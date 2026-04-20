@@ -301,7 +301,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.080</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.081</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div class="dn">
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
@@ -364,7 +364,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.080</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.081</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -402,6 +402,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
         <button type="button" class="picker-tab" id="ptab-chat" onclick="pickerSetTab('chat')"><span>💬</span>Chat</button>
         <button type="button" class="picker-tab act" id="ptab-search" onclick="pickerSetTab('search')"><span>🔍</span>Suche</button>
         <button type="button" class="picker-tab" id="ptab-foto" onclick="pickerSetTab('foto')"><span>📷</span>Foto</button>
+        <button type="button" class="picker-tab" id="ptab-barcode" onclick="pickerSetTab('barcode')"><span>📊</span>Barcode</button>
         <button type="button" class="picker-tab" id="ptab-own" onclick="pickerSetTab('own')"><span>✚</span>Eigenes</button>
         <button type="button" class="picker-tab" id="ptab-quick" onclick="pickerSetTab('quick')"><span>⚡</span>Quick</button>
       </div>
@@ -422,15 +423,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 
       <!-- Tab: Foto -->
       <div class="picker-panel" id="ppanel-foto">
-        <!-- Live-Video für Barcode-Scan -->
-        <div id="pickerFotoLiveWrap" class="barcode-wrap hidden">
-          <video id="pickerFotoVideo" playsinline muted></video>
-          <div class="barcode-overlay"><div style="width:70%;height:50%;border:2px solid var(--g2);border-radius:8px;position:relative;"><div class="barcode-line"></div></div></div>
-          <div class="barcode-hint" id="pickerFotoHint">🔍 Suche Barcode...</div>
-        </div>
-        <button type="button" id="pickerFotoTorchBtn" onclick="pickerFotoToggleTorch()" style="display:none;width:100%;background:rgba(0,0,0,.08);border:1.5px solid var(--br);border-radius:10px;padding:10px;font-size:15px;margin-bottom:8px;font-weight:600;">🔦 Taschenlampe ein/aus</button>
-        <!-- Foto aufnehmen (erscheint nach Live-Scan ohne Ergebnis) -->
-        <div id="pickerPhotoPickArea" style="display:block;">
+        <div id="pickerPhotoPickArea">
           <div class="photo-btns">
             <button type="button" class="photo-btn" onclick="document.getElementById('pickerCam').click()"><span>📷</span>Kamera</button>
             <button type="button" class="photo-btn" onclick="document.getElementById('pickerGal').click()"><span>🖼️</span>Galerie</button>
@@ -450,7 +443,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
           </div>
         </div>
         <div id="pickerPhotoStatus" class="hidden" style="background:var(--gl);border:1.5px solid var(--g3);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--g1);margin-bottom:10px;"></div>
-        <button type="button" class="abt" id="pickerAnalyzeBtn" style="display:none;" onclick="pickerAnalyze()">📷 KI-Analyse starten</button>
+        <button type="button" class="abt" id="pickerAnalyzeBtn" disabled onclick="pickerAnalyze()">📷 KI-Analyse starten</button>
         <div id="pickerPhotoResult" class="hidden" style="margin-top:10px;">
           <div style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:6px;">Erkannte Zutaten</div>
           <div style="margin-bottom:6px;">
@@ -476,6 +469,21 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
             <button type="button" class="cb2" style="margin-top:0;background:linear-gradient(135deg,#2d5f8a,#3d8bc4);" onclick="pickerPhotoAdd(true)">📋 Als Rezept</button>
           </div>
         </div>
+      </div>
+
+      <!-- Tab: Barcode -->
+      <div class="picker-panel" id="ppanel-barcode">
+        <div id="pickerBarcodeWrap" class="barcode-wrap hidden">
+          <video id="pickerBarcodeVideo" playsinline></video>
+          <div class="barcode-overlay"><div style="width:70%;height:50%;border:2px solid var(--g2);border-radius:8px;position:relative;"><div class="barcode-line"></div></div></div>
+          <div class="barcode-hint">Barcode in den Rahmen halten</div>
+        </div>
+        <input type="file" id="pickerBcPhoto" accept="image/*" capture="environment" style="display:none" onchange="pickerScanFromPhoto(event)">
+        <button type="button" id="torchBtn" onclick="pickerToggleTorch()" style="display:none;width:100%;background:rgba(0,0,0,.08);border:1.5px solid var(--br);border-radius:10px;padding:10px;font-size:15px;margin-bottom:8px;font-weight:600;">🔦 Taschenlampe ein/aus</button>
+        <div id="pickerBarcodeResult"></div>
+        <button type="button" id="pickerBcStartBtn" class="abt" onclick="pickerStartScan()">▶ Scanner starten</button>
+        <button type="button" id="pickerBcStopBtn" class="abt" style="display:none;background:linear-gradient(135deg,#555,#777);" onclick="pickerStopScan()">■ Scanner stoppen</button>
+        <button type="button" id="pickerBcPhotoBtn" class="abt" style="display:none;margin-top:8px;" onclick="document.getElementById('pickerBcPhoto').click()">📷 Foto aufnehmen</button>
       </div>
 
       <!-- Tab: Chat -->
@@ -1303,9 +1311,10 @@ function openPicker(meal, defaultTab){
   document.getElementById('pickerChatInp').value='';
   document.getElementById('pickerCam').value='';
   document.getElementById('pickerGal').value='';
+  document.getElementById('pickerBarcodeResult').innerHTML='';
   document.getElementById('pickerRecipeName').value='';
   document.getElementById('pickerChatRecipeName').value='';
-  pickerFotoLiveStop();
+  pickerStopScan();
   // Title
   var mealNames={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
   document.getElementById('pickerTitle').textContent=(mealNames[pickerMeal]||'Mahlzeit')+' – Zutat hinzufügen';
@@ -1319,13 +1328,13 @@ function openPicker(meal, defaultTab){
 }
 
 function closePicker(){
-  pickerFotoLiveStop();
+  pickerStopScan();
   closeOv('pickerOv');
 }
 
 function pickerSetTab(tab){
   // Always stop barcode scan when switching tabs
-  pickerFotoLiveStop();
+  pickerStopScan();
   document.querySelectorAll('.picker-tab').forEach(function(b){b.classList.remove('act');});
   document.querySelectorAll('.picker-panel').forEach(function(p){p.classList.remove('act');});
   var tabEl=document.getElementById('ptab-'+tab);
@@ -1333,8 +1342,7 @@ function pickerSetTab(tab){
   if(tabEl)tabEl.classList.add('act');
   if(panelEl)panelEl.classList.add('act');
   if(tab==='search'){pickerLoadDefaultResults();}
-  if(tab==='foto'){pickerFotoLiveStart();}
-  if(tab!=='foto'){pickerFotoLiveStop();}
+  if(tab==='barcode'){setTimeout(function(){pickerStartScan();},150);}
   // No auto-focus on chat - user taps input to open keyboard
 }
 
@@ -1449,24 +1457,22 @@ function pickerConfirmAdd(){
 // ─── PICKER: FOTO TAB ───
 function pickerHandlePhoto(e){
   var file=e.target.files[0];if(!file)return;
-  // Kamera-Stream stoppen – Foto wurde aufgenommen
-  pickerFotoLiveStop();
   var reader=new FileReader();
   reader.onload=function(ev){
     var img=new Image();
     img.onload=function(){
-      var c=document.createElement('canvas'),MAX=1200,w=img.width,h=img.height;
+      var c=document.createElement('canvas'),MAX=1024,w=img.width,h=img.height;
       if(w>h){if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}}else{if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}}
       c.width=w;c.height=h;
-      var ctx=c.getContext('2d',{willReadFrequently:true});
+      var ctx=c.getContext('2d');
       ctx.drawImage(img,0,0,w,h);
-      // Brightness + Contrast für bessere KI-Erkennung
       var imageData=ctx.getImageData(0,0,w,h);
       var data=imageData.data;
+      var brightness=20,contrast=1.15;
       for(var px=0;px<data.length;px+=4){
-        data[px]  =Math.min(255,Math.max(0,1.15*(data[px]  -128)+128+20));
-        data[px+1]=Math.min(255,Math.max(0,1.15*(data[px+1]-128)+128+20));
-        data[px+2]=Math.min(255,Math.max(0,1.15*(data[px+2]-128)+128+20));
+        data[px]  =Math.min(255,Math.max(0,contrast*(data[px]  -128)+128+brightness));
+        data[px+1]=Math.min(255,Math.max(0,contrast*(data[px+1]-128)+128+brightness));
+        data[px+2]=Math.min(255,Math.max(0,contrast*(data[px+2]-128)+128+brightness));
       }
       ctx.putImageData(imageData,0,0);
       var comp=c.toDataURL('image/jpeg',0.85);
@@ -1474,20 +1480,8 @@ function pickerHandlePhoto(e){
       document.getElementById('pickerPrev').src=comp;
       document.getElementById('pickerPrevWrap').classList.remove('hidden');
       document.getElementById('pickerPhotoPickArea').style.display='none';
-      // Barcode prüfen – wenn gefunden: Confirm zeigen, sonst Analyse-Button
-      var bcFound=false;
-      if(typeof ZXing!=='undefined'){
-        var hints=new Map();
-        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39]);
-        hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
-        try{
-          var r=new ZXing.BrowserMultiFormatReader(hints).decodeFromCanvas(c);
-          if(r&&r.getText()){bcFound=true;pickerFetchBarcodeForConfirm(r.getText());}
-        }catch(ex){}
-      }
-      if(!bcFound){
-        pickerAnalyze();
-      }
+      document.getElementById('pickerAnalyzeBtn').disabled=false;
+      pickerTryBarcode(c);
     };
     img.src=ev.target.result;
   };
@@ -1497,7 +1491,8 @@ function pickerHandlePhoto(e){
 function pickerResetPhoto(){
   window._pickerPhotoB64=null;
   document.getElementById('pickerPrevWrap').classList.add('hidden');
-  document.getElementById('pickerAnalyzeBtn').style.display='none';
+  document.getElementById('pickerPhotoPickArea').style.display='block';
+  document.getElementById('pickerAnalyzeBtn').disabled=true;
   document.getElementById('pickerBcConfirm').classList.add('hidden');
   document.getElementById('pickerPhotoResult').classList.add('hidden');
   document.getElementById('pickerPhotoStatus').classList.add('hidden');
@@ -1506,171 +1501,198 @@ function pickerResetPhoto(){
   document.getElementById('pickerRecipeName').value='';
   document.getElementById('pickerChatRecipeName').value='';
   pickerIngredients=[];
-  // Live-Scan neu starten
-  pickerFotoLiveStart();
 }
 
-// ════════════════════════════════════════
-// SECTION: FOTO-TAB LIVE-SCAN
-// ════════════════════════════════════════
-var _fotoLiveStream=null;
-var _fotoLiveScanLoop=null;
-var _fotoLiveActive=false;
-var _fotoTorchOn=false;
-
-function pickerFotoLiveStart(){
-  if(_fotoLiveActive)return;
-  _fotoLiveActive=true;
-  // UI reset
-  document.getElementById('pickerPrevWrap').classList.add('hidden');
-  document.getElementById('pickerBcConfirm').classList.add('hidden');
-  document.getElementById('pickerPhotoResult').classList.add('hidden');
-  document.getElementById('pickerAnalyzeBtn').style.display='none';
-  pickerSetPhotoStatus('',false);
-  // Live-Video sofort zeigen
-  var liveWrap=document.getElementById('pickerFotoLiveWrap');
-  if(liveWrap)liveWrap.classList.remove('hidden');
-  // Foto-Buttons sofort zeigen
-  var pickArea=document.getElementById('pickerPhotoPickArea');
-  if(pickArea)pickArea.style.display='block';
-  var hint=document.getElementById('pickerFotoHint');
-  if(hint)hint.textContent='🔍 Suche Barcode...';
-  var videoEl=document.getElementById('pickerFotoVideo');
+function pickerTryBarcode(canvas){
   var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
-  var videoConstraints=isIOS
-    ?{facingMode:'environment'}
-    :{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}};
-  navigator.mediaDevices.getUserMedia({video:videoConstraints}).then(function(stream){
-    if(!_fotoLiveActive){stream.getTracks().forEach(function(t){t.stop();});return;}
-    _fotoLiveStream=stream;
-    videoEl.srcObject=stream;
-    videoEl.setAttribute('playsinline','');
-    videoEl.muted=true;
-    videoEl.play().catch(function(){});
-    // Zoom + Focus nur Android
-    if(!isIOS){
-      try{
-        var track=stream.getVideoTracks()[0];
-        if(track){
-          var caps=track.getCapabilities();
-          var con={};
-          if(caps.focusMode&&caps.focusMode.includes('continuous'))con.focusMode='continuous';
-          if(caps.zoom){var z=Math.min(2,caps.zoom.max);if(z>caps.zoom.min)con.zoom=z;}
-          if(Object.keys(con).length)track.applyConstraints({advanced:[con]}).catch(function(){});
-        }
-      }catch(e){}
-    }
-    // Torch nur Android
-    var tb=document.getElementById('pickerFotoTorchBtn');
-    if(tb)tb.style.display=isIOS?'none':'block';
-    // iOS keepalive
-    if(isIOS){
-      videoEl._iosKeepAlive=function(){if(_fotoLiveActive&&videoEl.paused)videoEl.play().catch(function(){});};
-      document.addEventListener('visibilitychange',videoEl._iosKeepAlive);
-    }
-    // Scan-Loop starten
-    _pickerFotoStartScanLoop(videoEl,isIOS);
-  }).catch(function(err){
-    _fotoLiveActive=false;
-    if(hint)hint.textContent='';
-    pickerSetPhotoStatus('Kamera: '+(err.name==='NotAllowedError'?'Zugriff verweigert.':err.message),true);
-  });
-}
-
-function _pickerFotoStartScanLoop(videoEl,isIOS){
-  // Option 1: Native BarcodeDetector (Chrome Android)
-  if('BarcodeDetector' in window){
-    var detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39']});
-    _fotoLiveScanLoop=setInterval(function(){
-      if(!_fotoLiveActive)return;
-      if(videoEl.readyState<2)return;
-      detector.detect(videoEl).then(function(barcodes){
-        if(!_fotoLiveActive)return;
-        if(barcodes&&barcodes.length>0){
-          _pickerFotoBarcodeFound(barcodes[0].rawValue);
-        }
-      }).catch(function(){});
-    },200);
-  // Option 2: ZXing
-  } else if(typeof ZXing!=='undefined'){
+  if(typeof ZXing!=='undefined'){
     var hints=new Map();
     hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39]);
     hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
-    var reader=new ZXing.BrowserMultiFormatReader(hints,300);
-    var scanCanvas=document.createElement('canvas');
-    var scanCtx=scanCanvas.getContext('2d',{willReadFrequently:true});
-    var ZOOM=isIOS?2.5:1;
-    _fotoLiveScanLoop=setInterval(function(){
-      if(!_fotoLiveActive)return;
-      if(videoEl.readyState<2||(isIOS&&videoEl.paused))return;
-      var vw=videoEl.videoWidth,vh=videoEl.videoHeight;
-      if(!vw||!vh)return;
-      var sw=Math.round(vw/ZOOM),sh=Math.round(vh/ZOOM);
-      var sx=Math.round((vw-sw)/2),sy=Math.round((vh-sh)/2);
-      if(scanCanvas.width!==sw)scanCanvas.width=sw;
-      if(scanCanvas.height!==sh)scanCanvas.height=sh;
-      scanCtx.drawImage(videoEl,sx,sy,sw,sh,0,0,sw,sh);
-      try{
-        var result=reader.decodeFromCanvas(scanCanvas);
-        if(result&&result.getText()){_pickerFotoBarcodeFound(result.getText());}
-      }catch(e){}
-    },isIOS?400:300);
-  } else {
-    // Kein Scanner verfügbar – direkt Foto-Buttons zeigen
-    _pickerFotoShowPickArea();
+    try{
+      var r=new ZXing.BrowserMultiFormatReader(hints).decodeFromCanvas(canvas);
+      if(r&&r.getText()){pickerFetchBarcodeForConfirm(r.getText());return;}
+    }catch(e){}
   }
+  // iOS: Claude Haiku als Fallback für Barcode-Erkennung
+  if(!isIOS)return;
+  if(!S.apiKey||!isOnline)return;
+  var b64=canvas.toDataURL('image/jpeg',0.85).split(',')[1];
+  callClaude('claude-haiku-4-5',[
+    {type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},
+    {type:'text',text:'Is there a barcode in this image? If yes, reply with ONLY the digits. If no barcode, reply exactly "NONE".'}
+  ],20,
+  function(text){
+    var code=(text||'').trim().replace(/\s/g,'');
+    if(code!=='NONE'&&/^\d{8,14}$/.test(code))pickerFetchBarcodeForConfirm(code);
+  },
+  function(){});
 }
 
-function _pickerFotoBarcodeFound(code){
-  pickerFotoLiveStop();
-  pickerFetchBarcodeForConfirm(code);
-}
-
-function _pickerFotoShowPickArea(){
-  if(_fotoLiveScanLoop){clearInterval(_fotoLiveScanLoop);_fotoLiveScanLoop=null;}
-  var hint=document.getElementById('pickerFotoHint');
-  if(hint)hint.textContent='Kein Barcode gefunden';
-}
-
-function pickerFotoLiveStop(){
-  _fotoLiveActive=false;
-  if(_fotoLiveScanLoop){clearInterval(_fotoLiveScanLoop);_fotoLiveScanLoop=null;}
-  if(_fotoLiveStream){
-    try{_fotoLiveStream.getTracks().forEach(function(t){t.stop();});}catch(e){}
-    _fotoLiveStream=null;
-  }
-  var videoEl=document.getElementById('pickerFotoVideo');
-  if(videoEl){
-    if(videoEl._iosKeepAlive){document.removeEventListener('visibilitychange',videoEl._iosKeepAlive);videoEl._iosKeepAlive=null;}
-    try{if(videoEl.srcObject)videoEl.srcObject.getTracks().forEach(function(t){t.stop()});}catch(e){}
-    videoEl.srcObject=null;
-  }
-  var liveWrap=document.getElementById('pickerFotoLiveWrap');
-  if(liveWrap)liveWrap.classList.add('hidden');
-  var tb=document.getElementById('pickerFotoTorchBtn');
-  if(tb)tb.style.display='none';
-  _fotoTorchOn=false;
-}
-
-function pickerFotoToggleTorch(){
-  _fotoTorchOn=!_fotoTorchOn;
-  var btn=document.getElementById('pickerFotoTorchBtn');
-  if(btn)btn.textContent=_fotoTorchOn?'💡 Taschenlampe aus':'🔦 Taschenlampe ein/aus';
-  if(_fotoLiveStream){
-    var track=_fotoLiveStream.getVideoTracks()[0];
+function pickerToggleTorch(){
+  pickerTorchOn=!pickerTorchOn;
+  var btn=document.getElementById('torchBtn');
+  if(btn)btn.textContent=pickerTorchOn?'💡 Taschenlampe aus':'🔦 Taschenlampe ein/aus';
+  var videoEl=document.getElementById('pickerBarcodeVideo');
+  if(videoEl&&videoEl.srcObject){
+    var track=videoEl.srcObject.getVideoTracks()[0];
     if(track&&track.getCapabilities&&track.getCapabilities().torch){
-      track.applyConstraints({advanced:[{torch:_fotoTorchOn}]}).catch(function(){
+      track.applyConstraints({advanced:[{torch:pickerTorchOn}]}).catch(function(){
         showToast('Taschenlampe nicht verfügbar');
-        _fotoTorchOn=!_fotoTorchOn;
+        pickerTorchOn=!pickerTorchOn;
         if(btn)btn.textContent='🔦 Taschenlampe ein/aus';
       });
     } else {
       showToast('Taschenlampe nicht verfügbar');
-      _fotoTorchOn=!_fotoTorchOn;
+      pickerTorchOn=!pickerTorchOn;
       if(btn)btn.textContent='🔦 Taschenlampe ein/aus';
     }
   }
 }
+
+function pickerStartScan(){
+  var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
+  if(isIOS){
+    document.getElementById('pickerBcStartBtn').style.display='none';
+    document.getElementById('pickerBcPhotoBtn').style.display='block';
+    document.getElementById('pickerBarcodeResult').innerHTML='<div style="font-size:13px;color:var(--mu);padding:8px;text-align:center;">📷 Foto vom Barcode aufnehmen</div>';
+    return;
+  }
+  var wrap=document.getElementById('pickerBarcodeWrap');
+  wrap.classList.remove('hidden');
+  document.getElementById('pickerBcStartBtn').style.display='none';
+  document.getElementById('pickerBcStopBtn').style.display='block';
+  document.getElementById('pickerBarcodeResult').innerHTML='';
+  pickerBcActive=true;
+  var videoEl=document.getElementById('pickerBarcodeVideo');
+  var videoConstraints={facingMode:'environment',width:{ideal:1920},height:{ideal:1080}};
+  navigator.mediaDevices.getUserMedia({video:videoConstraints}).then(function(stream){
+    try{
+      var track=stream.getVideoTracks()[0];
+      if(track){
+        var caps=track.getCapabilities();
+        var constraints={};
+        if(caps.focusMode&&caps.focusMode.includes('continuous'))constraints.focusMode='continuous';
+        if(caps.zoom){var z=Math.min(2,caps.zoom.max);if(z>caps.zoom.min)constraints.zoom=z;}
+        if(Object.keys(constraints).length)track.applyConstraints({advanced:[constraints]}).catch(function(){});
+      }
+    }catch(e){}
+    if(!pickerBcActive){stream.getTracks().forEach(function(t){t.stop();});return;}
+    videoEl.srcObject=stream;
+    videoEl.setAttribute('playsinline','');
+    videoEl.muted=true;
+    videoEl.play();
+    var tb=document.getElementById('torchBtn');if(tb)tb.style.display='block';
+    pickerTorchOn=false;if(tb)tb.textContent='🔦';
+    if('BarcodeDetector' in window){
+      var detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39']});
+      pickerBcReader={_stream:stream};
+      pickerBcReader._scanLoop=setInterval(function(){
+        if(!pickerBcActive)return;
+        if(videoEl.readyState<2)return;
+        detector.detect(videoEl).then(function(barcodes){
+          if(!pickerBcActive)return;
+          if(barcodes&&barcodes.length>0){
+            var code=barcodes[0].rawValue;
+            clearInterval(pickerBcReader._scanLoop);
+            pickerStopScan();
+            pickerLookupBarcode(code);
+          }
+        }).catch(function(){});
+      },200);
+    } else if(typeof ZXing!=='undefined'){
+      var hints=new Map();
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39]);
+      hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
+      var reader=new ZXing.BrowserMultiFormatReader(hints,300);
+      pickerBcReader={_stream:stream,_zxing:reader};
+      var canvas=document.createElement('canvas');
+      var ctx=canvas.getContext('2d');
+      pickerBcReader._scanLoop=setInterval(function(){
+        if(!pickerBcActive)return;
+        if(videoEl.readyState<2)return;
+        canvas.width=videoEl.videoWidth;
+        canvas.height=videoEl.videoHeight;
+        if(!canvas.width)return;
+        ctx.drawImage(videoEl,0,0,canvas.width,canvas.height);
+        try{
+          var result=reader.decodeFromCanvas(canvas);
+          if(result&&result.getText()){
+            clearInterval(pickerBcReader._scanLoop);
+            pickerStopScan();
+            pickerLookupBarcode(result.getText());
+          }
+        }catch(e){}
+      },300);
+    } else {
+      document.getElementById('pickerBarcodeResult').innerHTML='<div style="font-size:13px;color:var(--re);padding:8px;">❌ Scanner nicht verfügbar.</div>';
+    }
+  }).catch(function(err){
+    document.getElementById('pickerBarcodeResult').innerHTML='<div style="font-size:13px;color:var(--re);padding:8px;">❌ '+(err.name==='NotAllowedError'?'Kamerazugriff verweigert.':'Kamera nicht verfügbar: '+err.message)+'</div>';
+    pickerStopScan();
+  });
+}
+
+function pickerStopScan(){
+  pickerBcActive=false;
+  if(pickerBcReader){
+    try{if(pickerBcReader._scanLoop)clearInterval(pickerBcReader._scanLoop);}catch(e){}
+    try{if(pickerBcReader._zxing)pickerBcReader._zxing.reset();}catch(e){}
+    try{if(pickerBcReader._stream)pickerBcReader._stream.getTracks().forEach(function(t){t.stop();});}catch(e){}
+    pickerBcReader=null;
+  }
+  var videoEl=document.getElementById('pickerBarcodeVideo');
+  if(videoEl){
+    if(videoEl._iosKeepAlive){document.removeEventListener('visibilitychange',videoEl._iosKeepAlive);videoEl._iosKeepAlive=null;}
+    if(videoEl.srcObject){try{videoEl.srcObject.getTracks().forEach(function(t){t.stop();});}catch(e){}videoEl.srcObject=null;}
+  }
+  var w=document.getElementById('pickerBarcodeWrap');if(w)w.classList.add('hidden');
+  var s=document.getElementById('pickerBcStartBtn');if(s)s.style.display='block';
+  var t=document.getElementById('pickerBcStopBtn');if(t)t.style.display='none';
+  var tb=document.getElementById('torchBtn');if(tb)tb.style.display='none';
+  var pb=document.getElementById('pickerBcPhotoBtn');if(pb)pb.style.display='none';
+  pickerTorchOn=false;
+}
+
+function pickerScanFromPhoto(event){
+  var file=event.target.files&&event.target.files[0];
+  if(!file)return;
+  var el=document.getElementById('pickerBarcodeResult');
+  el.innerHTML='<div style="font-size:13px;color:var(--g1);padding:8px;text-align:center;">🔍 Barcode wird erkannt...</div>';
+  var img=new Image();
+  var url=URL.createObjectURL(file);
+  img.onload=function(){
+    URL.revokeObjectURL(url);
+    var MAX=1200;
+    var scale=Math.min(1,MAX/Math.max(img.width,img.height));
+    var w=Math.round(img.width*scale),h=Math.round(img.height*scale);
+    var canvas=document.createElement('canvas');
+    canvas.width=w;canvas.height=h;
+    var ctx=canvas.getContext('2d',{willReadFrequently:true});
+    ctx.drawImage(img,0,0,w,h);
+    var zxingOk=false;
+    if(typeof ZXing!=='undefined'){
+      var hints=new Map();
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39]);
+      hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
+      try{
+        var result=new ZXing.BrowserMultiFormatReader(hints).decodeFromCanvas(canvas);
+        if(result&&result.getText()){
+          zxingOk=true;
+          document.getElementById('pickerBcPhoto').value='';
+          pickerLookupBarcode(result.getText());
+        }
+      }catch(e){}
+    }
+    if(!zxingOk){
+      el.innerHTML='<div style="font-size:13px;color:var(--re);padding:8px;">❌ Kein Barcode erkannt. Nochmal versuchen.</div>';
+      document.getElementById('pickerBcPhoto').value='';
+    }
+  };
+  img.onerror=function(){el.innerHTML='<div style="font-size:13px;color:var(--re);padding:8px;">❌ Foto konnte nicht geladen werden.</div>';};
+  img.src=url;
+}
+
 
 function pickerFetchBarcodeForConfirm(code){
   var cached=barcodeCache[code];
@@ -1729,10 +1751,33 @@ function pickerLookupBarcode(code){
 }
 
 function pickerShowBarcodeResult(food,fromCache){
-  pickerSetPhotoStatus('',false);
-  pickerIngredients=[{name:food.name,emoji:food.emoji,g:100,amount:100,per100:food.per100}];
-  pickerShowPhotoResult('');
-  showToast((food.emoji||'🍽')+' '+food.name+' erkannt');
+  var el=document.getElementById('pickerBarcodeResult');
+  if(!el){return;}
+  el.innerHTML='<div style="background:var(--gl);border:1.5px solid var(--g3);border-radius:12px;padding:12px;">'
+    +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'
+    +'<div style="font-size:28px;">'+(food.emoji||'🍽')+'</div>'
+    +'<div style="flex:1;"><div style="font-weight:700;font-size:14px;">'+food.name+'</div>'
+    +'<div style="font-size:11px;color:var(--mu);margin-top:2px;">P '+food.per100.protein+'g · K '+food.per100.carbs+'g · F '+food.per100.fat+'g pro 100g</div>'
+    +(fromCache?'<div style="font-size:10px;color:var(--g2);margin-top:2px;">📴 Aus Cache</div>':'')
+    +'</div>'
+    +'<div style="font-weight:800;font-size:15px;color:var(--g1);">'+Math.round(food.per100.kcal)+' kcal</div>'
+    +'</div>'
+    +'<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">'
+    +'<input type="number" id="pickerBcAmt" value="100" min="1" style="flex:1;border:2px solid var(--br);border-radius:9px;padding:8px;font-size:14px;font-weight:700;text-align:center;outline:none;">'
+    +'<div style="font-size:13px;color:var(--mu);">Gramm</div>'
+    +'</div>'
+    +'<button type="button" onclick="pickerBarcodeAdd()" style="width:100%;background:linear-gradient(135deg,var(--g1),var(--g2));color:white;border:none;border-radius:10px;padding:11px;font-weight:800;font-size:14px;">Hinzufügen ✓</button>'
+    +'</div>';
+  window._pickerBarcodeFood=food;
+}
+
+function pickerBarcodeAdd(){
+  var food=window._pickerBarcodeFood;if(!food)return;
+  var amt=parseFloat(document.getElementById('pickerBcAmt').value)||100;
+  var r=amt/100;
+  getDay().meals[pickerMeal].push({name:food.name,emoji:food.emoji,amount:amt,per100:food.per100,kcal:food.per100.kcal*r,protein:food.per100.protein*r,carbs:food.per100.carbs*r,fat:food.per100.fat*r});
+  saveS();renderAll();closePicker();
+  showToast((food.emoji||'🍽')+' '+food.name+' hinzugefügt');
 }
 
 
@@ -2243,7 +2288,7 @@ function switchTab(tab){
 function openOv(id){document.getElementById(id).classList.add('open');}
 function closeOv(id){
   document.getElementById(id).classList.remove('open');
-  if(id==='pickerOv'){pickerFotoLiveStop();}
+  if(id==='pickerOv'){pickerStopScan();}
   if(id==='recEditOv'){/* nothing extra */}
 }
 function bgClose(e,id){if(e.target.id===id)closeOv(id);}

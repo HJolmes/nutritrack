@@ -1,6 +1,6 @@
 // NutriTrack Service Worker
 // Version wird bei jedem Release hochgezählt - löst automatisches Update aus
-var VERSION = '0.073';
+var VERSION = '0.074';
 var CACHE = 'nt-' + VERSION;
 var SKIP = ['anthropic.com','corsproxy.io','openfoodfacts.org','fonts.googleapis.com','fonts.gstatic.com','unpkg.com'];
 

@@ -76,7 +76,8 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 .mac{flex:1;background:rgba(255,255,255,.15);border-radius:10px;padding:9px 6px;text-align:center;}
 .mv{font-family:'Nunito',sans-serif;font-weight:800;font-size:16px;}
 .mn{font-size:10px;opacity:.8;margin-top:1px;text-transform:uppercase;letter-spacing:.3px;}
-.mb{background:rgba(255,255,255,.2);border-radius:4px;height:3px;margin-top:5px;overflow:hidden;}
+.mb{background:rgba(255,255,255,.2);border-radius:4px;height:3px;margin-top:5px;overflow:visible;position:relative;}
+.mmk{position:absolute;top:-2px;width:2px;height:7px;background:white;border-radius:1px;opacity:0.9;pointer-events:none;}
 .mf{height:100%;border-radius:4px;background:white;transition:width .6s;}
 
 /* ── MEAL CARDS ── */
@@ -301,7 +302,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.084</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.085</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div class="dn">
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
@@ -333,9 +334,9 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
       </div>
       <div class="pt"><div class="pf" id="pFill" style="width:0%"></div></div>
       <div class="macs">
-        <div class="mac"><div class="mv" id="tP">0g</div><div class="mn">Protein</div><div class="mb"><div class="mf" id="fP" style="width:0%"></div></div></div>
-        <div class="mac"><div class="mv" id="tC">0g</div><div class="mn">Kohlenh.</div><div class="mb"><div class="mf" id="fC" style="width:0%"></div></div></div>
-        <div class="mac"><div class="mv" id="tF">0g</div><div class="mn">Fett</div><div class="mb"><div class="mf" id="fF" style="width:0%"></div></div></div>
+        <div class="mac"><div class="mv" id="tP">0g</div><div class="mn">Protein</div><div class="mb"><div class="mf" id="fP" style="width:0%"></div><div class="mmk" id="mkP"></div></div></div>
+        <div class="mac"><div class="mv" id="tC">0g</div><div class="mn">Kohlenh.</div><div class="mb"><div class="mf" id="fC" style="width:0%"></div><div class="mmk" id="mkC"></div></div></div>
+        <div class="mac"><div class="mv" id="tF">0g</div><div class="mn">Fett</div><div class="mb"><div class="mf" id="fF" style="width:0%"></div><div class="mmk" id="mkF"></div></div></div>
       </div>
     </div>
     <div class="mc"><div class="mh"><div class="mhl"><div class="mi" style="background:#fff8e1">🌅</div><div><div class="mnm">Frühstück</div><div class="ms" id="sub-breakfast">0 kcal</div></div></div><button type="button" class="ma" onclick="openPicker('breakfast')">+</button></div><div id="entries-breakfast"><div class="me">Noch nichts eingetragen</div></div></div>
@@ -364,7 +365,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.084</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.085</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -672,11 +673,40 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
         <div style="position:relative;"><input type="password" class="sinp" id="sk"><button type="button" onclick="toggleEye('sk')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:17px;color:var(--mu);">👁</button></div>
       </div>
       <div class="sf"><label class="lbl">Name</label><input type="text" class="sinp" id="sn"></div>
-      <div class="sf"><label class="lbl">Kalorienziel (kcal/Tag)</label><input type="number" class="sinp" id="sg"></div>
       <div class="srow">
         <div class="sf"><label class="lbl">Gewicht (kg)</label><input type="number" class="sinp" id="sw"></div>
         <div class="sf"><label class="lbl">Größe (cm)</label><input type="number" class="sinp" id="sh"></div>
       </div>
+      <div class="srow">
+        <div class="sf"><label class="lbl">Alter</label><input type="number" class="sinp" id="sa" placeholder="30"></div>
+        <div class="sf"><label class="lbl">Geschlecht</label>
+          <select class="sinp" id="sgender">
+            <option value="">Keine Angabe</option>
+            <option value="m">Männlich</option>
+            <option value="f">Weiblich</option>
+          </select>
+        </div>
+      </div>
+      <div class="sf"><label class="lbl">Aktivitätsgrad</label>
+        <select class="sinp" id="sactivity">
+          <option value="">Keine Angabe</option>
+          <option value="1.2">Wenig/keine Bewegung (Büro)</option>
+          <option value="1.375">Leichte Aktivität (1-3× Sport/Woche)</option>
+          <option value="1.55">Moderate Aktivität (3-5× Sport/Woche)</option>
+          <option value="1.725">Viel Aktivität (6-7× Sport/Woche)</option>
+          <option value="1.9">Sehr viel / körperliche Arbeit</option>
+        </select>
+      </div>
+      <div class="sf" id="pregnantRow" style="display:none;"><label class="lbl">🤰 Schwangerschaft</label>
+        <select class="sinp" id="spregnant">
+          <option value="0">Nicht schwanger</option>
+          <option value="1">1. Trimester (+0 kcal)</option>
+          <option value="2">2. Trimester (+300 kcal)</option>
+          <option value="3">3. Trimester (+500 kcal)</option>
+        </select>
+      </div>
+      <button type="button" class="seb" onclick="calcGoal()" style="margin-bottom:8px;">🧮 Kalorienbedarf berechnen</button>
+      <div class="sf"><label class="lbl">Kalorienziel (kcal/Tag)</label><input type="number" class="sinp" id="sg"></div>
       <button type="button" class="svb" onclick="saveSettings()">Speichern</button>
       <button type="button" class="seb" onclick="openPromptSettings()" style="margin-top:8px;">⚙️ KI-Prompts bearbeiten</button>
       <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--br);">
@@ -790,7 +820,7 @@ var DE_EN={apfel:'apple',birne:'pear',banane:'banana',orange:'orange',erdbeere:'
 // ════════════════════════════════════════
 // SECTION: STATE
 // ════════════════════════════════════════
-var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,currentDate:'',days:{}};
+var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:'',pregnant:0,macroTargets:{protein:0,carbs:0,fat:0},currentDate:'',days:{}};
 
 // Default prompts - editable in settings
 var DEFAULT_FOTO_PROMPT='Analysiere dieses Essensfoto auf Deutsch.\nGib ein JSON-Objekt zurueck:\n{"rezept":"Gesamtgerichtname auf Deutsch","zutaten":[{"name":"Zutat auf Deutsch","emoji":"Emoji","g":GRAMM}]}\n\nRegeln:\n- rezept: logischer Gesamtname des Gerichts\n- zutaten: erkenne was SICHTBAR auf dem Teller/Bild liegt - benne es so wie ein Mensch es bestellen oder kaufen wuerde\n- Nenne das fertige Lebensmittel, nicht seine Zutaten oder Bestandteile\n- 1 Einheit schatzen (Nutzer gibt Menge selbst an)\n- Logisch notwendige Beilagen erganzen (z.B. Butter bei belegtem Brot)\n- Getraenke: typische Bestandteile mit realistischen Mengen\n- Keine Rohzutaten nennen aus denen etwas hergestellt wurde\n- Realistische Gramm pro Einheit\n- Alle Namen auf Deutsch\n- Wenn nichts erkennbar: {"rezept":"","zutaten":[]}';
@@ -983,9 +1013,18 @@ function renderAll(){
   document.getElementById('tP').textContent=Math.round(t.protein)+'g';
   document.getElementById('tC').textContent=Math.round(t.carbs)+'g';
   document.getElementById('tF').textContent=Math.round(t.fat)+'g';
-  document.getElementById('fP').style.width=Math.min(100,(t.protein/150)*100)+'%';
-  document.getElementById('fC').style.width=Math.min(100,(t.carbs/250)*100)+'%';
-  document.getElementById('fF').style.width=Math.min(100,(t.fat/70)*100)+'%';
+  var mt=S.macroTargets&&S.macroTargets.protein?S.macroTargets:{protein:150,carbs:250,fat:70};
+  var pMax=Math.max(mt.protein*1.2,t.protein+10);
+  var cMax=Math.max(mt.carbs*1.2,t.carbs+10);
+  var fMax=Math.max(mt.fat*1.2,t.fat+10);
+  document.getElementById('fP').style.width=Math.min(100,(t.protein/pMax)*100)+'%';
+  document.getElementById('fC').style.width=Math.min(100,(t.carbs/cMax)*100)+'%';
+  document.getElementById('fF').style.width=Math.min(100,(t.fat/fMax)*100)+'%';
+  // Mindest-Marker
+  var mkP=document.getElementById('mkP'),mkC=document.getElementById('mkC'),mkF=document.getElementById('mkF');
+  if(mkP)mkP.style.left=Math.min(98,(mt.protein/pMax)*100)+'%';
+  if(mkC)mkC.style.left=Math.min(98,(mt.carbs/cMax)*100)+'%';
+  if(mkF)mkF.style.left=Math.min(98,(mt.fat/fMax)*100)+'%';
   ['breakfast','lunch','dinner','snack'].forEach(function(m){
     var en=day.meals[m],s=calcM(en);
     document.getElementById('sub-'+m).textContent=Math.round(s.kcal)+' kcal';
@@ -2232,6 +2271,16 @@ function openSettings(){
   document.getElementById('sg').value=S.goal;
   document.getElementById('sw').value=S.weight||'';
   document.getElementById('sh').value=S.height||'';
+  document.getElementById('sa').value=S.age||'';
+  document.getElementById('sgender').value=S.gender||'';
+  document.getElementById('sactivity').value=S.activity||'';
+  document.getElementById('spregnant').value=S.pregnant||0;
+  var pr=document.getElementById('pregnantRow');
+  if(pr)pr.style.display=(S.gender==='f')?'block':'none';
+  document.getElementById('sgender').onchange=function(){
+    var pr=document.getElementById('pregnantRow');
+    if(pr)pr.style.display=(this.value==='f')?'block':'none';
+  };
   document.getElementById('cacheInfo').textContent=customFoods.length+' eigene Lebensmittel · '+recipes.length+' Rezepte · '+Object.keys(foodCache).length+' gespeichert';
   renderSettFoodList();
   openOv('settOv');
@@ -2243,7 +2292,42 @@ function saveSettings(){
   S.goal=parseInt(document.getElementById('sg').value)||2000;
   S.weight=parseInt(document.getElementById('sw').value)||0;
   S.height=parseInt(document.getElementById('sh').value)||0;
+  S.age=parseInt(document.getElementById('sa').value)||0;
+  S.gender=document.getElementById('sgender').value||'';
+  S.activity=document.getElementById('sactivity').value||'';
+  S.pregnant=parseInt(document.getElementById('spregnant').value)||0;
+  S.macroTargets=calcMacroTargets(S.goal);
   saveS();renderAll();closeOv('settOv');showToast('Gespeichert ✓');
+}
+
+function calcGoal(){
+  var w=parseInt(document.getElementById('sw').value)||0;
+  var h=parseInt(document.getElementById('sh').value)||0;
+  var a=parseInt(document.getElementById('sa').value)||0;
+  var g=document.getElementById('sgender').value;
+  var act=parseFloat(document.getElementById('sactivity').value)||1.2;
+  var preg=parseInt(document.getElementById('spregnant').value)||0;
+  if(!w||!h||!a||!g){showToast('Bitte Gewicht, Größe, Alter und Geschlecht angeben');return;}
+  // Mifflin-St. Jeor
+  var bmr=g==='m'
+    ?(10*w)+(6.25*h)-(5*a)+5
+    :(10*w)+(6.25*h)-(5*a)-161;
+  var tdee=Math.round(bmr*act);
+  // Schwangerschaftszuschlag
+  var pregAdd=[0,0,300,500][preg]||0;
+  var total=tdee+pregAdd;
+  document.getElementById('sg').value=total;
+  var msg='Grundumsatz: '+Math.round(bmr)+' kcal · TDEE: '+tdee+' kcal'+(pregAdd?' · +'+pregAdd+' kcal (Schwangerschaft)':'');
+  showToast('Berechnet: '+total+' kcal/Tag');
+}
+
+function calcMacroTargets(kcal){
+  // Standard: 25% Protein, 45% Kohlenhydrate, 30% Fett
+  return{
+    protein:Math.round(kcal*0.25/4),
+    carbs:Math.round(kcal*0.45/4),
+    fat:Math.round(kcal*0.30/9)
+  };
 }
 
 function renderSettFoodList(){

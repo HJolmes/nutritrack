@@ -301,7 +301,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.071</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.072</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div class="dn">
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
@@ -364,7 +364,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.071</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.072</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -1793,6 +1793,11 @@ function pickerStartScan(){
     videoEl.setAttribute('playsinline','');
     videoEl.muted=true;
     videoEl.play();
+    // iOS: Video neu starten falls es pausiert (z.B. nach Tab-Wechsel)
+    if(isIOS){
+      videoEl._iosKeepAlive=function(){if(pickerBcActive&&videoEl.paused)videoEl.play();};
+      document.addEventListener('visibilitychange',videoEl._iosKeepAlive);
+    }
     // Torch nur auf Android verfügbar
     var tb=document.getElementById('torchBtn');if(tb)tb.style.display=isIOS?'none':'block';
     pickerTorchOn=false;if(tb)tb.textContent='🔦';
@@ -1825,12 +1830,19 @@ function pickerStartScan(){
       var reader=new ZXing.BrowserMultiFormatReader(hints,300);
       pickerBcReader={_stream:stream,_zxing:reader};
       if(isIOS){
-        // iOS: decodeFromVideoElement direkt – Canvas-Taint umgehen
+        // iOS: eigenen Canvas-Loop – Video am Leben lassen, Safari-Taint vermeiden
+        var iosCanvas=document.createElement('canvas');
+        var iosCtx=iosCanvas.getContext('2d',{willReadFrequently:true});
         pickerBcReader._scanLoop=setInterval(function(){
           if(!pickerBcActive)return;
-          if(videoEl.readyState<2)return;
+          if(videoEl.readyState<2||videoEl.paused)return;
+          var w=videoEl.videoWidth,h=videoEl.videoHeight;
+          if(!w||!h)return;
+          if(iosCanvas.width!==w)iosCanvas.width=w;
+          if(iosCanvas.height!==h)iosCanvas.height=h;
+          iosCtx.drawImage(videoEl,0,0,w,h);
           try{
-            var result=reader.decodeFromVideoElement(videoEl);
+            var result=reader.decodeFromCanvas(iosCanvas);
             if(result&&result.getText()){
               clearInterval(pickerBcReader._scanLoop);
               pickerStopScan();
@@ -1875,9 +1887,9 @@ function pickerStopScan(){
     pickerBcReader=null;
   }
   var videoEl=document.getElementById('pickerBarcodeVideo');
-  if(videoEl&&videoEl.srcObject){
-    try{videoEl.srcObject.getTracks().forEach(function(t){t.stop();});}catch(e){}
-    videoEl.srcObject=null;
+  if(videoEl){
+    if(videoEl._iosKeepAlive){document.removeEventListener('visibilitychange',videoEl._iosKeepAlive);videoEl._iosKeepAlive=null;}
+    if(videoEl.srcObject){try{videoEl.srcObject.getTracks().forEach(function(t){t.stop();});}catch(e){}videoEl.srcObject=null;}
   }
   var w=document.getElementById('pickerBarcodeWrap');if(w)w.classList.add('hidden');
   var s=document.getElementById('pickerBcStartBtn');if(s)s.style.display='block';

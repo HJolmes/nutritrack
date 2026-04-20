@@ -301,7 +301,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.083</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.084</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div class="dn">
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
@@ -364,7 +364,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.083</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.084</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -1907,6 +1907,66 @@ function pickerPhotoAdd(saveAsRecipe){
     var t=ingTotal(ings);
     getDay().meals[pickerMeal].push({name:name,emoji:'📸',isRecipe:true,recipeId:null,portions:portions,ingredients:ings,kcal:t.kcal*portions,protein:t.protein*portions,carbs:t.carbs*portions,fat:t.fat*portions});
     showToast('📸 '+name+' eingetragen');
+  }
+  saveS();renderAll();closePicker();
+}
+
+// ─── PICKER: CHAT TAB ───
+function pickerSendChat(){
+  var msg=document.getElementById('pickerChatInp').value.trim();if(!msg)return;
+  if(!isOnline){showToast('Internet benötigt');return;}
+  var msgs=document.getElementById('pickerChatMsgs');
+  msgs.innerHTML+='<div class="cm u">'+msg+'</div>';
+  document.getElementById('pickerChatInp').value='';
+  document.getElementById('pickerChatSend').disabled=true;
+  document.getElementById('pickerChatResult').classList.add('hidden');
+  msgs.scrollTop=msgs.scrollHeight;
+  var prompt=getChatPrompt().replace('{MSG}',msg);
+  callClaude('claude-haiku-4-5',[{type:'text',text:prompt}],300,
+    function(text){
+      var raw=parseIngJSON(text);
+      if(!raw.length){msgs.innerHTML+='<div class="cm a">❌ Konnte nicht parsen. Genauer beschreiben.</div>';document.getElementById('pickerChatSend').disabled=false;return;}
+      msgs.innerHTML+='<div class="cm a">✨ '+raw.length+' Zutaten erkannt. Suche Nährwerte...</div>';
+      msgs.scrollTop=msgs.scrollHeight;
+      lookupNutrients(raw,function(resolved){
+        pickerIngredients=resolved;
+        if(!document.getElementById('pickerChatRecipeName').value)
+          document.getElementById('pickerChatRecipeName').value=msg.slice(0,50);
+        pickerRenderIngList('pickerChatIngList',pickerIngredients,
+          function(i,v){pickerIngredients[i].amount=parseFloat(v)||0;pickerUpdateChatTotal();},
+          function(i){pickerIngredients.splice(i,1);pickerUpdateChatTotal();pickerRenderIngList('pickerChatIngList',pickerIngredients,function(i,v){pickerIngredients[i].amount=parseFloat(v)||0;pickerUpdateChatTotal();},function(i){pickerIngredients.splice(i,1);pickerUpdateChatTotal();});}
+        );
+        pickerUpdateChatTotal();
+        document.getElementById('pickerChatResult').classList.remove('hidden');
+        document.getElementById('pickerChatSend').disabled=false;
+      });
+    },
+    function(err){msgs.innerHTML+='<div class="cm a">❌ Fehler: '+err+'</div>';document.getElementById('pickerChatSend').disabled=false;}
+  );
+}
+
+function pickerUpdateChatTotal(){
+  var t=ingTotal(pickerIngredients);
+  var p=parseFloat(document.getElementById('pickerChatPortions').value)||1;
+  document.getElementById('pickerChatTotal').textContent='1 Portion: '+totalStr(t)+(p!==1?'  ·  '+p+'× = '+totalStr({kcal:t.kcal*p,protein:t.protein*p,carbs:t.carbs*p,fat:t.fat*p}):'');
+}
+
+function pickerChatAdd(saveAsRecipe){
+  if(!pickerIngredients.length){showToast('Keine Zutaten');return;}
+  var ings=JSON.parse(JSON.stringify(pickerIngredients));
+  pickerIngredients.forEach(function(f){cacheFood(f);});
+  var name=document.getElementById('pickerChatRecipeName').value.trim()||'Chat-Eintrag';
+  var portions=parseFloat(document.getElementById('pickerChatPortions').value)||1;
+  if(saveAsRecipe){
+    var rec={id:Date.now().toString(),name:name,emoji:'💬',ingredients:ings};
+    recipes.unshift(rec);saveX();
+    var t=ingTotal(ings);
+    getDay().meals[pickerMeal].push({name:name,emoji:'💬',isRecipe:true,recipeId:rec.id,portions:portions,ingredients:ings,kcal:t.kcal*portions,protein:t.protein*portions,carbs:t.carbs*portions,fat:t.fat*portions});
+    showToast('💬 '+name+' als Rezept gespeichert');
+  } else {
+    var t=ingTotal(ings);
+    getDay().meals[pickerMeal].push({name:name,emoji:'💬',isRecipe:true,recipeId:null,portions:portions,ingredients:ings,kcal:t.kcal*portions,protein:t.protein*portions,carbs:t.carbs*portions,fat:t.fat*portions});
+    showToast('💬 '+name+' eingetragen');
   }
   saveS();renderAll();closePicker();
 }

@@ -301,7 +301,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.074</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.075</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div class="dn">
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
@@ -364,7 +364,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.074</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.075</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -1921,29 +1921,48 @@ function pickerScanFromPhoto(event){
   var img=new Image();
   var url=URL.createObjectURL(file);
   img.onload=function(){
-    var canvas=document.createElement('canvas');
-    canvas.width=img.width;canvas.height=img.height;
-    var ctx=canvas.getContext('2d',{willReadFrequently:true});
-    ctx.drawImage(img,0,0);
     URL.revokeObjectURL(url);
-    if(typeof ZXing==='undefined'){el.innerHTML='<div style="font-size:13px;color:var(--re);padding:8px;">❌ Scanner nicht verfügbar.</div>';return;}
-    var hints=new Map();
-    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39]);
-    hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
-    var reader=new ZXing.BrowserMultiFormatReader(hints);
-    try{
-      var result=reader.decodeFromCanvas(canvas);
-      if(result&&result.getText()){
-        // Input zurücksetzen für erneutes Scannen
+    // Auf max. 1200px skalieren – ZXing hat Probleme mit sehr großen iOS-Fotos
+    var MAX=1200;
+    var scale=Math.min(1,MAX/Math.max(img.width,img.height));
+    var w=Math.round(img.width*scale), h=Math.round(img.height*scale);
+    var canvas=document.createElement('canvas');
+    canvas.width=w; canvas.height=h;
+    var ctx=canvas.getContext('2d',{willReadFrequently:true});
+    ctx.drawImage(img,0,0,w,h);
+    var zxingOk=false;
+    if(typeof ZXing!=='undefined'){
+      var hints=new Map();
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39]);
+      hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
+      try{
+        var result=new ZXing.BrowserMultiFormatReader(hints).decodeFromCanvas(canvas);
+        if(result&&result.getText()){
+          zxingOk=true;
+          document.getElementById('pickerBcPhoto').value='';
+          pickerLookupBarcode(result.getText());
+        }
+      }catch(e){}
+    }
+    if(!zxingOk){
+      // Fallback: Claude Vision den Barcode lesen lassen
+      if(!S.apiKey){el.innerHTML='<div style="font-size:13px;color:var(--re);padding:8px;">❌ Kein Barcode erkannt.</div>';document.getElementById('pickerBcPhoto').value='';return;}
+      el.innerHTML='<div style="font-size:13px;color:var(--g1);padding:8px;text-align:center;">🤖 KI liest Barcode...</div>';
+      var b64=canvas.toDataURL('image/jpeg',0.9).split(',')[1];
+      callClaude('claude-haiku-4-5',[
+        {type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},
+        {type:'text',text:'Lies den Barcode in diesem Bild. Antworte NUR mit der Ziffernfolge des Barcodes, ohne Text oder Erklärung. Wenn kein Barcode erkennbar ist, antworte mit "NONE".'}
+      ],50,
+      function(text){
+        var code=(text||'').trim().replace(/\D/g,'');
         document.getElementById('pickerBcPhoto').value='';
-        pickerLookupBarcode(result.getText());
-      } else {
+        if(code.length>=8){pickerLookupBarcode(code);}
+        else{el.innerHTML='<div style="font-size:13px;color:var(--re);padding:8px;">❌ Kein Barcode erkannt. Nochmal versuchen.</div>';}
+      },
+      function(){
         el.innerHTML='<div style="font-size:13px;color:var(--re);padding:8px;">❌ Kein Barcode erkannt. Nochmal versuchen.</div>';
         document.getElementById('pickerBcPhoto').value='';
-      }
-    }catch(e){
-      el.innerHTML='<div style="font-size:13px;color:var(--re);padding:8px;">❌ Kein Barcode erkannt. Nochmal versuchen.</div>';
-      document.getElementById('pickerBcPhoto').value='';
+      });
     }
   };
   img.onerror=function(){el.innerHTML='<div style="font-size:13px;color:var(--re);padding:8px;">❌ Foto konnte nicht geladen werden.</div>';};

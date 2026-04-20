@@ -301,7 +301,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.076</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.078</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div class="dn">
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
@@ -364,7 +364,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.076</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.078</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -428,6 +428,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
             <button type="button" class="photo-btn" onclick="document.getElementById('pickerCam').click()"><span>📷</span>Kamera</button>
             <button type="button" class="photo-btn" onclick="document.getElementById('pickerGal').click()"><span>🖼️</span>Galerie</button>
           </div>
+          <div style="font-size:11px;color:var(--mu);text-align:center;margin-top:8px;line-height:1.5;">Barcode im Bild? Wird automatisch erkannt.<br>Barcode gerade &amp; scharf fotografieren.</div>
         </div>
         <input type="file" id="pickerCam" accept="image/*" capture="environment" style="display:none" onchange="pickerHandlePhoto(event)">
         <input type="file" id="pickerGal" accept="image/*" style="display:none" onchange="pickerHandlePhoto(event)">
@@ -1509,7 +1510,8 @@ function pickerResetPhoto(){
 }
 
 function pickerTryBarcode(canvas){
-  // Stufe 1: ZXing
+  var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
+  // Stufe 1: ZXing (beide Plattformen, kein API-Call)
   if(typeof ZXing!=='undefined'){
     var hints=new Map();
     hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39]);
@@ -1519,21 +1521,21 @@ function pickerTryBarcode(canvas){
       if(r&&r.getText()){pickerFetchBarcodeForConfirm(r.getText());return;}
     }catch(e){}
   }
-  // Stufe 2: Claude Vision nach Barcode fragen
+  // Stufe 2: Nur auf iOS – Claude Haiku still nach Barcode fragen
+  if(!isIOS)return;
   if(!S.apiKey||!isOnline)return;
   var b64=canvas.toDataURL('image/jpeg',0.85).split(',')[1];
   callClaude('claude-haiku-4-5',[
     {type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},
-    {type:'text',text:'Is there a barcode in this image? If yes, reply with ONLY the digits of the barcode. If no barcode is visible, reply with exactly "NONE".'}
+    {type:'text',text:'Is there a barcode in this image? If yes, reply with ONLY the digits. If no barcode, reply exactly "NONE".'}
   ],20,
   function(text){
     var code=(text||'').trim().replace(/\s/g,'');
     if(code!=='NONE'&&/^\d{8,14}$/.test(code)){
       pickerFetchBarcodeForConfirm(code);
     }
-    // Kein Barcode → nichts tun, Nutzer drückt selbst "Analysieren"
   },
-  function(){/* Fehler → ignorieren, Nutzer kann manuell analysieren */});
+  function(){});
 }
 
 function pickerFetchBarcodeForConfirm(code){

@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#2d7d52">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="/nutritrack/manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="NutriTrack">
 <title>NutriTrack</title>
@@ -297,12 +301,22 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.068</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div class="dn">
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
       <button type="button" class="da" id="btnNext" onclick="changeDay(1)">›</button>
     </div>
+  </div>
+  <div id="installBanner" class="hidden" style="background:#e8f5e9;border:1.5px solid var(--g3);border-radius:12px;padding:11px 14px;margin:10px 12px 0;display:flex;align-items:center;gap:10px;">
+    <div style="font-size:20px;">📱</div>
+    <div style="flex:1;font-size:12px;color:var(--g1);font-weight:600;line-height:1.4;">Für Vollbild: Menü → <strong>„Zum Startbildschirm hinzufügen"</strong></div>
+    <button type="button" onclick="dismissInstall()" style="background:none;border:none;font-size:18px;color:#aaa;flex-shrink:0;">✕</button>
+  </div>
+  <div id="updateBanner" class="hidden" style="background:#e8f5e9;border:1.5px solid var(--g2);border-radius:12px;padding:11px 14px;margin:10px 12px 0;display:flex;align-items:center;gap:10px;">
+    <div style="font-size:20px;">🆕</div>
+    <div style="flex:1;font-size:13px;color:var(--g1);font-weight:600;">Update verfügbar!</div>
+    <button type="button" onclick="reloadForUpdate()" style="background:var(--g2);border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;color:white;flex-shrink:0;">Jetzt laden</button>
   </div>
   <div id="offBadge" class="off-badge hidden"><span>📴</span><div>Offline – lokale Datenbank aktiv</div></div>
   <div id="backupReminder" class="hidden" style="background:#fff8e1;border:1.5px solid #f9c74f;border-radius:12px;padding:11px 14px;margin:10px 12px 0;display:flex;align-items:center;gap:10px;">
@@ -332,30 +346,44 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
       <div class="wh"><div class="wt">💧 Wasser</div><div class="wv" id="wVal">0 / 8 Gläser</div></div>
       <div class="gls-wrap" id="glasses"></div>
     </div>
+    <div class="wc" id="fastCard">
+      <div class="wh"><div class="wt">🌙 Fasten</div><div class="wv" id="fastStatus">Kein aktives Fasten</div></div>
+      <div id="fastBody">
+        <button type="button" class="svb" style="width:100%;margin-top:2px;" onclick="openFastOv()">⏱ Fasten starten</button>
+      </div>
+    </div>
   </div>
   <div class="bnav">
     <button type="button" class="ni on" id="nM" onclick="switchTab('main')"><span>🏠</span>Heute</button>
     <div class="cw"><button type="button" class="cb" onclick="openPicker(null,'search')">＋</button></div>
-    <button type="button" class="ni" id="nS" onclick="switchTab('stats')"><span>📊</span>Statistik</button>
+    <button type="button" class="ni" id="nS" onclick="switchTab('stats')"><span>📋</span>Bibliothek</button>
   </div>
 </div>
 
 <!-- STATS -->
 <div id="statsScreen" class="screen">
-  <div class="hdr"><div class="hr"><div class="logo">Nutri<em>Track</em></div></div></div>
-  <div class="stm">
-    <div class="stc"><div class="stt">📅 Diese Woche</div><div class="wbs" id="weekBars"></div></div>
-    <div class="stc"><div class="stt">🍽 Makros heute</div><div class="mdr" id="macroDet"></div></div>
-    <div class="stc">
-      <div class="stt">🔥 Streak</div>
-      <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:34px;color:var(--or)" id="streakV">0</div>
-      <div style="font-size:13px;color:var(--mu);margin-top:4px;">Tage in Folge getrackt</div>
+  <div class="hdr">
+    <div class="hr">
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.068</span></div>
+      <div style="display:flex;gap:4px;">
+        <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
+        <button type="button" class="hbtn" onclick="shareData()">📤</button>
+        <button type="button" class="hbtn" onclick="openSettings()">⚙️</button>
+      </div>
     </div>
+  </div>
+  <div style="padding:12px;display:flex;flex-direction:column;gap:10px;">
+    <input type="text" id="libSearchQ" class="psi" placeholder="Suchen..." onkeyup="renderLibrary()" style="width:100%;">
+    <div style="display:flex;gap:8px;">
+      <button type="button" id="libTabRec" onclick="libSetTab('recipes')" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--g2);background:var(--g2);color:white;font-weight:700;font-size:13px;">📋 Rezepte</button>
+      <button type="button" id="libTabFoods" onclick="libSetTab('foods')" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--br);background:white;color:var(--mu);font-weight:700;font-size:13px;">🥗 Lebensmittel</button>
+    </div>
+    <div id="libraryList" style="display:flex;flex-direction:column;gap:8px;"></div>
   </div>
   <div class="bnav">
     <button type="button" class="ni" id="nM2" onclick="switchTab('main')"><span>🏠</span>Heute</button>
     <div class="cw"><button type="button" class="cb" onclick="openPicker(null,'search')">＋</button></div>
-    <button type="button" class="ni on" id="nS2" onclick="switchTab('stats')"><span>📊</span>Statistik</button>
+    <button type="button" class="ni on" id="nS2" onclick="switchTab('stats')"><span>📋</span>Bibliothek</button>
   </div>
 </div>
 
@@ -429,7 +457,16 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
             <input type="number" class="ai2" id="pickerPhotoPortions" value="1" min="0.1" step="0.1">
             <div class="au">Portion(en)</div>
           </div>
-          <div style="display:flex;gap:8px;margin-top:10px;">
+          <!-- Add more ingredients -->
+          <div style="border-top:1px solid var(--br);padding-top:10px;margin-top:6px;">
+            <div style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:8px;">Weitere Zutat hinzufügen</div>
+            <div style="display:flex;gap:6px;margin-bottom:6px;">
+              <input type="text" class="psi" id="pickerPhotoAddQ" placeholder="Suchen oder beschreiben..." onkeydown="if(event.key==='Enter')pickerPhotoAddSearch()">
+              <button type="button" class="psg" onclick="pickerPhotoAddSearch()">Suchen</button>
+            </div>
+            <div id="pickerPhotoAddResults" class="rl" style="max-height:160px;overflow-y:auto;margin-bottom:8px;"></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:6px;">
             <button type="button" class="cb2" style="margin-top:0;" onclick="pickerPhotoAdd(false)">✓ Eintragen</button>
             <button type="button" class="cb2" style="margin-top:0;background:linear-gradient(135deg,#2d5f8a,#3d8bc4);" onclick="pickerPhotoAdd(true)">📋 Als Rezept</button>
           </div>
@@ -537,6 +574,93 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
   </div>
 </div>
 
+<!-- ══ EIGENES LEBENSMITTEL BEARBEITEN ══ -->
+<div class="ov" id="ownFoodEditOv" onclick="bgClose(event,'ownFoodEditOv')">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd"><button type="button" class="mcl" onclick="closeOv('ownFoodEditOv')">✕</button><div class="mti">Lebensmittel bearbeiten</div></div>
+    <div class="mbd">
+      <label class="lbl">Name</label>
+      <input type="text" class="sinp" id="ownEditName" placeholder="Name" style="margin-bottom:10px;">
+      <label class="lbl">Emoji</label>
+      <input type="text" class="sinp" id="ownEditEmoji" placeholder="Emoji" style="margin-bottom:10px;">
+      <label class="lbl">Nährwerte pro 100g</label>
+      <div class="srow" style="margin-bottom:8px;">
+        <div class="sf"><label class="lbl">kcal</label><input type="number" class="sinp" id="ownEditKcal"></div>
+        <div class="sf"><label class="lbl">Protein g</label><input type="number" class="sinp" id="ownEditProtein"></div>
+      </div>
+      <div class="srow" style="margin-bottom:12px;">
+        <div class="sf"><label class="lbl">Kohlenhydrate g</label><input type="number" class="sinp" id="ownEditCarbs"></div>
+        <div class="sf"><label class="lbl">Fett g</label><input type="number" class="sinp" id="ownEditFat"></div>
+      </div>
+      <button type="button" class="svb" onclick="saveOwnFoodEdit()">💾 Speichern</button>
+      <button type="button" class="del-btn" onclick="deleteOwnFoodEdit()">🗑️ Löschen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ HILFE ══ -->
+<div class="ov" id="helpOv" onclick="bgClose(event,'helpOv')">
+  <div class="mod" style="height:92vh;">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" onclick="closeOv('helpOv')">✕</button>
+      <div class="mti">❓ Hilfe & Anleitung</div>
+      <div class="msu">NutriTrack Benutzerhandbuch</div>
+    </div>
+    <div class="mbd" style="padding:0;height:calc(92vh - 80px);">
+      <iframe id="helpFrame"
+        src="https://treix.github.io/nutritrack/nutritrack_anleitung.pdf"
+        style="width:100%;height:100%;border:none;display:block;"
+        title="NutriTrack Anleitung">
+      </iframe>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PROMPT EINSTELLUNGEN ══ -->
+<div class="ov" id="promptOv" onclick="bgClose(event,'promptOv')">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" onclick="closeOv('promptOv')">✕</button>
+      <div class="mti">⚙️ KI-Prompts</div>
+      <div class="msu">Zeigt die aktiven KI-Prompts (nur zur Ansicht)</div>
+    </div>
+    <div class="mbd">
+      <label class="lbl">📷 Foto-Analyse Prompt (aktiv)</label>
+      <textarea id="fotoPrTxt" readonly style="width:100%;border:2px solid var(--br);border-radius:10px;padding:10px;font-size:12px;font-family:monospace;line-height:1.5;outline:none;min-height:180px;resize:vertical;margin-bottom:10px;background:var(--bg2);color:var(--mu);cursor:default;"></textarea>
+      <label class="lbl">💬 Chat Prompt (aktiv)</label>
+      <textarea id="chatPrTxt" readonly style="width:100%;border:2px solid var(--br);border-radius:10px;padding:10px;font-size:12px;font-family:monospace;line-height:1.5;outline:none;min-height:120px;resize:vertical;margin-bottom:12px;background:var(--bg2);color:var(--mu);cursor:default;"></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- ══ FASTEN ══ -->
+<div class="ov" id="fastOv" onclick="bgClose(event,'fastOv')">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" onclick="closeOv('fastOv')">✕</button>
+      <div class="mti">🌙 Fasten starten</div>
+      <div class="msu">Wähle dein Fastenfenster</div>
+    </div>
+    <div class="mbd">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+        <button type="button" class="svb" onclick="startFast(16)">16:8</button>
+        <button type="button" class="svb" onclick="startFast(18)">18:6</button>
+        <button type="button" class="svb" onclick="startFast(20)">20:4</button>
+        <button type="button" class="svb" onclick="startFast(24)">24 Stunden</button>
+      </div>
+      <label class="lbl">⏱ Eigene Dauer (Stunden)</label>
+      <div style="display:flex;gap:8px;">
+        <input type="number" id="fastCustomH" min="1" max="72" placeholder="z.B. 14" style="flex:1;border:2px solid var(--br);border-radius:10px;padding:10px;font-size:16px;outline:none;">
+        <button type="button" class="svb" style="flex:0 0 auto;" onclick="startFastCustom()">Start</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ EINSTELLUNGEN ══ -->
 <div class="ov" id="settOv" onclick="bgClose(event,'settOv')">
   <div class="mod">
@@ -553,6 +677,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
         <div class="sf"><label class="lbl">Größe (cm)</label><input type="number" class="sinp" id="sh"></div>
       </div>
       <button type="button" class="svb" onclick="saveSettings()">Speichern</button>
+      <button type="button" class="seb" onclick="openPromptSettings()" style="margin-top:8px;">⚙️ KI-Prompts bearbeiten</button>
       <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--br);">
         <label class="lbl" style="margin-bottom:8px;">Datensicherung</label>
         <button type="button" class="seb" onclick="exportData()">📤 Exportieren</button>
@@ -665,6 +790,23 @@ var DE_EN={apfel:'apple',birne:'pear',banane:'banana',orange:'orange',erdbeere:'
 // SECTION: STATE
 // ════════════════════════════════════════
 var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,currentDate:'',days:{}};
+
+// Default prompts - editable in settings
+var DEFAULT_FOTO_PROMPT='Analysiere dieses Essensfoto auf Deutsch.\nGib ein JSON-Objekt zurueck:\n{"rezept":"Gesamtgerichtname auf Deutsch","zutaten":[{"name":"Zutat auf Deutsch","emoji":"Emoji","g":GRAMM}]}\n\nRegeln:\n- rezept: logischer Gesamtname des Gerichts\n- zutaten: erkenne was SICHTBAR auf dem Teller/Bild liegt - benne es so wie ein Mensch es bestellen oder kaufen wuerde\n- Nenne das fertige Lebensmittel, nicht seine Zutaten oder Bestandteile\n- 1 Einheit schatzen (Nutzer gibt Menge selbst an)\n- Logisch notwendige Beilagen erganzen (z.B. Butter bei belegtem Brot)\n- Getraenke: typische Bestandteile mit realistischen Mengen\n- Keine Rohzutaten nennen aus denen etwas hergestellt wurde\n- Realistische Gramm pro Einheit\n- Alle Namen auf Deutsch\n- Wenn nichts erkennbar: {"rezept":"","zutaten":[]}';
+
+var DEFAULT_CHAT_PROMPT='Nutzer hat gegessen: {MSG}\nZerlege in einzelne Zutaten.\nRegeln:\n- Werden einzelne Lebensmittel genannt (z.B. "Brot mit Kaese, Senf, Schinken"): NUR die genannten Zutaten listen, nichts erganzen\n- Wird ein Gericht oder Rezept genannt (z.B. "Hamburger", "Aperol Spritz"): typische Bestandteile als fertige Produkte aufschluesseln\n- Immer fertige Produkte, keine Rohzutaten (Butterkeks nicht Butter)\n- Immer nur 1 Einheit schatzen - Nutzer gibt Menge selbst an\n- Realistische Gramm-Schatzung fuer 1 Einheit\n- Namen auf Deutsch\n- Format: [{"name":"Deutscher Name","emoji":"Emoji","g":80}]';
+
+var PROMPT_VERSION='3';
+function getFotoPrompt(){
+  // Reset if prompt version changed
+  if(localStorage.getItem('nt_prompt_ver')!==PROMPT_VERSION){
+    localStorage.removeItem('nt_foto_prompt'); // Migration: alten gespeicherten Prompt löschen
+    localStorage.removeItem('nt_chat_prompt');
+    localStorage.setItem('nt_prompt_ver',PROMPT_VERSION);
+  }
+  return DEFAULT_FOTO_PROMPT;
+}
+function getChatPrompt(){return localStorage.getItem('nt_chat_prompt')||DEFAULT_CHAT_PROMPT;}
 var foodCache={}, customFoods=[], recipes=[], barcodeCache={};
 
 // Picker state
@@ -715,18 +857,51 @@ window.addEventListener('DOMContentLoaded',function(){
   if(S.apiKey)showMain();
   // Service Worker
   if('serviceWorker' in navigator){
-    var sw='var C="nt-v6";self.addEventListener("install",e=>{self.skipWaiting();});self.addEventListener("activate",e=>{self.clients.claim();});self.addEventListener("fetch",e=>{var u=e.request.url;if(u.includes("anthropic")||u.includes("corsproxy")||u.includes("openfoodfacts")||u.includes("fonts.g")||u.includes("unpkg")){e.respondWith(fetch(e.request).catch(()=>new Response("",{status:503})));return;}e.respondWith(caches.match(e.request).then(c=>{if(c)return c;return fetch(e.request).then(r=>{if(r.ok){var cl=r.clone();caches.open(C).then(ca=>ca.put(e.request,cl));}return r;}).catch(()=>caches.match("/nutritrack/")||caches.match("/nutritrack/index.html"));}));});';
-    navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'application/javascript'}))).then(function(){
+    navigator.serviceWorker.register('/nutritrack/sw.js').then(function(){
       if(caches)caches.open('nt-v6').then(function(c){c.add(window.location.href).catch(function(){});});
-    }).catch(function(){});
+    }).catch(function(e){console.warn('SW registration failed:',e);});
   }
 });
 function updBadge(){var b=document.getElementById('offBadge');if(b)b.classList.toggle('hidden',isOnline);}
+
+// Listen for SW update messages → show toast and reload
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.addEventListener('message',function(e){
+    if(e.data&&e.data.type==='SW_UPDATED'){
+      // Show update banner
+      var el=document.getElementById('updateBanner');
+      if(el)el.classList.remove('hidden');
+    }
+  });
+}
+function reloadForUpdate(){
+  window.location.reload(true);
+}
+function checkFullscreen(){
+  // Already in standalone mode - hide banner permanently
+  if(window.matchMedia('(display-mode: standalone)').matches){
+    localStorage.setItem('nt_install_dismissed','1');
+    return;
+  }
+  if(window.navigator.standalone){
+    localStorage.setItem('nt_install_dismissed','1');
+    return;
+  }
+  // Show install banner
+  var el=document.getElementById('installBanner');
+  if(el)el.classList.remove('hidden');
+}
+function dismissInstall(){
+  var el=document.getElementById('installBanner');
+  if(el)el.classList.add('hidden');
+  localStorage.setItem('nt_install_dismissed','1');
+}
 function showMain(){
   document.getElementById('setupScreen').classList.remove('active');
   document.getElementById('mainScreen').classList.add('active');
   renderAll();
   checkBackupReminder();
+  if(!localStorage.getItem('nt_install_dismissed'))checkFullscreen();
 }
 function checkBackupReminder(){
   try{
@@ -805,6 +980,7 @@ function renderAll(){
     }).join('');
   });
   renderWater();
+  renderFasting();
 }
 function renderWater(){
   var day=getDay(),w=day.water||0;
@@ -815,6 +991,88 @@ function renderWater(){
     (function(idx){b.onclick=function(){day.water=(idx<w)?idx:idx+1;saveS();renderAll();};})(i);
     wrap.appendChild(b);
   }
+}
+
+// ════════════════════════════════════════
+// SECTION: FASTING
+// ════════════════════════════════════════
+var _fastInterval=null;
+function loadFast(){try{return JSON.parse(localStorage.getItem('nt_fast')||'null');}catch(e){return null;}}
+function saveFast(f){if(f)localStorage.setItem('nt_fast',JSON.stringify(f));else localStorage.removeItem('nt_fast');}
+function openFastOv(){openOv('fastOv');}
+function startFast(hours){
+  closeOv('fastOv');
+  var f={start:Date.now(),hours:hours};
+  saveFast(f);
+  requestFastNotification(f);
+  renderFasting();
+}
+function startFastCustom(){
+  var h=parseInt(document.getElementById('fastCustomH').value);
+  if(!h||h<1||h>72){showToast('Bitte gültige Stunden eingeben (1–72)');return;}
+  startFast(h);
+}
+function stopFast(){
+  saveFast(null);
+  if(_fastInterval){clearInterval(_fastInterval);_fastInterval=null;}
+  renderFasting();
+  showToast('Fasten beendet');
+}
+function requestFastNotification(f){
+  if(!('Notification' in window))return;
+  var send=function(){
+    var end=f.start+f.hours*3600000;
+    var delay=end-Date.now();
+    if(delay<=0)return;
+    setTimeout(function(){
+      var end=new Date(f.start+f.hours*3600000);
+      new Notification('🌙 NutriTrack – Fasten beendet!',{body:'Du kannst wieder essen! ('+f.hours+'h geschafft)',icon:'/nutritrack/icon.svg'});
+    },delay);
+  };
+  if(Notification.permission==='granted'){send();}
+  else if(Notification.permission!=='denied'){
+    Notification.requestPermission().then(function(p){if(p==='granted')send();});
+  }
+}
+function renderFasting(){
+  var f=loadFast();
+  var status=document.getElementById('fastStatus');
+  var body=document.getElementById('fastBody');
+  if(_fastInterval){clearInterval(_fastInterval);_fastInterval=null;}
+  if(!f){
+    status.textContent='Kein aktives Fasten';
+    body.innerHTML='<button type="button" class="svb" style="width:100%;margin-top:2px;" onclick="openFastOv()">⏱ Fasten starten</button>';
+    return;
+  }
+  function tick(){
+    var now=Date.now();
+    var end=f.start+f.hours*3600000;
+    var rem=end-now;
+    var endDate=new Date(end);
+    var endStr=endDate.toLocaleDateString('de-DE',{weekday:'short'})+' '+endDate.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' Uhr';
+    if(rem<=0){
+      status.textContent='✅ Fasten abgeschlossen!';
+      body.innerHTML='<div style="text-align:center;padding:8px 0;font-size:13px;color:var(--mu);">'+f.hours+'h geschafft 🎉</div>'
+        +'<button type="button" class="seb" style="width:100%;margin-top:6px;" onclick="stopFast()">Beenden</button>';
+      if(_fastInterval){clearInterval(_fastInterval);_fastInterval=null;}
+      return;
+    }
+    var h=Math.floor(rem/3600000);
+    var m=Math.floor((rem%3600000)/60000);
+    var s=Math.floor((rem%60000)/1000);
+    var pad=function(n){return n<10?'0'+n:n;};
+    status.textContent=pad(h)+':'+pad(m)+':'+pad(s)+' verbleibend';
+    var pct=Math.min(100,Math.round((now-f.start)/(f.hours*3600000)*100));
+    body.innerHTML='<div style="margin:6px 0 4px;font-size:12px;color:var(--mu);display:flex;justify-content:space-between;">'
+      +'<span>Start: '+new Date(f.start).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' Uhr</span>'
+      +'<span>Ende: '+endStr+'</span></div>'
+      +'<div style="background:var(--br);border-radius:99px;height:8px;margin-bottom:10px;">'
+      +'<div style="background:var(--g1);height:8px;border-radius:99px;width:'+pct+'%;transition:width .5s;"></div></div>'
+      +'<div style="text-align:center;font-size:12px;color:var(--mu);margin-bottom:8px;">'+f.hours+'h Fasten · '+pct+'% geschafft</div>'
+      +'<button type="button" class="seb" style="width:100%;" onclick="stopFast()">⛔ Fasten abbrechen</button>';
+  }
+  tick();
+  _fastInterval=setInterval(tick,1000);
 }
 function renderIngHTML(ings,onAmtChange,onDel){
   return(ings||[]).map(function(ing,i){
@@ -860,7 +1118,6 @@ function findInLocalDB(name){
   for(var i=0;i<DB.length;i++){if(DB[i].n.toLowerCase()===nl)return DB[i];}
   for(var i=0;i<DB.length;i++){var syns=(DB[i].s||'').toLowerCase().split(' ');for(var j=0;j<syns.length;j++){if(syns[j]===nl)return DB[i];}}
   if(nl.length>=5){for(var i=0;i<DB.length;i++){if(DB[i].n.toLowerCase().startsWith(nl))return DB[i];}}
-  for(var i=0;i<DB.length;i++){var dn=DB[i].n.toLowerCase();if(dn.length>=5&&nl.startsWith(dn))return DB[i];}
   return null;
 }
 function searchLocal(q){
@@ -1033,6 +1290,8 @@ function openPicker(meal, defaultTab){
   document.getElementById('pickerBarcodeResult').innerHTML='';
   document.getElementById('pickerCam').value='';
   document.getElementById('pickerGal').value='';
+  document.getElementById('pickerRecipeName').value='';
+  document.getElementById('pickerChatRecipeName').value='';
   pickerStopScan();
   // Title
   var mealNames={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
@@ -1180,10 +1439,24 @@ function pickerHandlePhoto(e){
   reader.onload=function(ev){
     var img=new Image();
     img.onload=function(){
-      var c=document.createElement('canvas'),MAX=800,w=img.width,h=img.height;
+      var c=document.createElement('canvas'),MAX=1024,w=img.width,h=img.height;
       if(w>h){if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}}else{if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}}
-      c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);
-      var comp=c.toDataURL('image/jpeg',0.7);
+      c.width=w;c.height=h;
+      var ctx=c.getContext('2d');
+      ctx.drawImage(img,0,0,w,h);
+      // Enhance image: brightness + contrast for better KI recognition
+      var imageData=ctx.getImageData(0,0,w,h);
+      var data=imageData.data;
+      var brightness=20; // +20 brightness
+      var contrast=1.15; // +15% contrast
+      var factor=contrast;
+      for(var px=0;px<data.length;px+=4){
+        data[px]  =Math.min(255,Math.max(0,factor*(data[px]  -128)+128+brightness));
+        data[px+1]=Math.min(255,Math.max(0,factor*(data[px+1]-128)+128+brightness));
+        data[px+2]=Math.min(255,Math.max(0,factor*(data[px+2]-128)+128+brightness));
+      }
+      ctx.putImageData(imageData,0,0);
+      var comp=c.toDataURL('image/jpeg',0.85);
       window._pickerPhotoB64=comp.split(',')[1];
       document.getElementById('pickerPrev').src=comp;
       document.getElementById('pickerPrevWrap').classList.remove('hidden');
@@ -1207,6 +1480,8 @@ function pickerResetPhoto(){
   document.getElementById('pickerPhotoStatus').classList.add('hidden');
   document.getElementById('pickerCam').value='';
   document.getElementById('pickerGal').value='';
+  document.getElementById('pickerRecipeName').value='';
+  document.getElementById('pickerChatRecipeName').value='';
   pickerIngredients=[];
 }
 
@@ -1274,7 +1549,7 @@ function pickerAnalyze(){
   var btn=document.getElementById('pickerAnalyzeBtn');
   btn.disabled=true;btn.innerHTML='<span style="display:inline-flex;gap:5px;align-items:center;"><span class="spin"></span>KI analysiert...</span>';
   pickerSetPhotoStatus('KI analysiert das Foto...',false);
-  var prompt='Analysiere dieses Essensfoto auf Deutsch.\nGib ein JSON-Objekt zurück:\n{"rezept":"Gesamtgerichtname auf Deutsch","zutaten":[{"name":"Zutat auf Deutsch","emoji":"Emoji","g":80}]}\nRegeln:\n- rezept: logischer Gesamtname\n- zutaten: alle sichtbaren Einzelbestandteile\n- Gramm individuell und realistisch schätzen, niemals pauschal 100g\n- Nur sichtbare Bestandteile\n- Wenn nichts erkennbar: {"rezept":"","zutaten":[]}';
+  var prompt=getFotoPrompt();
   callClaude('claude-sonnet-4-5',[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:window._pickerPhotoB64}},{type:'text',text:prompt}],600,
     function(text){
       console.log('[NutriTrack KI-Antwort]',text);
@@ -1311,12 +1586,52 @@ function pickerUpdatePhotoTotal(){
   document.getElementById('pickerPhotoTotal').textContent='1 Portion: '+totalStr(t)+(p!==1?'  ·  '+p+'× = '+totalStr({kcal:t.kcal*p,protein:t.protein*p,carbs:t.carbs*p,fat:t.fat*p}):'');
 }
 
+function pickerPhotoAddSearch(){
+  var q=(document.getElementById('pickerPhotoAddQ')||{}).value||'';
+  var results=searchLocal(q);
+  var el=document.getElementById('pickerPhotoAddResults');
+  if(!el)return;
+  if(!results.length){el.innerHTML='<div class="nr">Kein Ergebnis</div>';return;}
+  window._pickerPhotoAddRes=results;
+  el.innerHTML=results.slice(0,8).map(function(p,i){
+    return'<div class="ri" onclick="pickerPhotoAddFromResult('+i+')">'
+      +'<div class="ri-e">'+(p.emoji||'🍽')+'</div>'
+      +'<div style="flex:1;min-width:0;"><div class="ri-n">'+p.name+'</div>'
+      +(p.per100?'<div class="ri-d">'+Math.round(p.per100.kcal)+' kcal/100g</div>':'')
+      +'</div>'
+      +'<div style="font-size:18px;color:var(--g2);font-weight:900;">＋</div>'
+      +'</div>';
+  }).join('');
+}
+
+function pickerPhotoAddFromResult(i){
+  var p=(window._pickerPhotoAddRes||[])[i];if(!p)return;
+  if(p.isRecipe){showToast('Rezepte können nicht als Zutat hinzugefügt werden');return;}
+  pickerIngredients.push({name:p.name,emoji:p.emoji,amount:100,per100:p.per100});
+  document.getElementById('pickerPhotoAddQ').value='';
+  document.getElementById('pickerPhotoAddResults').innerHTML='';
+  pickerShowPhotoResult(document.getElementById('pickerRecipeName').value||'');
+  showToast((p.emoji||'🍽')+' '+p.name+' hinzugefügt');
+}
+
 function pickerPhotoAdd(saveAsRecipe){
   if(!pickerIngredients.length){showToast('Keine Zutaten');return;}
-  var name=document.getElementById('pickerRecipeName').value.trim()||'Foto-Rezept';
-  var portions=parseFloat(document.getElementById('pickerPhotoPortions').value)||1;
   var ings=JSON.parse(JSON.stringify(pickerIngredients));
   pickerIngredients.forEach(function(f){cacheFood(f);});
+  // If in entry-edit mode: add ingredients to existing entry
+  if(window._editEntryMode){
+    window._editEntryMode=false;
+    var e=getDay().meals[window._editEntryMeal][window._editEntryIdx];
+    if(e&&e.ingredients){
+      ings.forEach(function(ing){e.ingredients.push(ing);});
+      saveS();closePicker();
+      openEditEntry(window._editEntryMeal,window._editEntryIdx);
+      showToast(ings.length+' Zutat(en) hinzugefügt');
+      return;
+    }
+  }
+  var name=document.getElementById('pickerRecipeName').value.trim()||'Foto-Rezept';
+  var portions=parseFloat(document.getElementById('pickerPhotoPortions').value)||1;
   if(saveAsRecipe){
     var rec={id:Date.now().toString(),name:name,emoji:'📸',ingredients:ings};
     recipes.unshift(rec);saveX();
@@ -1341,7 +1656,7 @@ function pickerSendChat(){
   document.getElementById('pickerChatSend').disabled=true;
   document.getElementById('pickerChatResult').classList.add('hidden');
   msgs.scrollTop=msgs.scrollHeight;
-  var prompt='Der Nutzer hat folgendes gegessen: '+msg+'\nErstelle ein JSON-Array mit ALLEN genannten Lebensmitteln.\nRegeln:\n- Jeden genannten Begriff als eigene Zutat\n- Namen EXAKT wie eingegeben übernehmen\n- Realistische Gramm-Schätzung\n- Format: [{"name":"Exakter Name","emoji":"Emoji","g":80}]\nKeine Lebensmittel weglassen oder zusammenfassen.';
+  var prompt=getChatPrompt().replace('{MSG}',msg);
   callClaude('claude-haiku-4-5',[{type:'text',text:prompt}],300,
     function(text){
       var raw=parseIngJSON(text);
@@ -1373,10 +1688,22 @@ function pickerUpdateChatTotal(){
 
 function pickerChatAdd(saveAsRecipe){
   if(!pickerIngredients.length){showToast('Keine Zutaten');return;}
-  var name=document.getElementById('pickerChatRecipeName').value.trim()||'Chat-Rezept';
-  var portions=parseFloat(document.getElementById('pickerChatPortions').value)||1;
   var ings=JSON.parse(JSON.stringify(pickerIngredients));
   pickerIngredients.forEach(function(f){cacheFood(f);});
+  // If in entry-edit mode: add ingredients to existing entry
+  if(window._editEntryMode){
+    window._editEntryMode=false;
+    var e=getDay().meals[window._editEntryMeal][window._editEntryIdx];
+    if(e&&e.ingredients){
+      ings.forEach(function(ing){e.ingredients.push(ing);});
+      saveS();closePicker();
+      openEditEntry(window._editEntryMeal,window._editEntryIdx);
+      showToast(ings.length+' Zutat(en) hinzugefügt');
+      return;
+    }
+  }
+  var name=document.getElementById('pickerChatRecipeName').value.trim()||'Chat-Rezept';
+  var portions=parseFloat(document.getElementById('pickerChatPortions').value)||1;
   if(saveAsRecipe){
     var rec={id:Date.now().toString(),name:name,emoji:'💬',ingredients:ings};
     recipes.unshift(rec);saveX();
@@ -1651,12 +1978,15 @@ function renderEditBody(e){
         +'<button type="button" class="ing-del" onclick="editIngDel('+i+')">✕</button>'
         +'</div>';
     }).join('');
-    body.innerHTML='<label class="lbl">Portionen</label>'
+    body.innerHTML='<label class="lbl">Name</label>'
+      +'<input type="text" class="finp" id="editName" value="'+e.name+'" style="margin-bottom:10px;">'
+      +'<label class="lbl">Portionen</label>'
       +'<div class="ar" style="margin-top:0;"><input type="number" class="ai2" id="editPortions" value="'+p+'" min="0.1" step="0.1" onchange="editUpdateTotal(this.value)"><div class="au">Portion(en)</div></div>'
       +'<div id="editTotal" class="rec-total" style="margin-top:8px;">1 Portion: '+totalStr(t)+'<br>'+p+'× = '+totalStr({kcal:t.kcal*p,protein:t.protein*p,carbs:t.carbs*p,fat:t.fat*p})+'</div>'
       +'<label class="lbl" style="margin-top:10px;">Zutaten</label>'
       +'<div class="ing-list" id="editIngList">'+ingHtml+'</div>'
       +'<button type="button" class="seb" style="margin-bottom:8px;" onclick="editAddIng()">+ Zutat hinzufügen</button>'
+      +(e.recipeId?'':'<button type="button" class="seb" style="margin-bottom:8px;border-color:var(--g2);color:var(--g2);" onclick="editSaveAsRecipe()">📋 Als Rezept speichern</button>')
       +'<button type="button" class="cb2" onclick="saveEditEntry()">Speichern ✓</button>'
       +'<button type="button" class="del-btn" onclick="deleteEntry()">🗑️ Eintrag löschen</button>';
   } else {
@@ -1698,6 +2028,8 @@ function editAddIng(){
 function saveEditEntry(){
   var day=getDay(),e=day.meals[editMeal][editIdx];
   if(e.isRecipe){
+    var newName=document.getElementById('editName');
+    if(newName&&newName.value.trim())e.name=newName.value.trim();
     var p=parseFloat(document.getElementById('editPortions').value)||1;
     e.portions=p;
     var t=ingTotal(e.ingredients||[]);
@@ -1708,6 +2040,19 @@ function saveEditEntry(){
     var r=amt/100;e.amount=amt;e.kcal=per100.kcal*r;e.protein=per100.protein*r;e.carbs=per100.carbs*r;e.fat=per100.fat*r;
   }
   saveS();renderAll();closeOv('editOv');showToast('Aktualisiert ✓');
+}
+
+function editSaveAsRecipe(){
+  var e=getDay().meals[editMeal][editIdx];
+  if(!e||!e.ingredients)return;
+  var name=(document.getElementById('editName')||{}).value||e.name||'Rezept';
+  var rec={id:Date.now().toString(),name:name.trim(),emoji:e.emoji||'📋',ingredients:JSON.parse(JSON.stringify(e.ingredients))};
+  recipes.unshift(rec);
+  e.recipeId=rec.id; // link entry to new recipe
+  e.name=rec.name;
+  saveX();saveS();
+  renderEditBody(e); // re-render to hide the button
+  showToast('📋 Als Rezept gespeichert');
 }
 
 function deleteEntry(){
@@ -1731,7 +2076,8 @@ function openRecipeEditor(recipeId){
   document.getElementById('recEditEmoji').value=rec.emoji||'';
   recEditRenderIng(rec.ingredients||[]);
   recEditSearch();
-  openOv('recEditOv');
+  closeOv('settOv');
+  setTimeout(function(){openOv('recEditOv');},200);
 }
 
 function recEditRenderIng(ings){
@@ -1797,7 +2143,10 @@ function recEditSave(){
   var newEmoji=document.getElementById('recEditEmoji').value.trim();
   if(newName)rec.name=newName;
   if(newEmoji)rec.emoji=newEmoji;
-  saveX();renderSettFoodList();closeOv('recEditOv');showToast('Rezept gespeichert ✓');
+  saveX();
+  closeOv('recEditOv');
+  setTimeout(function(){openSettings();},200);
+  showToast('Rezept gespeichert ✓');
 }
 
 function recEditDelete(){
@@ -1834,11 +2183,13 @@ function renderSettFoodList(){
   if(customFoods.length){
     html+='<div style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:6px;">Eigene Lebensmittel</div>';
     customFoods.forEach(function(f,i){
+      var ii=i;
       html+='<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--br);">'
         +'<div style="font-size:18px;">'+f.emoji+'</div>'
         +'<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:13px;">'+f.name+'</div>'
         +'<div style="font-size:11px;color:var(--mu);">'+f.per100.kcal+' kcal pro 100g</div></div>'
-        +'<button type="button" onclick="deleteOwnFood('+i+')" style="background:none;border:none;font-size:16px;color:var(--re);opacity:.6;">🗑️</button></div>';
+        +'<button type="button" onclick="openOwnFoodEdit('+ii+')" style="background:none;border:none;font-size:16px;color:var(--g2);margin-right:4px;">✏️</button>'
+        +'<button type="button" onclick="deleteOwnFood('+ii+')" style="background:none;border:none;font-size:16px;color:var(--re);opacity:.6;">🗑️</button></div>';
     });
   }
   if(recipes.length){
@@ -1856,13 +2207,59 @@ function renderSettFoodList(){
   el.innerHTML=html;
 }
 
+var _ownFoodEditIdx=null;
+
+function openOwnFoodEdit(i){
+  _ownFoodEditIdx=i;
+  var f=customFoods[i];if(!f)return;
+  document.getElementById('ownEditName').value=f.name;
+  document.getElementById('ownEditEmoji').value=f.emoji||'';
+  document.getElementById('ownEditKcal').value=f.per100.kcal||0;
+  document.getElementById('ownEditProtein').value=f.per100.protein||0;
+  document.getElementById('ownEditCarbs').value=f.per100.carbs||0;
+  document.getElementById('ownEditFat').value=f.per100.fat||0;
+  closeOv('settOv');
+  setTimeout(function(){openOv('ownFoodEditOv');},200);
+}
+
+function saveOwnFoodEdit(){
+  var i=_ownFoodEditIdx;
+  if(i===null||!customFoods[i])return;
+  var name=document.getElementById('ownEditName').value.trim();
+  if(!name){showToast('Name eingeben');return;}
+  customFoods[i]={
+    name:name,
+    emoji:document.getElementById('ownEditEmoji').value.trim()||emo(name),
+    per100:{
+      kcal:parseFloat(document.getElementById('ownEditKcal').value)||0,
+      protein:parseFloat(document.getElementById('ownEditProtein').value)||0,
+      carbs:parseFloat(document.getElementById('ownEditCarbs').value)||0,
+      fat:parseFloat(document.getElementById('ownEditFat').value)||0
+    }
+  };
+  saveX();
+  closeOv('ownFoodEditOv');
+  setTimeout(function(){openSettings();},200);
+  showToast('Gespeichert ✓');
+}
+
+function deleteOwnFoodEdit(){
+  var i=_ownFoodEditIdx;
+  if(i===null)return;
+  customFoods.splice(i,1);
+  saveX();
+  closeOv('ownFoodEditOv');
+  setTimeout(function(){openSettings();},200);
+  showToast('Gelöscht');
+}
+
 function deleteOwnFood(i){customFoods.splice(i,1);saveX();renderSettFoodList();}
 function deleteRecipeById(id){recipes=recipes.filter(function(r){return r.id!==id;});saveX();renderSettFoodList();}
 
 function exportData(){
   var blob=new Blob([JSON.stringify({state:S,foodCache:foodCache,customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache},null,2)],{type:'application/json'});
   var url=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url;a.download='nutritrack-backup.json';a.click();URL.revokeObjectURL(url);showToast('Backup exportiert 📤');
+  a.href=url;a.download='nutritrack-backup-'+today()+'.json';a.click();URL.revokeObjectURL(url);showToast('Backup exportiert 📤');
 }
 
 function importData(e){
@@ -1885,25 +2282,115 @@ function importData(e){
 // ════════════════════════════════════════
 // SECTION: STATS
 // ════════════════════════════════════════
-function renderStats(){
-  var wrap=document.getElementById('weekBars');if(!wrap)return;
-  var days=['Mo','Di','Mi','Do','Fr','Sa','So'];
-  var t=today(),parts=t.split('-');
-  var now=new Date(+parts[0],+parts[1]-1,+parts[2]),dow=(now.getDay()+6)%7;
-  wrap.innerHTML='';
-  for(var i=0;i<7;i++){
-    var s=addDays(t,-dow+i),dd=S.days[s];
-    var kcal=0;if(dd){var a=dd.meals.breakfast.concat(dd.meals.lunch,dd.meals.dinner,dd.meals.snack);kcal=calcM(a).kcal;}
-    var pct=Math.min(100,(kcal/S.goal)*100),isTd=s===S.currentDate;
-    wrap.innerHTML+='<div class="wbw"><div class="wbt"><div class="wbf'+(isTd?' td':'')+'" style="height:'+pct+'%"></div></div><div class="wbl">'+days[i]+'</div></div>';
+// ── LIBRARY TAB ──
+var _libTab='recipes';
+
+function libSetTab(tab){
+  _libTab=tab;
+  var rBtn=document.getElementById('libTabRec');
+  var fBtn=document.getElementById('libTabFoods');
+  if(tab==='recipes'){
+    rBtn.style.background='var(--g2)';rBtn.style.color='white';rBtn.style.borderColor='var(--g2)';
+    fBtn.style.background='white';fBtn.style.color='var(--mu)';fBtn.style.borderColor='var(--br)';
+  } else {
+    fBtn.style.background='var(--g2)';fBtn.style.color='white';fBtn.style.borderColor='var(--g2)';
+    rBtn.style.background='white';rBtn.style.color='var(--mu)';rBtn.style.borderColor='var(--br)';
   }
-  var day=getDay(),all=day.meals.breakfast.concat(day.meals.lunch,day.meals.dinner,day.meals.snack),tt=calcM(all);
-  document.getElementById('macroDet').innerHTML=[{n:'Protein',v:tt.protein,g:150,c:'#5b8dee'},{n:'Kohlenhydrate',v:tt.carbs,g:250,c:'#f9c74f'},{n:'Fett',v:tt.fat,g:70,c:'#f4845f'}]
-    .map(function(m){return'<div class="mdrow"><div class="mdd" style="background:'+m.c+'"></div><div class="mdn">'+m.n+'</div><div class="mdt"><div class="mdfi" style="width:'+Math.min(100,(m.v/m.g)*100)+'%;background:'+m.c+'"></div></div><div class="mdv">'+Math.round(m.v)+'g</div></div>';}).join('');
-  var streak=0,cur=t;
-  for(var j=0;j<365;j++){var dd2=S.days[cur];if(!dd2)break;var a2=dd2.meals.breakfast.concat(dd2.meals.lunch,dd2.meals.dinner,dd2.meals.snack);if(!a2.length)break;streak++;cur=addDays(cur,-1);}
-  document.getElementById('streakV').textContent=streak;
+  renderLibrary();
 }
+
+function renderLibrary(){
+  var el=document.getElementById('libraryList');if(!el)return;
+  var q=(document.getElementById('libSearchQ')||{}).value||'';
+  var ql=q.toLowerCase().trim();
+  var html='';
+
+  if(_libTab==='recipes'){
+    var filtered=recipes.filter(function(r){return !ql||r.name.toLowerCase().includes(ql);});
+    if(!filtered.length){
+      html='<div style="font-size:13px;color:var(--mu);font-style:italic;text-align:center;padding:24px;">Keine Rezepte gefunden</div>';
+    } else {
+      filtered.forEach(function(r){
+        var t=ingTotal(r.ingredients||[]);
+        html+='<div style="background:white;border-radius:12px;padding:12px 14px;box-shadow:var(--sh);display:flex;align-items:center;gap:10px;">'
+          +'<div style="font-size:26px;">'+(r.emoji||'📋')+'</div>'
+          +'<div style="flex:1;min-width:0;">'
+            +'<div style="font-weight:700;font-size:14px;">'+r.name+'</div>'
+            +'<div style="font-size:11px;color:var(--mu);margin-top:2px;">'+r.ingredients.length+' Zutaten · '+Math.round(t.kcal)+' kcal/Portion</div>'
+          +'</div>'
+          +'<button type="button" onclick="openRecipeEditor(this.dataset.rid)" data-rid="'+r.id+'" style="background:none;border:none;font-size:18px;color:var(--g2);padding:4px;">✏️</button>'
+          +'<button type="button" onclick="libAddRecipe(this.dataset.rid)" data-rid="'+r.id+'" style="background:var(--g2);border:none;border-radius:8px;color:white;font-size:18px;padding:4px 8px;">+</button>'
+          +'</div>';
+      });
+    }
+  } else {
+    // Custom foods + DB
+    var allFoods=[];
+    customFoods.forEach(function(f){allFoods.push({name:f.name,emoji:f.emoji,per100:f.per100,isCustom:true});});
+    DB.forEach(function(f){allFoods.push({name:f.n,emoji:f.e,per100:{kcal:f.k,protein:f.p,carbs:f.c,fat:f.f},isCustom:false});});
+    var filtered=allFoods.filter(function(f){return !ql||f.name.toLowerCase().includes(ql);});
+    filtered=filtered.slice(0,30);
+    if(!filtered.length){
+      html='<div style="font-size:13px;color:var(--mu);font-style:italic;text-align:center;padding:24px;">Keine Lebensmittel gefunden</div>';
+    } else {
+      window._libFoods=filtered;
+    filtered.forEach(function(f,i){
+      var editBtn=f.isCustom?('<button type="button" onclick="openOwnFoodEdit('+i+')" style="background:none;border:none;font-size:16px;color:var(--g2);padding:4px;">&#9998;</button>'):'';
+      html+='<div style="background:white;border-radius:12px;padding:10px 14px;box-shadow:var(--sh);display:flex;align-items:center;gap:10px;">'
+        +'<div style="font-size:22px;">'+(f.emoji||'&#127374;')+'</div>'
+        +'<div style="flex:1;min-width:0;">'
+          +'<div style="font-weight:700;font-size:13px;">'+f.name+'</div>'
+          +'<div style="font-size:11px;color:var(--mu);margin-top:1px;">'+Math.round(f.per100.kcal)+' kcal pro 100g</div>'
+        +'</div>'
+        +editBtn
+        +'<button type="button" onclick="libAddFood('+i+')" style="background:var(--g2);border:none;border-radius:8px;color:white;font-size:18px;width:32px;height:32px;">+</button>'
+        +'</div>';
+    })
+    }
+  }
+  el.innerHTML=html;
+}
+
+function libAddRecipe(id){
+  var rec=recipes.find(function(r){return r.id===id;});if(!rec)return;
+  switchTab('main');
+  setTimeout(function(){
+    openPicker(mealByTime(),'search');
+    // Pre-select recipe in search
+    var inp=document.getElementById('pickerSearchQ');
+    if(inp){inp.value=rec.name;pickerSearch();}
+  },200);
+}
+
+function libAddFood(i){
+  var f=(window._libFoods||[])[i];if(!f)return;
+  switchTab('main');
+  setTimeout(function(){
+    openPicker(mealByTime(),'search');
+    var inp=document.getElementById('pickerSearchQ');
+    if(inp){inp.value=f.name;pickerSearch();}
+  },200);
+}
+
+function libEditFood(i){
+  // Find the i-th custom food (offset from DB length difference)
+  var customIdx=i; // first items are custom foods
+  if(customIdx<customFoods.length){
+    openOwnFoodEdit(customIdx);
+  }
+}
+
+// ── PROMPT SETTINGS ──
+function openPromptSettings(){
+  document.getElementById('fotoPrTxt').value=getFotoPrompt();
+  document.getElementById('chatPrTxt').value=getChatPrompt();
+  closeOv('settOv');
+  setTimeout(function(){openOv('promptOv');},200);
+}
+function savePrompts(){/* readonly – keine Funktion */}
+function resetPrompts(){/* readonly – keine Funktion */}
+
+function renderStats(){/* replaced by renderLibrary */}
 
 // ════════════════════════════════════════
 // SECTION: OVERLAYS & TABS
@@ -1916,7 +2403,7 @@ function switchTab(tab){
   } else {
     document.getElementById('nS').classList.add('on');document.getElementById('nS2').classList.add('on');
     document.getElementById('statsScreen').classList.add('active');document.getElementById('mainScreen').classList.remove('active');
-    renderStats();
+    renderLibrary();
   }
 }
 function openOv(id){document.getElementById(id).classList.add('open');}
@@ -1946,6 +2433,14 @@ function shareData(){
     }catch(e){}
   }
   exportData();
+}
+
+function openHelp(){
+  // Force reload of PDF so latest version from GitHub is shown
+  var frame=document.getElementById('helpFrame');
+  var base='https://treix.github.io/nutritrack/nutritrack_anleitung.pdf';
+  frame.src=base+'?v='+Date.now();
+  openOv('helpOv');
 }
 
 function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2500);}

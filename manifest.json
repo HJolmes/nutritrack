@@ -1,0 +1,25 @@
+{
+  "name": "NutriTrack Beta",
+  "short_name": "NutriTrack",
+  "description": "Dein persönliches Ernährungstagebuch",
+  "start_url": "/nutritrack/",
+  "scope": "/nutritrack/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#2d7d52",
+  "theme_color": "#2d7d52",
+  "icons": [
+    {
+      "src": "/nutritrack/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIj4KICA8cmVjdCB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgcng9IjQwIiBmaWxsPSIjMmQ3ZDUyIi8+CiAgPHRleHQgeD0iOTYiIHk9IjEzMCIgZm9udC1mYW1pbHk9IkFyaWFsIEJsYWNrIiBmb250LXdlaWdodD0iOTAwIiBmb250LXNpemU9IjExMCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPk48L3RleHQ+Cjwvc3ZnPg==",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -301,7 +301,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.082</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.083</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div class="dn">
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
@@ -364,7 +364,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.082</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.083</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -1794,6 +1794,122 @@ function pickerBarcodeAdd(){
   showToast((food.emoji||'🍽')+' '+food.name+' hinzugefügt');
 }
 
+
+function pickerAnalyze(){
+  if(!window._pickerPhotoB64)return;
+  if(!isOnline){showToast('Foto-Analyse benötigt Internet');return;}
+  var btn=document.getElementById('pickerAnalyzeBtn');
+  btn.disabled=true;btn.innerHTML='<span style="display:inline-flex;gap:5px;align-items:center;"><span class="spin"></span>KI analysiert...</span>';
+  pickerSetPhotoStatus('KI analysiert das Foto...',false);
+  var prompt=getFotoPrompt();
+  callClaude('claude-sonnet-4-5',[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:window._pickerPhotoB64}},{type:'text',text:prompt}],600,
+    function(text){
+      console.log('[NutriTrack KI-Antwort]',text);
+      var parsed=parsePhotoResponse(text);
+      btn.disabled=false;btn.textContent='📷 Erneut analysieren';
+      if(!parsed.zutaten.length){
+        pickerSetPhotoStatus(text.length?'KI: '+text.slice(0,120):'Kein Lebensmittel erkannt.',true);
+        return;
+      }
+      if(parsed.rezept){
+        var nameField=document.getElementById('pickerRecipeName');
+        if(nameField&&!nameField.value.trim())nameField.value=parsed.rezept;
+      }
+      lookupNutrients(parsed.zutaten,function(resolved){
+        pickerIngredients=resolved;
+        pickerShowPhotoResult(parsed.rezept);
+        pickerSetPhotoStatus('',false);
+      });
+    },
+    function(err){btn.disabled=false;btn.textContent='📷 Erneut analysieren';pickerSetPhotoStatus('Fehler: '+err,true);}
+  );
+}
+
+function pickerShowPhotoResult(rezept){
+  if(rezept&&!document.getElementById('pickerRecipeName').value)
+    document.getElementById('pickerRecipeName').value=rezept;
+  pickerRenderIngList('pickerPhotoIngList',pickerIngredients,
+    function(i,v){pickerIngredients[i].amount=parseFloat(v)||0;pickerUpdatePhotoTotal();},
+    function(i){pickerIngredients.splice(i,1);pickerShowPhotoResult(rezept);}
+  );
+  pickerUpdatePhotoTotal();
+  document.getElementById('pickerPhotoResult').classList.remove('hidden');
+}
+
+function pickerUpdatePhotoTotal(){
+  var t=ingTotal(pickerIngredients);
+  var p=parseFloat(document.getElementById('pickerPhotoPortions').value)||1;
+  document.getElementById('pickerPhotoTotal').textContent='1 Portion: '+totalStr(t)+(p!==1?'  ·  '+p+'× = '+totalStr({kcal:t.kcal*p,protein:t.protein*p,carbs:t.carbs*p,fat:t.fat*p}):'');
+}
+
+function pickerSetPhotoStatus(msg,isErr){
+  var el=document.getElementById('pickerPhotoStatus');
+  if(!msg){el.classList.add('hidden');return;}
+  el.textContent=msg;
+  el.style.background=isErr?'#ffebee':'var(--gl)';
+  el.style.borderColor=isErr?'var(--re)':'var(--g3)';
+  el.style.color=isErr?'var(--re)':'var(--g1)';
+  el.classList.remove('hidden');
+}
+
+function pickerPhotoAddSearch(){
+  var q=(document.getElementById('pickerPhotoAddQ')||{}).value||'';
+  var results=searchLocal(q);
+  var el=document.getElementById('pickerPhotoAddResults');
+  if(!el)return;
+  if(!results.length){el.innerHTML='<div class="nr">Kein Ergebnis</div>';return;}
+  window._pickerPhotoAddRes=results;
+  el.innerHTML=results.slice(0,8).map(function(p,i){
+    return'<div class="ri" onclick="pickerPhotoAddFromResult('+i+')">'
+      +'<div class="ri-e">'+(p.emoji||'🍽')+'</div>'
+      +'<div style="flex:1;min-width:0;"><div class="ri-n">'+p.name+'</div>'
+      +(p.per100?'<div class="ri-d">'+Math.round(p.per100.kcal)+' kcal/100g</div>':'')
+      +'</div>'
+      +'<div style="font-size:18px;color:var(--g2);font-weight:900;">＋</div>'
+      +'</div>';
+  }).join('');
+}
+
+function pickerPhotoAddFromResult(i){
+  var p=(window._pickerPhotoAddRes||[])[i];if(!p)return;
+  if(p.isRecipe){showToast('Rezepte können nicht als Zutat hinzugefügt werden');return;}
+  pickerIngredients.push({name:p.name,emoji:p.emoji,amount:100,per100:p.per100});
+  document.getElementById('pickerPhotoAddQ').value='';
+  document.getElementById('pickerPhotoAddResults').innerHTML='';
+  pickerShowPhotoResult(document.getElementById('pickerRecipeName').value||'');
+  showToast((p.emoji||'🍽')+' '+p.name+' hinzugefügt');
+}
+
+function pickerPhotoAdd(saveAsRecipe){
+  if(!pickerIngredients.length){showToast('Keine Zutaten');return;}
+  var ings=JSON.parse(JSON.stringify(pickerIngredients));
+  pickerIngredients.forEach(function(f){cacheFood(f);});
+  if(window._editEntryMode){
+    window._editEntryMode=false;
+    var e=getDay().meals[window._editEntryMeal][window._editEntryIdx];
+    if(e&&e.ingredients){
+      ings.forEach(function(ing){e.ingredients.push(ing);});
+      saveS();closePicker();
+      openEditEntry(window._editEntryMeal,window._editEntryIdx);
+      showToast(ings.length+' Zutat(en) hinzugefügt');
+      return;
+    }
+  }
+  var name=document.getElementById('pickerRecipeName').value.trim()||'Foto-Rezept';
+  var portions=parseFloat(document.getElementById('pickerPhotoPortions').value)||1;
+  if(saveAsRecipe){
+    var rec={id:Date.now().toString(),name:name,emoji:'📸',ingredients:ings};
+    recipes.unshift(rec);saveX();
+    var t=ingTotal(ings);
+    getDay().meals[pickerMeal].push({name:name,emoji:'📸',isRecipe:true,recipeId:rec.id,portions:portions,ingredients:ings,kcal:t.kcal*portions,protein:t.protein*portions,carbs:t.carbs*portions,fat:t.fat*portions});
+    showToast('📸 '+name+' als Rezept gespeichert');
+  } else {
+    var t=ingTotal(ings);
+    getDay().meals[pickerMeal].push({name:name,emoji:'📸',isRecipe:true,recipeId:null,portions:portions,ingredients:ings,kcal:t.kcal*portions,protein:t.protein*portions,carbs:t.carbs*portions,fat:t.fat*portions});
+    showToast('📸 '+name+' eingetragen');
+  }
+  saveS();renderAll();closePicker();
+}
 
 // ─── PICKER: EIGENES TAB ───
 function pickerSaveOwn(){

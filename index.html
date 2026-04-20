@@ -301,7 +301,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.081</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.082</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div class="dn">
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
@@ -364,7 +364,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.081</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.082</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -1734,20 +1734,34 @@ function pickerBcNo(){
 }
 
 function pickerLookupBarcode(code){
-  pickerSetPhotoStatus('🔍 Suche Barcode '+code+'...',false);
+  var el=document.getElementById('pickerBarcodeResult');
+  var startBtn=document.getElementById('pickerBcStartBtn');
+  if(startBtn)startBtn.style.display='none';
+  if(el)el.innerHTML='<div style="font-size:13px;color:var(--g1);padding:8px;text-align:center;">🔍 Suche Barcode '+code+'...</div>';
   var cached=barcodeCache[code];
   if(cached){pickerShowBarcodeResult(cached,true);return;}
-  if(!isOnline){pickerSetPhotoStatus('📴 Offline – Barcode nicht im Cache',true);return;}
+  if(!isOnline){
+    if(el)el.innerHTML='<div style="font-size:13px;color:var(--re);padding:8px;">📴 Offline – Barcode nicht im Cache</div>';
+    if(startBtn)startBtn.style.display='block';
+    return;
+  }
   fetch('https://world.openfoodfacts.org/api/v0/product/'+code+'.json')
     .then(function(r){return r.json();})
     .then(function(data){
-      if(data.status!==1||!data.product){pickerSetPhotoStatus('❌ Produkt nicht gefunden ('+code+')',true);return;}
+      if(data.status!==1||!data.product){
+        if(el)el.innerHTML='<div style="font-size:13px;color:var(--re);padding:8px;">❌ Produkt nicht gefunden ('+code+')</div>';
+        if(startBtn)startBtn.style.display='block';
+        return;
+      }
       var p=data.product,nm=p.nutriments||{};
       var name=p.product_name_de||p.product_name||'Unbekannt';
       var food={name:name,emoji:emo(name),barcode:code,per100:{kcal:nm['energy-kcal_100g']||0,protein:nm['proteins_100g']||0,carbs:nm['carbohydrates_100g']||0,fat:nm['fat_100g']||0}};
       barcodeCache[code]=food;saveBarcodeCache();cacheFood(food);
       pickerShowBarcodeResult(food,false);
-    }).catch(function(){pickerSetPhotoStatus('❌ Fehler beim Laden',true);});
+    }).catch(function(){
+      if(el)el.innerHTML='<div style="font-size:13px;color:var(--re);padding:8px;">❌ Fehler beim Laden</div>';
+      if(startBtn)startBtn.style.display='block';
+    });
 }
 
 function pickerShowBarcodeResult(food,fromCache){

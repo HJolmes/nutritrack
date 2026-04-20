@@ -301,7 +301,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.070</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.071</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div class="dn">
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
@@ -364,7 +364,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.070</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.071</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -1813,7 +1813,7 @@ function pickerStartScan(){
           }
         }).catch(function(){});
       },200);
-    // Option 2: ZXing fallback
+    // Option 2: ZXing fallback (inkl. iOS)
     } else if(typeof ZXing!=='undefined'){
       var hints=new Map();
       hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[
@@ -1824,24 +1824,40 @@ function pickerStartScan(){
       hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
       var reader=new ZXing.BrowserMultiFormatReader(hints,300);
       pickerBcReader={_stream:stream,_zxing:reader};
-      var canvas=document.createElement('canvas');
-      var ctx=canvas.getContext('2d');
-      pickerBcReader._scanLoop=setInterval(function(){
-        if(!pickerBcActive)return;
-        if(videoEl.readyState<2)return;
-        canvas.width=videoEl.videoWidth;
-        canvas.height=videoEl.videoHeight;
-        if(!canvas.width)return;
-        ctx.drawImage(videoEl,0,0,canvas.width,canvas.height);
-        try{
-          var result=reader.decodeFromCanvas(canvas);
-          if(result&&result.getText()){
-            clearInterval(pickerBcReader._scanLoop);
-            pickerStopScan();
-            pickerLookupBarcode(result.getText());
-          }
-        }catch(e){}
-      },300);
+      if(isIOS){
+        // iOS: decodeFromVideoElement direkt – Canvas-Taint umgehen
+        pickerBcReader._scanLoop=setInterval(function(){
+          if(!pickerBcActive)return;
+          if(videoEl.readyState<2)return;
+          try{
+            var result=reader.decodeFromVideoElement(videoEl);
+            if(result&&result.getText()){
+              clearInterval(pickerBcReader._scanLoop);
+              pickerStopScan();
+              pickerLookupBarcode(result.getText());
+            }
+          }catch(e){}
+        },400);
+      } else {
+        var canvas=document.createElement('canvas');
+        var ctx=canvas.getContext('2d');
+        pickerBcReader._scanLoop=setInterval(function(){
+          if(!pickerBcActive)return;
+          if(videoEl.readyState<2)return;
+          canvas.width=videoEl.videoWidth;
+          canvas.height=videoEl.videoHeight;
+          if(!canvas.width)return;
+          ctx.drawImage(videoEl,0,0,canvas.width,canvas.height);
+          try{
+            var result=reader.decodeFromCanvas(canvas);
+            if(result&&result.getText()){
+              clearInterval(pickerBcReader._scanLoop);
+              pickerStopScan();
+              pickerLookupBarcode(result.getText());
+            }
+          }catch(e){}
+        },300);
+      }
     } else {
       document.getElementById('pickerBarcodeResult').innerHTML='<div style="font-size:13px;color:var(--re);padding:8px;">❌ Scanner nicht verfügbar.</div>';
     }

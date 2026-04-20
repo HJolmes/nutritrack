@@ -301,7 +301,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.079</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.080</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div class="dn">
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
@@ -364,7 +364,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.079</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.080</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -430,7 +430,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
         </div>
         <button type="button" id="pickerFotoTorchBtn" onclick="pickerFotoToggleTorch()" style="display:none;width:100%;background:rgba(0,0,0,.08);border:1.5px solid var(--br);border-radius:10px;padding:10px;font-size:15px;margin-bottom:8px;font-weight:600;">🔦 Taschenlampe ein/aus</button>
         <!-- Foto aufnehmen (erscheint nach Live-Scan ohne Ergebnis) -->
-        <div id="pickerPhotoPickArea" style="display:none;">
+        <div id="pickerPhotoPickArea" style="display:block;">
           <div class="photo-btns">
             <button type="button" class="photo-btn" onclick="document.getElementById('pickerCam').click()"><span>📷</span>Kamera</button>
             <button type="button" class="photo-btn" onclick="document.getElementById('pickerGal').click()"><span>🖼️</span>Galerie</button>
@@ -1486,7 +1486,7 @@ function pickerHandlePhoto(e){
         }catch(ex){}
       }
       if(!bcFound){
-        document.getElementById('pickerAnalyzeBtn').style.display='block';
+        pickerAnalyze();
       }
     };
     img.src=ev.target.result;
@@ -1521,17 +1521,18 @@ var _fotoTorchOn=false;
 function pickerFotoLiveStart(){
   if(_fotoLiveActive)return;
   _fotoLiveActive=true;
-  // Reset UI
-  var liveWrap=document.getElementById('pickerFotoLiveWrap');
-  var pickArea=document.getElementById('pickerPhotoPickArea');
-  var analyzeBtn=document.getElementById('pickerAnalyzeBtn');
-  if(liveWrap)liveWrap.classList.remove('hidden');
-  if(pickArea)pickArea.style.display='none';
-  if(analyzeBtn)analyzeBtn.style.display='none';
+  // UI reset
   document.getElementById('pickerPrevWrap').classList.add('hidden');
   document.getElementById('pickerBcConfirm').classList.add('hidden');
   document.getElementById('pickerPhotoResult').classList.add('hidden');
+  document.getElementById('pickerAnalyzeBtn').style.display='none';
   pickerSetPhotoStatus('',false);
+  // Live-Video sofort zeigen
+  var liveWrap=document.getElementById('pickerFotoLiveWrap');
+  if(liveWrap)liveWrap.classList.remove('hidden');
+  // Foto-Buttons sofort zeigen
+  var pickArea=document.getElementById('pickerPhotoPickArea');
+  if(pickArea)pickArea.style.display='block';
   var hint=document.getElementById('pickerFotoHint');
   if(hint)hint.textContent='🔍 Suche Barcode...';
   var videoEl=document.getElementById('pickerFotoVideo');
@@ -1545,8 +1546,8 @@ function pickerFotoLiveStart(){
     videoEl.srcObject=stream;
     videoEl.setAttribute('playsinline','');
     videoEl.muted=true;
-    videoEl.play();
-    // Zoom + Focus nur auf Android
+    videoEl.play().catch(function(){});
+    // Zoom + Focus nur Android
     if(!isIOS){
       try{
         var track=stream.getVideoTracks()[0];
@@ -1562,26 +1563,21 @@ function pickerFotoLiveStart(){
     // Torch nur Android
     var tb=document.getElementById('pickerFotoTorchBtn');
     if(tb)tb.style.display=isIOS?'none':'block';
-    // iOS: keepalive
+    // iOS keepalive
     if(isIOS){
-      videoEl._iosKeepAlive=function(){if(_fotoLiveActive&&videoEl.paused)videoEl.play();};
+      videoEl._iosKeepAlive=function(){if(_fotoLiveActive&&videoEl.paused)videoEl.play().catch(function(){});};
       document.addEventListener('visibilitychange',videoEl._iosKeepAlive);
     }
     // Scan-Loop starten
-    _pickerFotoStartScanLoop(videoEl, isIOS, stream);
-    // Nach 15s ohne Treffer: Foto-Buttons zeigen
-    _fotoLiveStream._noResultTimer=setTimeout(function(){
-      if(!_fotoLiveActive)return;
-      _pickerFotoShowPickArea();
-    },15000);
+    _pickerFotoStartScanLoop(videoEl,isIOS);
   }).catch(function(err){
     _fotoLiveActive=false;
-    _pickerFotoShowPickArea();
+    if(hint)hint.textContent='';
     pickerSetPhotoStatus('Kamera: '+(err.name==='NotAllowedError'?'Zugriff verweigert.':err.message),true);
   });
 }
 
-function _pickerFotoStartScanLoop(videoEl, isIOS, stream){
+function _pickerFotoStartScanLoop(videoEl,isIOS){
   // Option 1: Native BarcodeDetector (Chrome Android)
   if('BarcodeDetector' in window){
     var detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39']});
@@ -1631,19 +1627,15 @@ function _pickerFotoBarcodeFound(code){
 }
 
 function _pickerFotoShowPickArea(){
-  // Live-Scan beenden, Kamera-Stream aber laufen lassen für Foto
   if(_fotoLiveScanLoop){clearInterval(_fotoLiveScanLoop);_fotoLiveScanLoop=null;}
   var hint=document.getElementById('pickerFotoHint');
-  if(hint)hint.textContent='Kein Barcode – Foto aufnehmen';
-  var pickArea=document.getElementById('pickerPhotoPickArea');
-  if(pickArea)pickArea.style.display='block';
+  if(hint)hint.textContent='Kein Barcode gefunden';
 }
 
 function pickerFotoLiveStop(){
   _fotoLiveActive=false;
   if(_fotoLiveScanLoop){clearInterval(_fotoLiveScanLoop);_fotoLiveScanLoop=null;}
   if(_fotoLiveStream){
-    if(_fotoLiveStream._noResultTimer)clearTimeout(_fotoLiveStream._noResultTimer);
     try{_fotoLiveStream.getTracks().forEach(function(t){t.stop();});}catch(e){}
     _fotoLiveStream=null;
   }
@@ -1716,11 +1708,7 @@ function pickerBcYes(){
 function pickerBcNo(){
   document.getElementById('pickerBcConfirm').classList.add('hidden');
   pickerBcFound=null;
-  if(window._pickerPhotoB64){
-    document.getElementById('pickerAnalyzeBtn').style.display='block';
-  } else {
-    pickerAnalyze();
-  }
+  pickerAnalyze();
 }
 
 function pickerLookupBarcode(code){

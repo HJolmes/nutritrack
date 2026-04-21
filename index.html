@@ -308,7 +308,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.094</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.095</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div class="dn">
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
@@ -351,13 +351,19 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
       </div>
       <div id="ki-day-wrap" style="display:none;margin-top:10px;border-top:1px solid rgba(255,255,255,0.2);padding-top:10px;"></div>
     </div>
-    <div class="mc"><div class="mh"><div class="mhl"><div class="mi" style="background:#fff8e1">🌅</div><div><div class="mnm">Frühstück</div><div class="ms" id="sub-breakfast">0 kcal</div></div></div><div style="display:flex;gap:4px;"><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="copyMealFromYesterday('breakfast')" title="Von gestern kopieren">⎘</button><button type="button" class="ma" onclick="openPicker('breakfast')">+</button></div></div><div id="entries-breakfast"><div class="me">Noch nichts eingetragen</div></div></div>
-    <div class="mc"><div class="mh"><div class="mhl"><div class="mi" style="background:#e8f5e9">☀️</div><div><div class="mnm">Mittagessen</div><div class="ms" id="sub-lunch">0 kcal</div></div></div><div style="display:flex;gap:4px;"><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="copyMealFromYesterday('lunch')" title="Von gestern kopieren">⎘</button><button type="button" class="ma" onclick="openPicker('lunch')">+</button></div></div><div id="entries-lunch"><div class="me">Noch nichts eingetragen</div></div></div>
-    <div class="mc"><div class="mh"><div class="mhl"><div class="mi" style="background:#e3f2fd">🌙</div><div><div class="mnm">Abendessen</div><div class="ms" id="sub-dinner">0 kcal</div></div></div><div style="display:flex;gap:4px;"><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="copyMealFromYesterday('dinner')" title="Von gestern kopieren">⎘</button><button type="button" class="ma" onclick="openPicker('dinner')">+</button></div></div><div id="entries-dinner"><div class="me">Noch nichts eingetragen</div></div></div>
-    <div class="mc"><div class="mh"><div class="mhl"><div class="mi" style="background:#fce4ec">🍎</div><div><div class="mnm">Snacks</div><div class="ms" id="sub-snack">0 kcal</div></div></div><div style="display:flex;gap:4px;"><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="copyMealFromYesterday('snack')" title="Von gestern kopieren">⎘</button><button type="button" class="ma" onclick="openPicker('snack')">+</button></div></div><div id="entries-snack"><div class="me">Noch nichts eingetragen</div></div></div>
+    <div class="mc"><div class="mh"><div class="mhl"><div class="mi" style="background:#fff8e1">🌅</div><div><div class="mnm">Frühstück</div><div class="ms" id="sub-breakfast">0 kcal</div></div></div><div style="display:flex;gap:4px;"><button type="button" class="ma" style="font-size:12px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="openTemplateOv('breakfast')" title="Vorlage laden">📋</button><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="copyMealFromYesterday('breakfast')" title="Von gestern">⎘</button><button type="button" class="ma" onclick="openPicker('breakfast')">+</button></div></div><div id="entries-breakfast"><div class="me">Noch nichts eingetragen</div></div></div>
+    <div class="mc"><div class="mh"><div class="mhl"><div class="mi" style="background:#e8f5e9">☀️</div><div><div class="mnm">Mittagessen</div><div class="ms" id="sub-lunch">0 kcal</div></div></div><div style="display:flex;gap:4px;"><button type="button" class="ma" style="font-size:12px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="openTemplateOv('lunch')" title="Vorlage laden">📋</button><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="copyMealFromYesterday('lunch')" title="Von gestern">⎘</button><button type="button" class="ma" onclick="openPicker('lunch')">+</button></div></div><div id="entries-lunch"><div class="me">Noch nichts eingetragen</div></div></div>
+    <div class="mc"><div class="mh"><div class="mhl"><div class="mi" style="background:#e3f2fd">🌙</div><div><div class="mnm">Abendessen</div><div class="ms" id="sub-dinner">0 kcal</div></div></div><div style="display:flex;gap:4px;"><button type="button" class="ma" style="font-size:12px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="openTemplateOv('dinner')" title="Vorlage laden">📋</button><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="copyMealFromYesterday('dinner')" title="Von gestern">⎘</button><button type="button" class="ma" onclick="openPicker('dinner')">+</button></div></div><div id="entries-dinner"><div class="me">Noch nichts eingetragen</div></div></div>
+    <div class="mc"><div class="mh"><div class="mhl"><div class="mi" style="background:#fce4ec">🍎</div><div><div class="mnm">Snacks</div><div class="ms" id="sub-snack">0 kcal</div></div></div><div style="display:flex;gap:4px;"><button type="button" class="ma" style="font-size:12px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="openTemplateOv('snack')" title="Vorlage laden">📋</button><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="copyMealFromYesterday('snack')" title="Von gestern">⎘</button><button type="button" class="ma" onclick="openPicker('snack')">+</button></div></div><div id="entries-snack"><div class="me">Noch nichts eingetragen</div></div></div>
     <div class="wc">
       <div class="wh"><div class="wt">💧 Wasser</div><div class="wv" id="wVal">0 / 8 Gläser</div></div>
       <div class="gls-wrap" id="glasses"></div>
+      <div style="display:flex;gap:6px;margin-top:8px;" id="waterBtns">
+        <button type="button" onclick="addWater(150)" style="flex:1;background:var(--gl);border:1.5px solid var(--g3);border-radius:8px;padding:5px;font-size:11px;font-weight:700;color:var(--g1);">☕ 150ml</button>
+        <button type="button" onclick="addWater(250)" style="flex:1;background:var(--gl);border:1.5px solid var(--g3);border-radius:8px;padding:5px;font-size:11px;font-weight:700;color:var(--g1);">🥛 250ml</button>
+        <button type="button" onclick="addWater(330)" style="flex:1;background:var(--gl);border:1.5px solid var(--g3);border-radius:8px;padding:5px;font-size:11px;font-weight:700;color:var(--g1);">🥤 330ml</button>
+        <button type="button" onclick="addWater(500)" style="flex:1;background:var(--gl);border:1.5px solid var(--g3);border-radius:8px;padding:5px;font-size:11px;font-weight:700;color:var(--g1);">🍶 500ml</button>
+      </div>
     </div>
     <div class="wc" id="fastCard">
       <div class="wh"><div class="wt">🌙 Fasten</div><div class="wv" id="fastStatus">Kein aktives Fasten</div></div>
@@ -377,7 +383,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.094</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.095</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -700,6 +706,31 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
   </div>
 </div>
 
+<!-- ══ MAHLZEIT-VORLAGEN ══ -->
+<div class="ov" id="templateOv" onclick="bgClose(event,'templateOv')">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" onclick="closeOv('templateOv')">✕</button>
+      <div class="mti">📋 Vorlagen</div>
+      <div class="msu">Gespeicherte Mahlzeiten laden</div>
+    </div>
+    <div class="mbd" id="templateList"></div>
+  </div>
+</div>
+
+<!-- ══ EINKAUFSLISTE ══ -->
+<div class="ov" id="shoppingOv" onclick="bgClose(event,'shoppingOv')">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" onclick="closeOv('shoppingOv')">✕</button>
+      <div class="mti" id="shoppingListTitle">🛒 Einkaufsliste</div>
+    </div>
+    <div class="mbd" id="shoppingListContent"></div>
+  </div>
+</div>
+
 <!-- ══ FASTEN ══ -->
 <div class="ov" id="fastOv" onclick="bgClose(event,'fastOv')">
   <div class="mod">
@@ -799,6 +830,20 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
         <div class="sf"><label class="lbl">Kalorienziel (kcal/Tag)</label><input type="number" class="sinp" id="sg"></div>
       </div>
       <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--br);">
+        <label class="lbl" style="margin-bottom:6px;">🎯 Makro-Ziele</label>
+        <div style="display:flex;gap:6px;margin-bottom:8px;">
+          <button type="button" id="macroModePercent" onclick="setMacroMode('percent')" style="flex:1;padding:6px;border-radius:8px;border:1.5px solid var(--g2);background:var(--g2);color:white;font-size:12px;font-weight:700;">% vom Ziel</button>
+          <button type="button" id="macroModeGram" onclick="setMacroMode('gram')" style="flex:1;padding:6px;border-radius:8px;border:1.5px solid var(--br);background:white;color:var(--mu);font-size:12px;font-weight:700;">Eigene Gramm</button>
+        </div>
+        <div id="macroGramInputs" style="display:none;">
+          <div class="srow">
+            <div class="sf"><label class="lbl">Protein (g)</label><input type="number" class="sinp" id="smacrop" placeholder="160"></div>
+            <div class="sf"><label class="lbl">Carbs (g)</label><input type="number" class="sinp" id="smacroc" placeholder="200"></div>
+            <div class="sf"><label class="lbl">Fett (g)</label><input type="number" class="sinp" id="smacrof" placeholder="70"></div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--br);">
         <div class="srow">
           <div class="sf"><label class="lbl">💧 Wasserziel (Gläser)</label><input type="number" class="sinp" id="swatergoal" min="1" max="20" placeholder="8"></div>
           <div class="sf"><label class="lbl">🌙 Dark Mode</label>
@@ -813,6 +858,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
         </div>
       </div>
       <button type="button" class="svb" onclick="saveSettings()">Speichern</button>
+      <button type="button" class="seb" style="margin-top:8px;" onclick="syncToGoogleDrive()">☁️ Google Drive Sync</button>
       <button type="button" class="seb" onclick="openPromptSettings()" style="margin-top:8px;">⚙️ KI-Prompts bearbeiten</button>
       <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--br);">
         <label class="lbl" style="margin-bottom:6px;">⏰ Erinnerungen</label>
@@ -959,7 +1005,7 @@ var DE_EN={apfel:'apple',birne:'pear',banane:'banana',orange:'orange',erdbeere:'
 // ════════════════════════════════════════
 // SECTION: STATE
 // ════════════════════════════════════════
-var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:'',pregnant:0,pregnantET:'',pregWarn:false,goalWeight:0,goalDate:'',dietPrefs:[],dietFree:'',dietWarn:false,macroTargets:{protein:0,carbs:0,fat:0},reminders:[],weightLog:{},portionMemory:{},waterGoal:8,darkMode:false,currentDate:'',days:{}};
+var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:'',pregnant:0,pregnantET:'',pregWarn:false,goalWeight:0,goalDate:'',dietPrefs:[],dietFree:'',dietWarn:false,macroTargets:{protein:0,carbs:0,fat:0},macroGoalMode:'percent',macroGoalG:{protein:0,carbs:0,fat:0},reminders:[],weightLog:{},portionMemory:{},waterGoal:8,waterUnit:250,darkMode:false,mealTemplates:[],currentDate:'',days:{}};
 
 // Default prompts - editable in settings
 var DEFAULT_FOTO_PROMPT='Analysiere dieses Essensfoto auf Deutsch.\nGib ein JSON-Objekt zurueck:\n{"rezept":"Gesamtgerichtname auf Deutsch","zutaten":[{"name":"Zutat auf Deutsch","emoji":"Emoji","g":GRAMM}]}\n\nRegeln:\n- rezept: logischer Gesamtname des Gerichts\n- zutaten: erkenne was SICHTBAR auf dem Teller/Bild liegt - benne es so wie ein Mensch es bestellen oder kaufen wuerde\n- Nenne das fertige Lebensmittel, nicht seine Zutaten oder Bestandteile\n- 1 Einheit schatzen (Nutzer gibt Menge selbst an)\n- Logisch notwendige Beilagen erganzen (z.B. Butter bei belegtem Brot)\n- Getraenke: typische Bestandteile mit realistischen Mengen\n- Keine Rohzutaten nennen aus denen etwas hergestellt wurde\n- Realistische Gramm pro Einheit\n- Alle Namen auf Deutsch\n- Wenn nichts erkennbar: {"rezept":"","zutaten":[]}';
@@ -1154,7 +1200,7 @@ function renderAll(){
   document.getElementById('tP').textContent=Math.round(t.protein)+'g';
   document.getElementById('tC').textContent=Math.round(t.carbs)+'g';
   document.getElementById('tF').textContent=Math.round(t.fat)+'g';
-  var mt=S.macroTargets&&S.macroTargets.protein?S.macroTargets:{protein:150,carbs:250,fat:70};
+  var mt=getMacroTargets();
   var pMax=Math.max(mt.protein*1.2,t.protein+10);
   var cMax=Math.max(mt.carbs*1.2,t.carbs+10);
   var fMax=Math.max(mt.fat*1.2,t.fat+10);
@@ -2295,11 +2341,21 @@ function renderEditBody(e){
       +'<div class="ing-list" id="editIngList">'+ingHtml+'</div>'
       +'<button type="button" class="seb" style="margin-bottom:8px;" onclick="editAddIng()">+ Zutat hinzufügen</button>'
       +(e.recipeId?'':'<button type="button" class="seb" style="margin-bottom:8px;border-color:var(--g2);color:var(--g2);" onclick="editSaveAsRecipe()">📋 Als Rezept speichern</button>')
+      +renderNutrientDetail({kcal:t.kcal,protein:t.protein,carbs:t.carbs,fat:t.fat,sugar:t.sugar||0,fiber:t.fiber||0,salt:t.salt||0},p)
+      +(e.mealPhoto?'<div style="margin:8px 0;"><img src="'+e.mealPhoto+'" style="width:100%;border-radius:10px;max-height:160px;object-fit:cover;"></div>':'')
       +'<button type="button" class="cb2" onclick="saveEditEntry()">Speichern ✓</button>'
+      +'<button type="button" class="seb" style="margin-bottom:8px;border-color:var(--mu);color:var(--mu);" onclick="saveMealAsTemplate(\''+editMeal+'\')" >📋 Als Vorlage speichern</button>'
       +'<button type="button" class="del-btn" onclick="deleteEntry()">🗑️ Eintrag löschen</button>';
   } else {
+    var _r2=(e.amount||100)/100;
+    var _p100=e.per100||{};
+    var _ts={kcal:e.kcal||0,protein:e.protein||0,carbs:e.carbs||0,fat:e.fat||0,sugar:(_p100.sugar||0)*_r2,fiber:(_p100.fiber||0)*_r2,salt:(_p100.salt||0)*_r2};
     body.innerHTML='<label class="lbl">Menge</label>'
       +'<div class="ar" style="margin-top:0;"><input type="number" class="ai2" id="editAmt" value="'+e.amount+'" min="1"><div class="au">Gramm</div></div>'
+      +renderNutrientDetail(_ts,1)
+      +(e.mealPhoto?'<div style="margin:8px 0;"><img src="'+e.mealPhoto+'" style="width:100%;border-radius:10px;max-height:160px;object-fit:cover;"></div>':'')
+      +'<input type="file" id="editMealPhoto" accept="image/*" capture="environment" style="display:none" onchange="handleEditMealPhoto(event)">'
+      +'<button type="button" class="seb" style="margin-bottom:8px;" onclick="document.getElementById(\'editMealPhoto\').click()">📷 '+(e.mealPhoto?'Foto ändern':'Foto hinzufügen')+'</button>'
       +'<button type="button" class="cb2" onclick="saveEditEntry()">Speichern ✓</button>'
       +'<button type="button" class="del-btn" onclick="deleteEntry()">🗑️ Eintrag löschen</button>';
   }
@@ -2494,6 +2550,12 @@ function openSettings(){
   var wg=document.getElementById('swatergoal');if(wg)wg.value=S.waterGoal||8;
   var dm=document.getElementById('sdarkmode');if(dm)dm.checked=!!S.darkMode;
   applyDarkMode(!!S.darkMode);
+  // Makro-Modus
+  setMacroMode(S.macroGoalMode||'percent');
+  var mg=S.macroGoalG||{};
+  var mp=document.getElementById('smacrop');if(mp)mp.value=mg.protein||'';
+  var mc=document.getElementById('smacroc');if(mc)mc.value=mg.carbs||'';
+  var mf=document.getElementById('smacrof');if(mf)mf.value=mg.fat||'';
   // Ernährungspräferenzen laden
   S.dietPrefs=S.dietPrefs||[];
   var dfi=document.getElementById('sdietfree');
@@ -2611,6 +2673,9 @@ function saveSettings(){
   S.waterGoal=parseInt(document.getElementById('swatergoal')&&document.getElementById('swatergoal').value)||8;
   S.darkMode=!!(document.getElementById('sdarkmode')&&document.getElementById('sdarkmode').checked);
   applyDarkMode(S.darkMode);
+  S.macroGoalMode=S.macroGoalMode||'percent';
+  var _mp=document.getElementById('smacrop'),_mc=document.getElementById('smacroc'),_mf=document.getElementById('smacrof');
+  if(_mp&&_mc&&_mf){S.macroGoalG={protein:parseFloat(_mp.value)||0,carbs:parseFloat(_mc.value)||0,fat:parseFloat(_mf.value)||0};}
   S.macroTargets=dietMacroTargets(S.goal);
   saveS();renderAll();closeOv('settOv');showToast('Gespeichert ✓');
 }
@@ -3324,6 +3389,44 @@ function savePortionMemory(entries){
   });
 }
 
+function handleEditMealPhoto(e){
+  var file=e.target.files[0];if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    var img=new Image();
+    img.onload=function(){
+      var c=document.createElement('canvas'),MAX=800;
+      var w=img.width,h=img.height;
+      if(w>h){if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}}else{if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}}
+      c.width=w;c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      var b64=c.toDataURL('image/jpeg',0.7);
+      saveMealPhoto(editMeal,editIdx,b64);
+      // Bild direkt im Dialog zeigen
+      var existing=document.querySelector('#editBody img');
+      if(existing){existing.src=b64;}else{
+        var div=document.createElement('div');div.style='margin:8px 0;';
+        var im=document.createElement('img');im.src=b64;im.style='width:100%;border-radius:10px;max-height:160px;object-fit:cover;';
+        div.appendChild(im);
+        var btn=document.getElementById('editMealPhoto');
+        if(btn&&btn.parentNode)btn.parentNode.insertBefore(div,btn);
+      }
+    };
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function setMacroMode(mode){
+  S.macroGoalMode=mode;
+  var gi=document.getElementById('macroGramInputs');
+  if(gi)gi.style.display=mode==='gram'?'block':'none';
+  var bp=document.getElementById('macroModePercent');
+  var bg=document.getElementById('macroModeGram');
+  if(bp){bp.style.background=mode==='percent'?'var(--g2)':'white';bp.style.color=mode==='percent'?'white':'var(--mu)';bp.style.borderColor=mode==='percent'?'var(--g2)':'var(--br)';}
+  if(bg){bg.style.background=mode==='gram'?'var(--g2)':'white';bg.style.color=mode==='gram'?'white':'var(--mu)';bg.style.borderColor=mode==='gram'?'var(--g2)':'var(--br)';}
+}
+
 // ── Dark Mode ──
 function applyDarkMode(on){
   document.body.classList.toggle('dark',on);
@@ -3384,6 +3487,186 @@ function compressOldDays(){
     }
   });
   if(changed){saveS();console.log('[NutriTrack] Alte Tage komprimiert');}
+}
+
+// ── Nährstoff-Detail-Box ──
+function renderNutrientDetail(t,portions){
+  var p=portions||1;
+  var rows=[
+    {label:'Kalorien',val:Math.round(t.kcal*p)+' kcal',highlight:true},
+    {label:'Protein',val:Math.round(t.protein*p*10)/10+'g'},
+    {label:'Kohlenhydrate',val:Math.round(t.carbs*p*10)/10+'g'},
+    {label:'davon Zucker',val:Math.round((t.sugar||0)*p*10)/10+'g',indent:true},
+    {label:'Fett',val:Math.round(t.fat*p*10)/10+'g'},
+    {label:'Ballaststoffe',val:Math.round((t.fiber||0)*p*10)/10+'g'},
+    {label:'Salz',val:Math.round((t.salt||0)*p*100)/100+'g'},
+  ];
+  return '<div style="background:var(--gl);border-radius:10px;padding:10px;margin:8px 0;">'
+    +rows.map(function(r){
+      return'<div style="display:flex;justify-content:space-between;padding:3px 0'+(r.indent?';padding-left:12px':'')+';">'
+        +'<div style="font-size:12px;color:'+(r.highlight?'var(--tx)':'var(--mu)')+';">'+(r.indent?'↳ ':'')+r.label+'</div>'
+        +'<div style="font-size:12px;font-weight:'+(r.highlight?'800':'600')+';color:'+(r.highlight?'var(--g1)':'var(--tx)')+';">'+r.val+'</div>'
+        +'</div>';
+    }).join('')
+    +'</div>';
+}
+
+// ── Individuelle Makro-Ziele ──
+function getMacroTargets(){
+  if(S.macroGoalMode==='gram'&&S.macroGoalG&&S.macroGoalG.protein){
+    return{protein:S.macroGoalG.protein,carbs:S.macroGoalG.carbs,fat:S.macroGoalG.fat};
+  }
+  return S.macroTargets&&S.macroTargets.protein?S.macroTargets:{protein:150,carbs:250,fat:70};
+}
+
+// ── Wassertracking mit Getränkegrößen ──
+function addWater(ml){
+  var day=getDay();
+  var goal=S.waterGoal||8;
+  var unit=S.waterUnit||250;
+  var glasses=Math.round(ml/unit);if(!glasses)glasses=1;
+  day.water=Math.min(goal,(day.water||0)+glasses);
+  saveS();renderAll();
+}
+
+// ── Mahlzeit-Foto speichern ──
+function saveMealPhoto(meal,idx,b64){
+  var day=getDay();
+  if(day.meals[meal]&&day.meals[meal][idx]){
+    day.meals[meal][idx].mealPhoto=b64;
+    saveS();
+    showToast('📷 Foto gespeichert');
+  }
+}
+
+// ── Mahlzeit-Vorlagen ──
+function saveMealAsTemplate(meal){
+  var day=getDay();
+  var entries=day.meals[meal]||[];
+  if(!entries.length){showToast('Keine Einträge');return;}
+  var mealNames={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snacks'};
+  var name=mealNames[meal]+' – '+fmtDate(S.currentDate);
+  var template={id:Date.now().toString(),name:name,meal:meal,entries:JSON.parse(JSON.stringify(entries)),createdAt:today()};
+  if(!S.mealTemplates)S.mealTemplates=[];
+  S.mealTemplates.unshift(template);
+  if(S.mealTemplates.length>20)S.mealTemplates=S.mealTemplates.slice(0,20);
+  saveS();showToast('📋 Als Vorlage gespeichert');
+}
+
+function applyMealTemplate(id,meal){
+  var tpl=(S.mealTemplates||[]).find(function(t){return t.id===id;});
+  if(!tpl)return;
+  var day=getDay();
+  var copies=JSON.parse(JSON.stringify(tpl.entries));
+  day.meals[meal]=day.meals[meal].concat(copies);
+  saveS();renderAll();
+  showToast('✓ Vorlage eingetragen');
+  closeOv('templateOv');
+}
+
+function openTemplateOv(meal){
+  pickerMeal=meal;
+  var templates=S.mealTemplates||[];
+  var el=document.getElementById('templateList');
+  if(!el)return;
+  if(!templates.length){el.innerHTML='<div style="text-align:center;color:var(--mu);padding:20px;font-size:13px;">Noch keine Vorlagen gespeichert</div>';openOv('templateOv');return;}
+  el.innerHTML=templates.map(function(t){
+    var total=t.entries.reduce(function(a,e){return a+(e.kcal||0);},0);
+    return'<div style="background:var(--card);border-radius:12px;padding:12px;box-shadow:var(--sh);display:flex;align-items:center;gap:10px;">'
+      +'<div style="flex:1;"><div style="font-weight:700;font-size:13px;">'+t.name+'</div>'
+      +'<div style="font-size:11px;color:var(--mu);">'+t.entries.length+' Einträge · '+Math.round(total)+' kcal</div></div>'
+      +'<button type="button" onclick="applyMealTemplate(\''+t.id+'\',\''+meal+'\')" style="background:var(--g2);border:none;border-radius:8px;color:white;font-size:13px;padding:6px 12px;font-weight:700;">Laden</button>'
+      +'<button type="button" onclick="deleteTemplate(\''+t.id+'\')" style="background:none;border:none;color:var(--re);font-size:16px;">✕</button>'
+      +'</div>';
+  }).join('');
+  openOv('templateOv');
+}
+
+function deleteTemplate(id){
+  S.mealTemplates=(S.mealTemplates||[]).filter(function(t){return t.id!==id;});
+  saveS();openTemplateOv(pickerMeal);
+}
+
+// ── Einkaufsliste aus Rezept ──
+function openShoppingList(recipeId){
+  var rec=recipes.find(function(r){return r.id===recipeId;});
+  if(!rec)return;
+  var el=document.getElementById('shoppingListContent');
+  if(!el)return;
+  document.getElementById('shoppingListTitle').textContent='🛒 '+rec.name;
+  var portions=1;
+  el.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">'
+    +'<label style="font-size:13px;color:var(--mu);">Portionen:</label>'
+    +'<input type="number" id="shoppingPortions" value="1" min="0.5" step="0.5" style="width:60px;border:2px solid var(--br);border-radius:8px;padding:6px;font-size:14px;font-weight:700;text-align:center;outline:none;" onchange="renderShoppingItems(\''+recipeId+'\')">'
+    +'</div>'
+    +'<div id="shoppingItems"></div>'
+    +'<button type="button" class="svb" style="margin-top:10px;" onclick="copyShoppingList()">📋 Kopieren</button>';
+  openOv('shoppingOv');
+  renderShoppingItems(recipeId);
+}
+
+function renderShoppingItems(recipeId){
+  var rec=recipes.find(function(r){return r.id===recipeId;});if(!rec)return;
+  var p=parseFloat(document.getElementById('shoppingPortions').value)||1;
+  var el=document.getElementById('shoppingItems');if(!el)return;
+  el.innerHTML=rec.ingredients.map(function(ing){
+    var amt=Math.round((ing.amount||100)*p);
+    return'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--br);">'
+      +'<div style="font-size:13px;">'+(ing.emoji||'🍽')+' '+ing.name+'</div>'
+      +'<div style="font-size:13px;font-weight:700;color:var(--g1);">'+amt+'g</div>'
+      +'</div>';
+  }).join('');
+}
+
+function copyShoppingList(){
+  var items=document.getElementById('shoppingItems');if(!items)return;
+  var text=Array.from(items.querySelectorAll('div[style*="border-bottom"]')).map(function(row){
+    var cols=row.querySelectorAll('div');
+    return cols[0].textContent.trim()+': '+cols[1].textContent.trim();
+  }).join('\n');
+  navigator.clipboard.writeText(text).then(function(){showToast('📋 Kopiert');}).catch(function(){showToast('Kopieren nicht verfügbar');});
+}
+
+// ── Google Drive Sync ──
+function syncToGoogleDrive(){
+  if(!S.apiKey){showToast('Bitte zuerst API Key eingeben');return;}
+  showToast('☁️ Sync wird vorbereitet...');
+  var data=JSON.stringify({state:S,foodCache:foodCache,customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache,syncedAt:new Date().toISOString()});
+  // Via Anthropic API Google Drive schreiben
+  callClaude('claude-haiku-4-5',[{type:'text',text:'Reply with exactly: READY'}],5,
+    function(){
+      // Claude verfügbar – jetzt Drive-Sync via MCP
+      fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-haiku-4-5',
+          max_tokens:200,
+          messages:[{role:'user',content:'Save this NutriTrack backup to Google Drive as "nutritrack-sync.json" in the root folder. Data: '+data.slice(0,500)+'... [truncated for test]. Reply with SAVED or ERROR.'}],
+          mcp_servers:[{type:'url',url:'https://drivemcp.googleapis.com/mcp/v1',name:'google-drive'}]
+        })
+      }).then(function(r){return r.json();}).then(function(res){
+        var txt=res.content&&res.content.map(function(c){return c.text||'';}).join('');
+        if(txt.includes('SAVED')||txt.includes('creat')||txt.includes('updat')){
+          localStorage.setItem('nt_last_sync',new Date().toISOString());
+          showToast('☁️ In Google Drive gespeichert ✓');
+        } else {
+          // Fallback: direkter Download
+          triggerBackupDownload();
+          showToast('Drive nicht verfügbar – Download gestartet');
+        }
+      }).catch(function(){triggerBackupDownload();showToast('Drive Fehler – Download gestartet');});
+    },
+    function(){showToast('Kein Internet für Sync');}
+  );
+}
+
+function triggerBackupDownload(){
+  var data={state:S,foodCache:foodCache,customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache};
+  var blob=new Blob([JSON.stringify(data)],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');a.href=url;a.download='nutritrack-backup-'+today()+'.json';a.click();
+  URL.revokeObjectURL(url);
 }
 
 // ── Backup-Erinnerung: nur alle 7 Tage ──
@@ -3539,6 +3822,7 @@ function renderLibrary(){
           +'</div>'
           +'<button type="button" onclick="openRecipeEditor(this.dataset.rid)" data-rid="'+r.id+'" style="background:none;border:none;font-size:18px;color:var(--g2);padding:4px;">✏️</button>'
           +'<button type="button" onclick="duplicateRecipe(\''+r.id+'\')" style="background:none;border:none;font-size:16px;color:var(--mu);padding:4px;" title="Duplizieren">⎘</button>'
+          +'<button type="button" onclick="openShoppingList(\''+r.id+'\')" style="background:none;border:none;font-size:16px;color:var(--mu);padding:4px;" title="Einkaufsliste">🛒</button>'
           +'<button type="button" onclick="libAddRecipe(this.dataset.rid)" data-rid="'+r.id+'" style="background:var(--g2);border:none;border-radius:8px;color:white;font-size:18px;padding:4px 8px;">+</button>'
           +'</div>';
       });

@@ -302,7 +302,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.088</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.089</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div class="dn">
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
@@ -365,7 +365,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.088</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.089</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -1178,9 +1178,10 @@ function renderIngHTML(ings,onAmtChange,onDel){
     var amtVal=missingG?'':(ing.amount||'');
     var borderStyle=missingG?'border:1.5px solid var(--or);':'';
     var warn=missingG?'<span style="font-size:11px;color:var(--or);margin-left:2px;">⚠️</span>':'';
+    var ampelDot=S.pregWarn&&ing.pregAmpel?pregAmpelDot(ing.pregAmpel.ampel):'';
     return'<div class="ing-item">'
       +'<div class="ing-e">'+(ing.emoji||'🍽')+'</div>'
-      +'<div class="ing-n">'+ing.name+'</div>'
+      +'<div class="ing-n">'+ing.name+ampelDot+'</div>'
       +'<input type="number" class="ing-amt" value="'+amtVal+'" min="1" placeholder="g?" style="'+borderStyle+'" onchange="('+onAmtChange+')('+i+',this.value)">'
       +'<div class="ing-u">g</div>'
       +warn
@@ -2109,6 +2110,13 @@ function pickerIngDel(elId,i){var cb=window['_pickerIngCb_'+elId];if(cb)cb.onDel
 function openEditEntry(meal,idx){
   editMeal=meal;editIdx=idx;
   var e=getDay().meals[meal][idx];
+  // Ampeldaten vom Eintrag auf einzelne Zutaten übertragen
+  if(S.pregWarn&&e.pregAmpel&&e.ingredients){
+    e.ingredients.forEach(function(ing){
+      var key=ing.name.toLowerCase();
+      if(e.pregAmpel[key])ing.pregAmpel=e.pregAmpel[key];
+    });
+  }
   document.getElementById('editTitle').textContent=(e.emoji||'🍽')+' '+e.name;
   renderEditBody(e);
   openOv('editOv');
@@ -2124,9 +2132,10 @@ function renderEditBody(e){
       var amtVal=missingG?'':(ing.amount||'');
       var bStyle=missingG?'border-color:var(--or);':'';
       var warn=missingG?'<span style="font-size:11px;color:var(--or);">⚠️</span>':'';
+      var ampelDot=S.pregWarn&&ing.pregAmpel?pregAmpelDot(ing.pregAmpel.ampel):'';
       return'<div class="ing-item">'
         +'<div class="ing-e">'+(ing.emoji||'🍽')+'</div>'
-        +'<div class="ing-n">'+ing.name+'</div>'
+        +'<div class="ing-n">'+ing.name+ampelDot+'</div>'
         +'<input type="number" class="ing-amt" value="'+amtVal+'" min="1" placeholder="g?" style="'+bStyle+'" onchange="editIngAmt('+i+',this.value)">'
         +'<div class="ing-u">g</div>'+warn
         +'<button type="button" class="ing-del" onclick="editIngDel('+i+')">✕</button>'

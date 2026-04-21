@@ -302,7 +302,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.086</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.087</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div class="dn">
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
@@ -365,7 +365,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.086</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.087</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -707,24 +707,34 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
         </select>
         <div id="etRow" style="display:none;margin-top:8px;">
           <label class="lbl">Errechneter Termin (ET)</label>
-          <input type="date" class="sinp" id="set" placeholder="TT.MM.JJJJ">
+          <input type="date" class="sinp" id="set">
           <div id="etInfo" style="font-size:12px;color:var(--g1);margin-top:4px;"></div>
+        </div>
+        <div id="pregWarnRow" style="display:none;margin-top:10px;padding:10px;background:var(--gl);border-radius:10px;border:1px solid var(--g3);">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div style="font-size:13px;font-weight:700;">🚦 Lebensmittel-Ampel</div>
+              <div style="font-size:11px;color:var(--mu);margin-top:2px;">Hinweise bei Eingabe von Lebensmitteln</div>
+            </div>
+            <label style="position:relative;display:inline-block;width:44px;height:24px;">
+              <input type="checkbox" id="spregwarn" style="opacity:0;width:0;height:0;" onchange="updatePregnantUI()">
+              <span id="pregWarnToggle" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#ccc;border-radius:24px;transition:.3s;"></span>
+              <span id="pregWarnThumb" style="position:absolute;content:'';height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.3s;"></span>
+            </label>
+          </div>
         </div>
       </div>
       <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--br);">
         <label class="lbl" style="margin-bottom:6px;">🎯 Abnehmen</label>
-        <div id="weightLossRow">
-          <div class="srow">
-            <div class="sf"><label class="lbl">Zielgewicht (kg)</label><input type="number" class="sinp" id="sgoalweight" placeholder="70"></div>
-            <div class="sf"><label class="lbl">Bis Datum</label><input type="date" class="sinp" id="sgoaldate"></div>
-          </div>
-          <button type="button" class="seb" onclick="calcWeightLoss()" style="margin-bottom:4px;">📉 Defizit berechnen</button>
-          <div id="weightLossInfo" style="font-size:12px;color:var(--mu);min-height:16px;"></div>
+        <div class="srow">
+          <div class="sf"><label class="lbl">Zielgewicht (kg)</label><input type="number" class="sinp" id="sgoalweight" placeholder="70"></div>
+          <div class="sf"><label class="lbl">Bis Datum</label><input type="date" class="sinp" id="sgoaldate"></div>
         </div>
+        <div id="weightLossInfo" style="font-size:12px;color:var(--mu);min-height:16px;margin-bottom:4px;"></div>
       </div>
       <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--br);">
-      <button type="button" class="seb" onclick="calcGoal()" style="margin-bottom:8px;">🧮 Kalorienbedarf berechnen</button>
-      <div class="sf"><label class="lbl">Kalorienziel (kcal/Tag)</label><input type="number" class="sinp" id="sg"></div>
+        <button type="button" class="seb" onclick="calcGoal()" style="margin-bottom:8px;">🧮 Kalorienbedarf berechnen</button>
+        <div class="sf"><label class="lbl">Kalorienziel (kcal/Tag)</label><input type="number" class="sinp" id="sg"></div>
       </div>
       <button type="button" class="svb" onclick="saveSettings()">Speichern</button>
       <button type="button" class="seb" onclick="openPromptSettings()" style="margin-top:8px;">⚙️ KI-Prompts bearbeiten</button>
@@ -839,7 +849,7 @@ var DE_EN={apfel:'apple',birne:'pear',banane:'banana',orange:'orange',erdbeere:'
 // ════════════════════════════════════════
 // SECTION: STATE
 // ════════════════════════════════════════
-var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:'',pregnant:0,pregnantET:'',goalWeight:0,goalDate:'',macroTargets:{protein:0,carbs:0,fat:0},currentDate:'',days:{}};
+var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:'',pregnant:0,pregnantET:'',pregWarn:false,goalWeight:0,goalDate:'',macroTargets:{protein:0,carbs:0,fat:0},currentDate:'',days:{}};
 
 // Default prompts - editable in settings
 var DEFAULT_FOTO_PROMPT='Analysiere dieses Essensfoto auf Deutsch.\nGib ein JSON-Objekt zurueck:\n{"rezept":"Gesamtgerichtname auf Deutsch","zutaten":[{"name":"Zutat auf Deutsch","emoji":"Emoji","g":GRAMM}]}\n\nRegeln:\n- rezept: logischer Gesamtname des Gerichts\n- zutaten: erkenne was SICHTBAR auf dem Teller/Bild liegt - benne es so wie ein Mensch es bestellen oder kaufen wuerde\n- Nenne das fertige Lebensmittel, nicht seine Zutaten oder Bestandteile\n- 1 Einheit schatzen (Nutzer gibt Menge selbst an)\n- Logisch notwendige Beilagen erganzen (z.B. Butter bei belegtem Brot)\n- Getraenke: typische Bestandteile mit realistischen Mengen\n- Keine Rohzutaten nennen aus denen etwas hergestellt wurde\n- Realistische Gramm pro Einheit\n- Alle Namen auf Deutsch\n- Wenn nichts erkennbar: {"rezept":"","zutaten":[]}';
@@ -970,6 +980,7 @@ function dismissInstall(){
 function showMain(){
   document.getElementById('setupScreen').classList.remove('active');
   document.getElementById('mainScreen').classList.add('active');
+  updateGoalFromET();
   renderAll();
   checkBackupReminder();
   if(!localStorage.getItem('nt_install_dismissed'))checkFullscreen();
@@ -1509,6 +1520,7 @@ function pickerConfirmAdd(){
     cacheFood(f);
   }
   saveS();renderAll();closePicker();
+  checkPregWarn([f]);
   showToast((f.emoji||'🍽')+' '+f.name+' hinzugefügt');
 }
 
@@ -1849,6 +1861,7 @@ function pickerBarcodeAdd(){
   var r=amt/100;
   getDay().meals[pickerMeal].push({name:food.name,emoji:food.emoji,amount:amt,per100:food.per100,kcal:food.per100.kcal*r,protein:food.per100.protein*r,carbs:food.per100.carbs*r,fat:food.per100.fat*r});
   saveS();renderAll();closePicker();
+  checkPregWarn([food]);
   showToast((food.emoji||'🍽')+' '+food.name+' hinzugefügt');
 }
 
@@ -1967,6 +1980,7 @@ function pickerPhotoAdd(saveAsRecipe){
     showToast('📸 '+name+' eingetragen');
   }
   saveS();renderAll();closePicker();
+  checkPregWarn(ings);
 }
 
 // ─── PICKER: CHAT TAB ───
@@ -2027,6 +2041,7 @@ function pickerChatAdd(saveAsRecipe){
     showToast('💬 '+name+' eingetragen');
   }
   saveS();renderAll();closePicker();
+  checkPregWarn(ings);
 }
 
 // ─── PICKER: EIGENES TAB ───
@@ -2297,13 +2312,17 @@ function openSettings(){
   document.getElementById('set').value=S.pregnantET||'';
   document.getElementById('sgoalweight').value=S.goalWeight||'';
   document.getElementById('sgoaldate').value=S.goalDate||'';
+  var chk=document.getElementById('spregwarn');
+  if(chk)chk.checked=!!S.pregWarn;
   var pr=document.getElementById('pregnantRow');
   if(pr)pr.style.display=(S.gender==='f')?'block':'none';
   document.getElementById('sgender').onchange=function(){
     var pr=document.getElementById('pregnantRow');
     if(pr)pr.style.display=(this.value==='f')?'block':'none';
+    updatePregnantUI();
   };
   updatePregnantUI();
+  updateWeightLossInfo();
   document.getElementById('cacheInfo').textContent=customFoods.length+' eigene Lebensmittel · '+recipes.length+' Rezepte · '+Object.keys(foodCache).length+' gespeichert';
   renderSettFoodList();
   openOv('settOv');
@@ -2312,29 +2331,89 @@ function openSettings(){
 function updatePregnantUI(){
   var val=document.getElementById('spregnant').value;
   var etRow=document.getElementById('etRow');
+  var pregWarnRow=document.getElementById('pregWarnRow');
+  var isPreg=val!=='0'&&val!==0&&val!=='';
   if(etRow)etRow.style.display=(val==='et')?'block':'none';
+  if(pregWarnRow)pregWarnRow.style.display=isPreg?'block':'none';
   if(val==='et'){
     var etVal=document.getElementById('set').value;
     if(etVal)showETInfo(etVal);
     document.getElementById('set').onchange=function(){showETInfo(this.value);};
   }
+  // Toggle visuell
+  var chk=document.getElementById('spregwarn');
+  var tog=document.getElementById('pregWarnToggle');
+  var thumb=document.getElementById('pregWarnThumb');
+  if(chk&&tog&&thumb){
+    tog.style.background=chk.checked?'var(--g1)':'#ccc';
+    thumb.style.transform=chk.checked?'translateX(20px)':'translateX(0)';
+  }
 }
 
 function showETInfo(etVal){
   var info=document.getElementById('etInfo');if(!info||!etVal)return;
-  var et=new Date(etVal);
-  var lmp=new Date(et.getTime()-280*24*3600000);
-  var now=new Date();
-  var ssw=Math.floor((now-lmp)/(7*24*3600000));
+  var ssw=calcSSW(etVal);
   var tri=ssw<=12?1:ssw<=27?2:3;
   var add=[0,0,300,500][tri];
   info.textContent='Aktuelle SSW: '+ssw+' · '+tri+'. Trimester · +'+add+' kcal/Tag';
 }
 
+function calcSSW(etVal){
+  var et=new Date(etVal);
+  var lmp=new Date(et.getTime()-280*24*3600000);
+  return Math.floor((new Date()-lmp)/(7*24*3600000));
+}
+
+function getPregAddFromState(){
+  var mode=S.pregnant;
+  if(mode==='et'&&S.pregnantET){
+    var ssw=calcSSW(S.pregnantET);
+    var tri=ssw<=12?1:ssw<=27?2:3;
+    return [0,0,300,500][tri];
+  }
+  return [0,0,300,500][parseInt(mode)]||0;
+}
+
+function updateGoalFromET(){
+  if(!S.pregnantET||S.pregnant!=='et')return;
+  if(!S.weight||!S.height||!S.age||!S.gender)return;
+  var bmr=S.gender==='m'
+    ?(10*S.weight)+(6.25*S.height)-(5*S.age)+5
+    :(10*S.weight)+(6.25*S.height)-(5*S.age)-161;
+  var act=parseFloat(S.activity)||1.2;
+  var tdee=Math.round(bmr*act);
+  var pregAdd=getPregAddFromState();
+  var base=tdee+pregAdd;
+  // Abnehmziel einrechnen wenn gesetzt
+  var goal=base;
+  if(S.goalWeight&&S.goalDate&&S.goalWeight<S.weight){
+    var days=Math.round((new Date(S.goalDate)-new Date())/(24*3600000));
+    if(days>0){
+      var deficit=Math.round((S.weight-S.goalWeight)*7700/days);
+      goal=Math.max(1000,base-deficit);
+    }
+  }
+  if(S.goal!==goal){S.goal=goal;S.macroTargets=calcMacroTargets(goal);saveS();}
+}
+
+function updateWeightLossInfo(){
+  var w=S.weight||parseInt(document.getElementById('sw').value)||0;
+  var gw=parseFloat(document.getElementById('sgoalweight').value)||0;
+  var gd=document.getElementById('sgoaldate').value;
+  var info=document.getElementById('weightLossInfo');
+  if(!info)return;
+  if(!gw||!gd||!w||gw>=w){info.textContent='';return;}
+  var days=Math.round((new Date(gd)-new Date())/(24*3600000));
+  if(days<=0){info.textContent='';return;}
+  var deficit=Math.round((w-gw)*7700/days);
+  var warn=deficit>500?' ⚠️ Über 500 kcal/Tag Defizit':'';;
+  info.style.color=deficit>500?'var(--re)':'var(--g1)';
+  info.textContent=(w-gw)+'kg in '+days+' Tagen → −'+deficit+' kcal/Tag'+warn;
+}
+
 function saveSettings(){
   var k=document.getElementById('sk').value.trim();if(!k){showToast('API Key eingeben');return;}
   S.apiKey=k;S.name=document.getElementById('sn').value.trim()||'Du';
-  S.goal=parseInt(document.getElementById('sg').value)||2000;
   S.weight=parseInt(document.getElementById('sw').value)||0;
   S.height=parseInt(document.getElementById('sh').value)||0;
   S.age=parseInt(document.getElementById('sa').value)||0;
@@ -2342,8 +2421,11 @@ function saveSettings(){
   S.activity=document.getElementById('sactivity').value||'';
   S.pregnant=document.getElementById('spregnant').value||0;
   S.pregnantET=document.getElementById('set').value||'';
+  S.pregWarn=!!(document.getElementById('spregwarn')&&document.getElementById('spregwarn').checked);
   S.goalWeight=parseFloat(document.getElementById('sgoalweight').value)||0;
   S.goalDate=document.getElementById('sgoaldate').value||'';
+  // Kalorienziel: aus Eingabefeld (manuell überschreibbar)
+  S.goal=parseInt(document.getElementById('sg').value)||2000;
   S.macroTargets=calcMacroTargets(S.goal);
   saveS();renderAll();closeOv('settOv');showToast('Gespeichert ✓');
 }
@@ -2355,49 +2437,94 @@ function calcGoal(){
   var g=document.getElementById('sgender').value;
   var act=parseFloat(document.getElementById('sactivity').value)||1.2;
   var pregMode=document.getElementById('spregnant').value;
+  var gw=parseFloat(document.getElementById('sgoalweight').value)||0;
+  var gd=document.getElementById('sgoaldate').value;
   if(!w||!h||!a||!g){showToast('Bitte Gewicht, Größe, Alter und Geschlecht angeben');return;}
   var bmr=g==='m'
     ?(10*w)+(6.25*h)-(5*a)+5
     :(10*w)+(6.25*h)-(5*a)-161;
   var tdee=Math.round(bmr*act);
+  // Schwangerschaftszuschlag
   var pregAdd=0;
   if(pregMode==='et'){
     var etVal=document.getElementById('set').value;
-    if(etVal){
-      var et=new Date(etVal);
-      var lmp=new Date(et.getTime()-280*24*3600000);
-      var ssw=Math.floor((new Date()-lmp)/(7*24*3600000));
-      var tri=ssw<=12?1:ssw<=27?2:3;
-      pregAdd=[0,0,300,500][tri];
-    }
+    if(etVal){var ssw=calcSSW(etVal);var tri=ssw<=12?1:ssw<=27?2:3;pregAdd=[0,0,300,500][tri];}
   } else {
     pregAdd=[0,0,300,500][parseInt(pregMode)]||0;
   }
-  var total=tdee+pregAdd;
+  var base=tdee+pregAdd;
+  // Abnehmziel einrechnen
+  var total=base;
+  if(gw&&gd&&gw<w){
+    var days=Math.round((new Date(gd)-new Date())/(24*3600000));
+    if(days>0){
+      var deficit=Math.round((w-gw)*7700/days);
+      total=Math.max(1000,base-deficit);
+      if(deficit>500)showToast('⚠️ Defizit '+deficit+' kcal/Tag – über empfohlenes Limit');
+    }
+  }
   document.getElementById('sg').value=total;
-  showToast('Berechnet: '+total+' kcal/Tag'+(pregAdd?' (inkl. +'+pregAdd+' Schwangerschaft)':''));
+  showToast('Berechnet: '+total+' kcal/Tag'+(pregAdd?' (+'+pregAdd+' SS)':''));
+  updateWeightLossInfo();
 }
 
-function calcWeightLoss(){
-  var w=parseInt(document.getElementById('sw').value)||0;
-  var gw=parseFloat(document.getElementById('sgoalweight').value)||0;
-  var gd=document.getElementById('sgoaldate').value;
-  var info=document.getElementById('weightLossInfo');
-  if(!w||!gw||!gd){info.textContent='Bitte Gewicht, Zielgewicht und Datum angeben.';return;}
-  if(gw>=w){info.textContent='Zielgewicht muss unter aktuellem Gewicht liegen.';info.style.color='var(--re)';return;}
-  var days=Math.round((new Date(gd)-new Date())/(24*3600000));
-  if(days<=0){info.textContent='Datum muss in der Zukunft liegen.';info.style.color='var(--re)';return;}
-  var kgToLose=w-gw;
-  var totalDeficit=Math.round(kgToLose*7700);
-  var dailyDeficit=Math.round(totalDeficit/days);
-  var currentGoal=parseInt(document.getElementById('sg').value)||2000;
-  var newGoal=currentGoal-dailyDeficit;
-  info.style.color=dailyDeficit>500?'var(--re)':'var(--g1)';
-  var warn=dailyDeficit>500?' ⚠️ Über 500 kcal/Tag Defizit – gesundheitlich nicht empfohlen.':'';
-  info.textContent=kgToLose+'kg in '+days+' Tagen → −'+dailyDeficit+' kcal/Tag.'+warn;
-  document.getElementById('sg').value=Math.max(1000,newGoal);
-  if(dailyDeficit>500)showToast('⚠️ Defizit über 500 kcal/Tag – bitte prüfen');
-  else showToast('Ziel: '+Math.max(1000,newGoal)+' kcal/Tag');
+// ════════════════════════════════════════
+// SECTION: PREGNANCY WARNING AMPEL
+// ════════════════════════════════════════
+function checkPregWarn(ingredients){
+  if(!S.pregWarn||!S.apiKey||!isOnline)return;
+  var isPreg=S.pregnant&&S.pregnant!=='0';
+  if(!isPreg)return;
+  var names=ingredients.map(function(i){return i.name;}).filter(Boolean);
+  if(!names.length)return;
+  var prompt='Bewerte diese Lebensmittel für Schwangere wissenschaftlich. Antworte NUR mit gültigem JSON ohne Erklärung:\n'
+    +'[{"name":"Lebensmittelname","ampel":"gruen|gelb|rot|grau","grund":"kurze Begründung max 8 Wörter"}]\n'
+    +'gruen=unbedenklich, gelb=in Maßen ok, rot=meiden, grau=keine Empfehlung möglich.\n'
+    +'Nur wissenschaftlich fundierte Empfehlungen. Lebensmittel: '+names.join(', ');
+  callClaude('claude-haiku-4-5',[{type:'text',text:prompt}],300,
+    function(text){
+      try{
+        var clean=text.replace(/```json|```/g,'').trim();
+        var results=JSON.parse(clean);
+        if(!Array.isArray(results)||!results.length)return;
+        showPregAmpel(results);
+      }catch(e){}
+    },
+    function(){}
+  );
+}
+
+function showPregAmpel(results){
+  var colors={gruen:'#2d7d52',gelb:'#f9a825',rot:'#c62828',grau:'#9e9e9e'};
+  var icons={gruen:'🟢',gelb:'🟡',rot:'🔴',grau:'⚫'};
+  var hasWarn=results.some(function(r){return r.ampel==='rot'||r.ampel==='gelb';});
+  if(!hasWarn)return; // Nur anzeigen wenn gelb oder rot dabei
+  var html='<div style="padding:12px;">'
+    +'<div style="font-weight:800;font-size:14px;margin-bottom:8px;">🚦 Schwangerschafts-Hinweise</div>';
+  results.forEach(function(r){
+    if(r.ampel==='grau'||r.ampel==='gruen')return;
+    html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding:6px 8px;background:white;border-radius:8px;border-left:3px solid '+colors[r.ampel||'grau']+';">'
+      +'<div style="font-size:18px;">'+icons[r.ampel||'grau']+'</div>'
+      +'<div><div style="font-weight:700;font-size:13px;">'+r.name+'</div>'
+      +'<div style="font-size:11px;color:#555;">'+r.grund+'</div></div>'
+      +'</div>';
+  });
+  html+='</div>';
+  showPregAmpelModal(html);
+}
+
+function showPregAmpelModal(html){
+  var el=document.getElementById('pregAmpelModal');
+  if(!el){
+    el=document.createElement('div');
+    el.id='pregAmpelModal';
+    el.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:400px;background:var(--gl);border:1.5px solid var(--g3);border-radius:14px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.15);animation:slideUp .3s ease;';
+    el.onclick=function(){el.remove();};
+    document.body.appendChild(el);
+  }
+  el.innerHTML=html+'<div style="text-align:center;font-size:11px;color:var(--mu);padding:0 12px 10px;">Tippen zum Schließen</div>';
+  clearTimeout(el._timer);
+  el._timer=setTimeout(function(){if(el.parentNode)el.remove();},8000);
 }
 
 function calcMacroTargets(kcal){

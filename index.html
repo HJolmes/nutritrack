@@ -302,7 +302,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.087</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.088</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div class="dn">
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
@@ -365,7 +365,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.087</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.088</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -1063,11 +1063,18 @@ function renderAll(){
     c.innerHTML=en.map(function(e,i){
       var isR=!!e.isRecipe;
       var sub=isR?(e.portions||1)+'× Portion · '+Math.round(e.kcal)+' kcal':e.amount+'g · P'+Math.round(e.protein)+'g K'+Math.round(e.carbs)+'g F'+Math.round(e.fat)+'g';
+      var dot='';
+      if(S.pregWarn&&e.pregAmpel){
+        var vals=Object.values(e.pregAmpel);
+        var worst=vals.find(function(r){return r.ampel==='rot';})||vals.find(function(r){return r.ampel==='gelb';})||vals.find(function(r){return r.ampel==='gruen';});
+        if(worst)dot=pregAmpelDot(worst.ampel);
+      }
       return'<div class="fe'+(isR?' is-recipe':'')+'" onclick="openEditEntry(\''+m+'\','+i+')">'
         +'<div class="fee">'+(e.emoji||'🍽')+'</div>'
         +'<div class="fei"><div class="fen">'+e.name+'</div><div class="fem">'+sub+'</div></div>'
         +'<div class="fek">'+Math.round(e.kcal)+' kcal</div>'
-        +'<div class="fe-ic">✏️</div></div>';
+        +'<div style="display:flex;align-items:center;">'+dot+'<div class="fe-ic">✏️</div></div>'
+        +'</div>';
     }).join('');
   });
   renderWater();
@@ -1519,8 +1526,9 @@ function pickerConfirmAdd(){
     getDay().meals[pickerMeal].push(entry);
     cacheFood(f);
   }
+  var _idx=getDay().meals[pickerMeal].length-1;
   saveS();renderAll();closePicker();
-  checkPregWarn([f]);
+  checkPregWarn([f],pickerMeal,_idx);
   showToast((f.emoji||'🍽')+' '+f.name+' hinzugefügt');
 }
 
@@ -1860,8 +1868,9 @@ function pickerBarcodeAdd(){
   var amt=parseFloat(document.getElementById('pickerBcAmt').value)||100;
   var r=amt/100;
   getDay().meals[pickerMeal].push({name:food.name,emoji:food.emoji,amount:amt,per100:food.per100,kcal:food.per100.kcal*r,protein:food.per100.protein*r,carbs:food.per100.carbs*r,fat:food.per100.fat*r});
+  var _bidx=getDay().meals[pickerMeal].length-1;
   saveS();renderAll();closePicker();
-  checkPregWarn([food]);
+  checkPregWarn([food],pickerMeal,_bidx);
   showToast((food.emoji||'🍽')+' '+food.name+' hinzugefügt');
 }
 
@@ -1979,8 +1988,9 @@ function pickerPhotoAdd(saveAsRecipe){
     getDay().meals[pickerMeal].push({name:name,emoji:'📸',isRecipe:true,recipeId:null,portions:portions,ingredients:ings,kcal:t.kcal*portions,protein:t.protein*portions,carbs:t.carbs*portions,fat:t.fat*portions});
     showToast('📸 '+name+' eingetragen');
   }
+  var _pidx=getDay().meals[pickerMeal].length-1;
   saveS();renderAll();closePicker();
-  checkPregWarn(ings);
+  checkPregWarn(ings,pickerMeal,_pidx);
 }
 
 // ─── PICKER: CHAT TAB ───
@@ -2040,8 +2050,9 @@ function pickerChatAdd(saveAsRecipe){
     getDay().meals[pickerMeal].push({name:name,emoji:'💬',isRecipe:true,recipeId:null,portions:portions,ingredients:ings,kcal:t.kcal*portions,protein:t.protein*portions,carbs:t.carbs*portions,fat:t.fat*portions});
     showToast('💬 '+name+' eingetragen');
   }
+  var _cidx=getDay().meals[pickerMeal].length-1;
   saveS();renderAll();closePicker();
-  checkPregWarn(ings);
+  checkPregWarn(ings,pickerMeal,_cidx);
 }
 
 // ─── PICKER: EIGENES TAB ───
@@ -2076,9 +2087,10 @@ function pickerRenderIngList(elId,ings,onAmtChange,onDel){
     var amtVal=missingG?'':(ing.amount||'');
     var borderStyle=missingG?'border-color:var(--or);':'';
     var warn=missingG?'<span style="font-size:11px;color:var(--or);">⚠️</span>':'';
+    var ampelDot=S.pregWarn&&ing.pregAmpel?pregAmpelDot(ing.pregAmpel.ampel):'';
     return'<div class="ing-item">'
       +'<div class="ing-e">'+(ing.emoji||'🍽')+'</div>'
-      +'<div class="ing-n">'+ing.name+'</div>'
+      +'<div class="ing-n">'+ing.name+ampelDot+'</div>'
       +'<input type="number" class="ing-amt" value="'+amtVal+'" min="1" placeholder="g?" style="'+borderStyle+'" data-i="'+i+'" onchange="pickerIngAmtChange(\''+elId+'\','+i+',this.value)">'
       +'<div class="ing-u">g</div>'
       +warn
@@ -2471,7 +2483,7 @@ function calcGoal(){
 // ════════════════════════════════════════
 // SECTION: PREGNANCY WARNING AMPEL
 // ════════════════════════════════════════
-function checkPregWarn(ingredients){
+function checkPregWarn(ingredients, meal, entryIdx){
   if(!S.pregWarn||!S.apiKey||!isOnline)return;
   var isPreg=S.pregnant&&S.pregnant!=='0';
   if(!isPreg)return;
@@ -2487,18 +2499,39 @@ function checkPregWarn(ingredients){
         var clean=text.replace(/```json|```/g,'').trim();
         var results=JSON.parse(clean);
         if(!Array.isArray(results)||!results.length)return;
-        showPregAmpel(results);
+        // Ergebnisse als Map speichern
+        var map={};
+        results.forEach(function(r){map[r.name.toLowerCase()]=r;});
+        // Am Eintrag speichern wenn Mahlzeit + Index bekannt
+        if(meal!==undefined&&entryIdx!==undefined){
+          var entry=getDay().meals[meal]&&getDay().meals[meal][entryIdx];
+          if(entry){entry.pregAmpel=map;saveS();}
+        }
+        // Zutaten-Objekte direkt annotieren (für Picker)
+        ingredients.forEach(function(ing){
+          var r=map[ing.name.toLowerCase()];
+          if(r)ing.pregAmpel=r;
+        });
+        renderAll();
+        showPregAmpelModal(results);
       }catch(e){}
     },
     function(){}
   );
 }
 
-function showPregAmpel(results){
+function pregAmpelDot(ampel){
+  if(!S.pregWarn)return '';
+  var c={gruen:'#2d7d52',gelb:'#f9a825',rot:'#c62828',grau:'#bbb'}[ampel]||'';
+  if(!c)return '';
+  return '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+c+';margin-left:4px;flex-shrink:0;" title="'+{gruen:'OK',gelb:'In Maßen',rot:'Meiden',grau:'Keine Empfehlung'}[ampel]+'"></span>';
+}
+
+function showPregAmpelModal(results){
   var colors={gruen:'#2d7d52',gelb:'#f9a825',rot:'#c62828',grau:'#9e9e9e'};
   var icons={gruen:'🟢',gelb:'🟡',rot:'🔴',grau:'⚫'};
   var hasWarn=results.some(function(r){return r.ampel==='rot'||r.ampel==='gelb';});
-  if(!hasWarn)return; // Nur anzeigen wenn gelb oder rot dabei
+  if(!hasWarn)return;
   var html='<div style="padding:12px;">'
     +'<div style="font-weight:800;font-size:14px;margin-bottom:8px;">🚦 Schwangerschafts-Hinweise</div>';
   results.forEach(function(r){
@@ -2510,15 +2543,11 @@ function showPregAmpel(results){
       +'</div>';
   });
   html+='</div>';
-  showPregAmpelModal(html);
-}
-
-function showPregAmpelModal(html){
   var el=document.getElementById('pregAmpelModal');
   if(!el){
     el=document.createElement('div');
     el.id='pregAmpelModal';
-    el.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:400px;background:var(--gl);border:1.5px solid var(--g3);border-radius:14px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.15);animation:slideUp .3s ease;';
+    el.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:400px;background:var(--gl);border:1.5px solid var(--g3);border-radius:14px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.15);';
     el.onclick=function(){el.remove();};
     document.body.appendChild(el);
   }

@@ -308,7 +308,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.095</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.096</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div class="dn">
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
@@ -383,7 +383,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.095</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.096</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -1005,7 +1005,7 @@ var DE_EN={apfel:'apple',birne:'pear',banane:'banana',orange:'orange',erdbeere:'
 // ════════════════════════════════════════
 // SECTION: STATE
 // ════════════════════════════════════════
-var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:'',pregnant:0,pregnantET:'',pregWarn:false,goalWeight:0,goalDate:'',dietPrefs:[],dietFree:'',dietWarn:false,macroTargets:{protein:0,carbs:0,fat:0},macroGoalMode:'percent',macroGoalG:{protein:0,carbs:0,fat:0},reminders:[],weightLog:{},portionMemory:{},waterGoal:8,waterUnit:250,darkMode:false,mealTemplates:[],currentDate:'',days:{}};
+var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:'',pregnant:0,pregnantET:'',pregWarn:false,goalWeight:0,goalDate:'',goalAchievedShown:'',dietPrefs:[],dietFree:'',dietWarn:false,macroTargets:{protein:0,carbs:0,fat:0},macroGoalMode:'percent',macroGoalG:{protein:0,carbs:0,fat:0},reminders:[],weightLog:{},portionMemory:{},waterGoal:8,waterUnit:250,darkMode:false,mealTemplates:[],currentDate:'',days:{}};
 
 // Default prompts - editable in settings
 var DEFAULT_FOTO_PROMPT='Analysiere dieses Essensfoto auf Deutsch.\nGib ein JSON-Objekt zurueck:\n{"rezept":"Gesamtgerichtname auf Deutsch","zutaten":[{"name":"Zutat auf Deutsch","emoji":"Emoji","g":GRAMM}]}\n\nRegeln:\n- rezept: logischer Gesamtname des Gerichts\n- zutaten: erkenne was SICHTBAR auf dem Teller/Bild liegt - benne es so wie ein Mensch es bestellen oder kaufen wuerde\n- Nenne das fertige Lebensmittel, nicht seine Zutaten oder Bestandteile\n- 1 Einheit schatzen (Nutzer gibt Menge selbst an)\n- Logisch notwendige Beilagen erganzen (z.B. Butter bei belegtem Brot)\n- Getraenke: typische Bestandteile mit realistischen Mengen\n- Keine Rohzutaten nennen aus denen etwas hergestellt wurde\n- Realistische Gramm pro Einheit\n- Alle Namen auf Deutsch\n- Wenn nichts erkennbar: {"rezept":"","zutaten":[]}';
@@ -1033,6 +1033,7 @@ var pickerIngredients=[];     // photo/chat detected ingredients
 var pickerBcFound=null;       // barcode found pending confirm
 var pickerBcReader=null;      // ZXing reader instance
 var pickerBcActive=false;
+var pickerTorchOn=false;
 
 // Edit state
 var editMeal=null, editIdx=null;   // diary entry being edited
@@ -1052,7 +1053,20 @@ function mealByTime(){var h=new Date().getHours();if(h>=5&&h<11)return'breakfast
 // ════════════════════════════════════════
 // SECTION: STORAGE
 // ════════════════════════════════════════
-function saveS(){try{localStorage.setItem('nt_v6',JSON.stringify(S));}catch(e){}}
+function saveS(){
+  try{
+    var data=JSON.stringify(S);
+    localStorage.setItem('nt_v6',data);
+    // Warnung wenn >3MB (60% des Limits)
+    var kb=Math.round(data.length/1024);
+    if(kb>3000&&!window._storageWarnShown){
+      window._storageWarnShown=true;
+      setTimeout(function(){showToast('⚠️ Speicher fast voll ('+kb+'KB) – Backup erstellen!',5000);},500);
+    }
+  }catch(e){
+    showToast('⚠️ Speicher voll! Bitte Backup erstellen und alte Daten löschen.');
+  }
+}
 function loadS(){try{var d=localStorage.getItem('nt_v6');if(d){Object.assign(S,JSON.parse(d));return true;}}catch(e){}return false;}
 function saveX(){try{localStorage.setItem('nt_x',JSON.stringify({fc:foodCache,cf:customFoods,rc:recipes}));}catch(e){}}
 function loadX(){try{var d=localStorage.getItem('nt_x');if(d){var x=JSON.parse(d);foodCache=x.fc||{};customFoods=x.cf||[];recipes=x.rc||[];}}catch(e){}}
@@ -1345,24 +1359,6 @@ function renderFasting(){
   tick();
   _fastInterval=setInterval(tick,1000);
 }
-function renderIngHTML(ings,onAmtChange,onDel){
-  return(ings||[]).map(function(ing,i){
-    var missingG=ing.missingGrams||(ing.amount===null||ing.amount===undefined||ing.amount==='');
-    var amtVal=missingG?'':(ing.amount||'');
-    var borderStyle=missingG?'border:1.5px solid var(--or);':'';
-    var warn=missingG?'<span style="font-size:11px;color:var(--or);margin-left:2px;">⚠️</span>':'';
-    var ampelDot=(S.pregWarn&&ing.pregAmpel?pregAmpelDot(ing.pregAmpel.ampel):'')+(S.dietWarn&&ing.dietAmpel?dietAmpelDot(ing.dietAmpel.ampel):'');
-    return'<div class="ing-item">'
-      +'<div class="ing-e">'+(ing.emoji||'🍽')+'</div>'
-      +'<div class="ing-n">'+ing.name+ampelDot+'</div>'
-      +'<input type="number" class="ing-amt" value="'+amtVal+'" min="1" placeholder="g?" style="'+borderStyle+'" onchange="('+onAmtChange+')('+i+',this.value)">'
-      +'<div class="ing-u">g</div>'
-      +warn
-      +'<button type="button" class="ing-del" onclick="('+onDel+')('+i+')">✕</button>'
-      +'</div>';
-  }).join('');
-}
-
 // ════════════════════════════════════════
 // SECTION: EMOJI
 // ════════════════════════════════════════
@@ -2673,7 +2669,7 @@ function saveSettings(){
   S.waterGoal=parseInt(document.getElementById('swatergoal')&&document.getElementById('swatergoal').value)||8;
   S.darkMode=!!(document.getElementById('sdarkmode')&&document.getElementById('sdarkmode').checked);
   applyDarkMode(S.darkMode);
-  S.macroGoalMode=S.macroGoalMode||'percent';
+  // macroGoalMode wurde bereits durch setMacroMode() direkt in S gesetzt
   var _mp=document.getElementById('smacrop'),_mc=document.getElementById('smacroc'),_mf=document.getElementById('smacrof');
   if(_mp&&_mc&&_mf){S.macroGoalG={protein:parseFloat(_mp.value)||0,carbs:parseFloat(_mc.value)||0,fat:parseFloat(_mf.value)||0};}
   S.macroTargets=dietMacroTargets(S.goal);
@@ -3382,25 +3378,18 @@ function deleteReminder(i){
   S.reminders.splice(i,1);saveS();renderReminders();
 }
 
-// ── Portionsgedächtnis beim Speichern ──
-function savePortionMemory(entries){
-  entries.forEach(function(e){
-    if(!e.isRecipe&&e.name&&e.amount)rememberPortion(e.name,e.amount);
-  });
-}
-
 function handleEditMealPhoto(e){
   var file=e.target.files[0];if(!file)return;
   var reader=new FileReader();
   reader.onload=function(ev){
     var img=new Image();
     img.onload=function(){
-      var c=document.createElement('canvas'),MAX=800;
+      var c=document.createElement('canvas'),MAX=400;
       var w=img.width,h=img.height;
       if(w>h){if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}}else{if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}}
       c.width=w;c.height=h;
       c.getContext('2d').drawImage(img,0,0,w,h);
-      var b64=c.toDataURL('image/jpeg',0.7);
+      var b64=c.toDataURL('image/jpeg',0.6);
       saveMealPhoto(editMeal,editIdx,b64);
       // Bild direkt im Dialog zeigen
       var existing=document.querySelector('#editBody img');
@@ -3481,7 +3470,7 @@ function compressOldDays(){
       var day=S.days[d];
       var all=day.meals.breakfast.concat(day.meals.lunch,day.meals.dinner,day.meals.snack);
       var t=calcM(all);
-      // Nur Summen behalten, Details löschen
+      // Nur Summen behalten, Details + Fotos löschen
       S.days[d]={_compressed:true,kcal:Math.round(t.kcal),protein:Math.round(t.protein),carbs:Math.round(t.carbs),fat:Math.round(t.fat),water:day.water||0};
       changed=true;
     }
@@ -3630,35 +3619,33 @@ function copyShoppingList(){
 // ── Google Drive Sync ──
 function syncToGoogleDrive(){
   if(!S.apiKey){showToast('Bitte zuerst API Key eingeben');return;}
-  showToast('☁️ Sync wird vorbereitet...');
+  if(!isOnline){showToast('Kein Internet für Sync');return;}
+  showToast('☁️ Sync läuft...');
   var data=JSON.stringify({state:S,foodCache:foodCache,customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache,syncedAt:new Date().toISOString()});
-  // Via Anthropic API Google Drive schreiben
-  callClaude('claude-haiku-4-5',[{type:'text',text:'Reply with exactly: READY'}],5,
-    function(){
-      // Claude verfügbar – jetzt Drive-Sync via MCP
-      fetch('https://api.anthropic.com/v1/messages',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({
-          model:'claude-haiku-4-5',
-          max_tokens:200,
-          messages:[{role:'user',content:'Save this NutriTrack backup to Google Drive as "nutritrack-sync.json" in the root folder. Data: '+data.slice(0,500)+'... [truncated for test]. Reply with SAVED or ERROR.'}],
-          mcp_servers:[{type:'url',url:'https://drivemcp.googleapis.com/mcp/v1',name:'google-drive'}]
-        })
-      }).then(function(r){return r.json();}).then(function(res){
-        var txt=res.content&&res.content.map(function(c){return c.text||'';}).join('');
-        if(txt.includes('SAVED')||txt.includes('creat')||txt.includes('updat')){
-          localStorage.setItem('nt_last_sync',new Date().toISOString());
-          showToast('☁️ In Google Drive gespeichert ✓');
-        } else {
-          // Fallback: direkter Download
-          triggerBackupDownload();
-          showToast('Drive nicht verfügbar – Download gestartet');
-        }
-      }).catch(function(){triggerBackupDownload();showToast('Drive Fehler – Download gestartet');});
-    },
-    function(){showToast('Kein Internet für Sync');}
-  );
+  // Datenmenge prüfen
+  var kb=Math.round(data.length/1024);
+  fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':S.apiKey,'anthropic-version':'2023-06-01'},
+    body:JSON.stringify({
+      model:'claude-haiku-4-5',
+      max_tokens:100,
+      messages:[{role:'user',content:'Save the following JSON as a file named "nutritrack-backup.json" to the root of Google Drive. Reply with only "SAVED" on success.\n\n'+data}],
+      mcp_servers:[{type:'url',url:'https://drivemcp.googleapis.com/mcp/v1',name:'google-drive'}]
+    })
+  }).then(function(r){return r.json();}).then(function(res){
+    var txt=(res.content||[]).map(function(c){return c.text||'';}).join('');
+    if(txt.includes('SAVED')||txt.includes('creat')||txt.includes('updat')||txt.includes('upload')){
+      localStorage.setItem('nt_last_sync',new Date().toISOString());
+      showToast('☁️ Google Drive gespeichert ✓ ('+kb+'KB)');
+    } else {
+      triggerBackupDownload();
+      showToast('Drive nicht erreichbar – Download gestartet');
+    }
+  }).catch(function(){
+    triggerBackupDownload();
+    showToast('Drive Fehler – Download gestartet');
+  });
 }
 
 function triggerBackupDownload(){
@@ -3876,14 +3863,6 @@ function libAddFood(i){
   },200);
 }
 
-function libEditFood(i){
-  // Find the i-th custom food (offset from DB length difference)
-  var customIdx=i; // first items are custom foods
-  if(customIdx<customFoods.length){
-    openOwnFoodEdit(customIdx);
-  }
-}
-
 // ── PROMPT SETTINGS ──
 function openPromptSettings(){
   document.getElementById('fotoPrTxt').value=getFotoPrompt();
@@ -3891,8 +3870,7 @@ function openPromptSettings(){
   closeOv('settOv');
   setTimeout(function(){openOv('promptOv');},200);
 }
-function savePrompts(){/* readonly – keine Funktion */}
-function resetPrompts(){/* readonly – keine Funktion */}
+
 
 function renderStats(){/* replaced by renderLibrary */}
 
@@ -3947,7 +3925,7 @@ function openHelp(){
   openOv('helpOv');
 }
 
-function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2500);}
+function showToast(msg,duration){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},(duration||2500));}
 
 </script>
 </body>

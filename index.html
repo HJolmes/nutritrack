@@ -302,7 +302,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.085</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.086</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div class="dn">
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
@@ -365,7 +365,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.085</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.086</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -698,15 +698,34 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
         </select>
       </div>
       <div class="sf" id="pregnantRow" style="display:none;"><label class="lbl">🤰 Schwangerschaft</label>
-        <select class="sinp" id="spregnant">
+        <select class="sinp" id="spregnant" onchange="updatePregnantUI()">
           <option value="0">Nicht schwanger</option>
           <option value="1">1. Trimester (+0 kcal)</option>
           <option value="2">2. Trimester (+300 kcal)</option>
           <option value="3">3. Trimester (+500 kcal)</option>
+          <option value="et">Errechneter Termin eingeben</option>
         </select>
+        <div id="etRow" style="display:none;margin-top:8px;">
+          <label class="lbl">Errechneter Termin (ET)</label>
+          <input type="date" class="sinp" id="set" placeholder="TT.MM.JJJJ">
+          <div id="etInfo" style="font-size:12px;color:var(--g1);margin-top:4px;"></div>
+        </div>
       </div>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--br);">
+        <label class="lbl" style="margin-bottom:6px;">🎯 Abnehmen</label>
+        <div id="weightLossRow">
+          <div class="srow">
+            <div class="sf"><label class="lbl">Zielgewicht (kg)</label><input type="number" class="sinp" id="sgoalweight" placeholder="70"></div>
+            <div class="sf"><label class="lbl">Bis Datum</label><input type="date" class="sinp" id="sgoaldate"></div>
+          </div>
+          <button type="button" class="seb" onclick="calcWeightLoss()" style="margin-bottom:4px;">📉 Defizit berechnen</button>
+          <div id="weightLossInfo" style="font-size:12px;color:var(--mu);min-height:16px;"></div>
+        </div>
+      </div>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--br);">
       <button type="button" class="seb" onclick="calcGoal()" style="margin-bottom:8px;">🧮 Kalorienbedarf berechnen</button>
       <div class="sf"><label class="lbl">Kalorienziel (kcal/Tag)</label><input type="number" class="sinp" id="sg"></div>
+      </div>
       <button type="button" class="svb" onclick="saveSettings()">Speichern</button>
       <button type="button" class="seb" onclick="openPromptSettings()" style="margin-top:8px;">⚙️ KI-Prompts bearbeiten</button>
       <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--br);">
@@ -820,7 +839,7 @@ var DE_EN={apfel:'apple',birne:'pear',banane:'banana',orange:'orange',erdbeere:'
 // ════════════════════════════════════════
 // SECTION: STATE
 // ════════════════════════════════════════
-var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:'',pregnant:0,macroTargets:{protein:0,carbs:0,fat:0},currentDate:'',days:{}};
+var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:'',pregnant:0,pregnantET:'',goalWeight:0,goalDate:'',macroTargets:{protein:0,carbs:0,fat:0},currentDate:'',days:{}};
 
 // Default prompts - editable in settings
 var DEFAULT_FOTO_PROMPT='Analysiere dieses Essensfoto auf Deutsch.\nGib ein JSON-Objekt zurueck:\n{"rezept":"Gesamtgerichtname auf Deutsch","zutaten":[{"name":"Zutat auf Deutsch","emoji":"Emoji","g":GRAMM}]}\n\nRegeln:\n- rezept: logischer Gesamtname des Gerichts\n- zutaten: erkenne was SICHTBAR auf dem Teller/Bild liegt - benne es so wie ein Mensch es bestellen oder kaufen wuerde\n- Nenne das fertige Lebensmittel, nicht seine Zutaten oder Bestandteile\n- 1 Einheit schatzen (Nutzer gibt Menge selbst an)\n- Logisch notwendige Beilagen erganzen (z.B. Butter bei belegtem Brot)\n- Getraenke: typische Bestandteile mit realistischen Mengen\n- Keine Rohzutaten nennen aus denen etwas hergestellt wurde\n- Realistische Gramm pro Einheit\n- Alle Namen auf Deutsch\n- Wenn nichts erkennbar: {"rezept":"","zutaten":[]}';
@@ -2275,15 +2294,41 @@ function openSettings(){
   document.getElementById('sgender').value=S.gender||'';
   document.getElementById('sactivity').value=S.activity||'';
   document.getElementById('spregnant').value=S.pregnant||0;
+  document.getElementById('set').value=S.pregnantET||'';
+  document.getElementById('sgoalweight').value=S.goalWeight||'';
+  document.getElementById('sgoaldate').value=S.goalDate||'';
   var pr=document.getElementById('pregnantRow');
   if(pr)pr.style.display=(S.gender==='f')?'block':'none';
   document.getElementById('sgender').onchange=function(){
     var pr=document.getElementById('pregnantRow');
     if(pr)pr.style.display=(this.value==='f')?'block':'none';
   };
+  updatePregnantUI();
   document.getElementById('cacheInfo').textContent=customFoods.length+' eigene Lebensmittel · '+recipes.length+' Rezepte · '+Object.keys(foodCache).length+' gespeichert';
   renderSettFoodList();
   openOv('settOv');
+}
+
+function updatePregnantUI(){
+  var val=document.getElementById('spregnant').value;
+  var etRow=document.getElementById('etRow');
+  if(etRow)etRow.style.display=(val==='et')?'block':'none';
+  if(val==='et'){
+    var etVal=document.getElementById('set').value;
+    if(etVal)showETInfo(etVal);
+    document.getElementById('set').onchange=function(){showETInfo(this.value);};
+  }
+}
+
+function showETInfo(etVal){
+  var info=document.getElementById('etInfo');if(!info||!etVal)return;
+  var et=new Date(etVal);
+  var lmp=new Date(et.getTime()-280*24*3600000);
+  var now=new Date();
+  var ssw=Math.floor((now-lmp)/(7*24*3600000));
+  var tri=ssw<=12?1:ssw<=27?2:3;
+  var add=[0,0,300,500][tri];
+  info.textContent='Aktuelle SSW: '+ssw+' · '+tri+'. Trimester · +'+add+' kcal/Tag';
 }
 
 function saveSettings(){
@@ -2295,7 +2340,10 @@ function saveSettings(){
   S.age=parseInt(document.getElementById('sa').value)||0;
   S.gender=document.getElementById('sgender').value||'';
   S.activity=document.getElementById('sactivity').value||'';
-  S.pregnant=parseInt(document.getElementById('spregnant').value)||0;
+  S.pregnant=document.getElementById('spregnant').value||0;
+  S.pregnantET=document.getElementById('set').value||'';
+  S.goalWeight=parseFloat(document.getElementById('sgoalweight').value)||0;
+  S.goalDate=document.getElementById('sgoaldate').value||'';
   S.macroTargets=calcMacroTargets(S.goal);
   saveS();renderAll();closeOv('settOv');showToast('Gespeichert ✓');
 }
@@ -2306,19 +2354,50 @@ function calcGoal(){
   var a=parseInt(document.getElementById('sa').value)||0;
   var g=document.getElementById('sgender').value;
   var act=parseFloat(document.getElementById('sactivity').value)||1.2;
-  var preg=parseInt(document.getElementById('spregnant').value)||0;
+  var pregMode=document.getElementById('spregnant').value;
   if(!w||!h||!a||!g){showToast('Bitte Gewicht, Größe, Alter und Geschlecht angeben');return;}
-  // Mifflin-St. Jeor
   var bmr=g==='m'
     ?(10*w)+(6.25*h)-(5*a)+5
     :(10*w)+(6.25*h)-(5*a)-161;
   var tdee=Math.round(bmr*act);
-  // Schwangerschaftszuschlag
-  var pregAdd=[0,0,300,500][preg]||0;
+  var pregAdd=0;
+  if(pregMode==='et'){
+    var etVal=document.getElementById('set').value;
+    if(etVal){
+      var et=new Date(etVal);
+      var lmp=new Date(et.getTime()-280*24*3600000);
+      var ssw=Math.floor((new Date()-lmp)/(7*24*3600000));
+      var tri=ssw<=12?1:ssw<=27?2:3;
+      pregAdd=[0,0,300,500][tri];
+    }
+  } else {
+    pregAdd=[0,0,300,500][parseInt(pregMode)]||0;
+  }
   var total=tdee+pregAdd;
   document.getElementById('sg').value=total;
-  var msg='Grundumsatz: '+Math.round(bmr)+' kcal · TDEE: '+tdee+' kcal'+(pregAdd?' · +'+pregAdd+' kcal (Schwangerschaft)':'');
-  showToast('Berechnet: '+total+' kcal/Tag');
+  showToast('Berechnet: '+total+' kcal/Tag'+(pregAdd?' (inkl. +'+pregAdd+' Schwangerschaft)':''));
+}
+
+function calcWeightLoss(){
+  var w=parseInt(document.getElementById('sw').value)||0;
+  var gw=parseFloat(document.getElementById('sgoalweight').value)||0;
+  var gd=document.getElementById('sgoaldate').value;
+  var info=document.getElementById('weightLossInfo');
+  if(!w||!gw||!gd){info.textContent='Bitte Gewicht, Zielgewicht und Datum angeben.';return;}
+  if(gw>=w){info.textContent='Zielgewicht muss unter aktuellem Gewicht liegen.';info.style.color='var(--re)';return;}
+  var days=Math.round((new Date(gd)-new Date())/(24*3600000));
+  if(days<=0){info.textContent='Datum muss in der Zukunft liegen.';info.style.color='var(--re)';return;}
+  var kgToLose=w-gw;
+  var totalDeficit=Math.round(kgToLose*7700);
+  var dailyDeficit=Math.round(totalDeficit/days);
+  var currentGoal=parseInt(document.getElementById('sg').value)||2000;
+  var newGoal=currentGoal-dailyDeficit;
+  info.style.color=dailyDeficit>500?'var(--re)':'var(--g1)';
+  var warn=dailyDeficit>500?' ⚠️ Über 500 kcal/Tag Defizit – gesundheitlich nicht empfohlen.':'';
+  info.textContent=kgToLose+'kg in '+days+' Tagen → −'+dailyDeficit+' kcal/Tag.'+warn;
+  document.getElementById('sg').value=Math.max(1000,newGoal);
+  if(dailyDeficit>500)showToast('⚠️ Defizit über 500 kcal/Tag – bitte prüfen');
+  else showToast('Ziel: '+Math.max(1000,newGoal)+' kcal/Tag');
 }
 
 function calcMacroTargets(kcal){

@@ -304,7 +304,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.091</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.092</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div class="dn">
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
@@ -368,7 +368,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.091</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.092</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -2681,26 +2681,38 @@ function renderKIButtons(){
   var dayWrap=document.getElementById('ki-day-wrap');
   if(!dayWrap)return;
   var day=getDay();
-  var hasDinner=(day.meals.dinner||[]).length>0;
   var hasAny=['breakfast','lunch','dinner','snack'].some(function(m){return (day.meals[m]||[]).length>0;});
   if(!hasAny){dayWrap.style.display='none';return;}
-  // Hash des aktuellen Tages berechnen um Änderungen zu erkennen
   var hash=JSON.stringify(['breakfast','lunch','dinner','snack'].map(function(m){
     return(day.meals[m]||[]).map(function(e){return e.name+(e.amount||'')+(e.kcal||'');}).join('|');
   }));
   var changed=!day.kiRating||day.kiRating.hash!==hash;
   var rating=day.kiRating&&day.kiRating.day;
+  var open=day.kiRating&&day.kiRating.open;
   dayWrap.style.display='block';
   var btnLabel=rating?(changed?'🔄 Neu bewerten':'✓ Bewertet'):'🤖 Tag bewerten';
   var btnDisabled=rating&&!changed?' disabled':'';
   var btnStyle=rating&&!changed
-    ?'font-size:12px;background:none;border:1.5px solid #ccc;border-radius:8px;padding:5px 12px;color:#aaa;font-weight:700;cursor:default;'
-    :'font-size:12px;background:rgba(255,255,255,0.2);border:1.5px solid rgba(255,255,255,0.6);border-radius:8px;padding:5px 12px;color:white;font-weight:700;cursor:pointer;';
-  var ratingHtml=rating
-    ?'<div style="font-size:12px;color:rgba(255,255,255,0.85);line-height:1.6;margin-bottom:8px;">'+rating+'</div>'
-    :'';
-  dayWrap.innerHTML=ratingHtml
-    +'<button type="button" onclick="requestKIRating(\'day\')" '+btnDisabled+' style="'+btnStyle+'">'+btnLabel+'</button>';
+    ?'font-size:12px;background:none;border:1.5px solid rgba(255,255,255,0.3);border-radius:8px;padding:5px 12px;color:rgba(255,255,255,0.4);font-weight:700;cursor:default;margin-left:8px;'
+    :'font-size:12px;background:rgba(255,255,255,0.2);border:1.5px solid rgba(255,255,255,0.6);border-radius:8px;padding:5px 12px;color:white;font-weight:700;cursor:pointer;margin-left:8px;';
+  var ratingHtml='';
+  if(rating){
+    ratingHtml='<div id="kiTextWrap" style="overflow:hidden;transition:max-height .3s ease;max-height:'+(open?'300px':'0')+';">'
+      +'<div style="font-size:12px;color:rgba(255,255,255,0.85);line-height:1.6;padding-top:8px;">'+rating+'</div>'
+      +'</div>';
+  }
+  dayWrap.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;">'
+    +(rating?'<button type="button" onclick="toggleKIText()" style="font-size:12px;background:none;border:none;color:rgba(255,255,255,0.7);font-weight:700;cursor:pointer;padding:0;">'+(open?'▲ Einschätzung':'▼ Einschätzung')+'</button>':'<span></span>')
+    +'<button type="button" onclick="requestKIRating(\'day\')" '+btnDisabled+' style="'+btnStyle+'">'+btnLabel+'</button>'
+    +'</div>'
+    +ratingHtml;
+}
+
+function toggleKIText(){
+  var day=getDay();
+  if(!day.kiRating)return;
+  day.kiRating.open=!day.kiRating.open;
+  saveS();renderKIButtons();
 }
 
 function requestKIRating(meal){
@@ -2727,16 +2739,17 @@ function requestKIRating(meal){
     var names={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snacks'};
     return names[m]+': '+en.map(function(e){return e.name;}).join(', ');
   }).filter(Boolean).join('\n');
-  var prompt='Bewerte den Ernährungstag auf Deutsch in 3-4 Sätzen. Fließtext, keine Listen.\n'
+  var prompt='Bewerte den Ernährungstag auf Deutsch in maximal 2 kurzen Sätzen. Nur Fließtext.\n'
     +'Mahlzeiten:\n'+byMeal+'\n'
     +'Gesamt: '+Math.round(t.kcal)+' kcal, Protein '+Math.round(t.protein)+'g, Carbs '+Math.round(t.carbs)+'g, Fett '+Math.round(t.fat)+'g\n'
     +'Tagesziel: '+goal+' kcal'+prefStr+'\n'
-    +'Kurze ehrliche Einschätzung: Was ist positiv, was könnte optimiert werden?';
-  callClaude('claude-haiku-4-5',[{type:'text',text:prompt}],250,
+    +'1 Satz positiv, 1 Satz Verbesserungspotenzial. Maximal 50 Wörter gesamt.';
+  callClaude('claude-haiku-4-5',[{type:'text',text:prompt}],150,
     function(text){
       if(!day.kiRating)day.kiRating={};
       day.kiRating.day=text.trim();
       day.kiRating.hash=hash;
+      day.kiRating.open=true;
       saveS();renderKIButtons();
     },
     function(err){if(btn){btn.disabled=false;btn.textContent='🤖 Tag bewerten';}showToast('Fehler: '+err);}

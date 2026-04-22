@@ -304,7 +304,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.097</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.099</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div class="dn">
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
@@ -379,7 +379,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.097</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.099</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -490,12 +490,12 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
       <div class="picker-panel" id="ppanel-foto">
         <div id="pickerPhotoPickArea">
           <div class="photo-btns">
-            <button type="button" class="photo-btn" onclick="document.getElementById('pickerCam').click()"><span>📷</span>Kamera</button>
-            <button type="button" class="photo-btn" onclick="document.getElementById('pickerGal').click()"><span>🖼️</span>Galerie</button>
+            <label class="photo-btn" for="pickerCam" style="cursor:pointer;" onclick="void(0)"><span>📷</span>Kamera</label>
+            <label class="photo-btn" for="pickerGal" style="cursor:pointer;" onclick="void(0)"><span>🖼️</span>Galerie</label>
           </div>
         </div>
-        <input type="file" id="pickerCam" accept="image/*" capture="environment" style="display:none" onchange="pickerHandlePhoto(event)">
-        <input type="file" id="pickerGal" accept="image/*" style="display:none" onchange="pickerHandlePhoto(event)">
+        <input type="file" id="pickerCam" accept="image/*" capture="environment" style="position:fixed;top:-100vh;left:-100vw;width:1px;height:1px;opacity:0;" onchange="pickerHandlePhoto(event)">
+        <input type="file" id="pickerGal" accept="image/*" style="position:fixed;top:-100vh;left:-100vw;width:1px;height:1px;opacity:0;" onchange="pickerHandlePhoto(event)">
         <div id="pickerPrevWrap" class="pprev-wrap hidden">
           <img id="pickerPrev"><button type="button" class="pchange" onclick="pickerResetPhoto()">Ändern</button>
         </div>
@@ -543,12 +543,12 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
           <div class="barcode-overlay"><div style="width:70%;height:50%;border:2px solid var(--g2);border-radius:8px;position:relative;"><div class="barcode-line"></div></div></div>
           <div class="barcode-hint">Barcode in den Rahmen halten</div>
         </div>
-        <input type="file" id="pickerBcPhoto" accept="image/*" capture="environment" style="display:none" onchange="pickerScanFromPhoto(event)">
+        <input type="file" id="pickerBcPhoto" accept="image/*" capture="environment" style="position:fixed;top:-100vh;left:-100vw;width:1px;height:1px;opacity:0;" onchange="pickerScanFromPhoto(event)">
         <button type="button" id="torchBtn" onclick="pickerToggleTorch()" style="display:none;width:100%;background:rgba(0,0,0,.08);border:1.5px solid var(--br);border-radius:10px;padding:10px;font-size:15px;margin-bottom:8px;font-weight:600;">🔦 Taschenlampe ein/aus</button>
         <div id="pickerBarcodeResult"></div>
         <button type="button" id="pickerBcStartBtn" class="abt" onclick="pickerStartScan()">▶ Scanner starten</button>
         <button type="button" id="pickerBcStopBtn" class="abt" style="display:none;background:linear-gradient(135deg,#555,#777);" onclick="pickerStopScan()">■ Scanner stoppen</button>
-        <button type="button" id="pickerBcPhotoBtn" class="abt" style="display:none;margin-top:8px;" onclick="document.getElementById('pickerBcPhoto').click()">📷 Foto aufnehmen</button>
+        <label id="pickerBcPhotoBtn" for="pickerBcPhoto" class="abt" style="display:none;margin-top:8px;cursor:pointer;">📷 Foto aufnehmen</label>
       </div>
 
       <!-- Tab: Chat -->
@@ -1553,8 +1553,8 @@ function openPicker(meal, defaultTab){
   document.getElementById('pickerSub').textContent='Lokal + Online kombiniert';
   // Default tab
   pickerSetTab(defaultTab||'chat');
-  // Load search results in background
-  pickerLoadDefaultResults();
+  // Load search results non-blocking
+  requestAnimationFrame(function(){pickerLoadDefaultResults();});
   openOv('pickerOv');
   // Do NOT auto-focus - prevents keyboard popping up on mobile
 }
@@ -1695,34 +1695,32 @@ function pickerConfirmAdd(){
 // ─── PICKER: FOTO TAB ───
 function pickerHandlePhoto(e){
   var file=e.target.files[0];if(!file)return;
+  // Input sofort zurücksetzen damit iOS erneutes Auswählen erlaubt
+  e.target.value='';
   var reader=new FileReader();
   reader.onload=function(ev){
     var img=new Image();
     img.onload=function(){
-      var c=document.createElement('canvas'),MAX=1024,w=img.width,h=img.height;
+      // MAX 800px reicht für KI-Analyse – schneller, weniger RAM
+      var c=document.createElement('canvas'),MAX=800,w=img.width,h=img.height;
       if(w>h){if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}}else{if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}}
       c.width=w;c.height=h;
       var ctx=c.getContext('2d');
       ctx.drawImage(img,0,0,w,h);
-      var imageData=ctx.getImageData(0,0,w,h);
-      var data=imageData.data;
-      var brightness=20,contrast=1.15;
-      for(var px=0;px<data.length;px+=4){
-        data[px]  =Math.min(255,Math.max(0,contrast*(data[px]  -128)+128+brightness));
-        data[px+1]=Math.min(255,Math.max(0,contrast*(data[px+1]-128)+128+brightness));
-        data[px+2]=Math.min(255,Math.max(0,contrast*(data[px+2]-128)+128+brightness));
-      }
-      ctx.putImageData(imageData,0,0);
+      // Kein Pixel-Loop – JPEG-Komprimierung übernimmt Qualitätsanpassung
       var comp=c.toDataURL('image/jpeg',0.85);
       window._pickerPhotoB64=comp.split(',')[1];
       document.getElementById('pickerPrev').src=comp;
       document.getElementById('pickerPrevWrap').classList.remove('hidden');
       document.getElementById('pickerPhotoPickArea').style.display='none';
       document.getElementById('pickerAnalyzeBtn').disabled=false;
-      pickerTryBarcode(c);
+      // Barcode-Scan verzögert damit UI sofort reagiert
+      setTimeout(function(){pickerTryBarcode(c);},100);
     };
+    img.onerror=function(){showToast('Foto konnte nicht geladen werden');};
     img.src=ev.target.result;
   };
+  reader.onerror=function(){showToast('Fehler beim Lesen der Datei');};
   reader.readAsDataURL(file);
 }
 

@@ -304,7 +304,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.102</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.104</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div class="dn">
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
@@ -387,7 +387,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.102</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.104</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -740,7 +740,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
         <div style="font-size:22px;font-weight:900;color:var(--g1);" id="exKcal">0</div>
         <div style="font-size:12px;color:var(--mu);">kcal verbrannt (Schätzung)</div>
       </div>
-      <button type="button" class="seb" style="margin-bottom:8px;" onclick="estimateExercise()">🤖 KI-Schätzung</button>
+      <button type="button" id="exEstimateBtn" class="seb" style="margin-bottom:8px;" onclick="estimateExercise()">🤖 KI-Schätzung</button>
       <button type="button" class="svb" onclick="saveExercise()">Speichern ✓</button>
     </div>
   </div>
@@ -911,7 +911,11 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
           <button type="button" class="diet-btn" onclick="toggleDietPreset('Keto')">🥑 Keto</button>
           <button type="button" class="diet-btn" onclick="toggleDietPreset('High Protein')">💪 High Protein</button>
         </div>
-        <input type="text" class="sinp" id="sdietfree" placeholder="Eigene Präferenz (z.B. Histaminintoleranz)..." style="margin-bottom:8px;">
+        <div id="savedDietFreeList" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;"></div>
+        <div style="display:flex;gap:6px;">
+          <input type="text" class="sinp" id="sdietfree" placeholder="Eigene Präferenz (z.B. Histaminintoleranz)..." style="flex:1;margin-bottom:0;">
+          <button type="button" class="svb" style="flex:0 0 auto;padding:8px 12px;margin-top:0;white-space:nowrap;" onclick="addDietFree()">+ Speichern</button>
+        </div>
         <div id="dietMacroInfo" style="font-size:12px;color:var(--g1);margin-bottom:8px;min-height:14px;"></div>
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--gl);border-radius:10px;border:1px solid var(--g3);">
           <div>
@@ -1036,7 +1040,7 @@ var DE_EN={apfel:'apple',birne:'pear',banane:'banana',orange:'orange',erdbeere:'
 // ════════════════════════════════════════
 // SECTION: STATE
 // ════════════════════════════════════════
-var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:'',pregnant:0,pregnantET:'',pregWarn:false,goalWeight:0,goalDate:'',goalAchievedShown:'',dietPrefs:[],dietFree:'',dietWarn:false,macroTargets:{protein:0,carbs:0,fat:0},macroGoalMode:'percent',macroGoalG:{protein:0,carbs:0,fat:0},reminders:[],weightLog:{},portionMemory:{},waterGoal:8,waterUnit:250,mealTemplates:[],currentDate:'',days:{}};
+var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:'',pregnant:0,pregnantET:'',pregWarn:false,goalWeight:0,goalDate:'',goalAchievedShown:'',dietPrefs:[],dietFree:'',savedDietFree:[],dietWarn:false,macroTargets:{protein:0,carbs:0,fat:0},macroGoalMode:'percent',macroGoalG:{protein:0,carbs:0,fat:0},reminders:[],weightLog:{},portionMemory:{},waterGoal:8,waterUnit:250,mealTemplates:[],exerciseLibrary:[],currentDate:'',days:{}};
 
 // Default prompts - editable in settings
 var DEFAULT_FOTO_PROMPT='Analysiere dieses Essensfoto auf Deutsch.\nGib ein JSON-Objekt zurueck:\n{"rezept":"Gesamtgerichtname auf Deutsch","zutaten":[{"name":"Zutat auf Deutsch","emoji":"Emoji","g":GRAMM}]}\n\nRegeln:\n- rezept: logischer Gesamtname des Gerichts\n- zutaten: erkenne was SICHTBAR auf dem Teller/Bild liegt - benne es so wie ein Mensch es bestellen oder kaufen wuerde\n- Nenne das fertige Lebensmittel, nicht seine Zutaten oder Bestandteile\n- 1 Einheit schatzen (Nutzer gibt Menge selbst an)\n- Logisch notwendige Beilagen erganzen (z.B. Butter bei belegtem Brot)\n- Getraenke: typische Bestandteile mit realistischen Mengen\n- Keine Rohzutaten nennen aus denen etwas hergestellt wurde\n- Realistische Gramm pro Einheit\n- Alle Namen auf Deutsch\n- Wenn nichts erkennbar: {"rezept":"","zutaten":[]}';
@@ -2370,6 +2374,7 @@ function renderEditBody(e){
       +'<div class="ing-list" id="editIngList">'+ingHtml+'</div>'
       +'<button type="button" class="seb" style="margin-bottom:8px;" onclick="editAddIng()">+ Zutat hinzufügen</button>'
       +(e.recipeId?'':'<button type="button" class="seb" style="margin-bottom:8px;border-color:var(--g2);color:var(--g2);" onclick="editSaveAsRecipe()">📋 Als Rezept speichern</button>')
+      +renderAmpelInfo(e)
       +renderNutrientDetail({kcal:t.kcal,protein:t.protein,carbs:t.carbs,fat:t.fat,sugar:t.sugar||0,fiber:t.fiber||0,salt:t.salt||0},p)
       +(e.mealPhoto?'<div style="margin:8px 0;"><img src="'+e.mealPhoto+'" style="width:100%;border-radius:10px;max-height:160px;object-fit:cover;"></div>':'')
       +'<button type="button" class="cb2" onclick="saveEditEntry()">Speichern ✓</button>'
@@ -2381,6 +2386,7 @@ function renderEditBody(e){
     var _ts={kcal:e.kcal||0,protein:e.protein||0,carbs:e.carbs||0,fat:e.fat||0,sugar:(_p100.sugar||0)*_r2,fiber:(_p100.fiber||0)*_r2,salt:(_p100.salt||0)*_r2};
     body.innerHTML='<label class="lbl">Menge</label>'
       +'<div class="ar" style="margin-top:0;"><input type="number" class="ai2" id="editAmt" value="'+e.amount+'" min="1"><div class="au">Gramm</div></div>'
+      +renderAmpelInfo(e)
       +renderNutrientDetail(_ts,1)
       +(e.mealPhoto?'<div style="margin:8px 0;"><img src="'+e.mealPhoto+'" style="width:100%;border-radius:10px;max-height:160px;object-fit:cover;"></div>':'')
       +'<input type="file" id="editMealPhoto" accept="image/*" capture="environment" style="display:none" onchange="handleEditMealPhoto(event)">'
@@ -2594,6 +2600,7 @@ function openSettings(){
   updateDietPresetBtns();
   updateDietMacroInfo();
   updateDietWarnToggle();
+  renderSavedDietFreeList();
   document.getElementById('cacheInfo').textContent=customFoods.length+' eigene Lebensmittel · '+recipes.length+' Rezepte · '+Object.keys(foodCache).length+' gespeichert';
   renderSettFoodList();
   openOv('settOv');
@@ -2697,7 +2704,14 @@ function saveSettings(){
   S.goalDate=document.getElementById('sgoaldate').value||'';
   // Kalorienziel: aus Eingabefeld (manuell überschreibbar)
   S.goal=parseInt(document.getElementById('sg').value)||2000;
-  S.dietFree=document.getElementById('sdietfree')?document.getElementById('sdietfree').value.trim():'';
+  var _dfi=document.getElementById('sdietfree');
+  var _dfiVal=_dfi?_dfi.value.trim():'';
+  if(_dfiVal){
+    if(!S.savedDietFree)S.savedDietFree=[];
+    if(!S.savedDietFree.includes(_dfiVal))S.savedDietFree.push(_dfiVal);
+    S.dietFree=_dfiVal;
+  }
+  // savedDietFree bleibt erhalten
   S.dietWarn=!!(document.getElementById('sdietwarn')&&document.getElementById('sdietwarn').checked);
   S.waterGoal=parseInt(document.getElementById('swatergoal')&&document.getElementById('swatergoal').value)||8;
   // macroGoalMode wurde bereits durch setMacroMode() direkt in S gesetzt
@@ -2796,10 +2810,136 @@ function ampelDot(ampel,color){
 function pregAmpelDot(ampel){return S.pregWarn?ampelDot(ampel,'rgba(0,0,0,0.1)'):''}
 function showPregAmpelModal(results){showAmpelModal(results,'🚦 Schwangerschafts-Hinweise','');}
 function showDietAmpelModal(results,prefs){showAmpelModal(results,'🥗 Ernährungs-Hinweise',(prefs||[]).join(', '));}
+
+function showAmpelModal(results,title,subtitle){
+  var colors={gruen:'#2d7d52',gelb:'#f07700',rot:'#c62828',grau:'#9e9e9e'};
+  var icons={gruen:'🟢',gelb:'🟡',rot:'🔴',grau:'⚫'};
+  var warn=results.filter(function(r){return r.ampel==='rot'||r.ampel==='gelb';});
+  if(!warn.length)return;
+  // Banner von oben einblenden
+  var el=document.getElementById('ampelBanner');
+  if(!el){
+    el=document.createElement('div');
+    el.id='ampelBanner';
+    el.style.cssText='position:fixed;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;z-index:10000;'
+      +'background:white;box-shadow:0 4px 20px rgba(0,0,0,0.18);padding:12px 16px 10px;';
+    document.body.appendChild(el);
+  }
+  var html='<div style="font-weight:800;font-size:13px;margin-bottom:6px;">'+title+'</div>';
+  if(subtitle)html+='<div style="font-size:11px;color:var(--mu);margin-bottom:6px;">'+subtitle+'</div>';
+  warn.forEach(function(r){
+    html+='<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:5px;padding:5px 8px;'
+      +'background:'+{rot:'#fff3f3',gelb:'#fffbe6'}[r.ampel]+';border-left:3px solid '+colors[r.ampel]+';border-radius:6px;">'
+      +'<span style="font-size:16px;flex-shrink:0;">'+icons[r.ampel]+'</span>'
+      +'<div><span style="font-weight:700;font-size:12px;">'+r.name+'</span>'
+      +' <span style="font-size:12px;color:#555;">– '+r.grund+'</span></div>'
+      +'</div>';
+  });
+  html+='<div style="text-align:right;margin-top:4px;">'
+    +'<button onclick="document.getElementById(\'ampelBanner\').style.display=\'none\'" '
+    +'style="background:none;border:none;font-size:11px;color:var(--mu);cursor:pointer;">Schließen ✕</button></div>';
+  el.innerHTML=html;
+  el.style.display='block';
+  clearTimeout(el._t);
+  el._t=setTimeout(function(){el.style.display='none';},5000);
+}
+
+function renderAmpelInfo(e){
+  // Sammle alle Ampel-Daten des Eintrags
+  var html='';
+  var warnItems=[];
+  // Für Rezepte/Mahlzeiten: Zutaten prüfen
+  var ingredients=e.ingredients||[];
+  ingredients.forEach(function(ing){
+    if(S.pregWarn&&ing.pregAmpel&&(ing.pregAmpel.ampel==='rot'||ing.pregAmpel.ampel==='gelb')){
+      warnItems.push({type:'preg',ampel:ing.pregAmpel.ampel,name:ing.name,grund:ing.pregAmpel.grund});
+    }
+    if(S.dietWarn&&ing.dietAmpel&&(ing.dietAmpel.ampel==='rot'||ing.dietAmpel.ampel==='gelb')){
+      warnItems.push({type:'diet',ampel:ing.dietAmpel.ampel,name:ing.name,grund:ing.dietAmpel.grund});
+    }
+  });
+  // Für einzelne Lebensmittel: pregAmpel/dietAmpel am Eintrag
+  if(!ingredients.length){
+    var key=(e.name||'').toLowerCase();
+    if(S.pregWarn&&e.pregAmpel){
+      var pv=e.pregAmpel[key]||Object.values(e.pregAmpel)[0];
+      if(pv&&(pv.ampel==='rot'||pv.ampel==='gelb'))
+        warnItems.push({type:'preg',ampel:pv.ampel,name:e.name,grund:pv.grund});
+    }
+    if(S.dietWarn&&e.dietAmpel){
+      var dv=e.dietAmpel[key]||Object.values(e.dietAmpel)[0];
+      if(dv&&(dv.ampel==='rot'||dv.ampel==='gelb'))
+        warnItems.push({type:'diet',ampel:dv.ampel,name:e.name,grund:dv.grund});
+    }
+  }
+  if(!warnItems.length)return '';
+  var colors={rot:'#c62828',gelb:'#f07700'};
+  var icons={rot:'🔴',gelb:'🟡'};
+  var bg={rot:'#fff3f3',gelb:'#fffbe6'};
+  html='<div style="margin:8px 0;">';
+  warnItems.forEach(function(w){
+    var badge=w.type==='preg'?'🤰 Schwangerschaft':'🥗 Ernährung';
+    html+='<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 10px;'
+      +'background:'+bg[w.ampel]+';border-left:3px solid '+colors[w.ampel]+';border-radius:8px;margin-bottom:5px;">'
+      +'<span style="font-size:15px;">'+icons[w.ampel]+'</span>'
+      +'<div><div style="font-size:11px;color:var(--mu);font-weight:700;margin-bottom:1px;">'+badge+'</div>'
+      +'<div style="font-size:12px;font-weight:700;">'+w.name+'</div>'
+      +'<div style="font-size:12px;color:#555;">'+w.grund+'</div>'
+      +'</div></div>';
+  });
+  html+='</div>';
+  return html;
+}
+function showPregAmpelModal(results){showAmpelModal(results,'🚦 Schwangerschafts-Hinweise','');}
+function showDietAmpelModal(results,prefs){showAmpelModal(results,'🥗 Ernährungs-Hinweise',(prefs||[]).join(', '));}
 // ════════════════════════════════════════
 // SECTION: ERNÄHRUNGSPRÄFERENZEN
 // ════════════════════════════════════════
 var _dietPresets=['Vegetarisch','Vegan','Glutenfrei','Laktosefrei','Low Carb','Keto','High Protein'];
+
+function addDietFree(){
+  var input=document.getElementById('sdietfree');
+  var val=input?input.value.trim():'';
+  if(!val)return;
+  if(!S.savedDietFree)S.savedDietFree=[];
+  if(!S.savedDietFree.includes(val))S.savedDietFree.push(val);
+  S.dietFree=val;
+  input.value='';
+  saveS();
+  renderSavedDietFreeList();
+  updateDietMacroInfo();
+  showToast('✓ Präferenz gespeichert');
+}
+
+function renderSavedDietFreeList(){
+  var el=document.getElementById('savedDietFreeList');if(!el)return;
+  var saved=S.savedDietFree||[];
+  var active=S.dietFree||'';
+  if(!saved.length){el.innerHTML='';return;}
+  el.innerHTML=saved.map(function(p){
+    var isAct=p===active;
+    return'<div style="display:inline-flex;align-items:center;gap:4px;background:'+(isAct?'var(--g1)':'var(--gl)')+';border:1.5px solid '+(isAct?'var(--g1)':'var(--g3)')+';'
+      +'border-radius:20px;padding:4px 8px;font-size:12px;font-weight:700;color:'+(isAct?'white':'var(--g1)')+';cursor:pointer;" '
+      +'onclick="selectDietFree(\''+p.replace(/'/g,"\\'")+'\')">'
+      +p
+      +' <span onclick="event.stopPropagation();deleteDietFree(\''+p.replace(/'/g,"\\'")+'\') " '
+      +'style="font-size:10px;color:'+(isAct?'rgba(255,255,255,0.7)':'var(--re)')+';cursor:pointer;">✕</span>'
+      +'</div>';
+  }).join('');
+}
+
+function selectDietFree(val){
+  S.dietFree=S.dietFree===val?'':val;// Toggle
+  var input=document.getElementById('sdietfree');
+  if(input)input.value=S.dietFree;
+  saveS();renderSavedDietFreeList();updateDietMacroInfo();
+}
+
+function deleteDietFree(val){
+  S.savedDietFree=(S.savedDietFree||[]).filter(function(p){return p!==val;});
+  if(S.dietFree===val)S.dietFree='';
+  saveS();renderSavedDietFreeList();
+}
 
 function toggleDietPreset(name){
   var prefs=S.dietPrefs||[];
@@ -3636,24 +3776,53 @@ var EXERCISE_PRESETS=[
   {name:'Fußball',emoji:'⚽',met:{low:6,medium:8,high:10}},
 ];
 
+function getAllExercises(){
+  var lib=S.exerciseLibrary||[];
+  var all=EXERCISE_PRESETS.slice();
+  lib.forEach(function(le){
+    if(!all.find(function(p){return p.name.toLowerCase()===le.name.toLowerCase();}))
+      all.push(le);
+  });
+  return all;
+}
+
+function getExerciseMet(name,intensity){
+  var all=getAllExercises();
+  var found=all.find(function(p){return p.name.toLowerCase()===name.toLowerCase();});
+  if(found&&found.met)return found.met[intensity]||found.met.medium||5;
+  return null;
+}
+
 function openExerciseOv(){
   document.getElementById('exName').value='';
   document.getElementById('exDuration').value='';
   document.getElementById('exIntensity').value='medium';
   document.getElementById('exResult').style.display='none';
-  // Preset-Buttons rendern
-  var el=document.getElementById('exercisePresets');
-  el.innerHTML=EXERCISE_PRESETS.map(function(p){
-    return'<button type="button" onclick="selectExercisePreset(\''+p.name+'\')" '
-      +'style="background:var(--gl);border:1.5px solid var(--g3);border-radius:20px;padding:5px 10px;font-size:12px;font-weight:700;color:var(--g1);cursor:pointer;">'
-      +p.emoji+' '+p.name+'</button>';
-  }).join('');
+  renderExercisePresets();
   openOv('exerciseOv');
+}
+
+function renderExercisePresets(){
+  var el=document.getElementById('exercisePresets');if(!el)return;
+  var all=getAllExercises();
+  el.innerHTML=all.map(function(p){
+    var isLib=!EXERCISE_PRESETS.find(function(x){return x.name===p.name;});
+    var safeName=(p.name||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    var delBtn=isLib?('<span onclick="event.stopPropagation();deleteExerciseFromLibrary(\''+safeName+'\');void(0)" style="font-size:10px;color:var(--re);cursor:pointer;margin-left:4px;">✕</span>'):'';
+    return'<div style="display:inline-flex;align-items:center;background:var(--gl);border:1.5px solid var(--g3);border-radius:20px;padding:5px 10px;font-size:12px;font-weight:700;color:var(--g1);margin:2px;cursor:pointer;" onclick="selectExercisePreset(\''+safeName+'\')">'      +(p.emoji||'🏃')+' '+p.name+delBtn+'</div>';
+  }).join('');
 }
 
 function selectExercisePreset(name){
   document.getElementById('exName').value=name;
-  estimateExercise();
+  var dur=parseFloat(document.getElementById('exDuration').value)||30;
+  var intensity=document.getElementById('exIntensity').value;
+  var met=getExerciseMet(name,intensity);
+  if(met){
+    showExerciseResult(Math.round(met*(S.weight||75)*(dur/60)));
+  } else {
+    estimateExercise();
+  }
 }
 
 function estimateExercise(){
@@ -3662,38 +3831,43 @@ function estimateExercise(){
   var intensity=document.getElementById('exIntensity').value;
   if(!name)return;
   var weight=S.weight||75;
-  // Preset-basierte MET-Schätzung
-  var preset=EXERCISE_PRESETS.find(function(p){return p.name.toLowerCase()===name.toLowerCase();});
-  if(preset){
-    var met=preset.met[intensity]||preset.met.medium;
-    var kcal=Math.round(met*weight*(dur/60));
-    showExerciseResult(kcal);
-    return;
-  }
-  // KI-Schätzung für unbekannte Sportart
-  if(!S.apiKey||!isOnline){
-    // Fallback: generische MET-Schätzung
-    var metFallback={low:3,medium:5,high:8}[intensity];
-    showExerciseResult(Math.round(metFallback*weight*(dur/60)));
-    return;
-  }
-  var btn=document.querySelector('#exerciseOv .seb');
+  var met=getExerciseMet(name,intensity);
+  if(met){showExerciseResult(Math.round(met*weight*(dur/60)));return;}
+  if(!S.apiKey||!isOnline){showExerciseResult(Math.round(5*weight*(dur/60)));return;}
+  var btn=document.getElementById('exEstimateBtn');
   if(btn){btn.disabled=true;btn.textContent='⏳ Schätze...';}
   callClaude('claude-haiku-4-5',[{type:'text',text:
-    'Wie viele kcal verbrennt eine Person ('+weight+'kg) beim "'+name+'" für '+dur+' Minuten bei '+
-    {low:'leichter',medium:'mittlerer',high:'intensiver'}[intensity]+' Intensität? '+
-    'Antworte NUR mit der Zahl (ganze Zahl, kein Text).'}],20,
+    'Schätze MET und kcal für "'+name+'" ('+weight+'kg, '+dur+' Min, '
+    +{low:'leicht',medium:'mittel',high:'intensiv'}[intensity]+').\n'
+    +'Antworte NUR mit JSON: {"kcal":ZAHL,"met_low":ZAHL,"met_medium":ZAHL,"met_high":ZAHL,"emoji":"EMOJI"}'}],60,
     function(text){
-      var kcal=parseInt(text.replace(/\D/g,''))||Math.round(5*weight*(dur/60));
-      showExerciseResult(kcal);
+      try{
+        var a=text.indexOf('{'),z=text.lastIndexOf('}');
+        var d=JSON.parse(text.slice(a,z+1));
+        var kcal=parseInt(d.kcal)||Math.round(5*weight*(dur/60));
+        showExerciseResult(kcal);
+        saveToExerciseLibrary(name,d.emoji||'🏃',{
+          low:parseFloat(d.met_low)||3,
+          medium:parseFloat(d.met_medium)||5,
+          high:parseFloat(d.met_high)||8
+        });
+        renderExercisePresets();
+      }catch(e){showExerciseResult(Math.round(5*weight*(dur/60)));}
       if(btn){btn.disabled=false;btn.textContent='🤖 KI-Schätzung';}
     },
     function(){
-      var metFb={low:3,medium:5,high:8}[intensity];
-      showExerciseResult(Math.round(metFb*weight*(dur/60)));
+      showExerciseResult(Math.round(5*weight*(dur/60)));
       if(btn){btn.disabled=false;btn.textContent='🤖 KI-Schätzung';}
     }
   );
+}
+
+function saveToExerciseLibrary(name,emoji,met){
+  if(!S.exerciseLibrary)S.exerciseLibrary=[];
+  var idx=S.exerciseLibrary.findIndex(function(e){return e.name.toLowerCase()===name.toLowerCase();});
+  var entry={name:name,emoji:emoji||'🏃',met:met};
+  if(idx>=0)S.exerciseLibrary[idx]=entry;else S.exerciseLibrary.unshift(entry);
+  saveS();
 }
 
 function showExerciseResult(kcal){
@@ -3706,15 +3880,13 @@ function saveExercise(){
   if(!name){showToast('Bitte Aktivität eingeben');return;}
   var dur=parseFloat(document.getElementById('exDuration').value)||0;
   var intensity=document.getElementById('exIntensity').value;
-  var kcal=parseInt(document.getElementById('exKcal').textContent)||0;
-  if(!kcal){
-    // Falls keine Schätzung gemacht wurde
-    estimateExercise();
-    showToast('Bitte erst KI-Schätzung abrufen');
-    return;
-  }
-  var preset=EXERCISE_PRESETS.find(function(p){return p.name.toLowerCase()===name.toLowerCase();});
-  var emoji=preset?preset.emoji:'🏃';
+  var kcalEl=document.getElementById('exKcal');
+  var kcal=parseInt(kcalEl&&kcalEl.textContent)||0;
+  if(!kcal){estimateExercise();showToast('Bitte zuerst Kalorien schätzen');return;}
+  var all=getAllExercises();
+  var found=all.find(function(p){return p.name.toLowerCase()===name.toLowerCase();});
+  var emoji=found?found.emoji:'🏃';
+  if(!found)saveToExerciseLibrary(name,emoji,null);
   getDay().exercise.push({name:name,emoji:emoji,duration:dur,intensity:intensity,kcal:kcal,ts:Date.now()});
   saveS();renderAll();closeOv('exerciseOv');
   showToast(emoji+' '+name+': −'+kcal+' kcal');
@@ -3722,12 +3894,14 @@ function saveExercise(){
 
 function deleteExercise(idx){
   var day=getDay();
-  if(day.exercise&&day.exercise[idx]!==undefined){
-    day.exercise.splice(idx,1);
-    saveS();renderAll();
-  }
+  if(day.exercise&&day.exercise[idx]!==undefined){day.exercise.splice(idx,1);saveS();renderAll();}
 }
 
+function deleteExerciseFromLibrary(name){
+  S.exerciseLibrary=(S.exerciseLibrary||[]).filter(function(e){return e.name.toLowerCase()!==name.toLowerCase();});
+  saveS();renderExercisePresets();
+  showToast('Aus Bibliothek entfernt');
+}
 function renderExercise(){
   var el=document.getElementById('exerciseList');if(!el)return;
   var day=getDay();

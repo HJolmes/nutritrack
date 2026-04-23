@@ -372,7 +372,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.108</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.109</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div class="dn">
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
@@ -456,7 +456,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.108</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.109</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -866,6 +866,18 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
   </div>
 </div>
 
+<!-- ══ WAS IST NEU ══ -->
+<div class="ov" id="whatsNewOv">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <div class="mti">🆕 Was ist neu?</div>
+      <div class="msu" id="whatsNewVersion"></div>
+    </div>
+    <div class="mbd" id="whatsNewBody"></div>
+  </div>
+</div>
+
 <!-- ══ REZEPT URL-IMPORT ══ -->
 <div class="ov" id="recipeImportOv" onclick="bgClose(event,'recipeImportOv')">
   <div class="mod">
@@ -1159,6 +1171,18 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
+var APP_VERSION='0.109';
+var CHANGELOG=[
+  {v:'0.108',items:[
+    {icon:'🔗',text:'Rezept-Import per Link direkt beim Eintragen',where:'+ drücken → Tab „🔗 Link"'},
+    {icon:'📋',text:'Erkannte Zutaten sofort anpassen und direkt eintragen oder als Rezept speichern',where:'+ → 🔗 Link → Rezept laden'},
+  ]},
+  {v:'0.107',items:[
+    {icon:'🔗',text:'Rezept per URL importieren – auch mit kopiertem Werbetext',where:'Bibliothek → „🔗 Link"-Button'},
+    {icon:'✅',text:'URL wird automatisch aus dem eingefügten Text erkannt',where:'Bibliothek → 🔗 Link → Textfeld'},
+  ]},
+];
+
 // Default prompts - editable in settings
 var DEFAULT_FOTO_PROMPT='Analysiere dieses Essensfoto auf Deutsch.\nGib ein JSON-Objekt zurueck:\n{"rezept":"Gesamtgerichtname auf Deutsch","zutaten":[{"name":"Zutat auf Deutsch","emoji":"Emoji","g":GRAMM}]}\n\nRegeln:\n- rezept: logischer Gesamtname des Gerichts\n- zutaten: erkenne was SICHTBAR auf dem Teller/Bild liegt - benne es so wie ein Mensch es bestellen oder kaufen wuerde\n- Nenne das fertige Lebensmittel, nicht seine Zutaten oder Bestandteile\n- 1 Einheit schatzen (Nutzer gibt Menge selbst an)\n- Logisch notwendige Beilagen erganzen (z.B. Butter bei belegtem Brot)\n- Getraenke: typische Bestandteile mit realistischen Mengen\n- Keine Rohzutaten nennen aus denen etwas hergestellt wurde\n- Realistische Gramm pro Einheit\n- Alle Namen auf Deutsch\n- Wenn nichts erkennbar: {"rezept":"","zutaten":[]}';
 
@@ -1305,6 +1329,7 @@ function showMain(){
   updateGoalFromET();
   renderAll();
   checkBackupReminder();
+  checkWhatsNew();
   if(!localStorage.getItem('nt_install_dismissed'))checkFullscreen();
   scheduleReminders();
   setTimeout(compressOldDays,5000);
@@ -1319,6 +1344,29 @@ function checkBackupReminder(){
     setTimeout(function(){showBackupReminder();},2000);
   }catch(e){}
 }
+function checkWhatsNew(){
+  var last=localStorage.getItem('nt_last_version')||'';
+  if(!last){localStorage.setItem('nt_last_version',APP_VERSION);return;}
+  if(last===APP_VERSION)return;
+  var entries=CHANGELOG.filter(function(c){return parseFloat(c.v)>parseFloat(last);});
+  localStorage.setItem('nt_last_version',APP_VERSION);
+  if(!entries.length)return;
+  var html='';
+  entries.forEach(function(c){
+    html+='<div style="font-size:11px;font-weight:800;color:var(--mu);text-transform:uppercase;margin:12px 0 6px;">Beta v'+c.v+'</div>';
+    c.items.forEach(function(item){
+      html+='<div style="display:flex;gap:10px;align-items:flex-start;padding:10px;background:var(--gl);border-radius:10px;margin-bottom:6px;">'
+        +'<div style="font-size:22px;flex-shrink:0;">'+item.icon+'</div>'
+        +'<div><div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:2px;">'+item.text+'</div>'
+        +'<div style="font-size:11px;color:var(--g1);">📍 '+item.where+'</div></div></div>';
+    });
+  });
+  html+='<button type="button" class="cb2" onclick="closeWhatsNew()" style="width:100%;margin-top:12px;">Alles klar ✓</button>';
+  document.getElementById('whatsNewBody').innerHTML=html;
+  document.getElementById('whatsNewVersion').textContent='Beta v'+APP_VERSION;
+  setTimeout(function(){openOv('whatsNewOv');},1000);
+}
+function closeWhatsNew(){closeOv('whatsNewOv');}
 function showBackupReminder(){
   var el=document.getElementById('backupReminder');
   if(el)el.classList.remove('hidden');

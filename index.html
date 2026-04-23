@@ -304,7 +304,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.101</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.102</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div class="dn">
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
@@ -332,6 +332,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
     <div class="sum">
       <div class="st">
         <div><div class="kb" id="totKcal">0</div><div class="ku">kcal gegessen</div></div>
+        <div style="text-align:center;"><div class="kb" style="font-size:20px;color:#a5d6b7;" id="totBurned">0</div><div class="ku">kcal Sport</div></div>
         <div class="kr"><div class="krn" id="remKcal">2000</div><div class="krl">kcal verbleibend</div></div>
       </div>
       <div class="pt"><div class="pf" id="pFill" style="width:0%"></div></div>
@@ -351,6 +352,13 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
     <div class="mc"><div class="mh"><div class="mhl"><div class="mi" style="background:#e8f5e9">☀️</div><div><div class="mnm">Mittagessen</div><div class="ms" id="sub-lunch">0 kcal</div></div></div><div style="display:flex;gap:4px;"><button type="button" class="ma" style="font-size:12px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="openTemplateOv('lunch')" title="Vorlage laden">📋</button><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="copyMealFromYesterday('lunch')" title="Von gestern">⎘</button><button type="button" class="ma" onclick="openPicker('lunch')">+</button></div></div><div id="entries-lunch"><div class="me">Noch nichts eingetragen</div></div></div>
     <div class="mc"><div class="mh"><div class="mhl"><div class="mi" style="background:#e3f2fd">🌙</div><div><div class="mnm">Abendessen</div><div class="ms" id="sub-dinner">0 kcal</div></div></div><div style="display:flex;gap:4px;"><button type="button" class="ma" style="font-size:12px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="openTemplateOv('dinner')" title="Vorlage laden">📋</button><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="copyMealFromYesterday('dinner')" title="Von gestern">⎘</button><button type="button" class="ma" onclick="openPicker('dinner')">+</button></div></div><div id="entries-dinner"><div class="me">Noch nichts eingetragen</div></div></div>
     <div class="mc"><div class="mh"><div class="mhl"><div class="mi" style="background:#fce4ec">🍎</div><div><div class="mnm">Snacks</div><div class="ms" id="sub-snack">0 kcal</div></div></div><div style="display:flex;gap:4px;"><button type="button" class="ma" style="font-size:12px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="openTemplateOv('snack')" title="Vorlage laden">📋</button><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="copyMealFromYesterday('snack')" title="Von gestern">⎘</button><button type="button" class="ma" onclick="openPicker('snack')">+</button></div></div><div id="entries-snack"><div class="me">Noch nichts eingetragen</div></div></div>
+    <div class="wc" id="exerciseCard">
+      <div class="wh">
+        <div class="wt">🏃 Sport & Aktivität</div>
+        <button type="button" onclick="openExerciseOv()" style="background:var(--g2);border:none;border-radius:20px;color:white;font-size:13px;font-weight:700;padding:4px 12px;cursor:pointer;">+ Eintragen</button>
+      </div>
+      <div id="exerciseList"><div style="font-size:12px;color:var(--mu);font-style:italic;">Noch keine Aktivität eingetragen</div></div>
+    </div>
     <div class="wc">
       <div class="wh"><div class="wt">💧 Wasser</div><div class="wv" id="wVal">0 / 8 Gläser</div></div>
       <div class="gls-wrap" id="glasses"></div>
@@ -379,7 +387,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.101</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.102</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -698,6 +706,42 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
       <textarea id="fotoPrTxt" readonly style="width:100%;border:2px solid var(--br);border-radius:10px;padding:10px;font-size:12px;font-family:monospace;line-height:1.5;outline:none;min-height:180px;resize:vertical;margin-bottom:10px;background:var(--bg2);color:var(--mu);cursor:default;"></textarea>
       <label class="lbl">💬 Chat Prompt (aktiv)</label>
       <textarea id="chatPrTxt" readonly style="width:100%;border:2px solid var(--br);border-radius:10px;padding:10px;font-size:12px;font-family:monospace;line-height:1.5;outline:none;min-height:120px;resize:vertical;margin-bottom:12px;background:var(--bg2);color:var(--mu);cursor:default;"></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SPORT ══ -->
+<div class="ov" id="exerciseOv" onclick="bgClose(event,'exerciseOv')">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" onclick="closeOv('exerciseOv')">✕</button>
+      <div class="mti">🏃 Sport eintragen</div>
+      <div class="msu">Wird von Tageskalorien abgezogen</div>
+    </div>
+    <div class="mbd">
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;" id="exercisePresets"></div>
+      <div class="sf"><label class="lbl">Aktivität</label>
+        <input type="text" class="sinp" id="exName" placeholder="z.B. Laufen, Radfahren, Schwimmen...">
+      </div>
+      <div class="srow">
+        <div class="sf"><label class="lbl">Dauer (Min.)</label>
+          <input type="number" class="sinp" id="exDuration" placeholder="30" min="1" max="600">
+        </div>
+        <div class="sf"><label class="lbl">Intensität</label>
+          <select class="sinp" id="exIntensity">
+            <option value="low">🟢 Leicht</option>
+            <option value="medium" selected>🟡 Mittel</option>
+            <option value="high">🔴 Intensiv</option>
+          </select>
+        </div>
+      </div>
+      <div id="exResult" style="display:none;background:var(--gl);border-radius:10px;padding:10px;margin:8px 0;text-align:center;">
+        <div style="font-size:22px;font-weight:900;color:var(--g1);" id="exKcal">0</div>
+        <div style="font-size:12px;color:var(--mu);">kcal verbrannt (Schätzung)</div>
+      </div>
+      <button type="button" class="seb" style="margin-bottom:8px;" onclick="estimateExercise()">🤖 KI-Schätzung</button>
+      <button type="button" class="svb" onclick="saveExercise()">Speichern ✓</button>
     </div>
   </div>
 </div>
@@ -1180,7 +1224,7 @@ function doSetup(){
 // SECTION: DATA
 // ════════════════════════════════════════
 function changeDay(dir){var n=addDays(S.currentDate,dir);if(n>today()){showToast('Keine Zukunft 😄');return;}S.currentDate=n;renderAll();}
-function getDay(){if(!S.days[S.currentDate])S.days[S.currentDate]={meals:{breakfast:[],lunch:[],dinner:[],snack:[]},water:0};return S.days[S.currentDate];}
+function getDay(){if(!S.days[S.currentDate])S.days[S.currentDate]={meals:{breakfast:[],lunch:[],dinner:[],snack:[]},water:0,exercise:[]};var d=S.days[S.currentDate];if(!d.exercise)d.exercise=[];return d;}
 function calcM(arr){return arr.reduce(function(a,e){return{kcal:a.kcal+(e.kcal||0),protein:a.protein+(e.protein||0),carbs:a.carbs+(e.carbs||0),fat:a.fat+(e.fat||0),sugar:a.sugar+(e.sugar||0),fiber:a.fiber+(e.fiber||0),salt:a.salt+(e.salt||0)};},{kcal:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0,salt:0});}
 function ingTotal(ings){return(ings||[]).reduce(function(a,g){var r=(g.amount||0)/100;return{kcal:a.kcal+(g.per100.kcal||0)*r,protein:a.protein+(g.per100.protein||0)*r,carbs:a.carbs+(g.per100.carbs||0)*r,fat:a.fat+(g.per100.fat||0)*r,sugar:a.sugar+(g.per100.sugar||0)*r,fiber:a.fiber+(g.per100.fiber||0)*r,salt:a.salt+(g.per100.salt||0)*r};},{kcal:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0,salt:0});}
 function totalStr(t){return Math.round(t.kcal)+' kcal · P'+Math.round(t.protein)+'g K'+Math.round(t.carbs)+'g F'+Math.round(t.fat)+'g';}
@@ -1194,9 +1238,12 @@ function renderAll(){
   var day=getDay();
   var all=day.meals.breakfast.concat(day.meals.lunch,day.meals.dinner,day.meals.snack);
   var t=calcM(all);
+  var burned=(day.exercise||[]).reduce(function(a,e){return a+(e.kcal||0);},0);
   document.getElementById('totKcal').textContent=Math.round(t.kcal);
-  document.getElementById('remKcal').textContent=Math.max(0,S.goal-Math.round(t.kcal));
-  document.getElementById('pFill').style.width=Math.min(100,(t.kcal/S.goal)*100)+'%';
+  document.getElementById('totBurned').textContent=burned?'-'+Math.round(burned):'0';
+  var net=Math.max(0,S.goal-Math.round(t.kcal)+Math.round(burned));
+  document.getElementById('remKcal').textContent=net;
+  document.getElementById('pFill').style.width=Math.min(100,(t.kcal/(S.goal+burned))*100)+'%';
   document.getElementById('tP').textContent=Math.round(t.protein)+'g';
   document.getElementById('tC').textContent=Math.round(t.carbs)+'g';
   document.getElementById('tF').textContent=Math.round(t.fat)+'g';
@@ -1251,6 +1298,7 @@ function renderAll(){
   });
   renderWater();
   renderFasting();
+  renderExercise();
   renderKIButtons();
 }
 function renderWater(){
@@ -3572,6 +3620,134 @@ function triggerBackupDownload(){
   var url=URL.createObjectURL(blob);
   var a=document.createElement('a');a.href=url;a.download='nutritrack-backup-'+today()+'.json';a.click();
   URL.revokeObjectURL(url);
+}
+
+// ════════════════════════════════════════
+// SECTION: SPORT & AKTIVITÄT
+// ════════════════════════════════════════
+var EXERCISE_PRESETS=[
+  {name:'Laufen',emoji:'🏃',met:{low:6,medium:8,high:11}},
+  {name:'Radfahren',emoji:'🚴',met:{low:4,medium:6,high:10}},
+  {name:'Schwimmen',emoji:'🏊',met:{low:5,medium:7,high:10}},
+  {name:'Krafttraining',emoji:'🏋️',met:{low:3,medium:5,high:6}},
+  {name:'Yoga',emoji:'🧘',met:{low:2.5,medium:3,high:4}},
+  {name:'Wandern',emoji:'🥾',met:{low:3,medium:4,high:6}},
+  {name:'Spazieren',emoji:'🚶',met:{low:2.5,medium:3.5,high:4.5}},
+  {name:'Fußball',emoji:'⚽',met:{low:6,medium:8,high:10}},
+];
+
+function openExerciseOv(){
+  document.getElementById('exName').value='';
+  document.getElementById('exDuration').value='';
+  document.getElementById('exIntensity').value='medium';
+  document.getElementById('exResult').style.display='none';
+  // Preset-Buttons rendern
+  var el=document.getElementById('exercisePresets');
+  el.innerHTML=EXERCISE_PRESETS.map(function(p){
+    return'<button type="button" onclick="selectExercisePreset(\''+p.name+'\')" '
+      +'style="background:var(--gl);border:1.5px solid var(--g3);border-radius:20px;padding:5px 10px;font-size:12px;font-weight:700;color:var(--g1);cursor:pointer;">'
+      +p.emoji+' '+p.name+'</button>';
+  }).join('');
+  openOv('exerciseOv');
+}
+
+function selectExercisePreset(name){
+  document.getElementById('exName').value=name;
+  estimateExercise();
+}
+
+function estimateExercise(){
+  var name=document.getElementById('exName').value.trim();
+  var dur=parseFloat(document.getElementById('exDuration').value)||30;
+  var intensity=document.getElementById('exIntensity').value;
+  if(!name)return;
+  var weight=S.weight||75;
+  // Preset-basierte MET-Schätzung
+  var preset=EXERCISE_PRESETS.find(function(p){return p.name.toLowerCase()===name.toLowerCase();});
+  if(preset){
+    var met=preset.met[intensity]||preset.met.medium;
+    var kcal=Math.round(met*weight*(dur/60));
+    showExerciseResult(kcal);
+    return;
+  }
+  // KI-Schätzung für unbekannte Sportart
+  if(!S.apiKey||!isOnline){
+    // Fallback: generische MET-Schätzung
+    var metFallback={low:3,medium:5,high:8}[intensity];
+    showExerciseResult(Math.round(metFallback*weight*(dur/60)));
+    return;
+  }
+  var btn=document.querySelector('#exerciseOv .seb');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Schätze...';}
+  callClaude('claude-haiku-4-5',[{type:'text',text:
+    'Wie viele kcal verbrennt eine Person ('+weight+'kg) beim "'+name+'" für '+dur+' Minuten bei '+
+    {low:'leichter',medium:'mittlerer',high:'intensiver'}[intensity]+' Intensität? '+
+    'Antworte NUR mit der Zahl (ganze Zahl, kein Text).'}],20,
+    function(text){
+      var kcal=parseInt(text.replace(/\D/g,''))||Math.round(5*weight*(dur/60));
+      showExerciseResult(kcal);
+      if(btn){btn.disabled=false;btn.textContent='🤖 KI-Schätzung';}
+    },
+    function(){
+      var metFb={low:3,medium:5,high:8}[intensity];
+      showExerciseResult(Math.round(metFb*weight*(dur/60)));
+      if(btn){btn.disabled=false;btn.textContent='🤖 KI-Schätzung';}
+    }
+  );
+}
+
+function showExerciseResult(kcal){
+  document.getElementById('exKcal').textContent=kcal;
+  document.getElementById('exResult').style.display='block';
+}
+
+function saveExercise(){
+  var name=document.getElementById('exName').value.trim();
+  if(!name){showToast('Bitte Aktivität eingeben');return;}
+  var dur=parseFloat(document.getElementById('exDuration').value)||0;
+  var intensity=document.getElementById('exIntensity').value;
+  var kcal=parseInt(document.getElementById('exKcal').textContent)||0;
+  if(!kcal){
+    // Falls keine Schätzung gemacht wurde
+    estimateExercise();
+    showToast('Bitte erst KI-Schätzung abrufen');
+    return;
+  }
+  var preset=EXERCISE_PRESETS.find(function(p){return p.name.toLowerCase()===name.toLowerCase();});
+  var emoji=preset?preset.emoji:'🏃';
+  getDay().exercise.push({name:name,emoji:emoji,duration:dur,intensity:intensity,kcal:kcal,ts:Date.now()});
+  saveS();renderAll();closeOv('exerciseOv');
+  showToast(emoji+' '+name+': −'+kcal+' kcal');
+}
+
+function deleteExercise(idx){
+  var day=getDay();
+  if(day.exercise&&day.exercise[idx]!==undefined){
+    day.exercise.splice(idx,1);
+    saveS();renderAll();
+  }
+}
+
+function renderExercise(){
+  var el=document.getElementById('exerciseList');if(!el)return;
+  var day=getDay();
+  var exercises=day.exercise||[];
+  if(!exercises.length){
+    el.innerHTML='<div style="font-size:12px;color:var(--mu);font-style:italic;">Noch keine Aktivität eingetragen</div>';
+    return;
+  }
+  el.innerHTML=exercises.map(function(e,i){
+    var intLabel={low:'Leicht',medium:'Mittel',high:'Intensiv'}[e.intensity]||'';
+    return'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--br);">'
+      +'<div style="font-size:20px;">'+(e.emoji||'🏃')+'</div>'
+      +'<div style="flex:1;">'
+        +'<div style="font-size:13px;font-weight:700;">'+e.name+'</div>'
+        +'<div style="font-size:11px;color:var(--mu);">'+(e.duration?e.duration+' Min. · ':'')+intLabel+'</div>'
+      +'</div>'
+      +'<div style="font-size:13px;font-weight:800;color:var(--g1);">−'+Math.round(e.kcal)+' kcal</div>'
+      +'<button type="button" onclick="deleteExercise('+i+')" style="background:none;border:none;color:var(--mu);font-size:16px;padding:2px 6px;cursor:pointer;">✕</button>'
+      +'</div>';
+  }).join('');
 }
 
 // ── Backup-Erinnerung: nur alle 7 Tage ──

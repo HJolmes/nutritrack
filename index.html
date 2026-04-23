@@ -372,7 +372,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.105</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.106</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div class="dn">
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
@@ -409,12 +409,10 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
         <div class="mac"><div class="mv" id="tC">0g</div><div class="mn">Kohlenh.</div><div class="mb"><div class="mf" id="fC" style="width:0%"></div><div class="mmk" id="mkC"></div></div></div>
         <div class="mac"><div class="mv" id="tF">0g</div><div class="mn">Fett</div><div class="mb"><div class="mf" id="fF" style="width:0%"></div><div class="mmk" id="mkF"></div></div></div>
       </div>
-      <div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.2);">
-        <div style="text-align:center;"><div style="font-size:13px;font-weight:700;color:white;" id="tSugar">0g</div><div style="font-size:10px;color:rgba(255,255,255,0.7);">Zucker</div></div>
-        <div style="text-align:center;"><div style="font-size:13px;font-weight:700;color:white;" id="tFiber">0g</div><div style="font-size:10px;color:rgba(255,255,255,0.7);">Ballaststoffe</div></div>
-        <div style="text-align:center;"><div style="font-size:13px;font-weight:700;color:white;" id="tSalt">0g</div><div style="font-size:10px;color:rgba(255,255,255,0.7);">Salz</div></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.15);">
+        <button type="button" onclick="toggleNutrientAmpel()" style="background:none;border:none;color:rgba(255,255,255,0.7);font-size:12px;font-weight:700;cursor:pointer;padding:0;" id="nutriAmpelToggleBtn">▶ Nährwert-Details</button>
       </div>
-      <div id="nutriAmpelWrap"></div>
+      <div id="nutriAmpelWrap" style="overflow:hidden;max-height:0;transition:max-height .35s ease;"></div>
       <div id="ki-day-wrap" style="display:none;margin-top:10px;border-top:1px solid rgba(255,255,255,0.2);padding-top:10px;"></div>
     </div>
     <div class="mc"><div class="mh"><div class="mhl"><div class="mi" style="background:#fff8e1">🌅</div><div><div class="mnm">Frühstück</div><div class="ms" id="sub-breakfast">0 kcal</div></div></div><div style="display:flex;gap:4px;"><button type="button" class="ma" style="font-size:12px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="openTemplateOv('breakfast')" title="Vorlage laden">📋</button><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="copyMealFromYesterday('breakfast')" title="Von gestern">⎘</button><button type="button" class="ma" onclick="openPicker('breakfast')">+</button></div></div><div id="entries-breakfast"><div class="me">Noch nichts eingetragen</div></div></div>
@@ -456,7 +454,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.105</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.106</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -1292,6 +1290,20 @@ function onbNext(){
 }
 function onbSkip(){_onbStep=3;document.getElementById('onbSlides').style.transform='translateX(-300%)';}
 
+function toggleNutrientAmpel(){
+  var wrap=document.getElementById('nutriAmpelWrap');
+  var btn=document.getElementById('nutriAmpelToggleBtn');
+  if(!wrap)return;
+  var open=wrap.style.maxHeight!=='0px'&&wrap.style.maxHeight!=='';
+  if(open){
+    wrap.style.maxHeight='0';
+    if(btn)btn.textContent='▶ Nährwert-Details';
+  } else {
+    wrap.style.maxHeight='300px';
+    if(btn)btn.textContent='▼ Nährwert-Details';
+  }
+}
+
 // ── Animation beim Hinzufügen ──
 function animateAdd(meal){
   var sub=document.getElementById('sub-'+meal);
@@ -1423,14 +1435,13 @@ function renderAll(){
   if(mkP)mkP.style.left=Math.min(98,(mt.protein/pMax)*100)+'%';
   if(mkC)mkC.style.left=Math.min(98,(mt.carbs/cMax)*100)+'%';
   if(mkF)mkF.style.left=Math.min(98,(mt.fat/fMax)*100)+'%';
-  // Mikronährstoffe
-  var suEl=document.getElementById('tSugar'),fiEl=document.getElementById('tFiber'),saEl=document.getElementById('tSalt');
-  if(suEl)suEl.textContent=Math.round(t.sugar*10)/10+'g';
-  if(fiEl)fiEl.textContent=Math.round(t.fiber*10)/10+'g';
-  if(saEl)saEl.textContent=Math.round(t.salt*100)/100+'g';
-  // Nährwert-Ampel
+  // Nährwert-Ampel – nur Inhalt aktualisieren, Zustand (offen/zu) beibehalten
   var ampelEl=document.getElementById('nutriAmpelWrap');
-  if(ampelEl)ampelEl.innerHTML=t.kcal>50?renderNutrientAmpel(t):'';
+  if(ampelEl){
+    var wasOpen=ampelEl.style.maxHeight&&ampelEl.style.maxHeight!=='0px';
+    ampelEl.innerHTML=t.kcal>50?renderNutrientAmpel(t):'';
+    if(wasOpen)ampelEl.style.maxHeight='300px';
+  }
   // Zielüberprüfung (Abnehmziel erreicht)
   checkGoalAchieved();
   ['breakfast','lunch','dinner','snack'].forEach(function(m){

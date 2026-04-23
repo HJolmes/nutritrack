@@ -304,7 +304,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.100</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.101</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div class="dn">
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
@@ -379,7 +379,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.100</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.101</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -1397,7 +1397,7 @@ function searchLocal(q){
     if(s>0)add({name:f.name,emoji:f.emoji,per100:f.per100,badge:'🕐',bdgCls:'saved'},s+5);
   });
   // Built-in DB
-  DB.forEach(function(f){var s=fuzzy(f,q);if(s>0||!ql)add({name:f.n,emoji:f.e,per100:{kcal:f.k,protein:f.p,carbs:f.c,fat:f.f}},s);});
+  DB.forEach(function(f){var s=fuzzy(f,q);if(s>0||!ql)add({name:f.n,emoji:f.e,per100:{kcal:f.k,protein:f.p,carbs:f.c,fat:f.f,sugar:0,fiber:0,salt:0}},s);});
   results.sort(function(a,b){return b.score-a.score;});
   var out=[],seenOut={};
   results.forEach(function(x){var k=x.item.name.toLowerCase();if(!seenOut[k]){seenOut[k]=true;out.push(x.item);}});
@@ -1419,7 +1419,7 @@ function lookupNutrients(rawItems,onDone){
     // 1. Local DB
     var loc=findInLocalDB(name);
     if(loc){
-      results.push({name:loc.n,emoji:loc.e,amount:grams||0,per100:{kcal:loc.k,protein:loc.p,carbs:loc.c,fat:loc.f},missingGrams:grams===null});
+      results.push({name:loc.n,emoji:loc.e,amount:grams||0,per100:{kcal:loc.k,protein:loc.p,carbs:loc.c,fat:loc.f,sugar:0,fiber:0,salt:0},missingGrams:grams===null});
       pending--;if(!pending)onDone(results);return;
     }
     // 2. Open Food Facts
@@ -1441,11 +1441,11 @@ function lookupNutrients(rawItems,onDone){
   });
 }
 function kiNutrientLookup(name,emoji,grams,onDone){
-  var prompt='Nährwerte pro 100g für "'+name+'". Nur JSON: {"kcal":0,"protein":0,"carbs":0,"fat":0}';
-  callClaude('claude-haiku-4-5',[{type:'text',text:prompt}],80,
+  var prompt='Nährwerte pro 100g für "'+name+'". Nur JSON: {"kcal":0,"protein":0,"carbs":0,"fat":0,"sugar":0,"fiber":0,"salt":0}';
+  callClaude('claude-haiku-4-5',[{type:'text',text:prompt}],100,
     function(text){
       try{var a=text.indexOf('{'),z=text.lastIndexOf('}');if(a===-1||z<a)throw new Error();var d=JSON.parse(text.slice(a,z+1));
-        onDone({name:name,emoji:emoji,amount:grams||0,per100:{kcal:parseFloat(d.kcal)||0,protein:parseFloat(d.protein)||0,carbs:parseFloat(d.carbs)||0,fat:parseFloat(d.fat)||0},missingGrams:grams===null});
+        onDone({name:name,emoji:emoji,amount:grams||0,per100:{kcal:parseFloat(d.kcal)||0,protein:parseFloat(d.protein)||0,carbs:parseFloat(d.carbs)||0,fat:parseFloat(d.fat)||0,sugar:parseFloat(d.sugar)||0,fiber:parseFloat(d.fiber)||0,salt:parseFloat(d.salt)||0},missingGrams:grams===null});
       }catch(e){onDone(kiEstimate(name,emoji,grams));}
     },function(err){onDone(kiEstimate(name,emoji,grams));});
 }
@@ -1465,6 +1465,7 @@ function kiEstimate(name,emoji,grams){
   else if(/milch|milk/.test(nl))per100={kcal:60,protein:3.5,carbs:5,fat:3};
   else if(/öl|oil|butter/.test(nl))per100={kcal:750,protein:0,carbs:0,fat:83};
   else if(/fleischsalat|wurstsalat/.test(nl))per100={kcal:285,protein:9,carbs:5,fat:26};
+  per100.sugar=per100.sugar||0;per100.fiber=per100.fiber||0;per100.salt=per100.salt||0;
   return{name:name,emoji:emoji,amount:grams||0,per100:per100,source:'estimate',missingGrams:!grams};
 }
 function parseIngJSON(text){
@@ -2225,7 +2226,7 @@ function pickerChatAdd(saveAsRecipe){
 function pickerSaveOwn(){
   var name=document.getElementById('ownName').value.trim();if(!name){showToast('Name eingeben');return;}
   var emoji=document.getElementById('ownEmoji').value.trim()||emo(name);
-  var food={name:name,emoji:emoji,per100:{kcal:parseFloat(document.getElementById('ownKcal').value)||0,protein:parseFloat(document.getElementById('ownProtein').value)||0,carbs:parseFloat(document.getElementById('ownCarbs').value)||0,fat:parseFloat(document.getElementById('ownFat').value)||0}};
+  var food={name:name,emoji:emoji,per100:{kcal:parseFloat(document.getElementById('ownKcal').value)||0,protein:parseFloat(document.getElementById('ownProtein').value)||0,carbs:parseFloat(document.getElementById('ownCarbs').value)||0,fat:parseFloat(document.getElementById('ownFat').value)||0,sugar:0,fiber:0,salt:0}};
   customFoods.unshift(food);saveX();
   ['ownName','ownEmoji','ownKcal','ownProtein','ownCarbs','ownFat'].forEach(function(id){document.getElementById(id).value='';});
   showToast(emoji+' '+name+' gespeichert');
@@ -2240,7 +2241,7 @@ function pickerQuicktrack(){
   var p=parseFloat(document.getElementById('qtProtein').value)||0;
   var c=parseFloat(document.getElementById('qtCarbs').value)||0;
   var f=parseFloat(document.getElementById('qtFat').value)||0;
-  getDay().meals[pickerMeal].push({name:name,emoji:'⚡',amount:100,per100:{kcal:kcal,protein:p,carbs:c,fat:f},kcal:kcal,protein:p,carbs:c,fat:f});
+  getDay().meals[pickerMeal].push({name:name,emoji:'⚡',amount:100,per100:{kcal:kcal,protein:p,carbs:c,fat:f,sugar:0,fiber:0,salt:0},kcal:kcal,protein:p,carbs:c,fat:f,sugar:0,fiber:0,salt:0});
   saveS();renderAll();closePicker();
   showToast('⚡ '+name+' eingetragen');
 }
@@ -2456,7 +2457,7 @@ function recEditSearch(){
   var q=(document.getElementById('recEditSearchQ')||{}).value||'';
   var results=[],seen={};
   customFoods.forEach(function(f){if(!seen[f.name.toLowerCase()]){seen[f.name.toLowerCase()]=true;results.push({name:f.name,emoji:f.emoji,per100:f.per100});}});
-  DB.forEach(function(f){var s=fuzzy(f,q);if((s>0||!q)&&!seen[f.n.toLowerCase()]){seen[f.n.toLowerCase()]=true;results.push({name:f.n,emoji:f.e,per100:{kcal:f.k,protein:f.p,carbs:f.c,fat:f.f},score:s});}});
+  DB.forEach(function(f){var s=fuzzy(f,q);if((s>0||!q)&&!seen[f.n.toLowerCase()]){seen[f.n.toLowerCase()]=true;results.push({name:f.n,emoji:f.e,per100:{kcal:f.k,protein:f.p,carbs:f.c,fat:f.f,sugar:0,fiber:0,salt:0},score:s});}});
   if(q)results.sort(function(a,b){return(b.score||0)-(a.score||0);});
   results=results.slice(0,12);
   window._recEditResults=results;
@@ -3002,7 +3003,7 @@ function pickerAddRecent(i){
     // Als Rezept-Eintrag hinzufügen
     var t=ingTotal(item.ingredients||[]);
     var portions=item.portions||1;
-    getDay().meals[pickerMeal].push({name:item.name,emoji:item.emoji,isRecipe:true,recipeId:item.recipeId||null,portions:portions,ingredients:item.ingredients||[],kcal:t.kcal*portions,protein:t.protein*portions,carbs:t.carbs*portions,fat:t.fat*portions});
+    getDay().meals[pickerMeal].push({name:item.name,emoji:item.emoji,isRecipe:true,recipeId:item.recipeId||null,portions:portions,ingredients:item.ingredients||[],kcal:t.kcal*portions,protein:t.protein*portions,carbs:t.carbs*portions,fat:t.fat*portions,sugar:(t.sugar||0)*portions,fiber:(t.fiber||0)*portions,salt:(t.salt||0)*portions});
   } else {
     var recalled=recallPortion(item.name)||item.amount||100;
     var r=recalled/100;
@@ -3735,7 +3736,7 @@ function renderLibrary(){
     // Custom foods + DB
     var allFoods=[];
     customFoods.forEach(function(f){allFoods.push({name:f.name,emoji:f.emoji,per100:f.per100,isCustom:true});});
-    DB.forEach(function(f){allFoods.push({name:f.n,emoji:f.e,per100:{kcal:f.k,protein:f.p,carbs:f.c,fat:f.f},isCustom:false});});
+    DB.forEach(function(f){allFoods.push({name:f.n,emoji:f.e,per100:{kcal:f.k,protein:f.p,carbs:f.c,fat:f.f,sugar:0,fiber:0,salt:0},isCustom:false});});
     var filtered=allFoods.filter(function(f){return !ql||f.name.toLowerCase().includes(ql);});
     filtered=filtered.slice(0,30);
     if(!filtered.length){

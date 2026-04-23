@@ -31,11 +31,23 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 .hidden{display:none!important;}
 
 /* ── SETUP ── */
-#setupScreen{background:linear-gradient(160deg,var(--g1) 0%,var(--g2) 60%,#7dcda4 100%);align-items:center;justify-content:center;padding:32px 20px;}
-.s-logo{font-family:'Nunito',sans-serif;font-weight:900;font-size:42px;color:white;letter-spacing:-1px;margin-bottom:4px;}
+#setupScreen{background:linear-gradient(160deg,var(--g1) 0%,var(--g2) 60%,#7dcda4 100%);align-items:center;justify-content:center;padding:0;overflow:hidden;}
+.onb-wrap{width:100%;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+.onb-slides{display:flex;transition:transform .4s cubic-bezier(.4,0,.2,1);height:100%;}
+.onb-slide{min-width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center;}
+.s-logo{font-family:'Nunito',sans-serif;font-weight:900;font-size:48px;color:white;letter-spacing:-1px;margin-bottom:6px;}
 .s-logo span{opacity:.65;}
-.s-tag{color:rgba(255,255,255,.75);font-size:14px;margin-bottom:30px;text-align:center;}
-.s-card{background:white;border-radius:24px;padding:24px 20px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,.15);}
+.s-tag{color:rgba(255,255,255,.8);font-size:15px;margin-bottom:0;text-align:center;line-height:1.5;}
+.onb-icon{font-size:72px;margin-bottom:16px;animation:onbPop .5s cubic-bezier(.34,1.56,.64,1);}
+@keyframes onbPop{from{transform:scale(0.5);opacity:0;}to{transform:scale(1);opacity:1;}}
+.onb-title{font-family:'Nunito',sans-serif;font-weight:900;font-size:26px;color:white;margin-bottom:10px;}
+.onb-text{color:rgba(255,255,255,.85);font-size:14px;line-height:1.7;max-width:300px;}
+.onb-dots{display:flex;gap:7px;margin:24px 0 20px;}
+.onb-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.4);transition:all .3s;}
+.onb-dot.act{width:22px;border-radius:4px;background:white;}
+.onb-btn{background:white;color:var(--g1);border:none;border-radius:14px;padding:14px 40px;font-family:'Nunito',sans-serif;font-weight:800;font-size:16px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.15);}
+.onb-skip{background:none;border:none;color:rgba(255,255,255,.6);font-size:13px;margin-top:14px;cursor:pointer;text-decoration:underline;}
+.s-card{background:white;border-radius:24px;padding:24px 20px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,.18);max-height:85vh;overflow-y:auto;}
 .s-card h2{font-family:'Nunito',sans-serif;font-weight:800;font-size:19px;margin-bottom:5px;}
 .s-card p{font-size:13px;color:var(--mu);margin-bottom:16px;line-height:1.5;}
 .s-card a{color:var(--g2);}
@@ -83,25 +95,27 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 .mf{height:100%;border-radius:4px;background:white;transition:width .6s;}
 
 /* ── MEAL CARDS ── */
-.mc{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden;}
-.mh{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--br);}
-.mhl{display:flex;align-items:center;gap:9px;}
-.mi{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;}
-.mnm{font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;}
-.ms{font-size:11px;color:var(--mu);margin-top:1px;}
-.ma{width:28px;height:28px;border-radius:50%;border:2px solid var(--g2);background:white;color:var(--g2);font-size:19px;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.ma:active{background:var(--g2);color:white;}
-.fe{display:flex;align-items:center;gap:9px;padding:9px 14px;border-bottom:1px solid var(--br);cursor:pointer;animation:fsi .2s ease;}
+.mc{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden;transition:box-shadow .2s;}
+.mh{display:flex;justify-content:space-between;align-items:center;padding:13px 14px;border-bottom:1px solid var(--br);}
+.mhl{display:flex;align-items:center;gap:10px;}
+.mi{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;}
+.mnm{font-family:'Nunito',sans-serif;font-weight:800;font-size:15px;}
+.ms{font-size:11px;color:var(--mu);margin-top:2px;}
+.ma{width:30px;height:30px;border-radius:50%;border:2px solid var(--g2);background:white;color:var(--g2);font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;}
+.ma:active{background:var(--g2);color:white;transform:scale(0.9);}
+.fe{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--br);cursor:pointer;animation:fsi .25s ease;transition:background .15s;}
+.fe:active{background:var(--gl);}
 .fe:last-child{border-bottom:none;}
 .fe.is-recipe{background:linear-gradient(to right,#f0faf4,white);}
-@keyframes fsi{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:none;}}
-.fee{font-size:22px;width:30px;text-align:center;flex-shrink:0;}
+@keyframes fsi{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:none;}}
+@keyframes addPop{0%{transform:scale(1);}50%{transform:scale(1.08);}100%{transform:scale(1);}}
+.fee{font-size:24px;width:32px;text-align:center;flex-shrink:0;}
 .fei{flex:1;min-width:0;}
 .fen{font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.fem{font-size:11px;color:var(--mu);margin-top:1px;}
+.fem{font-size:11px;color:var(--mu);margin-top:2px;}
 .fek{font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;color:var(--g1);flex-shrink:0;}
-.fe-ic{font-size:14px;color:var(--mu);opacity:.35;flex-shrink:0;padding:2px;}
-.me{padding:12px 14px;font-size:13px;color:var(--mu);font-style:italic;}
+.fe-ic{font-size:14px;color:var(--mu);opacity:.3;flex-shrink:0;padding:2px;}
+.me{padding:14px 14px;font-size:13px;color:var(--mu);font-style:italic;text-align:center;}
 
 /* ── WATER ── */
 .wc{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);padding:13px 14px;}
@@ -283,28 +297,82 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 
 <!-- SETUP -->
 <div id="setupScreen" class="screen active">
-  <div class="s-logo">Nutri<span>Track</span></div>
-  <p class="s-tag">Dein persönliches Ernährungstagebuch</p>
-  <div class="s-card">
-    <h2>Willkommen!</h2>
-    <p>Gib deinen Anthropic API Key ein.<br>Erhältlich auf <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></p>
-    <label class="lbl">Anthropic API Key</label>
-    <div class="fiw"><input type="password" class="fi" id="s_key" placeholder="sk-ant-api03-..."><button class="eye" type="button" onclick="toggleEye('s_key')">👁</button></div>
-    <label class="lbl">Dein Name</label>
-    <input type="text" class="fi" id="s_name" placeholder="Max">
-    <label class="lbl">Tägliches Kalorienziel (kcal)</label>
-    <input type="number" class="fi" id="s_goal" placeholder="2000">
-    <label class="lbl">Gewicht &amp; Größe (optional)</label>
-    <div class="r2"><input type="number" class="fi" id="s_weight" placeholder="75 kg"><input type="number" class="fi" id="s_height" placeholder="178 cm"></div>
-    <button type="button" class="s-btn" id="setupBtn">Loslegen →</button>
-    <p style="font-size:12px;color:var(--mu);text-align:center;margin-top:10px;">Alle Daten bleiben lokal auf deinem Gerät.</p>
+  <div class="onb-wrap">
+    <!-- Onboarding Slides -->
+    <div class="onb-slides" id="onbSlides">
+      <!-- Slide 1: Willkommen -->
+      <div class="onb-slide">
+        <div class="s-logo">Nutri<span>Track</span></div>
+        <div style="color:rgba(255,255,255,.8);font-size:15px;margin:8px 0 40px;line-height:1.5;">Dein intelligentes Ernährungstagebuch</div>
+        <div class="onb-icon">🥗</div>
+        <div class="onb-title">Essen verstehen,<br>Gesundheit verbessern</div>
+        <div class="onb-text">Tracke Mahlzeiten per Foto, Chat oder Barcode – mit KI-Unterstützung die wirklich versteht was du isst.</div>
+        <div class="onb-dots">
+          <div class="onb-dot act" id="dot0"></div>
+          <div class="onb-dot" id="dot1"></div>
+          <div class="onb-dot" id="dot2"></div>
+          <div class="onb-dot" id="dot3"></div>
+        </div>
+        <button class="onb-btn" onclick="onbNext()">Los geht's →</button>
+        <button class="onb-skip" onclick="onbSkip()">Überspringen</button>
+      </div>
+      <!-- Slide 2: KI-Features -->
+      <div class="onb-slide">
+        <div class="onb-icon">📷</div>
+        <div class="onb-title">Einfach fotografieren</div>
+        <div class="onb-text">Mach ein Foto deiner Mahlzeit – die KI erkennt automatisch alle Zutaten und berechnet die Nährwerte. Kein manuelles Suchen.</div>
+        <div class="onb-dots">
+          <div class="onb-dot" id="dot0b"></div>
+          <div class="onb-dot act" id="dot1b"></div>
+          <div class="onb-dot" id="dot2b"></div>
+          <div class="onb-dot" id="dot3b"></div>
+        </div>
+        <button class="onb-btn" onclick="onbNext()">Weiter →</button>
+        <button class="onb-skip" onclick="onbSkip()">Überspringen</button>
+      </div>
+      <!-- Slide 3: Gesundheit -->
+      <div class="onb-slide">
+        <div class="onb-icon">🚦</div>
+        <div class="onb-title">Personalisierte Hinweise</div>
+        <div class="onb-text">Schwanger? Veganer? Laktoseintolerant? NutriTrack passt die Bewertung deiner Lebensmittel an deine persönliche Situation an.</div>
+        <div class="onb-dots">
+          <div class="onb-dot" id="dot0c"></div>
+          <div class="onb-dot" id="dot1c"></div>
+          <div class="onb-dot act" id="dot2c"></div>
+          <div class="onb-dot" id="dot3c"></div>
+        </div>
+        <button class="onb-btn" onclick="onbNext()">Weiter →</button>
+        <button class="onb-skip" onclick="onbSkip()">Überspringen</button>
+      </div>
+      <!-- Slide 4: Setup -->
+      <div class="onb-slide" style="justify-content:flex-start;padding-top:40px;overflow-y:auto;">
+        <div class="s-card" style="margin-top:10px;">
+          <div style="text-align:center;margin-bottom:16px;">
+            <div style="font-size:32px;margin-bottom:6px;">🔑</div>
+            <h2>Fast fertig!</h2>
+            <p>Gib deinen Anthropic API Key ein um die KI-Funktionen zu nutzen.<br>
+            <a href="https://console.anthropic.com" target="_blank">Hier kostenlos erstellen →</a></p>
+          </div>
+          <label class="lbl">Anthropic API Key</label>
+          <div class="fiw"><input type="password" class="fi" id="s_key" placeholder="sk-ant-api03-..."><button class="eye" type="button" onclick="toggleEye('s_key')">👁</button></div>
+          <label class="lbl">Dein Name</label>
+          <input type="text" class="fi" id="s_name" placeholder="Max">
+          <label class="lbl">Tägliches Kalorienziel (kcal)</label>
+          <input type="number" class="fi" id="s_goal" placeholder="2000">
+          <label class="lbl">Gewicht &amp; Größe (optional)</label>
+          <div class="r2"><input type="number" class="fi" id="s_weight" placeholder="75 kg"><input type="number" class="fi" id="s_height" placeholder="178 cm"></div>
+          <button type="button" class="s-btn" id="setupBtn">NutriTrack starten 🚀</button>
+          <p style="font-size:12px;color:var(--mu);text-align:center;margin-top:12px;">🔒 Alle Daten bleiben lokal auf deinem Gerät.</p>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.104</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.105</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div class="dn">
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
@@ -346,6 +414,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
         <div style="text-align:center;"><div style="font-size:13px;font-weight:700;color:white;" id="tFiber">0g</div><div style="font-size:10px;color:rgba(255,255,255,0.7);">Ballaststoffe</div></div>
         <div style="text-align:center;"><div style="font-size:13px;font-weight:700;color:white;" id="tSalt">0g</div><div style="font-size:10px;color:rgba(255,255,255,0.7);">Salz</div></div>
       </div>
+      <div id="nutriAmpelWrap"></div>
       <div id="ki-day-wrap" style="display:none;margin-top:10px;border-top:1px solid rgba(255,255,255,0.2);padding-top:10px;"></div>
     </div>
     <div class="mc"><div class="mh"><div class="mhl"><div class="mi" style="background:#fff8e1">🌅</div><div><div class="mnm">Frühstück</div><div class="ms" id="sub-breakfast">0 kcal</div></div></div><div style="display:flex;gap:4px;"><button type="button" class="ma" style="font-size:12px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="openTemplateOv('breakfast')" title="Vorlage laden">📋</button><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="copyMealFromYesterday('breakfast')" title="Von gestern">⎘</button><button type="button" class="ma" onclick="openPicker('breakfast')">+</button></div></div><div id="entries-breakfast"><div class="me">Noch nichts eingetragen</div></div></div>
@@ -387,7 +456,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.104</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.105</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -444,6 +513,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
       <div style="display:flex;gap:8px;">
         <button type="button" id="libTabRec" onclick="libSetTab('recipes')" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--g2);background:var(--g2);color:white;font-weight:700;font-size:13px;">📋 Rezepte</button>
         <button type="button" id="libTabFoods" onclick="libSetTab('foods')" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--br);background:white;color:var(--mu);font-weight:700;font-size:13px;">🥗 Lebensmittel</button>
+        <button type="button" onclick="openRecipeImport()" style="padding:9px 12px;border-radius:10px;border:1.5px solid var(--br);background:white;color:var(--mu);font-weight:700;font-size:13px;" title="Rezept per URL importieren">🔗</button>
       </div>
       <div id="libraryList" style="display:flex;flex-direction:column;gap:8px;"></div>
     </div>
@@ -1214,6 +1284,97 @@ function dismissBackupReminder(){
 // ════════════════════════════════════════
 // SECTION: SETUP
 // ════════════════════════════════════════
+// ── Onboarding ──
+var _onbStep=0;
+function onbNext(){
+  _onbStep=Math.min(_onbStep+1,3);
+  document.getElementById('onbSlides').style.transform='translateX(-'+(_onbStep*100)+'%)';
+}
+function onbSkip(){_onbStep=3;document.getElementById('onbSlides').style.transform='translateX(-300%)';}
+
+// ── Animation beim Hinzufügen ──
+function animateAdd(meal){
+  var sub=document.getElementById('sub-'+meal);
+  if(sub){sub.style.animation='none';sub.offsetHeight;sub.style.animation='addPop .3s ease';}
+  var card=sub&&sub.closest('.mc');
+  if(card){card.style.boxShadow='0 0 0 3px var(--g2)';setTimeout(function(){card.style.boxShadow='';},600);}
+}
+
+// ── Nährwert-Ampel ──
+function renderNutrientAmpel(t){
+  var mt=getMacroTargets();
+  var goal=S.goal||2000;
+  function status(val,target,isGood){
+    var pct=target>0?val/target:0;
+    if(isGood){// mehr ist besser (Protein, Ballaststoffe)
+      return pct>=0.9?'gruen':pct>=0.6?'gelb':'rot';
+    } else {// weniger ist besser (Zucker, Salz)
+      return pct<=1?'gruen':pct<=1.3?'gelb':'rot';
+    }
+  }
+  var items=[
+    {label:'Protein',val:Math.round(t.protein)+'g',st:status(t.protein,mt.protein,true)},
+    {label:'Carbs',val:Math.round(t.carbs)+'g',st:status(t.carbs,mt.carbs,false)},
+    {label:'Fett',val:Math.round(t.fat)+'g',st:status(t.fat,mt.fat,false)},
+    {label:'Zucker',val:Math.round(t.sugar*10)/10+'g',st:t.sugar>50?'rot':t.sugar>30?'gelb':'gruen'},
+    {label:'Ballaststoffe',val:Math.round(t.fiber*10)/10+'g',st:t.fiber>=25?'gruen':t.fiber>=15?'gelb':'rot'},
+    {label:'Salz',val:Math.round(t.salt*10)/10+'g',st:t.salt>6?'rot':t.salt>4?'gelb':'gruen'},
+  ];
+  var colors={gruen:'#2d7d52',gelb:'#f07700',rot:'#c62828'};
+  var bg={gruen:'rgba(255,255,255,0.15)',gelb:'rgba(249,168,37,0.25)',rot:'rgba(198,40,40,0.25)'};
+  return'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:8px;">'
+    +items.map(function(it){
+      return'<div style="background:'+bg[it.st]+';border-radius:8px;padding:6px 4px;text-align:center;">'
+        +'<div style="font-size:11px;font-weight:800;color:white;">'+it.val+'</div>'
+        +'<div style="font-size:9px;color:rgba(255,255,255,0.75);margin-top:1px;">'+it.label+'</div>'
+        +'<div style="width:6px;height:6px;border-radius:50%;background:'+colors[it.st]+';margin:3px auto 0;border:1.5px solid rgba(255,255,255,0.5);"></div>'
+        +'</div>';
+    }).join('')
+    +'</div>';
+}
+
+// ── Rezept-Import per URL ──
+function openRecipeImport(){
+  var url=prompt('Rezept-URL eingeben (z.B. chefkoch.de, essen-und-trinken.de):');
+  if(!url||!url.startsWith('http'))return;
+  if(!S.apiKey||!isOnline){showToast('Internet & API Key benötigt');return;}
+  showToast('⏳ Rezept wird importiert...');
+  fetch('https://corsproxy.io/?'+encodeURIComponent(url))
+    .then(function(r){return r.text();})
+    .then(function(html){
+      // HTML auf relevante Teile kürzen
+      var text=html.replace(/<script[\s\S]*?<\/script>/gi,'')
+                   .replace(/<style[\s\S]*?<\/style>/gi,'')
+                   .replace(/<[^>]+>/g,' ')
+                   .replace(/\s+/g,' ')
+                   .slice(0,3000);
+      callClaude('claude-haiku-4-5',[{type:'text',text:
+        'Extrahiere das Rezept aus diesem Text und gib NUR gültiges JSON zurück:\n'
+        +'{"name":"Rezeptname","zutaten":[{"name":"Zutat","menge":"100g"}]}\n'
+        +'Text: '+text}],500,
+        function(resp){
+          try{
+            var a=resp.indexOf('{'),z=resp.lastIndexOf('}');
+            var d=JSON.parse(resp.slice(a,z+1));
+            if(!d.name||!d.zutaten||!d.zutaten.length)throw new Error();
+            // Nährwerte nachschlagen und Rezept speichern
+            var rawItems=d.zutaten.map(function(z){
+              var g=parseFloat((z.menge||'').replace(/[^\d.]/g,''))||100;
+              return{name:z.name,g:g,emoji:emo(z.name)};
+            });
+            lookupNutrients(rawItems,function(ings){
+              var rec={id:Date.now().toString(),name:d.name,emoji:'🔗',ingredients:ings,importedFrom:url};
+              recipes.unshift(rec);saveX();
+              showToast('✓ "'+d.name+'" importiert ('+ings.length+' Zutaten)');
+            });
+          }catch(e){showToast('Rezept konnte nicht erkannt werden');}
+        },
+        function(){showToast('Import fehlgeschlagen');}
+      );
+    })
+    .catch(function(){showToast('URL konnte nicht geladen werden');});
+}
+
 function toggleEye(id){var el=document.getElementById(id);el.type=el.type==='password'?'text':'password';}
 function doSetup(){
   var k=document.getElementById('s_key').value.trim();if(!k){showToast('API Key eingeben');return;}
@@ -1267,6 +1428,9 @@ function renderAll(){
   if(suEl)suEl.textContent=Math.round(t.sugar*10)/10+'g';
   if(fiEl)fiEl.textContent=Math.round(t.fiber*10)/10+'g';
   if(saEl)saEl.textContent=Math.round(t.salt*100)/100+'g';
+  // Nährwert-Ampel
+  var ampelEl=document.getElementById('nutriAmpelWrap');
+  if(ampelEl)ampelEl.innerHTML=t.kcal>50?renderNutrientAmpel(t):'';
   // Zielüberprüfung (Abnehmziel erreicht)
   checkGoalAchieved();
   ['breakfast','lunch','dinner','snack'].forEach(function(m){
@@ -1738,6 +1902,7 @@ function pickerConfirmAdd(){
   }
   var _idx=getDay().meals[pickerMeal].length-1;
   saveS();renderAll();closePicker();
+  animateAdd(pickerMeal);
   rememberPortion(f.name,f.amount);
   checkDataQuality(f);
   checkPregWarn([f],pickerMeal,_idx);
@@ -2081,6 +2246,7 @@ function pickerBarcodeAdd(){
   getDay().meals[pickerMeal].push({name:food.name,emoji:food.emoji,amount:amt,per100:food.per100,kcal:food.per100.kcal*r,protein:food.per100.protein*r,carbs:food.per100.carbs*r,fat:food.per100.fat*r,sugar:(food.per100.sugar||0)*r,fiber:(food.per100.fiber||0)*r,salt:(food.per100.salt||0)*r});
   var _bidx=getDay().meals[pickerMeal].length-1;
   saveS();renderAll();closePicker();
+  animateAdd(pickerMeal);
   checkPregWarn([food],pickerMeal,_bidx);
   checkDietWarn([food],pickerMeal,_bidx);
   showToast((food.emoji||'🍽')+' '+food.name+' hinzugefügt');
@@ -2207,6 +2373,7 @@ function pickerPhotoAdd(saveAsRecipe){
   }
   var _pidx=getDay().meals[pickerMeal].length-1;
   saveS();renderAll();closePicker();
+  animateAdd(pickerMeal);
   checkPregWarn(ings,pickerMeal,_pidx);
   checkDietWarn(ings,pickerMeal,_pidx);
 }
@@ -2270,6 +2437,7 @@ function pickerChatAdd(saveAsRecipe){
   }
   var _cidx=getDay().meals[pickerMeal].length-1;
   saveS();renderAll();closePicker();
+  animateAdd(pickerMeal);
   checkPregWarn(ings,pickerMeal,_cidx);
   checkDietWarn(ings,pickerMeal,_cidx);
 }

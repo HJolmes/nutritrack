@@ -376,7 +376,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.112</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.113</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div class="dn">
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
@@ -419,10 +419,10 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
       <div id="nutriAmpelWrap" style="overflow:hidden;max-height:0;transition:max-height .35s ease;"></div>
       <div id="ki-day-wrap" style="display:none;margin-top:10px;border-top:1px solid rgba(255,255,255,0.2);padding-top:10px;"></div>
     </div>
-    <div class="mc"><div class="mh"><div class="mhl"><div class="mi" style="background:#fff8e1">🌅</div><div><div class="mnm">Frühstück</div><div class="ms" id="sub-breakfast">0 kcal</div></div></div><div style="display:flex;gap:4px;"><button type="button" class="ma" style="font-size:12px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="openTemplateOv('breakfast')" title="Vorlage laden">📋</button><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="copyMealFromYesterday('breakfast')" title="Von gestern">⎘</button><button type="button" class="ma" onclick="openPicker('breakfast')">+</button></div></div><div id="entries-breakfast"><div class="me">Noch nichts eingetragen</div></div></div>
-    <div class="mc"><div class="mh"><div class="mhl"><div class="mi" style="background:#e8f5e9">☀️</div><div><div class="mnm">Mittagessen</div><div class="ms" id="sub-lunch">0 kcal</div></div></div><div style="display:flex;gap:4px;"><button type="button" class="ma" style="font-size:12px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="openTemplateOv('lunch')" title="Vorlage laden">📋</button><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="copyMealFromYesterday('lunch')" title="Von gestern">⎘</button><button type="button" class="ma" onclick="openPicker('lunch')">+</button></div></div><div id="entries-lunch"><div class="me">Noch nichts eingetragen</div></div></div>
-    <div class="mc"><div class="mh"><div class="mhl"><div class="mi" style="background:#e3f2fd">🌙</div><div><div class="mnm">Abendessen</div><div class="ms" id="sub-dinner">0 kcal</div></div></div><div style="display:flex;gap:4px;"><button type="button" class="ma" style="font-size:12px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="openTemplateOv('dinner')" title="Vorlage laden">📋</button><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="copyMealFromYesterday('dinner')" title="Von gestern">⎘</button><button type="button" class="ma" onclick="openPicker('dinner')">+</button></div></div><div id="entries-dinner"><div class="me">Noch nichts eingetragen</div></div></div>
-    <div class="mc"><div class="mh"><div class="mhl"><div class="mi" style="background:#fce4ec">🍎</div><div><div class="mnm">Snacks</div><div class="ms" id="sub-snack">0 kcal</div></div></div><div style="display:flex;gap:4px;"><button type="button" class="ma" style="font-size:12px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="openTemplateOv('snack')" title="Vorlage laden">📋</button><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="copyMealFromYesterday('snack')" title="Von gestern">⎘</button><button type="button" class="ma" onclick="openPicker('snack')">+</button></div></div><div id="entries-snack"><div class="me">Noch nichts eingetragen</div></div></div>
+    <div class="mc"><div class="mh"><div class="mhl"><div class="mi" style="background:#fff8e1">🌅</div><div><div class="mnm">Frühstück</div><div class="ms" id="sub-breakfast">0 kcal</div></div></div><div style="display:flex;gap:4px;"><button type="button" class="ma" style="font-size:12px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="openTemplateOv('breakfast')" title="Vorlage laden">📋</button><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="copyMealFromYesterday('breakfast')" title="Von gestern">⎘</button><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="openMealShare('breakfast')" title="Mahlzeit teilen">📤</button><button type="button" class="ma" onclick="openPicker('breakfast')">+</button></div></div><div id="entries-breakfast"><div class="me">Noch nichts eingetragen</div></div></div>
+    <div class="mc"><div class="mh"><div class="mhl"><div class="mi" style="background:#e8f5e9">☀️</div><div><div class="mnm">Mittagessen</div><div class="ms" id="sub-lunch">0 kcal</div></div></div><div style="display:flex;gap:4px;"><button type="button" class="ma" style="font-size:12px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="openTemplateOv('lunch')" title="Vorlage laden">📋</button><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="copyMealFromYesterday('lunch')" title="Von gestern">⎘</button><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="openMealShare('lunch')" title="Mahlzeit teilen">📤</button><button type="button" class="ma" onclick="openPicker('lunch')">+</button></div></div><div id="entries-lunch"><div class="me">Noch nichts eingetragen</div></div></div>
+    <div class="mc"><div class="mh"><div class="mhl"><div class="mi" style="background:#e3f2fd">🌙</div><div><div class="mnm">Abendessen</div><div class="ms" id="sub-dinner">0 kcal</div></div></div><div style="display:flex;gap:4px;"><button type="button" class="ma" style="font-size:12px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="openTemplateOv('dinner')" title="Vorlage laden">📋</button><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="copyMealFromYesterday('dinner')" title="Von gestern">⎘</button><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="openMealShare('dinner')" title="Mahlzeit teilen">📤</button><button type="button" class="ma" onclick="openPicker('dinner')">+</button></div></div><div id="entries-dinner"><div class="me">Noch nichts eingetragen</div></div></div>
+    <div class="mc"><div class="mh"><div class="mhl"><div class="mi" style="background:#fce4ec">🍎</div><div><div class="mnm">Snacks</div><div class="ms" id="sub-snack">0 kcal</div></div></div><div style="display:flex;gap:4px;"><button type="button" class="ma" style="font-size:12px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="openTemplateOv('snack')" title="Vorlage laden">📋</button><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="copyMealFromYesterday('snack')" title="Von gestern">⎘</button><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="openMealShare('snack')" title="Mahlzeit teilen">📤</button><button type="button" class="ma" onclick="openPicker('snack')">+</button></div></div><div id="entries-snack"><div class="me">Noch nichts eingetragen</div></div></div>
     <div class="wc" id="exerciseCard">
       <div class="wh">
         <div class="wt">🏃 Sport & Aktivität</div>
@@ -458,7 +458,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.112</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.113</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -469,7 +469,6 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
   <div style="padding:12px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding-bottom:80px;">
     <div style="display:flex;gap:6px;">
       <button type="button" id="stTabStats" onclick="switchStatsTab('stats')" style="flex:1;padding:8px;border-radius:10px;border:1.5px solid var(--g2);background:var(--g2);color:white;font-weight:700;font-size:13px;">📊 Statistik</button>
-      <button type="button" id="stTabLib" onclick="switchStatsTab('lib')" style="flex:1;padding:8px;border-radius:10px;border:1.5px solid var(--br);background:white;color:var(--mu);font-weight:700;font-size:13px;">📋 Bibliothek</button>
     </div>
     <div id="stPanelStats" style="display:flex;flex-direction:column;gap:10px;">
       <div class="wc" style="display:flex;align-items:center;gap:10px;">
@@ -509,15 +508,6 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
         <div id="offlineQueueList"></div>
         <button type="button" class="svb" style="margin-top:8px;" onclick="processOfflineQueue()">Jetzt analysieren</button>
       </div>
-    </div>
-    <div id="stPanelLib" style="display:none;flex-direction:column;gap:10px;">
-      <input type="text" id="libSearchQ" class="psi" placeholder="Suchen..." onkeyup="renderLibrary()" style="width:100%;">
-      <div style="display:flex;gap:8px;">
-        <button type="button" id="libTabRec" onclick="libSetTab('recipes')" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--g2);background:var(--g2);color:white;font-weight:700;font-size:13px;">📋 Rezepte</button>
-        <button type="button" id="libTabFoods" onclick="libSetTab('foods')" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--br);background:white;color:var(--mu);font-weight:700;font-size:13px;">🥗 Lebensmittel</button>
-        <button type="button" onclick="openRecipeImport()" style="padding:9px 14px;border-radius:10px;border:1.5px solid var(--g2);background:white;color:var(--g2);font-weight:700;font-size:13px;" title="Rezept per URL importieren">🔗 Link</button>
-      </div>
-      <div id="libraryList" style="display:flex;flex-direction:column;gap:8px;"></div>
     </div>
   </div>
   <div class="bnav">
@@ -906,6 +896,50 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
   </div>
 </div>
 
+<!-- ══ EINTRAG KURZMENÜ ══ -->
+<div class="ov" id="entryMenuOv" onclick="bgClose(event,'entryMenuOv')">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" onclick="closeOv('entryMenuOv')">✕</button>
+      <div class="mti" id="entryMenuTitle">Eintrag</div>
+    </div>
+    <div class="mbd" id="entryMenuBody"></div>
+  </div>
+</div>
+
+<!-- ══ MAHLZEIT TEILEN ══ -->
+<div class="ov" id="mealCodeOv" onclick="bgClose(event,'mealCodeOv')">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" onclick="closeOv('mealCodeOv')">✕</button>
+      <div class="mti" id="mealCodeTitle">Mahlzeit teilen</div>
+      <div class="msu">Code kopieren oder einlösen</div>
+    </div>
+    <div class="mbd">
+      <div id="mealCodeExportWrap">
+        <label class="lbl">Mahlzeit-Code</label>
+        <textarea id="mealCodeText" readonly rows="4"
+          style="width:100%;border:1.5px solid var(--g2);border-radius:12px;padding:12px;font-size:12px;font-family:monospace;resize:none;outline:none;background:var(--gl);color:var(--tx);margin-bottom:8px;word-break:break-all;"></textarea>
+        <button type="button" class="cb2" onclick="copyMealCode()" style="margin-bottom:16px;">📋 Code kopieren</button>
+        <div style="border-top:1px solid var(--br);margin-bottom:12px;"></div>
+      </div>
+      <label class="lbl">Mahlzeit-Code einlösen</label>
+      <textarea id="mealImportCodeInput" rows="3" placeholder="Code hier einfügen..."
+        style="width:100%;border:1.5px solid var(--br);border-radius:12px;padding:12px;font-size:12px;font-family:monospace;resize:none;outline:none;margin-bottom:8px;word-break:break-all;"></textarea>
+      <label class="lbl">Eintragen in Mahlzeit:</label>
+      <select id="mealImportTarget" class="sinp" style="margin-bottom:8px;">
+        <option value="breakfast">Frühstück</option>
+        <option value="lunch">Mittagessen</option>
+        <option value="dinner">Abendessen</option>
+        <option value="snack">Snacks</option>
+      </select>
+      <button type="button" class="svb" onclick="importMealCode()" style="margin-top:0;">✅ Einträge importieren</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ REZEPT-CODE TEILEN ══ -->
 <div class="ov" id="recipeCodeOv" onclick="bgClose(event,'recipeCodeOv')">
   <div class="mod">
@@ -968,6 +1002,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
       <button type="button" class="stab" id="stab-ernaehrung" onclick="settSetTab('ernaehrung')">🥗 Ernährung</button>
       <button type="button" class="stab" id="stab-erinnerungen" onclick="settSetTab('erinnerungen')">⏰ Erinn.</button>
       <button type="button" class="stab" id="stab-daten" onclick="settSetTab('daten')">🗂 Daten</button>
+      <button type="button" class="stab" id="stab-bibliothek" onclick="settSetTab('bibliothek')">📚 Bibliothek</button>
     </div>
     <div class="mbd" style="padding-top:12px;">
 
@@ -1103,6 +1138,18 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
         </div>
       </div>
 
+      <!-- TAB: BIBLIOTHEK -->
+      <div id="spanel-bibliothek" style="display:none;">
+        <input type="text" id="libSearchQ" class="psi" placeholder="Suchen..." onkeyup="renderLibrary()" style="width:100%;margin-bottom:8px;">
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <button type="button" id="libTabRec" onclick="libSetTab('recipes')" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--g2);background:var(--g2);color:white;font-weight:700;font-size:13px;">📋 Rezepte</button>
+          <button type="button" id="libTabFoods" onclick="libSetTab('foods')" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--br);background:white;color:var(--mu);font-weight:700;font-size:13px;">🥗 Lebensmittel</button>
+          <button type="button" onclick="openRecipeImport()" style="padding:9px 14px;border-radius:10px;border:1.5px solid var(--g2);background:white;color:var(--g2);font-weight:700;font-size:13px;" title="Rezept per URL importieren">🔗</button>
+          <button type="button" onclick="openRecipeCodeShare(null)" style="padding:9px 14px;border-radius:10px;border:1.5px solid var(--g2);background:white;color:var(--g2);font-weight:700;font-size:13px;" title="Code einlösen">📥</button>
+        </div>
+        <div id="libraryList" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+
       <!-- TAB: DATEN -->
       <div id="spanel-daten" style="display:none;">
         <div class="sf" style="margin-bottom:12px;"><label class="lbl">🔑 Anthropic API Key</label>
@@ -1230,8 +1277,13 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.112';
+var APP_VERSION='0.113';
 var CHANGELOG=[
+  {v:'0.113',items:[
+    {icon:'📚',text:'Bibliothek (Rezepte & Lebensmittel) jetzt in den Einstellungen',where:'⚙️ → Tab „📚 Bibliothek"'},
+    {icon:'👆',text:'Rezept in Mahlzeit antippen: Bearbeiten, Teilen, Kochanleitung',where:'Rezept-Eintrag in der Hauptansicht antippen'},
+    {icon:'📤',text:'Ganze Mahlzeit als Code teilen – andere können direkt importieren',where:'Mahlzeit-Header → 📤 Button'},
+  ]},
   {v:'0.112',items:[
     {icon:'🔍',text:'Nährwerte pro Zutat aufklappbar – überall (Picker, Bearbeiten, Rezept-Editor)',where:'Zutat antippen → Emoji oder Name'},
   ]},
@@ -1695,7 +1747,7 @@ function renderAll(){
         var dworst=dvals.find(function(r){return r.ampel==='rot';})||dvals.find(function(r){return r.ampel==='gelb';})||dvals.find(function(r){return r.ampel==='gruen';});
         if(dworst)dot+=dietAmpelDot(dworst.ampel);
       }
-      return'<div class="fe'+(isR?' is-recipe':'')+'" onclick="openEditEntry(\''+m+'\','+i+')">'
+      return'<div class="fe'+(isR?' is-recipe':'')+'" onclick="'+(isR?'openEntryMenu':'openEditEntry')+'(\''+m+'\','+i+')">'
         +'<div class="fee">'+(e.emoji||'🍽')+'</div>'
         +'<div class="fei"><div class="fen">'+e.name+'</div><div class="fem">'+sub+'</div></div>'
         +'<div class="fek">'+Math.round(e.kcal)+' kcal</div>'
@@ -3031,6 +3083,78 @@ function moveEntry(targetMeal){
   showToast('↕ Nach '+MEAL_NAMES[targetMeal]+' verschoben');
 }
 
+// ─── EINTRAG KURZMENÜ (Hauptansicht, Rezepte) ───
+function openEntryMenu(meal,idx){
+  var e=getDay().meals[meal][idx];
+  if(!e)return;
+  document.getElementById('entryMenuTitle').textContent=(e.emoji||'🍽')+' '+e.name;
+  var rec=e.recipeId&&recipes.find(function(r){return r.id===e.recipeId;});
+  var ins=(rec&&rec.instructions)||e.instructions||'';
+  var body=document.getElementById('entryMenuBody');
+  body.innerHTML=
+    '<button type="button" class="svb" style="margin-bottom:8px;" onclick="closeOv(\'entryMenuOv\');openEditEntry(\''+meal+'\','+idx+')">✏️ Eintrag bearbeiten</button>'
+    +(rec?'<button type="button" class="seb" style="margin-bottom:8px;" onclick="closeOv(\'entryMenuOv\');openRecipeCodeShare(\''+rec.id+'\')">📤 Rezept teilen (Code)</button>':'')
+    +(ins?'<button type="button" class="seb" style="margin-bottom:8px;" onclick="showEntryInstructions()">📝 Kochanleitung anzeigen</button>':'')
+    +'<div id="entryInstructionsPanel" style="display:none;background:var(--gl);border-radius:12px;padding:12px;margin-bottom:8px;white-space:pre-wrap;font-size:13px;color:var(--tx);">'+ins+'</div>';
+  openOv('entryMenuOv');
+}
+function showEntryInstructions(){
+  var p=document.getElementById('entryInstructionsPanel');
+  if(p)p.style.display=p.style.display==='none'?'block':'none';
+}
+
+// ─── MAHLZEIT ALS CODE TEILEN ───
+function _encodeMealCode(meal){
+  var entries=getDay().meals[meal]||[];
+  if(!entries.length)return null;
+  var d={m:meal,e:entries.map(function(e){
+    if(e.isRecipe){
+      return{t:'r',n:e.name,em:e.emoji,p:e.portions||1,i:(e.ingredients||[]).map(function(ing){return{n:ing.name,em:ing.emoji,a:ing.amount,p:{k:Math.round(ing.per100.kcal),pr:Math.round((ing.per100.protein||0)*10)/10,c:Math.round((ing.per100.carbs||0)*10)/10,f:Math.round((ing.per100.fat||0)*10)/10}};})};
+    }
+    return{t:'f',n:e.name,em:e.emoji,a:e.amount,p:{k:Math.round(e.per100&&e.per100.kcal||e.kcal),pr:Math.round((e.per100&&e.per100.protein||e.protein||0)*10)/10,c:Math.round((e.per100&&e.per100.carbs||e.carbs||0)*10)/10,f:Math.round((e.per100&&e.per100.fat||e.fat||0)*10)/10}};
+  })};
+  try{return btoa(unescape(encodeURIComponent(JSON.stringify(d))));}catch(ex){return null;}
+}
+function _decodeMealCode(code){
+  try{
+    var d=JSON.parse(decodeURIComponent(escape(atob(code.trim().replace(/\s+/g,'')))));
+    return d.e.map(function(x){
+      if(x.t==='r'){
+        var ings=(x.i||[]).map(function(ing){return{name:ing.n,emoji:ing.em,amount:ing.a||100,per100:{kcal:ing.p.k,protein:ing.p.pr,carbs:ing.p.c,fat:ing.p.f,sugar:0,fiber:0,salt:0}};});
+        var t=ingTotal(ings);return Object.assign({name:x.n,emoji:x.em,isRecipe:true,recipeId:null,portions:x.p,ingredients:ings},scaleNutrients(t,x.p));
+      }
+      var per100={kcal:x.p.k,protein:x.p.pr,carbs:x.p.c,fat:x.p.f,sugar:0,fiber:0,salt:0};
+      var r=(x.a||100)/100;
+      return Object.assign({name:x.n,emoji:x.em,amount:x.a||100,per100:per100},scaleNutrients(per100,r));
+    });
+  }catch(ex){return null;}
+}
+function openMealShare(meal){
+  var code=_encodeMealCode(meal);
+  if(!code){showToast('Keine Einträge zum Teilen');return;}
+  document.getElementById('mealCodeTitle').textContent='📤 '+MEAL_NAMES[meal]+' teilen';
+  document.getElementById('mealCodeText').value=code;
+  document.getElementById('mealImportCodeInput').value='';
+  document.getElementById('mealImportTarget').value=meal;
+  openOv('mealCodeOv');
+}
+function copyMealCode(){
+  var t=document.getElementById('mealCodeText');
+  if(!t)return;
+  if(navigator.clipboard){navigator.clipboard.writeText(t.value).then(function(){showToast('Code kopiert ✓');});}
+  else{t.select();document.execCommand('copy');showToast('Code kopiert ✓');}
+}
+function importMealCode(){
+  var code=document.getElementById('mealImportCodeInput').value.trim();
+  var target=document.getElementById('mealImportTarget').value;
+  if(!code){showToast('Code eingeben');return;}
+  var entries=_decodeMealCode(code);
+  if(!entries||!entries.length){showToast('Ungültiger Code');return;}
+  entries.forEach(function(e){getDay().meals[target].push(e);});
+  saveS();renderAll();closeOv('mealCodeOv');
+  showToast('✅ '+entries.length+' Einträge in '+MEAL_NAMES[target]+' importiert');
+}
+
 // Override pickerConfirmAdd when in entry-edit mode
 var _origPickerConfirmAdd=null;
 // We handle this via the _editEntryMode flag in pickerConfirmAdd
@@ -3184,12 +3308,13 @@ function importRecipeCode(){
 // SECTION: SETTINGS
 // ════════════════════════════════════════
 function settSetTab(tab){
-  ['profil','ziele','ernaehrung','erinnerungen','daten'].forEach(function(t){
+  ['profil','ziele','ernaehrung','erinnerungen','daten','bibliothek'].forEach(function(t){
     var btn=document.getElementById('stab-'+t);
     var panel=document.getElementById('spanel-'+t);
     if(btn)btn.classList.toggle('act',t===tab);
     if(panel)panel.style.display=t===tab?'block':'none';
   });
+  if(tab==='bibliothek')renderLibrary();
 }
 
 function openSettings(){
@@ -3816,18 +3941,10 @@ function logWeight(){
 
 // ── Stats-Panel rendern ──
 function switchStatsTab(tab){
-  document.getElementById('stPanelStats').style.display=tab==='stats'?'flex':'none';
-  document.getElementById('stPanelLib').style.display=tab==='lib'?'flex':'none';
+  document.getElementById('stPanelStats').style.display='flex';
   document.getElementById('stPanelStats').style.flexDirection='column';
   document.getElementById('stPanelStats').style.gap='10px';
-  document.getElementById('stTabStats').style.background=tab==='stats'?'var(--g2)':'white';
-  document.getElementById('stTabStats').style.color=tab==='stats'?'white':'var(--mu)';
-  document.getElementById('stTabStats').style.borderColor=tab==='stats'?'var(--g2)':'var(--br)';
-  document.getElementById('stTabLib').style.background=tab==='lib'?'var(--g2)':'white';
-  document.getElementById('stTabLib').style.color=tab==='lib'?'white':'var(--mu)';
-  document.getElementById('stTabLib').style.borderColor=tab==='lib'?'var(--g2)':'var(--br)';
-  if(tab==='stats')renderStatsPanel();
-  if(tab==='lib')renderLibrary();
+  renderStatsPanel();
 }
 
 function renderStatsPanel(){

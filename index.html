@@ -244,14 +244,16 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 /* Ingredient list (universal) */
 .ing-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;}
 .ing-item{display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:9px;padding:8px 10px;}
-.ing-e{font-size:18px;flex-shrink:0;}
-.ing-n{flex:1;font-size:13px;font-weight:600;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ing-e{font-size:18px;flex-shrink:0;cursor:pointer;}
+.ing-n{flex:1;font-size:13px;font-weight:600;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;}
 .ing-amt{border:1.5px solid var(--br);border-radius:7px;padding:4px 8px;font-size:13px;font-weight:700;width:65px;text-align:center;outline:none;}
 .ing-amt:focus{border-color:var(--g2);}
 .ing-amt.warn{border-color:var(--or);}
 .ing-u{font-size:11px;color:var(--mu);flex-shrink:0;}
 .ing-del{background:none;border:none;font-size:15px;color:var(--mu);opacity:.4;flex-shrink:0;padding:2px;}
 .ing-del:active{opacity:1;color:var(--re);}
+.ing-details{display:none;background:var(--gl);border-radius:0 0 9px 9px;padding:6px 10px 7px;font-size:12px;color:var(--g1);font-weight:600;border-top:1px solid var(--br);margin-top:-2px;}
+.ing-wrap{margin-bottom:4px;border-radius:9px;overflow:hidden;box-shadow:0 1px 4px rgba(45,125,82,.07);}
 .rec-total{background:var(--gl);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--g1);font-weight:700;margin-bottom:10px;}
 
 /* Recipe builder within picker */
@@ -374,7 +376,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.111</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.112</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div class="dn">
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
@@ -458,7 +460,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.111</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.112</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -1230,8 +1232,11 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.111';
+var APP_VERSION='0.112';
 var CHANGELOG=[
+  {v:'0.112',items:[
+    {icon:'🔍',text:'Nährwerte pro Zutat aufklappbar – überall (Picker, Bearbeiten, Rezept-Editor)',where:'Zutat antippen → Emoji oder Name'},
+  ]},
   {v:'0.111',items:[
     {icon:'📱',text:'Live-Barcode-Scanner auf iPhone/iPad (iOS 18.6.2+)',where:'+ → Barcode → Scanner starten'},
   ]},
@@ -1589,6 +1594,32 @@ function getDay(){if(!S.days[S.currentDate])S.days[S.currentDate]={meals:{breakf
 function calcM(arr){return arr.reduce(function(a,e){return{kcal:a.kcal+(e.kcal||0),protein:a.protein+(e.protein||0),carbs:a.carbs+(e.carbs||0),fat:a.fat+(e.fat||0),sugar:a.sugar+(e.sugar||0),fiber:a.fiber+(e.fiber||0),salt:a.salt+(e.salt||0)};},{kcal:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0,salt:0});}
 function ingTotal(ings){return(ings||[]).reduce(function(a,g){var r=(g.amount||0)/100;return{kcal:a.kcal+(g.per100.kcal||0)*r,protein:a.protein+(g.per100.protein||0)*r,carbs:a.carbs+(g.per100.carbs||0)*r,fat:a.fat+(g.per100.fat||0)*r,sugar:a.sugar+(g.per100.sugar||0)*r,fiber:a.fiber+(g.per100.fiber||0)*r,salt:a.salt+(g.per100.salt||0)*r};},{kcal:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0,salt:0});}
 function scaleNutrients(t,factor){return{kcal:t.kcal*factor,protein:t.protein*factor,carbs:t.carbs*factor,fat:t.fat*factor,sugar:(t.sugar||0)*factor,fiber:(t.fiber||0)*factor,salt:(t.salt||0)*factor};}
+
+function ingNutrHtml(ing){
+  var p=ing.per100||{};
+  var a=parseFloat(ing.amount)||0;
+  var r=a/100;
+  if(a){
+    return Math.round((p.kcal||0)*r)+' kcal'
+      +' &nbsp;·&nbsp; P '+Math.round((p.protein||0)*r)+'g'
+      +' &nbsp;·&nbsp; K '+Math.round((p.carbs||0)*r)+'g'
+      +' &nbsp;·&nbsp; F '+Math.round((p.fat||0)*r)+'g'
+      +(p.sugar?(p.sugar*r>=0.5?' &nbsp;·&nbsp; Zucker '+Math.round(p.sugar*r*10)/10+'g':''):'')
+      +(p.fiber?(p.fiber*r>=0.5?' &nbsp;·&nbsp; Bal. '+Math.round(p.fiber*r*10)/10+'g':''):'');
+  }
+  return 'pro 100g: '+Math.round(p.kcal||0)+' kcal'
+    +' &nbsp;·&nbsp; P '+Math.round(p.protein||0)+'g'
+    +' &nbsp;·&nbsp; K '+Math.round(p.carbs||0)+'g'
+    +' &nbsp;·&nbsp; F '+Math.round(p.fat||0)+'g';
+}
+
+function ingToggle(event,id){
+  event.stopPropagation();
+  var el=document.getElementById(id);
+  if(!el)return;
+  el.style.display=el.style.display==='block'?'none':'block';
+}
+
 function totalStr(t){return Math.round(t.kcal)+' kcal · P'+Math.round(t.protein)+'g K'+Math.round(t.carbs)+'g F'+Math.round(t.fat)+'g';}
 
 // ════════════════════════════════════════
@@ -2804,13 +2835,17 @@ function pickerRenderIngList(elId,ings,onAmtChange,onDel){
     var borderStyle=missingG?'border-color:var(--or);':'';
     var warn=missingG?'<span style="font-size:11px;color:var(--or);">⚠️</span>':'';
     var ampelDot=(S.pregWarn&&ing.pregAmpel?pregAmpelDot(ing.pregAmpel.ampel):'')+(S.dietWarn&&ing.dietAmpel?dietAmpelDot(ing.dietAmpel.ampel):'');
-    return'<div class="ing-item">'
-      +'<div class="ing-e">'+(ing.emoji||'🍽')+'</div>'
-      +'<div class="ing-n">'+ing.name+ampelDot+'</div>'
+    var nid=elId+'-n-'+i;
+    return'<div class="ing-wrap">'
+      +'<div class="ing-item">'
+      +'<div class="ing-e" onclick="ingToggle(event,\''+nid+'\')">'+(ing.emoji||'🍽')+'</div>'
+      +'<div class="ing-n" onclick="ingToggle(event,\''+nid+'\')">'+ing.name+ampelDot+'</div>'
       +'<input type="number" class="ing-amt" value="'+amtVal+'" min="1" placeholder="g?" style="'+borderStyle+'" data-i="'+i+'" onchange="pickerIngAmtChange(\''+elId+'\','+i+',this.value)">'
       +'<div class="ing-u">g</div>'
       +warn
       +'<button type="button" class="ing-del" onclick="pickerIngDel(\''+elId+'\','+i+')">✕</button>'
+      +'</div>'
+      +'<div class="ing-details" id="'+nid+'">'+ingNutrHtml(ing)+'</div>'
       +'</div>';
   }).join('');
   // Store callbacks
@@ -2854,12 +2889,16 @@ function renderEditBody(e){
       var bStyle=missingG?'border-color:var(--or);':'';
       var warn=missingG?'<span style="font-size:11px;color:var(--or);">⚠️</span>':'';
       var ampelDot=(S.pregWarn&&ing.pregAmpel?pregAmpelDot(ing.pregAmpel.ampel):'')+(S.dietWarn&&ing.dietAmpel?dietAmpelDot(ing.dietAmpel.ampel):'');
-      return'<div class="ing-item">'
-        +'<div class="ing-e">'+(ing.emoji||'🍽')+'</div>'
-        +'<div class="ing-n">'+ing.name+ampelDot+'</div>'
+      var nid='edit-n-'+i;
+      return'<div class="ing-wrap">'
+        +'<div class="ing-item">'
+        +'<div class="ing-e" onclick="ingToggle(event,\''+nid+'\')">'+(ing.emoji||'🍽')+'</div>'
+        +'<div class="ing-n" onclick="ingToggle(event,\''+nid+'\')">'+ing.name+ampelDot+'</div>'
         +'<input type="number" class="ing-amt" value="'+amtVal+'" min="1" placeholder="g?" style="'+bStyle+'" onchange="editIngAmt('+i+',this.value)">'
         +'<div class="ing-u">g</div>'+warn
         +'<button type="button" class="ing-del" onclick="editIngDel('+i+')">✕</button>'
+        +'</div>'
+        +'<div class="ing-details" id="'+nid+'">'+ingNutrHtml(ing)+'</div>'
         +'</div>';
     }).join('');
     body.innerHTML='<label class="lbl">Name</label>'
@@ -3010,12 +3049,16 @@ function recEditRenderIng(ings){
     var missingG=ing.missingGrams||(ing.amount===null||ing.amount===undefined);
     var amtVal=missingG?'':(ing.amount||'');
     var bStyle=missingG?'border-color:var(--or);':'';
-    return'<div class="ing-item">'
-      +'<div class="ing-e">'+(ing.emoji||'🍽')+'</div>'
-      +'<div class="ing-n">'+ing.name+'</div>'
+    var nid='reced-n-'+i;
+    return'<div class="ing-wrap">'
+      +'<div class="ing-item">'
+      +'<div class="ing-e" onclick="ingToggle(event,\''+nid+'\')">'+(ing.emoji||'🍽')+'</div>'
+      +'<div class="ing-n" onclick="ingToggle(event,\''+nid+'\')">'+ing.name+'</div>'
       +'<input type="number" class="ing-amt" value="'+amtVal+'" min="1" placeholder="g?" style="'+bStyle+'" onchange="recEditIngAmt('+i+',this.value)">'
       +'<div class="ing-u">g</div>'
       +'<button type="button" class="ing-del" onclick="recEditIngDel('+i+')">✕</button>'
+      +'</div>'
+      +'<div class="ing-details" id="'+nid+'">'+ingNutrHtml(ing)+'</div>'
       +'</div>';
   }).join('');
   document.getElementById('recEditTotal').textContent=ings.length?'Gesamt: '+totalStr(t):'';

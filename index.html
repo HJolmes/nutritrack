@@ -376,7 +376,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.113</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.114</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div class="dn">
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
@@ -460,7 +460,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.113</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.114</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -1163,7 +1163,10 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
           <button type="button" class="seb" onclick="exportData()">📤 Exportieren</button>
           <button type="button" class="seb" onclick="document.getElementById('impInp').click()">📥 Importieren</button>
           <input type="file" id="impInp" accept=".json" style="display:none" onchange="importData(event)">
-          <button type="button" class="seb" style="margin-top:4px;" onclick="syncToGoogleDrive()">☁️ Google Drive Sync</button>
+        </div>
+        <div style="padding-top:12px;border-top:1px solid var(--br);margin-bottom:12px;">
+          <label class="lbl" style="margin-bottom:8px;">☁️ OneDrive Sync</label>
+          <div id="odStatusWrap"></div>
         </div>
         <div style="padding-top:12px;border-top:1px solid var(--br);margin-bottom:12px;">
           <button type="button" class="seb" onclick="openPromptSettings()">⚙️ KI-Prompts anzeigen</button>
@@ -1279,8 +1282,18 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.113';
+var APP_VERSION='0.114';
+
+// ── OneDrive PKCE Config ──
+var OD_CLIENT_ID='ae62274b-87de-4369-b1e5-9d6e45a724f4';
+var OD_REDIRECT='https://hjolmes.github.io/nutritrack/';
+var OD_SCOPES='Files.ReadWrite User.Read offline_access';
+var OD_FILE_PATH='/NutriTrack/nutritrack-backup.json';
+
 var CHANGELOG=[
+  {v:'0.114',items:[
+    {icon:'☁️',text:'OneDrive Sync – Daten automatisch in Microsoft OneDrive sichern',where:'⚙️ → Daten → OneDrive verbinden'},
+  ]},
   {v:'0.113',items:[
     {icon:'📚',text:'Bibliothek (Rezepte & Lebensmittel) jetzt in den Einstellungen',where:'⚙️ → Tab „📚 Bibliothek"'},
     {icon:'👆',text:'Rezept in Mahlzeit antippen: Bearbeiten, Teilen, Kochanleitung',where:'Rezept-Eintrag in der Hauptansicht antippen'},
@@ -1396,6 +1409,16 @@ function setAppleTouchIconPNG(){
   }catch(e){}
 }
 window.addEventListener('DOMContentLoaded',function(){
+  // Handle OneDrive OAuth callback
+  var _params=new URLSearchParams(window.location.search);
+  var _odCode=_params.get('code');
+  var _odState=_params.get('state');
+  if(_odCode&&_odState){
+    loadS();loadX();loadBarcodeCache();
+    _odHandleCallback(_odCode,_odState);
+    if(S.apiKey)showMain();
+    return;
+  }
   var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
   if(isIOS)setAppleTouchIconPNG();
   loadS();loadX();loadBarcodeCache();
@@ -3304,6 +3327,7 @@ function settSetTab(tab){
     if(panel)panel.style.display=t===tab?'block':'none';
   });
   if(tab==='bibliothek')renderLibrary();
+  if(tab==='daten')renderOneDriveStatus();
 }
 
 function openSettings(){
@@ -4427,36 +4451,166 @@ function copyShoppingList(){
   navigator.clipboard.writeText(text).then(function(){showToast('📋 Kopiert');}).catch(function(){showToast('Kopieren nicht verfügbar');});
 }
 
-// ── Google Drive Sync ──
-function syncToGoogleDrive(){
-  if(!S.apiKey){showToast('Bitte zuerst API Key eingeben');return;}
-  if(!isOnline){showToast('Kein Internet für Sync');return;}
-  showToast('☁️ Sync läuft...');
-  var data=JSON.stringify({state:S,foodCache:foodCache,customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache,syncedAt:new Date().toISOString()});
-  // Datenmenge prüfen
-  var kb=Math.round(data.length/1024);
-  fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST',
-    headers:{'Content-Type':'application/json','x-api-key':S.apiKey,'anthropic-version':'2023-06-01'},
-    body:JSON.stringify({
-      model:'claude-haiku-4-5',
-      max_tokens:100,
-      messages:[{role:'user',content:'Save the following JSON as a file named "nutritrack-backup.json" to the root of Google Drive. Reply with only "SAVED" on success.\n\n'+data}],
-      mcp_servers:[{type:'url',url:'https://drivemcp.googleapis.com/mcp/v1',name:'google-drive'}]
-    })
-  }).then(function(r){return r.json();}).then(function(res){
-    var txt=(res.content||[]).map(function(c){return c.text||'';}).join('');
-    if(txt.includes('SAVED')||txt.includes('creat')||txt.includes('updat')||txt.includes('upload')){
-      localStorage.setItem('nt_last_sync',new Date().toISOString());
-      showToast('☁️ Google Drive gespeichert ✓ ('+kb+'KB)');
-    } else {
-      triggerBackupDownload();
-      showToast('Drive nicht erreichbar – Download gestartet');
-    }
-  }).catch(function(){
-    triggerBackupDownload();
-    showToast('Drive Fehler – Download gestartet');
+// ── OneDrive Sync (OAuth2 PKCE) ──
+function _odLoadTokens(){try{return JSON.parse(localStorage.getItem('nt_od')||'null');}catch(e){return null;}}
+function _odSaveTokens(t){localStorage.setItem('nt_od',JSON.stringify(t));}
+function _odClearTokens(){localStorage.removeItem('nt_od');}
+
+function _b64url(buf){
+  return btoa(String.fromCharCode.apply(null,new Uint8Array(buf)))
+    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+}
+function _sha256(str){
+  var buf=new TextEncoder().encode(str);
+  return crypto.subtle.digest('SHA-256',buf);
+}
+function _randomStr(len){
+  var arr=new Uint8Array(len);
+  crypto.getRandomValues(arr);
+  return _b64url(arr);
+}
+
+function oneDriveConnect(){
+  var verifier=_randomStr(48);
+  var state=_randomStr(16);
+  sessionStorage.setItem('od_verifier',verifier);
+  sessionStorage.setItem('od_state',state);
+  _sha256(verifier).then(function(hash){
+    var challenge=_b64url(hash);
+    var url='https://login.microsoftonline.com/common/oauth2/v2.0/authorize'
+      +'?client_id='+OD_CLIENT_ID
+      +'&response_type=code'
+      +'&redirect_uri='+encodeURIComponent(OD_REDIRECT)
+      +'&scope='+encodeURIComponent(OD_SCOPES)
+      +'&code_challenge='+challenge
+      +'&code_challenge_method=S256'
+      +'&state='+state;
+    window.location.href=url;
   });
+}
+
+function _odHandleCallback(code,state){
+  var verifier=sessionStorage.getItem('od_verifier');
+  var savedState=sessionStorage.getItem('od_state');
+  sessionStorage.removeItem('od_verifier');
+  sessionStorage.removeItem('od_state');
+  if(!verifier||state!==savedState){showToast('OneDrive: Ungültiger Status');return;}
+  // Clean URL
+  history.replaceState({},'',OD_REDIRECT);
+  fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token',{
+    method:'POST',
+    headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:'client_id='+OD_CLIENT_ID
+      +'&grant_type=authorization_code'
+      +'&code='+encodeURIComponent(code)
+      +'&redirect_uri='+encodeURIComponent(OD_REDIRECT)
+      +'&code_verifier='+encodeURIComponent(verifier)
+      +'&scope='+encodeURIComponent(OD_SCOPES)
+  }).then(function(r){return r.json();}).then(function(t){
+    if(t.error){showToast('OneDrive Fehler: '+t.error_description);return;}
+    _odSaveTokens({
+      access_token:t.access_token,
+      refresh_token:t.refresh_token,
+      expires_at:Date.now()+(t.expires_in-60)*1000
+    });
+    showToast('☁️ OneDrive verbunden ✓');
+    renderOneDriveStatus();
+  }).catch(function(){showToast('OneDrive Token-Fehler');});
+}
+
+function _odGetToken(){
+  var tok=_odLoadTokens();
+  if(!tok)return Promise.reject('not_connected');
+  if(Date.now()<tok.expires_at)return Promise.resolve(tok.access_token);
+  // Refresh
+  return fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token',{
+    method:'POST',
+    headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:'client_id='+OD_CLIENT_ID
+      +'&grant_type=refresh_token'
+      +'&refresh_token='+encodeURIComponent(tok.refresh_token)
+      +'&scope='+encodeURIComponent(OD_SCOPES)
+  }).then(function(r){return r.json();}).then(function(t){
+    if(t.error){_odClearTokens();throw new Error(t.error);}
+    var updated={access_token:t.access_token,refresh_token:t.refresh_token||tok.refresh_token,expires_at:Date.now()+(t.expires_in-60)*1000};
+    _odSaveTokens(updated);
+    return updated.access_token;
+  });
+}
+
+function oneDriveSyncUp(){
+  if(!isOnline){showToast('Kein Internet');return;}
+  showToast('☁️ Hochladen...');
+  _odGetToken().then(function(token){
+    var data=JSON.stringify({state:S,foodCache:foodCache,customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache,syncedAt:new Date().toISOString()});
+    var kb=Math.round(data.length/1024);
+    return fetch('https://graph.microsoft.com/v1.0/me/drive/root:'+OD_FILE_PATH+':/content',{
+      method:'PUT',
+      headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+      body:data
+    }).then(function(r){
+      if(!r.ok)throw new Error(r.status);
+      localStorage.setItem('nt_last_sync',new Date().toISOString());
+      showToast('☁️ OneDrive gespeichert ✓ ('+kb+' KB)');
+      renderOneDriveStatus();
+    });
+  }).catch(function(e){
+    if(e==='not_connected'){showToast('OneDrive nicht verbunden');}
+    else{showToast('OneDrive Upload fehlgeschlagen');}
+  });
+}
+
+function oneDriveSyncDown(){
+  if(!isOnline){showToast('Kein Internet');return;}
+  showToast('☁️ Herunterladen...');
+  _odGetToken().then(function(token){
+    return fetch('https://graph.microsoft.com/v1.0/me/drive/root:'+OD_FILE_PATH+':/content',{
+      headers:{'Authorization':'Bearer '+token}
+    }).then(function(r){
+      if(r.status===404){showToast('Keine Sicherung in OneDrive gefunden');return null;}
+      if(!r.ok)throw new Error(r.status);
+      return r.json();
+    }).then(function(backup){
+      if(!backup)return;
+      if(backup.state)S=Object.assign(S,backup.state);
+      if(backup.foodCache)foodCache=backup.foodCache;
+      if(backup.customFoods)customFoods=backup.customFoods;
+      if(backup.recipes)recipes=backup.recipes;
+      if(backup.barcodeCache)barcodeCache=backup.barcodeCache;
+      saveS();saveX();saveBarcodeCache();
+      renderAll();
+      showToast('☁️ Daten aus OneDrive geladen ✓');
+    });
+  }).catch(function(e){
+    if(e==='not_connected'){showToast('OneDrive nicht verbunden');}
+    else{showToast('OneDrive Download fehlgeschlagen');}
+  });
+}
+
+function oneDriveDisconnect(){
+  _odClearTokens();
+  showToast('OneDrive getrennt');
+  renderOneDriveStatus();
+}
+
+function renderOneDriveStatus(){
+  var wrap=document.getElementById('odStatusWrap');
+  if(!wrap)return;
+  var tok=_odLoadTokens();
+  var lastSync=localStorage.getItem('nt_last_sync');
+  var lastStr=lastSync?new Date(lastSync).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'–';
+  if(tok){
+    wrap.innerHTML='<div style="background:var(--gl);border-radius:10px;padding:10px 12px;margin-bottom:8px;">'
+      +'<div style="font-size:13px;font-weight:700;color:var(--g1);margin-bottom:2px;">✅ Verbunden</div>'
+      +'<div style="font-size:12px;color:var(--mu);">Letzter Sync: '+lastStr+'</div>'
+      +'</div>'
+      +'<button type="button" class="seb" onclick="oneDriveSyncUp()">☁️ Jetzt sichern</button>'
+      +'<button type="button" class="seb" onclick="oneDriveSyncDown()">📥 Aus OneDrive laden</button>'
+      +'<button type="button" class="seb" style="color:#c00;border-color:#c00;margin-top:4px;" onclick="oneDriveDisconnect()">🔌 Trennen</button>';
+  } else {
+    wrap.innerHTML='<div style="font-size:12px;color:var(--mu);margin-bottom:8px;">Verbinde NutriTrack mit deinem Microsoft-Konto, um Daten automatisch zu sichern.</div>'
+      +'<button type="button" class="seb" onclick="oneDriveConnect()">🔗 Mit OneDrive verbinden</button>';
+  }
 }
 
 function triggerBackupDownload(){

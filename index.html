@@ -390,7 +390,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.116</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.117</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div class="dn">
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
@@ -472,7 +472,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.116</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.117</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -1299,7 +1299,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.116';
+var APP_VERSION='0.117';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1316,6 +1316,9 @@ var OD_SCOPES='Files.ReadWrite User.Read offline_access';
 var OD_FILE_PATH='/NutriTrack/nutritrack-backup.json';
 
 var CHANGELOG=[
+  {v:'0.117',items:[
+    {icon:'☁️',text:'Export-Button speichert zuerst in OneDrive – lokaler Download als Fallback',where:'📤 Button oben rechts'},
+  ]},
   {v:'0.116',items:[
     {icon:'🔑',text:'Proxy-Passwort: KI-Zugang per Passwort sichern – kein Token mehr im Code',where:'⚙️ → Daten → Proxy-Passwort'},
   ]},
@@ -4636,9 +4639,9 @@ function _odGetToken(){
 }
 
 function oneDriveSyncUp(){
-  if(!isOnline){showToast('Kein Internet');return;}
+  if(!isOnline){showToast('Kein Internet');return Promise.reject('offline');}
   showToast('☁️ Hochladen...');
-  _odGetToken().then(function(token){
+  return _odGetToken().then(function(token){
     var data=JSON.stringify({state:backupState(),foodCache:foodCache,customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache,syncedAt:new Date().toISOString()});
     var kb=Math.round(data.length/1024);
     return fetch('https://graph.microsoft.com/v1.0/me/drive/root:'+OD_FILE_PATH+':/content',{
@@ -4653,7 +4656,8 @@ function oneDriveSyncUp(){
     });
   }).catch(function(e){
     if(e==='not_connected'){showToast('OneDrive nicht verbunden');}
-    else{showToast('OneDrive Upload fehlgeschlagen');}
+    else if(e!=='offline'){showToast('OneDrive Upload fehlgeschlagen');}
+    throw e;
   });
 }
 
@@ -5126,6 +5130,11 @@ function bgClose(e,id){if(e.target.id===id)closeOv(id);}
 // SECTION: TOAST
 // ════════════════════════════════════════
 function shareData(){
+  var tok=_odLoadTokens();
+  if(tok&&isOnline){
+    oneDriveSyncUp().catch(function(){exportData();});
+    return;
+  }
   var data={state:backupState(),foodCache:foodCache,customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache};
   var json=JSON.stringify(data,null,2);
   var filename='nutritrack-backup-'+today()+'.json';

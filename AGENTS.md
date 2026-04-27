@@ -16,8 +16,10 @@ Protect user data. Nutrition logs, photos, API keys, OneDrive tokens, backups, a
 
 This repository is a static GitHub Pages app, not a bundled npm/React project.
 
-- `index.html` contains HTML, CSS, app state, rendering, event handlers, storage, AI calls, OpenFoodFacts calls, OneDrive sync, backup/import/export, and most UI flows.
+- `index.html` contains HTML, CSS, app state, rendering, event handlers, storage, AI proxy calls, OpenFoodFacts calls, OneDrive sync, backup/import/export, and most UI flows.
 - `sw.js` is the PWA service worker and cache updater.
+- `worker/src/index.js` is the Cloudflare Worker AI proxy.
+- `worker/wrangler.toml` configures the Worker deploy target without storing secrets.
 - `manifest.json` defines PWA install metadata.
 - `icon.svg` is the app icon.
 - `nutritrack_anleitung.pdf` is the user guide.
@@ -25,7 +27,8 @@ This repository is a static GitHub Pages app, not a bundled npm/React project.
 Runtime integrations currently include:
 
 - Browser `localStorage` keys including `nt_v6`, `nt_x`, `nt_bc`, `nt_od`, `nt_offline_queue`, version/reminder/install keys.
-- Anthropic Messages API called directly from the browser.
+- Anthropic Messages API called through the Cloudflare Worker proxy. The real Anthropic key belongs only in the `ANTHROPIC_API_KEY` Worker secret.
+- The browser sends `X-NutriTrack-Proxy-Token` to the Worker. Treat this app token as a light usage barrier, not as a true secret.
 - OpenFoodFacts API for search/barcode/product lookup.
 - Microsoft OneDrive OAuth PKCE and Graph API backup sync.
 - ZXing loaded from `https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js`.
@@ -56,7 +59,7 @@ Prefer existing helper functions and state shape over introducing duplicate stat
 
 When adding or changing persisted fields, make imports, exports, OneDrive sync, and old saved data behave safely. Avoid destructive migrations unless explicitly requested.
 
-Do not commit real secrets, API keys, OAuth tokens, `.env` files, exported backups, personal nutrition data, or test files containing private data.
+Do not commit real secrets, API keys, OAuth tokens, `.env` files, `.dev.vars`, exported backups, personal nutrition data, or test files containing private data. `ANTHROPIC_API_KEY` and `NUTRITRACK_PROXY_TOKEN` must be configured as Cloudflare Worker secrets.
 
 Avoid adding new external CDNs or APIs unless necessary. If adding one, document why and ensure the service worker skip/cache behavior is correct.
 
@@ -69,6 +72,7 @@ There is currently no npm build or automated test suite. Before opening or mergi
 - Check browser console for errors.
 - Test install/update behavior when `sw.js` changed.
 - Test backup export/import if persisted data shape changed.
+- Test Worker auth and CORS if `worker/` or AI proxy calls changed.
 - Test OneDrive sync only with non-private test data if sync code changed.
 - Test offline/online behavior if fetch, cache, or service-worker logic changed.
 

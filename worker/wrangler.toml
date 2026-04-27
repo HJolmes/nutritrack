@@ -1,0 +1,7 @@
+name = "nutritrack-ai-proxy"
+main = "src/index.js"
+compatibility_date = "2026-04-27"
+
+# Set these as Cloudflare Worker secrets, never in this file:
+# wrangler secret put ANTHROPIC_API_KEY
+# wrangler secret put NUTRITRACK_PROXY_TOKEN

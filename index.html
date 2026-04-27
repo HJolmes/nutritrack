@@ -352,13 +352,10 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
       <div class="onb-slide" style="justify-content:flex-start;padding-top:40px;overflow-y:auto;">
         <div class="s-card" style="margin-top:10px;">
           <div style="text-align:center;margin-bottom:16px;">
-            <div style="font-size:32px;margin-bottom:6px;">🔑</div>
+            <div style="font-size:32px;margin-bottom:6px;">🔒</div>
             <h2>Fast fertig!</h2>
-            <p>Gib deinen Anthropic API Key ein um die KI-Funktionen zu nutzen.<br>
-            <a href="https://console.anthropic.com" target="_blank">Hier kostenlos erstellen →</a></p>
+            <p>KI-Funktionen laufen jetzt geschützt über den NutriTrack Cloudflare Proxy. Dein Anthropic API Key wird nicht im Browser gespeichert.</p>
           </div>
-          <label class="lbl">Anthropic API Key</label>
-          <div class="fiw"><input type="password" class="fi" id="s_key" placeholder="sk-ant-api03-..."><button class="eye" type="button" onclick="toggleEye('s_key')">👁</button></div>
           <label class="lbl">Dein Name</label>
           <input type="text" class="fi" id="s_name" placeholder="Max">
           <label class="lbl">Tägliches Kalorienziel (kcal)</label>
@@ -376,7 +373,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.114</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.115</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div class="dn">
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
@@ -458,7 +455,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.114</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.115</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -1152,8 +1149,9 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 
       <!-- TAB: DATEN -->
       <div id="spanel-daten" style="display:none;">
-        <div class="sf" style="margin-bottom:12px;"><label class="lbl">🔑 Anthropic API Key</label>
-          <div style="position:relative;"><input type="password" class="sinp" id="sk"><button type="button" onclick="toggleEye('sk')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:17px;color:var(--mu);">👁</button></div>
+        <div class="sf" style="margin-bottom:12px;"><label class="lbl">🔒 KI Proxy</label>
+          <div style="font-size:12px;color:var(--mu);line-height:1.5;">Anthropic läuft über den Cloudflare Worker. Der API Key wird nur als Worker Secret gespeichert.</div>
+          <div id="aiProxyStatus" style="font-size:12px;color:var(--g1);font-weight:700;margin-top:6px;"></div>
         </div>
         <button type="button" class="svb" onclick="saveSettings()" style="margin-bottom:12px;">Speichern ✓</button>
         <div style="padding-top:12px;border-top:1px solid var(--br);margin-bottom:12px;">
@@ -1280,7 +1278,9 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.114';
+var APP_VERSION='0.115';
+var AI_PROXY_URL='https://nutritrack-ai-proxy.hjolmes.workers.dev/v1/messages';
+var AI_PROXY_TOKEN='CHANGE_ME_NUTRITRACK_PROXY_TOKEN';
 
 // ── OneDrive PKCE Config ──
 var OD_CLIENT_ID='ae62274b-87de-4369-b1e5-9d6e45a724f4';
@@ -1289,6 +1289,9 @@ var OD_SCOPES='Files.ReadWrite User.Read offline_access';
 var OD_FILE_PATH='/NutriTrack/nutritrack-backup.json';
 
 var CHANGELOG=[
+  {v:'0.115',items:[
+    {icon:'🔒',text:'KI-Anfragen laufen jetzt über einen geschützten Cloudflare Proxy statt direkt aus dem Browser',where:'Cloudflare Worker + sichere Secrets'},
+  ]},
   {v:'0.114',items:[
     {icon:'☁️',text:'OneDrive Sync – Daten automatisch in Microsoft OneDrive sichern',where:'⚙️ → Daten → OneDrive verbinden'},
   ]},
@@ -1386,6 +1389,11 @@ function loadX(){try{var d=localStorage.getItem('nt_x');if(d){var x=JSON.parse(d
 function saveBarcodeCache(){try{localStorage.setItem('nt_bc',JSON.stringify(barcodeCache));}catch(e){}}
 function loadBarcodeCache(){try{var d=localStorage.getItem('nt_bc');if(d)barcodeCache=JSON.parse(d);}catch(e){}}
 function cacheFood(f){if(!f||!f.name)return;var k=f.name.toLowerCase().trim();foodCache[k]={name:f.name,emoji:f.emoji,per100:f.per100,addedAt:Date.now()};saveX();}
+function isAiConfigured(){return AI_PROXY_URL&&AI_PROXY_TOKEN&&AI_PROXY_TOKEN.indexOf('CHANGE_ME_')!==0;}
+function canUseAi(){return isOnline&&isAiConfigured();}
+function showAiUnavailable(){showToast(isOnline?'KI Proxy nicht konfiguriert':'Internet benötigt');}
+function clearLegacyApiKey(){if(S.apiKey){S.apiKey='';saveS();}}
+function backupState(){var copy=JSON.parse(JSON.stringify(S));delete copy.apiKey;return copy;}
 
 // ════════════════════════════════════════
 // SECTION: INIT
@@ -1413,19 +1421,23 @@ window.addEventListener('DOMContentLoaded',function(){
   var _odState=_params.get('state');
   if(_odCode&&_odState){
     loadS();loadX();loadBarcodeCache();
+    var hadLegacyApiKey=!!S.apiKey;
     _odHandleCallback(_odCode,_odState);
-    if(S.apiKey)showMain();
+    clearLegacyApiKey();
+    if(S.setupDone||hadLegacyApiKey||S.name!=='Du')showMain();
     return;
   }
   var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
   if(isIOS)setAppleTouchIconPNG();
   loadS();loadX();loadBarcodeCache();
+  var hadLegacyApiKey=!!S.apiKey;
+  clearLegacyApiKey();
   S.currentDate=today();
   window.addEventListener('online',function(){isOnline=true;updBadge();showToast('Online 🌐');});
   window.addEventListener('offline',function(){isOnline=false;updBadge();showToast('Offline 📴');});
   updBadge();
   document.getElementById('setupBtn').addEventListener('click',doSetup);
-  if(S.apiKey)showMain();
+  if(S.setupDone||hadLegacyApiKey||S.name!=='Du')showMain();
   // Service Worker
   if('serviceWorker' in navigator){
     navigator.serviceWorker.register('/nutritrack/sw.js').then(function(){
@@ -1625,7 +1637,7 @@ function recipeImportStart(){
   var raw=document.getElementById('recipeImportInput').value;
   var url=recipeImportExtractUrl(raw);
   if(!url)return;
-  if(!S.apiKey||!isOnline){showToast('Internet & API Key benötigt');return;}
+  if(!canUseAi()){showAiUnavailable();return;}
   closeOv('recipeImportOv');
   showToast('⏳ Rezept wird importiert...');
   fetch('https://corsproxy.io/?'+encodeURIComponent(url))
@@ -1665,8 +1677,9 @@ function recipeImportStart(){
 
 function toggleEye(id){var el=document.getElementById(id);el.type=el.type==='password'?'text':'password';}
 function doSetup(){
-  var k=document.getElementById('s_key').value.trim();if(!k){showToast('API Key eingeben');return;}
-  S.apiKey=k;S.name=document.getElementById('s_name').value.trim()||'Du';
+  S.apiKey='';
+  S.setupDone=true;
+  S.name=document.getElementById('s_name').value.trim()||'Du';
   S.goal=parseInt(document.getElementById('s_goal').value)||2000;
   S.weight=parseInt(document.getElementById('s_weight').value)||0;
   S.height=parseInt(document.getElementById('s_height').value)||0;
@@ -2039,11 +2052,12 @@ function parsePhotoResponse(text){
 // SECTION: API
 // ════════════════════════════════════════
 function callClaude(model,content,maxTok,onOk,onErr){
-  fetch('https://api.anthropic.com/v1/messages',{
+  if(!canUseAi()){onErr('KI Proxy nicht konfiguriert');return;}
+  fetch(AI_PROXY_URL,{
     method:'POST',
-    headers:{'Content-Type':'application/json','x-api-key':S.apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    headers:{'Content-Type':'application/json','X-NutriTrack-Proxy-Token':AI_PROXY_TOKEN},
     body:JSON.stringify({model:model,max_tokens:maxTok,temperature:0,messages:[{role:'user',content:content}]})
-  }).then(function(r){return r.json();}).then(function(d){
+  }).then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error(d.error||('HTTP '+r.status));return d;});}).then(function(d){
     if(d.error)throw new Error(d.error.message);
     onOk(d.content.map(function(c){return c.text||'';}).join(''));
   }).catch(function(e){onErr(e.message||'Fehler');});
@@ -2289,7 +2303,7 @@ function pickerTryBarcode(canvas){
   }
   // iOS: Claude Haiku als Fallback für Barcode-Erkennung
   if(!isIOS)return;
-  if(!S.apiKey||!isOnline)return;
+  if(!canUseAi())return;
   var b64=canvas.toDataURL('image/jpeg',0.85).split(',')[1];
   callClaude('claude-haiku-4-5',[
     {type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},
@@ -2821,7 +2835,8 @@ function pickerLinkDetect(){
 function pickerLinkImport(){
   var raw=document.getElementById('pickerLinkInput').value;
   var url=recipeImportExtractUrl(raw);
-  if(!url||!S.apiKey||!isOnline){showToast('Internet & API Key benötigt');return;}
+  if(!url)return;
+  if(!canUseAi()){showAiUnavailable();return;}
   var btn=document.getElementById('pickerLinkImportBtn');
   btn.disabled=true;btn.textContent='⏳ Laden...';btn.style.opacity='.6';
   fetch('https://corsproxy.io/?'+encodeURIComponent(url))
@@ -3342,7 +3357,6 @@ function settSetTab(tab){
 }
 
 function openSettings(){
-  document.getElementById('sk').value=S.apiKey;
   document.getElementById('sn').value=S.name;
   document.getElementById('sg').value=S.goal;
   document.getElementById('sw').value=S.weight||'';
@@ -3382,6 +3396,8 @@ function openSettings(){
   updateDietWarnToggle();
   renderSavedDietFreeList();
   document.getElementById('cacheInfo').textContent=customFoods.length+' eigene Lebensmittel · '+recipes.length+' Rezepte · '+Object.keys(foodCache).length+' gespeichert';
+  var aiStatus=document.getElementById('aiProxyStatus');
+  if(aiStatus)aiStatus.textContent=isAiConfigured()?'Cloudflare Proxy konfiguriert':'Proxy URL/Token in index.html eintragen';
   renderSettFoodList();
   settSetTab('profil');
   openOv('settOv');
@@ -3471,8 +3487,9 @@ function updateWeightLossInfo(){
 }
 
 function saveSettings(){
-  var k=document.getElementById('sk').value.trim();if(!k){showToast('API Key eingeben');return;}
-  S.apiKey=k;S.name=document.getElementById('sn').value.trim()||'Du';
+  S.apiKey='';
+  S.setupDone=true;
+  S.name=document.getElementById('sn').value.trim()||'Du';
   S.weight=parseInt(document.getElementById('sw').value)||0;
   S.height=parseInt(document.getElementById('sh').value)||0;
   S.age=parseInt(document.getElementById('sa').value)||0;
@@ -3544,7 +3561,7 @@ function calcGoal(){
 // SECTION: PREGNANCY WARNING AMPEL
 // ════════════════════════════════════════
 function _checkAmpelWarn(ingredients,meal,entryIdx,guardOk,promptPrefix,ampelField,onResults){
-  if(!guardOk||!S.apiKey||!isOnline)return;
+  if(!guardOk||!canUseAi())return;
   var names=ingredients.map(function(i){return i.name;}).filter(Boolean);
   if(!names.length)return;
   callClaude('claude-haiku-4-5',[{type:'text',text:promptPrefix+names.join(', ')}],300,
@@ -3807,7 +3824,7 @@ function toggleKIText(){
 }
 
 function requestKIRating(meal){
-  if(!S.apiKey||!isOnline){showToast('Internet & API Key benötigt');return;}
+  if(!canUseAi()){showAiUnavailable();return;}
   var day=getDay();
   var btn=event&&event.target;
   if(btn){btn.disabled=true;btn.textContent='⏳ Analysiere...';}
@@ -4135,7 +4152,7 @@ function processOfflineQueue(){
 
 // ── KI-Wochenbericht ──
 function requestWeekReport(){
-  if(!S.apiKey||!isOnline){showToast('Internet & API Key benötigt');return;}
+  if(!canUseAi()){showAiUnavailable();return;}
   var btn=document.getElementById('weekReportBtn');
   if(btn){btn.disabled=true;btn.textContent='⏳...';}
   var lines=[];
@@ -4553,7 +4570,7 @@ function oneDriveSyncUp(){
   if(!isOnline){showToast('Kein Internet');return;}
   showToast('☁️ Hochladen...');
   _odGetToken().then(function(token){
-    var data=JSON.stringify({state:S,foodCache:foodCache,customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache,syncedAt:new Date().toISOString()});
+    var data=JSON.stringify({state:backupState(),foodCache:foodCache,customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache,syncedAt:new Date().toISOString()});
     var kb=Math.round(data.length/1024);
     return fetch('https://graph.microsoft.com/v1.0/me/drive/root:'+OD_FILE_PATH+':/content',{
       method:'PUT',
@@ -4583,7 +4600,7 @@ function oneDriveSyncDown(){
       return r.json();
     }).then(function(backup){
       if(!backup)return;
-      if(backup.state)S=Object.assign(S,backup.state);
+      if(backup.state){delete backup.state.apiKey;S=Object.assign(S,backup.state);S.apiKey='';S.setupDone=true;}
       if(backup.foodCache)foodCache=backup.foodCache;
       if(backup.customFoods)customFoods=backup.customFoods;
       if(backup.recipes)recipes=backup.recipes;
@@ -4625,7 +4642,7 @@ function renderOneDriveStatus(){
 }
 
 function triggerBackupDownload(){
-  var data={state:S,foodCache:foodCache,customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache};
+  var data={state:backupState(),foodCache:foodCache,customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache};
   var blob=new Blob([JSON.stringify(data)],{type:'application/json'});
   var url=URL.createObjectURL(blob);
   var a=document.createElement('a');a.href=url;a.download='nutritrack-backup-'+today()+'.json';a.click();
@@ -4703,7 +4720,7 @@ function estimateExercise(){
   var weight=S.weight||75;
   var met=getExerciseMet(name,intensity);
   if(met){showExerciseResult(Math.round(met*weight*(dur/60)));return;}
-  if(!S.apiKey||!isOnline){showExerciseResult(Math.round(5*weight*(dur/60)));return;}
+  if(!canUseAi()){showExerciseResult(Math.round(5*weight*(dur/60)));return;}
   var btn=document.getElementById('exEstimateBtn');
   if(btn){btn.disabled=true;btn.textContent='⏳ Schätze...';}
   callClaude('claude-haiku-4-5',[{type:'text',text:
@@ -4884,7 +4901,7 @@ function deleteOwnFood(i){customFoods.splice(i,1);saveX();renderSettFoodList();}
 function deleteRecipeById(id){recipes=recipes.filter(function(r){return r.id!==id;});saveX();renderSettFoodList();}
 
 function exportData(){
-  var blob=new Blob([JSON.stringify({state:S,foodCache:foodCache,customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache},null,2)],{type:'application/json'});
+  var blob=new Blob([JSON.stringify({state:backupState(),foodCache:foodCache,customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache},null,2)],{type:'application/json'});
   var url=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=url;a.download='nutritrack-backup-'+today()+'.json';a.click();URL.revokeObjectURL(url);showToast('Backup exportiert 📤');
 }
@@ -4895,7 +4912,7 @@ function importData(e){
   reader.onload=function(ev){
     try{
       var d=JSON.parse(ev.target.result);
-      if(d.state)Object.assign(S,d.state);
+      if(d.state){delete d.state.apiKey;Object.assign(S,d.state);S.apiKey='';S.setupDone=true;}
       if(d.foodCache)Object.assign(foodCache,d.foodCache);
       if(d.customFoods)customFoods=d.customFoods;
       if(d.recipes)recipes=d.recipes;
@@ -5040,7 +5057,7 @@ function bgClose(e,id){if(e.target.id===id)closeOv(id);}
 // SECTION: TOAST
 // ════════════════════════════════════════
 function shareData(){
-  var data={state:S,foodCache:foodCache,customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache};
+  var data={state:backupState(),foodCache:foodCache,customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache};
   var json=JSON.stringify(data,null,2);
   var filename='nutritrack-backup-'+today()+'.json';
   if(navigator.share){

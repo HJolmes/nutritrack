@@ -1596,7 +1596,7 @@ function _autosaveLoad(idx){
   saveS();saveX();renderAll();closeOv('autoSavesOv');
   showToast('Stand geladen ✓');
 }
-function openAutoSaves(){renderAutoSaves();openOv('autoSavesOv');}
+function openAutoSaves(){closeOv('settOv');renderAutoSaves();openOv('autoSavesOv');}
 function renderAutoSaves(){
   var el=document.getElementById('autoSavesList');
   if(!el)return;

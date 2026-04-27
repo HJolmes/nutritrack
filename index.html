@@ -1332,6 +1332,10 @@ var OD_CLIENT_ID='ae62274b-87de-4369-b1e5-9d6e45a724f4';
 var OD_REDIRECT='https://hjolmes.github.io/nutritrack/';
 var OD_SCOPES='Files.ReadWrite User.Read offline_access';
 var OD_FILE_PATH='/NutriTrack/nutritrack-backup.json';
+var OD_SLOTS=5;
+function _odSlotPath(idx){return '/NutriTrack/nutritrack-slot-'+(idx+1)+'.json';}
+function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slots_meta')||'[null,null,null,null,null]');}catch(e){return [null,null,null,null,null];}}
+function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
   {v:'0.118',items:[
@@ -1586,40 +1590,56 @@ function _autosaveLoad(idx){
 }
 function openAutoSaves(){renderAutoSaves();openOv('autoSavesOv');}
 function renderAutoSaves(){
-  var saves=[];
-  try{saves=JSON.parse(localStorage.getItem('nt_autosaves')||'[]');}catch(e){}
   var el=document.getElementById('autoSavesList');
   if(!el)return;
-  if(!saves.length){el.innerHTML='<div style="text-align:center;color:var(--mu);font-size:13px;padding:24px;">Noch keine Autospeicher vorhanden.</div>';return;}
-  el.innerHTML=saves.map(function(s,i){
-    var d=new Date(s.savedAt);
-    var label=d.toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'})+' · '+d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
-    var kcal='–';
-    try{
-      var dateKey=s.savedAt.slice(0,10);
-      var day=s.state.days&&s.state.days[dateKey];
-      if(day&&day.meals){
-        var total=0;
-        ['breakfast','lunch','dinner','snack'].forEach(function(m){(day.meals[m]||[]).forEach(function(e){total+=e.kcal||0;});});
-        kcal=Math.round(total)+'';
+  if(_odLoadTokens()){
+    // OneDrive-Slots anzeigen
+    var meta=_odSlotsMetaGet();
+    var currentIdx=parseInt(localStorage.getItem('nt_od_slot_idx')||'0',10)%OD_SLOTS;
+    var html='<div style="font-size:12px;color:var(--mu);margin-bottom:12px;">☁️ OneDrive · 5 rotierende Slots (nächster: Slot '+(currentIdx+1)+')</div>';
+    for(var i=0;i<OD_SLOTS;i++){
+      var m=meta[i];
+      var isCurrent=i===((currentIdx-1+OD_SLOTS)%OD_SLOTS)&&m;
+      if(m){
+        var d=new Date(m.savedAt);
+        var label=d.toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'})+' · '+d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+        html+='<div style="display:flex;align-items:center;gap:10px;padding:12px;background:'+(isCurrent?'var(--g3)':'var(--gl)')+';border-radius:12px;margin-bottom:8px;">'
+          +'<div style="font-size:11px;font-weight:800;color:var(--g1);min-width:48px;">Slot '+(i+1)+'</div>'
+          +'<div style="flex:1;min-width:0;">'
+          +'<div style="font-size:13px;font-weight:700;color:var(--tx);">'+label+'</div>'
+          +(isCurrent?'<div style="font-size:11px;color:var(--g1);margin-top:2px;">← zuletzt gespeichert</div>':'')
+          +'</div>'
+          +'<button type="button" class="seb" style="flex-shrink:0;" onclick="_odSlotLoad('+i+')">Laden</button>'
+          +'</div>';
+      }else{
+        html+='<div style="display:flex;align-items:center;gap:10px;padding:12px;background:#f4f4f4;border-radius:12px;margin-bottom:8px;opacity:0.5;">'
+          +'<div style="font-size:11px;font-weight:800;color:var(--mu);min-width:48px;">Slot '+(i+1)+'</div>'
+          +'<div style="flex:1;font-size:13px;color:var(--mu);">Leer</div>'
+          +'</div>';
       }
-    }catch(e){}
-    return '<div style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--gl);border-radius:12px;margin-bottom:8px;">'
-      +'<div style="flex:1;min-width:0;">'
-      +'<div style="font-size:13px;font-weight:700;color:var(--tx);">'+label+'</div>'
-      +'<div style="font-size:12px;color:var(--mu);margin-top:2px;">'+kcal+' kcal</div>'
-      +'</div>'
-      +'<button type="button" class="seb" style="flex-shrink:0;" onclick="_autosaveLoad('+i+')">Laden</button>'
-      +'</div>';
-  }).join('')+'<div style="font-size:11px;color:var(--mu);text-align:center;margin-top:8px;">'+saves.length+' / '+AUTOSAVE_MAX+' Autospeicher</div>';
+    }
+    el.innerHTML=html;
+  }else{
+    // Fallback: lokale Snapshots
+    var saves=[];
+    try{saves=JSON.parse(localStorage.getItem('nt_autosaves')||'[]');}catch(e){}
+    if(!saves.length){el.innerHTML='<div style="text-align:center;color:var(--mu);font-size:13px;padding:24px;">Noch keine Autospeicher vorhanden.<br><br>OneDrive verbinden für Cloud-Autospeicher.</div>';return;}
+    el.innerHTML='<div style="font-size:12px;color:var(--mu);margin-bottom:12px;">💾 Lokale Snapshots (OneDrive nicht verbunden)</div>'
+      +saves.map(function(s,i){
+        var d=new Date(s.savedAt);
+        var label=d.toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'2-digit'})+' · '+d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+        return '<div style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--gl);border-radius:12px;margin-bottom:8px;">'
+          +'<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:var(--tx);">'+label+'</div></div>'
+          +'<button type="button" class="seb" style="flex-shrink:0;" onclick="_autosaveLoad('+i+')">Laden</button>'
+          +'</div>';
+      }).join('');
+  }
 }
 function _odAutoSync(){
   if(!_odLoadTokens())return;
   if(!isOnline)return;
   if(localStorage.getItem('nt_od_sync_date')===today())return;
-  oneDriveSyncUp().then(function(){
-    localStorage.setItem('nt_od_sync_date',today());
-  }).catch(function(){});
+  oneDriveSyncSlot().catch(function(){});
 }
 function _checkOdBanner(){
   if(_odLoadTokens())return;
@@ -4788,6 +4808,62 @@ function oneDriveDisconnect(){
   _odClearTokens();
   showToast('OneDrive getrennt');
   renderOneDriveStatus();
+}
+
+function oneDriveSyncSlot(){
+  if(!isOnline){showToast('Kein Internet');return Promise.reject('offline');}
+  var meta=_odSlotsMetaGet();
+  var idx=parseInt(localStorage.getItem('nt_od_slot_idx')||'0',10)%OD_SLOTS;
+  showToast('☁️ Autospeicher '+(idx+1)+'/'+OD_SLOTS+' ...');
+  return _odGetToken().then(function(token){
+    var savedAt=new Date().toISOString();
+    var data=JSON.stringify({state:backupState(),customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache,savedAt:savedAt});
+    var kb=Math.round(data.length/1024);
+    return fetch('https://graph.microsoft.com/v1.0/me/drive/root:'+_odSlotPath(idx)+':/content',{
+      method:'PUT',
+      headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+      body:data
+    }).then(function(r){
+      if(!r.ok)throw new Error(r.status);
+      meta[idx]={savedAt:savedAt};
+      _odSlotsMetaSave(meta);
+      localStorage.setItem('nt_od_slot_idx',((idx+1)%OD_SLOTS)+'');
+      localStorage.setItem('nt_od_sync_date',today());
+      localStorage.setItem('nt_last_sync',savedAt);
+      showToast('☁️ Slot '+(idx+1)+' gespeichert ✓ ('+kb+' KB)');
+      renderOneDriveStatus();
+    });
+  }).catch(function(e){
+    if(e==='not_connected'){showToast('OneDrive nicht verbunden');}
+    else if(e!=='offline'){showToast('Autospeicher fehlgeschlagen');}
+    throw e;
+  });
+}
+function _odSlotLoad(idx){
+  if(!isOnline){showToast('Kein Internet');return;}
+  var meta=_odSlotsMetaGet();
+  if(!meta[idx]){showToast('Slot '+(idx+1)+' ist leer');return;}
+  var d=new Date(meta[idx].savedAt);
+  var label=d.toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit'})+' · '+d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+  if(!confirm('Slot '+(idx+1)+' vom '+label+' laden?\nAktuelle Daten werden überschrieben.'))return;
+  showToast('☁️ Herunterladen...');
+  _odGetToken().then(function(token){
+    return fetch('https://graph.microsoft.com/v1.0/me/drive/root:'+_odSlotPath(idx)+':/content',{
+      headers:{'Authorization':'Bearer '+token}
+    }).then(function(r){
+      if(r.status===404){showToast('Slot '+(idx+1)+' nicht gefunden');return null;}
+      if(!r.ok)throw new Error(r.status);
+      return r.json();
+    }).then(function(d){
+      if(!d)return;
+      if(d.state){delete d.state.apiKey;Object.assign(S,d.state);S.apiKey='';S.setupDone=true;}
+      if(d.customFoods)customFoods=d.customFoods;
+      if(d.recipes)recipes=d.recipes;
+      if(d.barcodeCache)Object.assign(barcodeCache,d.barcodeCache);
+      saveS();saveX();saveBarcodeCache();renderAll();closeOv('autoSavesOv');
+      showToast('Stand geladen ✓');
+    });
+  }).catch(function(){showToast('Laden fehlgeschlagen');});
 }
 
 function renderOneDriveStatus(){

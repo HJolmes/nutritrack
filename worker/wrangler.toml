@@ -2,6 +2,10 @@ name = "nutritrack-ai-proxy"
 main = "src/index.js"
 compatibility_date = "2026-04-27"
 
+[vars]
+ANTHROPIC_VERSION = "2023-06-01"
+ALLOWED_ORIGINS = "https://hjolmes.github.io,http://localhost:8000,http://127.0.0.1:8000,http://localhost:8787,http://127.0.0.1:8787"
+
 # Set these as Cloudflare Worker secrets, never in this file:
 # wrangler secret put ANTHROPIC_API_KEY
 # wrangler secret put NUTRITRACK_PROXY_TOKEN

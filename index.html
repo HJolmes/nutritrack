@@ -1279,8 +1279,8 @@ var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
 var APP_VERSION='0.115';
-var AI_PROXY_URL='https://nutritrack-ai-proxy.hjolmes.workers.dev/v1/messages';
-var AI_PROXY_TOKEN='CHANGE_ME_NUTRITRACK_PROXY_TOKEN';
+var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
+var PROJECT_AI_PROXY_SECRET='LRTA1GnO2mZPs8A4ZqF7E65oB3VQ9HWvj0lVa';
 
 // ── OneDrive PKCE Config ──
 var OD_CLIENT_ID='ae62274b-87de-4369-b1e5-9d6e45a724f4';
@@ -1389,7 +1389,7 @@ function loadX(){try{var d=localStorage.getItem('nt_x');if(d){var x=JSON.parse(d
 function saveBarcodeCache(){try{localStorage.setItem('nt_bc',JSON.stringify(barcodeCache));}catch(e){}}
 function loadBarcodeCache(){try{var d=localStorage.getItem('nt_bc');if(d)barcodeCache=JSON.parse(d);}catch(e){}}
 function cacheFood(f){if(!f||!f.name)return;var k=f.name.toLowerCase().trim();foodCache[k]={name:f.name,emoji:f.emoji,per100:f.per100,addedAt:Date.now()};saveX();}
-function isAiConfigured(){return AI_PROXY_URL&&AI_PROXY_TOKEN&&AI_PROXY_TOKEN.indexOf('CHANGE_ME_')!==0;}
+function isAiConfigured(){return PROJECT_AI_PROXY_URL&&PROJECT_AI_PROXY_SECRET&&PROJECT_AI_PROXY_SECRET.indexOf('CHANGE_ME_')!==0;}
 function canUseAi(){return isOnline&&isAiConfigured();}
 function showAiUnavailable(){showToast(isOnline?'KI Proxy nicht konfiguriert':'Internet benötigt');}
 function clearLegacyApiKey(){if(S.apiKey){S.apiKey='';saveS();}}
@@ -2053,11 +2053,11 @@ function parsePhotoResponse(text){
 // ════════════════════════════════════════
 function callClaude(model,content,maxTok,onOk,onErr){
   if(!canUseAi()){onErr('KI Proxy nicht konfiguriert');return;}
-  fetch(AI_PROXY_URL,{
+  fetch(PROJECT_AI_PROXY_URL,{
     method:'POST',
-    headers:{'Content-Type':'application/json','X-NutriTrack-Proxy-Token':AI_PROXY_TOKEN},
+    headers:{'Content-Type':'application/json','x-app-proxy-secret':PROJECT_AI_PROXY_SECRET},
     body:JSON.stringify({model:model,max_tokens:maxTok,temperature:0,messages:[{role:'user',content:content}]})
-  }).then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error(d.error||('HTTP '+r.status));return d;});}).then(function(d){
+  }).then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error((d.error&&d.error.message)||d.error||('HTTP '+r.status));return d;});}).then(function(d){
     if(d.error)throw new Error(d.error.message);
     onOk(d.content.map(function(c){return c.text||'';}).join(''));
   }).catch(function(e){onErr(e.message||'Fehler');});

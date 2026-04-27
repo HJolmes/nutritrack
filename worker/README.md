@@ -19,8 +19,8 @@ This Worker proxies NutriTrack AI requests to Anthropic so the real Anthropic AP
 9. Note the Worker URL, for example:
    - `https://nutritrack-ai-proxy.<your-subdomain>.workers.dev`
 10. In `index.html`, set:
-   - `AI_PROXY_URL` to `<Worker URL>/v1/messages`
-   - `AI_PROXY_TOKEN` to the same value as `NUTRITRACK_PROXY_TOKEN`
+   - `PROJECT_AI_PROXY_URL` to `<Worker URL>/v1/messages`
+   - `PROJECT_AI_PROXY_SECRET` to the same value as `NUTRITRACK_PROXY_TOKEN`
 
 ## GitHub Setup
 
@@ -36,10 +36,21 @@ If you later want GitHub Actions to deploy the Worker:
 4. Add `CLOUDFLARE_API_TOKEN` with Worker deploy permissions.
 5. Keep `ANTHROPIC_API_KEY` and `NUTRITRACK_PROXY_TOKEN` in Cloudflare Worker secrets unless a CI workflow explicitly needs to manage them.
 
+The static GitHub Pages frontend has no build step. If you add one later, pass only public values to the browser build. The app token is visible to browser users and is not a strong secret.
+
+## Local Token Generation
+
+PowerShell:
+
+```powershell
+-join ((48..57 + 65..90 + 97..122) | Get-Random -Count 48 | ForEach-Object {[char]$_})
+```
+
 ## Smoke Tests
 
 After deployment:
 
-- A `POST /v1/messages` request without `X-NutriTrack-Proxy-Token` should return `401`.
+- `GET /health` should return a JSON status.
+- A `POST /v1/messages` request without `x-app-proxy-secret` should return `401`.
 - A request with the wrong token should return `401`.
 - A valid request from `https://hjolmes.github.io` should reach Anthropic.

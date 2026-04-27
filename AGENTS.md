@@ -28,7 +28,7 @@ Runtime integrations currently include:
 
 - Browser `localStorage` keys including `nt_v6`, `nt_x`, `nt_bc`, `nt_od`, `nt_offline_queue`, version/reminder/install keys.
 - Anthropic Messages API called through the Cloudflare Worker proxy. The real Anthropic key belongs only in the `ANTHROPIC_API_KEY` Worker secret.
-- The browser sends `X-NutriTrack-Proxy-Token` to the Worker. Treat this app token as a light usage barrier, not as a true secret.
+- The browser sends `x-app-proxy-secret` to the Worker. Treat this app token as a light usage barrier, not as a true secret.
 - OpenFoodFacts API for search/barcode/product lookup.
 - Microsoft OneDrive OAuth PKCE and Graph API backup sync.
 - ZXing loaded from `https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js`.

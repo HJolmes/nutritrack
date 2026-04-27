@@ -1333,7 +1333,15 @@ var OD_REDIRECT='https://hjolmes.github.io/nutritrack/';
 var OD_SCOPES='Files.ReadWrite User.Read offline_access';
 var OD_FILE_PATH='/NutriTrack/nutritrack-backup.json';
 var OD_SLOTS=5;
-function _odSlotPath(idx){return '/NutriTrack/nutritrack-slot-'+(idx+1)+'.json';}
+function _odFolder(){return (localStorage.getItem('nt_od_path')||'/NutriTrack').replace(/\/+$/,'');}
+function _odSlotPath(idx){return _odFolder()+'/nutritrack-slot-'+(idx+1)+'.json';}
+function _odSaveFolder(path){
+  path=(path||'').trim().replace(/\/+$/,'');
+  if(!path.startsWith('/'))path='/'+path;
+  localStorage.setItem('nt_od_path',path);
+  showToast('Pfad gespeichert: '+path);
+  renderOneDriveStatus();
+}
 function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slots_meta')||'[null,null,null,null,null]');}catch(e){return [null,null,null,null,null];}}
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
@@ -4767,7 +4775,7 @@ function oneDriveSyncUp(){
   return _odGetToken().then(function(token){
     var data=JSON.stringify({state:backupState(),foodCache:foodCache,customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache,syncedAt:new Date().toISOString()});
     var kb=Math.round(data.length/1024);
-    return fetch('https://graph.microsoft.com/v1.0/me/drive/root:'+OD_FILE_PATH+':/content',{
+    return fetch('https://graph.microsoft.com/v1.0/me/drive/root:'+_odFolder()+'/nutritrack-backup.json:/content',{
       method:'PUT',
       headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
       body:data
@@ -4789,7 +4797,7 @@ function oneDriveSyncDown(){
   if(!isOnline){showToast('Kein Internet');return;}
   showToast('☁️ Herunterladen...');
   _odGetToken().then(function(token){
-    return fetch('https://graph.microsoft.com/v1.0/me/drive/root:'+OD_FILE_PATH+':/content',{
+    return fetch('https://graph.microsoft.com/v1.0/me/drive/root:'+_odFolder()+'/nutritrack-backup.json:/content',{
       headers:{'Authorization':'Bearer '+token}
     }).then(function(r){
       if(r.status===404){showToast('Keine Sicherung in OneDrive gefunden');return null;}
@@ -4881,9 +4889,17 @@ function renderOneDriveStatus(){
   var lastSync=localStorage.getItem('nt_last_sync');
   var lastStr=lastSync?new Date(lastSync).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'–';
   if(tok){
+    var folder=_odFolder();
     wrap.innerHTML='<div style="background:var(--gl);border-radius:10px;padding:10px 12px;margin-bottom:8px;">'
       +'<div style="font-size:13px;font-weight:700;color:var(--g1);margin-bottom:2px;">✅ Verbunden</div>'
       +'<div style="font-size:12px;color:var(--mu);">Letzter Sync: '+lastStr+'</div>'
+      +'</div>'
+      +'<div style="margin-bottom:8px;">'
+      +'<div style="font-size:12px;color:var(--mu);margin-bottom:4px;">📁 OneDrive-Ordner</div>'
+      +'<div style="display:flex;gap:6px;">'
+      +'<input id="odPathInput" type="text" value="'+folder+'" placeholder="/NutriTrack" style="flex:1;padding:8px 10px;border:2px solid var(--br);border-radius:8px;font-size:13px;outline:none;">'
+      +'<button type="button" class="seb" style="flex-shrink:0;" onclick="_odSaveFolder(document.getElementById(\'odPathInput\').value)">✓</button>'
+      +'</div>'
       +'</div>'
       +'<button type="button" class="seb" onclick="oneDriveSyncUp()">☁️ Jetzt sichern</button>'
       +'<button type="button" class="seb" onclick="oneDriveSyncDown()">📥 Aus OneDrive laden</button>'

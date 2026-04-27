@@ -299,6 +299,23 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 </head>
 <body>
 
+<!-- PROXY PASSWORD GATE -->
+<div id="proxyPwGate" style="display:none;position:fixed;inset:0;background:rgba(18,41,31,0.92);z-index:99999;align-items:center;justify-content:center;padding:24px;">
+  <div style="background:#fff;border-radius:24px;padding:36px 28px 28px;max-width:360px;width:100%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.3);">
+    <div style="font-size:40px;margin-bottom:10px;">🔑</div>
+    <div style="font-size:20px;font-weight:800;color:#18291f;margin-bottom:6px;">NutriTrack</div>
+    <div style="font-size:13px;color:#7a9487;margin-bottom:24px;line-height:1.5;">Bitte gib dein Proxy-Passwort ein,<br>um die App zu nutzen.</div>
+    <input type="password" id="proxyPwInput" placeholder="Passwort" autocomplete="current-password"
+      style="width:100%;box-sizing:border-box;padding:14px 16px;border:2px solid #e0ece6;border-radius:12px;font-size:16px;outline:none;margin-bottom:8px;"
+      onkeydown="if(event.key==='Enter')submitProxyPw()">
+    <div id="proxyPwError" style="display:none;color:#ef5350;font-size:12px;font-weight:600;margin-bottom:10px;"></div>
+    <button type="button" onclick="submitProxyPw()"
+      style="width:100%;padding:14px;background:#2d7d52;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;margin-top:4px;">
+      Weiter →
+    </button>
+  </div>
+</div>
+
 <!-- SETUP -->
 <div id="setupScreen" class="screen active">
   <div class="onb-wrap">
@@ -373,7 +390,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.115</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.116</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div class="dn">
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
@@ -455,7 +472,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.115</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.116</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -1149,9 +1166,13 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 
       <!-- TAB: DATEN -->
       <div id="spanel-daten" style="display:none;">
-        <div class="sf" style="margin-bottom:12px;"><label class="lbl">🔒 KI Proxy</label>
-          <div style="font-size:12px;color:var(--mu);line-height:1.5;">Anthropic läuft über den Cloudflare Worker. Der API Key wird nur als Worker Secret gespeichert.</div>
-          <div id="aiProxyStatus" style="font-size:12px;color:var(--g1);font-weight:700;margin-top:6px;"></div>
+        <div class="sf" style="margin-bottom:12px;"><label class="lbl">🔑 Proxy-Passwort</label>
+          <div style="font-size:12px;color:var(--mu);line-height:1.5;margin-bottom:8px;">Passwort sichert den KI-Zugang. Das Passwort wird als SHA-256 Hash gespeichert – nie im Klartext.</div>
+          <div id="aiProxyStatus" style="font-size:12px;color:var(--g1);font-weight:700;margin-bottom:10px;"></div>
+          <input type="password" id="settProxyPwInput" placeholder="Neues Passwort eingeben" autocomplete="new-password"
+            style="width:100%;box-sizing:border-box;padding:10px 12px;border:2px solid var(--br);border-radius:10px;font-size:14px;outline:none;margin-bottom:8px;"
+            onkeydown="if(event.key==='Enter')saveProxyPwFromSettings()">
+          <button type="button" class="seb" onclick="saveProxyPwFromSettings()">Passwort speichern ✓</button>
         </div>
         <button type="button" class="svb" onclick="saveSettings()" style="margin-bottom:12px;">Speichern ✓</button>
         <div style="padding-top:12px;border-top:1px solid var(--br);margin-bottom:12px;">
@@ -1278,9 +1299,15 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.115';
+var APP_VERSION='0.116';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
-var PROJECT_AI_PROXY_SECRET='LRTA1GnO2mZPs8A4ZqF7E65oB3VQ9HWvj0lVa';
+function _sha256hex(str){
+  return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
+    return Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
+  });
+}
+function getProxySecret(){return localStorage.getItem('nt_proxy_pw')||'';}
+function setProxySecret(pw){return _sha256hex(pw).then(function(h){localStorage.setItem('nt_proxy_pw',h);return h;});}
 
 // ── OneDrive PKCE Config ──
 var OD_CLIENT_ID='ae62274b-87de-4369-b1e5-9d6e45a724f4';
@@ -1289,6 +1316,9 @@ var OD_SCOPES='Files.ReadWrite User.Read offline_access';
 var OD_FILE_PATH='/NutriTrack/nutritrack-backup.json';
 
 var CHANGELOG=[
+  {v:'0.116',items:[
+    {icon:'🔑',text:'Proxy-Passwort: KI-Zugang per Passwort sichern – kein Token mehr im Code',where:'⚙️ → Daten → Proxy-Passwort'},
+  ]},
   {v:'0.115',items:[
     {icon:'🔒',text:'KI-Anfragen laufen jetzt über einen geschützten Cloudflare Proxy statt direkt aus dem Browser',where:'Cloudflare Worker + sichere Secrets'},
   ]},
@@ -1389,7 +1419,7 @@ function loadX(){try{var d=localStorage.getItem('nt_x');if(d){var x=JSON.parse(d
 function saveBarcodeCache(){try{localStorage.setItem('nt_bc',JSON.stringify(barcodeCache));}catch(e){}}
 function loadBarcodeCache(){try{var d=localStorage.getItem('nt_bc');if(d)barcodeCache=JSON.parse(d);}catch(e){}}
 function cacheFood(f){if(!f||!f.name)return;var k=f.name.toLowerCase().trim();foodCache[k]={name:f.name,emoji:f.emoji,per100:f.per100,addedAt:Date.now()};saveX();}
-function isAiConfigured(){return PROJECT_AI_PROXY_URL&&PROJECT_AI_PROXY_SECRET&&PROJECT_AI_PROXY_SECRET.indexOf('CHANGE_ME_')!==0;}
+function isAiConfigured(){return !!(PROJECT_AI_PROXY_URL&&getProxySecret());}
 function canUseAi(){return isOnline&&isAiConfigured();}
 function showAiUnavailable(){showToast(isOnline?'KI Proxy nicht konfiguriert':'Internet benötigt');}
 function clearLegacyApiKey(){if(S.apiKey){S.apiKey='';saveS();}}
@@ -1482,6 +1512,42 @@ function dismissInstall(){
   if(el)el.classList.add('hidden');
   localStorage.setItem('nt_install_dismissed','1');
 }
+function checkProxyPwGate(){
+  var gate=document.getElementById('proxyPwGate');
+  if(!gate)return;
+  if(!getProxySecret()){
+    gate.style.display='flex';
+    setTimeout(function(){var i=document.getElementById('proxyPwInput');if(i)i.focus();},50);
+  }
+}
+function submitProxyPw(){
+  var input=document.getElementById('proxyPwInput');
+  var errEl=document.getElementById('proxyPwError');
+  var pw=(input?input.value:'').trim();
+  if(!pw){
+    if(errEl){errEl.textContent='Bitte Passwort eingeben.';errEl.style.display='block';}
+    return;
+  }
+  setProxySecret(pw).then(function(){
+    var gate=document.getElementById('proxyPwGate');
+    if(gate)gate.style.display='none';
+    if(input)input.value='';
+    if(errEl)errEl.style.display='none';
+    var aiStatus=document.getElementById('aiProxyStatus');
+    if(aiStatus)aiStatus.textContent='Proxy-Passwort gesetzt ✓';
+  });
+}
+function saveProxyPwFromSettings(){
+  var input=document.getElementById('settProxyPwInput');
+  var pw=(input?input.value:'').trim();
+  if(!pw){showToast('Bitte Passwort eingeben');return;}
+  setProxySecret(pw).then(function(){
+    if(input)input.value='';
+    var aiStatus=document.getElementById('aiProxyStatus');
+    if(aiStatus)aiStatus.textContent='Passwort gesetzt ✓';
+    showToast('Proxy-Passwort gespeichert');
+  });
+}
 function showMain(){
   document.getElementById('setupScreen').classList.remove('active');
   document.getElementById('mainScreen').classList.add('active');
@@ -1492,6 +1558,7 @@ function showMain(){
   if(!localStorage.getItem('nt_install_dismissed'))checkFullscreen();
   scheduleReminders();
   setTimeout(compressOldDays,5000);
+  checkProxyPwGate();
 }
 function checkBackupReminder(){
   try{
@@ -2055,7 +2122,7 @@ function callClaude(model,content,maxTok,onOk,onErr){
   if(!canUseAi()){onErr('KI Proxy nicht konfiguriert');return;}
   fetch(PROJECT_AI_PROXY_URL,{
     method:'POST',
-    headers:{'Content-Type':'application/json','x-app-proxy-secret':PROJECT_AI_PROXY_SECRET},
+    headers:{'Content-Type':'application/json','x-app-proxy-secret':getProxySecret()},
     body:JSON.stringify({model:model,max_tokens:maxTok,temperature:0,messages:[{role:'user',content:content}]})
   }).then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error((d.error&&d.error.message)||d.error||('HTTP '+r.status));return d;});}).then(function(d){
     if(d.error)throw new Error(d.error.message);
@@ -3397,7 +3464,9 @@ function openSettings(){
   renderSavedDietFreeList();
   document.getElementById('cacheInfo').textContent=customFoods.length+' eigene Lebensmittel · '+recipes.length+' Rezepte · '+Object.keys(foodCache).length+' gespeichert';
   var aiStatus=document.getElementById('aiProxyStatus');
-  if(aiStatus)aiStatus.textContent=isAiConfigured()?'Cloudflare Proxy konfiguriert':'Proxy URL/Token in index.html eintragen';
+  if(aiStatus)aiStatus.textContent=getProxySecret()?'Passwort gesetzt ✓':'Noch kein Passwort – KI nicht verfügbar';
+  var settPwInput=document.getElementById('settProxyPwInput');
+  if(settPwInput)settPwInput.value='';
   renderSettFoodList();
   settSetTab('profil');
   openOv('settOv');

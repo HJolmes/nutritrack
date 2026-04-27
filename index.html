@@ -316,6 +316,14 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
   </div>
 </div>
 
+<!-- AUTOSAVE OVERLAY -->
+<div id="autoSavesOv" class="ov">
+  <div class="ovc">
+    <div class="ovh"><span class="ovt">🕹️ Autospeicher</span><button class="ovcl" onclick="closeOv('autoSavesOv')">✕</button></div>
+    <div id="autoSavesList"></div>
+  </div>
+</div>
+
 <!-- SETUP -->
 <div id="setupScreen" class="screen active">
   <div class="onb-wrap">
@@ -390,7 +398,12 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.117</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.118</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div id="odMissingBanner" style="display:none;align-items:center;gap:10px;background:#fff3e0;border-bottom:1px solid #ffe0b2;padding:10px 16px;">
+      <div style="flex:1;font-size:12px;color:#e65100;font-weight:600;">☁️ OneDrive nicht verbunden – Sichere deine Daten einmal täglich lokal.</div>
+      <button type="button" onclick="shareData()" style="font-size:12px;font-weight:700;color:#e65100;background:none;border:1px solid #e65100;padding:4px 8px;border-radius:8px;cursor:pointer;">💾 Jetzt</button>
+      <button type="button" onclick="dismissOdBanner()" style="font-size:14px;color:#e65100;background:none;border:none;cursor:pointer;padding:4px;">✕</button>
+    </div>
     <div class="dn">
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
@@ -472,7 +485,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.117</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.118</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -1175,6 +1188,11 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
           <button type="button" class="seb" onclick="saveProxyPwFromSettings()">Passwort speichern ✓</button>
         </div>
         <button type="button" class="svb" onclick="saveSettings()" style="margin-bottom:12px;">Speichern ✓</button>
+        <div style="padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--br);">
+          <label class="lbl" style="margin-bottom:8px;">🕹️ Autospeicher</label>
+          <div style="font-size:12px;color:var(--mu);margin-bottom:8px;">Wird bei jedem App-Start automatisch gespeichert. Bis zu 5 Stände.</div>
+          <button type="button" class="seb" onclick="openAutoSaves()">📂 Autospeicher anzeigen</button>
+        </div>
         <div style="padding-top:12px;border-top:1px solid var(--br);margin-bottom:12px;">
           <label class="lbl" style="margin-bottom:8px;">💾 Datensicherung</label>
           <button type="button" class="seb" onclick="exportData()">📤 Exportieren</button>
@@ -1299,7 +1317,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.117';
+var APP_VERSION='0.118';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1316,6 +1334,10 @@ var OD_SCOPES='Files.ReadWrite User.Read offline_access';
 var OD_FILE_PATH='/NutriTrack/nutritrack-backup.json';
 
 var CHANGELOG=[
+  {v:'0.118',items:[
+    {icon:'🕹️',text:'Autospeicher – App speichert bei jedem Start automatisch; frühere Stände laden',where:'⚙️ → Daten → Autospeicher'},
+    {icon:'☁️',text:'Täglicher Hinweis wenn OneDrive nicht verbunden',where:'Banner oben im Hauptbildschirm'},
+  ]},
   {v:'0.117',items:[
     {icon:'☁️',text:'Export-Button speichert zuerst in OneDrive – lokaler Download als Fallback',where:'📤 Button oben rechts'},
   ]},
@@ -1540,6 +1562,69 @@ function submitProxyPw(){
     if(aiStatus)aiStatus.textContent='Proxy-Passwort gesetzt ✓';
   });
 }
+var AUTOSAVE_MAX=5;
+function _autosaveCreate(){
+  var saves=[];
+  try{saves=JSON.parse(localStorage.getItem('nt_autosaves')||'[]');}catch(e){}
+  saves.unshift({savedAt:new Date().toISOString(),state:backupState(),customFoods:JSON.parse(JSON.stringify(customFoods)),recipes:JSON.parse(JSON.stringify(recipes))});
+  if(saves.length>AUTOSAVE_MAX)saves=saves.slice(0,AUTOSAVE_MAX);
+  try{localStorage.setItem('nt_autosaves',JSON.stringify(saves));}catch(e){}
+}
+function _autosaveLoad(idx){
+  var saves=[];
+  try{saves=JSON.parse(localStorage.getItem('nt_autosaves')||'[]');}catch(e){}
+  var save=saves[idx];
+  if(!save)return;
+  var d=new Date(save.savedAt);
+  var label=d.toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit'})+' · '+d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+  if(!confirm('Stand vom '+label+' laden?\nAktuelle Daten werden überschrieben.'))return;
+  if(save.state){delete save.state.apiKey;Object.assign(S,save.state);S.apiKey='';S.setupDone=true;}
+  if(save.customFoods)customFoods=save.customFoods;
+  if(save.recipes)recipes=save.recipes;
+  saveS();saveX();renderAll();closeOv('autoSavesOv');
+  showToast('Stand geladen ✓');
+}
+function openAutoSaves(){renderAutoSaves();openOv('autoSavesOv');}
+function renderAutoSaves(){
+  var saves=[];
+  try{saves=JSON.parse(localStorage.getItem('nt_autosaves')||'[]');}catch(e){}
+  var el=document.getElementById('autoSavesList');
+  if(!el)return;
+  if(!saves.length){el.innerHTML='<div style="text-align:center;color:var(--mu);font-size:13px;padding:24px;">Noch keine Autospeicher vorhanden.</div>';return;}
+  el.innerHTML=saves.map(function(s,i){
+    var d=new Date(s.savedAt);
+    var label=d.toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'})+' · '+d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+    var kcal='–';
+    try{
+      var dateKey=s.savedAt.slice(0,10);
+      var day=s.state.days&&s.state.days[dateKey];
+      if(day&&day.meals){
+        var total=0;
+        ['breakfast','lunch','dinner','snack'].forEach(function(m){(day.meals[m]||[]).forEach(function(e){total+=e.kcal||0;});});
+        kcal=Math.round(total)+'';
+      }
+    }catch(e){}
+    return '<div style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--gl);border-radius:12px;margin-bottom:8px;">'
+      +'<div style="flex:1;min-width:0;">'
+      +'<div style="font-size:13px;font-weight:700;color:var(--tx);">'+label+'</div>'
+      +'<div style="font-size:12px;color:var(--mu);margin-top:2px;">'+kcal+' kcal</div>'
+      +'</div>'
+      +'<button type="button" class="seb" style="flex-shrink:0;" onclick="_autosaveLoad('+i+')">Laden</button>'
+      +'</div>';
+  }).join('')+'<div style="font-size:11px;color:var(--mu);text-align:center;margin-top:8px;">'+saves.length+' / '+AUTOSAVE_MAX+' Autospeicher</div>';
+}
+function _checkOdBanner(){
+  if(_odLoadTokens())return;
+  var last=localStorage.getItem('nt_od_banner_date');
+  if(last===today())return;
+  localStorage.setItem('nt_od_banner_date',today());
+  var el=document.getElementById('odMissingBanner');
+  if(el)el.style.display='flex';
+}
+function dismissOdBanner(){
+  var el=document.getElementById('odMissingBanner');
+  if(el)el.style.display='none';
+}
 function saveProxyPwFromSettings(){
   var input=document.getElementById('settProxyPwInput');
   var pw=(input?input.value:'').trim();
@@ -1562,6 +1647,8 @@ function showMain(){
   scheduleReminders();
   setTimeout(compressOldDays,5000);
   checkProxyPwGate();
+  setTimeout(_autosaveCreate,1000);
+  setTimeout(_checkOdBanner,1500);
 }
 function checkBackupReminder(){
   try{
@@ -2766,10 +2853,17 @@ function pickerShowPhotoResult(rezept){
   document.getElementById('pickerPhotoResult').classList.remove('hidden');
 }
 
-function pickerUpdatePhotoTotal(){
+function pickerUpdateTotal(tab){
   var t=ingTotal(pickerIngredients);
-  var p=parseFloat(document.getElementById('pickerPhotoPortions').value)||1;
-  document.getElementById('pickerPhotoTotal').textContent='1 Portion: '+totalStr(t)+(p!==1?'  ·  '+p+'× = '+totalStr(scaleNutrients(t,p)):'');
+  var p=parseFloat(document.getElementById('picker'+tab+'Portions').value)||1;
+  document.getElementById('picker'+tab+'Total').textContent='1 Portion: '+totalStr(t)+(p!==1?'  ·  '+p+'× = '+totalStr(scaleNutrients(t,p)):'');
+}
+function pickerUpdatePhotoTotal(){pickerUpdateTotal('Photo');}
+function _pickerIngCallbacks(tab){
+  return {
+    onChange:function(i,v){pickerIngredients[i].amount=parseFloat(v)||0;pickerUpdateTotal(tab);},
+    onDelete:function(i){pickerIngredients.splice(i,1);pickerUpdateTotal(tab);}
+  };
 }
 
 function pickerSetPhotoStatus(msg,isErr){
@@ -2877,11 +2971,7 @@ function pickerSendChat(){
   );
 }
 
-function pickerUpdateChatTotal(){
-  var t=ingTotal(pickerIngredients);
-  var p=parseFloat(document.getElementById('pickerChatPortions').value)||1;
-  document.getElementById('pickerChatTotal').textContent='1 Portion: '+totalStr(t)+(p!==1?'  ·  '+p+'× = '+totalStr(scaleNutrients(t,p)):'');
-}
+function pickerUpdateChatTotal(){pickerUpdateTotal('Chat');}
 
 function pickerChatAdd(saveAsRecipe){_pickerAdd('💬','pickerChatRecipeName','pickerChatPortions','Chat-Eintrag',saveAsRecipe,true);}
 
@@ -2958,11 +3048,7 @@ function pickerLinkImport(){
       btn.disabled=false;btn.textContent='🔗 Rezept laden';btn.style.opacity='1';
     });
 }
-function pickerUpdateLinkTotal(){
-  var t=ingTotal(pickerIngredients);
-  var p=parseFloat(document.getElementById('pickerLinkPortions').value)||1;
-  document.getElementById('pickerLinkTotal').textContent='1 Portion: '+totalStr(t)+(p!==1?'  ·  '+p+'× = '+totalStr(scaleNutrients(t,p)):'');
-}
+function pickerUpdateLinkTotal(){pickerUpdateTotal('Link');}
 function pickerLinkAdd(saveAsRecipe){
   _pickerAdd('🔗','pickerLinkRecipeName','pickerLinkPortions','Rezept',saveAsRecipe,true);
   // Kochanleitung auf das zuletzt gespeicherte Rezept übertragen

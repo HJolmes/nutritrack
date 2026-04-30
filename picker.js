@@ -293,6 +293,11 @@ function pickerToggleTorch(){
 // pixel-accessible frames from a camera stream on iOS Safari (GPU compositing
 // makes ctx.drawImage(video) return black pixels outside of rVFC callbacks).
 // Canvas must be in the DOM (position:fixed offscreen) for iOS pixel readback.
+//
+// Crop to the visible scan region (matches the green viewfinder ~85% × 45%)
+// and downscale to ~800px width. ZXing in JS is too slow on a full 1920×1080
+// frame and gets confused by background clutter – cropping massively improves
+// hit rate and CPU use.
 function _pickerFrameLoop(videoEl,canvas,ctx,detect,label){
   var frameCount=0;
   var dbgCv=document.createElement('canvas');
@@ -302,18 +307,29 @@ function _pickerFrameLoop(videoEl,canvas,ctx,detect,label){
   var dbgEl=document.getElementById('pickerBarcodeResult');
   if(dbgEl){
     dbgEl.innerHTML='<div id="bcDbgWrap" style="font-size:11px;color:var(--mu);text-align:center;padding:4px 0;">'+
-      '<span id="bcDbgLabel">'+label+'</span> · Frame <span id="bcDbgN">0</span></div>';
+      '<span id="bcDbgLabel">'+label+'</span> · Frame <span id="bcDbgN">0</span> · <span id="bcDbgSz">–</span></div>';
     document.getElementById('bcDbgWrap').appendChild(dbgCv);
   }
+  var TARGET_W=800;
+  var CROP_W_RATIO=0.85;
+  var CROP_H_RATIO=0.45;
   function process(){
     if(!pickerBcActive)return;
     if(!videoEl.videoWidth){schedule();return;}
-    if(canvas.width!==videoEl.videoWidth)canvas.width=videoEl.videoWidth;
-    if(canvas.height!==videoEl.videoHeight)canvas.height=videoEl.videoHeight;
-    ctx.drawImage(videoEl,0,0,canvas.width,canvas.height);
-    // Debug preview: scaled-down copy of what the decoder sees
+    var vw=videoEl.videoWidth,vh=videoEl.videoHeight;
+    var cropW=Math.round(vw*CROP_W_RATIO);
+    var cropH=Math.round(vh*CROP_H_RATIO);
+    var cropX=Math.round((vw-cropW)/2);
+    var cropY=Math.round((vh-cropH)/2);
+    var scale=Math.min(1,TARGET_W/cropW);
+    var outW=Math.max(1,Math.round(cropW*scale));
+    var outH=Math.max(1,Math.round(cropH*scale));
+    if(canvas.width!==outW)canvas.width=outW;
+    if(canvas.height!==outH)canvas.height=outH;
+    ctx.drawImage(videoEl,cropX,cropY,cropW,cropH,0,0,outW,outH);
     frameCount++;
     var fn=document.getElementById('bcDbgN');if(fn)fn.textContent=frameCount;
+    var sz=document.getElementById('bcDbgSz');if(sz)sz.textContent=outW+'×'+outH;
     dbgCtx.drawImage(canvas,0,0,120,80);
     detect(canvas,schedule);
   }

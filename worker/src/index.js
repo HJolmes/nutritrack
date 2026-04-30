@@ -10,6 +10,7 @@ const DEFAULT_ALLOWED_ORIGINS = [
 const MAX_BODY_BYTES = 1024 * 1024 * 4;
 const MAX_BARCODE_BODY_BYTES = 1024 * 200; // 200 KB pro Frame reicht
 const BARCODE_MODEL = "claude-haiku-4-5";
+const DECODER_TIMEOUT_MS = 1500;
 
 function allowedOrigins(env) {
   const raw = env.ALLOWED_ORIGINS || DEFAULT_ALLOWED_ORIGINS.join(",");
@@ -108,12 +109,36 @@ function isValidBarcodeChecksum(code) {
   return true;
 }
 
+// Calls the OSS-Decoder microservice (OpenCV BarcodeDetector + pyzbar) and
+// returns the parsed JSON or null on any error / timeout.
+async function tryExternalDecoder(decoderUrl, buffer, mediaType) {
+  try {
+    const response = await fetch(decoderUrl.replace(/\/+$/, "") + "/decode", {
+      method: "POST",
+      headers: { "Content-Type": mediaType },
+      body: buffer,
+      signal: AbortSignal.timeout(DECODER_TIMEOUT_MS),
+    });
+    if (!response.ok) return null;
+    return await response.json();
+  } catch (error) {
+    return null;
+  }
+}
+
 async function handleDecodeBarcode(request, origin, env) {
   if (origin && !allowedOrigins(env).has(origin)) {
     return jsonResponse(403, "origin_not_allowed", "Origin is not allowed", origin, env);
   }
-  if (!env.ANTHROPIC_API_KEY || !env.NUTRITRACK_PROXY_TOKEN) {
+  const visionFallbackEnabled = env.ENABLE_VISION_FALLBACK === "true";
+  if (!env.NUTRITRACK_PROXY_TOKEN) {
     return jsonResponse(500, "worker_not_configured", "Required Worker secrets are missing", origin, env);
+  }
+  if (visionFallbackEnabled && !env.ANTHROPIC_API_KEY) {
+    return jsonResponse(500, "worker_not_configured", "ANTHROPIC_API_KEY is required when ENABLE_VISION_FALLBACK is true", origin, env);
+  }
+  if (!env.DECODER_URL && !visionFallbackEnabled) {
+    return jsonResponse(500, "worker_not_configured", "DECODER_URL or ENABLE_VISION_FALLBACK must be set", origin, env);
   }
   const token = request.headers.get("x-app-proxy-secret") || "";
   if (token !== env.NUTRITRACK_PROXY_TOKEN) {
@@ -135,6 +160,36 @@ async function handleDecodeBarcode(request, origin, env) {
 
   const contentType = request.headers.get("content-type") || "image/jpeg";
   const mediaType = contentType.split(";")[0].trim() || "image/jpeg";
+
+  // Primary path: OSS-Decoder (OpenCV + pyzbar). Skips Anthropic entirely on hit.
+  if (env.DECODER_URL) {
+    const decoded = await tryExternalDecoder(env.DECODER_URL, buffer, mediaType);
+    const decodedCode = decoded && typeof decoded.code === "string" ? decoded.code : null;
+    if (decodedCode && isValidBarcodeChecksum(decodedCode)) {
+      return jsonResponse(200, "ok", "ok", origin, env, {
+        code: decodedCode,
+        raw: decodedCode,
+        candidate: decodedCode,
+        checksumValid: true,
+        found: true,
+        source: "opencv",
+      });
+    }
+  }
+
+  // Fallback path is opt-in. Without it, we return a clean miss so the client
+  // can fall back to its local decoders / manual entry without paying for Vision.
+  if (!visionFallbackEnabled) {
+    return jsonResponse(200, "ok", "ok", origin, env, {
+      code: null,
+      raw: "",
+      candidate: null,
+      checksumValid: false,
+      found: false,
+      source: "opencv-miss",
+    });
+  }
+
   const base64 = bytesToBase64(buffer);
 
   const body = {
@@ -194,6 +249,7 @@ async function handleDecodeBarcode(request, origin, env) {
     candidate: candidate,
     checksumValid: checksumValid,
     found: Boolean(code),
+    source: "anthropic",
   });
 }
 

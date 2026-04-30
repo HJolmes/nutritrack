@@ -293,13 +293,28 @@ function pickerToggleTorch(){
 // pixel-accessible frames from a camera stream on iOS Safari (GPU compositing
 // makes ctx.drawImage(video) return black pixels outside of rVFC callbacks).
 // Canvas must be in the DOM (position:fixed offscreen) for iOS pixel readback.
-function _pickerFrameLoop(videoEl,canvas,ctx,detect){
+function _pickerFrameLoop(videoEl,canvas,ctx,detect,label){
+  var frameCount=0;
+  var dbgCv=document.createElement('canvas');
+  dbgCv.width=120;dbgCv.height=80;
+  dbgCv.style.cssText='width:120px;height:80px;border:1px solid var(--br);border-radius:6px;display:block;margin:6px auto 0;';
+  var dbgCtx=dbgCv.getContext('2d');
+  var dbgEl=document.getElementById('pickerBarcodeResult');
+  if(dbgEl){
+    dbgEl.innerHTML='<div id="bcDbgWrap" style="font-size:11px;color:var(--mu);text-align:center;padding:4px 0;">'+
+      '<span id="bcDbgLabel">'+label+'</span> · Frame <span id="bcDbgN">0</span></div>';
+    document.getElementById('bcDbgWrap').appendChild(dbgCv);
+  }
   function process(){
     if(!pickerBcActive)return;
     if(!videoEl.videoWidth){schedule();return;}
     if(canvas.width!==videoEl.videoWidth)canvas.width=videoEl.videoWidth;
     if(canvas.height!==videoEl.videoHeight)canvas.height=videoEl.videoHeight;
     ctx.drawImage(videoEl,0,0,canvas.width,canvas.height);
+    // Debug preview: scaled-down copy of what the decoder sees
+    frameCount++;
+    var fn=document.getElementById('bcDbgN');if(fn)fn.textContent=frameCount;
+    dbgCtx.drawImage(canvas,0,0,120,80);
     detect(canvas,schedule);
   }
   function schedule(){
@@ -366,12 +381,10 @@ function pickerStartScan(){
         _pickerFrameLoop(videoEl,canvas,ctx,function(c,next){
           try{var r=reader.decodeFromCanvas(c);if(r&&r.getText()){pickerStopScan();pickerLookupBarcode(r.getText());return;}}catch(e){}
           next();
-        });
+        },'ZXing');
       }
 
       if('BarcodeDetector' in window){
-        // getSupportedFormats guards against unsupported formats (e.g. upc_a
-        // is not supported on Safari and would throw in the constructor)
         var want=['ean_13','ean_8','upc_a','upc_e','code_128','code_39'];
         BarcodeDetector.getSupportedFormats().then(function(supported){
           var formats=want.filter(function(f){return supported.indexOf(f)>=0;});
@@ -383,9 +396,8 @@ function pickerStartScan(){
               if(barcodes&&barcodes.length>0){pickerStopScan();pickerLookupBarcode(barcodes[0].rawValue);}
               else{next();}
             }).catch(next);
-          });
+          },'BarcodeDetector ('+formats.length+' Formate)');
         }).catch(function(){
-          // getSupportedFormats not available – try without upc_a to be safe
           try{
             var detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_e','code_128','code_39']});
             _pickerFrameLoop(videoEl,canvas,ctx,function(c,next){
@@ -394,7 +406,7 @@ function pickerStartScan(){
                 if(barcodes&&barcodes.length>0){pickerStopScan();pickerLookupBarcode(barcodes[0].rawValue);}
                 else{next();}
               }).catch(next);
-            });
+            },'BarcodeDetector (Fallback)');
           }catch(e){startZXing();}
         });
       }else{

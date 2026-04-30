@@ -313,10 +313,9 @@ function _pickerFrameLoop(videoEl,canvas,ctx,detect,label){
     document.getElementById('bcDbgWrap').appendChild(dbgCv);
   }
   var TARGET_W=800;
-  // Engerer Crop = mehr Pixel pro Strichcode-Modul für den Decoder. 70%×35%
-  // entspricht dem grünen Sucher-Rahmen. Vorher 85%×45% – zu viel Hintergrund.
-  var CROP_W_RATIO=0.70;
-  var CROP_H_RATIO=0.35;
+  // 80%×42%: kompromiss zwischen genug Pixeln und engem Fokus auf Barcode.
+  var CROP_W_RATIO=0.80;
+  var CROP_H_RATIO=0.42;
   function process(){
     if(!pickerBcActive)return;
     if(!videoEl.videoWidth){schedule();return;}
@@ -330,7 +329,12 @@ function _pickerFrameLoop(videoEl,canvas,ctx,detect,label){
     var outH=Math.max(1,Math.round(cropH*scale));
     if(canvas.width!==outW)canvas.width=outW;
     if(canvas.height!==outH)canvas.height=outH;
+    // Schwarz-Weiß + erhöhter Kontrast hilft bei reflektiven Verpackungen
+    // (Joghurtbecher, Folien) und niedrigem Strichkontrast. iOS Safari 14.5+
+    // unterstützt ctx.filter; Browsern ohne Support ignorieren still die filter.
+    try{ctx.filter='grayscale(100%) contrast(180%) brightness(105%)';}catch(e){}
     ctx.drawImage(videoEl,cropX,cropY,cropW,cropH,0,0,outW,outH);
+    try{ctx.filter='none';}catch(e){}
     frameCount++;
     var fn=document.getElementById('bcDbgN');if(fn)fn.textContent=frameCount;
     // Zeigt: Stream-Auflösung → Decoder-Auflösung. Wichtig für Diagnose ob
@@ -733,6 +737,29 @@ function pickerBcNo(){
   document.getElementById('pickerBcConfirm').classList.add('hidden');
   pickerBcFound=null;
   pickerAnalyze();
+}
+
+// Notnagel: Code manuell eintippen wenn alle Decoder versagen.
+// Auf iOS: long-press im Eingabefeld → "Text scannen" nutzt Apples Live Text OCR,
+// die EAN-Klartextziffern unter dem Strichcode extrem zuverlässig liest.
+function pickerOpenManualBarcode(){
+  pickerStopScan();
+  var el=document.getElementById('pickerBarcodeResult');
+  if(!el)return;
+  el.innerHTML='<div style="background:var(--gl);border:1.5px solid var(--br);border-radius:12px;padding:12px;">'
+    +'<div style="font-size:12px;color:var(--mu);margin-bottom:6px;">Tippe die 13 Ziffern unter dem Strichcode ein.</div>'
+    +'<div style="font-size:11px;color:var(--mu);margin-bottom:10px;line-height:1.4;">📱 <strong>iPhone-Tipp:</strong> Halte das Eingabefeld lang gedrückt → „Text scannen" → mit Kamera die Ziffern lesen lassen (Apples Live Text).</div>'
+    +'<input type="text" id="bcDirectInput" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="z.B. 4011200296898" style="width:100%;box-sizing:border-box;border:2px solid var(--br);border-radius:9px;padding:10px;font-size:16px;font-family:ui-monospace,Menlo,monospace;letter-spacing:1px;outline:none;margin-bottom:10px;" maxlength="14">'
+    +'<button type="button" onclick="pickerSubmitManualBarcode()" style="width:100%;background:linear-gradient(135deg,var(--g1),var(--g2));color:white;border:none;border-radius:10px;padding:11px;font-weight:800;font-size:14px;">Suchen ✓</button>'
+    +'</div>';
+  setTimeout(function(){var i=document.getElementById('bcDirectInput');if(i)i.focus();},50);
+}
+function pickerSubmitManualBarcode(){
+  var i=document.getElementById('bcDirectInput');
+  if(!i)return;
+  var code=(i.value||'').replace(/\D/g,'');
+  if(code.length<8){showToast('Mindestens 8 Ziffern eingeben');return;}
+  pickerLookupBarcode(code);
 }
 
 function pickerLookupBarcode(code){

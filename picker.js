@@ -313,8 +313,10 @@ function _pickerFrameLoop(videoEl,canvas,ctx,detect,label){
     document.getElementById('bcDbgWrap').appendChild(dbgCv);
   }
   var TARGET_W=800;
-  var CROP_W_RATIO=0.85;
-  var CROP_H_RATIO=0.45;
+  // Engerer Crop = mehr Pixel pro Strichcode-Modul für den Decoder. 70%×35%
+  // entspricht dem grünen Sucher-Rahmen. Vorher 85%×45% – zu viel Hintergrund.
+  var CROP_W_RATIO=0.70;
+  var CROP_H_RATIO=0.35;
   function process(){
     if(!pickerBcActive)return;
     if(!videoEl.videoWidth){schedule();return;}
@@ -444,19 +446,20 @@ function pickerStartScan(){
     if(!pickerBcActive){stream.getTracks().forEach(function(t){t.stop();});return;}
     videoEl.srcObject=stream;
     var playP=videoEl.play();if(playP)playP.catch(function(){});
-    // Android only: torch + camera tuning
     var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
+    // Auto-Focus auf BEIDEN Plattformen versuchen – moderne iPhones (16+) unterstützen
+    // continuous focus zuverlässig. Mit try/catch falls iOS Safari zickt.
+    try{
+      var track=stream.getVideoTracks()[0];if(track){
+        var caps=track.getCapabilities?track.getCapabilities():{};var adv={};
+        if(caps.focusMode&&caps.focusMode.includes('continuous'))adv.focusMode='continuous';
+        if(!isIOS&&caps.zoom){var z=Math.min(2,caps.zoom.max);if(z>caps.zoom.min)adv.zoom=z;}
+        if(Object.keys(adv).length)track.applyConstraints({advanced:[adv]}).catch(function(){});
+      }
+    }catch(e){}
     if(!isIOS){
       var tb=document.getElementById('torchBtn');if(tb)tb.style.display='block';
       pickerTorchOn=false;if(tb)tb.textContent='🔦';
-      try{
-        var track=stream.getVideoTracks()[0];if(track){
-          var caps=track.getCapabilities();var adv={};
-          if(caps.focusMode&&caps.focusMode.includes('continuous'))adv.focusMode='continuous';
-          if(caps.zoom){var z=Math.min(2,caps.zoom.max);if(z>caps.zoom.min)adv.zoom=z;}
-          if(Object.keys(adv).length)track.applyConstraints({advanced:[adv]}).catch(function(){});
-        }
-      }catch(e){}
     }
     pickerBcReader={_stream:stream};
     function startScanWhenReady(){
@@ -469,6 +472,25 @@ function pickerStartScan(){
       var ctx=canvas.getContext('2d',{willReadFrequently:true});
       pickerBcReader._canvas=canvas;
 
+      // Pro Frame: erst zxing-wasm probieren, bei Misserfolg zbar-wasm.
+      // Beide laufen gegen denselben Canvas, kostet zusammen typ. <30 ms pro Frame.
+      // ZBar nutzt komplett andere Algorithmen → fängt oft genau die Codes,
+      // bei denen ZXing aufgibt (z.B. dünne Striche, niedriger Kontrast, Glanz).
+      function _zbarTry(c){
+        if(!window.ZBarWasm||!window.ZBarWasm.scanImageData)return Promise.resolve(null);
+        try{
+          var imageData=ctx.getImageData(0,0,c.width,c.height);
+          return window.ZBarWasm.scanImageData(imageData).then(function(symbols){
+            if(symbols&&symbols.length){
+              for(var i=0;i<symbols.length;i++){
+                var t=symbols[i].decode?symbols[i].decode():(symbols[i].data||'');
+                if(t)return String(t);
+              }
+            }
+            return null;
+          }).catch(function(){return null;});
+        }catch(e){return Promise.resolve(null);}
+      }
       function startZXingWasm(){
         _pickerFrameLoop(videoEl,canvas,ctx,function(c,next){
           window.ZXingWasm.readBarcodes(c,{
@@ -482,9 +504,20 @@ function pickerStartScan(){
             if(results&&results.length>0&&results[0].text){
               pickerStopScan();pickerLookupBarcode(results[0].text);return;
             }
-            next();
-          }).catch(next);
-        },'ZXing-WASM');
+            // ZXing hat nichts gefunden → ZBar versuchen
+            return _zbarTry(c).then(function(zbarCode){
+              if(!pickerBcActive)return;
+              if(zbarCode){pickerStopScan();pickerLookupBarcode(zbarCode);return;}
+              next();
+            });
+          }).catch(function(){
+            return _zbarTry(c).then(function(zbarCode){
+              if(!pickerBcActive)return;
+              if(zbarCode){pickerStopScan();pickerLookupBarcode(zbarCode);return;}
+              next();
+            });
+          });
+        },'ZXing+ZBar-WASM');
       }
 
       function startZXingJs(){
@@ -500,8 +533,12 @@ function pickerStartScan(){
         pickerBcReader._zxing=reader;
         _pickerFrameLoop(videoEl,canvas,ctx,function(c,next){
           try{var r=reader.decodeFromCanvas(c);if(r&&r.getText()){pickerStopScan();pickerLookupBarcode(r.getText());return;}}catch(e){}
-          next();
-        },'ZXing-JS');
+          _zbarTry(c).then(function(zbarCode){
+            if(!pickerBcActive)return;
+            if(zbarCode){pickerStopScan();pickerLookupBarcode(zbarCode);return;}
+            next();
+          });
+        },'ZXing-JS+ZBar');
       }
 
       // Wartet bis zu 2s auf das WASM-Modul, dann startet WASM oder JS-Fallback.

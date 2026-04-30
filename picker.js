@@ -331,7 +331,9 @@ function _pickerFrameLoop(videoEl,canvas,ctx,detect,label){
     ctx.drawImage(videoEl,cropX,cropY,cropW,cropH,0,0,outW,outH);
     frameCount++;
     var fn=document.getElementById('bcDbgN');if(fn)fn.textContent=frameCount;
-    var sz=document.getElementById('bcDbgSz');if(sz)sz.textContent=outW+'×'+outH;
+    // Zeigt: Stream-Auflösung → Decoder-Auflösung. Wichtig für Diagnose ob
+    // iOS uns hochauflösenden Stream gibt.
+    var sz=document.getElementById('bcDbgSz');if(sz)sz.textContent=vw+'×'+vh+' → '+outW+'×'+outH;
     dbgCtx.drawImage(canvas,0,0,120,80);
     detect(canvas,schedule);
   }
@@ -421,7 +423,24 @@ function pickerStartScan(){
   var videoEl=document.getElementById('pickerBarcodeVideo');
   videoEl.setAttribute('playsinline','');
   videoEl.muted=true;
-  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}).then(function(stream){
+  // iOS Safari liefert mit dem reinen facingMode-Constraint manchmal nur 480×640
+  // (Postkarten-Auflösung), was für Barcode-Decode zu wenig Pixel ergibt. Mit
+  // ideal-Werten fragen wir 1920×1080 an; wenn die Kamera weniger kann, wählt
+  // der Browser automatisch die nächst-höhere verfügbare Auflösung.
+  function _getCameraStream(){
+    return navigator.mediaDevices.getUserMedia({
+      video:{
+        facingMode:{ideal:'environment'},
+        width:{ideal:1920},
+        height:{ideal:1080},
+        frameRate:{ideal:30}
+      }
+    }).catch(function(err){
+      // Fallback: simple Constraints falls iOS mit ideal-Werten zickt
+      return navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    });
+  }
+  _getCameraStream().then(function(stream){
     if(!pickerBcActive){stream.getTracks().forEach(function(t){t.stop();});return;}
     videoEl.srcObject=stream;
     var playP=videoEl.play();if(playP)playP.catch(function(){});

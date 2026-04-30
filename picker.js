@@ -718,6 +718,7 @@ function pickerShowBarcodeNotFound(code,msg){
   if(!el)return;
   window._pickerBarcodeNotFoundCode=code;
   el.innerHTML='<div style="background:var(--gl);border:1.5px solid var(--br);border-radius:12px;padding:12px;">'
+    +'<div style="font-size:11px;color:var(--mu);text-align:center;margin-bottom:8px;letter-spacing:.3px;">📷 Erkannt: <strong style="font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--g1);">'+code+'</strong></div>'
     +'<div style="font-size:12px;color:var(--mu);margin-bottom:10px;">'+msg+'</div>'
     +'<input type="text" id="bcManualName" placeholder="Produktname *" style="width:100%;box-sizing:border-box;border:2px solid var(--br);border-radius:9px;padding:8px;font-size:14px;margin-bottom:8px;outline:none;">'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">'

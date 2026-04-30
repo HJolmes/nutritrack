@@ -358,15 +358,15 @@ function _pickerStartServerDecodeLoop(canvas){
   if(typeof canUseAi!=='function'||!canUseAi())return false;
   var url=_pickerServerDecodeUrl();if(!url)return false;
   pickerBcServerActive=true;
-  var inFlight=0;var nextAt=Date.now()+500;
+  var inFlight=0;var nextAt=Date.now()+500;var reqCount=0;
   function setStatus(s){var el=document.getElementById('bcDbgServer');if(el)el.textContent='Server: '+s;}
   setStatus('warte');
   function tick(){
     if(!pickerBcActive||!pickerBcServerActive)return;
     var now=Date.now();
     if(inFlight>=1||now<nextAt||!canvas.width||canvas.width<16){setTimeout(tick,120);return;}
-    nextAt=now+700;inFlight++;
-    setStatus('scan…');
+    nextAt=now+700;inFlight++;reqCount++;
+    setStatus('scan… ('+reqCount+')');
     canvas.toBlob(function(blob){
       if(!pickerBcActive||!pickerBcServerActive||!blob){inFlight--;setTimeout(tick,120);return;}
       fetch(url,{
@@ -375,13 +375,20 @@ function _pickerStartServerDecodeLoop(canvas){
         body:blob
       }).then(function(r){
         if(!pickerBcActive||!pickerBcServerActive)return null;
-        if(r.status===204){setStatus('—');return null;}
-        if(!r.ok){setStatus('Fehler '+r.status);return null;}
+        if(!r.ok){setStatus('Fehler '+r.status+' ('+reqCount+')');return null;}
         return r.json();
       }).then(function(d){
         if(!pickerBcActive||!pickerBcServerActive||!d)return;
-        if(d.ok&&d.data&&d.data.code){setStatus('Treffer ✓');pickerStopScan();pickerLookupBarcode(d.data.code);}
-      }).catch(function(){setStatus('offline');}).then(function(){
+        var raw=(d&&d.data&&d.data.raw)?String(d.data.raw):'';
+        var code=(d&&d.data&&d.data.code)?String(d.data.code):'';
+        var label=raw?raw.slice(0,28):'(leer)';
+        if(code){
+          setStatus('✓ '+code);
+          pickerStopScan();pickerLookupBarcode(code);
+        }else{
+          setStatus(label+' ('+reqCount+')');
+        }
+      }).catch(function(e){setStatus('offline ('+reqCount+')');}).then(function(){
         inFlight--;setTimeout(tick,120);
       });
     },'image/jpeg',0.6);

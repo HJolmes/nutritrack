@@ -148,14 +148,13 @@ async function handleDecodeBarcode(request, origin, env) {
   const block = (answer && answer.content && answer.content[0]) || null;
   const text = block && block.type === "text" ? block.text : "";
   const code = extractBarcodeDigits(text);
+  const rawTrimmed = (text || "").trim().slice(0, 64);
 
-  if (!code) {
-    return new Response(null, {
-      status: 204,
-      headers: { ...corsHeaders(origin, env), "Cache-Control": "no-store" },
-    });
-  }
-  return jsonResponse(200, "ok", "ok", origin, env, { code });
+  return jsonResponse(200, "ok", "ok", origin, env, {
+    code: code,
+    raw: rawTrimmed,
+    found: Boolean(code),
+  });
 }
 
 export default {

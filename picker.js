@@ -290,27 +290,23 @@ function pickerToggleTorch(){
 
 function _pickerZxingScanLoop(videoEl,canvas,ctx,reader){
   if(!pickerBcActive)return;
-  requestAnimationFrame(function(){
-    if(!pickerBcActive)return;
-    if(videoEl.readyState<2||!videoEl.videoWidth){
-      setTimeout(function(){_pickerZxingScanLoop(videoEl,canvas,ctx,reader);},100);return;
-    }
+  if(videoEl.readyState<2||!videoEl.videoWidth){
+    setTimeout(function(){_pickerZxingScanLoop(videoEl,canvas,ctx,reader);},100);return;
+  }
+  if(canvas.width!==videoEl.videoWidth||canvas.height!==videoEl.videoHeight){
     canvas.width=videoEl.videoWidth;canvas.height=videoEl.videoHeight;
-    function onFrame(){
-      try{
-        var r=reader.decodeFromCanvas(canvas);
-        if(r&&r.getText()){pickerStopScan();pickerLookupBarcode(r.getText());return;}
-      }catch(e){}
-      setTimeout(function(){_pickerZxingScanLoop(videoEl,canvas,ctx,reader);},150);
+  }
+  // iOS Safari: ctx.drawImage(video) only works when the canvas is in the DOM
+  if(!canvas.parentNode)document.body.appendChild(canvas);
+  ctx.drawImage(videoEl,0,0,canvas.width,canvas.height);
+  try{
+    var r=reader.decodeFromCanvas(canvas);
+    if(r&&r.getText()){
+      if(canvas.parentNode)canvas.parentNode.removeChild(canvas);
+      pickerStopScan();pickerLookupBarcode(r.getText());return;
     }
-    if(typeof createImageBitmap!=='undefined'){
-      createImageBitmap(videoEl).then(function(bm){
-        ctx.drawImage(bm,0,0,canvas.width,canvas.height);bm.close();onFrame();
-      }).catch(function(){ctx.drawImage(videoEl,0,0,canvas.width,canvas.height);onFrame();});
-    } else {
-      ctx.drawImage(videoEl,0,0,canvas.width,canvas.height);onFrame();
-    }
-  });
+  }catch(e){}
+  setTimeout(function(){_pickerZxingScanLoop(videoEl,canvas,ctx,reader);},150);
 }
 
 function pickerStartScan(){
@@ -361,9 +357,11 @@ function pickerStartScan(){
         hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39]);
         hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
         var reader=new ZXing.BrowserMultiFormatReader(hints,300);
-        pickerBcReader._zxing=reader;
         var canvas=document.createElement('canvas');
+        canvas.style.cssText='position:fixed;left:-9999px;top:0;pointer-events:none;';
         var ctx=canvas.getContext('2d',{willReadFrequently:true});
+        pickerBcReader._zxing=reader;
+        pickerBcReader._zxingCanvas=canvas;
         _pickerZxingScanLoop(videoEl,canvas,ctx,reader);
       } else {
         document.getElementById('pickerBarcodeResult').innerHTML='<div style="font-size:13px;color:var(--re);padding:8px;">❌ ZXing nicht geladen. Seite neu laden.</div>';
@@ -389,7 +387,7 @@ function pickerStopScan(){
   pickerBcActive=false;
   if(pickerBcReader){
     try{if(pickerBcReader._scanLoop)clearInterval(pickerBcReader._scanLoop);}catch(e){}
-    try{if(pickerBcReader._zxing)pickerBcReader._zxing.reset();}catch(e){}
+    try{if(pickerBcReader._zxing){pickerBcReader._zxing.reset();if(pickerBcReader._zxingCanvas&&pickerBcReader._zxingCanvas.parentNode)pickerBcReader._zxingCanvas.parentNode.removeChild(pickerBcReader._zxingCanvas);}}catch(e){}
     try{if(pickerBcReader._stream)pickerBcReader._stream.getTracks().forEach(function(t){t.stop();});}catch(e){}
     pickerBcReader=null;
   }

@@ -657,44 +657,106 @@ function pickerStopScan(){
   var s=document.getElementById('pickerBcStartBtn');if(s)s.style.display='block';
   var t=document.getElementById('pickerBcStopBtn');if(t)t.style.display='none';
   var tb=document.getElementById('torchBtn');if(tb)tb.style.display='none';
-  var pb=document.getElementById('pickerBcPhotoBtn');if(pb)pb.style.display='none';
+  // Foto-Knopf bleibt sichtbar – ist jetzt der zuverlässige Plan B
   pickerTorchOn=false;
 }
 
+// Decodet ein hochauflösendes Foto mit allen verfügbaren Decodern + Server.
+// Foto-Pfad ist robuster als Live-Stream, weil iOS hier Hardware-Auto-Focus,
+// Stabilisierung und volle Sensor-Auflösung nutzt (~4032×3024 statt 1080×1920).
 function pickerScanFromPhoto(event){
   var file=event.target.files&&event.target.files[0];
   if(!file)return;
   var el=document.getElementById('pickerBarcodeResult');
-  el.innerHTML='<div style="font-size:13px;color:var(--g1);padding:8px;text-align:center;">🔍 Barcode wird erkannt...</div>';
+  el.innerHTML='<div style="font-size:13px;color:var(--g1);padding:8px;text-align:center;"><span class="spin" style="display:inline-block;width:14px;height:14px;border:2px solid var(--g2);border-top-color:transparent;border-radius:50%;vertical-align:middle;margin-right:6px;"></span>Foto wird analysiert (alle Decoder + KI)…</div>';
   var img=new Image();
   var url=URL.createObjectURL(file);
   img.onload=function(){
     URL.revokeObjectURL(url);
-    var MAX=1200;
+    // 1600px Max statt 1200 – mehr Pixel pro Strichcode-Modul
+    var MAX=1600;
     var scale=Math.min(1,MAX/Math.max(img.width,img.height));
     var w=Math.round(img.width*scale),h=Math.round(img.height*scale);
     var canvas=document.createElement('canvas');
     canvas.width=w;canvas.height=h;
     var ctx=canvas.getContext('2d',{willReadFrequently:true});
+    // S/W + Kontrast hilft, falls iOS Safari es unterstützt
+    try{ctx.filter='grayscale(100%) contrast(170%) brightness(105%)';}catch(e){}
     ctx.drawImage(img,0,0,w,h);
-    var zxingOk=false;
-    if(typeof ZXing!=='undefined'){
-      var hints=new Map();
-      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39]);
-      hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
-      try{
-        var result=new ZXing.BrowserMultiFormatReader(hints).decodeFromCanvas(canvas);
-        if(result&&result.getText()){
-          zxingOk=true;
-          document.getElementById('pickerBcPhoto').value='';
-          pickerLookupBarcode(result.getText());
+    try{ctx.filter='none';}catch(e){}
+    var done=false;
+    function hit(code,via){
+      if(done)return;done=true;
+      var inp=document.getElementById('pickerBcPhoto');if(inp)inp.value='';
+      pickerLookupBarcode(code);
+    }
+    function fail(){
+      if(done)return;done=true;
+      el.innerHTML='<div style="background:var(--gl);border:1.5px solid var(--br);border-radius:12px;padding:12px;">'
+        +'<div style="font-size:13px;color:var(--re);margin-bottom:8px;text-align:center;">❌ Kein Barcode erkannt</div>'
+        +'<div style="font-size:11px;color:var(--mu);text-align:center;margin-bottom:10px;">Nochmal versuchen oder Code direkt eintippen:</div>'
+        +'<button type="button" onclick="pickerOpenManualBarcode()" style="width:100%;background:linear-gradient(135deg,var(--g1),var(--g2));color:white;border:none;border-radius:10px;padding:10px;font-weight:800;font-size:13px;">📝 Code manuell eingeben</button>'
+        +'</div>';
+      var inp=document.getElementById('pickerBcPhoto');if(inp)inp.value='';
+    }
+    // 1. ZXing-WASM (modern, schnell)
+    var p1=Promise.resolve(null);
+    if(window.ZXingWasm&&window.ZXingWasm.readBarcodes){
+      p1=window.ZXingWasm.readBarcodes(canvas,{
+        formats:['EAN-13','EAN-8','UPC-A','UPC-E','Code128','Code39'],
+        tryHarder:true,tryRotate:true,tryInvert:true,maxNumberOfSymbols:1
+      }).then(function(rs){return rs&&rs.length&&rs[0].text?rs[0].text:null;}).catch(function(){return null;});
+    }
+    p1.then(function(c){
+      if(c){hit(c,'wasm');return;}
+      // 2. ZBar-WASM (andere Algorithmen)
+      if(window.ZBarWasm&&window.ZBarWasm.scanImageData){
+        try{
+          var imgData=ctx.getImageData(0,0,w,h);
+          return window.ZBarWasm.scanImageData(imgData).then(function(syms){
+            if(syms&&syms.length){
+              for(var i=0;i<syms.length;i++){
+                var t=syms[i].decode?syms[i].decode():(syms[i].data||'');
+                if(t){hit(String(t),'zbar');return null;}
+              }
+            }
+            return null;
+          }).catch(function(){return null;});
+        }catch(e){}
+      }
+      return null;
+    }).then(function(){
+      if(done)return;
+      // 3. ZXing-JS (Fallback)
+      if(typeof ZXing!=='undefined'){
+        try{
+          var hints=new Map();
+          hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39]);
+          hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
+          var r=new ZXing.BrowserMultiFormatReader(hints).decodeFromCanvas(canvas);
+          if(r&&r.getText()){hit(r.getText(),'zxingjs');return;}
+        }catch(e){}
+      }
+      // 4. Server (Claude Vision) als letzter Ausweg
+      if(typeof canUseAi==='function'&&canUseAi()){
+        var serverUrl=_pickerServerDecodeUrl&&_pickerServerDecodeUrl();
+        if(serverUrl){
+          canvas.toBlob(function(blob){
+            if(!blob){fail();return;}
+            fetch(serverUrl,{
+              method:'POST',
+              headers:{'Content-Type':'image/jpeg','x-app-proxy-secret':getProxySecret()},
+              body:blob
+            }).then(function(r){return r.ok?r.json():null;}).then(function(d){
+              if(d&&d.ok&&d.data&&d.data.code){hit(d.data.code,'server');}
+              else{fail();}
+            }).catch(fail);
+          },'image/jpeg',0.85);
+          return;
         }
-      }catch(e){}
-    }
-    if(!zxingOk){
-      el.innerHTML='<div style="font-size:13px;color:var(--re);padding:8px;">❌ Kein Barcode erkannt. Nochmal versuchen.</div>';
-      document.getElementById('pickerBcPhoto').value='';
-    }
+      }
+      fail();
+    });
   };
   img.onerror=function(){el.innerHTML='<div style="font-size:13px;color:var(--re);padding:8px;">❌ Foto konnte nicht geladen werden.</div>';};
   img.src=url;

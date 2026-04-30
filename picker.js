@@ -383,9 +383,27 @@ function pickerStartScan(){
       var ctx=canvas.getContext('2d',{willReadFrequently:true});
       pickerBcReader._canvas=canvas;
 
-      function startZXing(){
+      function startZXingWasm(){
+        _pickerFrameLoop(videoEl,canvas,ctx,function(c,next){
+          window.ZXingWasm.readBarcodes(c,{
+            formats:['EAN-13','EAN-8','UPC-A','UPC-E','Code128','Code39'],
+            tryHarder:true,
+            tryRotate:true,
+            tryInvert:true,
+            maxNumberOfSymbols:1
+          }).then(function(results){
+            if(!pickerBcActive)return;
+            if(results&&results.length>0&&results[0].text){
+              pickerStopScan();pickerLookupBarcode(results[0].text);return;
+            }
+            next();
+          }).catch(next);
+        },'ZXing-WASM');
+      }
+
+      function startZXingJs(){
         if(typeof ZXing==='undefined'){
-          document.getElementById('pickerBarcodeResult').innerHTML='<div style="font-size:13px;color:var(--re);padding:8px;">❌ ZXing nicht geladen. Seite neu laden.</div>';
+          document.getElementById('pickerBarcodeResult').innerHTML='<div style="font-size:13px;color:var(--re);padding:8px;">❌ Decoder nicht geladen. Seite neu laden.</div>';
           document.getElementById('pickerBcPhotoBtn').style.display='block';
           return;
         }
@@ -397,9 +415,26 @@ function pickerStartScan(){
         _pickerFrameLoop(videoEl,canvas,ctx,function(c,next){
           try{var r=reader.decodeFromCanvas(c);if(r&&r.getText()){pickerStopScan();pickerLookupBarcode(r.getText());return;}}catch(e){}
           next();
-        },'ZXing');
+        },'ZXing-JS');
       }
 
+      // Wartet bis zu 2s auf das WASM-Modul, dann startet WASM oder JS-Fallback.
+      function startWasmOrFallback(){
+        if(!pickerBcActive)return;
+        if(window.ZXingWasm&&window.ZXingWasm.readBarcodes){startZXingWasm();return;}
+        var waited=0;
+        var poll=setInterval(function(){
+          if(!pickerBcActive){clearInterval(poll);return;}
+          waited+=100;
+          if(window.ZXingWasm&&window.ZXingWasm.readBarcodes){clearInterval(poll);startZXingWasm();}
+          else if(waited>=2000){clearInterval(poll);startZXingJs();}
+        },100);
+      }
+
+      // Decoder-Reihenfolge:
+      // 1. BarcodeDetector (Chrome/Edge: GPU-nativ, sehr schnell)
+      // 2. zxing-wasm (iOS Safari & alle Browser ohne BarcodeDetector – C++/WASM, robust)
+      // 3. ZXing-JS (Fallback falls WASM-Modul nicht laden konnte)
       if('BarcodeDetector' in window){
         var want=['ean_13','ean_8','upc_a','upc_e','code_128','code_39'];
         BarcodeDetector.getSupportedFormats().then(function(supported){
@@ -423,10 +458,10 @@ function pickerStartScan(){
                 else{next();}
               }).catch(next);
             },'BarcodeDetector (Fallback)');
-          }catch(e){startZXing();}
+          }catch(e){startWasmOrFallback();}
         });
       }else{
-        startZXing();
+        startWasmOrFallback();
       }
     }
     if(videoEl.readyState>=2){startScanWhenReady();}

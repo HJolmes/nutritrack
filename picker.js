@@ -531,17 +531,43 @@ function pickerStartScan(){
         hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
         var reader=new ZXing.BrowserMultiFormatReader(hints,300);
         pickerBcReader._zxing=reader;
+        // Pro Frame ALLE Decoder probieren in Reihenfolge:
+        // 1. zxing-wasm wenn nachträglich geladen (kann nach Start verfügbar werden)
+        // 2. zbar-wasm wenn geladen
+        // 3. ZXing-JS (immer da)
         _pickerFrameLoop(videoEl,canvas,ctx,function(c,next){
-          try{var r=reader.decodeFromCanvas(c);if(r&&r.getText()){pickerStopScan();pickerLookupBarcode(r.getText());return;}}catch(e){}
-          _zbarTry(c).then(function(zbarCode){
+          // Update label dynamically based on which engines are loaded
+          var lbl=document.getElementById('bcDbgLabel');
+          if(lbl){
+            var parts=['ZXing-JS'];
+            if(window.ZXingWasm&&window.ZXingWasm.readBarcodes)parts.unshift('ZXing-WASM');
+            if(window.ZBarWasm&&window.ZBarWasm.scanImageData)parts.push('ZBar-WASM');
+            lbl.textContent=parts.join('+');
+          }
+          var p=Promise.resolve(null);
+          if(window.ZXingWasm&&window.ZXingWasm.readBarcodes){
+            p=window.ZXingWasm.readBarcodes(c,{
+              formats:['EAN-13','EAN-8','UPC-A','UPC-E','Code128','Code39'],
+              tryHarder:true,tryRotate:true,tryInvert:true,maxNumberOfSymbols:1
+            }).then(function(rs){return rs&&rs.length&&rs[0].text?rs[0].text:null;}).catch(function(){return null;});
+          }
+          p.then(function(code){
             if(!pickerBcActive)return;
-            if(zbarCode){pickerStopScan();pickerLookupBarcode(zbarCode);return;}
-            next();
+            if(code){pickerStopScan();pickerLookupBarcode(code);return;}
+            // Try ZXing-JS
+            try{var r=reader.decodeFromCanvas(c);if(r&&r.getText()){pickerStopScan();pickerLookupBarcode(r.getText());return;}}catch(e){}
+            // Try ZBar last
+            _zbarTry(c).then(function(zbarCode){
+              if(!pickerBcActive)return;
+              if(zbarCode){pickerStopScan();pickerLookupBarcode(zbarCode);return;}
+              next();
+            });
           });
         },'ZXing-JS+ZBar');
       }
 
-      // Wartet bis zu 2s auf das WASM-Modul, dann startet WASM oder JS-Fallback.
+      // Polling auf 15s erhöht – auf iOS Safari mit mobiler Verbindung kann
+      // esm.sh 5–10s brauchen, vorher haben wir vorzeitig auf JS-Fallback gewechselt.
       function startWasmOrFallback(){
         if(!pickerBcActive)return;
         if(window.ZXingWasm&&window.ZXingWasm.readBarcodes){startZXingWasm();return;}
@@ -550,7 +576,7 @@ function pickerStartScan(){
           if(!pickerBcActive){clearInterval(poll);return;}
           waited+=100;
           if(window.ZXingWasm&&window.ZXingWasm.readBarcodes){clearInterval(poll);startZXingWasm();}
-          else if(waited>=2000){clearInterval(poll);startZXingJs();}
+          else if(waited>=15000){clearInterval(poll);startZXingJs();}
         },100);
       }
 

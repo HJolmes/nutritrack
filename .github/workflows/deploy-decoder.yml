@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - "claude/research-barcode-api-aRybb"
     paths:
       - "decoder/**"
       - ".github/workflows/deploy-decoder.yml"

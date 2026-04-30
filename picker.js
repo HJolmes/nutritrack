@@ -287,94 +287,41 @@ function pickerToggleTorch(){
   }
 }
 
-// iOS Live-Scanner (iOS 17+ / ab iOS 18.6.2 Mindestversion)
-// Nutzt BarcodeDetector API + getUserMedia, angepasst an iOS-Restriktionen.
-// Bestehender Android-Scanner bleibt unverändert.
-function pickerStartScanIOS(){
-  var wrap=document.getElementById('pickerBarcodeWrap');
-  wrap.classList.remove('hidden');
-  document.getElementById('pickerBcStartBtn').style.display='none';
-  document.getElementById('pickerBcStopBtn').style.display='block';
-  document.getElementById('pickerBcPhotoBtn').style.display='block'; // Foto als Fallback weiterhin anbieten
-  document.getElementById('pickerBarcodeResult').innerHTML='<div style="font-size:13px;color:var(--g1);padding:8px;text-align:center;"><span class="spin" style="display:inline-block;width:14px;height:14px;border:2px solid var(--g2);border-top-color:transparent;border-radius:50%;vertical-align:middle;margin-right:6px;"></span>Kamera startet…</div>';
-  pickerBcActive=true;
-  var videoEl=document.getElementById('pickerBarcodeVideo');
-  // iOS: {exact} bevorzugt, Fallback ohne exact falls Gerät es ablehnt
-  var tryStream=navigator.mediaDevices.getUserMedia({video:{facingMode:{exact:'environment'}}})
-    .catch(function(){return navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});});
-  tryStream.then(function(stream){
-    if(!pickerBcActive){stream.getTracks().forEach(function(t){t.stop();});return;}
-    videoEl.srcObject=stream;
-    videoEl.setAttribute('playsinline',''); // Pflicht auf iOS – verhindert Vollbild
-    videoEl.muted=true;
-    videoEl.play().catch(function(){});
-    document.getElementById('pickerBarcodeResult').innerHTML='';
-    var detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39']});
-    pickerBcReader={_stream:stream};
-    pickerBcReader._scanLoop=setInterval(function(){
-      if(!pickerBcActive)return;
-      if(videoEl.readyState<2)return;
-      detector.detect(videoEl).then(function(barcodes){
-        if(!pickerBcActive)return;
-        if(barcodes&&barcodes.length>0){
-          clearInterval(pickerBcReader._scanLoop);
-          pickerStopScan();
-          pickerLookupBarcode(barcodes[0].rawValue);
-        }
-      }).catch(function(){});
-    },250);
-  }).catch(function(err){
-    var msg=err.name==='NotAllowedError'
-      ?'Kamerazugriff verweigert – bitte in iPhone-Einstellungen → Safari → Kamera erlauben.'
-      :'Kamera nicht verfügbar: '+err.message;
-    document.getElementById('pickerBarcodeResult').innerHTML='<div style="font-size:13px;color:var(--re);padding:10px;text-align:center;">❌ '+msg+'</div>';
-    document.getElementById('pickerBcPhotoBtn').style.display='block';
-    document.getElementById('pickerBcStopBtn').style.display='none';
-    document.getElementById('pickerBcStartBtn').style.display='block';
-    pickerBcActive=false;
-  });
-}
 
 function pickerStartScan(){
   var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
-  if(isIOS){
-    if('BarcodeDetector' in window){
-      pickerStartScanIOS();
-    } else {
-      // Bestehender Foto-Fallback für iOS < 17
-      document.getElementById('pickerBcStartBtn').style.display='none';
-      document.getElementById('pickerBcPhotoBtn').style.display='block';
-      document.getElementById('pickerBarcodeResult').innerHTML='<div style="font-size:13px;color:var(--mu);padding:8px;text-align:center;">📷 Foto vom Barcode aufnehmen</div>';
-    }
-    return;
-  }
   var wrap=document.getElementById('pickerBarcodeWrap');
   wrap.classList.remove('hidden');
   document.getElementById('pickerBcStartBtn').style.display='none';
   document.getElementById('pickerBcStopBtn').style.display='block';
-  document.getElementById('pickerBarcodeResult').innerHTML='';
+  document.getElementById('pickerBarcodeResult').innerHTML='<div style="font-size:13px;color:var(--g1);padding:8px;text-align:center;"><span class="spin" style="display:inline-block;width:14px;height:14px;border:2px solid var(--g2);border-top-color:transparent;border-radius:50%;vertical-align:middle;margin-right:6px;"></span>Kamera startet…</div>';
   pickerBcActive=true;
   var videoEl=document.getElementById('pickerBarcodeVideo');
-  var videoConstraints={facingMode:'environment',width:{ideal:1920},height:{ideal:1080}};
-  navigator.mediaDevices.getUserMedia({video:videoConstraints}).then(function(stream){
-    try{
-      var track=stream.getVideoTracks()[0];
-      if(track){
-        var caps=track.getCapabilities();
-        var constraints={};
-        if(caps.focusMode&&caps.focusMode.includes('continuous'))constraints.focusMode='continuous';
-        if(caps.zoom){var z=Math.min(2,caps.zoom.max);if(z>caps.zoom.min)constraints.zoom=z;}
-        if(Object.keys(constraints).length)track.applyConstraints({advanced:[constraints]}).catch(function(){});
-      }
-    }catch(e){}
+  // playsinline + muted sind auf iOS Pflicht damit kein Vollbild aufgeht
+  videoEl.setAttribute('playsinline','');
+  videoEl.muted=true;
+  // Kein {exact} bei facingMode – schlaegt auf manchen iOS-Geraeten fehl
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}).then(function(stream){
     if(!pickerBcActive){stream.getTracks().forEach(function(t){t.stop();});return;}
     videoEl.srcObject=stream;
-    videoEl.setAttribute('playsinline','');
-    videoEl.muted=true;
-    videoEl.play();
-    var tb=document.getElementById('torchBtn');if(tb)tb.style.display='block';
-    pickerTorchOn=false;if(tb)tb.textContent='🔦';
+    var playP=videoEl.play();if(playP)playP.catch(function(){});
+    // Taschenlampe + Kamera-Optimierungen nur auf Android
+    if(!isIOS){
+      var tb=document.getElementById('torchBtn');if(tb)tb.style.display='block';
+      pickerTorchOn=false;if(tb)tb.textContent='🔦';
+      try{
+        var track=stream.getVideoTracks()[0];
+        if(track){
+          var caps=track.getCapabilities();var adv={};
+          if(caps.focusMode&&caps.focusMode.includes('continuous'))adv.focusMode='continuous';
+          if(caps.zoom){var z=Math.min(2,caps.zoom.max);if(z>caps.zoom.min)adv.zoom=z;}
+          if(Object.keys(adv).length)track.applyConstraints({advanced:[adv]}).catch(function(){});
+        }
+      }catch(e){}
+    }
+    document.getElementById('pickerBarcodeResult').innerHTML='';
     if('BarcodeDetector' in window){
+      // BarcodeDetector – Chrome/Android
       var detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39']});
       pickerBcReader={_stream:stream};
       pickerBcReader._scanLoop=setInterval(function(){
@@ -383,43 +330,47 @@ function pickerStartScan(){
         detector.detect(videoEl).then(function(barcodes){
           if(!pickerBcActive)return;
           if(barcodes&&barcodes.length>0){
-            var code=barcodes[0].rawValue;
-            clearInterval(pickerBcReader._scanLoop);
-            pickerStopScan();
-            pickerLookupBarcode(code);
+            clearInterval(pickerBcReader._scanLoop);pickerStopScan();
+            pickerLookupBarcode(barcodes[0].rawValue);
           }
         }).catch(function(){});
       },200);
     } else if(typeof ZXing!=='undefined'){
+      // ZXing canvas-Scan – funktioniert auf iOS Safari + aelterem Android
       var hints=new Map();
       hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39]);
       hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
       var reader=new ZXing.BrowserMultiFormatReader(hints,300);
       pickerBcReader={_stream:stream,_zxing:reader};
       var canvas=document.createElement('canvas');
-      var ctx=canvas.getContext('2d');
+      var ctx=canvas.getContext('2d',{willReadFrequently:true});
       pickerBcReader._scanLoop=setInterval(function(){
         if(!pickerBcActive)return;
-        if(videoEl.readyState<2)return;
-        canvas.width=videoEl.videoWidth;
-        canvas.height=videoEl.videoHeight;
-        if(!canvas.width)return;
+        if(videoEl.readyState<2||!videoEl.videoWidth)return;
+        canvas.width=videoEl.videoWidth;canvas.height=videoEl.videoHeight;
         ctx.drawImage(videoEl,0,0,canvas.width,canvas.height);
         try{
           var result=reader.decodeFromCanvas(canvas);
           if(result&&result.getText()){
-            clearInterval(pickerBcReader._scanLoop);
-            pickerStopScan();
+            clearInterval(pickerBcReader._scanLoop);pickerStopScan();
             pickerLookupBarcode(result.getText());
           }
         }catch(e){}
-      },300);
+      },200);
     } else {
-      document.getElementById('pickerBarcodeResult').innerHTML='<div style="font-size:13px;color:var(--re);padding:8px;">❌ Scanner nicht verfügbar.</div>';
+      document.getElementById('pickerBarcodeResult').innerHTML='<div style="font-size:13px;color:var(--re);padding:8px;">&#x274C; Scanner-Bibliothek nicht geladen. Bitte Seite neu laden.</div>';
+      document.getElementById('pickerBcPhotoBtn').style.display='block';
     }
   }).catch(function(err){
-    document.getElementById('pickerBarcodeResult').innerHTML='<div style="font-size:13px;color:var(--re);padding:8px;">❌ '+(err.name==='NotAllowedError'?'Kamerazugriff verweigert.':'Kamera nicht verfügbar: '+err.message)+'</div>';
-    pickerStopScan();
+    var isPermission=err.name==='NotAllowedError';
+    var msg=isPermission
+      ?'Kamerazugriff verweigert – bitte in Einstellungen → Safari → Kamera erlauben.'
+      :'Kamera nicht verfügbar: '+err.message;
+    document.getElementById('pickerBarcodeResult').innerHTML='<div style="font-size:13px;color:var(--re);padding:10px;text-align:center;">&#x274C; '+msg+'</div>';
+    document.getElementById('pickerBcPhotoBtn').style.display='block';
+    document.getElementById('pickerBcStopBtn').style.display='none';
+    document.getElementById('pickerBcStartBtn').style.display='block';
+    pickerBcActive=false;
   });
 }
 

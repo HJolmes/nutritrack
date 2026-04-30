@@ -288,30 +288,52 @@ function pickerToggleTorch(){
 }
 
 
+function _pickerZxingScanLoop(videoEl,canvas,ctx,reader){
+  if(!pickerBcActive)return;
+  requestAnimationFrame(function(){
+    if(!pickerBcActive)return;
+    if(videoEl.readyState<2||!videoEl.videoWidth){
+      setTimeout(function(){_pickerZxingScanLoop(videoEl,canvas,ctx,reader);},100);return;
+    }
+    canvas.width=videoEl.videoWidth;canvas.height=videoEl.videoHeight;
+    function onFrame(){
+      try{
+        var r=reader.decodeFromCanvas(canvas);
+        if(r&&r.getText()){pickerStopScan();pickerLookupBarcode(r.getText());return;}
+      }catch(e){}
+      setTimeout(function(){_pickerZxingScanLoop(videoEl,canvas,ctx,reader);},150);
+    }
+    if(typeof createImageBitmap!=='undefined'){
+      createImageBitmap(videoEl).then(function(bm){
+        ctx.drawImage(bm,0,0,canvas.width,canvas.height);bm.close();onFrame();
+      }).catch(function(){ctx.drawImage(videoEl,0,0,canvas.width,canvas.height);onFrame();});
+    } else {
+      ctx.drawImage(videoEl,0,0,canvas.width,canvas.height);onFrame();
+    }
+  });
+}
+
 function pickerStartScan(){
-  var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
   var wrap=document.getElementById('pickerBarcodeWrap');
   wrap.classList.remove('hidden');
   document.getElementById('pickerBcStartBtn').style.display='none';
   document.getElementById('pickerBcStopBtn').style.display='block';
-  document.getElementById('pickerBarcodeResult').innerHTML='<div style="font-size:13px;color:var(--g1);padding:8px;text-align:center;"><span class="spin" style="display:inline-block;width:14px;height:14px;border:2px solid var(--g2);border-top-color:transparent;border-radius:50%;vertical-align:middle;margin-right:6px;"></span>Kamera startet…</div>';
+  document.getElementById('pickerBarcodeResult').innerHTML='<div style="font-size:13px;color:var(--g1);padding:10px;text-align:center;"><span class="spin" style="display:inline-block;width:14px;height:14px;border:2px solid var(--g2);border-top-color:transparent;border-radius:50%;vertical-align:middle;margin-right:6px;"></span>Kamera startetâ¦</div>';
   pickerBcActive=true;
   var videoEl=document.getElementById('pickerBarcodeVideo');
-  // playsinline + muted sind auf iOS Pflicht damit kein Vollbild aufgeht
   videoEl.setAttribute('playsinline','');
   videoEl.muted=true;
-  // Kein {exact} bei facingMode – schlaegt auf manchen iOS-Geraeten fehl
   navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}).then(function(stream){
     if(!pickerBcActive){stream.getTracks().forEach(function(t){t.stop();});return;}
     videoEl.srcObject=stream;
     var playP=videoEl.play();if(playP)playP.catch(function(){});
-    // Taschenlampe + Kamera-Optimierungen nur auf Android
+    // Android only: torch + camera tuning
+    var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
     if(!isIOS){
       var tb=document.getElementById('torchBtn');if(tb)tb.style.display='block';
       pickerTorchOn=false;if(tb)tb.textContent='🔦';
       try{
-        var track=stream.getVideoTracks()[0];
-        if(track){
+        var track=stream.getVideoTracks()[0];if(track){
           var caps=track.getCapabilities();var adv={};
           if(caps.focusMode&&caps.focusMode.includes('continuous'))adv.focusMode='continuous';
           if(caps.zoom){var z=Math.min(2,caps.zoom.max);if(z>caps.zoom.min)adv.zoom=z;}
@@ -319,60 +341,49 @@ function pickerStartScan(){
         }
       }catch(e){}
     }
-    document.getElementById('pickerBarcodeResult').innerHTML='';
-    if('BarcodeDetector' in window){
-      // BarcodeDetector – Chrome/Android
-      var detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39']});
-      pickerBcReader={_stream:stream};
-      pickerBcReader._scanLoop=setInterval(function(){
-        if(!pickerBcActive)return;
-        if(videoEl.readyState<2)return;
-        detector.detect(videoEl).then(function(barcodes){
+    pickerBcReader={_stream:stream};
+    // Wait for video to be ready before scanning
+    function startScanWhenReady(){
+      if(!pickerBcActive)return;
+      document.getElementById('pickerBarcodeResult').innerHTML='';
+      if('BarcodeDetector' in window){
+        var detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39']});
+        pickerBcReader._scanLoop=setInterval(function(){
           if(!pickerBcActive)return;
-          if(barcodes&&barcodes.length>0){
-            clearInterval(pickerBcReader._scanLoop);pickerStopScan();
-            pickerLookupBarcode(barcodes[0].rawValue);
-          }
-        }).catch(function(){});
-      },200);
-    } else if(typeof ZXing!=='undefined'){
-      // ZXing canvas-Scan – funktioniert auf iOS Safari + aelterem Android
-      var hints=new Map();
-      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39]);
-      hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
-      var reader=new ZXing.BrowserMultiFormatReader(hints,300);
-      pickerBcReader={_stream:stream,_zxing:reader};
-      var canvas=document.createElement('canvas');
-      var ctx=canvas.getContext('2d',{willReadFrequently:true});
-      pickerBcReader._scanLoop=setInterval(function(){
-        if(!pickerBcActive)return;
-        if(videoEl.readyState<2||!videoEl.videoWidth)return;
-        canvas.width=videoEl.videoWidth;canvas.height=videoEl.videoHeight;
-        ctx.drawImage(videoEl,0,0,canvas.width,canvas.height);
-        try{
-          var result=reader.decodeFromCanvas(canvas);
-          if(result&&result.getText()){
-            clearInterval(pickerBcReader._scanLoop);pickerStopScan();
-            pickerLookupBarcode(result.getText());
-          }
-        }catch(e){}
-      },200);
-    } else {
-      document.getElementById('pickerBarcodeResult').innerHTML='<div style="font-size:13px;color:var(--re);padding:8px;">&#x274C; Scanner-Bibliothek nicht geladen. Bitte Seite neu laden.</div>';
-      document.getElementById('pickerBcPhotoBtn').style.display='block';
+          if(videoEl.readyState<2)return;
+          detector.detect(videoEl).then(function(barcodes){
+            if(!pickerBcActive)return;
+            if(barcodes&&barcodes.length>0){clearInterval(pickerBcReader._scanLoop);pickerStopScan();pickerLookupBarcode(barcodes[0].rawValue);}
+          }).catch(function(){});
+        },200);
+      } else if(typeof ZXing!=='undefined'){
+        var hints=new Map();
+        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39]);
+        hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
+        var reader=new ZXing.BrowserMultiFormatReader(hints,300);
+        pickerBcReader._zxing=reader;
+        var canvas=document.createElement('canvas');
+        var ctx=canvas.getContext('2d',{willReadFrequently:true});
+        _pickerZxingScanLoop(videoEl,canvas,ctx,reader);
+      } else {
+        document.getElementById('pickerBarcodeResult').innerHTML='<div style="font-size:13px;color:var(--re);padding:8px;">❌ ZXing nicht geladen. Seite neu laden.</div>';
+        document.getElementById('pickerBcPhotoBtn').style.display='block';
+      }
     }
+    if(videoEl.readyState>=2){startScanWhenReady();}
+    else{videoEl.oncanplay=function(){videoEl.oncanplay=null;startScanWhenReady();};}
   }).catch(function(err){
-    var isPermission=err.name==='NotAllowedError';
-    var msg=isPermission
-      ?'Kamerazugriff verweigert – bitte in Einstellungen → Safari → Kamera erlauben.'
+    var msg=err.name==='NotAllowedError'
+      ?'Kamerazugriff verweigert â in Einstellungen → Safari → Kamera erlauben.'
       :'Kamera nicht verfügbar: '+err.message;
-    document.getElementById('pickerBarcodeResult').innerHTML='<div style="font-size:13px;color:var(--re);padding:10px;text-align:center;">&#x274C; '+msg+'</div>';
+    document.getElementById('pickerBarcodeResult').innerHTML='<div style="font-size:13px;color:var(--re);padding:10px;text-align:center;">❌ '+msg+'</div>';
     document.getElementById('pickerBcPhotoBtn').style.display='block';
     document.getElementById('pickerBcStopBtn').style.display='none';
     document.getElementById('pickerBcStartBtn').style.display='block';
     pickerBcActive=false;
   });
 }
+
 
 function pickerStopScan(){
   pickerBcActive=false;
@@ -481,16 +492,14 @@ function pickerLookupBarcode(code){
   var cached=barcodeCache[code];
   if(cached){pickerShowBarcodeResult(cached,true);return;}
   if(!isOnline){
-    if(el)el.innerHTML='<div style="font-size:13px;color:var(--re);padding:8px;">📴 Offline – Barcode nicht im Cache</div>';
-    if(startBtn)startBtn.style.display='block';
+    pickerShowBarcodeNotFound(code,'📴 Offline – nicht im Cache. Werte manuell eintragen:');
     return;
   }
   fetch('https://world.openfoodfacts.org/api/v0/product/'+code+'.json')
     .then(function(r){return r.json();})
     .then(function(data){
       if(data.status!==1||!data.product){
-        if(el)el.innerHTML='<div style="font-size:13px;color:var(--re);padding:8px;">❌ Produkt nicht gefunden ('+code+')</div>';
-        if(startBtn)startBtn.style.display='block';
+        pickerShowBarcodeNotFound(code,'Produkt nicht in der Datenbank. Trag die Werte selbst ein:');
         return;
       }
       var p=data.product,nm=p.nutriments||{};
@@ -547,6 +556,39 @@ function pickerBarcodeAdd(){
   checkPregWarn([food],pickerMeal,_bidx);
   checkDietWarn([food],pickerMeal,_bidx);
   showToast((food.emoji||'🍽')+' '+food.name+' hinzugefügt');
+}
+
+function pickerShowBarcodeNotFound(code,msg){
+  var el=document.getElementById('pickerBarcodeResult');
+  if(!el)return;
+  window._pickerBarcodeNotFoundCode=code;
+  el.innerHTML='<div style="background:var(--gl);border:1.5px solid var(--br);border-radius:12px;padding:12px;">'
+    +'<div style="font-size:12px;color:var(--mu);margin-bottom:10px;">'+msg+'</div>'
+    +'<input type="text" id="bcManualName" placeholder="Produktname *" style="width:100%;box-sizing:border-box;border:2px solid var(--br);border-radius:9px;padding:8px;font-size:14px;margin-bottom:8px;outline:none;">'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">'
+    +'<label style="font-size:11px;color:var(--mu);">kcal/100g<input type="number" id="bcManualKcal" placeholder="0" min="0" style="width:100%;box-sizing:border-box;border:1.5px solid var(--br);border-radius:8px;padding:6px;font-size:13px;margin-top:2px;outline:none;"></label>'
+    +'<label style="font-size:11px;color:var(--mu);">Protein g<input type="number" id="bcManualProt" placeholder="0" min="0" style="width:100%;box-sizing:border-box;border:1.5px solid var(--br);border-radius:8px;padding:6px;font-size:13px;margin-top:2px;outline:none;"></label>'
+    +'<label style="font-size:11px;color:var(--mu);">Kohlenhydrate g<input type="number" id="bcManualCarbs" placeholder="0" min="0" style="width:100%;box-sizing:border-box;border:1.5px solid var(--br);border-radius:8px;padding:6px;font-size:13px;margin-top:2px;outline:none;"></label>'
+    +'<label style="font-size:11px;color:var(--mu);">Fett g<input type="number" id="bcManualFat" placeholder="0" min="0" style="width:100%;box-sizing:border-box;border:1.5px solid var(--br);border-radius:8px;padding:6px;font-size:13px;margin-top:2px;outline:none;"></label>'
+    +'</div>'
+    +'<button type="button" onclick="pickerBarcodeManualSave(\''+code+'\')" style="width:100%;background:linear-gradient(135deg,var(--g1),var(--g2));color:white;border:none;border-radius:10px;padding:11px;font-weight:800;font-size:14px;">Speichern & hinzufügen ✓</button>'
+    +'</div>';
+}
+
+function pickerBarcodeManualSave(code){
+  var name=(document.getElementById('bcManualName').value||'').trim();
+  if(!name){showToast('Produktname eingeben');return;}
+  var food={name:name,emoji:emo(name),barcode:code,per100:{
+    kcal:parseFloat(document.getElementById('bcManualKcal').value)||0,
+    protein:parseFloat(document.getElementById('bcManualProt').value)||0,
+    carbs:parseFloat(document.getElementById('bcManualCarbs').value)||0,
+    fat:parseFloat(document.getElementById('bcManualFat').value)||0,
+    sugar:0,fiber:0,salt:0
+  }};
+  barcodeCache[code]=food;saveBarcodeCache();
+  customFoods.unshift(food);saveX();
+  pickerShowBarcodeResult(food,false);
+  showToast(food.emoji+' '+food.name+' gespeichert');
 }
 
 function pickerAnalyze(){

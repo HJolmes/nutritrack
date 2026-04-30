@@ -288,25 +288,44 @@ function pickerToggleTorch(){
 }
 
 
-function _pickerZxingScanLoop(videoEl,canvas,ctx,reader){
-  if(!pickerBcActive)return;
-  if(videoEl.readyState<2||!videoEl.videoWidth){
-    setTimeout(function(){_pickerZxingScanLoop(videoEl,canvas,ctx,reader);},100);return;
+// Unified scan loop for BarcodeDetector and ZXing.
+// Uses requestVideoFrameCallback on iOS 15.4+ – the only reliable way to get
+// pixel-accessible frames from a camera stream on iOS Safari (GPU compositing
+// makes ctx.drawImage(video) return black pixels outside of rVFC callbacks).
+// Canvas must be in the DOM (position:fixed offscreen) for iOS pixel readback.
+function _pickerFrameLoop(videoEl,canvas,ctx,detect,label){
+  var frameCount=0;
+  var dbgCv=document.createElement('canvas');
+  dbgCv.width=120;dbgCv.height=80;
+  dbgCv.style.cssText='width:120px;height:80px;border:1px solid var(--br);border-radius:6px;display:block;margin:6px auto 0;';
+  var dbgCtx=dbgCv.getContext('2d');
+  var dbgEl=document.getElementById('pickerBarcodeResult');
+  if(dbgEl){
+    dbgEl.innerHTML='<div id="bcDbgWrap" style="font-size:11px;color:var(--mu);text-align:center;padding:4px 0;">'+
+      '<span id="bcDbgLabel">'+label+'</span> · Frame <span id="bcDbgN">0</span></div>';
+    document.getElementById('bcDbgWrap').appendChild(dbgCv);
   }
-  if(canvas.width!==videoEl.videoWidth||canvas.height!==videoEl.videoHeight){
-    canvas.width=videoEl.videoWidth;canvas.height=videoEl.videoHeight;
+  function process(){
+    if(!pickerBcActive)return;
+    if(!videoEl.videoWidth){schedule();return;}
+    if(canvas.width!==videoEl.videoWidth)canvas.width=videoEl.videoWidth;
+    if(canvas.height!==videoEl.videoHeight)canvas.height=videoEl.videoHeight;
+    ctx.drawImage(videoEl,0,0,canvas.width,canvas.height);
+    // Debug preview: scaled-down copy of what the decoder sees
+    frameCount++;
+    var fn=document.getElementById('bcDbgN');if(fn)fn.textContent=frameCount;
+    dbgCtx.drawImage(canvas,0,0,120,80);
+    detect(canvas,schedule);
   }
-  // iOS Safari: ctx.drawImage(video) only works when the canvas is in the DOM
-  if(!canvas.parentNode)document.body.appendChild(canvas);
-  ctx.drawImage(videoEl,0,0,canvas.width,canvas.height);
-  try{
-    var r=reader.decodeFromCanvas(canvas);
-    if(r&&r.getText()){
-      if(canvas.parentNode)canvas.parentNode.removeChild(canvas);
-      pickerStopScan();pickerLookupBarcode(r.getText());return;
+  function schedule(){
+    if(!pickerBcActive)return;
+    if(typeof videoEl.requestVideoFrameCallback==='function'){
+      videoEl.requestVideoFrameCallback(process);
+    }else{
+      setTimeout(process,200);
     }
-  }catch(e){}
-  setTimeout(function(){_pickerZxingScanLoop(videoEl,canvas,ctx,reader);},150);
+  }
+  schedule();
 }
 
 function pickerStartScan(){
@@ -338,34 +357,60 @@ function pickerStartScan(){
       }catch(e){}
     }
     pickerBcReader={_stream:stream};
-    // Wait for video to be ready before scanning
     function startScanWhenReady(){
       if(!pickerBcActive)return;
       document.getElementById('pickerBarcodeResult').innerHTML='';
-      if('BarcodeDetector' in window){
-        var detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39']});
-        pickerBcReader._scanLoop=setInterval(function(){
-          if(!pickerBcActive)return;
-          if(videoEl.readyState<2)return;
-          detector.detect(videoEl).then(function(barcodes){
-            if(!pickerBcActive)return;
-            if(barcodes&&barcodes.length>0){clearInterval(pickerBcReader._scanLoop);pickerStopScan();pickerLookupBarcode(barcodes[0].rawValue);}
-          }).catch(function(){});
-        },200);
-      } else if(typeof ZXing!=='undefined'){
+      // Shared canvas: in DOM (offscreen) for iOS pixel readback
+      var canvas=document.createElement('canvas');
+      canvas.style.cssText='position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;pointer-events:none;opacity:0;';
+      document.body.appendChild(canvas);
+      var ctx=canvas.getContext('2d',{willReadFrequently:true});
+      pickerBcReader._canvas=canvas;
+
+      function startZXing(){
+        if(typeof ZXing==='undefined'){
+          document.getElementById('pickerBarcodeResult').innerHTML='<div style="font-size:13px;color:var(--re);padding:8px;">❌ ZXing nicht geladen. Seite neu laden.</div>';
+          document.getElementById('pickerBcPhotoBtn').style.display='block';
+          return;
+        }
         var hints=new Map();
         hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39]);
         hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
         var reader=new ZXing.BrowserMultiFormatReader(hints,300);
-        var canvas=document.createElement('canvas');
-        canvas.style.cssText='position:fixed;left:-9999px;top:0;pointer-events:none;';
-        var ctx=canvas.getContext('2d',{willReadFrequently:true});
         pickerBcReader._zxing=reader;
-        pickerBcReader._zxingCanvas=canvas;
-        _pickerZxingScanLoop(videoEl,canvas,ctx,reader);
-      } else {
-        document.getElementById('pickerBarcodeResult').innerHTML='<div style="font-size:13px;color:var(--re);padding:8px;">❌ ZXing nicht geladen. Seite neu laden.</div>';
-        document.getElementById('pickerBcPhotoBtn').style.display='block';
+        _pickerFrameLoop(videoEl,canvas,ctx,function(c,next){
+          try{var r=reader.decodeFromCanvas(c);if(r&&r.getText()){pickerStopScan();pickerLookupBarcode(r.getText());return;}}catch(e){}
+          next();
+        },'ZXing');
+      }
+
+      if('BarcodeDetector' in window){
+        var want=['ean_13','ean_8','upc_a','upc_e','code_128','code_39'];
+        BarcodeDetector.getSupportedFormats().then(function(supported){
+          var formats=want.filter(function(f){return supported.indexOf(f)>=0;});
+          if(!formats.length)formats=['ean_13','ean_8'];
+          var detector=new BarcodeDetector({formats:formats});
+          _pickerFrameLoop(videoEl,canvas,ctx,function(c,next){
+            detector.detect(c).then(function(barcodes){
+              if(!pickerBcActive)return;
+              if(barcodes&&barcodes.length>0){pickerStopScan();pickerLookupBarcode(barcodes[0].rawValue);}
+              else{next();}
+            }).catch(next);
+          },'BarcodeDetector ('+formats.length+' Formate)');
+        }).catch(function(){
+          try{
+            var detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_e','code_128','code_39']});
+            _pickerFrameLoop(videoEl,canvas,ctx,function(c,next){
+              detector.detect(c).then(function(barcodes){
+                if(!pickerBcActive)return;
+                if(barcodes&&barcodes.length>0){pickerStopScan();pickerLookupBarcode(barcodes[0].rawValue);}
+                else{next();}
+              }).catch(next);
+            },'BarcodeDetector (Fallback)');
+          }catch(e){startZXing();}
+        });
+      }else{
+        startZXing();
       }
     }
     if(videoEl.readyState>=2){startScanWhenReady();}
@@ -387,7 +432,8 @@ function pickerStopScan(){
   pickerBcActive=false;
   if(pickerBcReader){
     try{if(pickerBcReader._scanLoop)clearInterval(pickerBcReader._scanLoop);}catch(e){}
-    try{if(pickerBcReader._zxing){pickerBcReader._zxing.reset();if(pickerBcReader._zxingCanvas&&pickerBcReader._zxingCanvas.parentNode)pickerBcReader._zxingCanvas.parentNode.removeChild(pickerBcReader._zxingCanvas);}}catch(e){}
+    try{if(pickerBcReader._zxing)pickerBcReader._zxing.reset();}catch(e){}
+    try{if(pickerBcReader._canvas&&pickerBcReader._canvas.parentNode)pickerBcReader._canvas.parentNode.removeChild(pickerBcReader._canvas);}catch(e){}
     try{if(pickerBcReader._stream)pickerBcReader._stream.getTracks().forEach(function(t){t.stop();});}catch(e){}
     pickerBcReader=null;
   }

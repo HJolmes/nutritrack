@@ -72,6 +72,42 @@ function extractBarcodeDigits(text) {
   return digits;
 }
 
+// Validates EAN-13 / EAN-8 / UPC-A check digit (last digit).
+// Returns true for codes with a correct check digit, false otherwise.
+// Strong filter against hallucinated digits from the vision model.
+function isValidBarcodeChecksum(code) {
+  if (typeof code !== "string" || !/^\d+$/.test(code)) return false;
+  if (code.length !== 13 && code.length !== 12 && code.length !== 8) {
+    // We cannot validate Code 128 / Code 39 / unusual lengths cheaply – allow them through.
+    return true;
+  }
+  // EAN-13 / UPC-A use the same checksum algorithm; pad UPC-A (12) to 13 with leading 0.
+  const padded = code.length === 12 ? "0" + code : code;
+  if (padded.length === 13) {
+    let sumOdd = 0;
+    let sumEven = 0;
+    for (let i = 0; i < 12; i++) {
+      const d = padded.charCodeAt(i) - 48;
+      if (i % 2 === 0) sumOdd += d;
+      else sumEven += d;
+    }
+    const total = sumOdd + sumEven * 3;
+    const expected = (10 - (total % 10)) % 10;
+    return expected === padded.charCodeAt(12) - 48;
+  }
+  if (code.length === 8) {
+    // EAN-8: positions 1,3,5,7 ×3 + positions 2,4,6 ×1 (0-indexed inverted).
+    let sum = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = code.charCodeAt(i) - 48;
+      sum += i % 2 === 0 ? d * 3 : d;
+    }
+    const expected = (10 - (sum % 10)) % 10;
+    return expected === code.charCodeAt(7) - 48;
+  }
+  return true;
+}
+
 async function handleDecodeBarcode(request, origin, env) {
   if (origin && !allowedOrigins(env).has(origin)) {
     return jsonResponse(403, "origin_not_allowed", "Origin is not allowed", origin, env);
@@ -114,7 +150,7 @@ async function handleDecodeBarcode(request, origin, env) {
           },
           {
             type: "text",
-            text: "Read the barcode in this image. Reply with ONLY the numeric code (the digits printed below the bars), no spaces, no other text. If no barcode is fully visible or readable, reply NONE.",
+            text: "Read the EAN-13 barcode in this image. Below the black bars there is a row of 13 digits printed in plain text. Reply with ONLY those 13 digits, no spaces, no other text. If you cannot clearly read all 13 digits, reply exactly NONE. Do NOT guess any digit. Do NOT invent digits. NONE is the right answer when the barcode is blurry, partially occluded, or not in the image.",
           },
         ],
       },
@@ -147,12 +183,16 @@ async function handleDecodeBarcode(request, origin, env) {
   }
   const block = (answer && answer.content && answer.content[0]) || null;
   const text = block && block.type === "text" ? block.text : "";
-  const code = extractBarcodeDigits(text);
+  const candidate = extractBarcodeDigits(text);
   const rawTrimmed = (text || "").trim().slice(0, 64);
+  const checksumValid = candidate ? isValidBarcodeChecksum(candidate) : false;
+  const code = checksumValid ? candidate : null;
 
   return jsonResponse(200, "ok", "ok", origin, env, {
     code: code,
     raw: rawTrimmed,
+    candidate: candidate,
+    checksumValid: checksumValid,
     found: Boolean(code),
   });
 }

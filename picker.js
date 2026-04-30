@@ -11,6 +11,7 @@ var pickerIngredients=[];     // photo/chat detected ingredients
 var pickerBcFound=null;       // barcode found pending confirm
 var pickerBcReader=null;      // ZXing reader instance
 var pickerBcActive=false;
+var pickerBcServerActive=false; // Server-Decode-Loop läuft parallel zum lokalen Decoder
 var pickerTorchOn=false;
 
 // ════════════════════════════════════════
@@ -307,7 +308,8 @@ function _pickerFrameLoop(videoEl,canvas,ctx,detect,label){
   var dbgEl=document.getElementById('pickerBarcodeResult');
   if(dbgEl){
     dbgEl.innerHTML='<div id="bcDbgWrap" style="font-size:11px;color:var(--mu);text-align:center;padding:4px 0;">'+
-      '<span id="bcDbgLabel">'+label+'</span> · Frame <span id="bcDbgN">0</span> · <span id="bcDbgSz">–</span></div>';
+      '<span id="bcDbgLabel">'+label+'</span> · Frame <span id="bcDbgN">0</span> · <span id="bcDbgSz">–</span> · '+
+      '<span id="bcDbgServer">Server: aus</span></div>';
     document.getElementById('bcDbgWrap').appendChild(dbgCv);
   }
   var TARGET_W=800;
@@ -342,6 +344,50 @@ function _pickerFrameLoop(videoEl,canvas,ctx,detect,label){
     }
   }
   schedule();
+}
+
+// Server-Decode-Loop: streamt parallel zum lokalen Decoder ~1.4 fps gecropte
+// JPEG-Frames an den Cloudflare-Worker (POST /decode-barcode), der per Claude
+// Haiku Vision die Ziffern liest. Lokaler Decoder läuft weiter – wer zuerst
+// trifft, gewinnt. Auf iOS ist der Worker-Pfad meist der einzige, der trifft.
+function _pickerServerDecodeUrl(){
+  if(typeof PROJECT_AI_PROXY_URL!=='string'||!PROJECT_AI_PROXY_URL)return null;
+  return PROJECT_AI_PROXY_URL.replace(/\/v1\/messages\/?$/,'/decode-barcode');
+}
+function _pickerStartServerDecodeLoop(canvas){
+  if(typeof canUseAi!=='function'||!canUseAi())return false;
+  var url=_pickerServerDecodeUrl();if(!url)return false;
+  pickerBcServerActive=true;
+  var inFlight=0;var nextAt=Date.now()+500;
+  function setStatus(s){var el=document.getElementById('bcDbgServer');if(el)el.textContent='Server: '+s;}
+  setStatus('warte');
+  function tick(){
+    if(!pickerBcActive||!pickerBcServerActive)return;
+    var now=Date.now();
+    if(inFlight>=1||now<nextAt||!canvas.width||canvas.width<16){setTimeout(tick,120);return;}
+    nextAt=now+700;inFlight++;
+    setStatus('scan…');
+    canvas.toBlob(function(blob){
+      if(!pickerBcActive||!pickerBcServerActive||!blob){inFlight--;setTimeout(tick,120);return;}
+      fetch(url,{
+        method:'POST',
+        headers:{'Content-Type':'image/jpeg','x-app-proxy-secret':getProxySecret()},
+        body:blob
+      }).then(function(r){
+        if(!pickerBcActive||!pickerBcServerActive)return null;
+        if(r.status===204){setStatus('—');return null;}
+        if(!r.ok){setStatus('Fehler '+r.status);return null;}
+        return r.json();
+      }).then(function(d){
+        if(!pickerBcActive||!pickerBcServerActive||!d)return;
+        if(d.ok&&d.data&&d.data.code){setStatus('Treffer ✓');pickerStopScan();pickerLookupBarcode(d.data.code);}
+      }).catch(function(){setStatus('offline');}).then(function(){
+        inFlight--;setTimeout(tick,120);
+      });
+    },'image/jpeg',0.6);
+  }
+  setTimeout(tick,500);
+  return true;
 }
 
 function pickerStartScan(){
@@ -435,6 +481,12 @@ function pickerStartScan(){
       // 1. BarcodeDetector (Chrome/Edge: GPU-nativ, sehr schnell)
       // 2. zxing-wasm (iOS Safari & alle Browser ohne BarcodeDetector – C++/WASM, robust)
       // 3. ZXing-JS (Fallback falls WASM-Modul nicht laden konnte)
+      // PARALLEL: Server-Decode über Cloudflare-Worker (Claude Haiku Vision).
+      // Nur auf Plattformen ohne BarcodeDetector aktivieren – auf Chrome/Android
+      // trifft der lokale Decoder ohnehin in <100ms, da brauchen wir keinen Roundtrip.
+      if(!('BarcodeDetector' in window)){
+        try{_pickerStartServerDecodeLoop(canvas);}catch(e){}
+      }
       if('BarcodeDetector' in window){
         var want=['ean_13','ean_8','upc_a','upc_e','code_128','code_39'];
         BarcodeDetector.getSupportedFormats().then(function(supported){
@@ -481,6 +533,7 @@ function pickerStartScan(){
 
 function pickerStopScan(){
   pickerBcActive=false;
+  pickerBcServerActive=false;
   if(pickerBcReader){
     try{if(pickerBcReader._scanLoop)clearInterval(pickerBcReader._scanLoop);}catch(e){}
     try{if(pickerBcReader._zxing)pickerBcReader._zxing.reset();}catch(e){}

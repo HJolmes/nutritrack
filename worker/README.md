@@ -2,6 +2,14 @@
 
 This Worker proxies NutriTrack AI requests to Anthropic so the real Anthropic API key is never shipped to the browser.
 
+## Endpoints
+
+- `GET  /health` – status JSON, no auth.
+- `POST /v1/messages` – generic Anthropic Messages proxy (used by KI-Foto/Chat features). Body is JSON forwarded to `api.anthropic.com/v1/messages`.
+- `POST /decode-barcode` – live barcode decoder. Body is a raw JPEG (max 200 KB). Worker forwards it to Claude Haiku 4.5 Vision and returns either `204 No Content` (no barcode found) or `{ ok: true, data: { code: "<digits>" } }`. Used by the Barcode-Tab to decode each frame on iPhones where local WASM decoders fail.
+
+All POST endpoints require the `x-app-proxy-secret` header to match `NUTRITRACK_PROXY_TOKEN`.
+
 ## Cloudflare Setup
 
 1. Open the Cloudflare Dashboard.

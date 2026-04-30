@@ -359,6 +359,9 @@ function _pickerStartServerDecodeLoop(canvas){
   var url=_pickerServerDecodeUrl();if(!url)return false;
   pickerBcServerActive=true;
   var inFlight=0;var nextAt=Date.now()+500;var reqCount=0;
+  // Mehrfrachen-Bestätigung: erst nach 2 identischen gültigen Codes wird der Lookup gestartet.
+  // Schützt gegen seltene Halluzinationen mit zufällig gültiger Prüfziffer.
+  var lastCode=null;
   function setStatus(s){var el=document.getElementById('bcDbgServer');if(el)el.textContent='Server: '+s;}
   setStatus('warte');
   function tick(){
@@ -379,14 +382,25 @@ function _pickerStartServerDecodeLoop(canvas){
         return r.json();
       }).then(function(d){
         if(!pickerBcActive||!pickerBcServerActive||!d)return;
-        var raw=(d&&d.data&&d.data.raw)?String(d.data.raw):'';
-        var code=(d&&d.data&&d.data.code)?String(d.data.code):'';
-        var label=raw?raw.slice(0,28):'(leer)';
+        var data=d.data||{};
+        var raw=data.raw?String(data.raw):'';
+        var code=data.code?String(data.code):'';
+        var candidate=data.candidate?String(data.candidate):'';
+        var checksumOk=Boolean(data.checksumValid);
         if(code){
-          setStatus('✓ '+code);
-          pickerStopScan();pickerLookupBarcode(code);
+          if(lastCode===code){
+            setStatus('✓✓ '+code);
+            pickerStopScan();pickerLookupBarcode(code);
+          }else{
+            lastCode=code;
+            setStatus('1/2 ✓ '+code+' ('+reqCount+')');
+          }
+        }else if(candidate&&!checksumOk){
+          lastCode=null;
+          setStatus('✗ '+candidate+' ('+reqCount+')');
         }else{
-          setStatus(label+' ('+reqCount+')');
+          lastCode=null;
+          setStatus((raw?raw.slice(0,24):'(leer)')+' ('+reqCount+')');
         }
       }).catch(function(e){setStatus('offline ('+reqCount+')');}).then(function(){
         inFlight--;setTimeout(tick,120);

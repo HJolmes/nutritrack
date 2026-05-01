@@ -1,0 +1,55 @@
+name: Deploy OSS-Barcode-Decoder to Cloud Run
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "decoder/**"
+      - ".github/workflows/deploy-decoder.yml"
+
+env:
+  GCP_REGION: europe-west1
+  SERVICE_NAME: nutritrack-decoder
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Skip when Cloud Run secrets are missing
+        if: env.GCP_PROJECT_ID == '' || env.GCP_SA_KEY == ''
+        run: |
+          echo "::notice::Skipping decoder deploy because GCP_PROJECT_ID or GCP_SA_KEY is not configured in GitHub Actions secrets."
+          echo "Manual deploy remains supported (see decoder/README.md)."
+
+      - name: Auth to Google Cloud
+        if: env.GCP_PROJECT_ID != '' && env.GCP_SA_KEY != ''
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up gcloud
+        if: env.GCP_PROJECT_ID != '' && env.GCP_SA_KEY != ''
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Deploy to Cloud Run
+        if: env.GCP_PROJECT_ID != '' && env.GCP_SA_KEY != ''
+        run: |
+          gcloud run deploy "$SERVICE_NAME" \
+            --source decoder \
+            --region "$GCP_REGION" \
+            --allow-unauthenticated \
+            --max-instances 2 \
+            --memory 512Mi \
+            --cpu 1 \
+            --timeout 10s \
+            --quiet

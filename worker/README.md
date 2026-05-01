@@ -6,7 +6,12 @@ This Worker proxies NutriTrack AI requests to Anthropic so the real Anthropic AP
 
 - `GET  /health` – status JSON, no auth.
 - `POST /v1/messages` – generic Anthropic Messages proxy (used by KI-Foto/Chat features). Body is JSON forwarded to `api.anthropic.com/v1/messages`.
-- `POST /decode-barcode` – live barcode decoder. Body is a raw JPEG (max 200 KB). Worker forwards it to Claude Haiku 4.5 Vision and returns either `204 No Content` (no barcode found) or `{ ok: true, data: { code: "<digits>" } }`. Used by the Barcode-Tab to decode each frame on iPhones where local WASM decoders fail.
+- `POST /decode-barcode` – live barcode decoder. Body is a raw JPEG (max 200 KB). Returns `{ ok: true, data: { code, found, source, ... } }`. Used by the Barcode-Tab to decode each frame on iPhones where local WASM decoders fail.
+
+  **Decode pipeline (since v0.137):**
+  1. **Primary path:** posts the JPEG to the OSS-Decoder microservice at `DECODER_URL` (OpenCV `BarcodeDetector` + pyzbar — see `decoder/`). Hit returns immediately with `source: "opencv"`. Free, ~30–150 ms warm.
+  2. **Fallback (only when `ENABLE_VISION_FALLBACK=true`):** sends the frame to Claude Haiku 4.5 Vision. Returns `source: "anthropic"` on hit. Costs money — leave disabled in production unless OSS-Decoder hit rate is unacceptable.
+  3. **Otherwise:** returns `{ found: false, source: "opencv-miss" }` so the client can fall back to local decoders / manual entry.
 
 All POST endpoints require the `x-app-proxy-secret` header to match `NUTRITRACK_PROXY_TOKEN`.
 
@@ -24,6 +29,9 @@ All POST endpoints require the `x-app-proxy-secret` header to match `NUTRITRACK_
 8. Add a second secret:
    - Name: `NUTRITRACK_PROXY_TOKEN`
    - Value: a long random token, 32+ characters
+8b. Add the OSS-Decoder URL as a secret:
+   - Name: `DECODER_URL`
+   - Value: the Cloud Run service URL from `decoder/README.md`, e.g. `https://nutritrack-decoder-xxxxx-ew.a.run.app`
 9. Note the Worker URL, for example:
    - `https://nutritrack-ai-proxy.<your-subdomain>.workers.dev`
 10. In `index.html`, set:

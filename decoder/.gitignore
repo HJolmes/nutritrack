@@ -1,0 +1,18 @@
+# Local test images — never commit (privacy: AGENTS.md datenschutz rule)
+test-assets/
+*.jpg
+*.jpeg
+*.png
+*.heic
+*.heif
+
+# Optional super-resolution DNN weights (download separately, not committed)
+sr.prototxt
+sr.caffemodel
+
+# Python build artifacts
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env

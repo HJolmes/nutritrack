@@ -19,9 +19,9 @@ ENABLE_VISION_FALLBACK = "false"
 #   wrangler kv namespace create nutritrack-shares
 # → liefert eine ID. Dann den folgenden Block einkommentieren und id einsetzen:
 #
-# [[kv_namespaces]]
-# binding = "SHARE_KV"
-# id = "REPLACE_WITH_KV_NAMESPACE_ID"
+[[kv_namespaces]]
+binding = "SHARE_KV"
+id = "873c9976307f4af087ff8205ba957b1c"
 #
 # Solange der Block auskommentiert ist, gibt /share 503 zurueck und die PWA
 # faellt automatisch auf is.gd / Originallink zurueck. Siehe README.md.

@@ -1,0 +1,103 @@
+name: Setup Share KV (one-shot)
+
+# Einmaliges Setup fuer den Share-Link-Shortener:
+#   1. Legt den KV-Namespace `nutritrack-shares` in Cloudflare an (idempotent).
+#   2. Aktiviert den [[kv_namespaces]]-Block in worker/wrangler.toml mit der ID.
+#   3. Deployt den Worker sofort mit aktivem SHARE_KV-Binding.
+#   4. Oeffnet einen Folge-PR mit dem wrangler.toml-Diff fuer Repo-Konsistenz.
+#
+# Manuell triggern via GitHub UI: Actions -> "Setup Share KV (one-shot)" -> Run workflow.
+# Sobald wrangler.toml die echte ID enthaelt, kann dieser Workflow geloescht werden.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify Cloudflare secrets
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN oder CLOUDFLARE_ACCOUNT_ID fehlt in den GitHub Actions Secrets."
+            exit 1
+          fi
+
+      - name: Find or create KV namespace
+        id: kv
+        run: |
+          set -e
+          echo "Suche existierenden Namespace nutritrack-shares ..."
+          LIST_JSON=$(npx --yes wrangler@latest kv namespace list 2>/dev/null || echo "[]")
+          ID=$(echo "$LIST_JSON" | jq -r '.[] | select(.title | test("nutritrack-shares$")) | .id' | head -n1)
+
+          if [ -z "$ID" ] || [ "$ID" = "null" ]; then
+            echo "Kein bestehender Namespace gefunden, lege neuen an ..."
+            CREATE_OUT=$(npx --yes wrangler@latest kv namespace create nutritrack-shares 2>&1 | tee /dev/stderr)
+            ID=$(echo "$CREATE_OUT" | grep -oE '[a-f0-9]{32}' | head -n1)
+          else
+            echo "Bestehenden Namespace wiederverwendet: $ID"
+          fi
+
+          if [ -z "$ID" ]; then
+            echo "::error::Konnte keine KV-Namespace-ID ermitteln."
+            exit 1
+          fi
+          echo "KV namespace id: $ID"
+          echo "id=$ID" >> "$GITHUB_OUTPUT"
+
+      - name: Patch worker/wrangler.toml
+        run: |
+          set -e
+          ID="${{ steps.kv.outputs.id }}"
+          python3 - <<PY
+          import re, pathlib
+          p = pathlib.Path("worker/wrangler.toml")
+          src = p.read_text()
+          if "[[kv_namespaces]]" in src and "REPLACE_WITH_KV_NAMESPACE_ID" not in src:
+              print("wrangler.toml ist bereits konfiguriert – ueberspringe Patch.")
+          else:
+              src = re.sub(r"^# \[\[kv_namespaces\]\]\s*$", "[[kv_namespaces]]", src, flags=re.M)
+              src = re.sub(r'^# binding = "SHARE_KV"\s*$', 'binding = "SHARE_KV"', src, flags=re.M)
+              src = re.sub(r'^# id = "REPLACE_WITH_KV_NAMESPACE_ID"\s*$',
+                           f'id = "${ID}"', src, flags=re.M)
+              p.write_text(src)
+              print("wrangler.toml gepatcht.")
+          PY
+          echo "--- worker/wrangler.toml ---"
+          cat worker/wrangler.toml
+
+      - name: Deploy Worker with new binding
+        run: npx --yes wrangler@latest deploy --config worker/wrangler.toml
+
+      - name: Open follow-up PR with wrangler.toml change
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          if git diff --quiet worker/wrangler.toml; then
+            echo "Keine Aenderung in wrangler.toml – Repo ist bereits aktuell, kein PR noetig."
+            exit 0
+          fi
+          BRANCH="claude/nutritrack-fix-kv-binding"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add worker/wrangler.toml
+          git commit -m "fix: KV-Binding SHARE_KV in wrangler.toml aktivieren"
+          git push -u origin "$BRANCH"
+          gh pr create \
+            --title "fix: KV-Binding SHARE_KV aktivieren" \
+            --body "Aktiviert den Share-Link-Shortener. KV-Namespace nutritrack-shares wurde via setup-share-kv.yml angelegt, ID hier ins wrangler.toml eingetragen. Worker ist bereits deployt und live; dieser PR hält das Repo nur konsistent." \
+            --base main \
+            --head "$BRANCH"

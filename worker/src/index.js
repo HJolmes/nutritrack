@@ -266,6 +266,9 @@ export default {
       return jsonResponse(200, "ok", "ok", origin, env, {
         service: "nutritrack-ai-proxy",
         configured: Boolean(env.ANTHROPIC_API_KEY && env.NUTRITRACK_PROXY_TOKEN),
+        decoderConfigured: Boolean(env.DECODER_URL),
+        visionFallbackEnabled: env.ENABLE_VISION_FALLBACK === "true",
+        codeVersion: "v0.137-decoder-first",
       });
     }
 

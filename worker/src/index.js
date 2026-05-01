@@ -253,6 +253,88 @@ async function handleDecodeBarcode(request, origin, env) {
   });
 }
 
+// ─── SHARE-LINK SHORTENER (KV-backed) ───
+const SHARE_ID_LEN = 7;
+const SHARE_TTL_SECONDS = 60 * 60 * 24 * 365; // 1 year
+const MAX_SHARE_CODE_BYTES = 1024 * 8; // 8 KB; recipes ~600 chars
+const SHARE_TARGET_BASE = "https://hjolmes.github.io/nutritrack/";
+// Base58-ish (no 0/O/1/I/l) – avoids visual confusion in shared URLs
+const SHARE_ALPHABET = "23456789abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ";
+
+function generateShareId() {
+  const arr = new Uint8Array(SHARE_ID_LEN);
+  crypto.getRandomValues(arr);
+  let id = "";
+  for (let i = 0; i < SHARE_ID_LEN; i++) id += SHARE_ALPHABET[arr[i] % SHARE_ALPHABET.length];
+  return id;
+}
+
+async function handleShareCreate(request, origin, env) {
+  if (origin && !allowedOrigins(env).has(origin)) {
+    return jsonResponse(403, "origin_not_allowed", "Origin is not allowed", origin, env);
+  }
+  if (!env.SHARE_KV) {
+    return jsonResponse(503, "kv_not_configured", "Share storage is not configured", origin, env);
+  }
+  if (getContentLength(request) > MAX_SHARE_CODE_BYTES) {
+    return jsonResponse(413, "request_too_large", "Code is too large", origin, env);
+  }
+  let body;
+  try {
+    body = await request.json();
+  } catch (e) {
+    return jsonResponse(400, "invalid_json", "Body must be JSON", origin, env);
+  }
+  const code = typeof body.code === "string" ? body.code.trim() : "";
+  if (!code || code.length < 8 || code.length > 8192 || !/^[A-Za-z0-9+/=_-]+$/.test(code)) {
+    return jsonResponse(400, "invalid_code", "Invalid share code", origin, env);
+  }
+  let id = null;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const candidate = generateShareId();
+    const exists = await env.SHARE_KV.get(candidate);
+    if (!exists) { id = candidate; break; }
+  }
+  if (!id) {
+    return jsonResponse(500, "id_collision", "Could not generate unique ID", origin, env);
+  }
+  await env.SHARE_KV.put(id, code, { expirationTtl: SHARE_TTL_SECONDS });
+  const workerUrl = new URL(request.url);
+  return jsonResponse(200, "ok", "ok", origin, env, {
+    id,
+    short: workerUrl.origin + "/s/" + id,
+  });
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+async function handleShareRedirect(request, env) {
+  const url = new URL(request.url);
+  const id = url.pathname.replace(/^\/s\//, "").trim();
+  if (!id || !/^[A-Za-z0-9]{4,16}$/.test(id)) {
+    return new Response("Invalid share link", { status: 400, headers: { "Content-Type": "text/plain; charset=utf-8" } });
+  }
+  if (!env.SHARE_KV) {
+    return new Response("Share storage not configured", { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } });
+  }
+  const code = await env.SHARE_KV.get(id);
+  if (!code) {
+    return new Response("Share link expired or not found", { status: 404, headers: { "Content-Type": "text/plain; charset=utf-8" } });
+  }
+  // Fragment redirect via HTML — Location-header fragments are unreliable across browsers
+  const target = SHARE_TARGET_BASE + "#x=" + encodeURIComponent(code);
+  const html = `<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><title>NutriTrack</title><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0; url=${escapeHtml(target)}"><script>location.replace(${JSON.stringify(target)});</script><style>body{font-family:-apple-system,system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;color:#2d7d52;background:#f5fbf7;}a{color:#2d7d52;}</style></head><body><div style="text-align:center;padding:24px;"><div style="font-size:42px;">📥</div><div style="margin-top:8px;font-weight:700;">Weiterleitung zu NutriTrack…</div><div style="margin-top:8px;font-size:13px;"><a href="${escapeHtml(target)}">Falls die Weiterleitung nicht funktioniert: tippe hier</a></div></div></body></html>`;
+  return new Response(html, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get("Origin") || "";
@@ -268,12 +350,20 @@ export default {
         configured: Boolean(env.ANTHROPIC_API_KEY && env.NUTRITRACK_PROXY_TOKEN),
         decoderConfigured: Boolean(env.DECODER_URL),
         visionFallbackEnabled: env.ENABLE_VISION_FALLBACK === "true",
-        codeVersion: "v0.137-decoder-first",
+        shareConfigured: Boolean(env.SHARE_KV),
+        codeVersion: "v0.140-share-shortener",
       });
     }
 
     if (request.method === "POST" && url.pathname === "/decode-barcode") {
       return handleDecodeBarcode(request, origin, env);
+    }
+
+    if (request.method === "POST" && url.pathname === "/share") {
+      return handleShareCreate(request, origin, env);
+    }
+    if (request.method === "GET" && url.pathname.startsWith("/s/")) {
+      return handleShareRedirect(request, env);
     }
 
     if (request.method !== "POST" || url.pathname !== "/v1/messages") {

@@ -416,7 +416,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.139</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.140</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div id="odMissingBanner" style="display:none;align-items:center;gap:10px;background:#fff3e0;border-bottom:1px solid #ffe0b2;padding:10px 16px;">
       <div style="flex:1;font-size:12px;color:#e65100;font-weight:600;">☁️ OneDrive nicht verbunden – Sichere deine Daten einmal täglich lokal.</div>
       <button type="button" onclick="shareData()" style="font-size:12px;font-weight:700;color:#e65100;background:none;border:1px solid #e65100;padding:4px 8px;border-radius:8px;cursor:pointer;">💾 Jetzt</button>
@@ -503,7 +503,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.139</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.140</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -1357,7 +1357,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.139';
+var APP_VERSION='0.140';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1386,6 +1386,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.140',items:[
+    {icon:'🔗',text:'Eigener Kurzlink-Service auf dem Cloudflare Worker statt is.gd: aus dem ~570-Zeichen-Link wird "https://nutritrack-ai-proxy.h-jolmes.workers.dev/s/Ab12X3y" (~58 Zeichen). Funktioniert dauerhaft (kein Drittanbieter, eigene KV-Storage), 1 Jahr Lebenszeit pro Link, ID alphanumerisch ohne 0/O/1/I/l. Fallback weiterhin: is.gd → langer Link',where:'Jeder 📤 Share-Button'},
+  ]},
   {v:'0.139',items:[
     {icon:'🔗',text:'Teilen via Kurzlink: Lange Base64-URLs werden über is.gd zu „is.gd/abc123" verkürzt – passt in jede WhatsApp-Vorschau, kein Zeilenumbruch mehr. Fallback auf Original-Link wenn der Shortener offline ist',where:'Jeder 📤 Share-Button'},
     {icon:'📲',text:'Auf Android (Chrome ≥97) öffnen geteilte Links jetzt direkt die installierte PWA statt den Browser-Tab. Auf iOS bleibt der Safari-Pfad (Apple bietet keine PWA-URL-Routing-API), aber das Rezept landet trotzdem in der App – Safari und PWA teilen sich denselben Speicher',where:'Manifest: handle_links + launch_handler'},
@@ -2700,21 +2703,39 @@ function _normalizePayload(d,legacy){
   return d;
 }
 
-// ─── SHORTENER (is.gd, CORS-offen) ───
-function _shortenUrl(longUrl,onDone){
+// ─── SHORTENER ───
+// Primary: eigener Cloudflare Worker (KV-backed, dauerhaft, CORS unter Kontrolle).
+// Fallback: is.gd (CORS-offen, falls Worker temporär 503 oder KV nicht konfiguriert).
+// Final: Originallink.
+var SHARE_WORKER_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
+
+function _shortenUrl(payloadCode,longUrl,onDone){
   var done=false;var fin=function(u){if(done)return;done=true;onDone(u);};
-  // 4s timeout — falls is.gd lahmt, lieber Originallink anbieten
-  setTimeout(function(){fin(longUrl);},4000);
+  setTimeout(function(){fin(longUrl);},6000);
   if(!isOnline){fin(longUrl);return;}
+  // 1) Eigener Worker
+  var ctrl=null;
   try{
-    fetch('https://is.gd/create.php?format=simple&url='+encodeURIComponent(longUrl))
-      .then(function(r){return r.ok?r.text():null;})
-      .then(function(t){
-        var s=(t||'').trim();
-        if(s&&/^https?:\/\/(is\.gd|v\.gd)\//.test(s))fin(s);
-        else fin(longUrl);
+    fetch(SHARE_WORKER_URL+'/share',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({code:payloadCode})
+    }).then(function(r){return r.ok?r.json():null;})
+      .then(function(j){
+        if(j&&j.data&&j.data.short&&/^https?:\/\//.test(j.data.short)){fin(j.data.short);return;}
+        throw new Error('worker-share-failed');
       })
-      .catch(function(){fin(longUrl);});
+      .catch(function(){
+        // 2) is.gd Fallback
+        return fetch('https://is.gd/create.php?format=simple&url='+encodeURIComponent(longUrl))
+          .then(function(r){return r.ok?r.text():null;})
+          .then(function(t){
+            var s=(t||'').trim();
+            if(s&&/^https?:\/\/(is|v)\.gd\//.test(s))fin(s);
+            else fin(longUrl);
+          })
+          .catch(function(){fin(longUrl);});
+      });
   }catch(e){fin(longUrl);}
 }
 
@@ -2753,10 +2774,10 @@ function _shareItem(payload,name,summary){
   document.getElementById('shareItemCodeText').value=built.code;
   var status=document.getElementById('shareItemShortStatus');
   status.textContent='⏳ Kurzlink wird erstellt …';
-  _shortenUrl(built.url,function(short){
+  _shortenUrl(built.code,built.url,function(short){
     document.getElementById('shareItemUrl').value=short;
     if(short!==built.url){
-      status.innerHTML='✓ Kurzlink: <span style="font-family:monospace;">'+short+'</span>';
+      status.innerHTML='✓ Kurzlink: <span style="font-family:monospace;font-size:11px;word-break:break-all;">'+short+'</span>';
     } else {
       status.textContent='Kurzlink offline – langer Link wird verwendet';
     }

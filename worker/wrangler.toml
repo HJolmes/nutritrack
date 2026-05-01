@@ -13,3 +13,15 @@ ENABLE_VISION_FALLBACK = "false"
 # wrangler secret put ANTHROPIC_API_KEY      # only required if ENABLE_VISION_FALLBACK=true
 # wrangler secret put NUTRITRACK_PROXY_TOKEN
 # wrangler secret put DECODER_URL            # https://nutritrack-decoder-xxxxx-ew.a.run.app
+
+# KV-Namespace fuer Share-Link-Shortener (Endpoints: POST /share, GET /s/<id>).
+# Setup einmalig:
+#   wrangler kv namespace create nutritrack-shares
+# → liefert eine ID. Dann den folgenden Block einkommentieren und id einsetzen:
+#
+# [[kv_namespaces]]
+# binding = "SHARE_KV"
+# id = "REPLACE_WITH_KV_NAMESPACE_ID"
+#
+# Solange der Block auskommentiert ist, gibt /share 503 zurueck und die PWA
+# faellt automatisch auf is.gd / Originallink zurueck. Siehe README.md.

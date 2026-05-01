@@ -5,6 +5,10 @@
   "start_url": "/nutritrack/",
   "scope": "/nutritrack/",
   "display": "standalone",
+  "handle_links": "preferred",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
   "orientation": "portrait-primary",
   "background_color": "#2d7d52",
   "theme_color": "#2d7d52",

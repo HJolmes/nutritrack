@@ -416,7 +416,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.137</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.138</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn">📤</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div id="odMissingBanner" style="display:none;align-items:center;gap:10px;background:#fff3e0;border-bottom:1px solid #ffe0b2;padding:10px 16px;">
       <div style="flex:1;font-size:12px;color:#e65100;font-weight:600;">☁️ OneDrive nicht verbunden – Sichere deine Daten einmal täglich lokal.</div>
       <button type="button" onclick="shareData()" style="font-size:12px;font-weight:700;color:#e65100;background:none;border:1px solid #e65100;padding:4px 8px;border-radius:8px;cursor:pointer;">💾 Jetzt</button>
@@ -503,7 +503,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.137</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.138</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -781,7 +781,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
           style="width:100%;border:1.5px solid var(--br);border-radius:12px;padding:10px;font-size:13px;font-family:inherit;resize:vertical;outline:none;margin-bottom:8px;min-height:80px;"></textarea>
       </div>
       <button type="button" class="cb2" onclick="recEditSave()">💾 Rezept speichern</button>
-      <button type="button" class="seb" style="margin-bottom:8px;" onclick="openRecipeCodeShare(recEditId)">📤 Rezept teilen (Code)</button>
+      <button type="button" class="seb" style="margin-bottom:8px;" onclick="openRecipeCodeShare(recEditId)">📤 Rezept teilen</button>
       <button type="button" class="del-btn" onclick="recEditDelete()">🗑️ Rezept löschen</button>
     </div>
   </div>
@@ -986,27 +986,58 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
   </div>
 </div>
 
-<!-- ══ REZEPT-CODE TEILEN ══ -->
+<!-- ══ REZEPT TEILEN (Link + Code-Fallback) ══ -->
 <div class="ov" id="recipeCodeOv" onclick="bgClose(event,'recipeCodeOv')">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
       <button type="button" class="mcl" onclick="closeOv('recipeCodeOv')">✕</button>
       <div class="mti">📤 Rezept teilen</div>
-      <div class="msu">Code kopieren oder einlösen</div>
+      <div class="msu">Per Link teilen oder Code/Link einlösen</div>
     </div>
     <div class="mbd">
       <div id="recipeCodeExportWrap" style="display:none;">
-        <label class="lbl">Dein Rezept-Code</label>
-        <textarea id="recipeCodeText" readonly rows="4"
-          style="width:100%;border:1.5px solid var(--g2);border-radius:12px;padding:12px;font-size:12px;font-family:monospace;resize:none;outline:none;background:var(--gl);color:var(--tx);margin-bottom:8px;word-break:break-all;"></textarea>
-        <button type="button" class="cb2" onclick="copyRecipeCode()" style="margin-bottom:12px;">📋 Code kopieren</button>
+        <div id="recipeSharePreview" style="background:var(--gl);border-radius:12px;padding:12px;margin-bottom:10px;">
+          <div id="recipeShareName" style="font-weight:800;font-size:15px;color:var(--tx);"></div>
+          <div id="recipeShareSummary" style="font-size:12px;color:var(--mu);margin-top:2px;"></div>
+        </div>
+        <input type="hidden" id="recipeShareUrl">
+        <button type="button" class="cb2" onclick="shareRecipeLink()" style="margin-bottom:8px;">📤 Link teilen</button>
+        <button type="button" class="seb" onclick="copyRecipeLink()" style="margin-bottom:12px;">📋 Link kopieren</button>
+        <details style="margin-bottom:12px;">
+          <summary style="font-size:12px;color:var(--mu);cursor:pointer;padding:4px 0;">Erweitert: Code statt Link</summary>
+          <textarea id="recipeCodeText" readonly rows="3"
+            style="width:100%;box-sizing:border-box;border:1.5px solid var(--g2);border-radius:12px;padding:12px;font-size:12px;font-family:monospace;resize:none;outline:none;background:var(--gl);color:var(--tx);margin:8px 0;word-break:break-all;"></textarea>
+          <button type="button" class="seb" onclick="copyRecipeCode()" style="width:100%;">📋 Code kopieren</button>
+        </details>
         <div style="border-top:1px solid var(--br);margin-bottom:12px;"></div>
       </div>
-      <label class="lbl">Rezept-Code einlösen</label>
-      <textarea id="recipeImportCodeInput" rows="3" placeholder="Rezept-Code hier einfügen..."
-        style="width:100%;border:1.5px solid var(--br);border-radius:12px;padding:12px;font-size:12px;font-family:monospace;resize:none;outline:none;margin-bottom:8px;word-break:break-all;"></textarea>
+      <label class="lbl">Rezept-Link oder -Code einlösen</label>
+      <textarea id="recipeImportCodeInput" rows="3" placeholder="Link oder Code hier einfügen..."
+        style="width:100%;box-sizing:border-box;border:1.5px solid var(--br);border-radius:12px;padding:12px;font-size:12px;font-family:monospace;resize:none;outline:none;margin-bottom:8px;word-break:break-all;"></textarea>
       <button type="button" class="svb" onclick="importRecipeCode()" style="margin-top:0;">✅ Rezept importieren</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ REZEPT-IMPORT BESTÄTIGEN (geteilter Link geöffnet) ══ -->
+<div class="ov" id="recipeImportConfirmOv" onclick="bgClose(event,'recipeImportConfirmOv')">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" onclick="closeOv('recipeImportConfirmOv')">✕</button>
+      <div class="mti">📥 Rezept importieren?</div>
+      <div class="msu">Du hast einen geteilten Rezept-Link geöffnet</div>
+    </div>
+    <div class="mbd">
+      <div style="background:var(--gl);border-radius:12px;padding:14px;margin-bottom:12px;">
+        <div id="recipeImportConfirmTitle" style="font-weight:800;font-size:17px;color:var(--tx);"></div>
+        <div id="recipeImportConfirmSummary" style="font-size:13px;color:var(--mu);margin-top:4px;"></div>
+        <div id="recipeImportConfirmIngs" style="font-size:12px;color:var(--tx);margin-top:8px;line-height:1.5;"></div>
+        <div id="recipeImportConfirmIns" style="display:none;font-size:12px;color:var(--mu);margin-top:10px;padding-top:10px;border-top:1px solid var(--br);white-space:pre-wrap;"></div>
+      </div>
+      <button type="button" class="svb" onclick="confirmRecipeImport()" style="margin-top:0;margin-bottom:8px;">✅ In Bibliothek speichern</button>
+      <button type="button" class="seb" onclick="closeOv('recipeImportConfirmOv')">Abbrechen</button>
     </div>
   </div>
 </div>
@@ -1191,7 +1222,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
           <button type="button" id="libTabRec" onclick="libSetTab('recipes')" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--g2);background:var(--g2);color:white;font-weight:700;font-size:13px;">📋 Rezepte</button>
           <button type="button" id="libTabFoods" onclick="libSetTab('foods')" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--br);background:white;color:var(--mu);font-weight:700;font-size:13px;">🥗 Lebensmittel</button>
           <button type="button" onclick="openRecipeImport()" style="padding:9px 14px;border-radius:10px;border:1.5px solid var(--g2);background:white;color:var(--g2);font-weight:700;font-size:13px;" title="Rezept per URL importieren">🔗</button>
-          <button type="button" onclick="openRecipeCodeShare(null)" style="padding:9px 14px;border-radius:10px;border:1.5px solid var(--g2);background:white;color:var(--g2);font-weight:700;font-size:13px;" title="Code einlösen">📥</button>
+          <button type="button" onclick="openRecipeCodeShare(null)" style="padding:9px 14px;border-radius:10px;border:1.5px solid var(--g2);background:white;color:var(--g2);font-weight:700;font-size:13px;" title="Rezept-Link oder -Code einlösen">📥</button>
         </div>
         <div id="libraryList" style="display:flex;flex-direction:column;gap:8px;"></div>
       </div>
@@ -1336,7 +1367,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.137';
+var APP_VERSION='0.138';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1365,6 +1396,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.138',items:[
+    {icon:'🔗',text:'Rezepte teilen jetzt per Link statt Code: 📤 öffnet das System-Share-Sheet (WhatsApp, Mail, Signal, …). Empfänger tippt den Link an → Rezept-Vorschau mit Zutaten und Kalorien → ein Tap zum Importieren. Funktioniert auf iOS und Android. Code-Eingabefeld bleibt als Fallback erhalten und akzeptiert sowohl Link als auch alten Code',where:'Bibliothek → Rezept → 📤 oder Rezept bearbeiten → „Rezept teilen"'},
+  ]},
   {v:'0.137',items:[
     {icon:'🚀',text:'iOS-Server-Decode komplett umgebaut: statt Claude Vision (KI, teuer) läuft jetzt ein dedizierter OSS-Decoder (OpenCV BarcodeDetector + pyzbar) auf Cloud Run als Primärpfad. Echter Strichcode-Decoder, kein KI-Bias, ~30–150 ms warm, dauerhaft kostenlos im Free-Tier. Vision bleibt nur als optionaler Fallback verkabelt (per Env-Flag aktivierbar)',where:'Barcode-Tab'},
   ]},
@@ -1574,7 +1608,10 @@ window.addEventListener('DOMContentLoaded',function(){
   window.addEventListener('offline',function(){isOnline=false;updBadge();showToast('Offline 📴');});
   updBadge();
   document.getElementById('setupBtn').addEventListener('click',doSetup);
-  if(S.setupDone||hadLegacyApiKey||S.name!=='Du')showMain();
+  var _mainShown=(S.setupDone||hadLegacyApiKey||S.name!=='Du');
+  if(_mainShown)showMain();
+  // Auto-Import wenn die App über einen geteilten Rezept-Link geöffnet wurde
+  if(_mainShown)_checkSharedRecipeOnBoot();
   // Service Worker
   if('serviceWorker' in navigator){
     navigator.serviceWorker.register('/nutritrack/sw.js').then(function(){
@@ -2511,7 +2548,7 @@ function openEntryMenu(meal,idx){
   var body=document.getElementById('entryMenuBody');
   body.innerHTML=
     '<button type="button" class="svb" style="margin-bottom:8px;" onclick="closeOv(\'entryMenuOv\');openEditEntry(\''+meal+'\','+idx+')">✏️ Eintrag bearbeiten</button>'
-    +(rec?'<button type="button" class="seb" style="margin-bottom:8px;" onclick="closeOv(\'entryMenuOv\');openRecipeCodeShare(\''+rec.id+'\')">📤 Rezept teilen (Code)</button>':'')
+    +(rec?'<button type="button" class="seb" style="margin-bottom:8px;" onclick="closeOv(\'entryMenuOv\');openRecipeCodeShare(\''+rec.id+'\')">📤 Rezept teilen</button>':'')
     +(ins?'<button type="button" class="seb" style="margin-bottom:8px;" onclick="showEntryInstructions()">📝 Kochanleitung anzeigen</button>':'')
     +'<div id="entryInstructionsPanel" style="display:none;background:var(--gl);border-radius:12px;padding:12px;margin-bottom:8px;white-space:pre-wrap;font-size:13px;color:var(--tx);">'+ins+'</div>';
   openOv('entryMenuOv');
@@ -2690,6 +2727,30 @@ function _decodeRecipeCode(code){
   }catch(ex){return null;}
 }
 
+function _recipeShareUrl(rec){
+  var code=_encodeRecipeCode(rec);
+  if(!code)return null;
+  return location.origin+location.pathname+'#r='+encodeURIComponent(code);
+}
+
+function _recipeSummary(rec){
+  var ings=rec.ingredients||[];
+  var t=ingTotal(ings);
+  return ings.length+' Zutat'+(ings.length===1?'':'en')+' · '+Math.round(t.kcal)+' kcal';
+}
+
+function _extractRecipeCode(input){
+  if(!input)return '';
+  var s=String(input).trim();
+  var m=s.match(/[#?&]r=([^&\s]+)/);
+  if(m){
+    var c=m[1];
+    try{c=decodeURIComponent(c);}catch(e){}
+    return c.replace(/\s+/g,'');
+  }
+  return s.replace(/\s+/g,'');
+}
+
 function openRecipeCodeShare(id){
   var wrap=document.getElementById('recipeCodeExportWrap');
   var textEl=document.getElementById('recipeCodeText');
@@ -2697,29 +2758,122 @@ function openRecipeCodeShare(id){
   importEl.value='';
   if(id){
     var rec=recipes.find(function(r){return r.id===id;});
-    if(rec){var code=_encodeRecipeCode(rec);if(code){textEl.value=code;wrap.style.display='block';}}
-    else{wrap.style.display='none';}
+    if(rec){
+      var code=_encodeRecipeCode(rec);
+      var url=_recipeShareUrl(rec);
+      if(code&&url){
+        textEl.value=code;
+        document.getElementById('recipeShareUrl').value=url;
+        document.getElementById('recipeShareName').textContent=(rec.emoji||'📋')+' '+rec.name;
+        document.getElementById('recipeShareSummary').textContent=_recipeSummary(rec);
+        wrap.style.display='block';
+      } else {
+        wrap.style.display='none';
+      }
+    } else {
+      wrap.style.display='none';
+    }
   } else {
     wrap.style.display='none';
   }
   openOv('recipeCodeOv');
 }
 
+function shareRecipeLink(){
+  var url=document.getElementById('recipeShareUrl').value;
+  var name=document.getElementById('recipeShareName').textContent||'Rezept';
+  if(!url){showToast('Kein Link verfügbar');return;}
+  if(navigator.share){
+    navigator.share({title:name,text:'Rezept aus NutriTrack: '+name,url:url}).catch(function(err){
+      // user cancelled or share failed → silent on AbortError, otherwise fall back to copy
+      if(err&&err.name!=='AbortError')copyRecipeLink();
+    });
+  } else {
+    copyRecipeLink();
+  }
+}
+
+function copyRecipeLink(){
+  var url=document.getElementById('recipeShareUrl').value;
+  if(!url){showToast('Kein Link verfügbar');return;}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(function(){showToast('Link kopiert ✓');},function(){_fallbackCopy(url);});
+  } else {
+    _fallbackCopy(url);
+  }
+}
+
+function _fallbackCopy(text){
+  try{
+    var t=document.createElement('textarea');
+    t.value=text;t.style.position='fixed';t.style.opacity='0';
+    document.body.appendChild(t);t.select();
+    document.execCommand('copy');
+    document.body.removeChild(t);
+    showToast('Link kopiert ✓');
+  }catch(e){showToast('Kopieren nicht möglich');}
+}
+
 function copyRecipeCode(){
   var t=document.getElementById('recipeCodeText');
   if(!t)return;
-  if(navigator.clipboard){navigator.clipboard.writeText(t.value).then(function(){showToast('Code kopiert ✓');});}
-  else{t.select();document.execCommand('copy');showToast('Code kopiert ✓');}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t.value).then(function(){showToast('Code kopiert ✓');},function(){t.select();document.execCommand('copy');showToast('Code kopiert ✓');});
+  } else {
+    t.select();document.execCommand('copy');showToast('Code kopiert ✓');
+  }
 }
 
 function importRecipeCode(){
-  var code=document.getElementById('recipeImportCodeInput').value.trim();
-  if(!code){showToast('Code eingeben');return;}
+  var raw=document.getElementById('recipeImportCodeInput').value;
+  if(!raw||!raw.trim()){showToast('Link oder Code eingeben');return;}
+  var code=_extractRecipeCode(raw);
   var rec=_decodeRecipeCode(code);
-  if(!rec){showToast('Ungültiger Code');return;}
+  if(!rec){showToast('Ungültiger Link/Code');return;}
   recipes.unshift(rec);saveX();
   closeOv('recipeCodeOv');
   showToast('✅ "'+rec.name+'" importiert');
+}
+
+// ─── REZEPT-IMPORT VIA GETEILTEM LINK (#r= / ?r=) ───
+var _pendingImportRecipe=null;
+
+function _checkSharedRecipeOnBoot(){
+  try{
+    var blob=(location.hash||'')+' '+(location.search||'');
+    var m=blob.match(/[#?&]r=([^&\s]+)/);
+    if(!m)return;
+    var code=m[1];
+    try{code=decodeURIComponent(code);}catch(e){}
+    var rec=_decodeRecipeCode(code);
+    // Clear URL so a refresh doesn't re-trigger the import
+    try{history.replaceState(null,'',location.pathname);}catch(e){}
+    if(!rec)return;
+    _pendingImportRecipe=rec;
+    var ings=rec.ingredients||[];
+    document.getElementById('recipeImportConfirmTitle').textContent=(rec.emoji||'📋')+' '+rec.name;
+    document.getElementById('recipeImportConfirmSummary').textContent=_recipeSummary(rec);
+    document.getElementById('recipeImportConfirmIngs').innerHTML=ings.map(function(i){return(i.emoji||'🍽')+' '+i.name+' <span style="color:var(--mu);">('+(i.amount||0)+'g)</span>';}).join(' · ');
+    var insEl=document.getElementById('recipeImportConfirmIns');
+    if(rec.instructions){
+      insEl.style.display='block';
+      var ins=rec.instructions;
+      insEl.textContent=ins.length>240?ins.substring(0,240)+'…':ins;
+    } else {
+      insEl.style.display='none';
+    }
+    setTimeout(function(){openOv('recipeImportConfirmOv');},300);
+  }catch(e){}
+}
+
+function confirmRecipeImport(){
+  if(!_pendingImportRecipe)return;
+  var rec=_pendingImportRecipe;
+  recipes.unshift(rec);saveX();
+  _pendingImportRecipe=null;
+  closeOv('recipeImportConfirmOv');
+  showToast('✅ "'+rec.name+'" gespeichert');
+  if(typeof renderAll==='function')renderAll();
 }
 
 // ════════════════════════════════════════

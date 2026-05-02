@@ -299,11 +299,31 @@ async function handleShareCreate(request, origin, env) {
     return jsonResponse(500, "id_collision", "Could not generate unique ID", origin, env);
   }
   await env.SHARE_KV.put(id, code, { expirationTtl: SHARE_TTL_SECONDS });
-  const workerUrl = new URL(request.url);
+  // Short URL on PWA origin so Android Chrome's handle_links can route
+  // installed-PWA links directly to the app instead of the browser tab.
   return jsonResponse(200, "ok", "ok", origin, env, {
     id,
-    short: workerUrl.origin + "/s/" + id,
+    short: SHARE_TARGET_BASE + "?s=" + id,
   });
+}
+
+async function handleShareLookup(request, origin, env) {
+  if (origin && !allowedOrigins(env).has(origin)) {
+    return jsonResponse(403, "origin_not_allowed", "Origin is not allowed", origin, env);
+  }
+  if (!env.SHARE_KV) {
+    return jsonResponse(503, "kv_not_configured", "Share storage is not configured", origin, env);
+  }
+  const url = new URL(request.url);
+  const id = url.pathname.replace(/^\/share\//, "").trim();
+  if (!id || !/^[A-Za-z0-9]{4,16}$/.test(id)) {
+    return jsonResponse(400, "invalid_id", "Invalid share id", origin, env);
+  }
+  const code = await env.SHARE_KV.get(id);
+  if (!code) {
+    return jsonResponse(404, "not_found", "Share link expired or not found", origin, env);
+  }
+  return jsonResponse(200, "ok", "ok", origin, env, { id, code });
 }
 
 function escapeHtml(s) {
@@ -311,20 +331,18 @@ function escapeHtml(s) {
 }
 
 async function handleShareRedirect(request, env) {
+  // Legacy endpoint for v0.140 short URLs that pointed at the worker origin.
+  // We now route to the PWA-origin short form so Android Chrome can deep-link
+  // into an installed PWA via handle_links.
   const url = new URL(request.url);
   const id = url.pathname.replace(/^\/s\//, "").trim();
   if (!id || !/^[A-Za-z0-9]{4,16}$/.test(id)) {
     return new Response("Invalid share link", { status: 400, headers: { "Content-Type": "text/plain; charset=utf-8" } });
   }
-  if (!env.SHARE_KV) {
-    return new Response("Share storage not configured", { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } });
-  }
-  const code = await env.SHARE_KV.get(id);
-  if (!code) {
-    return new Response("Share link expired or not found", { status: 404, headers: { "Content-Type": "text/plain; charset=utf-8" } });
-  }
-  // Fragment redirect via HTML — Location-header fragments are unreliable across browsers
-  const target = SHARE_TARGET_BASE + "#x=" + encodeURIComponent(code);
+  // Don't even hit KV — the PWA will look up the code itself and report a clean
+  // error if the id is gone. This keeps the redirect cheap and works even when
+  // SHARE_KV is unbound (e.g., during initial setup).
+  const target = SHARE_TARGET_BASE + "?s=" + encodeURIComponent(id);
   const html = `<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><title>NutriTrack</title><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0; url=${escapeHtml(target)}"><script>location.replace(${JSON.stringify(target)});</script><style>body{font-family:-apple-system,system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;color:#2d7d52;background:#f5fbf7;}a{color:#2d7d52;}</style></head><body><div style="text-align:center;padding:24px;"><div style="font-size:42px;">📥</div><div style="margin-top:8px;font-weight:700;">Weiterleitung zu NutriTrack…</div><div style="margin-top:8px;font-size:13px;"><a href="${escapeHtml(target)}">Falls die Weiterleitung nicht funktioniert: tippe hier</a></div></div></body></html>`;
   return new Response(html, {
     status: 200,
@@ -351,7 +369,7 @@ export default {
         decoderConfigured: Boolean(env.DECODER_URL),
         visionFallbackEnabled: env.ENABLE_VISION_FALLBACK === "true",
         shareConfigured: Boolean(env.SHARE_KV),
-        codeVersion: "v0.140-share-shortener",
+        codeVersion: "v0.142-pwa-origin-share",
       });
     }
 
@@ -361,6 +379,9 @@ export default {
 
     if (request.method === "POST" && url.pathname === "/share") {
       return handleShareCreate(request, origin, env);
+    }
+    if (request.method === "GET" && url.pathname.startsWith("/share/")) {
+      return handleShareLookup(request, origin, env);
     }
     if (request.method === "GET" && url.pathname.startsWith("/s/")) {
       return handleShareRedirect(request, env);

@@ -86,6 +86,9 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 .logo{font-family:'Nunito',sans-serif;font-weight:900;font-size:21px;color:var(--g1);letter-spacing:-.5px;}
 .logo em{color:var(--g2);font-style:normal;}
 .hbtn{background:none;border:none;font-size:20px;color:var(--mu);padding:4px;}
+.fb-fab{position:fixed;right:12px;bottom:84px;width:44px;height:44px;border-radius:50%;background:var(--g1,#e96e3c);color:#fff;border:none;font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.22);z-index:400;}
+.fb-fab:active{transform:scale(.94);}
+body:has(#setupScreen.active) .fb-fab{display:none;}
 .dn{display:flex;align-items:center;gap:4px;margin-top:8px;}
 .da{background:none;border:none;font-size:24px;color:var(--mu);padding:4px 12px;border-radius:8px;line-height:1;user-select:none;}
 .da:active{background:var(--gl);}
@@ -656,7 +659,6 @@ button,input,select,textarea{font-family:var(--fs-body);}
         <button type="button" class="hbtn" onclick="openHelp()" title="Hilfe">?</button>
         <button type="button" class="hbtn" onclick="shareData()" id="shareBtn" title="Daten sichern">📤</button>
         <button type="button" class="hbtn" onclick="openImportPaste()" title="Rezept/Mahlzeit/Lebensmittel importieren">📥</button>
-        <button type="button" class="hbtn" onclick="openFeedback()" title="Bug melden oder Wunsch">🐛</button>
         <button type="button" class="hbtn" onclick="openSettings()" title="Einstellungen">⚙️</button>
       </div>
     </div>
@@ -803,7 +805,6 @@ button,input,select,textarea{font-family:var(--fs-body);}
         <button type="button" class="hbtn" onclick="openHelp()" title="Hilfe">?</button>
         <button type="button" class="hbtn" onclick="shareData()" title="Daten sichern">📤</button>
         <button type="button" class="hbtn" onclick="openImportPaste()" title="Importieren">📥</button>
-        <button type="button" class="hbtn" onclick="openFeedback()" title="Bug melden oder Wunsch">🐛</button>
         <button type="button" class="hbtn" onclick="openSettings()" title="Einstellungen">⚙️</button>
       </div>
     </div>
@@ -874,7 +875,6 @@ button,input,select,textarea{font-family:var(--fs-body);}
         <div class="greet-sub">Letzte 30 Tage</div>
       </div>
       <div style="display:flex;gap:6px;">
-        <button type="button" class="hbtn" onclick="openFeedback()" title="Bug melden oder Wunsch">🐛</button>
         <button type="button" class="hbtn" onclick="openSettings()" title="Einstellungen">⚙️</button>
       </div>
     </div>
@@ -938,7 +938,6 @@ button,input,select,textarea{font-family:var(--fs-body);}
       </div>
       <div style="display:flex;gap:6px;">
         <button type="button" class="hbtn" onclick="openHelp()" title="Hilfe">?</button>
-        <button type="button" class="hbtn" onclick="openFeedback()" title="Bug melden oder Wunsch">🐛</button>
       </div>
     </div>
   </div>
@@ -970,12 +969,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.145</div></div>
-      <div class="lr-val">›</div>
-    </div>
-    <div class="list-row" onclick="openFeedback()">
-      <div class="lr-ic">🐛</div>
-      <div class="lr-body"><div class="lr-name">Feedback senden</div><div class="lr-sub">Bug melden oder Änderungswunsch</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.146</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1848,7 +1842,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.145';
+var APP_VERSION='0.146';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1877,6 +1871,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.146',items:[
+    {icon:'🐛',text:'Feedback-Button (🐛) ist jetzt ein globaler Floating-Button unten rechts und auf jeder Seite sowie über jedem geöffneten Modal erreichbar (Issue #48). Die Header-Buttons und der eigene Listen-Eintrag im „Mehr"-Hub entfallen dafür ersatzlos',where:'App-weit (außer Setup)'},
+  ]},
   {v:'0.145',items:[
     {icon:'🐛',text:'Neuer Feedback-Button (🐛) im Top-Header jedes Screens und im „Mehr"-Hub: Bug melden oder Änderungswunsch einreichen — landet automatisch als GitHub-Issue auf hjolmes/nutritrack. Optional kann ein Auto-Screenshot der aktuellen Seite angehängt werden (Vorschau vor dem Senden, Screenshot kann persönliche Daten enthalten — bitte prüfen). Mitgesendet werden Tab, Screen, App-Version, User-Agent und Zeitpunkt',where:'Top-Header jedes Screens · Mehr-Hub'},
   ]},
@@ -5703,5 +5700,6 @@ function showToast(msg,duration){var t=document.getElementById('toast');t.textCo
 
 </script>
 <script src="picker.js"></script>
+<button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 </body>
 </html>

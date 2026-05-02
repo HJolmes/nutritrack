@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.151 (2026-05-02)
+**Stand:** v0.152 (2026-05-02)
 
 ## URLs
 
@@ -15,7 +15,7 @@
 - **Theme (v0.144):** Cream `#faf6f1`, Coral `#e96e3c`, Fraunces+Inter. Override-Block `/* BLOOM REDESIGN */` am Ende von `<style>`.
 - **Screens:** `mainScreen` (Heute, Hero-kcal, 2×2-Mahlzeiten-Grid), `historyScreen`, `mealDetailScreen`, `statsScreen`, `moreScreen`. Bottom-Nav mit 5 Items, `switchTab(tab)` mappt via `data-tab`, `'stats'`→`'trends'`.
 - **Datenkompatibilität:** Alte IDs (`tP/tC/tF`, `entries-<meal>` …) bleiben befüllt parallel zu neuen Grid-IDs (`kcal-<meal>`, `mealsTotal` …).
-- **Feedback (v0.148):** Globaler FAB `#feedbackFab` (`bottom:84px;right:12px`, `z-index:400`) vor `</body>`, auf `setupScreen` versteckt. Modal `feedbackOv` (eigener `z-index:350`, sitzt über anderen Modalen). Layout: Type-Buttons → Textarea → Senden → ausklappbares `<details id="feedbackShotDetails">` mit „📸 Sichtbarer Ausschnitt" (lazy `html2canvas@1.4.1`, captured nur Viewport via `x/y/width/height`+`windowWidth/Height`) + „📁 Eigenes Foto…" (`#feedbackPhotoInput`, max 8 MB, JPEG 0.8/≤1200px in `attachFeedbackPhoto`). Section-Marker: `// SECTION: FEEDBACK`.
+- **Feedback (v0.148/0.152):** Globaler FAB `#feedbackFab` (`bottom:84px;right:12px`, `z-index:400`) vor `</body>`, auf `setupScreen` versteckt. Modal `feedbackOv` (eigener `z-index:350`, sitzt über anderen Modalen). Layout: Type-Buttons → Textarea → Senden → ausklappbares `<details id="feedbackShotDetails">` mit „📸 Sichtbarer Ausschnitt" (lazy `html2canvas@1.4.1`, captured nur Viewport via `x/y/width/height`+`windowWidth/Height`) + „📁 Eigenes Foto…" (`#feedbackPhotoInput`, max 8 MB, JPEG 0.8/≤1200px in `attachFeedbackPhoto`). `attachFeedbackScreenshot` nutzt `foreignObjectRendering:false`, `imageTimeout:8000`, `ignoreElements`-Filter für `feedbackOv` und macht bei Fehler einen Auto-Retry mit `allowTaint:true`; Fehlertext geht in Toast (max 80 Zeichen) + `console.error('[feedback] …')`. Section-Marker: `// SECTION: FEEDBACK`.
 - **Header (v0.149/0.151):** `mainScreen`/`statsScreen` ohne `📤 shareData` — nur `?` `📥` `⚙️`. Backup nur via Settings/Datensicherung, „Mehr"-Hub-Eintrag, OneDrive-Banner und Backup-Reminder. `historyScreen`/`mealDetailScreen`/`moreScreen` haben minimale Header. `mainScreen` zeigt zusätzlich rechts neben „Hej <Name>" einen kleinen klickbaren Versions-Tag `#appVersionTag` (öffnet `whatsNewOv`); Text kommt beim DOMContentLoaded aus `APP_VERSION`.
 - **Kalorien-Ampel (v0.149):** `_kcalAmpel(goal,eaten,S)` vor `renderAll()` — ±10 % grün; darüber/darunter abhängig von Diät-Richtung (lose/gain/maintain), abgeleitet aus `S.goalWeight` vs `S.weight ±0.5`. `kcalTrendPill`-Klassen `balanced`/`over`.
 - **KI-Tagesbewertung (v0.150):** `requestKIRating(ev)` baut Prompt mit Per-Mahlzeit-Makros (kcal · P · K · F), Gesamt-Makros und Makro-Zielen aus `getMacroTargets()`. Leere KI-Antwort → Toast + Button-Reset; `max_tokens=300`, model `claude-haiku-4-5`.
@@ -52,16 +52,17 @@
 - v0.149 Kalorien-Ampel pro Diät-Richtung (lose/gain/maintain mit/ohne Zielgewicht)
 - v0.150 KI-Tagesbewertung mit Makros + leere-Antwort-Toast
 - v0.151 Versions-Tag im Heute-Header (klickbar → Was ist neu) + zentraler ＋ im Mahlzeit-Detail nutzt offene Mahlzeit, „+ Zutat"-Button entfernt
+- v0.152 Feedback-Screenshot: Auto-Retry + genauerer Toast bei Fehler (Repro auf Android Chrome 147 / Edge wenn möglich)
 
 ## Versions-Historie (letzte 5)
 
 | Version | PR | Was |
 |---|---|---|
-| v0.147 | #50 | Feedback-Modal: „✕ entfernen"-Button stacken |
 | v0.148 | — | Feedback: z-index über anderen Modals + Viewport-Screenshot + Layout (Senden direkt unter Textfeld, Screenshot ausklappbar, „📁 Eigenes Foto…") (#54, #56, #57) |
 | v0.149 | — | Header ohne 📤 + Kalorien-Ampel ±10 %/diät-zielabhängig (#52, #53) |
 | v0.150 | — | KI-Tagesbewertung mit Per-Mahlzeit-Makros + leere-Antwort-Handling (#55) |
-| v0.151 | — | Versions-Tag im Heute-Header + zentraler ＋ im Mahlzeit-Detail mahlzeitenkontextsensitiv, „+ Zutat" entfernt (#62, #64) |
+| v0.151 | #65 | Versions-Tag im Heute-Header + zentraler ＋ im Mahlzeit-Detail mahlzeitenkontextsensitiv, „+ Zutat" entfernt (#62, #64) |
+| v0.152 | — | Feedback-Screenshot robuster (foreignObject aus, Image-Timeout, Auto-Retry, genauerer Fehler-Toast) (#61) |
 
 ---
 

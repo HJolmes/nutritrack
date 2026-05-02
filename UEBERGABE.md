@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.146 (2026-05-02)
+**Stand:** v0.150 (2026-05-02)
 
 ## URLs
 
@@ -15,7 +15,10 @@
 - **Theme (v0.144):** Cream `#faf6f1`, Coral `#e96e3c`, Fraunces+Inter. Override-Block `/* BLOOM REDESIGN */` am Ende von `<style>`.
 - **Screens:** `mainScreen` (Heute, Hero-kcal, 2×2-Mahlzeiten-Grid), `historyScreen`, `mealDetailScreen`, `statsScreen`, `moreScreen`. Bottom-Nav mit 5 Items, `switchTab(tab)` mappt via `data-tab`, `'stats'`→`'trends'`.
 - **Datenkompatibilität:** Alte IDs (`tP/tC/tF`, `entries-<meal>` …) bleiben befüllt parallel zu neuen Grid-IDs (`kcal-<meal>`, `mealsTotal` …).
-- **Feedback (v0.146):** Globaler FAB `#feedbackFab` (`bottom:84px;right:12px`, `z-index:400`) vor `</body>`, auf `setupScreen` versteckt. Modal `feedbackOv` → Bug/Wunsch + Beschreibung + optional Auto-Screenshot (lazy `html2canvas@1.4.1`, JPEG 0.8, ≤1200px). Section-Marker: `// SECTION: FEEDBACK`.
+- **Feedback (v0.148):** Globaler FAB `#feedbackFab` (`bottom:84px;right:12px`, `z-index:400`) vor `</body>`, auf `setupScreen` versteckt. Modal `feedbackOv` (eigener `z-index:350`, sitzt über anderen Modalen). Layout: Type-Buttons → Textarea → Senden → ausklappbares `<details id="feedbackShotDetails">` mit „📸 Sichtbarer Ausschnitt" (lazy `html2canvas@1.4.1`, captured nur Viewport via `x/y/width/height`+`windowWidth/Height`) + „📁 Eigenes Foto…" (`#feedbackPhotoInput`, max 8 MB, JPEG 0.8/≤1200px in `attachFeedbackPhoto`). Section-Marker: `// SECTION: FEEDBACK`.
+- **Header (v0.149):** `mainScreen`/`statsScreen` ohne `📤 shareData` — nur `?` `📥` `⚙️`. Backup nur via Settings/Datensicherung, „Mehr"-Hub-Eintrag, OneDrive-Banner und Backup-Reminder. `historyScreen`/`mealDetailScreen`/`moreScreen` haben minimale Header.
+- **Kalorien-Ampel (v0.149):** `_kcalAmpel(goal,eaten,S)` vor `renderAll()` — ±10 % grün; darüber/darunter abhängig von Diät-Richtung (lose/gain/maintain), abgeleitet aus `S.goalWeight` vs `S.weight ±0.5`. `kcalTrendPill`-Klassen `balanced`/`over`.
+- **KI-Tagesbewertung (v0.150):** `requestKIRating(ev)` baut Prompt mit Per-Mahlzeit-Makros (kcal · P · K · F), Gesamt-Makros und Makro-Zielen aus `getMacroTargets()`. Leere KI-Antwort → Toast + Button-Reset; `max_tokens=300`, model `claude-haiku-4-5`.
 - **Share/Import:** Sender → `POST /share` (Worker, KV, 1y TTL) → `?s=<id>` auf PWA-Origin. Empfänger: Android öffnet PWA via `handle_links`; iOS-Safari (non-standalone) bekommt `iosSwitchOv`-Anleitung + Auto-Clipboard, User wechselt zur PWA und tippt 📥 (`openImportPaste()`). Legacy-URL-Formen `#x=`/`#r=`/`workers.dev/s/<id>` bleiben kompatibel.
 - **Payload-Schema (base64-JSON):** `{t:'r'|'f'|'m', …}`.
 
@@ -44,20 +47,19 @@
 
 ## Live-Test offen
 
-- v0.142 Android Direct-PWA-Open (PWA-Reinstall ggf. nötig)
-- v0.143 iOS-Safari-Handoff 3-Schritt-Flow
-- v0.144 Bloom-Redesign in echter PWA
-- v0.145/0.146 Feedback-Flow End-to-End (braucht Worker-Deploy mit `GITHUB_TOKEN`)
+- v0.148 Feedback-Modal vor offenem anderen Modal (z-index), Viewport-Screenshot, „📁 Eigenes Foto…"
+- v0.149 Kalorien-Ampel pro Diät-Richtung (lose/gain/maintain mit/ohne Zielgewicht)
+- v0.150 KI-Tagesbewertung mit Makros + leere-Antwort-Toast
 
 ## Versions-Historie (letzte 5)
 
 | Version | PR | Was |
 |---|---|---|
-| v0.142 | #43 | Kurzlink auf PWA-Origin → Android öffnet PWA direkt |
-| v0.143 | #43 | iOS-Safari-Handoff via Zwischenablage |
-| v0.144 | #45 | Bloom-Redesign + 5-Tab-Bottom-Nav + Mahlzeit-Detail |
-| v0.145 | — | Feedback-Button (Header je Screen) + Worker `/feedback` |
 | v0.146 | #48 | Feedback als globaler FAB statt Header-Buttons |
+| v0.147 | #50 | Feedback-Modal: „✕ entfernen"-Button stacken |
+| v0.148 | — | Feedback: z-index über anderen Modals + Viewport-Screenshot + Layout (Senden direkt unter Textfeld, Screenshot ausklappbar, „📁 Eigenes Foto…") (#54, #56, #57) |
+| v0.149 | — | Header ohne 📤 + Kalorien-Ampel ±10 %/diät-zielabhängig (#52, #53) |
+| v0.150 | — | KI-Tagesbewertung mit Per-Mahlzeit-Makros + leere-Antwort-Handling (#55) |
 
 ---
 

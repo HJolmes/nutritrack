@@ -161,6 +161,7 @@ body:has(#setupScreen.active) .fb-fab{display:none;}
 
 /* ── OVERLAYS ── */
 .ov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(2px);}
+#feedbackOv{z-index:350;}
 .ov .mod{position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;}
 .ov.open{display:flex;}
 .mod{background:white;border-radius:24px 24px 0 0;width:100%;max-width:430px;height:88vh;max-height:88vh;overflow-y:auto;animation:su .3s cubic-bezier(.4,0,.2,1);}
@@ -969,7 +970,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.147</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.148</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1496,19 +1497,24 @@ button,input,select,textarea{font-family:var(--fs-body);}
       </div>
       <textarea id="feedbackText" rows="5" placeholder="Was ist passiert / was wünschst du dir? Je konkreter, desto besser."
         style="width:100%;box-sizing:border-box;border:1.5px solid var(--br);border-radius:12px;padding:12px;font-size:14px;resize:vertical;outline:none;margin-bottom:10px;"></textarea>
-      <div style="margin-bottom:10px;">
-        <button type="button" class="seb" onclick="attachFeedbackScreenshot()" id="feedbackShotBtn" style="margin-top:0;">📸 Screenshot anhängen</button>
-        <button type="button" class="seb" onclick="_clearFeedbackScreenshot()" id="feedbackShotClear" style="display:none;">✕ Screenshot entfernen</button>
-      </div>
-      <div id="feedbackShotPreview" style="display:none;margin-bottom:10px;">
-        <img id="feedbackShotImg" alt="Screenshot-Vorschau" style="max-width:100%;border-radius:10px;border:1px solid var(--br);">
-        <div style="font-size:11px;color:var(--mu);margin-top:4px;text-align:center;">Vorschau – prüfe vor dem Senden, ob persönliche Daten sichtbar sind.</div>
-      </div>
+      <button type="button" class="svb" id="feedbackSendBtn" onclick="submitFeedback()" style="margin-top:0;margin-bottom:12px;">📤 Senden</button>
+      <details id="feedbackShotDetails" style="margin-bottom:10px;border:1px solid var(--br);border-radius:10px;padding:8px 12px;">
+        <summary style="font-size:13px;cursor:pointer;font-weight:600;">📸 Screenshot anhängen <span id="feedbackShotBadge" style="display:none;font-size:11px;font-weight:500;color:var(--g1);">· angehängt</span></summary>
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+          <button type="button" class="seb" onclick="attachFeedbackScreenshot()" id="feedbackShotBtn" style="margin-top:0;flex:1 1 140px;">📸 Sichtbarer Ausschnitt</button>
+          <button type="button" class="seb" onclick="document.getElementById('feedbackPhotoInput').click()" id="feedbackPhotoBtn" style="margin-top:0;flex:1 1 140px;">📁 Eigenes Foto…</button>
+          <input type="file" id="feedbackPhotoInput" accept="image/*" style="display:none;" onchange="attachFeedbackPhoto(event)">
+          <button type="button" class="seb" onclick="_clearFeedbackScreenshot()" id="feedbackShotClear" style="display:none;margin-top:0;flex:1 1 100%;">✕ Entfernen</button>
+        </div>
+        <div id="feedbackShotPreview" style="display:none;margin-top:10px;">
+          <img id="feedbackShotImg" alt="Screenshot-Vorschau" style="max-width:100%;border-radius:10px;border:1px solid var(--br);">
+          <div style="font-size:11px;color:var(--mu);margin-top:4px;text-align:center;">Vorschau – prüfe vor dem Senden, ob persönliche Daten sichtbar sind.</div>
+        </div>
+      </details>
       <details style="margin-bottom:10px;">
         <summary style="font-size:12px;color:var(--mu);cursor:pointer;padding:4px 0;">Was wird mitgeschickt?</summary>
         <div id="feedbackCtxPreview" style="font-size:11px;color:var(--mu);background:var(--gl);border-radius:8px;padding:8px;margin-top:6px;font-family:monospace;white-space:pre-wrap;word-break:break-all;"></div>
       </details>
-      <button type="button" class="svb" id="feedbackSendBtn" onclick="submitFeedback()" style="margin-top:0;margin-bottom:8px;">📤 Senden</button>
       <button type="button" class="seb" onclick="closeOv('feedbackOv')">Abbrechen</button>
       <div style="font-size:11px;color:var(--mu);margin-top:10px;text-align:center;line-height:1.4;">
         Landet als GitHub-Issue auf <strong>hjolmes/nutritrack</strong>.
@@ -1842,7 +1848,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.147';
+var APP_VERSION='0.148';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1871,6 +1877,11 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.148',items:[
+    {icon:'🐛',text:'Feedback-Modal liegt jetzt über allen anderen Modalen (vorher konnte es hinter offenen Dialogen verschwinden, Issue #57)',where:'Feedback-Modal'},
+    {icon:'🐛',text:'Screenshot beim Feedback nimmt nur noch den sichtbaren Ausschnitt auf (vorher die ganze Seite) – kleinere Datei, präzisere Suche (Issue #56)',where:'Feedback-Modal · 📸 Sichtbarer Ausschnitt'},
+    {icon:'🐛',text:'Feedback-Modal aufgeräumt: „📤 Senden" sitzt jetzt direkt unter dem Textfeld, der Screenshot-Bereich ist ausklappbar und enthält neben dem Auto-Screenshot auch „📁 Eigenes Foto…" als Fallback (Issue #54)',where:'Feedback-Modal'},
+  ]},
   {v:'0.147',items:[
     {icon:'🐛',text:'Feedback-Modal: „✕ Screenshot entfernen" liegt jetzt unter dem „Screenshot anhängen"-Button (vorher daneben mit unsauber breiter leerer Fläche)',where:'Feedback-Modal'},
   ]},
@@ -5597,9 +5608,26 @@ function _clearFeedbackScreenshot(){
   var p=document.getElementById('feedbackShotPreview');
   var img=document.getElementById('feedbackShotImg');
   var clr=document.getElementById('feedbackShotClear');
+  var badge=document.getElementById('feedbackShotBadge');
+  var inp=document.getElementById('feedbackPhotoInput');
   if(p)p.style.display='none';
   if(img)img.src='';
   if(clr)clr.style.display='none';
+  if(badge)badge.style.display='none';
+  if(inp)inp.value='';
+}
+
+function _showFeedbackShotPreview(dataUrl){
+  var img=document.getElementById('feedbackShotImg');
+  var p=document.getElementById('feedbackShotPreview');
+  var clr=document.getElementById('feedbackShotClear');
+  var badge=document.getElementById('feedbackShotBadge');
+  var det=document.getElementById('feedbackShotDetails');
+  if(img)img.src=dataUrl;
+  if(p)p.style.display='block';
+  if(clr)clr.style.display='block';
+  if(badge)badge.style.display='inline';
+  if(det)det.open=true;
 }
 
 function openFeedback(){
@@ -5632,8 +5660,14 @@ function attachFeedbackScreenshot(){
   // Modal kurz schließen, damit es nicht im Bild landet
   closeOv('feedbackOv');
   setTimeout(function(){
+    var sx=window.scrollX||window.pageXOffset||0;
+    var sy=window.scrollY||window.pageYOffset||0;
+    var vw=window.innerWidth;
+    var vh=window.innerHeight;
     _loadHtml2Canvas().then(function(h2c){
-      return h2c(document.body,{scale:0.7,logging:false,useCORS:true,backgroundColor:'#faf6f1'});
+      // Nur sichtbarer Ausschnitt – das, was der Nutzer zuletzt gesehen hat
+      return h2c(document.body,{scale:0.7,logging:false,useCORS:true,backgroundColor:'#faf6f1',
+        x:sx,y:sy,width:vw,height:vh,scrollX:0,scrollY:0,windowWidth:vw,windowHeight:vh});
     }).then(function(canvas){
       // Auf max 1200px Breite begrenzen
       var max=1200;
@@ -5642,20 +5676,42 @@ function attachFeedbackScreenshot(){
         c2.getContext('2d').drawImage(canvas,0,0,c2.width,c2.height);canvas=c2;}
       var dataUrl=canvas.toDataURL('image/jpeg',0.8);
       _feedbackScreenshotB64=dataUrl.split(',')[1];
-      var img=document.getElementById('feedbackShotImg');
-      var p=document.getElementById('feedbackShotPreview');
-      var clr=document.getElementById('feedbackShotClear');
-      if(img)img.src=dataUrl;
-      if(p)p.style.display='block';
-      if(clr)clr.style.display='block';
+      _showFeedbackShotPreview(dataUrl);
       openOv('feedbackOv');
     }).catch(function(err){
       openOv('feedbackOv');
       showToast('Screenshot fehlgeschlagen: '+(err&&err.message||'unbekannt'));
     }).then(function(){
-      if(btn){btn.disabled=false;btn.textContent='📸 Screenshot anhängen';}
+      if(btn){btn.disabled=false;btn.textContent='📸 Sichtbarer Ausschnitt';}
     });
   },120);
+}
+
+function attachFeedbackPhoto(ev){
+  var f=ev&&ev.target&&ev.target.files&&ev.target.files[0];
+  if(!f)return;
+  if(!/^image\//.test(f.type)){showToast('Bitte Bild-Datei wählen');return;}
+  if(f.size>8*1024*1024){showToast('Bild zu groß (max 8 MB)');return;}
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var src=e.target.result;
+    var im=new Image();
+    im.onload=function(){
+      // Auf max 1200px Breite verkleinern + JPEG 0.8
+      var max=1200;
+      var w=im.width,h=im.height;
+      if(w>max){var f2=max/w;w=max;h=Math.round(h*f2);}
+      var c=document.createElement('canvas');c.width=w;c.height=h;
+      c.getContext('2d').drawImage(im,0,0,w,h);
+      var dataUrl=c.toDataURL('image/jpeg',0.8);
+      _feedbackScreenshotB64=dataUrl.split(',')[1];
+      _showFeedbackShotPreview(dataUrl);
+    };
+    im.onerror=function(){showToast('Bild konnte nicht gelesen werden');};
+    im.src=src;
+  };
+  reader.onerror=function(){showToast('Datei konnte nicht gelesen werden');};
+  reader.readAsDataURL(f);
 }
 
 function submitFeedback(){

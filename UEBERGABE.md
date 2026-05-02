@@ -2,20 +2,30 @@
 
 > **Anweisung für neue Sessions:** Lies diese Datei zuerst. Sie ersetzt jede manuelle Kontext-Übergabe. Beim Abschluss einer Iteration (Merge auf `main`) wird sie aktualisiert.
 
-**Letzte Aktualisierung:** 2026-05-02 (nach v0.144)
+**Letzte Aktualisierung:** 2026-05-02 (nach v0.145)
 
 ---
 
 ## Aktueller Versionsstand
 
-- **Live:** v0.144 auf `main` (Bloom-Redesign + 5-Tab-Nav + Mahlzeit-Detail)
+- **Live:** v0.145 auf `main` (Feedback-Button mit GitHub-Issue-Anbindung)
 - **PWA:** https://hjolmes.github.io/nutritrack/
-- **Worker:** https://nutritrack-ai-proxy.h-jolmes.workers.dev (codeVersion `v0.142-pwa-origin-share`, vom Redesign nicht berührt)
+- **Worker:** https://nutritrack-ai-proxy.h-jolmes.workers.dev (codeVersion `v0.145-feedback`, neuer `POST /feedback` Endpoint)
 - **Decoder:** https://nutritrack-decoder-294137824893.europe-west1.run.app
 
-## Architektur (Stand v0.144)
+## Architektur (Stand v0.145)
 
-### UI-Struktur (neu in v0.144)
+### Feedback-Button (neu in v0.145)
+
+- **UI:** 🐛-Button im Top-Header **jedes** Screens (`mainScreen`, `historyScreen`, `statsScreen`, `moreScreen`) plus eigener Eintrag im „Mehr"-Hub. Beim Klick wird der aktuelle Tab/Screen vor dem Modal-Open eingefroren, damit die Quelle korrekt erfasst wird.
+- **Modal `feedbackOv`:** Toggle Bug/Wunsch, freie Beschreibung (max 2000 Zeichen), optional Auto-Screenshot via lazy-loaded `html2canvas@1.4.1` (Modal schließt sich kurz, damit es nicht im Bild landet, max 1200px Breite, JPEG 0.8). Detail-Section zeigt vor dem Senden, was mitgeschickt wird (Tab, Screen, App-Version, PWA-Standalone, Online, Zeitpunkt, User-Agent).
+- **JS-Hooks:** `openFeedback()`, `attachFeedbackScreenshot()`, `submitFeedback()`, `_setFeedbackType()`, `_clearFeedbackScreenshot()`, `_captureFeedbackContext()`. Section-Marker im Code: `// SECTION: FEEDBACK`.
+- **Worker-Anbindung:** `POST https://nutritrack-ai-proxy.h-jolmes.workers.dev/feedback`. Body `{type:'bug'|'enhancement', description, context, screenshotB64?}`. Origin-Check, kein Proxy-Token (wie `/share`).
+- **GitHub-Flow im Worker:** Falls Screenshot vorhanden, wird er via Contents-API auf den (lazy erstellten) Branch `feedback-screenshots` nach `feedback/screenshots/<ts>-<rand>.jpg` committed. Danach wird ein Issue im konfigurierten Repo (`GITHUB_REPO`, default `hjolmes/nutritrack`) mit Title-Prefix `[Bug]`/`[Idee]`, Labels `bug|enhancement` + `from-app`, Markdown-Body inkl. Kontext-Tabelle und eingebettetem Screenshot-Link erstellt.
+- **Worker-Secrets (manuell):** `GITHUB_TOKEN` (fine-grained PAT, Scope `hjolmes/nutritrack`, Permissions `Issues: read & write` + `Contents: read & write`), optional `GITHUB_REPO` (sonst Default).
+- **Service Worker:** `unpkg.com` ist bereits in der SKIP-Liste (war für ZXing schon nötig) — html2canvas-CDN wird also nicht gecached und dadurch beim ersten Klick lazy nachgeladen.
+
+### UI-Struktur (Stand v0.144)
 
 - **Theme:** Cream-Background `#faf6f1`, Coral-Akzent `#e96e3c`, Fraunces-Serif (display) + Inter (body). Implementiert als Override-Block ganz unten im `<style>`-Bereich von `index.html` (`/* BLOOM REDESIGN v0.144 */`) — bestehende Klassen werden re-skinned, alle JS-Hooks bleiben erhalten.
 - **Screens:**
@@ -91,6 +101,7 @@ URL: `https://nutritrack-ai-proxy.h-jolmes.workers.dev`
 | `POST /share` | Body `{code:"<base64>"}` → `{ok:true, data:{id, short}}` |
 | `GET /share/<id>` | Lookup → `{ok:true, data:{id, code}}` |
 | `GET /s/<id>` | Legacy (v0.140) → HTML-Redirect zu `?s=<id>` |
+| `POST /feedback` | Body `{type, description, context, screenshotB64?}` → erstellt GitHub-Issue, optional Screenshot-Commit auf Branch `feedback-screenshots` |
 
 ### Worker-Bindings/Secrets
 
@@ -98,6 +109,8 @@ URL: `https://nutritrack-ai-proxy.h-jolmes.workers.dev`
 - `NUTRITRACK_PROXY_TOKEN` (secret)
 - `DECODER_URL` (secret)
 - `SHARE_KV` (KV-Namespace, ID `873c9976307f4af087ff8205ba957b1c`)
+- `GITHUB_TOKEN` (secret, fine-grained PAT für `/feedback` — nur `hjolmes/nutritrack`, Permissions `Issues: read & write` + `Contents: read & write`)
+- `GITHUB_REPO` (optional env var, Default `hjolmes/nutritrack`)
 
 ### Cloud Run Decoder
 
@@ -126,6 +139,10 @@ Suchpfade für die wichtigsten Sektionen:
 - `handleShareLookup()` — GET /share/<id>
 - `handleShareRedirect()` — GET /s/<id> (Legacy)
 - `generateShareId()` — Base58-7-char IDs (kein 0/O/1/I/l)
+- `// ─── FEEDBACK ENDPOINT (creates GitHub Issue, optional screenshot upload) ───`
+- `handleFeedback()` — POST /feedback
+- `ensureFeedbackBranch()` — lazy create `feedback-screenshots` branch
+- `uploadFeedbackScreenshot()` — Contents-API PUT JPEG, returns `download_url`
 
 ### `manifest.json`
 
@@ -134,8 +151,8 @@ Suchpfade für die wichtigsten Sektionen:
 
 ### `sw.js`
 
-- `VERSION = '0.143'`
-- SKIP-Liste: `workers.dev`, `is.gd`, `v.gd`, etc. (kein SW-Caching für Shortener)
+- `VERSION = '0.145'`
+- SKIP-Liste: `workers.dev`, `is.gd`, `v.gd`, `unpkg.com`, etc. (kein SW-Caching für Shortener / CDN-Libs wie html2canvas)
 
 ## Versioning-Workflow (PFLICHT bei jedem deployablen Bump)
 
@@ -170,6 +187,7 @@ Niemals committen: API Keys, OAuth Tokens, exportierte Backups, persönliche Ern
 - ⏳ iOS Safari-Handoff (v0.143): 3-Schritt-Flow noch nicht in der Praxis durchgespielt
 - ⏳ iOS PWA standalone Direct-Import: noch nicht getestet
 - ⏳ v0.144 Bloom-Redesign: nicht in echter PWA durchgespielt — Heute-Header personalisiert, 2×2-Grid und Mahlzeit-Detail bisher nur über statisches HTTP-Serving + JS-Syntax-Check verifiziert
+- ⏳ v0.145 Feedback-Button: End-to-End-Test ausstehend — benötigt erst Worker-Deploy mit gesetztem `GITHUB_TOKEN`-Secret + Issues-Schreibrechten auf `hjolmes/nutritrack`. Erst danach lässt sich der Flow (Modal → Beschreibung + Auto-Screenshot → Issue erscheint in GitHub mit Screenshot-Bild) verifizieren
 
 ## Versions-Historie
 
@@ -182,6 +200,7 @@ Niemals committen: API Keys, OAuth Tokens, exportierte Backups, persönliche Ern
 | v0.142 | #43 | Kurzlink wandert auf PWA-Origin → Android öffnet PWA direkt |
 | v0.143 | #43 | iOS-Safari-Handoff via Zwischenablage + Auto-Paste |
 | v0.144 | #45 | Bloom-Redesign (Cream/Coral/Fraunces) + 5-Tab-Bottom-Nav + Mahlzeit-Detail-Subseite + Verlauf/Mehr-Hub |
+| v0.145 | TBD | 🐛 Feedback-Button im Header jedes Screens + Mehr-Hub: Bug/Wunsch direkt aus der App als GitHub-Issue auf `hjolmes/nutritrack`, optional mit Auto-Screenshot (html2canvas, lazy-loaded). Worker-Endpoint `POST /feedback` mit lazy-erstelltem `feedback-screenshots` Branch für Screenshot-Commits |
 
 ## Mögliche Folge-Iterationen (nicht eingeplant)
 

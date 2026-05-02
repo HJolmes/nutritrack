@@ -326,6 +326,179 @@ async function handleShareLookup(request, origin, env) {
   return jsonResponse(200, "ok", "ok", origin, env, { id, code });
 }
 
+// ─── FEEDBACK ENDPOINT (creates GitHub Issue, optional screenshot upload) ───
+const MAX_FEEDBACK_BODY_BYTES = 1024 * 1024 * 1.5; // 1.5 MB total incl. screenshot
+const MAX_FEEDBACK_DESCRIPTION = 2000;
+const MAX_FEEDBACK_SCREENSHOT_BYTES = 1024 * 1024; // 1 MB raw base64
+const FEEDBACK_SCREENSHOT_BRANCH = "feedback-screenshots";
+const FEEDBACK_USER_AGENT = "nutritrack-feedback-worker";
+const FEEDBACK_DEFAULT_REPO = "hjolmes/nutritrack";
+
+function ghHeaders(env) {
+  return {
+    Authorization: "Bearer " + env.GITHUB_TOKEN,
+    Accept: "application/vnd.github+json",
+    "User-Agent": FEEDBACK_USER_AGENT,
+    "X-GitHub-Api-Version": "2022-11-28",
+  };
+}
+
+async function ensureFeedbackBranch(env, repo) {
+  let res = await fetch(`https://api.github.com/repos/${repo}/branches/${FEEDBACK_SCREENSHOT_BRANCH}`, {
+    headers: ghHeaders(env),
+  });
+  if (res.ok) return true;
+  if (res.status !== 404) return false;
+  res = await fetch(`https://api.github.com/repos/${repo}/git/ref/heads/main`, {
+    headers: ghHeaders(env),
+  });
+  if (!res.ok) return false;
+  const mainRef = await res.json();
+  const sha = mainRef && mainRef.object && mainRef.object.sha;
+  if (!sha) return false;
+  res = await fetch(`https://api.github.com/repos/${repo}/git/refs`, {
+    method: "POST",
+    headers: { ...ghHeaders(env), "Content-Type": "application/json" },
+    body: JSON.stringify({ ref: `refs/heads/${FEEDBACK_SCREENSHOT_BRANCH}`, sha }),
+  });
+  return res.ok || res.status === 422; // 422 = ref already exists (race)
+}
+
+async function uploadFeedbackScreenshot(env, repo, base64) {
+  const ts = new Date().toISOString().replace(/[:.]/g, "-");
+  const rand = Math.random().toString(36).slice(2, 8);
+  const path = `feedback/screenshots/${ts}-${rand}.jpg`;
+  const branchOk = await ensureFeedbackBranch(env, repo);
+  if (!branchOk) return null;
+  const res = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
+    method: "PUT",
+    headers: { ...ghHeaders(env), "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: `feedback: screenshot ${ts}`,
+      branch: FEEDBACK_SCREENSHOT_BRANCH,
+      content: base64,
+    }),
+  });
+  if (!res.ok) return null;
+  const j = await res.json();
+  return (j && j.content && j.content.download_url) || null;
+}
+
+function mdEscapeCell(s) {
+  return String(s == null ? "" : s).replace(/\|/g, "\\|").replace(/\r?\n/g, " ").slice(0, 240);
+}
+
+async function handleFeedback(request, origin, env) {
+  if (origin && !allowedOrigins(env).has(origin)) {
+    return jsonResponse(403, "origin_not_allowed", "Origin is not allowed", origin, env);
+  }
+  if (!env.GITHUB_TOKEN) {
+    return jsonResponse(503, "github_not_configured", "Feedback endpoint is not configured", origin, env);
+  }
+  const repo = ((env.GITHUB_REPO || FEEDBACK_DEFAULT_REPO) + "").trim();
+  if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo)) {
+    return jsonResponse(500, "github_repo_invalid", "GITHUB_REPO is invalid", origin, env);
+  }
+  if (getContentLength(request) > MAX_FEEDBACK_BODY_BYTES) {
+    return jsonResponse(413, "request_too_large", "Feedback is too large", origin, env);
+  }
+  let body;
+  try {
+    body = await request.json();
+  } catch (e) {
+    return jsonResponse(400, "invalid_json", "Body must be JSON", origin, env);
+  }
+  const type = body && (body.type === "bug" || body.type === "enhancement") ? body.type : null;
+  if (!type) {
+    return jsonResponse(400, "invalid_type", "type must be 'bug' or 'enhancement'", origin, env);
+  }
+  const description = body && typeof body.description === "string" ? body.description.trim() : "";
+  if (!description) {
+    return jsonResponse(400, "missing_description", "description is required", origin, env);
+  }
+  if (description.length > MAX_FEEDBACK_DESCRIPTION) {
+    return jsonResponse(400, "description_too_long", `description max ${MAX_FEEDBACK_DESCRIPTION} chars`, origin, env);
+  }
+  const ctx = body && body.context && typeof body.context === "object" ? body.context : {};
+  let screenshotB64 = body && typeof body.screenshotB64 === "string" ? body.screenshotB64 : null;
+  if (screenshotB64) {
+    // Strip a possible data:image/...;base64, prefix defensively
+    const comma = screenshotB64.indexOf(",");
+    if (comma > 0 && /^data:/i.test(screenshotB64)) screenshotB64 = screenshotB64.slice(comma + 1);
+    if (!/^[A-Za-z0-9+/=]+$/.test(screenshotB64)) {
+      return jsonResponse(400, "invalid_screenshot", "Screenshot must be base64", origin, env);
+    }
+    if (screenshotB64.length > MAX_FEEDBACK_SCREENSHOT_BYTES) {
+      return jsonResponse(413, "screenshot_too_large", "Screenshot is too large", origin, env);
+    }
+  }
+
+  let screenshotUrl = null;
+  let screenshotError = null;
+  if (screenshotB64) {
+    try {
+      screenshotUrl = await uploadFeedbackScreenshot(env, repo, screenshotB64);
+      if (!screenshotUrl) screenshotError = "upload returned no URL";
+    } catch (e) {
+      screenshotError = (e && e.message) || "upload threw";
+    }
+  }
+
+  const isBug = type === "bug";
+  const labels = [isBug ? "bug" : "enhancement", "from-app"];
+  const titlePrefix = isBug ? "[Bug]" : "[Idee]";
+  const firstLine = description.split("\n")[0].trim().slice(0, 70) || description.slice(0, 70);
+  const title = `${titlePrefix} ${firstLine}`;
+
+  const md = [
+    `**Typ:** ${isBug ? "🐛 Bug" : "💡 Änderungswunsch"}`,
+    "",
+    "### Beschreibung",
+    description,
+    "",
+    "### Kontext",
+    "| Feld | Wert |",
+    "|---|---|",
+    `| Tab | \`${mdEscapeCell(ctx.tab || "?")}\` |`,
+    `| Screen | \`${mdEscapeCell(ctx.screen || "?")}\` |`,
+    `| App-Version | \`${mdEscapeCell(ctx.version || "?")}\` |`,
+    `| Standalone (PWA) | ${ctx.standalone ? "ja" : "nein"} |`,
+    `| Online | ${ctx.online === false ? "nein" : "ja"} |`,
+    `| Zeitpunkt | ${mdEscapeCell(ctx.ts || "")} |`,
+    `| User-Agent | \`${mdEscapeCell(ctx.ua || "")}\` |`,
+    "",
+  ];
+  if (screenshotUrl) {
+    md.push("### Screenshot");
+    md.push(`![Screenshot](${screenshotUrl})`);
+    md.push("");
+  } else if (screenshotB64) {
+    md.push(`> _(Screenshot wurde mitgeschickt, konnte aber nicht hochgeladen werden${screenshotError ? ": " + screenshotError : ""}.)_`);
+    md.push("");
+  }
+  md.push("---");
+  md.push("_Gesendet via 🐛-Button in der NutriTrack-PWA._");
+
+  const issueRes = await fetch(`https://api.github.com/repos/${repo}/issues`, {
+    method: "POST",
+    headers: { ...ghHeaders(env), "Content-Type": "application/json" },
+    body: JSON.stringify({ title, body: md.join("\n"), labels }),
+  });
+  if (!issueRes.ok) {
+    let detail = null;
+    try {
+      detail = await issueRes.json();
+    } catch (_) {}
+    return jsonResponse(502, "github_create_failed", `GitHub returned ${issueRes.status}`, origin, env, detail);
+  }
+  const issue = await issueRes.json();
+  return jsonResponse(200, "ok", "ok", origin, env, {
+    number: issue.number,
+    html_url: issue.html_url,
+    screenshotUploaded: Boolean(screenshotUrl),
+  });
+}
+
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
@@ -369,7 +542,8 @@ export default {
         decoderConfigured: Boolean(env.DECODER_URL),
         visionFallbackEnabled: env.ENABLE_VISION_FALLBACK === "true",
         shareConfigured: Boolean(env.SHARE_KV),
-        codeVersion: "v0.142-pwa-origin-share",
+        feedbackConfigured: Boolean(env.GITHUB_TOKEN),
+        codeVersion: "v0.145-feedback",
       });
     }
 
@@ -379,6 +553,9 @@ export default {
 
     if (request.method === "POST" && url.pathname === "/share") {
       return handleShareCreate(request, origin, env);
+    }
+    if (request.method === "POST" && url.pathname === "/feedback") {
+      return handleFeedback(request, origin, env);
     }
     if (request.method === "GET" && url.pathname.startsWith("/share/")) {
       return handleShareLookup(request, origin, env);

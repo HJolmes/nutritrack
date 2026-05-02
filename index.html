@@ -653,7 +653,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.151</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -914,14 +914,13 @@ button,input,select,textarea{font-family:var(--fs-body);}
     <div class="md-list-head"><h4>Zutaten</h4><div class="meta" id="mdCount">0 Posten</div></div>
     <div class="md-list" id="mdList"></div>
     <div class="md-cta">
-      <button type="button" class="add" id="mdAdd">+ Zutat</button>
       <button type="button" class="tpl" id="mdTpl">📋 Vorlage</button>
     </div>
   </div>
   <div class="bnav">
     <button type="button" class="ni on" data-tab="main" onclick="switchTab('main')"><span>🏠</span>Heute</button>
     <button type="button" class="ni" data-tab="history" onclick="switchTab('history')"><span>📅</span>Verlauf</button>
-    <div class="cw"><button type="button" class="cb" onclick="openPicker(null,'search')">＋</button></div>
+    <div class="cw"><button type="button" class="cb" id="cbMealDetail" onclick="openPicker(null,'search')">＋</button></div>
     <button type="button" class="ni" data-tab="trends" onclick="switchTab('trends')"><span>📈</span>Trends</button>
     <button type="button" class="ni" data-tab="more" onclick="switchTab('more')"><span>☰</span>Mehr</button>
   </div>
@@ -968,7 +967,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.150</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.151</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1846,7 +1845,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.150';
+var APP_VERSION='0.151';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1875,6 +1874,10 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.151',items:[
+    {icon:'🔢',text:'Versionsnummer ist jetzt im Heute-Header sichtbar (kleiner Tag rechts neben „Hej …") – Tippen öffnet „Was ist neu" (Issue #62)',where:'Heute-Tab · Header'},
+    {icon:'➕',text:'Mahlzeit-Detail entrümpelt: der separate „+ Zutat"-Button im Body fällt weg. Stattdessen kennt der zentrale ＋ in der unteren Leiste jetzt die geöffnete Mahlzeit und legt direkt dort an (Issue #64)',where:'Mahlzeit-Detail'},
+  ]},
   {v:'0.150',items:[
     {icon:'🤖',text:'KI-Tagesbewertung („🤖 Tag bewerten" auf der Heute-Seite): Prompt enthält jetzt Makros pro Mahlzeit (kcal · P · K · F) plus Gesamt-Makros und Makro-Ziele – die Bewertung bezieht sich nun konkret auf Kalorien- und Makroziele. Bei leerer KI-Antwort kommt eine Hinweis-Toast statt einem stummen leeren Feld; Token-Limit auf 300 erhöht (Issue #55)',where:'Heute-Tab · KI-Tagesbewertung'},
   ]},
@@ -2113,6 +2116,7 @@ function setAppleTouchIconPNG(){
   }catch(e){}
 }
 window.addEventListener('DOMContentLoaded',function(){
+  var _vt=document.getElementById('appVersionTag');if(_vt)_vt.textContent='v'+APP_VERSION;
   // Handle OneDrive OAuth callback
   var _params=new URLSearchParams(window.location.search);
   var _odCode=_params.get('code');
@@ -5521,7 +5525,7 @@ function renderMealDetail(meal){
         +'</div>';
     }).join('');
   }
-  var ctaAdd=document.getElementById('mdAdd');if(ctaAdd)ctaAdd.setAttribute('onclick',"openPicker('"+meal+"')");
+  var cbMd=document.getElementById('cbMealDetail');if(cbMd)cbMd.setAttribute('onclick',"openPicker('"+meal+"')");
   var ctaTpl=document.getElementById('mdTpl');if(ctaTpl)ctaTpl.setAttribute('onclick',"openTemplateOv('"+meal+"')");
   var ctaCpy=document.getElementById('mdCopy');if(ctaCpy)ctaCpy.setAttribute('onclick',"copyMealFromYesterday('"+meal+"')");
   var ctaShr=document.getElementById('mdShare');if(ctaShr)ctaShr.setAttribute('onclick',"shareMeal('"+meal+"')");

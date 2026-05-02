@@ -2,7 +2,9 @@
 
 > **Erste Aktion in jeder neuen Session: Lies `UEBERGABE.md`.** Diese Datei enthält den aktuellen Projekt-Stand, die Architektur, offene Live-Tests und die Versions-Historie. Sie wird bei jedem deployablen Merge aktualisiert. Ohne sie ist keine sinnvolle Iteration möglich.
 
-Bei Abschluss einer funktionalen Iteration (vor dem Merge) `UEBERGABE.md` aktualisieren: Versionsstand, Architektur-Änderungen, Live-Test-Status, Versions-Historie.
+Bei Abschluss einer funktionalen Iteration (vor dem Merge) `UEBERGABE.md` aktualisieren: Versionsstand, Architektur (aktueller Live-Zustand), Live-Test-Status, Versions-Historie.
+
+**`UEBERGABE.md` muss knapp bleiben — so viel wie nötig, so wenig wie möglich.** Beim Update: Architektur-Sektion **überschreiben statt anhängen** (sie beschreibt nur den aktuellen Stand, keine pro-Version-Chronik), erledigte Live-Tests streichen, Versions-Historie auf die letzten 5 Einträge kürzen, keine Inhalte aus `CLAUDE.md`/`AGENTS.md` duplizieren (Versioning-Workflow, Git-Workflow, Datenschutz, Cross-Platform-Regel). Details siehe Sektion „Pflege" in `UEBERGABE.md`.
 
 Befolge ausserdem immer die vollständigen Regeln in `AGENTS.md`. Die wichtigsten Punkte zusammengefasst:
 

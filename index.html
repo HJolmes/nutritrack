@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#2d7d52">
+<meta name="theme-color" content="#e96e3c">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -31,7 +31,8 @@
   }).catch(function(e){console.warn('zbar-wasm load failed',e);});
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Nunito+Sans:wght@400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
 @font-face{font-family:'Nunito';font-weight:700 900;src:local('Arial Rounded MT Bold'),local('system-ui');font-display:swap;}
 @font-face{font-family:'Nunito Sans';font-weight:400 700;src:local('Helvetica Neue'),local('Arial'),local('system-ui');font-display:swap;}
@@ -313,6 +314,236 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 
 .tst{position:fixed;bottom:92px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--tx);color:white;border-radius:11px;padding:9px 16px;font-size:13px;font-weight:600;opacity:0;transition:all .25s;z-index:500;white-space:nowrap;pointer-events:none;}
 .tst.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ═══════════════════════════════════════════════════════════════
+   BLOOM REDESIGN v0.140 — re-skins existing classes, keeps all JS hooks.
+   Cream background, coral accent, Fraunces serif for display.
+   ═══════════════════════════════════════════════════════════════ */
+:root{
+  --bg:#faf6f1;--card:#ffffff;--tx:#1f1a14;--mu:#9c9385;
+  --br:#ece4d4;--gl:#f5efe2;
+  --g1:#e96e3c;--g2:#e96e3c;--g3:#f4a07a;
+  --or:#e96e3c;--re:#d33b3b;
+  --r:24px;--sh:0 1px 0 rgba(0,0,0,0.04),0 8px 24px -16px rgba(0,0,0,0.10);
+  --fs-display:'Fraunces','Nunito',Georgia,serif;
+  --fs-body:'Inter','Nunito Sans',system-ui,sans-serif;
+}
+body{font-family:var(--fs-body);background:var(--bg);color:var(--tx);letter-spacing:-0.005em;padding-bottom:96px;}
+button,input,select,textarea{font-family:var(--fs-body);}
+
+/* HEADER ─ "Hej Hannes" headline */
+.hdr{background:var(--bg);padding:18px 18px 8px;border-bottom:none;}
+.logo{font-family:var(--fs-display);font-weight:500;font-size:26px;color:var(--tx);letter-spacing:-0.03em;line-height:1.1;}
+.logo em{color:var(--g1);font-style:italic;font-weight:400;}
+.hbtn{background:var(--gl)!important;border:none!important;border-radius:50%!important;width:38px!important;height:38px!important;display:inline-flex;align-items:center;justify-content:center;font-size:16px!important;color:var(--tx)!important;}
+.dn{margin-top:10px;background:var(--card);border-radius:18px;padding:4px;box-shadow:var(--sh);}
+.da{background:none;border:none;color:var(--mu);font-size:22px;width:38px;height:38px;border-radius:14px;}
+.da:active{background:var(--gl);}
+.dl{font-family:var(--fs-display);font-weight:500;font-size:16px;letter-spacing:-0.02em;color:var(--tx);}
+.greet-sub{font-size:12px;color:var(--mu);margin-top:2px;letter-spacing:0.01em;}
+
+/* HERO SUMMARY */
+.main{padding:14px 18px 24px;gap:14px;}
+.sum{
+  background:var(--card);border-radius:32px;padding:22px 20px 20px;color:var(--tx);
+  box-shadow:0 1px 0 rgba(0,0,0,0.04),0 16px 40px -24px rgba(0,0,0,0.12);
+  position:relative;overflow:hidden;
+}
+.sum::before{
+  content:'';position:absolute;top:-80px;right:-60px;width:200px;height:200px;border-radius:50%;
+  background:radial-gradient(circle,rgba(233,110,60,0.18),transparent 70%);filter:blur(20px);pointer-events:none;
+}
+.sum .hero-cap{font-size:11px;font-weight:600;color:var(--mu);text-transform:uppercase;letter-spacing:0.14em;text-align:center;margin-bottom:4px;position:relative;z-index:1;}
+.sum .hero-num{font-family:var(--fs-display);font-weight:500;font-size:96px;line-height:0.95;letter-spacing:-0.05em;color:var(--tx);text-align:center;position:relative;z-index:1;}
+.sum .hero-unit{font-size:12px;color:var(--mu);text-align:center;margin-top:4px;letter-spacing:0.04em;position:relative;z-index:1;}
+.sum .hero-pill{display:flex;justify-content:center;margin:12px 0 4px;position:relative;z-index:1;}
+.sum .hero-pill span{background:var(--g1);color:#fff;border-radius:999px;padding:7px 14px;font-size:12px;font-weight:600;letter-spacing:0.01em;}
+.sum .hero-pill span.over{background:#d33b3b;}
+.sum .hero-pill span.balanced{background:#7ba072;}
+.sum .hero-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--mu);margin:10px 4px 12px;position:relative;z-index:1;}
+.sum .hero-meta b{font-family:var(--fs-display);font-weight:500;color:var(--tx);font-size:13px;display:block;letter-spacing:-0.01em;}
+
+.macs{gap:10px;position:relative;z-index:1;}
+.mac{background:var(--gl);border-radius:18px;padding:12px 12px 10px;text-align:left;position:relative;}
+.mac .mac-pct{position:absolute;top:10px;right:12px;font-size:11px;color:var(--mu);font-weight:600;}
+.mv{font-family:var(--fs-display);font-weight:500;font-size:22px;letter-spacing:-0.025em;color:var(--tx);}
+.mv .mv-goal{font-family:var(--fs-body);font-size:12px;color:var(--mu);font-weight:500;letter-spacing:0;}
+.mn{font-size:11px;color:var(--mu);text-transform:none;letter-spacing:0.02em;font-weight:600;margin-top:0;}
+.mb{background:rgba(0,0,0,0.06);height:5px;border-radius:999px;margin-top:8px;overflow:hidden;}
+.mf{border-radius:999px;height:100%;}
+.mac:nth-child(1) .mf{background:linear-gradient(90deg,#d97757,#e89571);}
+.mac:nth-child(2) .mf{background:linear-gradient(90deg,#c4a747,#e0c875);}
+.mac:nth-child(3) .mf{background:linear-gradient(90deg,#7ba072,#a3c298);}
+.mmk{display:none;}
+.pt{display:none;}
+
+/* SECTION HEADING above grids */
+.sec-head{display:flex;justify-content:space-between;align-items:baseline;padding:0 4px;margin-top:4px;}
+.sec-head h3{font-family:var(--fs-display);font-weight:500;font-size:24px;letter-spacing:-0.025em;color:var(--tx);}
+.sec-head .sec-meta{font-size:12px;color:var(--mu);}
+
+/* MEALS GRID 2x2 */
+.meals-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.meals-grid .mc{cursor:pointer;border-radius:24px;background:var(--card);box-shadow:var(--sh);overflow:hidden;position:relative;transition:transform .15s ease;}
+.meals-grid .mc:active{transform:scale(0.98);}
+.meals-grid .mc::after{content:'';position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;filter:blur(24px);opacity:0.55;pointer-events:none;}
+.meals-grid .mc[data-meal="breakfast"]::after{background:radial-gradient(circle,rgba(233,158,82,0.45),transparent 70%);}
+.meals-grid .mc[data-meal="lunch"]::after{background:radial-gradient(circle,rgba(123,160,114,0.45),transparent 70%);}
+.meals-grid .mc[data-meal="dinner"]::after{background:radial-gradient(circle,rgba(155,118,200,0.45),transparent 70%);}
+.meals-grid .mc[data-meal="snack"]::after{background:radial-gradient(circle,rgba(220,113,160,0.45),transparent 70%);}
+.meal-card-body{position:relative;z-index:1;padding:14px 14px 16px;}
+.meal-card-body .mi{width:42px;height:42px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:20px;background:var(--gl);}
+.meals-grid .mc[data-meal="breakfast"] .mi{background:#fde6cf;}
+.meals-grid .mc[data-meal="lunch"] .mi{background:#dde9d2;}
+.meals-grid .mc[data-meal="dinner"] .mi{background:#e6dcef;}
+.meals-grid .mc[data-meal="snack"] .mi{background:#f5d6e1;}
+.meal-card-name{font-family:var(--fs-display);font-weight:500;font-size:18px;letter-spacing:-0.02em;margin-top:10px;}
+.meal-card-time{font-size:11px;color:var(--mu);margin-top:2px;}
+.meal-card-kcal{font-family:var(--fs-display);font-weight:500;font-size:24px;letter-spacing:-0.02em;margin-top:6px;}
+.meal-card-kcal small{font-family:var(--fs-body);font-size:11px;color:var(--mu);font-weight:500;margin-left:3px;}
+.meal-card-preview{font-size:11px;color:var(--mu);margin-top:6px;line-height:1.4;min-height:30px;}
+
+/* WATER + EXERCISE + FAST CARDS */
+.wc{background:var(--card);border-radius:24px;box-shadow:var(--sh);padding:16px 18px;}
+.wt{font-family:var(--fs-display);font-weight:500;font-size:18px;letter-spacing:-0.02em;}
+.wv{font-size:12px;color:var(--mu);font-weight:500;}
+.gls{width:36px;height:36px;border-radius:12px;border:1.5px solid var(--br);background:var(--gl);}
+.gls.on{background:linear-gradient(135deg,#85c1e9,#5dade2);border-color:#5dade2;color:#fff;}
+#exerciseCard button[onclick="openExerciseOv()"]{background:var(--g1)!important;border-radius:999px!important;}
+#waterBtns button{background:var(--gl)!important;border-color:var(--br)!important;color:var(--tx)!important;border-radius:999px!important;}
+
+/* BOTTOM NAV — pill */
+.bnav{
+  background:var(--tx);border-top:none;border-radius:32px;
+  margin:0 14px 14px;left:50%;transform:translateX(-50%);
+  width:calc(100% - 28px);max-width:402px;height:64px;
+  padding:0 6px;box-shadow:0 16px 40px -16px rgba(0,0,0,0.4);
+  align-items:center;justify-content:space-around;
+}
+.ni{color:rgba(255,255,255,0.5);font-size:10px;font-weight:600;flex:1;}
+.ni span{font-size:20px;}
+.ni.on{color:#fff;}
+.cw{flex:0 0 auto;}
+.cb{
+  width:52px;height:52px;border-radius:50%;
+  background:linear-gradient(135deg,var(--g1),var(--g3));border:none;
+  box-shadow:0 8px 24px -4px rgba(233,110,60,0.6);top:0;
+  font-size:24px;font-weight:300;color:#fff;
+}
+
+/* SETUP / ONBOARDING */
+#setupScreen{background:linear-gradient(160deg,#fef0e7 0%,#faf6f1 50%,#f5e9d9 100%);}
+.s-logo{font-family:var(--fs-display);font-weight:500;color:var(--tx);}
+.s-logo span{color:var(--g1);opacity:1;font-style:italic;}
+.s-tag{color:var(--mu);}
+.onb-title{font-family:var(--fs-display);color:var(--tx);font-weight:500;letter-spacing:-0.025em;}
+.onb-text{color:var(--mu);}
+.onb-btn{background:var(--tx);color:#fff;border-radius:999px;padding:16px 32px;}
+.onb-skip{color:var(--mu);}
+.onb-dot{background:rgba(0,0,0,0.12);}
+.onb-dot.act{background:var(--g1);width:24px;border-radius:4px;}
+.s-card{border-radius:32px;background:#fff;}
+.s-card h2{font-family:var(--fs-display);font-weight:500;letter-spacing:-0.02em;font-size:24px;}
+.s-card p{color:var(--mu);}
+.s-btn{background:var(--g1);border-radius:999px;font-weight:600;}
+.fi{border-radius:14px;border:1.5px solid var(--br);background:#fff;}
+.fi:focus{border-color:var(--g1);}
+
+/* MODALS / OVERLAYS */
+.mod{border-radius:32px 32px 0 0;}
+.mhd{border-bottom:1px solid var(--br);padding:18px 20px 14px;}
+.mti{font-family:var(--fs-display);font-weight:500;font-size:22px;letter-spacing:-0.02em;}
+.msu{color:var(--mu);}
+
+/* PICKER tabs as pills */
+.picker-tab{border-radius:14px;border:1.5px solid var(--br);background:#fff;color:var(--mu);padding:10px 6px;}
+.picker-tab.act{background:var(--tx);border-color:var(--tx);color:#fff;}
+.psi,.psg,.rec-search-inp,.rec-search-btn,.sinp,.finp{border-radius:14px;}
+.psi,.rec-search-inp,.sinp,.finp{border:1.5px solid var(--br);background:#fff;}
+.psi:focus,.rec-search-inp:focus,.sinp:focus,.finp:focus{border-color:var(--g1);}
+.psg,.rec-search-btn{background:var(--g1);}
+
+/* RESULTS */
+.ri{border-radius:18px;border:1.5px solid var(--br);}
+.ri.sel,.ri:active{border-color:var(--g1);background:#fef4ee;}
+.ri-k{font-family:var(--fs-display);color:var(--g1);font-weight:500;letter-spacing:-0.02em;}
+.ri-bdg{background:var(--g1);}
+.ri-bdg.own{background:#f9c74f;}
+
+/* BUTTONS */
+.svb,.cb2,.abt{background:var(--tx);border-radius:14px;font-weight:600;}
+.seb{background:var(--gl);border-color:var(--br);border-radius:14px;}
+.del-btn{border-color:var(--re);color:var(--re);border-radius:14px;}
+.fsave{background:var(--g1);border-radius:12px;}
+
+/* STATS */
+.stt{font-family:var(--fs-display);font-weight:500;font-size:20px;letter-spacing:-0.02em;}
+.stc{border-radius:24px;}
+.wbf{background:linear-gradient(180deg,#f4a07a,var(--g1));}
+.wbf.td{background:var(--tx);}
+
+/* DIET BUTTONS / TABS */
+.diet-btn,.stab{border-radius:999px;border:1.5px solid var(--br);}
+.diet-btn.act,.stab.act{background:var(--g1);border-color:var(--g1);color:#fff;}
+
+/* HERO trend pill */
+#nutriAmpelToggleBtn{color:rgba(31,26,20,0.55)!important;}
+
+/* TOAST */
+.tst{background:var(--tx);border-radius:14px;}
+
+/* INSTALL / UPDATE BANNERS — softer */
+#installBanner,#updateBanner,#backupReminder{border-radius:18px;border-color:var(--br);background:var(--gl);color:var(--tx);}
+#installBanner div,#updateBanner div,#backupReminder div{color:var(--tx);}
+#updateBanner button{background:var(--g1);}
+
+/* MEAL DETAIL SUBSCREEN */
+#mealDetailScreen .md-head{padding:14px 18px 0;display:flex;align-items:center;gap:10px;}
+#mealDetailScreen .md-back{background:var(--gl);border:none;width:38px;height:38px;border-radius:50%;font-size:18px;color:var(--tx);display:flex;align-items:center;justify-content:center;cursor:pointer;}
+#mealDetailScreen .md-actions{margin-left:auto;display:flex;gap:6px;}
+#mealDetailScreen .md-actions button{background:var(--gl);border:none;width:38px;height:38px;border-radius:50%;font-size:16px;color:var(--tx);cursor:pointer;}
+#mealDetailScreen .md-body{padding:14px 18px 24px;display:flex;flex-direction:column;gap:14px;}
+#mealDetailScreen .md-cap{font-size:11px;font-weight:600;color:var(--g1);text-transform:uppercase;letter-spacing:0.12em;}
+#mealDetailScreen .md-title{font-family:var(--fs-display);font-weight:500;font-size:38px;line-height:1;letter-spacing:-0.035em;color:var(--tx);}
+#mealDetailScreen .md-title em{color:var(--g1);font-style:italic;font-weight:400;}
+#mealDetailScreen .md-photo{height:200px;border-radius:24px;background:linear-gradient(135deg,#e8845a,#e96e3c 60%,#c45a2e);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.7);font-size:11px;letter-spacing:0.18em;text-transform:uppercase;font-weight:600;background-size:cover;background-position:center;}
+#mealDetailScreen .md-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+#mealDetailScreen .md-stat{background:var(--card);border-radius:18px;padding:12px 6px;text-align:center;box-shadow:var(--sh);}
+#mealDetailScreen .md-stat .sv{font-family:var(--fs-display);font-weight:500;font-size:22px;letter-spacing:-0.025em;}
+#mealDetailScreen .md-stat .sl{font-size:10px;color:var(--mu);margin-top:2px;font-weight:500;}
+#mealDetailScreen .md-stat.kcal .sv{color:var(--tx);}
+#mealDetailScreen .md-stat.p .sv{color:#d97757;}
+#mealDetailScreen .md-stat.c .sv{color:#c4a747;}
+#mealDetailScreen .md-stat.f .sv{color:#7ba072;}
+#mealDetailScreen .md-list-head{display:flex;justify-content:space-between;align-items:baseline;}
+#mealDetailScreen .md-list-head h4{font-family:var(--fs-display);font-weight:500;font-size:22px;letter-spacing:-0.02em;}
+#mealDetailScreen .md-list-head .meta{font-size:12px;color:var(--mu);}
+#mealDetailScreen .md-list{display:flex;flex-direction:column;gap:8px;}
+#mealDetailScreen .md-list .fe{background:var(--card);border-radius:18px;box-shadow:var(--sh);padding:12px 14px;border:none;}
+#mealDetailScreen .md-cta{display:flex;gap:10px;}
+#mealDetailScreen .md-cta button{flex:1;border:none;border-radius:999px;padding:14px;font-size:14px;font-weight:600;cursor:pointer;}
+#mealDetailScreen .md-cta .add{background:var(--tx);color:#fff;}
+#mealDetailScreen .md-cta .tpl{background:#fff;color:var(--tx);border:1.5px solid var(--br);}
+
+/* HISTORY / TRENDS / MORE shared row style */
+.list-row{background:var(--card);border-radius:18px;box-shadow:var(--sh);padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;}
+.list-row:active{background:var(--gl);}
+.list-row .lr-ic{width:40px;height:40px;border-radius:14px;background:var(--gl);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.list-row .lr-body{flex:1;min-width:0;}
+.list-row .lr-name{font-family:var(--fs-display);font-weight:500;font-size:16px;letter-spacing:-0.02em;}
+.list-row .lr-sub{font-size:11px;color:var(--mu);margin-top:2px;}
+.list-row .lr-val{font-family:var(--fs-display);font-weight:500;font-size:18px;color:var(--g1);letter-spacing:-0.02em;}
+
+/* TRENDS cards */
+.trend-card{background:var(--card);border-radius:24px;box-shadow:var(--sh);padding:18px;}
+.trend-card.streak{background:linear-gradient(135deg,#f4a07a,var(--g1));color:#fff;position:relative;overflow:hidden;}
+.trend-card.streak::after{content:'🔥';position:absolute;right:-10px;bottom:-30px;font-size:140px;opacity:0.18;}
+.trend-card.streak .v{font-family:var(--fs-display);font-weight:500;font-size:42px;letter-spacing:-0.03em;line-height:1;margin-top:6px;}
+.trend-card.streak .l{font-size:12px;opacity:0.9;margin-top:4px;}
+.trend-card.streak .h{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;opacity:0.95;}
+.trend-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.trend-card .head{display:flex;justify-content:space-between;align-items:baseline;}
+.trend-card .head h4{font-family:var(--fs-display);font-weight:500;font-size:22px;letter-spacing:-0.02em;}
 </style>
 </head>
 <body>
@@ -416,7 +647,18 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.143</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn" title="Daten sichern">📤</button><button type="button" class="hbtn" onclick="openImportPaste()" title="Rezept/Mahlzeit/Lebensmittel importieren">📥</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr">
+      <div>
+        <div class="logo">Hej <em id="greetName">Du</em></div>
+        <div class="greet-sub" id="greetSub">Heute</div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button type="button" class="hbtn" onclick="openHelp()" title="Hilfe">?</button>
+        <button type="button" class="hbtn" onclick="shareData()" id="shareBtn" title="Daten sichern">📤</button>
+        <button type="button" class="hbtn" onclick="openImportPaste()" title="Rezept/Mahlzeit/Lebensmittel importieren">📥</button>
+        <button type="button" class="hbtn" onclick="openSettings()" title="Einstellungen">⚙️</button>
+      </div>
+    </div>
     <div id="odMissingBanner" style="display:none;align-items:center;gap:10px;background:#fff3e0;border-bottom:1px solid #ffe0b2;padding:10px 16px;">
       <div style="flex:1;font-size:12px;color:#e65100;font-weight:600;">☁️ OneDrive nicht verbunden – Sichere deine Daten einmal täglich lokal.</div>
       <button type="button" onclick="shareData()" style="font-size:12px;font-weight:700;color:#e65100;background:none;border:1px solid #e65100;padding:4px 8px;border-radius:8px;cursor:pointer;">💾 Jetzt</button>
@@ -447,27 +689,74 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
   </div>
   <div class="main">
     <div class="sum">
-      <div class="st">
-        <div><div class="kb" id="totKcal">0</div><div class="ku">kcal gegessen</div></div>
-        <div style="text-align:center;"><div class="kb" style="font-size:20px;color:#a5d6b7;" id="totBurned">0</div><div class="ku">kcal Sport</div></div>
-        <div class="kr"><div class="krn" id="remKcal">2000</div><div class="krl">kcal verbleibend</div></div>
+      <div class="hero-cap">Noch übrig heute</div>
+      <div class="hero-num" id="remKcal">2000</div>
+      <div class="hero-unit">kcal verbleibend</div>
+      <div class="hero-pill"><span id="kcalTrendPill">auf Kurs</span></div>
+      <div class="hero-meta">
+        <div><b id="totKcal">0</b><span>kcal gegessen</span></div>
+        <div style="text-align:right;"><b id="totBurned">0</b><span>kcal Sport</span></div>
       </div>
-      <div class="pt"><div class="pf" id="pFill" style="width:0%"></div></div>
       <div class="macs">
-        <div class="mac"><div class="mv" id="tP">0g</div><div class="mn">Protein</div><div class="mb"><div class="mf" id="fP" style="width:0%"></div><div class="mmk" id="mkP"></div></div></div>
-        <div class="mac"><div class="mv" id="tC">0g</div><div class="mn">Kohlenh.</div><div class="mb"><div class="mf" id="fC" style="width:0%"></div><div class="mmk" id="mkC"></div></div></div>
-        <div class="mac"><div class="mv" id="tF">0g</div><div class="mn">Fett</div><div class="mb"><div class="mf" id="fF" style="width:0%"></div><div class="mmk" id="mkF"></div></div></div>
+        <div class="mac"><span class="mac-pct" id="pctP">0%</span><div class="mn">Protein</div><div class="mv"><span id="tP">0g</span><span class="mv-goal" id="gP"></span></div><div class="mb"><div class="mf" id="fP" style="width:0%"></div><div class="mmk" id="mkP"></div></div></div>
+        <div class="mac"><span class="mac-pct" id="pctC">0%</span><div class="mn">Kohlenh.</div><div class="mv"><span id="tC">0g</span><span class="mv-goal" id="gC"></span></div><div class="mb"><div class="mf" id="fC" style="width:0%"></div><div class="mmk" id="mkC"></div></div></div>
+        <div class="mac"><span class="mac-pct" id="pctF">0%</span><div class="mn">Fett</div><div class="mv"><span id="tF">0g</span><span class="mv-goal" id="gF"></span></div><div class="mb"><div class="mf" id="fF" style="width:0%"></div><div class="mmk" id="mkF"></div></div></div>
       </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.15);">
-        <button type="button" onclick="toggleNutrientAmpel()" style="background:none;border:none;color:rgba(255,255,255,0.7);font-size:12px;font-weight:700;cursor:pointer;padding:0;" id="nutriAmpelToggleBtn">▶ Nährwert-Details</button>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:10px;border-top:1px solid var(--br);">
+        <button type="button" onclick="toggleNutrientAmpel()" style="background:none;border:none;color:var(--mu);font-size:12px;font-weight:600;cursor:pointer;padding:0;" id="nutriAmpelToggleBtn">▶ Nährwert-Details</button>
       </div>
       <div id="nutriAmpelWrap" style="overflow:hidden;max-height:0;transition:max-height .35s ease;"></div>
-      <div id="ki-day-wrap" style="display:none;margin-top:10px;border-top:1px solid rgba(255,255,255,0.2);padding-top:10px;"></div>
+      <div id="ki-day-wrap" style="display:none;margin-top:10px;border-top:1px solid var(--br);padding-top:10px;"></div>
+      <!-- legacy progress bar (hidden via CSS) -->
+      <div class="pt"><div class="pf" id="pFill" style="width:0%"></div></div>
     </div>
-    <div class="mc"><div class="mh"><div class="mhl"><div class="mi" style="background:#fff8e1">🌅</div><div><div class="mnm">Frühstück</div><div class="ms" id="sub-breakfast">0 kcal</div></div></div><div style="display:flex;gap:4px;"><button type="button" class="ma" style="font-size:12px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="openTemplateOv('breakfast')" title="Vorlage laden">📋</button><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="copyMealFromYesterday('breakfast')" title="Von gestern">⎘</button><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="shareMeal('breakfast')" title="Mahlzeit teilen">📤</button><button type="button" class="ma" onclick="openPicker('breakfast')">+</button></div></div><div id="entries-breakfast"><div class="me">Noch nichts eingetragen</div></div></div>
-    <div class="mc"><div class="mh"><div class="mhl"><div class="mi" style="background:#e8f5e9">☀️</div><div><div class="mnm">Mittagessen</div><div class="ms" id="sub-lunch">0 kcal</div></div></div><div style="display:flex;gap:4px;"><button type="button" class="ma" style="font-size:12px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="openTemplateOv('lunch')" title="Vorlage laden">📋</button><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="copyMealFromYesterday('lunch')" title="Von gestern">⎘</button><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="shareMeal('lunch')" title="Mahlzeit teilen">📤</button><button type="button" class="ma" onclick="openPicker('lunch')">+</button></div></div><div id="entries-lunch"><div class="me">Noch nichts eingetragen</div></div></div>
-    <div class="mc"><div class="mh"><div class="mhl"><div class="mi" style="background:#e3f2fd">🌙</div><div><div class="mnm">Abendessen</div><div class="ms" id="sub-dinner">0 kcal</div></div></div><div style="display:flex;gap:4px;"><button type="button" class="ma" style="font-size:12px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="openTemplateOv('dinner')" title="Vorlage laden">📋</button><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="copyMealFromYesterday('dinner')" title="Von gestern">⎘</button><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="shareMeal('dinner')" title="Mahlzeit teilen">📤</button><button type="button" class="ma" onclick="openPicker('dinner')">+</button></div></div><div id="entries-dinner"><div class="me">Noch nichts eingetragen</div></div></div>
-    <div class="mc"><div class="mh"><div class="mhl"><div class="mi" style="background:#fce4ec">🍎</div><div><div class="mnm">Snacks</div><div class="ms" id="sub-snack">0 kcal</div></div></div><div style="display:flex;gap:4px;"><button type="button" class="ma" style="font-size:12px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="openTemplateOv('snack')" title="Vorlage laden">📋</button><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="copyMealFromYesterday('snack')" title="Von gestern">⎘</button><button type="button" class="ma" style="font-size:14px;width:28px;background:none;border:1.5px solid var(--br);color:var(--mu);" onclick="shareMeal('snack')" title="Mahlzeit teilen">📤</button><button type="button" class="ma" onclick="openPicker('snack')">+</button></div></div><div id="entries-snack"><div class="me">Noch nichts eingetragen</div></div></div>
+    <div class="sec-head"><h3>Mahlzeiten</h3><div class="sec-meta"><span id="mealsTotal">0 kcal</span> · <span id="mealsCount">0 Posten</span></div></div>
+    <div class="meals-grid">
+      <div class="mc" data-meal="breakfast" onclick="openMealDetail('breakfast')">
+        <div class="meal-card-body">
+          <div class="mi">🌅</div>
+          <div class="meal-card-name">Frühstück</div>
+          <div class="meal-card-time" id="time-breakfast">noch leer</div>
+          <div class="meal-card-kcal" id="kcal-breakfast">0<small>kcal</small></div>
+          <div class="meal-card-preview" id="preview-breakfast">Noch nichts eingetragen</div>
+        </div>
+        <span id="sub-breakfast" style="display:none;"></span>
+        <div id="entries-breakfast" style="display:none;"><div class="me">Noch nichts eingetragen</div></div>
+      </div>
+      <div class="mc" data-meal="lunch" onclick="openMealDetail('lunch')">
+        <div class="meal-card-body">
+          <div class="mi">☀️</div>
+          <div class="meal-card-name">Mittagessen</div>
+          <div class="meal-card-time" id="time-lunch">noch leer</div>
+          <div class="meal-card-kcal" id="kcal-lunch">0<small>kcal</small></div>
+          <div class="meal-card-preview" id="preview-lunch">Noch nichts eingetragen</div>
+        </div>
+        <span id="sub-lunch" style="display:none;"></span>
+        <div id="entries-lunch" style="display:none;"><div class="me">Noch nichts eingetragen</div></div>
+      </div>
+      <div class="mc" data-meal="dinner" onclick="openMealDetail('dinner')">
+        <div class="meal-card-body">
+          <div class="mi">🌙</div>
+          <div class="meal-card-name">Abendessen</div>
+          <div class="meal-card-time" id="time-dinner">noch leer</div>
+          <div class="meal-card-kcal" id="kcal-dinner">0<small>kcal</small></div>
+          <div class="meal-card-preview" id="preview-dinner">Noch nichts eingetragen</div>
+        </div>
+        <span id="sub-dinner" style="display:none;"></span>
+        <div id="entries-dinner" style="display:none;"><div class="me">Noch nichts eingetragen</div></div>
+      </div>
+      <div class="mc" data-meal="snack" onclick="openMealDetail('snack')">
+        <div class="meal-card-body">
+          <div class="mi">🍎</div>
+          <div class="meal-card-name">Snacks</div>
+          <div class="meal-card-time" id="time-snack">zwischen</div>
+          <div class="meal-card-kcal" id="kcal-snack">0<small>kcal</small></div>
+          <div class="meal-card-preview" id="preview-snack">Noch nichts eingetragen</div>
+        </div>
+        <span id="sub-snack" style="display:none;"></span>
+        <div id="entries-snack" style="display:none;"><div class="me">Noch nichts eingetragen</div></div>
+      </div>
+    </div>
     <div class="wc" id="exerciseCard">
       <div class="wh">
         <div class="wt">🏃 Sport & Aktivität</div>
@@ -493,72 +782,200 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
     </div>
   </div>
   <div class="bnav">
-    <button type="button" class="ni on" id="nM" onclick="switchTab('main')"><span>🏠</span>Heute</button>
+    <button type="button" class="ni on" data-tab="main" onclick="switchTab('main')"><span>🏠</span>Heute</button>
+    <button type="button" class="ni" data-tab="history" onclick="switchTab('history')"><span>📅</span>Verlauf</button>
     <div class="cw"><button type="button" class="cb" onclick="openPicker(null,'search')">＋</button></div>
-    <button type="button" class="ni" id="nS" onclick="switchTab('stats')"><span>📊</span>Statistik</button>
+    <button type="button" class="ni" data-tab="trends" onclick="switchTab('trends')"><span>📈</span>Trends</button>
+    <button type="button" class="ni" data-tab="more" onclick="switchTab('more')"><span>☰</span>Mehr</button>
   </div>
 </div>
 
-<!-- STATS -->
+<!-- STATS / TRENDS -->
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.143</span></div>
-      <div style="display:flex;gap:4px;">
-        <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
-        <button type="button" class="hbtn" onclick="shareData()">📤</button>
-        <button type="button" class="hbtn" onclick="openSettings()">⚙️</button>
+      <div>
+        <div class="logo">Deine <em>Trends</em></div>
+        <div class="greet-sub">Wochen- und Gewichtsverlauf</div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button type="button" class="hbtn" onclick="openHelp()" title="Hilfe">?</button>
+        <button type="button" class="hbtn" onclick="shareData()" title="Daten sichern">📤</button>
+        <button type="button" class="hbtn" onclick="openImportPaste()" title="Importieren">📥</button>
+        <button type="button" class="hbtn" onclick="openSettings()" title="Einstellungen">⚙️</button>
       </div>
     </div>
   </div>
-  <div style="padding:12px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding-bottom:80px;">
-    <div style="display:flex;gap:6px;">
-      <button type="button" id="stTabStats" onclick="switchStatsTab('stats')" style="flex:1;padding:8px;border-radius:10px;border:1.5px solid var(--g2);background:var(--g2);color:white;font-weight:700;font-size:13px;">📊 Statistik</button>
-    </div>
-    <div id="stPanelStats" style="display:flex;flex-direction:column;gap:10px;">
-      <div class="wc" style="display:flex;align-items:center;gap:10px;">
-        <div style="flex:1;"><div style="font-weight:800;font-size:14px;">⚖️ Gewicht heute</div><div style="font-size:11px;color:var(--mu);margin-top:2px;" id="weightTrend"></div></div>
-        <input type="number" id="weightToday" step="0.1" placeholder="kg" style="width:80px;border:2px solid var(--br);border-radius:10px;padding:8px;font-size:16px;font-weight:700;text-align:center;outline:none;">
-        <button type="button" class="svb" style="padding:8px 14px;margin-top:0;" onclick="logWeight()">✓</button>
-      </div>
-      <div class="wc" id="weightChartWrap">
-        <div style="font-weight:800;font-size:14px;margin-bottom:8px;">📈 Gewichtsverlauf</div>
-        <canvas id="weightChart" height="120" style="width:100%;display:none;"></canvas>
-        <div id="weightChartEmpty" style="text-align:center;color:var(--mu);font-size:13px;padding:20px 0;">Noch keine Gewichtsdaten</div>
-      </div>
-      <div class="wc">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-          <div style="font-weight:800;font-size:14px;">📊 Verlauf</div>
+  <div class="main">
+    <div style="display:none;"><button type="button" id="stTabStats" onclick="switchStatsTab('stats')">stats</button></div>
+    <div id="stPanelStats" style="display:flex;flex-direction:column;gap:14px;">
+      <div class="trend-card">
+        <div class="head"><h4>Kalorien</h4>
           <div style="display:flex;gap:4px;">
-            <button type="button" id="rangeBtn7" onclick="setStatsRange(7)" style="font-size:11px;padding:3px 8px;border-radius:6px;border:1.5px solid var(--g2);background:var(--g2);color:white;font-weight:700;">7T</button>
-            <button type="button" id="rangeBtn30" onclick="setStatsRange(30)" style="font-size:11px;padding:3px 8px;border-radius:6px;border:1.5px solid var(--br);background:white;color:var(--mu);font-weight:700;">30T</button>
+            <button type="button" class="stab act" id="rangeBtn7" onclick="setStatsRange(7)">7T</button>
+            <button type="button" class="stab" id="rangeBtn30" onclick="setStatsRange(30)">30T</button>
           </div>
         </div>
-        <div id="weekBars" style="display:flex;align-items:flex-end;gap:2px;height:80px;"></div>
-        <div id="weekLabels" style="display:flex;gap:4px;margin-top:4px;"></div>
+        <div id="weekBars" style="display:flex;align-items:flex-end;gap:4px;height:120px;margin-top:14px;"></div>
+        <div id="weekLabels" style="display:flex;gap:4px;margin-top:6px;"></div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-        <div class="wc" style="text-align:center;"><div style="font-size:28px;font-weight:800;color:var(--g1);" id="streakNum">0</div><div style="font-size:11px;color:var(--mu);">Tage Streak 🔥</div></div>
-        <div class="wc" style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--g1);" id="avgKcal">0</div><div style="font-size:11px;color:var(--mu);">Ø kcal/Tag (7T)</div></div>
-      </div>
-      <div class="wc">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-          <div style="font-weight:800;font-size:14px;">🤖 KI-Wochenbericht</div>
-          <button type="button" onclick="requestWeekReport()" id="weekReportBtn" style="font-size:12px;background:var(--g1);border:none;border-radius:8px;padding:5px 10px;color:white;font-weight:700;cursor:pointer;">Erstellen</button>
+      <div class="trend-grid">
+        <div class="trend-card streak">
+          <div class="h">Streak</div>
+          <div class="v"><span id="streakNum">0</span> Tage</div>
+          <div class="l">in Folge erfasst</div>
         </div>
-        <div id="weekReportText" style="font-size:12px;color:var(--mu);line-height:1.6;"></div>
+        <div class="trend-card">
+          <div style="font-size:12px;color:var(--mu);font-weight:600;">Ø kcal/Tag</div>
+          <div style="font-family:var(--fs-display);font-weight:500;font-size:34px;letter-spacing:-0.03em;margin-top:6px;" id="avgKcal">0</div>
+          <div style="font-size:11px;color:var(--mu);margin-top:4px;">letzte 7 Tage</div>
+        </div>
       </div>
-      <div class="wc" id="offlineQueueWrap" style="display:none;">
-        <div style="font-weight:800;font-size:14px;margin-bottom:6px;">📷 Offline-Fotos ausstehend</div>
-        <div id="offlineQueueList"></div>
+      <div class="trend-card" id="weightChartWrap">
+        <div class="head" style="display:flex;align-items:center;gap:10px;">
+          <h4 style="flex:1;">Gewicht</h4>
+          <input type="number" id="weightToday" step="0.1" placeholder="kg" style="width:80px;border:1.5px solid var(--br);border-radius:14px;padding:8px;font-size:15px;font-weight:600;text-align:center;outline:none;background:#fff;">
+          <button type="button" class="svb" style="padding:8px 14px;margin-top:0;" onclick="logWeight()">✓</button>
+        </div>
+        <div style="font-size:11px;color:var(--mu);margin-top:6px;" id="weightTrend"></div>
+        <canvas id="weightChart" height="120" style="width:100%;display:none;margin-top:12px;"></canvas>
+        <div id="weightChartEmpty" style="text-align:center;color:var(--mu);font-size:13px;padding:20px 0;">Noch keine Gewichtsdaten</div>
+      </div>
+      <div class="trend-card">
+        <div class="head"><h4>KI-Bericht ✨</h4>
+          <button type="button" onclick="requestWeekReport()" id="weekReportBtn" style="font-size:12px;background:var(--g1);border:none;border-radius:999px;padding:6px 12px;color:white;font-weight:600;cursor:pointer;">Erstellen</button>
+        </div>
+        <div id="weekReportText" style="font-size:13px;color:var(--mu);line-height:1.6;margin-top:8px;"></div>
+      </div>
+      <div class="trend-card" id="offlineQueueWrap" style="display:none;">
+        <div class="head"><h4>📷 Offline-Fotos</h4></div>
+        <div id="offlineQueueList" style="margin-top:8px;"></div>
         <button type="button" class="svb" style="margin-top:8px;" onclick="processOfflineQueue()">Jetzt analysieren</button>
       </div>
     </div>
   </div>
   <div class="bnav">
-    <button type="button" class="ni" id="nM2" onclick="switchTab('main')"><span>🏠</span>Heute</button>
+    <button type="button" class="ni" data-tab="main" onclick="switchTab('main')"><span>🏠</span>Heute</button>
+    <button type="button" class="ni" data-tab="history" onclick="switchTab('history')"><span>📅</span>Verlauf</button>
     <div class="cw"><button type="button" class="cb" onclick="openPicker(null,'search')">＋</button></div>
-    <button type="button" class="ni on" id="nS2" onclick="switchTab('stats')"><span>📊</span>Statistik</button>
+    <button type="button" class="ni on" data-tab="trends" onclick="switchTab('trends')"><span>📈</span>Trends</button>
+    <button type="button" class="ni" data-tab="more" onclick="switchTab('more')"><span>☰</span>Mehr</button>
+  </div>
+</div>
+
+<!-- HISTORY -->
+<div id="historyScreen" class="screen">
+  <div class="hdr">
+    <div class="hr">
+      <div>
+        <div class="logo">Dein <em>Verlauf</em></div>
+        <div class="greet-sub">Letzte 30 Tage</div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button type="button" class="hbtn" onclick="openSettings()" title="Einstellungen">⚙️</button>
+      </div>
+    </div>
+  </div>
+  <div class="main">
+    <div id="historyList" style="display:flex;flex-direction:column;gap:8px;"></div>
+  </div>
+  <div class="bnav">
+    <button type="button" class="ni" data-tab="main" onclick="switchTab('main')"><span>🏠</span>Heute</button>
+    <button type="button" class="ni on" data-tab="history" onclick="switchTab('history')"><span>📅</span>Verlauf</button>
+    <div class="cw"><button type="button" class="cb" onclick="openPicker(null,'search')">＋</button></div>
+    <button type="button" class="ni" data-tab="trends" onclick="switchTab('trends')"><span>📈</span>Trends</button>
+    <button type="button" class="ni" data-tab="more" onclick="switchTab('more')"><span>☰</span>Mehr</button>
+  </div>
+</div>
+
+<!-- MEAL DETAIL -->
+<div id="mealDetailScreen" class="screen">
+  <div class="md-head">
+    <button type="button" class="md-back" onclick="closeMealDetail()">‹</button>
+    <div class="md-actions">
+      <button type="button" id="mdCopy" title="Von gestern">⎘</button>
+      <button type="button" id="mdShare" title="Teilen">📤</button>
+    </div>
+  </div>
+  <div class="md-body">
+    <div>
+      <div class="md-cap" id="mdCap">— MAHLZEIT</div>
+      <div class="md-title" id="mdTitle"><em>Mahlzeit</em></div>
+    </div>
+    <div class="md-photo" id="mdPhoto">Foto-Platzhalter</div>
+    <div class="md-stats">
+      <div class="md-stat kcal"><div class="sv" id="mdKcal">0</div><div class="sl">kcal</div></div>
+      <div class="md-stat p"><div class="sv" id="mdP">0g</div><div class="sl">Protein</div></div>
+      <div class="md-stat c"><div class="sv" id="mdC">0g</div><div class="sl">Kohlenh.</div></div>
+      <div class="md-stat f"><div class="sv" id="mdF">0g</div><div class="sl">Fett</div></div>
+    </div>
+    <div class="md-list-head"><h4>Zutaten</h4><div class="meta" id="mdCount">0 Posten</div></div>
+    <div class="md-list" id="mdList"></div>
+    <div class="md-cta">
+      <button type="button" class="add" id="mdAdd">+ Zutat</button>
+      <button type="button" class="tpl" id="mdTpl">📋 Vorlage</button>
+    </div>
+  </div>
+  <div class="bnav">
+    <button type="button" class="ni on" data-tab="main" onclick="switchTab('main')"><span>🏠</span>Heute</button>
+    <button type="button" class="ni" data-tab="history" onclick="switchTab('history')"><span>📅</span>Verlauf</button>
+    <div class="cw"><button type="button" class="cb" onclick="openPicker(null,'search')">＋</button></div>
+    <button type="button" class="ni" data-tab="trends" onclick="switchTab('trends')"><span>📈</span>Trends</button>
+    <button type="button" class="ni" data-tab="more" onclick="switchTab('more')"><span>☰</span>Mehr</button>
+  </div>
+</div>
+
+<!-- MORE HUB -->
+<div id="moreScreen" class="screen">
+  <div class="hdr">
+    <div class="hr">
+      <div>
+        <div class="logo"><em>Mehr</em></div>
+        <div class="greet-sub">Bibliothek, Einstellungen &amp; Daten</div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button type="button" class="hbtn" onclick="openHelp()" title="Hilfe">?</button>
+      </div>
+    </div>
+  </div>
+  <div class="main">
+    <div class="list-row" onclick="openSettings();setTimeout(function(){if(typeof switchSettingsTab==='function')switchSettingsTab('library');},50);">
+      <div class="lr-ic">📚</div>
+      <div class="lr-body"><div class="lr-name">Bibliothek</div><div class="lr-sub">Rezepte &amp; eigene Lebensmittel</div></div>
+      <div class="lr-val">›</div>
+    </div>
+    <div class="list-row" onclick="openSettings()">
+      <div class="lr-ic">⚙️</div>
+      <div class="lr-body"><div class="lr-name">Einstellungen</div><div class="lr-sub">Profil, Ziele, Ernährung, Erinnerungen</div></div>
+      <div class="lr-val">›</div>
+    </div>
+    <div class="list-row" onclick="shareData()">
+      <div class="lr-ic">💾</div>
+      <div class="lr-body"><div class="lr-name">Daten teilen / sichern</div><div class="lr-sub">Backup als Code oder Link</div></div>
+      <div class="lr-val">›</div>
+    </div>
+    <div class="list-row" onclick="if(typeof openImportPaste==='function')openImportPaste();else openSettings();">
+      <div class="lr-ic">📥</div>
+      <div class="lr-body"><div class="lr-name">Code / Link einlösen</div><div class="lr-sub">Geteilte Mahlzeit oder Rezept importieren</div></div>
+      <div class="lr-val">›</div>
+    </div>
+    <div class="list-row" onclick="openHelp()">
+      <div class="lr-ic">❓</div>
+      <div class="lr-body"><div class="lr-name">Hilfe &amp; FAQ</div><div class="lr-sub">Funktionen erklärt</div></div>
+      <div class="lr-val">›</div>
+    </div>
+    <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
+      <div class="lr-ic">🎉</div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.144</div></div>
+      <div class="lr-val">›</div>
+    </div>
+  </div>
+  <div class="bnav">
+    <button type="button" class="ni" data-tab="main" onclick="switchTab('main')"><span>🏠</span>Heute</button>
+    <button type="button" class="ni" data-tab="history" onclick="switchTab('history')"><span>📅</span>Verlauf</button>
+    <div class="cw"><button type="button" class="cb" onclick="openPicker(null,'search')">＋</button></div>
+    <button type="button" class="ni" data-tab="trends" onclick="switchTab('trends')"><span>📈</span>Trends</button>
+    <button type="button" class="ni on" data-tab="more" onclick="switchTab('more')"><span>☰</span>Mehr</button>
   </div>
 </div>
 
@@ -1385,7 +1802,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.143';
+var APP_VERSION='0.144';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1414,6 +1831,12 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.144',items:[
+    {icon:'🌸',text:'Bloom-Redesign: warmes Cream-Theme mit Coral-Akzent und Fraunces-Serif-Typografie – ruhigere, redaktionelle Optik auf jedem Screen',where:'App-weit'},
+    {icon:'🏠',text:'Heute personalisiert: „Hej {Name}" mit Wochentag und Kalenderwoche, große Hero-Zahl „kcal verbleibend" plus Trend-Pill (über/unter Soll)',where:'Heute-Tab'},
+    {icon:'🍱',text:'Mahlzeiten als 2×2-Grid: jede Karte zeigt Icon-Tile, Uhrzeit, kcal-Wert und Vorschau der Zutaten – Tap öffnet die neue Mahlzeit-Detail-Subseite',where:'Heute-Tab'},
+    {icon:'🧭',text:'5-Tab-Navigation als schwebende Pille: Heute · Verlauf · + · Trends · Mehr – inklusive Verlauf-Liste der vergangenen Tage und „Mehr"-Hub für Bibliothek/Einstellungen/Daten/Hilfe',where:'Bottom-Nav'},
+  ]},
   {v:'0.143',items:[
     {icon:'📲',text:'Auf iOS isoliert Apple seit iOS 17.4 den Safari-Speicher von der installierten PWA – Imports landeten in Safari-Daten und waren in der App nicht sichtbar. Neuer Flow: Wenn du einen geteilten Link in Safari öffnest, kopiert NutriTrack die URL automatisch in die Zwischenablage und zeigt eine 3-Schritt-Anleitung. In der App tippst du oben auf 📥 – der Link wird automatisch eingefügt und du bestätigst nur noch die Vorschau',where:'Geteilter Link in Safari öffnen'},
     {icon:'📋',text:'Beim 📥-Tap in der App wird die Zwischenablage geprüft. Wenn ein NutriTrack-Link drin liegt, wird er automatisch ins Eingabefeld übernommen – ein Tap weniger',where:'Hauptansicht → 📥'},
@@ -2108,37 +2531,87 @@ function renderAll(){
   }
   // Zielüberprüfung (Abnehmziel erreicht)
   checkGoalAchieved();
+  var totalEntries=0,totalMealKcal=0;
+  var defaultTimes={breakfast:'morgens',lunch:'mittags',dinner:'abends',snack:'zwischen'};
   MEALS.forEach(function(m){
     var en=day.meals[m],s=calcM(en);
     // Mahlzeit-Budget
     var budgets={breakfast:0.25,lunch:0.35,dinner:0.30,snack:0.10};
     var budget=Math.round(S.goal*budgets[m]);
     var mkcal=Math.round(s.kcal);
-    document.getElementById('sub-'+m).textContent=mkcal+' / '+budget+' kcal';
+    var subEl=document.getElementById('sub-'+m);
+    if(subEl)subEl.textContent=mkcal+' / '+budget+' kcal';
+    // Grid-Card aktualisieren
+    var kcalEl=document.getElementById('kcal-'+m);
+    if(kcalEl)kcalEl.innerHTML=mkcal+'<small>kcal</small>';
+    var timeEl=document.getElementById('time-'+m);
+    if(timeEl){
+      if(en.length){
+        var t=en[0].addedAt?new Date(en[0].addedAt):null;
+        timeEl.textContent=t?(String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0')):defaultTimes[m];
+      } else {
+        timeEl.textContent='noch leer';
+      }
+    }
+    var prevEl=document.getElementById('preview-'+m);
+    if(prevEl){
+      if(!en.length)prevEl.textContent='Noch nichts eingetragen';
+      else{
+        var names=en.slice(0,2).map(function(e){return e.name;}).join(' · ');
+        if(en.length>2)names+=' +'+(en.length-2);
+        prevEl.textContent=names;
+      }
+    }
+    totalEntries+=en.length;totalMealKcal+=mkcal;
     var c=document.getElementById('entries-'+m);
-    if(!en.length){c.innerHTML='<div class="me">Noch nichts eingetragen</div>';return;}
-    c.innerHTML=en.map(function(e,i){
-      var isR=!!e.isRecipe;
-      var sub=isR?(e.portions||1)+'× Portion · '+Math.round(e.kcal)+' kcal':e.amount+'g · P'+Math.round(e.protein)+'g K'+Math.round(e.carbs)+'g F'+Math.round(e.fat)+'g';
-      var dot='';
-      if(S.pregWarn&&e.pregAmpel){
-        var vals=Object.values(e.pregAmpel);
-        var worst=vals.find(function(r){return r.ampel==='rot';})||vals.find(function(r){return r.ampel==='gelb';})||vals.find(function(r){return r.ampel==='gruen';});
-        if(worst)dot=pregAmpelDot(worst.ampel);
-      }
-      if(S.dietWarn&&e.dietAmpel){
-        var dvals=Object.values(e.dietAmpel);
-        var dworst=dvals.find(function(r){return r.ampel==='rot';})||dvals.find(function(r){return r.ampel==='gelb';})||dvals.find(function(r){return r.ampel==='gruen';});
-        if(dworst)dot+=dietAmpelDot(dworst.ampel);
-      }
-      return'<div class="fe'+(isR?' is-recipe':'')+'" onclick="'+(isR?'openEntryMenu':'openEditEntry')+'(\''+m+'\','+i+')">'
-        +'<div class="fee">'+(e.emoji||'🍽')+'</div>'
-        +'<div class="fei"><div class="fen">'+e.name+'</div><div class="fem">'+sub+'</div></div>'
-        +'<div class="fek">'+Math.round(e.kcal)+' kcal</div>'
-        +'<div style="display:flex;align-items:center;">'+dot+'<div class="fe-ic">✏️</div></div>'
-        +'</div>';
-    }).join('');
+    if(!en.length){c.innerHTML='<div class="me">Noch nichts eingetragen</div>';}else{
+      c.innerHTML=en.map(function(e,i){
+        var isR=!!e.isRecipe;
+        var sub=isR?(e.portions||1)+'× Portion · '+Math.round(e.kcal)+' kcal':e.amount+'g · P'+Math.round(e.protein)+'g K'+Math.round(e.carbs)+'g F'+Math.round(e.fat)+'g';
+        var dot='';
+        if(S.pregWarn&&e.pregAmpel){
+          var vals=Object.values(e.pregAmpel);
+          var worst=vals.find(function(r){return r.ampel==='rot';})||vals.find(function(r){return r.ampel==='gelb';})||vals.find(function(r){return r.ampel==='gruen';});
+          if(worst)dot=pregAmpelDot(worst.ampel);
+        }
+        if(S.dietWarn&&e.dietAmpel){
+          var dvals=Object.values(e.dietAmpel);
+          var dworst=dvals.find(function(r){return r.ampel==='rot';})||dvals.find(function(r){return r.ampel==='gelb';})||dvals.find(function(r){return r.ampel==='gruen';});
+          if(dworst)dot+=dietAmpelDot(dworst.ampel);
+        }
+        return'<div class="fe'+(isR?' is-recipe':'')+'" onclick="'+(isR?'openEntryMenu':'openEditEntry')+'(\''+m+'\','+i+')">'
+          +'<div class="fee">'+(e.emoji||'🍽')+'</div>'
+          +'<div class="fei"><div class="fen">'+e.name+'</div><div class="fem">'+sub+'</div></div>'
+          +'<div class="fek">'+Math.round(e.kcal)+' kcal</div>'
+          +'<div style="display:flex;align-items:center;">'+dot+'<div class="fe-ic">✏️</div></div>'
+          +'</div>';
+      }).join('');
+    }
   });
+  var mtot=document.getElementById('mealsTotal');if(mtot)mtot.textContent=totalMealKcal+' kcal';
+  var mcnt=document.getElementById('mealsCount');if(mcnt)mcnt.textContent=totalEntries+' Posten';
+  // Greeting + Trend-Pill + Macro-Goals
+  var gn=document.getElementById('greetName');if(gn)gn.textContent=(S.name&&S.name!=='Du')?S.name:'Du';
+  var gs=document.getElementById('greetSub');if(gs)gs.textContent=formatGreetSub(S.currentDate);
+  var pill=document.getElementById('kcalTrendPill');
+  if(pill){
+    var goal=S.goal||2000,eaten=Math.max(0,t.kcal-burned);
+    var diff=goal-eaten,dpct=goal?Math.round(Math.abs(diff)/goal*100):0;
+    pill.classList.remove('over','balanced');
+    if(diff<0){pill.classList.add('over');pill.textContent='⬈ '+dpct+' % über Soll';}
+    else if(dpct<5){pill.classList.add('balanced');pill.textContent='✓ im Plan';}
+    else if(dpct<15){pill.textContent='⬊ '+dpct+' % unter Soll · leicht';}
+    else {pill.textContent='⬊ '+dpct+' % unter Soll · stark';}
+  }
+  var mtg=getMacroTargets();
+  var gpe=document.getElementById('gP');if(gpe)gpe.textContent=mtg.protein?' /'+Math.round(mtg.protein)+'g':'';
+  var gce=document.getElementById('gC');if(gce)gce.textContent=mtg.carbs?' /'+Math.round(mtg.carbs)+'g':'';
+  var gfe=document.getElementById('gF');if(gfe)gfe.textContent=mtg.fat?' /'+Math.round(mtg.fat)+'g':'';
+  var ppP=document.getElementById('pctP');if(ppP)ppP.textContent=mtg.protein?Math.round(t.protein/mtg.protein*100)+'%':'';
+  var ppC=document.getElementById('pctC');if(ppC)ppC.textContent=mtg.carbs?Math.round(t.carbs/mtg.carbs*100)+'%':'';
+  var ppF=document.getElementById('pctF');if(ppF)ppF.textContent=mtg.fat?Math.round(t.fat/mtg.fat*100)+'%':'';
+  // Falls Mahlzeit-Detail offen ist, mit aktualisieren
+  if(window._mealDetailOpen)renderMealDetail(window._mealDetailOpen);
   renderWater();
   renderFasting();
   renderExercise();
@@ -4874,16 +5347,112 @@ function openPromptSettings(){
 // SECTION: OVERLAYS & TABS
 // ════════════════════════════════════════
 function switchTab(tab){
-  document.querySelectorAll('.ni').forEach(function(b){b.classList.remove('on');});
-  if(tab==='main'){
-    document.getElementById('nM').classList.add('on');document.getElementById('nM2').classList.add('on');
-    document.getElementById('mainScreen').classList.add('active');document.getElementById('statsScreen').classList.remove('active');
-  } else {
-    document.getElementById('nS').classList.add('on');document.getElementById('nS2').classList.add('on');
-    document.getElementById('statsScreen').classList.add('active');document.getElementById('mainScreen').classList.remove('active');
-    switchStatsTab('stats');
-  }
+  if(tab==='stats')tab='trends'; // legacy alias
+  var screens={main:'mainScreen',history:'historyScreen',trends:'statsScreen',more:'moreScreen',mealDetail:'mealDetailScreen'};
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  var target=document.getElementById(screens[tab]||'mainScreen');
+  if(target)target.classList.add('active');
+  document.querySelectorAll('.bnav .ni').forEach(function(b){
+    b.classList.toggle('on', b.getAttribute('data-tab')===tab);
+  });
+  if(tab==='trends')switchStatsTab('stats');
+  if(tab==='history')renderHistory();
+  if(tab==='more')renderMore();
+  if(tab==='main')window._mealDetailOpen=null;
+  try{window.scrollTo(0,0);}catch(e){}
 }
+function formatGreetSub(dateStr){
+  try{
+    var d=dateStr?new Date(dateStr+'T00:00:00'):new Date();
+    var days=['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+    var months=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+    return days[d.getDay()]+' · '+d.getDate()+'. '+months[d.getMonth()]+' · KW '+isoWeek(d);
+  }catch(e){return '';}
+}
+function isoWeek(d){
+  var t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
+  t.setUTCDate(t.getUTCDate()+4-(t.getUTCDay()||7));
+  var y=new Date(Date.UTC(t.getUTCFullYear(),0,1));
+  return Math.ceil((((t-y)/86400000)+1)/7);
+}
+
+// ── MEAL DETAIL SUBSCREEN ──
+var MEAL_LABELS={breakfast:{label:'Frühstück',icon:'🌅',cap:'Frühstück'},lunch:{label:'Mittagessen',icon:'☀️',cap:'Mittagessen'},dinner:{label:'Abendessen',icon:'🌙',cap:'Abendessen'},snack:{label:'Snacks',icon:'🍎',cap:'Snack'}};
+function openMealDetail(meal){
+  window._mealDetailOpen=meal;
+  renderMealDetail(meal);
+  switchTab('mealDetail');
+}
+function closeMealDetail(){window._mealDetailOpen=null;switchTab('main');}
+function renderMealDetail(meal){
+  var info=MEAL_LABELS[meal];if(!info)return;
+  var day=getDay(),en=day.meals[meal]||[],s=calcM(en);
+  var capEl=document.getElementById('mdCap');if(capEl)capEl.textContent='— '+info.cap.toUpperCase()+(en.length&&en[0].addedAt?' · '+(new Date(en[0].addedAt)).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}):'');
+  var titleEl=document.getElementById('mdTitle');
+  if(titleEl){
+    if(en.length){
+      var names=en.slice(0,3).map(function(e){return e.name;});
+      var head=names.length>1?names.slice(0,-1).join(', ')+' & <em>'+names[names.length-1]+'</em>':'<em>'+names[0]+'</em>';
+      titleEl.innerHTML=head;
+    } else {
+      titleEl.innerHTML='<em>'+info.label+'</em>';
+    }
+  }
+  var photoEl=document.getElementById('mdPhoto');
+  if(photoEl){
+    var ph=en.find(function(e){return e.photo;});
+    if(ph&&ph.photo){photoEl.style.backgroundImage='url('+ph.photo+')';photoEl.textContent='';}
+    else{photoEl.style.backgroundImage='';photoEl.textContent='Foto-Platzhalter';}
+  }
+  var setS=function(id,val){var e=document.getElementById(id);if(e)e.textContent=val;};
+  setS('mdKcal',Math.round(s.kcal));
+  setS('mdP',Math.round(s.protein)+'g');
+  setS('mdC',Math.round(s.carbs)+'g');
+  setS('mdF',Math.round(s.fat)+'g');
+  setS('mdCount',en.length+' Posten');
+  var listEl=document.getElementById('mdList');
+  if(listEl){
+    if(!en.length){listEl.innerHTML='<div class="me" style="background:var(--card);border-radius:18px;padding:18px;box-shadow:var(--sh);text-align:center;color:var(--mu);">Noch nichts eingetragen</div>';}
+    else listEl.innerHTML=en.map(function(e,i){
+      var isR=!!e.isRecipe;
+      var sub=isR?(e.portions||1)+'× Portion · '+Math.round(e.kcal)+' kcal':e.amount+'g · '+Math.round(e.protein)+'g P · '+Math.round(e.carbs)+'g C · '+Math.round(e.fat)+'g F';
+      return'<div class="fe" onclick="'+(isR?'openEntryMenu':'openEditEntry')+'(\''+meal+'\','+i+')">'
+        +'<div class="fee" style="background:var(--gl);width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;">'+(e.emoji||'🍽')+'</div>'
+        +'<div class="fei"><div class="fen">'+e.name+'</div><div class="fem">'+sub+'</div></div>'
+        +'<div class="fek">'+Math.round(e.kcal)+'</div>'
+        +'</div>';
+    }).join('');
+  }
+  var ctaAdd=document.getElementById('mdAdd');if(ctaAdd)ctaAdd.setAttribute('onclick',"openPicker('"+meal+"')");
+  var ctaTpl=document.getElementById('mdTpl');if(ctaTpl)ctaTpl.setAttribute('onclick',"openTemplateOv('"+meal+"')");
+  var ctaCpy=document.getElementById('mdCopy');if(ctaCpy)ctaCpy.setAttribute('onclick',"copyMealFromYesterday('"+meal+"')");
+  var ctaShr=document.getElementById('mdShare');if(ctaShr)ctaShr.setAttribute('onclick',"shareMeal('"+meal+"')");
+}
+
+// ── HISTORY (Verlauf) ──
+function renderHistory(){
+  var el=document.getElementById('historyList');if(!el)return;
+  var keys=Object.keys(S.days||{}).sort().reverse().slice(0,30);
+  if(!keys.length){el.innerHTML='<div style="color:var(--mu);text-align:center;padding:40px 16px;">Noch keine Tage erfasst.</div>';return;}
+  var days=['So','Mo','Di','Mi','Do','Fr','Sa'];
+  var months=['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+  el.innerHTML=keys.map(function(k){
+    var day=S.days[k]||{};var meals=day.meals||{};
+    var kcal=0,count=0;
+    Object.keys(meals).forEach(function(m){(meals[m]||[]).forEach(function(e){kcal+=e.kcal||0;count++;});});
+    var d=new Date(k+'T00:00:00');
+    var dayLabel=days[d.getDay()]+', '+d.getDate()+'. '+months[d.getMonth()];
+    return'<div class="list-row" onclick="goToDay(\''+k+'\')">'
+      +'<div class="lr-ic">📅</div>'
+      +'<div class="lr-body"><div class="lr-name">'+dayLabel+'</div><div class="lr-sub">'+count+' Posten</div></div>'
+      +'<div class="lr-val">'+Math.round(kcal)+'<small style="font-family:Inter;font-size:11px;color:var(--mu);font-weight:500;"> kcal</small></div>'
+      +'</div>';
+  }).join('');
+}
+function goToDay(k){S.currentDate=k;saveS();switchTab('main');renderAll();}
+
+// ── MORE Hub ──
+function renderMore(){/* statisch, kein Render nötig */}
 function openOv(id){document.getElementById(id).classList.add('open');}
 function closeOv(id){
   document.getElementById(id).classList.remove('open');

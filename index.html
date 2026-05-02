@@ -658,7 +658,6 @@ button,input,select,textarea{font-family:var(--fs-body);}
       </div>
       <div style="display:flex;gap:6px;">
         <button type="button" class="hbtn" onclick="openHelp()" title="Hilfe">?</button>
-        <button type="button" class="hbtn" onclick="shareData()" id="shareBtn" title="Daten sichern">📤</button>
         <button type="button" class="hbtn" onclick="openImportPaste()" title="Rezept/Mahlzeit/Lebensmittel importieren">📥</button>
         <button type="button" class="hbtn" onclick="openSettings()" title="Einstellungen">⚙️</button>
       </div>
@@ -804,7 +803,6 @@ button,input,select,textarea{font-family:var(--fs-body);}
       </div>
       <div style="display:flex;gap:6px;">
         <button type="button" class="hbtn" onclick="openHelp()" title="Hilfe">?</button>
-        <button type="button" class="hbtn" onclick="shareData()" title="Daten sichern">📤</button>
         <button type="button" class="hbtn" onclick="openImportPaste()" title="Importieren">📥</button>
         <button type="button" class="hbtn" onclick="openSettings()" title="Einstellungen">⚙️</button>
       </div>
@@ -970,7 +968,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.148</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.149</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1848,7 +1846,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.148';
+var APP_VERSION='0.149';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1877,6 +1875,10 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.149',items:[
+    {icon:'🐛',text:'Header aufgeräumt: „📤 Sichern" ist nicht mehr im Header neben „📥 Importieren" (zu ähnlich, zu nah). Daten-Sicherung läuft jetzt nur noch über Einstellungen → Datensicherung bzw. den „Mehr"-Hub → Daten teilen / sichern (Issue #53)',where:'Heute · Trends'},
+    {icon:'🎯',text:'Kalorien-Ampel auf der Heute-Seite richtet sich nach deinem Diät-Ziel: ±10 % vom Kalorienziel = grün („im Plan"); darüber/darunter ist abhängig vom Zielgewicht. Wer abnehmen will, bekommt Unterschreitungen grün („gut für dein Defizit") und Überschreitungen rot mit Bewegungstipp. Wer zunehmen will, bekommt es genau umgekehrt. Ohne Zielgewicht (Halten) wird beides als Hinweis markiert (Issue #52)',where:'Heute-Tab · Hero-Pill unter der kcal-Zahl'},
+  ]},
   {v:'0.148',items:[
     {icon:'🐛',text:'Feedback-Modal liegt jetzt über allen anderen Modalen (vorher konnte es hinter offenen Dialogen verschwinden, Issue #57)',where:'Feedback-Modal'},
     {icon:'🐛',text:'Screenshot beim Feedback nimmt nur noch den sichtbaren Ausschnitt auf (vorher die ganze Seite) – kleinere Datei, präzisere Suche (Issue #56)',where:'Feedback-Modal · 📸 Sichtbarer Ausschnitt'},
@@ -2556,6 +2558,28 @@ function totalStr(t){return Math.round(t.kcal)+' kcal · P'+Math.round(t.protein
 // ════════════════════════════════════════
 // SECTION: RENDER
 // ════════════════════════════════════════
+function _kcalAmpel(goal,eaten,S){
+  // Liefert {state:'balanced'|'over'|'under', text}.
+  // ±10 % Toleranz = grün. Außerhalb: Bewertung anhand Diät-Ziel
+  // (lose/gain/maintain), abgeleitet aus S.goalWeight vs S.weight.
+  var diff=goal-eaten;
+  var pct=goal?Math.round(Math.abs(diff)/goal*100):0;
+  if(pct<=10)return {state:'balanced',text:'✓ im Plan ('+pct+' %)'};
+  var dir='maintain';
+  if(S&&S.goalWeight&&S.weight){
+    if(S.goalWeight<S.weight-0.5)dir='lose';
+    else if(S.goalWeight>S.weight+0.5)dir='gain';
+  }
+  if(diff<0){
+    // über dem Kalorienziel
+    if(dir==='gain')return {state:'balanced',text:'⬈ '+pct+' % über Ziel · super, baut auf'};
+    return {state:'over',text:'⬈ '+pct+' % über Ziel · ein paar Schritte gehen?'};
+  }
+  // unter dem Kalorienziel
+  if(dir==='lose')return {state:'balanced',text:'⬊ '+pct+' % unter Ziel · gut für dein Defizit'};
+  return {state:'over',text:'⬊ '+pct+' % unter Ziel · noch etwas essen!'};
+}
+
 function renderAll(){
   document.getElementById('dateLabel').textContent=fmtDate(S.currentDate);
   document.getElementById('btnNext').style.opacity=S.currentDate===today()?'0.3':'1';
@@ -2655,13 +2679,11 @@ function renderAll(){
   var gs=document.getElementById('greetSub');if(gs)gs.textContent=formatGreetSub(S.currentDate);
   var pill=document.getElementById('kcalTrendPill');
   if(pill){
-    var goal=S.goal||2000,eaten=Math.max(0,t.kcal-burned);
-    var diff=goal-eaten,dpct=goal?Math.round(Math.abs(diff)/goal*100):0;
+    var ampel=_kcalAmpel(S.goal||2000,Math.max(0,t.kcal-burned),S);
     pill.classList.remove('over','balanced');
-    if(diff<0){pill.classList.add('over');pill.textContent='⬈ '+dpct+' % über Soll';}
-    else if(dpct<5){pill.classList.add('balanced');pill.textContent='✓ im Plan';}
-    else if(dpct<15){pill.textContent='⬊ '+dpct+' % unter Soll · leicht';}
-    else {pill.textContent='⬊ '+dpct+' % unter Soll · stark';}
+    if(ampel.state==='balanced')pill.classList.add('balanced');
+    else if(ampel.state==='over')pill.classList.add('over');
+    pill.textContent=ampel.text;
   }
   var mtg=getMacroTargets();
   var gpe=document.getElementById('gP');if(gpe)gpe.textContent=mtg.protein?' /'+Math.round(mtg.protein)+'g':'';

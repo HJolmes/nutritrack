@@ -968,7 +968,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.149</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.150</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1846,7 +1846,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.149';
+var APP_VERSION='0.150';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1875,6 +1875,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.150',items:[
+    {icon:'🤖',text:'KI-Tagesbewertung („🤖 Tag bewerten" auf der Heute-Seite): Prompt enthält jetzt Makros pro Mahlzeit (kcal · P · K · F) plus Gesamt-Makros und Makro-Ziele – die Bewertung bezieht sich nun konkret auf Kalorien- und Makroziele. Bei leerer KI-Antwort kommt eine Hinweis-Toast statt einem stummen leeren Feld; Token-Limit auf 300 erhöht (Issue #55)',where:'Heute-Tab · KI-Tagesbewertung'},
+  ]},
   {v:'0.149',items:[
     {icon:'🐛',text:'Header aufgeräumt: „📤 Sichern" ist nicht mehr im Header neben „📥 Importieren" (zu ähnlich, zu nah). Daten-Sicherung läuft jetzt nur noch über Einstellungen → Datensicherung bzw. den „Mehr"-Hub → Daten teilen / sichern (Issue #53)',where:'Heute · Trends'},
     {icon:'🎯',text:'Kalorien-Ampel auf der Heute-Seite richtet sich nach deinem Diät-Ziel: ±10 % vom Kalorienziel = grün („im Plan"); darüber/darunter ist abhängig vom Zielgewicht. Wer abnehmen will, bekommt Unterschreitungen grün („gut für dein Defizit") und Überschreitungen rot mit Bewegungstipp. Wer zunehmen will, bekommt es genau umgekehrt. Ohne Zielgewicht (Halten) wird beides als Hinweis markiert (Issue #52)',where:'Heute-Tab · Hero-Pill unter der kcal-Zahl'},
@@ -4155,7 +4158,7 @@ function renderKIButtons(){
   }
   dayWrap.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;">'
     +(rating?'<button type="button" onclick="toggleKIText()" style="font-size:12px;background:none;border:none;color:rgba(255,255,255,0.7);font-weight:700;cursor:pointer;padding:0;">'+(open?'▲ Einschätzung':'▼ Einschätzung')+'</button>':'<span></span>')
-    +'<button type="button" onclick="requestKIRating(\'day\')" '+btnDisabled+' style="'+btnStyle+'">'+btnLabel+'</button>'
+    +'<button type="button" onclick="requestKIRating(event)" '+btnDisabled+' style="'+btnStyle+'">'+btnLabel+'</button>'
     +'</div>'
     +ratingHtml;
 }
@@ -4167,38 +4170,51 @@ function toggleKIText(){
   saveS();renderKIButtons();
 }
 
-function requestKIRating(meal){
+function requestKIRating(ev){
   if(!canUseAi()){showAiUnavailable();return;}
   var day=getDay();
-  var btn=event&&event.target;
+  var btn=(ev&&ev.target)||(typeof event!=='undefined'&&event&&event.target)||null;
   if(btn){btn.disabled=true;btn.textContent='⏳ Analysiere...';}
   var items=[];
   MEALS.forEach(function(m){
     (day.meals[m]||[]).forEach(function(e){items.push(e);});
   });
-  if(!items.length){if(btn)btn.disabled=false;return;}
+  if(!items.length){if(btn){btn.disabled=false;btn.textContent='🤖 Tag bewerten';}return;}
   var hash=JSON.stringify(MEALS.map(function(m){
     return(day.meals[m]||[]).map(function(e){return e.name+(e.amount||'')+(e.kcal||'');}).join('|');
   }));
   var allPrefs=(S.dietPrefs||[]).concat(S.dietFree?[S.dietFree]:[]);
   var prefStr=allPrefs.length?'\nErnährungspräferenzen: '+allPrefs.join(', '):'';
   var goal=S.goal||2000;
-  var t={kcal:0,protein:0,carbs:0,fat:0};
-  items.forEach(function(e){t.kcal+=e.kcal||0;t.protein+=e.protein||0;t.carbs+=e.carbs||0;t.fat+=e.fat||0;});
+  var t=calcM(items);
+  var mtg=getMacroTargets()||{};
+  // Pro Mahlzeit Name + Makros anhängen, damit die KI eine vollständige Grundlage hat.
   var byMeal=MEALS.map(function(m){
     var en=day.meals[m]||[];
     if(!en.length)return '';
-    return MEAL_NAMES[m]+': '+en.map(function(e){return e.name;}).join(', ');
+    var ms=calcM(en);
+    return MEAL_NAMES[m]+' ('+Math.round(ms.kcal)+' kcal · '+Math.round(ms.protein)+'g P · '+Math.round(ms.carbs)+'g K · '+Math.round(ms.fat)+'g F): '
+      +en.map(function(e){return e.name;}).join(', ');
   }).filter(Boolean).join('\n');
-  var prompt='Bewerte den Ernährungstag auf Deutsch in maximal 2 kurzen Sätzen. Nur Fließtext.\n'
+  var goalsStr='Tagesziel: '+goal+' kcal';
+  if(mtg.protein||mtg.carbs||mtg.fat){
+    goalsStr+=' · Protein '+Math.round(mtg.protein||0)+'g · Kohlenh. '+Math.round(mtg.carbs||0)+'g · Fett '+Math.round(mtg.fat||0)+'g';
+  }
+  var prompt='Bewerte den Ernährungstag auf Deutsch in maximal 2 kurzen Sätzen. Nur Fließtext, keine Aufzählung.\n'
     +'Mahlzeiten:\n'+byMeal+'\n'
-    +'Gesamt: '+Math.round(t.kcal)+' kcal, Protein '+Math.round(t.protein)+'g, Carbs '+Math.round(t.carbs)+'g, Fett '+Math.round(t.fat)+'g\n'
-    +'Tagesziel: '+goal+' kcal'+prefStr+'\n'
-    +'1 Satz positiv, 1 Satz Verbesserungspotenzial. Maximal 50 Wörter gesamt.';
-  callClaude('claude-haiku-4-5',[{type:'text',text:prompt}],150,
+    +'Gesamt: '+Math.round(t.kcal)+' kcal · Protein '+Math.round(t.protein)+'g · Kohlenh. '+Math.round(t.carbs)+'g · Fett '+Math.round(t.fat)+'g\n'
+    +goalsStr+prefStr+'\n'
+    +'1 Satz positiv, 1 Satz Verbesserungspotenzial mit Bezug auf Kalorien- und Makroziele. Maximal 60 Wörter gesamt.';
+  callClaude('claude-haiku-4-5',[{type:'text',text:prompt}],300,
     function(text){
+      var clean=(text||'').trim();
+      if(!clean){
+        if(btn){btn.disabled=false;btn.textContent='🤖 Tag bewerten';}
+        showToast('KI-Antwort leer – bitte erneut versuchen');
+        return;
+      }
       if(!day.kiRating)day.kiRating={};
-      day.kiRating.day=text.trim();
+      day.kiRating.day=clean;
       day.kiRating.hash=hash;
       day.kiRating.open=true;
       saveS();renderKIButtons();

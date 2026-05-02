@@ -10,14 +10,17 @@ Befolge ausserdem immer die vollständigen Regeln in `AGENTS.md`. Die wichtigste
 
 ## Versioning (PFLICHT bei jeder deployablen Änderung)
 
-Bei jeder funktionalen Änderung (neue Features, Bugfixes, UI-Änderungen) MÜSSEN folgende vier Dinge gleichzeitig aktualisiert werden:
+**Versions-Bump (Punkte 1–3) bei JEDER Änderung an deployten Dateien** (`index.html`, `sw.js`, `worker/`, `manifest.json`) — auch bei reinen Refactorings, internen Verbesserungen oder Bugfixes, von denen der Nutzer nichts mitbekommt. Damit greifen Service-Worker-Cache-Invalidierung und Versions-Trail zuverlässig.
 
 1. `APP_VERSION` in `index.html` – um `0.001` erhöhen
 2. `VERSION` in `sw.js` – auf denselben Wert setzen
 3. Sichtbarer Versionstext `Beta vX.XXX` in `index.html` – alle Vorkommen (2×)
-4. `CHANGELOG`-Eintrag in `index.html` – kurze, nutzerlesbare Beschreibung
 
-Dokumentationsänderungen ohne Auswirkung auf die App dürfen den Versionsbump überspringen.
+**`CHANGELOG`-Eintrag (Punkt 4) NUR bei nutzerwahrnehmbaren Änderungen** (neue Features, UI-Änderungen, sichtbare Bugfixes). Refactorings, interne Cleanups, Doku-im-Code, Performance-Tweaks ohne UI-Effekt usw. erhalten **keinen** CHANGELOG-Eintrag — der „Was ist neu"-Dialog bleibt für diese Versionen still (`checkWhatsNew()` überspringt Versionen ohne `CHANGELOG`-Eintrag automatisch).
+
+4. `CHANGELOG`-Eintrag in `index.html` – kurze, nutzerlesbare Beschreibung (nur bei sichtbaren Änderungen)
+
+Reine Doku-Änderungen (`UEBERGABE.md`, `CLAUDE.md`, `AGENTS.md`, README) dürfen sowohl Versions-Bump als auch CHANGELOG-Eintrag überspringen — sie werden nicht ausgeliefert.
 
 ## Architektur
 

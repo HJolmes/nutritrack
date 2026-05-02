@@ -2,18 +2,30 @@
 
 > **Anweisung für neue Sessions:** Lies diese Datei zuerst. Sie ersetzt jede manuelle Kontext-Übergabe. Beim Abschluss einer Iteration (Merge auf `main`) wird sie aktualisiert.
 
-**Letzte Aktualisierung:** 2026-05-02 (nach v0.143)
+**Letzte Aktualisierung:** 2026-05-02 (nach v0.144)
 
 ---
 
 ## Aktueller Versionsstand
 
-- **Live:** v0.143 auf `main` (commit `3e85d8a`)
+- **Live:** v0.144 auf `main` (Bloom-Redesign + 5-Tab-Nav + Mahlzeit-Detail)
 - **PWA:** https://hjolmes.github.io/nutritrack/
-- **Worker:** https://nutritrack-ai-proxy.h-jolmes.workers.dev (codeVersion `v0.142-pwa-origin-share`)
+- **Worker:** https://nutritrack-ai-proxy.h-jolmes.workers.dev (codeVersion `v0.142-pwa-origin-share`, vom Redesign nicht berührt)
 - **Decoder:** https://nutritrack-decoder-294137824893.europe-west1.run.app
 
-## Architektur (Stand v0.143)
+## Architektur (Stand v0.144)
+
+### UI-Struktur (neu in v0.144)
+
+- **Theme:** Cream-Background `#faf6f1`, Coral-Akzent `#e96e3c`, Fraunces-Serif (display) + Inter (body). Implementiert als Override-Block ganz unten im `<style>`-Bereich von `index.html` (`/* BLOOM REDESIGN v0.144 */`) — bestehende Klassen werden re-skinned, alle JS-Hooks bleiben erhalten.
+- **Screens:**
+  - `mainScreen` — Heute mit personalisierter „Hej {Name}"-Begrüßung, Hero-Kalorienzahl + `kcalTrendPill`, 3 Makro-Pills, Mahlzeiten-Grid (2×2).
+  - `historyScreen` — Verlauf der letzten 30 Tage als anklickbare Liste (`renderHistory()` → `goToDay(k)`).
+  - `mealDetailScreen` — Mahlzeit-Detail mit Foto-Header, Stat-Pills (kcal/P/C/F) und Zutaten-Liste; geöffnet via `openMealDetail(meal)`, geschlossen via `closeMealDetail()`.
+  - `statsScreen` — Trends (orange Streak-Card, Ø-kcal, Gewicht-Card, KI-Bericht).
+  - `moreScreen` — Hub mit Bibliothek, Einstellungen, Daten, Code einlösen, Hilfe, Was-ist-neu.
+- **Navigation:** Bottom-Nav als dunkle Pille mit 5 Items (Heute / Verlauf / + / Trends / Mehr). `switchTab(tab)` mappt via `data-tab`-Attribut, `'stats'` als Alias auf `'trends'`.
+- **Datenkompatibilität:** Alle bestehenden IDs (`tP/tC/tF`, `fP/fC/fF`, `entries-<meal>`, `sub-<meal>`) bleiben funktional — die alte renderAll-Schleife befüllt sie weiter, parallel werden die neuen Grid-IDs (`kcal-<meal>`, `time-<meal>`, `preview-<meal>`, `mealsTotal`, `mealsCount`) sowie die offene Detail-Seite über `_mealDetailOpen` mit aktualisiert.
 
 ### Share-Flow (Rezepte / Mahlzeiten / Lebensmittel)
 
@@ -157,8 +169,9 @@ Niemals committen: API Keys, OAuth Tokens, exportierte Backups, persönliche Ern
 - ⏳ Android Direct-PWA-Open (v0.142): noch nicht live-getestet (eventuell PWA-Reinstall nötig damit Manifest neu geladen wird)
 - ⏳ iOS Safari-Handoff (v0.143): 3-Schritt-Flow noch nicht in der Praxis durchgespielt
 - ⏳ iOS PWA standalone Direct-Import: noch nicht getestet
+- ⏳ v0.144 Bloom-Redesign: nicht in echter PWA durchgespielt — Heute-Header personalisiert, 2×2-Grid und Mahlzeit-Detail bisher nur über statisches HTTP-Serving + JS-Syntax-Check verifiziert
 
-## Versions-Historie der Share-Iteration
+## Versions-Historie
 
 | Version | PR | Was |
 |---|---|---|
@@ -168,6 +181,7 @@ Niemals committen: API Keys, OAuth Tokens, exportierte Backups, persönliche Ern
 | v0.141 | #39 | 📥 Import-Button in Top-Header der Hauptansicht |
 | v0.142 | #43 | Kurzlink wandert auf PWA-Origin → Android öffnet PWA direkt |
 | v0.143 | #43 | iOS-Safari-Handoff via Zwischenablage + Auto-Paste |
+| v0.144 | #45 | Bloom-Redesign (Cream/Coral/Fraunces) + 5-Tab-Bottom-Nav + Mahlzeit-Detail-Subseite + Verlauf/Mehr-Hub |
 
 ## Mögliche Folge-Iterationen (nicht eingeplant)
 
@@ -175,6 +189,7 @@ Niemals committen: API Keys, OAuth Tokens, exportierte Backups, persönliche Ern
 - Android-Live-Test mit PWA-Reinstall (damit neues Manifest greift)
 - KV-TTL evtl. von 1 Jahr auf 90 Tage senken wenn Volumen wächst
 - Wenn der Anthropic-Vision-Fallback nach Wochen ungenutzt: kompletter Removal aus `worker/src/index.js` (~60 LOC weniger)
+- v0.144 Folgearbeit: echte Foto-Vorschau im Mahlzeit-Detail (aktuell orange Platzhalter wenn keiner der Einträge ein `photo`-Feld hat), Trends-Card 12M-Toggle, „Mehr" um Datenexport-Slots erweitern
 
 ## Cost / Limits
 

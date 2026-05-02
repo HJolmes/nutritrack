@@ -2,22 +2,23 @@
 
 > **Anweisung für neue Sessions:** Lies diese Datei zuerst. Sie ersetzt jede manuelle Kontext-Übergabe. Beim Abschluss einer Iteration (Merge auf `main`) wird sie aktualisiert.
 
-**Letzte Aktualisierung:** 2026-05-02 (nach v0.145)
+**Letzte Aktualisierung:** 2026-05-02 (nach v0.146)
 
 ---
 
 ## Aktueller Versionsstand
 
-- **Live:** v0.145 auf `main` (Feedback-Button mit GitHub-Issue-Anbindung)
+- **Live:** v0.146 auf `main` (Feedback-FAB global statt Header-Buttons – Issue #48)
 - **PWA:** https://hjolmes.github.io/nutritrack/
-- **Worker:** https://nutritrack-ai-proxy.h-jolmes.workers.dev (codeVersion `v0.145-feedback`, neuer `POST /feedback` Endpoint)
+- **Worker:** https://nutritrack-ai-proxy.h-jolmes.workers.dev (codeVersion `v0.145-feedback`, `POST /feedback` Endpoint)
 - **Decoder:** https://nutritrack-decoder-294137824893.europe-west1.run.app
 
-## Architektur (Stand v0.145)
+## Architektur (Stand v0.146)
 
-### Feedback-Button (neu in v0.145)
+### Feedback-Button (v0.146 – globaler FAB)
 
-- **UI:** 🐛-Button im Top-Header **jedes** Screens (`mainScreen`, `historyScreen`, `statsScreen`, `moreScreen`) plus eigener Eintrag im „Mehr"-Hub. Beim Klick wird der aktuelle Tab/Screen vor dem Modal-Open eingefroren, damit die Quelle korrekt erfasst wird.
+- **UI:** Ein einziger globaler Floating-Action-Button (`#feedbackFab`, Klasse `.fb-fab`) unten rechts (`bottom:84px;right:12px`, `z-index:400`), platziert vor dem schließenden `</body>`-Tag. Auf jedem Screen sichtbar und auch über jedem geöffneten Overlay (`.ov` hat `z-index:300`). Auf `setupScreen` automatisch ausgeblendet via `body:has(#setupScreen.active) .fb-fab{display:none}`.
+- **Entfernt in v0.146 (Issue #48):** Alle vier Header-🐛-Buttons (`mainScreen`/`statsScreen`/`historyScreen`/`moreScreen`) und der eigene `list-row`-Eintrag im „Mehr"-Hub. Onclick-Hook bleibt `openFeedback()`.
 - **Modal `feedbackOv`:** Toggle Bug/Wunsch, freie Beschreibung (max 2000 Zeichen), optional Auto-Screenshot via lazy-loaded `html2canvas@1.4.1` (Modal schließt sich kurz, damit es nicht im Bild landet, max 1200px Breite, JPEG 0.8). Detail-Section zeigt vor dem Senden, was mitgeschickt wird (Tab, Screen, App-Version, PWA-Standalone, Online, Zeitpunkt, User-Agent).
 - **JS-Hooks:** `openFeedback()`, `attachFeedbackScreenshot()`, `submitFeedback()`, `_setFeedbackType()`, `_clearFeedbackScreenshot()`, `_captureFeedbackContext()`. Section-Marker im Code: `// SECTION: FEEDBACK`.
 - **Worker-Anbindung:** `POST https://nutritrack-ai-proxy.h-jolmes.workers.dev/feedback`. Body `{type:'bug'|'enhancement', description, context, screenshotB64?}`. Origin-Check, kein Proxy-Token (wie `/share`).

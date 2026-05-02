@@ -416,7 +416,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div class="hdr">
-    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.142</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn" title="Daten sichern">📤</button><button type="button" class="hbtn" onclick="openImportPaste()" title="Rezept/Mahlzeit/Lebensmittel importieren">📥</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
+    <div class="hr"><div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.143</span></div><div style="display:flex;gap:4px;"><button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button><button type="button" class="hbtn" onclick="shareData()" id="shareBtn" title="Daten sichern">📤</button><button type="button" class="hbtn" onclick="openImportPaste()" title="Rezept/Mahlzeit/Lebensmittel importieren">📥</button><button type="button" class="hbtn" onclick="openSettings()">⚙️</button></div></div>
     <div id="odMissingBanner" style="display:none;align-items:center;gap:10px;background:#fff3e0;border-bottom:1px solid #ffe0b2;padding:10px 16px;">
       <div style="flex:1;font-size:12px;color:#e65100;font-weight:600;">☁️ OneDrive nicht verbunden – Sichere deine Daten einmal täglich lokal.</div>
       <button type="button" onclick="shareData()" style="font-size:12px;font-weight:700;color:#e65100;background:none;border:1px solid #e65100;padding:4px 8px;border-radius:8px;cursor:pointer;">💾 Jetzt</button>
@@ -503,7 +503,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 <div id="statsScreen" class="screen">
   <div class="hdr">
     <div class="hr">
-      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.142</span></div>
+      <div class="logo">Nutri<em>Track</em> <span style="font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;">Beta v0.143</span></div>
       <div style="display:flex;gap:4px;">
         <button type="button" class="hbtn" onclick="openHelp()" style="font-size:13px;font-weight:800;color:var(--g1);border:2px solid var(--g2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;">?</button>
         <button type="button" class="hbtn" onclick="shareData()">📤</button>
@@ -1001,6 +1001,34 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
   </div>
 </div>
 
+<!-- ══ iOS-SAFARI: WEITER IN APP IMPORTIEREN (Storage isoliert) ══ -->
+<div class="ov" id="iosSwitchOv" onclick="bgClose(event,'iosSwitchOv')">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" onclick="closeOv('iosSwitchOv')">✕</button>
+      <div class="mti">📲 In NutriTrack-App öffnen</div>
+      <div class="msu">Apple isoliert Safari-Daten von App-Daten</div>
+    </div>
+    <div class="mbd">
+      <div style="background:#fff8e1;border:1.5px solid #f9c74f;border-radius:12px;padding:12px;margin-bottom:14px;font-size:13px;color:#7d5a00;line-height:1.5;">
+        Du benutzt gerade <strong>Safari</strong>. Damit das Rezept in deiner installierten NutriTrack-App landet, brauchst du nur drei Schritte:
+      </div>
+      <ol style="margin:0 0 14px 0;padding-left:22px;font-size:14px;line-height:1.7;color:var(--tx);">
+        <li>Schließe diese Seite (Tab schließen)</li>
+        <li>Öffne <strong>NutriTrack</strong> auf deinem Home-Bildschirm</li>
+        <li>Tippe oben rechts auf <strong>📥</strong> – der Link wurde bereits kopiert und fügt sich automatisch ein</li>
+      </ol>
+      <button type="button" class="cb2" onclick="iosCopyShareUrl()" style="margin-bottom:8px;">📋 Link erneut kopieren</button>
+      <button type="button" class="seb" onclick="iosImportInBrowser()" style="margin-bottom:0;">Trotzdem hier in Safari importieren</button>
+      <div style="font-size:11px;color:var(--mu);margin-top:10px;text-align:center;line-height:1.4;">
+        Hinweis: Wenn du NutriTrack noch nicht installiert hast, tippe Safaris Teilen-Symbol → „Zum Home-Bildschirm".<br>
+        Auf Android öffnet sich der Link automatisch in der App (kein Extra-Schritt nötig).
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ IMPORT BESTÄTIGEN (Vorschau + Speichern) ══ -->
 <div class="ov" id="importConfirmOv" onclick="bgClose(event,'importConfirmOv')">
   <div class="mod">
@@ -1357,7 +1385,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.142';
+var APP_VERSION='0.143';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1386,6 +1414,11 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.143',items:[
+    {icon:'📲',text:'Auf iOS isoliert Apple seit iOS 17.4 den Safari-Speicher von der installierten PWA – Imports landeten in Safari-Daten und waren in der App nicht sichtbar. Neuer Flow: Wenn du einen geteilten Link in Safari öffnest, kopiert NutriTrack die URL automatisch in die Zwischenablage und zeigt eine 3-Schritt-Anleitung. In der App tippst du oben auf 📥 – der Link wird automatisch eingefügt und du bestätigst nur noch die Vorschau',where:'Geteilter Link in Safari öffnen'},
+    {icon:'📋',text:'Beim 📥-Tap in der App wird die Zwischenablage geprüft. Wenn ein NutriTrack-Link drin liegt, wird er automatisch ins Eingabefeld übernommen – ein Tap weniger',where:'Hauptansicht → 📥'},
+    {icon:'🆘',text:'„Trotzdem in Safari importieren"-Option für reine Browser-Nutzer ohne installierte App – Daten bleiben dann in Safari, nicht in der App',where:'iOS-Switch-to-App-Dialog'},
+  ]},
   {v:'0.142',items:[
     {icon:'📲',text:'Geteilte Links öffnen jetzt direkt die installierte PWA (auf Android Chrome) statt einem neuen Browser-Tab. Dafür liegt der Kurzlink ab jetzt auf der PWA-Origin selbst (hjolmes.github.io/nutritrack/?s=Ab12X), nicht mehr auf der Worker-Origin – Chrome erkennt den PWA-Scope und routet via handle_links zur App. Auf iOS bleibt der Safari-Pfad (Apple bietet keine PWA-URL-Routing-API), aber Safari und PWA teilen sich denselben Storage – das Rezept landet trotzdem in der App',where:'Jeder geteilte Link'},
     {icon:'🔗',text:'Kurzlink ist jetzt sogar 11 Zeichen kürzer (~47 statt ~58), weil hjolmes.github.io kürzer ist als nutritrack-ai-proxy.h-jolmes.workers.dev. Alte v0.140-Links bleiben gültig – der Worker leitet sie automatisch auf das neue Format um',where:''},
@@ -2998,9 +3031,71 @@ function importPasted(){
   setTimeout(function(){_previewImport(d);},150);
 }
 
+// ─── PLATFORM DETECTION ───
+function _isIos(){
+  var ua=navigator.userAgent;
+  if(/iPad|iPhone|iPod/.test(ua)&&!window.MSStream)return true;
+  // iPadOS 13+ fakes Macintosh UA aber hat Touch
+  if(/Mac/.test(ua)&&navigator.maxTouchPoints&&navigator.maxTouchPoints>1)return true;
+  return false;
+}
+function _isPwaStandalone(){
+  return (window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)
+      || window.navigator.standalone===true;
+}
+
+// ─── iOS SAFARI → PWA HANDOFF ───
+// Apple isoliert seit iOS 17.4 den Storage zwischen Safari und installierten
+// Home-Screen-PWAs. Damit Imports nicht in Safari landen sondern in der App,
+// kopieren wir den Link in die Zwischenablage und zeigen klare 3-Schritt-Anleitung.
+var _iosShareUrlPending='';
+
+function _showIosBrowserToAppFlow(fullUrl){
+  _iosShareUrlPending=fullUrl;
+  // Sofort kopieren – damit User beim Schritt 3 keine Extra-Aktion braucht.
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(fullUrl).catch(function(){});
+  } else {_fallbackCopy(fullUrl);}
+  openOv('iosSwitchOv');
+}
+function iosCopyShareUrl(){
+  if(!_iosShareUrlPending){showToast('Kein Link gespeichert');return;}
+  _copyToClipboard(_iosShareUrlPending,'Link');
+}
+function iosImportInBrowser(){
+  closeOv('iosSwitchOv');
+  // Re-trigger the normal boot flow but bypass the iOS guard
+  var url=_iosShareUrlPending;
+  _iosShareUrlPending='';
+  if(!url)return;
+  var u;try{u=new URL(url);}catch(e){return;}
+  var sid=_extractShareId(u.search);
+  if(sid){setTimeout(function(){_lookupAndPreview(sid);},150);return;}
+  var ext=_extractShareCode((u.hash||'')+' '+(u.search||''));
+  if(!ext)return;
+  var d=_normalizePayload(_decodePayload(ext.code),ext.legacy);
+  if(!d){showToast('Ungültiger Link');return;}
+  setTimeout(function(){_previewImport(d);},150);
+}
+
+// ─── IMPORT-PASTE: AUTO-FILL AUS ZWISCHENABLAGE ───
 function openImportPaste(){
-  document.getElementById('importPasteInput').value='';
+  var inp=document.getElementById('importPasteInput');
+  inp.value='';
   openOv('importPasteOv');
+  // Zwischenablage prüfen – iOS zeigt evtl. einen "Einfügen erlauben?"-Hinweis
+  if(navigator.clipboard&&navigator.clipboard.readText){
+    navigator.clipboard.readText().then(function(txt){
+      if(!txt)return;
+      var t=String(txt).trim();
+      if(t.length>4096)return; // unrealistisch lang → ignorieren
+      if(/[?&]s=[A-Za-z0-9]{4,16}/.test(t)||/[#?&][xr]=[A-Za-z0-9+/=_%-]{8,}/.test(t)){
+        inp.value=t;
+        inp.style.background='#f0faf4';
+        showToast('Aus Zwischenablage eingefügt ✓');
+      }
+    }).catch(function(){/* user denied / not allowed */});
+  }
 }
 
 // ─── AUTO-IMPORT BEIM BOOT (geteilter Link geöffnet) ───
@@ -3008,17 +3103,24 @@ function _checkSharedItemOnBoot(){
   try{
     var search=location.search||'';
     var hash=location.hash||'';
-    // 1) Worker-stored short link: ?s=<id>
     var sid=_extractShareId(search);
+    var hasInlinePayload=/[#?&][xr]=/.test(hash+' '+search);
+    if(!sid&&!hasInlinePayload)return;
+    // iOS Safari (non-standalone): Storage isoliert von der installierten PWA.
+    // Statt direkt zu importieren zeigen wir die Switch-to-App-Anleitung.
+    if(_isIos()&&!_isPwaStandalone()){
+      var fullUrl=location.href;
+      try{history.replaceState(null,'',location.pathname);}catch(e){}
+      setTimeout(function(){_showIosBrowserToAppFlow(fullUrl);},300);
+      return;
+    }
+    // Normaler Pfad: Android (PWA oder Browser) und iOS-PWA-standalone
     if(sid){
       try{history.replaceState(null,'',location.pathname);}catch(e){}
       setTimeout(function(){_lookupAndPreview(sid);},300);
       return;
     }
-    // 2) Inline payload: #x=<code> / #r=<code>
-    var blob=hash+' '+search;
-    if(!/[#?&][xr]=/.test(blob))return;
-    var ext=_extractShareCode(blob);
+    var ext=_extractShareCode(hash+' '+search);
     if(!ext)return;
     var d=_normalizePayload(_decodePayload(ext.code),ext.legacy);
     try{history.replaceState(null,'',location.pathname);}catch(e){}

@@ -656,6 +656,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
         <button type="button" class="hbtn" onclick="openHelp()" title="Hilfe">?</button>
         <button type="button" class="hbtn" onclick="shareData()" id="shareBtn" title="Daten sichern">📤</button>
         <button type="button" class="hbtn" onclick="openImportPaste()" title="Rezept/Mahlzeit/Lebensmittel importieren">📥</button>
+        <button type="button" class="hbtn" onclick="openFeedback()" title="Bug melden oder Wunsch">🐛</button>
         <button type="button" class="hbtn" onclick="openSettings()" title="Einstellungen">⚙️</button>
       </div>
     </div>
@@ -802,6 +803,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
         <button type="button" class="hbtn" onclick="openHelp()" title="Hilfe">?</button>
         <button type="button" class="hbtn" onclick="shareData()" title="Daten sichern">📤</button>
         <button type="button" class="hbtn" onclick="openImportPaste()" title="Importieren">📥</button>
+        <button type="button" class="hbtn" onclick="openFeedback()" title="Bug melden oder Wunsch">🐛</button>
         <button type="button" class="hbtn" onclick="openSettings()" title="Einstellungen">⚙️</button>
       </div>
     </div>
@@ -872,6 +874,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
         <div class="greet-sub">Letzte 30 Tage</div>
       </div>
       <div style="display:flex;gap:6px;">
+        <button type="button" class="hbtn" onclick="openFeedback()" title="Bug melden oder Wunsch">🐛</button>
         <button type="button" class="hbtn" onclick="openSettings()" title="Einstellungen">⚙️</button>
       </div>
     </div>
@@ -935,6 +938,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
       </div>
       <div style="display:flex;gap:6px;">
         <button type="button" class="hbtn" onclick="openHelp()" title="Hilfe">?</button>
+        <button type="button" class="hbtn" onclick="openFeedback()" title="Bug melden oder Wunsch">🐛</button>
       </div>
     </div>
   </div>
@@ -966,7 +970,12 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.144</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.145</div></div>
+      <div class="lr-val">›</div>
+    </div>
+    <div class="list-row" onclick="openFeedback()">
+      <div class="lr-ic">🐛</div>
+      <div class="lr-body"><div class="lr-name">Feedback senden</div><div class="lr-sub">Bug melden oder Änderungswunsch</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1477,6 +1486,43 @@ button,input,select,textarea{font-family:var(--fs-body);}
   </div>
 </div>
 
+<!-- ══ FEEDBACK (Bug / Änderungswunsch) ══ -->
+<div class="ov" id="feedbackOv" onclick="bgClose(event,'feedbackOv')">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" onclick="closeOv('feedbackOv')">✕</button>
+      <div class="mti">🐛 Feedback senden</div>
+      <div class="msu">Bug oder Änderungswunsch direkt an die Entwicklung</div>
+    </div>
+    <div class="mbd">
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button type="button" id="feedbackTypeBug" class="seb" onclick="_setFeedbackType('bug')" style="flex:1;">🐛 Bug</button>
+        <button type="button" id="feedbackTypeIdea" class="seb" onclick="_setFeedbackType('enhancement')" style="flex:1;">💡 Wunsch</button>
+      </div>
+      <textarea id="feedbackText" rows="5" placeholder="Was ist passiert / was wünschst du dir? Je konkreter, desto besser."
+        style="width:100%;box-sizing:border-box;border:1.5px solid var(--br);border-radius:12px;padding:12px;font-size:14px;resize:vertical;outline:none;margin-bottom:10px;"></textarea>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <button type="button" class="seb" onclick="attachFeedbackScreenshot()" id="feedbackShotBtn" style="flex:1;">📸 Screenshot anhängen</button>
+        <button type="button" class="seb" onclick="_clearFeedbackScreenshot()" id="feedbackShotClear" style="flex:0 0 auto;display:none;">✕</button>
+      </div>
+      <div id="feedbackShotPreview" style="display:none;margin-bottom:10px;">
+        <img id="feedbackShotImg" alt="Screenshot-Vorschau" style="max-width:100%;border-radius:10px;border:1px solid var(--br);">
+        <div style="font-size:11px;color:var(--mu);margin-top:4px;text-align:center;">Vorschau – prüfe vor dem Senden, ob persönliche Daten sichtbar sind.</div>
+      </div>
+      <details style="margin-bottom:10px;">
+        <summary style="font-size:12px;color:var(--mu);cursor:pointer;padding:4px 0;">Was wird mitgeschickt?</summary>
+        <div id="feedbackCtxPreview" style="font-size:11px;color:var(--mu);background:var(--gl);border-radius:8px;padding:8px;margin-top:6px;font-family:monospace;white-space:pre-wrap;word-break:break-all;"></div>
+      </details>
+      <button type="button" class="svb" id="feedbackSendBtn" onclick="submitFeedback()" style="margin-top:0;margin-bottom:8px;">📤 Senden</button>
+      <button type="button" class="seb" onclick="closeOv('feedbackOv')">Abbrechen</button>
+      <div style="font-size:11px;color:var(--mu);margin-top:10px;text-align:center;line-height:1.4;">
+        Landet als GitHub-Issue auf <strong>hjolmes/nutritrack</strong>.
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ FASTEN ══ -->
 <div class="ov" id="fastOv" onclick="bgClose(event,'fastOv')">
   <div class="mod">
@@ -1802,7 +1848,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.144';
+var APP_VERSION='0.145';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1831,6 +1877,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.145',items:[
+    {icon:'🐛',text:'Neuer Feedback-Button (🐛) im Top-Header jedes Screens und im „Mehr"-Hub: Bug melden oder Änderungswunsch einreichen — landet automatisch als GitHub-Issue auf hjolmes/nutritrack. Optional kann ein Auto-Screenshot der aktuellen Seite angehängt werden (Vorschau vor dem Senden, Screenshot kann persönliche Daten enthalten — bitte prüfen). Mitgesendet werden Tab, Screen, App-Version, User-Agent und Zeitpunkt',where:'Top-Header jedes Screens · Mehr-Hub'},
+  ]},
   {v:'0.144',items:[
     {icon:'🌸',text:'Bloom-Redesign: warmes Cream-Theme mit Coral-Akzent und Fraunces-Serif-Typografie – ruhigere, redaktionelle Optik auf jedem Screen',where:'App-weit'},
     {icon:'🏠',text:'Heute personalisiert: „Hej {Name}" mit Wochentag und Kalenderwoche, große Hero-Zahl „kcal verbleibend" plus Trend-Pill (über/unter Soll)',where:'Heute-Tab'},
@@ -5493,6 +5542,161 @@ function openHelp(){
   var base='https://hjolmes.github.io/nutritrack/nutritrack_anleitung.pdf';
   frame.src=base+'?v='+Date.now();
   openOv('helpOv');
+}
+
+// ════════════════════════════════════════
+// SECTION: FEEDBACK (Bug-Report / Änderungswunsch)
+// ════════════════════════════════════════
+var FEEDBACK_WORKER_URL=SHARE_WORKER_URL+'/feedback';
+var _feedbackContext=null;
+var _feedbackScreenshotB64=null;
+var _feedbackType='bug';
+var _feedbackBusy=false;
+var _html2canvasLoading=null;
+
+function _captureFeedbackContext(){
+  var tabBtn=document.querySelector('.bnav .ni.on');
+  var screen=document.querySelector('.screen.active');
+  return {
+    tab:tabBtn?tabBtn.getAttribute('data-tab'):'unknown',
+    screen:screen?screen.id:'unknown',
+    version:typeof APP_VERSION==='string'?APP_VERSION:'?',
+    ua:navigator.userAgent||'',
+    standalone:!!(navigator.standalone||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)),
+    online:navigator.onLine!==false,
+    ts:new Date().toISOString()
+  };
+}
+
+function _setFeedbackType(t){
+  _feedbackType=(t==='enhancement')?'enhancement':'bug';
+  var bug=document.getElementById('feedbackTypeBug');
+  var idea=document.getElementById('feedbackTypeIdea');
+  if(bug)bug.style.background=(_feedbackType==='bug')?'var(--g1)':'';
+  if(bug)bug.style.color=(_feedbackType==='bug')?'#fff':'';
+  if(idea)idea.style.background=(_feedbackType==='enhancement')?'var(--g1)':'';
+  if(idea)idea.style.color=(_feedbackType==='enhancement')?'#fff':'';
+}
+
+function _renderFeedbackCtxPreview(){
+  var pre=document.getElementById('feedbackCtxPreview');
+  if(!pre||!_feedbackContext)return;
+  var c=_feedbackContext;
+  pre.textContent=
+    'Tab:        '+c.tab+'\n'+
+    'Screen:     '+c.screen+'\n'+
+    'Version:    '+c.version+'\n'+
+    'PWA:        '+(c.standalone?'ja':'nein')+'\n'+
+    'Online:     '+(c.online?'ja':'nein')+'\n'+
+    'Zeitpunkt:  '+c.ts+'\n'+
+    'User-Agent: '+c.ua;
+}
+
+function _clearFeedbackScreenshot(){
+  _feedbackScreenshotB64=null;
+  var p=document.getElementById('feedbackShotPreview');
+  var img=document.getElementById('feedbackShotImg');
+  var clr=document.getElementById('feedbackShotClear');
+  if(p)p.style.display='none';
+  if(img)img.src='';
+  if(clr)clr.style.display='none';
+}
+
+function openFeedback(){
+  _feedbackContext=_captureFeedbackContext();
+  _clearFeedbackScreenshot();
+  _setFeedbackType(_feedbackType||'bug');
+  var ta=document.getElementById('feedbackText');
+  if(ta)ta.value='';
+  _renderFeedbackCtxPreview();
+  openOv('feedbackOv');
+}
+
+function _loadHtml2Canvas(){
+  if(window.html2canvas)return Promise.resolve(window.html2canvas);
+  if(_html2canvasLoading)return _html2canvasLoading;
+  _html2canvasLoading=new Promise(function(resolve,reject){
+    var s=document.createElement('script');
+    s.src='https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js';
+    s.onload=function(){resolve(window.html2canvas);};
+    s.onerror=function(){_html2canvasLoading=null;reject(new Error('html2canvas Lade-Fehler'));};
+    document.head.appendChild(s);
+  });
+  return _html2canvasLoading;
+}
+
+function attachFeedbackScreenshot(){
+  if(_feedbackBusy)return;
+  var btn=document.getElementById('feedbackShotBtn');
+  if(btn){btn.disabled=true;btn.textContent='📸 Aufnahme…';}
+  // Modal kurz schließen, damit es nicht im Bild landet
+  closeOv('feedbackOv');
+  setTimeout(function(){
+    _loadHtml2Canvas().then(function(h2c){
+      return h2c(document.body,{scale:0.7,logging:false,useCORS:true,backgroundColor:'#faf6f1'});
+    }).then(function(canvas){
+      // Auf max 1200px Breite begrenzen
+      var max=1200;
+      var w=canvas.width,h=canvas.height;
+      if(w>max){var f=max/w;var c2=document.createElement('canvas');c2.width=max;c2.height=Math.round(h*f);
+        c2.getContext('2d').drawImage(canvas,0,0,c2.width,c2.height);canvas=c2;}
+      var dataUrl=canvas.toDataURL('image/jpeg',0.8);
+      _feedbackScreenshotB64=dataUrl.split(',')[1];
+      var img=document.getElementById('feedbackShotImg');
+      var p=document.getElementById('feedbackShotPreview');
+      var clr=document.getElementById('feedbackShotClear');
+      if(img)img.src=dataUrl;
+      if(p)p.style.display='block';
+      if(clr)clr.style.display='inline-block';
+      openOv('feedbackOv');
+    }).catch(function(err){
+      openOv('feedbackOv');
+      showToast('Screenshot fehlgeschlagen: '+(err&&err.message||'unbekannt'));
+    }).then(function(){
+      if(btn){btn.disabled=false;btn.textContent='📸 Screenshot anhängen';}
+    });
+  },120);
+}
+
+function submitFeedback(){
+  if(_feedbackBusy)return;
+  var ta=document.getElementById('feedbackText');
+  var desc=ta?ta.value.trim():'';
+  if(!desc){showToast('Bitte Beschreibung ausfüllen');if(ta)ta.focus();return;}
+  if(desc.length>2000){showToast('Beschreibung zu lang (max 2000 Zeichen)');return;}
+  if(!_feedbackContext)_feedbackContext=_captureFeedbackContext();
+  _feedbackBusy=true;
+  var btn=document.getElementById('feedbackSendBtn');
+  if(btn){btn.disabled=true;btn.textContent='📤 Sende…';}
+  var payload={
+    type:_feedbackType,
+    description:desc,
+    context:_feedbackContext,
+    screenshotB64:_feedbackScreenshotB64
+  };
+  fetch(FEEDBACK_WORKER_URL,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload)
+  }).then(function(r){return r.json().then(function(j){return {status:r.status,j:j};});})
+  .then(function(res){
+    if(res.j&&res.j.ok&&res.j.data){
+      closeOv('feedbackOv');
+      var url=res.j.data.html_url;
+      showToast('Danke! Issue #'+res.j.data.number+' erstellt');
+      if(url)setTimeout(function(){
+        if(confirm('Issue erstellt: #'+res.j.data.number+'\n\nIm Browser öffnen?'))window.open(url,'_blank','noopener');
+      },400);
+    }else{
+      var msg=(res.j&&res.j.error&&res.j.error.message)||('Fehler '+res.status);
+      showToast('Senden fehlgeschlagen: '+msg);
+    }
+  }).catch(function(){
+    showToast('Senden fehlgeschlagen – bist du online?');
+  }).then(function(){
+    _feedbackBusy=false;
+    if(btn){btn.disabled=false;btn.textContent='📤 Senden';}
+  });
 }
 
 function showToast(msg,duration){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},(duration||2500));}

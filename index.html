@@ -969,7 +969,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.146</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.147</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1496,9 +1496,9 @@ button,input,select,textarea{font-family:var(--fs-body);}
       </div>
       <textarea id="feedbackText" rows="5" placeholder="Was ist passiert / was wünschst du dir? Je konkreter, desto besser."
         style="width:100%;box-sizing:border-box;border:1.5px solid var(--br);border-radius:12px;padding:12px;font-size:14px;resize:vertical;outline:none;margin-bottom:10px;"></textarea>
-      <div style="display:flex;gap:8px;margin-bottom:10px;">
-        <button type="button" class="seb" onclick="attachFeedbackScreenshot()" id="feedbackShotBtn" style="flex:1;">📸 Screenshot anhängen</button>
-        <button type="button" class="seb" onclick="_clearFeedbackScreenshot()" id="feedbackShotClear" style="flex:0 0 auto;display:none;">✕</button>
+      <div style="margin-bottom:10px;">
+        <button type="button" class="seb" onclick="attachFeedbackScreenshot()" id="feedbackShotBtn" style="margin-top:0;">📸 Screenshot anhängen</button>
+        <button type="button" class="seb" onclick="_clearFeedbackScreenshot()" id="feedbackShotClear" style="display:none;">✕ Screenshot entfernen</button>
       </div>
       <div id="feedbackShotPreview" style="display:none;margin-bottom:10px;">
         <img id="feedbackShotImg" alt="Screenshot-Vorschau" style="max-width:100%;border-radius:10px;border:1px solid var(--br);">
@@ -1842,7 +1842,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.146';
+var APP_VERSION='0.147';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1871,6 +1871,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.147',items:[
+    {icon:'🐛',text:'Feedback-Modal: „✕ Screenshot entfernen" liegt jetzt unter dem „Screenshot anhängen"-Button (vorher daneben mit unsauber breiter leerer Fläche)',where:'Feedback-Modal'},
+  ]},
   {v:'0.146',items:[
     {icon:'🐛',text:'Feedback-Button (🐛) ist jetzt ein globaler Floating-Button unten rechts und auf jeder Seite sowie über jedem geöffneten Modal erreichbar (Issue #48). Die Header-Buttons und der eigene Listen-Eintrag im „Mehr"-Hub entfallen dafür ersatzlos',where:'App-weit (außer Setup)'},
   ]},
@@ -5644,7 +5647,7 @@ function attachFeedbackScreenshot(){
       var clr=document.getElementById('feedbackShotClear');
       if(img)img.src=dataUrl;
       if(p)p.style.display='block';
-      if(clr)clr.style.display='inline-block';
+      if(clr)clr.style.display='block';
       openOv('feedbackOv');
     }).catch(function(err){
       openOv('feedbackOv');

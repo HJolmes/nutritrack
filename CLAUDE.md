@@ -1,6 +1,10 @@
 # NutriTrack – Claude Code Instructions
 
-Befolge immer die vollständigen Regeln in `AGENTS.md`. Die wichtigsten Punkte zusammengefasst:
+> **Erste Aktion in jeder neuen Session: Lies `UEBERGABE.md`.** Diese Datei enthält den aktuellen Projekt-Stand, die Architektur, offene Live-Tests und die Versions-Historie. Sie wird bei jedem deployablen Merge aktualisiert. Ohne sie ist keine sinnvolle Iteration möglich.
+
+Bei Abschluss einer funktionalen Iteration (vor dem Merge) `UEBERGABE.md` aktualisieren: Versionsstand, Architektur-Änderungen, Live-Test-Status, Versions-Historie.
+
+Befolge ausserdem immer die vollständigen Regeln in `AGENTS.md`. Die wichtigsten Punkte zusammengefasst:
 
 ## Versioning (PFLICHT bei jeder deployablen Änderung)
 

@@ -6,6 +6,12 @@ Feature-Wünsche und Verbesserungsvorschläge werden ausschließlich als GitHub-
 
 Jeder Wunsch bekommt zusätzlich zum `enhancement`-Label genau ein **Themen-Label** `topic:<kebab-case>`. Vorgehen und Themen-Beispiele identisch zu `issues.md` — Bugs und Wünsche teilen denselben Topic-Namensraum.
 
+**Re-Labeling (Spiegelregel zu `issues.md`):** Ist ein als `enhancement` angelegtes Item in Wahrheit ein Bug → `enhancement`-Label entfernen, `bug` setzen, ab da gilt `issues.md`. Mischfälle bekommen beide Labels.
+
+## Vorschau im Chat (vor Code-Edits)
+
+Identisch zu `issues.md` → „Vorschau im Chat (vor Code-Edits)": pro Topic zuerst im Chat Items + geplanten Fix (je 1 Satz) zusammenfassen, auf Bestätigung warten, dann Code. Gilt auch wenn der Mensch „mach alle nacheinander" sagt — pro Topic eine Vorschau, dann Bestätigung.
+
 ## Abarbeitung (pro Iteration)
 
 - **Genau ein Topic pro Iteration.** Wünsche desselben Topics werden zusammen umgesetzt, soweit sie kohärent sind.

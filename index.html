@@ -653,7 +653,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.151</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.152</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -967,7 +967,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.151</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.152</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1845,7 +1845,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.151';
+var APP_VERSION='0.152';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1874,6 +1874,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.152',items:[
+    {icon:'📸',text:'Screenshot beim Feedback ist robuster: weniger Mobile-Chromium-Stolpersteine (deaktiviertes ForeignObject-Rendering, Bild-Timeout 8 s, Feedback-Modal selbst wird ignoriert) und ein automatischer Zweit-Versuch mit toleranteren Optionen, falls der erste fehlschlägt. Schlägt es trotzdem fehl, zeigt der Toast jetzt den genauen Fehlertext und verweist auf „📁 Eigenes Foto…" (Issue #61)',where:'Feedback-Modal · 📸 Sichtbarer Ausschnitt'},
+  ]},
   {v:'0.151',items:[
     {icon:'🔢',text:'Versionsnummer ist jetzt im Heute-Header sichtbar (kleiner Tag rechts neben „Hej …") – Tippen öffnet „Was ist neu" (Issue #62)',where:'Heute-Tab · Header'},
     {icon:'➕',text:'Mahlzeit-Detail entrümpelt: der separate „+ Zutat"-Button im Body fällt weg. Stattdessen kennt der zentrale ＋ in der unteren Leiste jetzt die geöffnete Mahlzeit und legt direkt dort an (Issue #64)',where:'Mahlzeit-Detail'},
@@ -5704,12 +5707,27 @@ function attachFeedbackScreenshot(){
   setTimeout(function(){
     var sx=window.scrollX||window.pageXOffset||0;
     var sy=window.scrollY||window.pageYOffset||0;
-    var vw=window.innerWidth;
-    var vh=window.innerHeight;
+    // Negative/0-Werte vermeiden — html2canvas erzeugt sonst leere/fehlerhafte Canvas
+    var vw=Math.max(1,window.innerWidth|0);
+    var vh=Math.max(1,window.innerHeight|0);
+    var baseOpts={scale:0.7,logging:false,backgroundColor:'#faf6f1',
+      x:sx,y:sy,width:vw,height:vh,scrollX:0,scrollY:0,windowWidth:vw,windowHeight:vh,
+      foreignObjectRendering:false,removeContainer:true,imageTimeout:8000,
+      ignoreElements:function(el){return el&&el.id==='feedbackOv';}};
+    var _h2c;
     _loadHtml2Canvas().then(function(h2c){
-      // Nur sichtbarer Ausschnitt – das, was der Nutzer zuletzt gesehen hat
-      return h2c(document.body,{scale:0.7,logging:false,useCORS:true,backgroundColor:'#faf6f1',
-        x:sx,y:sy,width:vw,height:vh,scrollX:0,scrollY:0,windowWidth:vw,windowHeight:vh});
+      _h2c=h2c;
+      // 1. Versuch: CORS-konform (sicher gegen tainted Canvas)
+      return h2c(document.body,Object.assign({useCORS:true,allowTaint:false},baseOpts));
+    }).catch(function(err1){
+      try{console.error('[feedback] screenshot pass 1 failed',err1);}catch(e){}
+      // 2. Versuch: tainted erlauben — manche Mobile-Chromium-Builds brauchen das
+      if(!_h2c)throw err1;
+      return _h2c(document.body,Object.assign({useCORS:false,allowTaint:true},baseOpts))
+        .catch(function(err2){
+          try{console.error('[feedback] screenshot pass 2 failed',err2);}catch(e){}
+          throw err2;
+        });
     }).then(function(canvas){
       // Auf max 1200px Breite begrenzen
       var max=1200;
@@ -5722,7 +5740,9 @@ function attachFeedbackScreenshot(){
       openOv('feedbackOv');
     }).catch(function(err){
       openOv('feedbackOv');
-      showToast('Screenshot fehlgeschlagen: '+(err&&err.message||'unbekannt'));
+      var m=(err&&(err.message||err.name))||'unbekannt';
+      if(m.length>80)m=m.slice(0,80)+'…';
+      showToast('Screenshot fehlgeschlagen: '+m+' — bitte „📁 Eigenes Foto…" nutzen');
     }).then(function(){
       if(btn){btn.disabled=false;btn.textContent='📸 Sichtbarer Ausschnitt';}
     });

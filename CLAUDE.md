@@ -6,6 +6,8 @@ Bei Abschluss einer funktionalen Iteration (vor dem Merge) `UEBERGABE.md` aktual
 
 **`UEBERGABE.md` muss knapp bleiben — so viel wie nötig, so wenig wie möglich.** Beim Update: Architektur-Sektion **überschreiben statt anhängen** (sie beschreibt nur den aktuellen Stand, keine pro-Version-Chronik), erledigte Live-Tests streichen, Versions-Historie auf die letzten 5 Einträge kürzen, keine Inhalte aus `CLAUDE.md`/`AGENTS.md` duplizieren (Versioning-Workflow, Git-Workflow, Datenschutz, Cross-Platform-Regel). Details siehe Sektion „Pflege" in `UEBERGABE.md`.
 
+**Bug- und Wunsch-Workflow:** Bugs werden gemäß `issues.md` abgearbeitet, Wünsche gemäß `wuensche.md`. Beide Dateien enthalten nur Regeln — die eigentlichen Issues leben in GitHub (`label:bug` / `label:enhancement`, automatisch erzeugt vom Feedback-FAB). Pflicht vor jeder Arbeit am Issue: Themen-Label `topic:<bereich>` triagieren (passendes Label finden oder neu anlegen). Pro Iteration **genau ein Topic** — zusammengehörige Issues desselben Topics gemeinsam erledigen.
+
 Befolge ausserdem immer die vollständigen Regeln in `AGENTS.md`. Die wichtigsten Punkte zusammengefasst:
 
 ## Versioning (PFLICHT bei jeder deployablen Änderung)

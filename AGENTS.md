@@ -41,15 +41,16 @@ At the start of every work session, read the current version in both places:
 - `index.html`: `APP_VERSION`
 - `sw.js`: `VERSION`
 
-For deployable functional changes:
+For **any** change to shipped files (`index.html`, `sw.js`, `worker/`, `manifest.json`) — including invisible refactors, internal cleanups, or non-user-facing bugfixes:
 
 - Increment the beta version by `0.001`.
 - Update `APP_VERSION` in `index.html`.
 - Update visible version text in `index.html` if present.
-- Add a user-readable `CHANGELOG` entry in `index.html`.
 - Update `VERSION` in `sw.js` to the same version so the service worker refreshes caches.
 
-Documentation-only changes may skip app versioning unless they affect setup, deployment, user-visible help, or agent workflow.
+Add a user-readable `CHANGELOG` entry in `index.html` **only when the user notices the change** (new features, UI changes, visible bugfixes). For purely internal changes, skip the `CHANGELOG` entry — `checkWhatsNew()` automatically suppresses the "what's new" dialog for versions without a matching entry.
+
+Pure documentation changes (`UEBERGABE.md`, `CLAUDE.md`, `AGENTS.md`, README) may skip both the version bump and the CHANGELOG entry.
 
 ## Editing Rules
 

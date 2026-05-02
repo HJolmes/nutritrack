@@ -2,20 +2,27 @@
 
 > **Erste Aktion in jeder neuen Session: Lies `UEBERGABE.md`.** Diese Datei enthält den aktuellen Projekt-Stand, die Architektur, offene Live-Tests und die Versions-Historie. Sie wird bei jedem deployablen Merge aktualisiert. Ohne sie ist keine sinnvolle Iteration möglich.
 
-Bei Abschluss einer funktionalen Iteration (vor dem Merge) `UEBERGABE.md` aktualisieren: Versionsstand, Architektur-Änderungen, Live-Test-Status, Versions-Historie.
+Bei Abschluss einer funktionalen Iteration (vor dem Merge) `UEBERGABE.md` aktualisieren: Versionsstand, Architektur (aktueller Live-Zustand), Live-Test-Status, Versions-Historie.
+
+**`UEBERGABE.md` muss knapp bleiben — so viel wie nötig, so wenig wie möglich.** Beim Update: Architektur-Sektion **überschreiben statt anhängen** (sie beschreibt nur den aktuellen Stand, keine pro-Version-Chronik), erledigte Live-Tests streichen, Versions-Historie auf die letzten 5 Einträge kürzen, keine Inhalte aus `CLAUDE.md`/`AGENTS.md` duplizieren (Versioning-Workflow, Git-Workflow, Datenschutz, Cross-Platform-Regel). Details siehe Sektion „Pflege" in `UEBERGABE.md`.
+
+**Bug- und Wunsch-Workflow:** Bugs werden gemäß `issues.md` abgearbeitet, Wünsche gemäß `wuensche.md`. Beide Dateien enthalten nur Regeln — die eigentlichen Issues leben in GitHub (`label:bug` / `label:enhancement`, automatisch erzeugt vom Feedback-FAB). Pflicht vor jeder Arbeit am Issue: Themen-Label `topic:<bereich>` triagieren (passendes Label finden oder neu anlegen). Pro Iteration **genau ein Topic** — zusammengehörige Issues desselben Topics gemeinsam erledigen.
 
 Befolge ausserdem immer die vollständigen Regeln in `AGENTS.md`. Die wichtigsten Punkte zusammengefasst:
 
 ## Versioning (PFLICHT bei jeder deployablen Änderung)
 
-Bei jeder funktionalen Änderung (neue Features, Bugfixes, UI-Änderungen) MÜSSEN folgende vier Dinge gleichzeitig aktualisiert werden:
+**Versions-Bump (Punkte 1–3) bei JEDER Änderung an deployten Dateien** (`index.html`, `sw.js`, `worker/`, `manifest.json`) — auch bei reinen Refactorings, internen Verbesserungen oder Bugfixes, von denen der Nutzer nichts mitbekommt. Damit greifen Service-Worker-Cache-Invalidierung und Versions-Trail zuverlässig.
 
 1. `APP_VERSION` in `index.html` – um `0.001` erhöhen
 2. `VERSION` in `sw.js` – auf denselben Wert setzen
 3. Sichtbarer Versionstext `Beta vX.XXX` in `index.html` – alle Vorkommen (2×)
-4. `CHANGELOG`-Eintrag in `index.html` – kurze, nutzerlesbare Beschreibung
 
-Dokumentationsänderungen ohne Auswirkung auf die App dürfen den Versionsbump überspringen.
+**`CHANGELOG`-Eintrag (Punkt 4) NUR bei nutzerwahrnehmbaren Änderungen** (neue Features, UI-Änderungen, sichtbare Bugfixes). Refactorings, interne Cleanups, Doku-im-Code, Performance-Tweaks ohne UI-Effekt usw. erhalten **keinen** CHANGELOG-Eintrag — der „Was ist neu"-Dialog bleibt für diese Versionen still (`checkWhatsNew()` überspringt Versionen ohne `CHANGELOG`-Eintrag automatisch).
+
+4. `CHANGELOG`-Eintrag in `index.html` – kurze, nutzerlesbare Beschreibung (nur bei sichtbaren Änderungen)
+
+Reine Doku-Änderungen (`UEBERGABE.md`, `CLAUDE.md`, `AGENTS.md`, README) dürfen sowohl Versions-Bump als auch CHANGELOG-Eintrag überspringen — sie werden nicht ausgeliefert.
 
 ## Architektur
 

@@ -653,7 +653,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.153</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.154</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -967,7 +967,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.153</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.154</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1498,7 +1498,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
       <details id="feedbackShotDetails" style="margin-bottom:10px;border:1px solid var(--br);border-radius:10px;padding:8px 12px;">
         <summary style="font-size:13px;cursor:pointer;font-weight:600;">📸 Screenshot anhängen <span id="feedbackShotBadge" style="display:none;font-size:11px;font-weight:500;color:var(--g1);">· angehängt</span></summary>
         <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
-          <button type="button" class="seb" onclick="attachFeedbackScreenshot()" id="feedbackShotBtn" style="margin-top:0;flex:1 1 140px;">📸 Sichtbarer Ausschnitt</button>
+          <button type="button" class="seb" onclick="attachFeedbackScreenshot()" id="feedbackShotBtn" style="margin-top:0;flex:1 1 140px;">📸 Screenshot</button>
           <button type="button" class="seb" onclick="document.getElementById('feedbackPhotoInput').click()" id="feedbackPhotoBtn" style="margin-top:0;flex:1 1 140px;">📁 Eigenes Foto…</button>
           <input type="file" id="feedbackPhotoInput" accept="image/*" style="display:none;" onchange="attachFeedbackPhoto(event)">
           <button type="button" class="seb" onclick="_clearFeedbackScreenshot()" id="feedbackShotClear" style="display:none;margin-top:0;flex:1 1 100%;">✕ Entfernen</button>
@@ -1845,7 +1845,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.153';
+var APP_VERSION='0.154';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1874,6 +1874,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.154',items:[
+    {icon:'📸',text:'Screenshot beim Feedback erfasst wieder die ganze Seite (statt nur den sichtbaren Ausschnitt). Das war zuverlässiger – der Viewport-Crop hat bei offenen Bottom-Sheet-Modalen Teile abgeschnitten. Button heißt jetzt schlicht „📸 Screenshot" (Issue #67, revertiert #56)',where:'Feedback-Modal · 📸 Screenshot'},
+  ]},
   {v:'0.153',items:[
     {icon:'📸',text:'Screenshot beim Feedback erfasst Bottom-Sheet-Modale (z.B. „Zutat hinzufügen") jetzt komplett — vorher wurde nur der obere Header-Streifen abgelichtet, weil html2canvas die Modal-Position falsch berechnet hat. Vor dem Capture friert die Funktion die tatsächliche Viewport-Position des offenen Modals als Pixel-Werte ein und stellt sie hinterher zurück (Issue #67)',where:'Feedback-Modal · 📸 Sichtbarer Ausschnitt'},
   ]},
@@ -5708,31 +5711,10 @@ function attachFeedbackScreenshot(){
   // Modal kurz schließen, damit es nicht im Bild landet
   closeOv('feedbackOv');
   setTimeout(function(){
-    var sx=window.scrollX||window.pageXOffset||0;
-    var sy=window.scrollY||window.pageYOffset||0;
-    // Negative/0-Werte vermeiden — html2canvas erzeugt sonst leere/fehlerhafte Canvas
-    var vw=Math.max(1,window.innerWidth|0);
-    var vh=Math.max(1,window.innerHeight|0);
-    // Bottom-Sheet-Modale haben position:fixed; bottom:0 — html2canvas platziert sie sonst
-    // ans Document-Bottom (außerhalb der Capture-Region). Wir frieren ihre tatsächliche
-    // Viewport-Position als Pixel-top/height ein und stellen das hinterher zurück.
-    var modSnaps=[];
-    try{
-      document.querySelectorAll('.ov.open:not(#feedbackOv) .mod').forEach(function(mod){
-        var rect=mod.getBoundingClientRect();
-        modSnaps.push({el:mod,attr:mod.getAttribute('style')});
-        mod.style.bottom='auto';
-        mod.style.top=Math.round(sy+rect.top)+'px';
-        mod.style.height=Math.round(rect.height)+'px';
-      });
-    }catch(e){try{console.error('[feedback] mod prep failed',e);}catch(_){}}
-    var _restoreMods=function(){
-      modSnaps.forEach(function(s){
-        if(s.attr==null)s.el.removeAttribute('style');else s.el.setAttribute('style',s.attr);
-      });
-    };
+    // Ganze Page erfassen — Viewport-Crop hat zu unzuverlässige Ergebnisse mit
+    // position:fixed Bottom-Sheets gebracht (#56/#67). Lieber die volle Page;
+    // max-Width-Resize unten begrenzt die Dateigröße.
     var baseOpts={scale:0.7,logging:false,backgroundColor:'#faf6f1',
-      x:sx,y:sy,width:vw,height:vh,scrollX:sx,scrollY:sy,windowWidth:vw,windowHeight:vh,
       foreignObjectRendering:false,removeContainer:true,imageTimeout:8000,
       ignoreElements:function(el){return el&&el.id==='feedbackOv';}};
     var _h2c;
@@ -5750,7 +5732,6 @@ function attachFeedbackScreenshot(){
           throw err2;
         });
     }).then(function(canvas){
-      _restoreMods();
       // Auf max 1200px Breite begrenzen
       var max=1200;
       var w=canvas.width,h=canvas.height;
@@ -5761,13 +5742,12 @@ function attachFeedbackScreenshot(){
       _showFeedbackShotPreview(dataUrl);
       openOv('feedbackOv');
     }).catch(function(err){
-      _restoreMods();
       openOv('feedbackOv');
       var m=(err&&(err.message||err.name))||'unbekannt';
       if(m.length>80)m=m.slice(0,80)+'…';
       showToast('Screenshot fehlgeschlagen: '+m+' — bitte „📁 Eigenes Foto…" nutzen');
     }).then(function(){
-      if(btn){btn.disabled=false;btn.textContent='📸 Sichtbarer Ausschnitt';}
+      if(btn){btn.disabled=false;btn.textContent='📸 Screenshot';}
     });
   },120);
 }

@@ -653,7 +653,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.156</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.157</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -913,6 +913,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     <div class="md-list" id="mdList"></div>
     <div class="md-cta">
       <button type="button" class="tpl" id="mdTpl">📋 Vorlage</button>
+      <button type="button" class="tpl" id="mdSaveRecipe">💾 Als Rezept</button>
     </div>
   </div>
   <div class="bnav">
@@ -965,7 +966,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.156</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.157</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1843,7 +1844,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.156';
+var APP_VERSION='0.157';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1872,6 +1873,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.157',items:[
+    {icon:'📋',text:'Aus einer Mahlzeit lässt sich jetzt ein Rezept erstellen: im Mahlzeit-Detail neuer Button „💾 Als Rezept" — bündelt alle Einträge der Mahlzeit (inkl. enthaltener Rezepte, anteilig nach Portionen) zu einem neuen Rezept und öffnet direkt den Editor zum Benennen (Issue #75)',where:'Mahlzeit-Detail · 💾 Als Rezept'},
+  ]},
   {v:'0.156',items:[
     {icon:'⚙️',text:'Einstellungs-Button oben rechts entfernt — Einstellungen erreichst du weiter über den Mehr-Tab (Issue #71)',where:'Heute-Tab & Trends · Header'},
     {icon:'🆕',text:'„Was ist neu" zeigt jetzt die komplette Versionshistorie — nicht nur die Änderungen seit dem letzten Update (Issue #70)',where:'Mehr-Tab → Was ist neu · Header-Versions-Tag'},
@@ -2071,6 +2075,7 @@ var foodCache={}, customFoods=[], recipes=[], barcodeCache={};
 // Edit state
 var editMeal=null, editIdx=null;   // diary entry being edited
 var recEditId=null;                // recipe being edited in settings
+var recEditOpenedFrom=null;        // 'settings' | 'mealDetail' — controls return target
 
 var isOnline=navigator.onLine;
 
@@ -3204,6 +3209,7 @@ var _origPickerConfirmAdd=null;
 // ════════════════════════════════════════
 function openRecipeEditor(recipeId){
   recEditId=recipeId;
+  recEditOpenedFrom='settings';
   var rec=recipes.find(function(r){return r.id===recipeId;});
   if(!rec)return;
   document.getElementById('recEditTitle').textContent=(rec.emoji||'📋')+' '+rec.name;
@@ -3287,14 +3293,20 @@ function recEditSave(){
   var insEl=document.getElementById('recEditInstructions');
   if(insEl)rec.instructions=insEl.value.trim();
   saveX();
+  var from=recEditOpenedFrom;
   closeOv('recEditOv');
-  setTimeout(function(){openSettings();},200);
+  recEditOpenedFrom=null;
+  if(from!=='mealDetail'){setTimeout(function(){openSettings();},200);}
   showToast('Rezept gespeichert ✓');
 }
 
 function recEditDelete(){
   recipes=recipes.filter(function(r){return r.id!==recEditId;});
-  saveX();renderSettFoodList();closeOv('recEditOv');showToast('Rezept gelöscht');
+  saveX();
+  if(recEditOpenedFrom!=='mealDetail'){renderSettFoodList();}
+  closeOv('recEditOv');
+  recEditOpenedFrom=null;
+  showToast('Rezept gelöscht');
 }
 
 // ════════════════════════════════════════
@@ -5561,6 +5573,40 @@ function renderMealDetail(meal){
   var ctaTpl=document.getElementById('mdTpl');if(ctaTpl)ctaTpl.setAttribute('onclick',"openTemplateOv('"+meal+"')");
   var ctaCpy=document.getElementById('mdCopy');if(ctaCpy)ctaCpy.setAttribute('onclick',"copyMealFromYesterday('"+meal+"')");
   var ctaShr=document.getElementById('mdShare');if(ctaShr)ctaShr.setAttribute('onclick',"shareMeal('"+meal+"')");
+  var ctaSav=document.getElementById('mdSaveRecipe');
+  if(ctaSav){ctaSav.setAttribute('onclick',"saveMealAsRecipe('"+meal+"')");ctaSav.style.display=en.length?'':'none';}
+}
+
+function saveMealAsRecipe(meal){
+  var day=getDay(),en=day.meals[meal]||[];
+  if(!en.length){showToast('Keine Einträge in dieser Mahlzeit');return;}
+  var ings=[];
+  en.forEach(function(e){
+    if(e.isRecipe&&e.ingredients&&e.ingredients.length){
+      var portions=e.portions||1;
+      e.ingredients.forEach(function(ing){
+        if(!ing.per100)return;
+        ings.push({name:ing.name,emoji:ing.emoji||'🍽',amount:Math.round((ing.amount||0)*portions),per100:ing.per100});
+      });
+    } else if(e.per100){
+      ings.push({name:e.name,emoji:e.emoji||'🍽',amount:e.amount||100,per100:e.per100});
+    }
+  });
+  if(!ings.length){showToast('Keine geeigneten Zutaten für ein Rezept gefunden');return;}
+  var firstName=en[0].name||MEAL_NAMES[meal]||'Mahlzeit';
+  var defaultName=en.length>1?firstName+' & '+(en.length-1)+' weitere':firstName;
+  var rec={id:Date.now().toString(),name:defaultName,emoji:en[0].emoji||'📋',ingredients:JSON.parse(JSON.stringify(ings)),instructions:''};
+  recipes.unshift(rec);saveX();
+  recEditOpenedFrom='mealDetail';
+  recEditId=rec.id;
+  document.getElementById('recEditTitle').textContent=(rec.emoji||'📋')+' '+rec.name;
+  document.getElementById('recEditName').value=rec.name;
+  document.getElementById('recEditEmoji').value=rec.emoji||'';
+  var insEl=document.getElementById('recEditInstructions');if(insEl)insEl.value='';
+  recEditRenderIng(rec.ingredients);
+  recEditSearch();
+  openOv('recEditOv');
+  showToast('📋 Rezept erstellt – Name & Zutaten anpassen');
 }
 
 // ── HISTORY (Verlauf) ──

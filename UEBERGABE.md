@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.156 (2026-05-04)
+**Stand:** v0.157 (2026-05-04)
 
 ## URLs
 
@@ -19,7 +19,7 @@
 - **Header (v0.149/0.155):** `mainScreen`/`statsScreen` ohne `📤 shareData` und ohne `⚙️` — nur `?` `📥`. Backup nur via Settings/Datensicherung, „Mehr"-Hub-Eintrag, OneDrive-Banner und Backup-Reminder. `historyScreen`/`mealDetailScreen`/`moreScreen` haben minimale Header. `mainScreen` zeigt zusätzlich rechts neben „Hej <Name>" einen kleinen klickbaren Versions-Tag `#appVersionTag` (öffnet `whatsNewOv`); Text kommt beim DOMContentLoaded aus `APP_VERSION`.
 - **Kalorien-Ampel (v0.149):** `_kcalAmpel(goal,eaten,S)` vor `renderAll()` — ±10 % grün; darüber/darunter abhängig von Diät-Richtung (lose/gain/maintain), abgeleitet aus `S.goalWeight` vs `S.weight ±0.5`. `kcalTrendPill`-Klassen `balanced`/`over`.
 - **KI-Tagesbewertung (v0.150):** `requestKIRating(ev)` baut Prompt mit Per-Mahlzeit-Makros (kcal · P · K · F), Gesamt-Makros und Makro-Zielen aus `getMacroTargets()`. Leere KI-Antwort → Toast + Button-Reset; `max_tokens=300`, model `claude-haiku-4-5`.
-- **Mahlzeit-Detail (v0.151):** Nur noch `📋 Vorlage` als CTA im Body — kein separater Zutat-Button. Der zentrale `＋` der Bottom-Nav (`#cbMealDetail`) wird in `renderMealDetail` auf `openPicker('<meal>')` umgebogen, sodass er die geöffnete Mahlzeit als Kontext nutzt.
+- **Mahlzeit-Detail (v0.151/0.157):** CTAs im Body: `📋 Vorlage` (`#mdTpl` → `openTemplateOv`) + `💾 Als Rezept` (`#mdSaveRecipe` → `saveMealAsRecipe`, nur sichtbar wenn Einträge vorhanden). Der zentrale `＋` der Bottom-Nav (`#cbMealDetail`) wird in `renderMealDetail` auf `openPicker('<meal>')` umgebogen. `saveMealAsRecipe(meal)` flacht alle Einträge zu Zutaten ab (Recipe-Einträge anteilig nach `portions`, Single-Foods 1:1), persistiert das Rezept sofort in `recipes`, setzt `recEditOpenedFrom='mealDetail'` und öffnet `recEditOv` direkt zum Benennen. `recEditSave`/`recEditDelete` springen nur dann zurück in Settings, wenn `recEditOpenedFrom!=='mealDetail'`.
 - **Share/Import:** Sender → `POST /share` (Worker, KV, 1y TTL) → `?s=<id>` auf PWA-Origin. Empfänger: Android öffnet PWA via `handle_links`; iOS-Safari (non-standalone) bekommt `iosSwitchOv`-Anleitung + Auto-Clipboard, User wechselt zur PWA und tippt 📥 (`openImportPaste()`). Legacy-URL-Formen `#x=`/`#r=`/`workers.dev/s/<id>` bleiben kompatibel.
 - **Payload-Schema (base64-JSON):** `{t:'r'|'f'|'m', …}`.
 
@@ -52,18 +52,17 @@
 - v0.149 Kalorien-Ampel pro Diät-Richtung (lose/gain/maintain mit/ohne Zielgewicht)
 - v0.150 KI-Tagesbewertung mit Makros + leere-Antwort-Toast
 - v0.154 Feedback-Screenshot wieder Full-Page (Viewport-Crop entfernt, Bottom-Sheets jetzt vollständig im Bild)
-- v0.155 (revertiert) Mahlzeit-Detail als Bottom Sheet — zurückgedreht in v0.156
-- v0.156 ⚙️ aus Hauptseite/Trends entfernt; „Was ist neu" zeigt komplette History (#70, #71)
+- v0.157 Mahlzeit-Detail „💾 Als Rezept" — Rezept aus Mahlzeit erstellen, Editor öffnet zum Benennen (#75)
 
 ## Versions-Historie (letzte 5)
 
 | Version | PR | Was |
 |---|---|---|
-| v0.152 | #66 | Feedback-Screenshot robuster (foreignObject aus, Image-Timeout, Auto-Retry, genauerer Fehler-Toast) (#61) |
 | v0.153 | #68 | Feedback-Screenshot: Versuch Bottom-Sheet-Modale per Pixel-Freeze zu erfassen (klappte nicht — siehe v0.154) (#67) |
 | v0.154 | — | Feedback-Screenshot wieder Full-Page (Viewport-Crop entfernt, revertiert #56) (#67) |
 | v0.155 | #73 | Mahlzeit-Detail → Bottom Sheet; ⚙️ entfernt; Was-ist-neu-History — Bottom Sheet in v0.156 revertiert |
 | v0.156 | — | Revert Bottom Sheet (#72); ⚙️ entfernt + Was-ist-neu-History bleiben (#70, #71) |
+| v0.157 | — | Mahlzeit-Detail: „💾 Als Rezept" speichert die Mahlzeit als Rezept und öffnet den Editor (#75) |
 
 ---
 

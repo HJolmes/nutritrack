@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.154 (2026-05-02)
+**Stand:** v0.155 (2026-05-04)
 
 ## URLs
 
@@ -16,10 +16,10 @@
 - **Screens:** `mainScreen` (Heute, Hero-kcal, 2×2-Mahlzeiten-Grid), `historyScreen`, `mealDetailScreen`, `statsScreen`, `moreScreen`. Bottom-Nav mit 5 Items, `switchTab(tab)` mappt via `data-tab`, `'stats'`→`'trends'`.
 - **Datenkompatibilität:** Alte IDs (`tP/tC/tF`, `entries-<meal>` …) bleiben befüllt parallel zu neuen Grid-IDs (`kcal-<meal>`, `mealsTotal` …).
 - **Feedback (v0.154):** Globaler FAB `#feedbackFab` (`bottom:84px;right:12px`, `z-index:400`) vor `</body>`, auf `setupScreen` versteckt. Modal `feedbackOv` (eigener `z-index:350`, sitzt über anderen Modalen). Layout: Type-Buttons → Textarea → Senden → ausklappbares `<details id="feedbackShotDetails">` mit „📸 Screenshot" (lazy `html2canvas@1.4.1`, captured ganze Page — kein Viewport-Crop, weil das mit Bottom-Sheets unzuverlässig war) + „📁 Eigenes Foto…" (`#feedbackPhotoInput`, max 8 MB, JPEG 0.8/≤1200px in `attachFeedbackPhoto`). `attachFeedbackScreenshot` nutzt `scale:0.7`, `foreignObjectRendering:false`, `imageTimeout:8000`, `ignoreElements`-Filter für `feedbackOv`, Auto-Retry bei Fehler mit `allowTaint:true`; Fehlertext geht in Toast (max 80 Zeichen) + `console.error('[feedback] …')`. Section-Marker: `// SECTION: FEEDBACK`.
-- **Header (v0.149/0.151):** `mainScreen`/`statsScreen` ohne `📤 shareData` — nur `?` `📥` `⚙️`. Backup nur via Settings/Datensicherung, „Mehr"-Hub-Eintrag, OneDrive-Banner und Backup-Reminder. `historyScreen`/`mealDetailScreen`/`moreScreen` haben minimale Header. `mainScreen` zeigt zusätzlich rechts neben „Hej <Name>" einen kleinen klickbaren Versions-Tag `#appVersionTag` (öffnet `whatsNewOv`); Text kommt beim DOMContentLoaded aus `APP_VERSION`.
+- **Header (v0.149/0.155):** `mainScreen`/`statsScreen` ohne `📤 shareData` und ohne `⚙️` — nur `?` `📥`. Backup nur via Settings/Datensicherung, „Mehr"-Hub-Eintrag, OneDrive-Banner und Backup-Reminder. `historyScreen`/`mealDetailScreen`/`moreScreen` haben minimale Header. `mainScreen` zeigt zusätzlich rechts neben „Hej <Name>" einen kleinen klickbaren Versions-Tag `#appVersionTag` (öffnet `whatsNewOv`); Text kommt beim DOMContentLoaded aus `APP_VERSION`.
 - **Kalorien-Ampel (v0.149):** `_kcalAmpel(goal,eaten,S)` vor `renderAll()` — ±10 % grün; darüber/darunter abhängig von Diät-Richtung (lose/gain/maintain), abgeleitet aus `S.goalWeight` vs `S.weight ±0.5`. `kcalTrendPill`-Klassen `balanced`/`over`.
 - **KI-Tagesbewertung (v0.150):** `requestKIRating(ev)` baut Prompt mit Per-Mahlzeit-Makros (kcal · P · K · F), Gesamt-Makros und Makro-Zielen aus `getMacroTargets()`. Leere KI-Antwort → Toast + Button-Reset; `max_tokens=300`, model `claude-haiku-4-5`.
-- **Mahlzeit-Detail (v0.151):** Nur noch `📋 Vorlage` als CTA im Body — `mdAdd`-Button entfernt. Stattdessen wird der zentrale `＋` der Bottom-Nav (`#cbMealDetail`) in `renderMealDetail` auf `openPicker('<meal>')` umgebogen, sodass er die geöffnete Mahlzeit als Kontext nutzt.
+- **Mahlzeit-Detail (v0.155):** `#mealDetailScreen` ist jetzt ein `ov`-Overlay (Bottom Sheet, 88 vh), kein eigener Screen mehr. `openMealDetail()` ruft `openOv()`, `closeMealDetail()` ruft `closeOv()`. Kopf sticky (`position:sticky;top:0`). CTAs: `＋ Zutat` (`#mdAdd` → `openPicker(meal)`) + `📋 Vorlage`. `switchTab()` schließt das Overlay automatisch beim Tab-Wechsel.
 - **Share/Import:** Sender → `POST /share` (Worker, KV, 1y TTL) → `?s=<id>` auf PWA-Origin. Empfänger: Android öffnet PWA via `handle_links`; iOS-Safari (non-standalone) bekommt `iosSwitchOv`-Anleitung + Auto-Clipboard, User wechselt zur PWA und tippt 📥 (`openImportPaste()`). Legacy-URL-Formen `#x=`/`#r=`/`workers.dev/s/<id>` bleiben kompatibel.
 - **Payload-Schema (base64-JSON):** `{t:'r'|'f'|'m', …}`.
 
@@ -38,7 +38,7 @@
 
 ## Code-Suchpfade
 
-`index.html`: `// SECTION: SHARE & IMPORT`, `// SECTION: FEEDBACK`, `_isIos()`, `_isPwaStandalone()`, `_checkSharedItemOnBoot()`, `_showIosBrowserToAppFlow()`, `openImportPaste()`, `openFeedback()`. Modale: `shareItemOv`, `importPasteOv`, `importConfirmOv`, `iosSwitchOv`, `feedbackOv`.
+`index.html`: `// SECTION: SHARE & IMPORT`, `// SECTION: FEEDBACK`, `_isIos()`, `_isPwaStandalone()`, `_checkSharedItemOnBoot()`, `_showIosBrowserToAppFlow()`, `openImportPaste()`, `openFeedback()`. Modale: `shareItemOv`, `importPasteOv`, `importConfirmOv`, `iosSwitchOv`, `feedbackOv`, `mealDetailScreen`.
 
 `worker/src/index.js`: `// ─── SHARE-LINK SHORTENER`, `// ─── FEEDBACK ENDPOINT`. Funktionen: `handleShareCreate/Lookup/Redirect`, `generateShareId` (Base58, 7 Zeichen), `handleFeedback`, `ensureFeedbackBranch`, `uploadFeedbackScreenshot`.
 
@@ -51,18 +51,18 @@
 - v0.148 Feedback-Modal vor offenem anderen Modal (z-index), „📁 Eigenes Foto…"
 - v0.149 Kalorien-Ampel pro Diät-Richtung (lose/gain/maintain mit/ohne Zielgewicht)
 - v0.150 KI-Tagesbewertung mit Makros + leere-Antwort-Toast
-- v0.151 Versions-Tag im Heute-Header (klickbar → Was ist neu) + zentraler ＋ im Mahlzeit-Detail nutzt offene Mahlzeit, „+ Zutat"-Button entfernt
 - v0.154 Feedback-Screenshot wieder Full-Page (Viewport-Crop entfernt, Bottom-Sheets jetzt vollständig im Bild)
+- v0.155 Mahlzeit-Detail als Bottom Sheet, ⚙️ entfernt, „Was ist neu" zeigt komplette History
 
 ## Versions-Historie (letzte 5)
 
 | Version | PR | Was |
 |---|---|---|
-| v0.150 | — | KI-Tagesbewertung mit Per-Mahlzeit-Makros + leere-Antwort-Handling (#55) |
 | v0.151 | #65 | Versions-Tag im Heute-Header + zentraler ＋ im Mahlzeit-Detail mahlzeitenkontextsensitiv, „+ Zutat" entfernt (#62, #64) |
 | v0.152 | #66 | Feedback-Screenshot robuster (foreignObject aus, Image-Timeout, Auto-Retry, genauerer Fehler-Toast) (#61) |
 | v0.153 | #68 | Feedback-Screenshot: Versuch Bottom-Sheet-Modale per Pixel-Freeze zu erfassen (klappte nicht — siehe v0.154) (#67) |
 | v0.154 | — | Feedback-Screenshot wieder Full-Page (Viewport-Crop entfernt, revertiert #56) (#67) |
+| v0.155 | — | Mahlzeit-Detail → Bottom Sheet; ⚙️ aus Hauptseite/Trends entfernt; „Was ist neu" zeigt komplette History (#70, #71, #72) |
 
 ---
 

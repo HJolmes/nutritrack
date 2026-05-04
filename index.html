@@ -971,7 +971,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.158</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.159</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1913,7 +1913,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.158';
+var APP_VERSION='0.159';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1942,6 +1942,10 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.159',items:[
+    {icon:'☁️',text:'Läuft die OneDrive-Sitzung ab, erscheint jetzt sofort ein Dialog zum Neu-Verbinden — ein Tipp reicht, kein stiller Datenverlust mehr (#77)',where:'OneDrive · Verbindung'},
+    {icon:'💾',text:'Autospeicher-Slots werden jetzt täglich automatisch befüllt — ein Fehler hatte die Slot-Rotation deaktiviert (#78)',where:'OneDrive · Autospeicher'},
+  ]},
   {v:'0.158',items:[
     {icon:'🏃',text:'Sport-Sync: Workouts aus Apple Health (über iOS-Kurzbefehle) und Samsung Health / Health Connect (über Android HTTP-Shortcuts oder Tasker) werden automatisch importiert. Die verbrannten Kalorien werden vom Tagesziel abgezogen. Einrichten unter „Mehr" → „Sport-Sync".',where:'Mehr · Sport-Sync'},
   ]},
@@ -2390,14 +2394,6 @@ function _odAutoSync(){
   if(!isOnline)return;
   if(localStorage.getItem('nt_od_sync_date')===today())return;
   oneDriveSyncSlot().catch(function(){});
-}
-function _odAutoSync(){
-  if(!_odLoadTokens())return;
-  if(!isOnline)return;
-  if(localStorage.getItem('nt_od_sync_date')===today())return;
-  oneDriveSyncUp().then(function(){
-    localStorage.setItem('nt_od_sync_date',today());
-  }).catch(function(){});
 }
 function _checkOdBanner(){
   if(_odLoadTokens())return;
@@ -5021,6 +5017,10 @@ function _odHandleCallback(code,state){
   }).catch(function(){showToast('OneDrive Token-Fehler');});
 }
 
+function _odShowReconnect(){
+  localStorage.removeItem('nt_od_banner_date');
+  openOv('odReconnectOv');
+}
 function _odGetToken(){
   var tok=_odLoadTokens();
   if(!tok)return Promise.reject('not_connected');
@@ -5034,7 +5034,12 @@ function _odGetToken(){
       +'&refresh_token='+encodeURIComponent(tok.refresh_token)
       +'&scope='+encodeURIComponent(OD_SCOPES)
   }).then(function(r){return r.json();}).then(function(t){
-    if(t.error){_odClearTokens();throw new Error(t.error);}
+    if(t.error){
+      if(t.error==='invalid_grant'||t.error==='interaction_required'||t.error==='unauthorized_client'){
+        _odClearTokens();renderOneDriveStatus();_odShowReconnect();
+      }
+      throw new Error(t.error);
+    }
     var updated={access_token:t.access_token,refresh_token:t.refresh_token||tok.refresh_token,expires_at:Date.now()+(t.expires_in-60)*1000};
     _odSaveTokens(updated);
     return updated.access_token;
@@ -5170,7 +5175,7 @@ function renderOneDriveStatus(){
       +'<div style="font-size:12px;color:var(--mu);margin-bottom:4px;">📁 OneDrive-Ordner</div>'
       +'<div style="display:flex;gap:6px;">'
       +'<input id="odPathInput" type="text" value="'+folder+'" placeholder="/NutriTrack" style="flex:1;padding:8px 10px;border:2px solid var(--br);border-radius:8px;font-size:13px;outline:none;">'
-      +'<button type="button" class="seb" style="flex-shrink:0;" onclick="_odSaveFolder(document.getElementById(\'odPathInput\').value)">✓</button>'
+      +'<button type="button" class="seb" style="width:auto;margin-top:0;flex-shrink:0;" onclick="_odSaveFolder(document.getElementById(\'odPathInput\').value)">✓</button>'
       +'</div>'
       +'</div>'
       +'<button type="button" class="seb" onclick="oneDriveSyncUp()">☁️ Jetzt sichern</button>'
@@ -6058,5 +6063,14 @@ function hsTestSync(){
 <script src="picker.js"></script>
 <script src="js/health-sync.js"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
+<div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
+  <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">
+    <div style="font-size:36px;margin-bottom:12px;">☁️</div>
+    <div style="font-weight:700;font-size:17px;margin-bottom:8px;">OneDrive abgemeldet</div>
+    <div style="font-size:14px;color:var(--mu);margin-bottom:20px;">Deine OneDrive-Sitzung ist abgelaufen. Verbinde dich neu, um automatische Backups fortzusetzen.</div>
+    <button type="button" class="seb" style="margin-top:0;margin-bottom:8px;" onclick="closeOv('odReconnectOv');oneDriveConnect()">🔗 Neu verbinden</button>
+    <button type="button" onclick="closeOv('odReconnectOv')" style="background:none;border:none;color:var(--mu);font-size:14px;width:100%;padding:8px;cursor:pointer;font-family:inherit;">Später</button>
+  </div>
+</div>
 </body>
 </html>

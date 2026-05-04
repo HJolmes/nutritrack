@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.158 (2026-05-04)
+**Stand:** v0.159 (2026-05-04)
 
 ## URLs
 
@@ -22,6 +22,8 @@
 - **Mahlzeit-Detail (v0.151/0.157):** CTAs im Body: `📋 Vorlage` (`#mdTpl` → `openTemplateOv`) + `💾 Als Rezept` (`#mdSaveRecipe` → `saveMealAsRecipe`, nur sichtbar wenn Einträge vorhanden). Der zentrale `＋` der Bottom-Nav (`#cbMealDetail`) wird in `renderMealDetail` auf `openPicker('<meal>')` umgebogen. `saveMealAsRecipe(meal)` flacht alle Einträge zu Zutaten ab (Recipe-Einträge anteilig nach `portions`, Single-Foods 1:1), persistiert das Rezept sofort in `recipes`, setzt `recEditOpenedFrom='mealDetail'` und öffnet `recEditOv` direkt zum Benennen. `recEditSave`/`recEditDelete` springen nur dann zurück in Settings, wenn `recEditOpenedFrom!=='mealDetail'`.
 - **Share/Import:** Sender → `POST /share` (Worker, KV, 1y TTL) → `?s=<id>` auf PWA-Origin. Empfänger: Android öffnet PWA via `handle_links`; iOS-Safari (non-standalone) bekommt `iosSwitchOv`-Anleitung + Auto-Clipboard, User wechselt zur PWA und tippt 📥 (`openImportPaste()`). Legacy-URL-Formen `#x=`/`#r=`/`workers.dev/s/<id>` bleiben kompatibel.
 - **Payload-Schema (base64-JSON):** `{t:'r'|'f'|'m', …}`.
+- **OneDrive Reconnect (v0.159):** `_odGetToken()` unterscheidet Auth-Fehler (`invalid_grant`, `interaction_required`, `unauthorized_client`) von Netzwerkfehlern — nur bei echten Auth-Fehlern werden Tokens gelöscht + sofort `odReconnectOv`-Modal geöffnet (Bottom-Sheet, `.ov`-Klasse, `_odShowReconnect()`). Netzwerkfehler löschen Tokens nicht mehr.
+- **OneDrive Autospeicher-Fix (v0.159):** Doppelte `_odAutoSync()`-Definition entfernt — die zweite Definition (rief `oneDriveSyncUp()` auf) überschrieb die erste (rief `oneDriveSyncSlot()` auf). Jetzt wird täglich korrekt ein Autospeicher-Slot gefüllt.
 - **Sport-Sync (v0.158):** Erstes ausgelagertes Modul `js/health-sync.js` (klassisches `<script>` vor `</body>`, exportiert `window.NTHealth`). User generiert in „Mehr → Sport-Sync" ein 32-Zeichen-Token (Base58-ish, `localStorage.nt_health_token`), trägt es in eine iOS-Shortcut-Automation („wenn Training endet") oder Android HTTP Request Shortcut ein. Automation POSTet `{id, source, type, start, kcal, durationSec?, distanceM?, hrAvg?}` mit Header `X-User-Token` an Worker `POST /workout` (KV-Key `wo:<token>:<id>`, TTL 60d). PWA pollt `GET /workouts?since=<lastpoll>` bei `DOMContentLoaded` (mit 800ms Delay) und `visibilitychange→visible`, dedupliziert via `_healthId`-Marker, hängt Workouts in `S.days[<localDate>].exercise[]` an (Schema bleibt kompatibel zur manuellen Erfassung) — die existierende `burned`-Subtraktion in `renderAll()` zieht die Kalorien automatisch vom Tagesziel ab. `renderExercise()` zeigt für `_source`-Einträge ein kleines „Apple"/„Samsung"-Badge.
 
 ## Worker-Endpoints
@@ -59,16 +61,17 @@
 - v0.154 Feedback-Screenshot wieder Full-Page (Viewport-Crop entfernt, Bottom-Sheets jetzt vollständig im Bild)
 - v0.157 Mahlzeit-Detail „💾 Als Rezept" — Rezept aus Mahlzeit erstellen, Editor öffnet zum Benennen (#75)
 - v0.158 Sport-Sync: Worker-Endpoints `/workout` + `/workouts` deployen (`wrangler deploy` im `worker/`), in „Mehr → Sport-Sync" Token erzeugen, je eine iOS-Shortcut-Automation und ein Android-HTTP-Request-Shortcut bauen, echtes Workout durchspielen → in PWA muss „Apple"/„Samsung"-Badge erscheinen, Hero-kcal um den Wert reduziert sein
+- v0.159 OneDrive Reconnect-Modal: Token ablaufen lassen (oder manuell `_odClearTokens()` in DevTools), dann sync triggern → `odReconnectOv` muss aufgehen; „Neu verbinden" startet PKCE-Flow neu
 
 ## Versions-Historie (letzte 5)
 
 | Version | PR | Was |
 |---|---|---|
-| v0.154 | — | Feedback-Screenshot wieder Full-Page (Viewport-Crop entfernt, revertiert #56) (#67) |
 | v0.155 | #73 | Mahlzeit-Detail → Bottom Sheet; ⚙️ entfernt; Was-ist-neu-History — Bottom Sheet in v0.156 revertiert |
 | v0.156 | — | Revert Bottom Sheet (#72); ⚙️ entfernt + Was-ist-neu-History bleiben (#70, #71) |
 | v0.157 | — | Mahlzeit-Detail: „💾 Als Rezept" speichert die Mahlzeit als Rezept und öffnet den Editor (#75) |
 | v0.158 | — | Sport-Sync: Apple-Health- und Samsung-Health-Workouts werden via Worker-Endpoint + per-User-Token automatisch importiert; erstes ausgelagertes Modul `js/health-sync.js` |
+| v0.159 | — | OneDrive: Reconnect-Modal bei abgelaufener Sitzung (#77); Autospeicher-Slot-Rotation war durch doppelte Funktionsdefinition deaktiviert, gefixt (#78); Bestätigen-Button Ordnerpfad-Dialog Layout (#83) |
 
 ---
 

@@ -118,6 +118,18 @@ Concrete rules:
 
 These rules apply to every agent (Claude Code, Codex, automation scripts) interacting with this repository, on every branch, including this file's own contents.
 
+## CSS Pitfalls
+
+**`.seb` buttons in flex rows:** The `.seb` class sets `width:100%` and `margin-top:8px`. Inside a `display:flex` row container these properties break the layout — the button expands to full container width regardless of `flex-shrink:0`, and `margin-top` shifts it vertically within the row. This manifests as a misaligned or oversized button and reproduces identically on Android Chrome and iOS Safari.
+
+Rule: whenever a `.seb` button sits as a flex child in a row container, always override both properties inline:
+
+```html
+<button class="seb" style="width:auto;margin-top:0;…">…</button>
+```
+
+Add any further flex-specific overrides (`flex:1`, `flex-shrink:0`, explicit `padding`, …) as needed, but `width:auto;margin-top:0;` are always the baseline.
+
 ## GitHub Workflow
 
 Prefer PRs over direct pushes to `main`.

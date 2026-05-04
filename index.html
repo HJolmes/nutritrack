@@ -970,7 +970,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.163</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.164</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1911,7 +1911,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.163';
+var APP_VERSION='0.164';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1940,6 +1940,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.164',items:[
+    {icon:'🌐',text:'Im Chat-Tab sucht die App jetzt zuerst in OpenFoodFacts — Markenprodukte (z.B. Dean & David) werden direkt mit echten Nährwerten als Karte angezeigt. Kein Treffer → KI schätzt wie bisher. „🤖 Stattdessen KI fragen" überspringt OFT. (#79)',where:'Picker · Chat-Tab'},
+  ]},
   {v:'0.163',items:[
     {icon:'💬',text:'Nach der Foto-Analyse wechselt der Picker automatisch in den Chat — die KI kann jetzt Rückfragen stellen, und du kannst weitere Details zum Foto ergänzen. Fotos werden als Bildkontext mitgeschickt (Modell: claude-sonnet-4-6). (#80)',where:'Picker · Foto → Chat'},
   ]},

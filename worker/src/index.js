@@ -24,7 +24,7 @@ function corsHeaders(origin, env) {
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, x-app-proxy-secret",
+    "Access-Control-Allow-Headers": "Content-Type, x-app-proxy-secret, x-user-token",
     "Access-Control-Max-Age": "86400",
     Vary: "Origin",
   };
@@ -499,6 +499,134 @@ async function handleFeedback(request, origin, env) {
   });
 }
 
+// ─── HEALTH WORKOUT INGEST (Apple Health / Samsung Health via Shortcuts/Tasker) ───
+// Per-user token in `X-User-Token` (24–64 chars, base58-ish). Workouts are
+// stored in SHARE_KV under `wo:<userToken>:<workoutId>` with a TTL so the
+// namespace self-cleans. The worker never authenticates the token against a
+// user database — it just keys on whatever long random string the PWA
+// generated. Brute-forcing another user's namespace is infeasible at 24+ chars.
+const WORKOUT_TTL_SECONDS = 60 * 60 * 24 * 60; // 60 days
+const MAX_WORKOUT_BODY_BYTES = 1024 * 4; // 4 KB
+const MAX_WORKOUT_LIST_LIMIT = 200;
+const USER_TOKEN_RE = /^[A-Za-z0-9_-]{24,64}$/;
+const WORKOUT_ID_RE = /^[A-Za-z0-9_.:-]{1,80}$/;
+const WORKOUT_KV_PREFIX = "wo:";
+
+function readUserToken(request) {
+  const raw = request.headers.get("x-user-token") || "";
+  const trimmed = raw.trim();
+  if (!USER_TOKEN_RE.test(trimmed)) return null;
+  return trimmed;
+}
+
+function clampNumber(value, min, max) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  if (n < min || n > max) return null;
+  return n;
+}
+
+function sanitizeWorkout(raw) {
+  if (!raw || typeof raw !== "object") return null;
+  const id = typeof raw.id === "string" && WORKOUT_ID_RE.test(raw.id) ? raw.id : null;
+  if (!id) return null;
+  const source = typeof raw.source === "string" ? raw.source.trim().slice(0, 32) : "";
+  if (!source) return null;
+  const start = typeof raw.start === "string" ? raw.start.trim().slice(0, 40) : "";
+  if (!start || !/^\d{4}-\d{2}-\d{2}/.test(start)) return null;
+  const startMs = Date.parse(start);
+  if (!Number.isFinite(startMs)) return null;
+  const kcal = clampNumber(raw.kcal, 0, 10000);
+  if (kcal === null) return null;
+  const out = {
+    id,
+    source,
+    start,
+    startMs,
+    kcal: Math.round(kcal),
+  };
+  if (typeof raw.type === "string") out.type = raw.type.trim().slice(0, 48);
+  const dur = clampNumber(raw.durationSec, 0, 24 * 3600);
+  if (dur !== null) out.durationSec = Math.round(dur);
+  const dist = clampNumber(raw.distanceM, 0, 1000 * 1000);
+  if (dist !== null) out.distanceM = Math.round(dist);
+  const hr = clampNumber(raw.hrAvg, 0, 260);
+  if (hr !== null) out.hrAvg = Math.round(hr);
+  return out;
+}
+
+async function handleWorkoutCreate(request, origin, env) {
+  if (!env.SHARE_KV) {
+    return jsonResponse(503, "kv_not_configured", "Workout storage is not configured", origin, env);
+  }
+  const token = readUserToken(request);
+  if (!token) {
+    return jsonResponse(401, "invalid_token", "Missing or malformed X-User-Token", origin, env);
+  }
+  if (getContentLength(request) > MAX_WORKOUT_BODY_BYTES) {
+    return jsonResponse(413, "request_too_large", "Workout body is too large", origin, env);
+  }
+  let body;
+  try {
+    body = await request.json();
+  } catch (e) {
+    return jsonResponse(400, "invalid_json", "Body must be JSON", origin, env);
+  }
+  const workout = sanitizeWorkout(body);
+  if (!workout) {
+    return jsonResponse(400, "invalid_workout", "Workout payload is invalid (need id, source, start, kcal)", origin, env);
+  }
+  const key = WORKOUT_KV_PREFIX + token + ":" + workout.id;
+  await env.SHARE_KV.put(key, JSON.stringify(workout), {
+    expirationTtl: WORKOUT_TTL_SECONDS,
+    metadata: { startMs: workout.startMs },
+  });
+  return jsonResponse(200, "ok", "ok", origin, env, {
+    id: workout.id,
+    stored: true,
+  });
+}
+
+async function handleWorkoutList(request, origin, env) {
+  if (origin && !allowedOrigins(env).has(origin)) {
+    return jsonResponse(403, "origin_not_allowed", "Origin is not allowed", origin, env);
+  }
+  if (!env.SHARE_KV) {
+    return jsonResponse(503, "kv_not_configured", "Workout storage is not configured", origin, env);
+  }
+  const token = readUserToken(request);
+  if (!token) {
+    return jsonResponse(401, "invalid_token", "Missing or malformed X-User-Token", origin, env);
+  }
+  const url = new URL(request.url);
+  const sinceRaw = url.searchParams.get("since") || "0";
+  const since = Number(sinceRaw);
+  const sinceMs = Number.isFinite(since) && since > 0 ? since : 0;
+  const prefix = WORKOUT_KV_PREFIX + token + ":";
+  const list = await env.SHARE_KV.list({ prefix, limit: MAX_WORKOUT_LIST_LIMIT });
+  const workouts = [];
+  for (const k of list.keys) {
+    const meta = k.metadata && typeof k.metadata === "object" ? k.metadata : null;
+    if (sinceMs && meta && Number.isFinite(meta.startMs) && meta.startMs <= sinceMs) continue;
+    const raw = await env.SHARE_KV.get(k.name);
+    if (!raw) continue;
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (_) {
+      continue;
+    }
+    if (sinceMs && Number.isFinite(parsed.startMs) && parsed.startMs <= sinceMs) continue;
+    workouts.push(parsed);
+  }
+  workouts.sort((a, b) => (a.startMs || 0) - (b.startMs || 0));
+  return jsonResponse(200, "ok", "ok", origin, env, {
+    workouts,
+    count: workouts.length,
+    truncated: Boolean(list.list_complete === false),
+  });
+}
+
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
@@ -543,7 +671,8 @@ export default {
         visionFallbackEnabled: env.ENABLE_VISION_FALLBACK === "true",
         shareConfigured: Boolean(env.SHARE_KV),
         feedbackConfigured: Boolean(env.GITHUB_TOKEN),
-        codeVersion: "v0.145-feedback",
+        workoutsConfigured: Boolean(env.SHARE_KV),
+        codeVersion: "v0.158-workouts",
       });
     }
 
@@ -556,6 +685,12 @@ export default {
     }
     if (request.method === "POST" && url.pathname === "/feedback") {
       return handleFeedback(request, origin, env);
+    }
+    if (request.method === "POST" && url.pathname === "/workout") {
+      return handleWorkoutCreate(request, origin, env);
+    }
+    if (request.method === "GET" && url.pathname === "/workouts") {
+      return handleWorkoutList(request, origin, env);
     }
     if (request.method === "GET" && url.pathname.startsWith("/share/")) {
       return handleShareLookup(request, origin, env);

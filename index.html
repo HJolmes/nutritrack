@@ -653,7 +653,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.157</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.158</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -959,6 +959,11 @@ button,input,select,textarea{font-family:var(--fs-body);}
       <div class="lr-body"><div class="lr-name">Code / Link einlösen</div><div class="lr-sub">Geteilte Mahlzeit oder Rezept importieren</div></div>
       <div class="lr-val">›</div>
     </div>
+    <div class="list-row" onclick="openHealthSync()">
+      <div class="lr-ic">🏃</div>
+      <div class="lr-body"><div class="lr-name">Sport-Sync</div><div class="lr-sub" id="healthSyncSub">Apple Health · Samsung Health</div></div>
+      <div class="lr-val">›</div>
+    </div>
     <div class="list-row" onclick="openHelp()">
       <div class="lr-ic">❓</div>
       <div class="lr-body"><div class="lr-name">Hilfe &amp; FAQ</div><div class="lr-sub">Funktionen erklärt</div></div>
@@ -966,7 +971,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.157</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.158</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1298,6 +1303,70 @@ button,input,select,textarea{font-family:var(--fs-body);}
       </div>
       <button type="button" id="exEstimateBtn" class="seb" style="margin-bottom:8px;" onclick="estimateExercise()">🤖 KI-Schätzung</button>
       <button type="button" class="svb" onclick="saveExercise()">Speichern ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SPORT-SYNC (Apple Health / Samsung Health) ══ -->
+<div class="ov" id="healthSyncOv" onclick="bgClose(event,'healthSyncOv')">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" onclick="closeOv('healthSyncOv')">✕</button>
+      <div class="mti">🏃 Sport-Sync</div>
+      <div class="msu">Apple Health · Samsung Health · Health Connect</div>
+    </div>
+    <div class="mbd">
+      <div style="background:var(--gl);border-radius:10px;padding:10px;font-size:12px;color:var(--mu);line-height:1.5;margin-bottom:12px;">
+        Workouts werden von einer Automation auf deinem Telefon (Apple Shortcuts / Android HTTP Request Shortcuts / Tasker) an einen Cloudflare-Endpunkt geschickt. NutriTrack holt sie beim Öffnen ab und zieht die verbrannten Kalorien vom Tagesziel ab.
+      </div>
+
+      <label class="lbl">🔑 Dein persönliches Token</label>
+      <div style="display:flex;gap:6px;margin-bottom:6px;">
+        <input type="text" class="sinp" id="hsTokenIn" placeholder="(noch nicht erzeugt)" style="flex:1;font-family:monospace;font-size:12px;" autocomplete="off" spellcheck="false">
+        <button type="button" class="seb" style="flex:0 0 auto;padding:6px 12px;" onclick="hsCopyToken()">📋</button>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:14px;">
+        <button type="button" class="seb" style="flex:1;" onclick="hsGenerateToken()">🎲 Neu erzeugen</button>
+        <button type="button" class="seb" style="flex:1;" onclick="hsSaveToken()">Speichern ✓</button>
+      </div>
+
+      <details style="margin-bottom:10px;">
+        <summary style="font-size:13px;font-weight:700;color:var(--g1);cursor:pointer;padding:6px 0;">📱 Apple Health (iOS Shortcuts)</summary>
+        <div style="font-size:12px;color:var(--mu);line-height:1.6;padding:6px 2px;">
+          <ol style="margin:0 0 8px 18px;padding:0;">
+            <li>App „Kurzbefehle" öffnen → Reiter „Automation" → „+" → „Wenn ein Training beendet wird".</li>
+            <li>Aktion „Letztes Training finden" → Limit 1.</li>
+            <li>Aktion „Inhalte einer URL abrufen": URL = <code id="hsAppleUrl" style="font-size:11px;"></code>, Methode POST.</li>
+            <li>Header: <code>X-User-Token</code> = dein Token, <code>Content-Type</code> = <code>application/json</code>.</li>
+            <li>Anfragetext (JSON): siehe Vorlage unten — UUID, Workout-Name, Startzeit, Dauer, Kalorien aus dem Training einsetzen.</li>
+            <li>„Vor dem Ausführen fragen" deaktivieren — sonst wird's nicht automatisch.</li>
+          </ol>
+        </div>
+      </details>
+
+      <details style="margin-bottom:10px;">
+        <summary style="font-size:13px;font-weight:700;color:var(--g1);cursor:pointer;padding:6px 0;">🤖 Samsung Health / Android (Health Connect)</summary>
+        <div style="font-size:12px;color:var(--mu);line-height:1.6;padding:6px 2px;">
+          <ol style="margin:0 0 8px 18px;padding:0;">
+            <li>App „HTTP Request Shortcuts" (kostenlos im Play Store) installieren.</li>
+            <li>In Health Connect die Berechtigung „Trainings lesen" für Samsung Health aktivieren.</li>
+            <li>Neuen Shortcut erstellen: Methode POST, URL = <code id="hsAndroidUrl" style="font-size:11px;"></code>.</li>
+            <li>Header: <code>X-User-Token</code> = dein Token.</li>
+            <li>Body als JSON, Werte über Variablen aus Health Connect einsetzen (Trigger: Tasker-Plugin „Health Connect Tasker", löst nach beendetem Workout aus).</li>
+            <li>Alternativ: nur manuell antippen, wenn ein Workout fertig ist — das pusht es ins NutriTrack.</li>
+          </ol>
+        </div>
+      </details>
+
+      <label class="lbl" style="margin-top:6px;">📋 Body-Vorlage (JSON)</label>
+      <textarea id="hsBodyTpl" readonly style="width:100%;border:2px solid var(--br);border-radius:10px;padding:10px;font-size:11px;font-family:monospace;line-height:1.5;outline:none;min-height:130px;resize:vertical;background:var(--bg2);color:var(--mu);" onclick="this.select()"></textarea>
+
+      <div style="display:flex;gap:6px;margin-top:14px;">
+        <button type="button" class="seb" style="flex:1;" onclick="hsTestSync()">🔄 Jetzt synchronisieren</button>
+        <button type="button" class="seb" style="flex:1;color:var(--re);" onclick="hsClearToken()">Token löschen</button>
+      </div>
+      <div id="hsStatus" style="margin-top:10px;font-size:12px;color:var(--mu);text-align:center;min-height:18px;"></div>
     </div>
   </div>
 </div>
@@ -1844,7 +1913,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.157';
+var APP_VERSION='0.158';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1873,6 +1942,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.158',items:[
+    {icon:'🏃',text:'Sport-Sync: Workouts aus Apple Health (über iOS-Kurzbefehle) und Samsung Health / Health Connect (über Android HTTP-Shortcuts oder Tasker) werden automatisch importiert. Die verbrannten Kalorien werden vom Tagesziel abgezogen. Einrichten unter „Mehr" → „Sport-Sync".',where:'Mehr · Sport-Sync'},
+  ]},
   {v:'0.157',items:[
     {icon:'📋',text:'Aus einer Mahlzeit lässt sich jetzt ein Rezept erstellen: im Mahlzeit-Detail neuer Button „💾 Als Rezept" — bündelt alle Einträge der Mahlzeit (inkl. enthaltener Rezepte, anteilig nach Portionen) zu einem neuen Rezept und öffnet direkt den Editor zum Benennen (Issue #75)',where:'Mahlzeit-Detail · 💾 Als Rezept'},
   ]},
@@ -2170,6 +2242,17 @@ window.addEventListener('DOMContentLoaded',function(){
       if(caches)caches.open('nt-v6').then(function(c){c.add(window.location.href).catch(function(){});});
     }).catch(function(e){console.warn('SW registration failed:',e);});
   }
+  // Health-Sync: pull new Apple-Health/Samsung-Health workouts on boot
+  // and on tab refocus. Module is no-op when no token has been set up.
+  if(typeof _hsRefreshHubSub==='function')_hsRefreshHubSub();
+  if(window.NTHealth&&window.NTHealth.getToken()){
+    setTimeout(function(){window.NTHealth.sync();},800);
+  }
+  document.addEventListener('visibilitychange',function(){
+    if(document.visibilityState==='visible'&&window.NTHealth&&window.NTHealth.getToken()){
+      window.NTHealth.sync();
+    }
+  });
 });
 function updBadge(){var b=document.getElementById('offBadge');if(b)b.classList.toggle('hidden',isOnline);}
 
@@ -5257,11 +5340,16 @@ function renderExercise(){
   }
   el.innerHTML=exercises.map(function(e,i){
     var intLabel={low:'Leicht',medium:'Mittel',high:'Intensiv'}[e.intensity]||'';
+    var srcBadge='';
+    if(e._source){
+      var label=/apple/i.test(e._source)?'Apple':/samsung/i.test(e._source)?'Samsung':'Sync';
+      srcBadge=' · <span style="background:var(--gl);border-radius:6px;padding:1px 5px;font-size:10px;font-weight:700;color:var(--g1);">'+label+'</span>';
+    }
     return'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--br);">'
       +'<div style="font-size:20px;">'+(e.emoji||'🏃')+'</div>'
       +'<div style="flex:1;">'
         +'<div style="font-size:13px;font-weight:700;">'+e.name+'</div>'
-        +'<div style="font-size:11px;color:var(--mu);">'+(e.duration?e.duration+' Min. · ':'')+intLabel+'</div>'
+        +'<div style="font-size:11px;color:var(--mu);">'+(e.duration?e.duration+' Min. · ':'')+intLabel+srcBadge+'</div>'
       +'</div>'
       +'<div style="font-size:13px;font-weight:800;color:var(--g1);">−'+Math.round(e.kcal)+' kcal</div>'
       +'<button type="button" onclick="deleteExercise('+i+')" style="background:none;border:none;color:var(--mu);font-size:16px;padding:2px 6px;cursor:pointer;">✕</button>'
@@ -5891,8 +5979,84 @@ function submitFeedback(){
 
 function showToast(msg,duration){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},(duration||2500));}
 
+// ════════════════════════════════════════
+// SECTION: HEALTH SYNC (UI bridge to js/health-sync.js)
+// ════════════════════════════════════════
+function _hsRefreshHubSub(){
+  var el=document.getElementById('healthSyncSub');if(!el||!window.NTHealth)return;
+  el.textContent=window.NTHealth.getToken()?'Aktiv · Apple/Samsung Health':'Apple Health · Samsung Health';
+}
+function openHealthSync(){
+  if(!window.NTHealth){showToast('Sync-Modul nicht geladen');return;}
+  var tpl=window.NTHealth.shortcutInstructions();
+  var existing=window.NTHealth.getToken();
+  document.getElementById('hsTokenIn').value=existing||'';
+  document.getElementById('hsAppleUrl').textContent=tpl.url;
+  document.getElementById('hsAndroidUrl').textContent=tpl.url;
+  document.getElementById('hsBodyTpl').value=tpl.body;
+  document.getElementById('hsStatus').textContent=existing?'Token aktiv — Sync läuft beim App-Öffnen automatisch.':'Noch kein Token — neu erzeugen und in deine Shortcut-Automation eintragen.';
+  openOv('healthSyncOv');
+}
+function hsGenerateToken(){
+  if(!window.NTHealth)return;
+  var t=window.NTHealth.generateToken();
+  document.getElementById('hsTokenIn').value=t;
+  document.getElementById('hsStatus').textContent='Neues Token erzeugt — bitte „Speichern ✓" tippen, sonst geht es verloren.';
+}
+function hsSaveToken(){
+  if(!window.NTHealth)return;
+  var v=(document.getElementById('hsTokenIn').value||'').trim();
+  if(!v){
+    window.NTHealth.clearToken();
+    showToast('Token entfernt');
+    document.getElementById('hsStatus').textContent='Kein Token gesetzt — Sport-Sync ist inaktiv.';
+    _hsRefreshHubSub();
+    return;
+  }
+  try{
+    window.NTHealth.setToken(v);
+    showToast('Token gespeichert ✓');
+    document.getElementById('hsStatus').textContent='Token gespeichert — du kannst jetzt synchronisieren.';
+    _hsRefreshHubSub();
+  }catch(e){
+    showToast('Token-Format ungültig (24–64 Zeichen, A-Z a-z 0-9 _ -)');
+  }
+}
+function hsCopyToken(){
+  var v=document.getElementById('hsTokenIn').value||'';
+  if(!v){showToast('Erst Token erzeugen');return;}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(v).then(function(){showToast('Token kopiert 📋');},function(){showToast('Kopieren fehlgeschlagen');});
+  }else{
+    var el=document.getElementById('hsTokenIn');el.select();try{document.execCommand('copy');showToast('Token kopiert 📋');}catch(e){showToast('Kopieren fehlgeschlagen');}
+  }
+}
+function hsClearToken(){
+  if(!window.NTHealth)return;
+  if(!confirm('Token wirklich löschen? Bestehende Workouts bleiben erhalten — neue Workouts kommen erst wieder, wenn du ein neues Token erzeugst und in deine Shortcut-Automation einträgst.'))return;
+  window.NTHealth.clearToken();
+  document.getElementById('hsTokenIn').value='';
+  document.getElementById('hsStatus').textContent='Token gelöscht.';
+  _hsRefreshHubSub();
+  showToast('Token gelöscht');
+}
+function hsTestSync(){
+  if(!window.NTHealth){showToast('Sync-Modul nicht geladen');return;}
+  if(!window.NTHealth.getToken()){showToast('Erst Token speichern');return;}
+  document.getElementById('hsStatus').textContent='Synchronisiere…';
+  window.NTHealth.sync({force:true}).then(function(r){
+    if(!r||!r.ok){
+      document.getElementById('hsStatus').textContent='Fehler: '+((r&&r.reason)||'unbekannt');
+      return;
+    }
+    document.getElementById('hsStatus').textContent=r.added?('✓ '+r.added+' neue Workout(s) importiert'):'✓ Keine neuen Workouts';
+    if(r.added)showToast(r.added+' Workout(s) importiert');
+  });
+}
+
 </script>
 <script src="picker.js"></script>
+<script src="js/health-sync.js"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 </body>
 </html>

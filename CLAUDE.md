@@ -26,8 +26,10 @@ Reine Doku-Änderungen (`UEBERGABE.md`, `CLAUDE.md`, `AGENTS.md`, README) dürfe
 
 ## Architektur
 
-- Alles in `index.html` (HTML + CSS + JS) – keine separaten Dateien anlegen
-- `sw.js` – Service Worker, nur Versions-Bump nötig
+- HTML, CSS und State/Render-Code: in `index.html`. CSS bleibt dort.
+- Klar abgegrenzte JS-Features dürfen in eigene klassische `<script>`-Dateien unter `js/` ausgelagert werden (Beispiele: `picker.js` im Repo-Root, `js/health-sync.js`). Keine ES-Module, keine Bundler — die Datei wird per `<script src="…"></script>` vor `</body>` eingebunden, exportiert ihre API über ein `window.<Namespace>`-Objekt und greift auf existierende globale Funktionen (`saveS`, `renderAll`, `S` …) direkt zu. Bestehende Logik in `index.html` wird **nicht** prophylaktisch verschoben — nur neue Features modular, der alte Monolith bleibt liegen.
+- Bei neuen JS-Modulen sicherstellen, dass sie über den Service-Worker erreichbar sind (Cache-First-Pfad in `sw.js`) — sonst funktioniert die PWA offline nicht.
+- `sw.js` – Service Worker, Versions-Bump nötig
 - `worker/` – Cloudflare Worker AI-Proxy, separat deployen
 - Keine npm/React/Build-Tools – statische GitHub Pages App
 

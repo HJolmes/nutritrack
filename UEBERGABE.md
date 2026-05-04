@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.157 (2026-05-04)
+**Stand:** v0.158 (2026-05-04)
 
 ## URLs
 
@@ -22,6 +22,7 @@
 - **Mahlzeit-Detail (v0.151/0.157):** CTAs im Body: `📋 Vorlage` (`#mdTpl` → `openTemplateOv`) + `💾 Als Rezept` (`#mdSaveRecipe` → `saveMealAsRecipe`, nur sichtbar wenn Einträge vorhanden). Der zentrale `＋` der Bottom-Nav (`#cbMealDetail`) wird in `renderMealDetail` auf `openPicker('<meal>')` umgebogen. `saveMealAsRecipe(meal)` flacht alle Einträge zu Zutaten ab (Recipe-Einträge anteilig nach `portions`, Single-Foods 1:1), persistiert das Rezept sofort in `recipes`, setzt `recEditOpenedFrom='mealDetail'` und öffnet `recEditOv` direkt zum Benennen. `recEditSave`/`recEditDelete` springen nur dann zurück in Settings, wenn `recEditOpenedFrom!=='mealDetail'`.
 - **Share/Import:** Sender → `POST /share` (Worker, KV, 1y TTL) → `?s=<id>` auf PWA-Origin. Empfänger: Android öffnet PWA via `handle_links`; iOS-Safari (non-standalone) bekommt `iosSwitchOv`-Anleitung + Auto-Clipboard, User wechselt zur PWA und tippt 📥 (`openImportPaste()`). Legacy-URL-Formen `#x=`/`#r=`/`workers.dev/s/<id>` bleiben kompatibel.
 - **Payload-Schema (base64-JSON):** `{t:'r'|'f'|'m', …}`.
+- **Sport-Sync (v0.158):** Erstes ausgelagertes Modul `js/health-sync.js` (klassisches `<script>` vor `</body>`, exportiert `window.NTHealth`). User generiert in „Mehr → Sport-Sync" ein 32-Zeichen-Token (Base58-ish, `localStorage.nt_health_token`), trägt es in eine iOS-Shortcut-Automation („wenn Training endet") oder Android HTTP Request Shortcut ein. Automation POSTet `{id, source, type, start, kcal, durationSec?, distanceM?, hrAvg?}` mit Header `X-User-Token` an Worker `POST /workout` (KV-Key `wo:<token>:<id>`, TTL 60d). PWA pollt `GET /workouts?since=<lastpoll>` bei `DOMContentLoaded` (mit 800ms Delay) und `visibilitychange→visible`, dedupliziert via `_healthId`-Marker, hängt Workouts in `S.days[<localDate>].exercise[]` an (Schema bleibt kompatibel zur manuellen Erfassung) — die existierende `burned`-Subtraktion in `renderAll()` zieht die Kalorien automatisch vom Tagesziel ab. `renderExercise()` zeigt für `_source`-Einträge ein kleines „Apple"/„Samsung"-Badge.
 
 ## Worker-Endpoints
 
@@ -33,14 +34,18 @@
 | `POST /share` / `GET /share/<id>` | KV-Shortener |
 | `GET /s/<id>` | Legacy-Redirect |
 | `POST /feedback` | erstellt GitHub-Issue, optional Screenshot-Commit auf Branch `feedback-screenshots` |
+| `POST /workout` | Apple/Samsung Workout-Ingest (Header `X-User-Token`, KV `wo:<token>:<id>`, 60d TTL) |
+| `GET /workouts?since=<ms>` | Liste aller Workouts eines Tokens seit Timestamp (PWA-Polling) |
 
 **Bindings/Secrets:** `ANTHROPIC_API_KEY`, `NUTRITRACK_PROXY_TOKEN`, `DECODER_URL`, `SHARE_KV` (KV `873c9976307f4af087ff8205ba957b1c`), `GITHUB_TOKEN` (fine-grained PAT, `hjolmes/nutritrack`, Issues+Contents read+write), opt. `GITHUB_REPO`.
 
 ## Code-Suchpfade
 
-`index.html`: `// SECTION: SHARE & IMPORT`, `// SECTION: FEEDBACK`, `_isIos()`, `_isPwaStandalone()`, `_checkSharedItemOnBoot()`, `_showIosBrowserToAppFlow()`, `openImportPaste()`, `openFeedback()`. Modale: `shareItemOv`, `importPasteOv`, `importConfirmOv`, `iosSwitchOv`, `feedbackOv`, `mealDetailScreen`.
+`index.html`: `// SECTION: SHARE & IMPORT`, `// SECTION: FEEDBACK`, `// SECTION: HEALTH SYNC`, `_isIos()`, `_isPwaStandalone()`, `_checkSharedItemOnBoot()`, `_showIosBrowserToAppFlow()`, `openImportPaste()`, `openFeedback()`, `openHealthSync()`. Modale: `shareItemOv`, `importPasteOv`, `importConfirmOv`, `iosSwitchOv`, `feedbackOv`, `healthSyncOv`, `mealDetailScreen`.
 
-`worker/src/index.js`: `// ─── SHARE-LINK SHORTENER`, `// ─── FEEDBACK ENDPOINT`. Funktionen: `handleShareCreate/Lookup/Redirect`, `generateShareId` (Base58, 7 Zeichen), `handleFeedback`, `ensureFeedbackBranch`, `uploadFeedbackScreenshot`.
+`js/health-sync.js`: `window.NTHealth` (`getToken/setToken/clearToken/generateToken/getWorkerBase/sync/onMutation/shortcutInstructions`). Append-Pfad: `_appendWorkout` → `S.days[<localDate>].exercise[]` mit `_healthId`/`_source`-Markern, dann `saveS()` + `renderAll()`.
+
+`worker/src/index.js`: `// ─── SHARE-LINK SHORTENER`, `// ─── FEEDBACK ENDPOINT`, `// ─── HEALTH WORKOUT INGEST`. Funktionen: `handleShareCreate/Lookup/Redirect`, `generateShareId` (Base58, 7 Zeichen), `handleFeedback`, `ensureFeedbackBranch`, `uploadFeedbackScreenshot`, `handleWorkoutCreate`, `handleWorkoutList`, `sanitizeWorkout`, `readUserToken` (Token-Format `^[A-Za-z0-9_-]{24,64}$`).
 
 `manifest.json`: `handle_links: "preferred"`, `launch_handler.client_mode: "navigate-existing"`.
 
@@ -53,16 +58,17 @@
 - v0.150 KI-Tagesbewertung mit Makros + leere-Antwort-Toast
 - v0.154 Feedback-Screenshot wieder Full-Page (Viewport-Crop entfernt, Bottom-Sheets jetzt vollständig im Bild)
 - v0.157 Mahlzeit-Detail „💾 Als Rezept" — Rezept aus Mahlzeit erstellen, Editor öffnet zum Benennen (#75)
+- v0.158 Sport-Sync: Worker-Endpoints `/workout` + `/workouts` deployen (`wrangler deploy` im `worker/`), in „Mehr → Sport-Sync" Token erzeugen, je eine iOS-Shortcut-Automation und ein Android-HTTP-Request-Shortcut bauen, echtes Workout durchspielen → in PWA muss „Apple"/„Samsung"-Badge erscheinen, Hero-kcal um den Wert reduziert sein
 
 ## Versions-Historie (letzte 5)
 
 | Version | PR | Was |
 |---|---|---|
-| v0.153 | #68 | Feedback-Screenshot: Versuch Bottom-Sheet-Modale per Pixel-Freeze zu erfassen (klappte nicht — siehe v0.154) (#67) |
 | v0.154 | — | Feedback-Screenshot wieder Full-Page (Viewport-Crop entfernt, revertiert #56) (#67) |
 | v0.155 | #73 | Mahlzeit-Detail → Bottom Sheet; ⚙️ entfernt; Was-ist-neu-History — Bottom Sheet in v0.156 revertiert |
 | v0.156 | — | Revert Bottom Sheet (#72); ⚙️ entfernt + Was-ist-neu-History bleiben (#70, #71) |
 | v0.157 | — | Mahlzeit-Detail: „💾 Als Rezept" speichert die Mahlzeit als Rezept und öffnet den Editor (#75) |
+| v0.158 | — | Sport-Sync: Apple-Health- und Samsung-Health-Workouts werden via Worker-Endpoint + per-User-Token automatisch importiert; erstes ausgelagertes Modul `js/health-sync.js` |
 
 ---
 

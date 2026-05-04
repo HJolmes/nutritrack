@@ -6,7 +6,7 @@ These rules apply to Claude Code, Codex, and human contributors working in this 
 
 NutriTrack is a static mobile-first PWA for nutrition tracking. Extend existing flows instead of adding parallel buttons, duplicate modals, or separate workflows.
 
-Most app logic currently lives in `index.html`. Before changing behavior, search the existing sections and update the existing flow in place. Keep shared logic centralized for storage, import/export, OneDrive sync, food lookup, barcode scanning, AI parsing, recipe handling, and meal editing.
+Most app logic currently lives in `index.html`; some self-contained features are factored out into classic-script modules (`picker.js`, `js/health-sync.js`). Before changing behavior, search the existing sections in `index.html` *and* the relevant module file, then update the existing flow in place. Keep shared logic centralized for storage, import/export, OneDrive sync, food lookup, barcode scanning, AI parsing, recipe handling, meal editing, and health/workout sync.
 
 Do not add special-case UI for one food, diet, meal, or import source if the existing picker, recipe, settings, or meal-entry flow can support it.
 
@@ -17,7 +17,10 @@ Protect user data. Nutrition logs, photos, API keys, OneDrive tokens, backups, a
 This repository is a static GitHub Pages app, not a bundled npm/React project.
 
 - `index.html` contains HTML, CSS, app state, rendering, event handlers, storage, AI proxy calls, OpenFoodFacts calls, OneDrive sync, backup/import/export, and most UI flows.
-- `sw.js` is the PWA service worker and cache updater.
+- `picker.js` (root) is the universal ingredient picker, loaded as a classic script after `index.html`'s inline block.
+- `js/` holds additional self-contained classic-script modules. Each module exposes its API on a `window.<Namespace>` object and calls the existing globals (`S`, `saveS()`, `renderAll()`, …) directly — no ES modules, no bundler. New, well-bounded features should be added here instead of growing `index.html`. Existing in-`index.html` logic is **not** preemptively migrated; only new features land modular.
+- `js/health-sync.js` polls the Cloudflare Worker for Apple Health / Samsung Health workouts (Apple Shortcuts, Android HTTP Request Shortcuts / Tasker → Worker `/workout`) and appends them to `S.days[date].exercise[]` so the existing burned-calorie deduction in `renderAll()` Just Works. Public API: `window.NTHealth`.
+- `sw.js` is the PWA service worker and cache updater. New static assets under `js/` are served via the cache-first path (no extra config needed) — but the SW version still needs bumping so new assets actually land in the active cache.
 - `worker/src/index.js` is the Cloudflare Worker AI proxy.
 - `worker/wrangler.toml` configures the Worker deploy target without storing secrets.
 - `manifest.json` defines PWA install metadata.

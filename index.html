@@ -970,7 +970,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.164</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.166</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1911,7 +1911,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.164';
+var APP_VERSION='0.166';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1940,6 +1940,12 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.166',items:[
+    {icon:'📷',text:'Foto-Tab: Nach der Analyse kein automatischer Wechsel in den Chat mehr — Ergebnis bleibt sichtbar, Zutaten direkt eintragbar.',where:'Picker · Foto-Tab'},
+  ]},
+  {v:'0.165',items:[
+    {icon:'🌐',text:'OpenFoodFacts findet jetzt deutlich mehr Produkte: Einträge mit Energie-Angabe in kJ (statt kcal) werden korrekt erkannt und umgerechnet — betrifft Chat-Suche, Suche-Tab und Nährwert-Lookup. (#79)',where:'Picker · Chat & Suche'},
+  ]},
   {v:'0.164',items:[
     {icon:'🌐',text:'Im Chat-Tab sucht die App jetzt zuerst in OpenFoodFacts — Markenprodukte (z.B. Dean & David) werden direkt mit echten Nährwerten als Karte angezeigt. Kein Treffer → KI schätzt wie bisher. „🤖 Stattdessen KI fragen" überspringt OFT. (#79)',where:'Picker · Chat-Tab'},
   ]},
@@ -3011,10 +3017,11 @@ function lookupNutrients(rawItems,onDone){
       var url='https://world.openfoodfacts.org/cgi/search.pl?search_terms='+encodeURIComponent(name)+'&search_simple=1&action=process&json=1&page_size=5&fields=product_name,nutriments';
       fetch(proxy+encodeURIComponent(url)).then(function(r){return r.json();})
         .then(function(data){
-          var prods=(data.products||[]).filter(function(p){return(p.nutriments||{})['energy-kcal_100g']>0;});
+          var prods=(data.products||[]).filter(function(p){var nm=(p.nutriments||{});return(nm['energy-kcal_100g']||nm['energy_100g'])>0;});
           if(prods.length>0){
             var p=prods[0],nm=p.nutriments||{};
-            results.push({name:name,emoji:emoji,amount:grams||0,per100:{kcal:nm['energy-kcal_100g']||0,protein:nm['proteins_100g']||0,carbs:nm['carbohydrates_100g']||0,fat:nm['fat_100g']||0,sugar:nm['sugars_100g']||0,fiber:nm['fiber_100g']||0,salt:nm['salt_100g']||0},missingGrams:grams===null});
+            var kcal=nm['energy-kcal_100g']||Math.round((nm['energy_100g']||0)/4.184);
+            results.push({name:name,emoji:emoji,amount:grams||0,per100:{kcal:kcal,protein:nm['proteins_100g']||0,carbs:nm['carbohydrates_100g']||0,fat:nm['fat_100g']||0,sugar:nm['sugars_100g']||0,fiber:nm['fiber_100g']||0,salt:nm['salt_100g']||0},missingGrams:grams===null});
             pending--;if(!pending)onDone(results);
           } else {kiNutrientLookup(name,emoji,grams,function(res){results.push(res);pending--;if(!pending)onDone(results);});}
         }).catch(function(){kiNutrientLookup(name,emoji,grams,function(res){results.push(res);pending--;if(!pending)onDone(results);});});

@@ -970,7 +970,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.161</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.162</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1911,7 +1911,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.161';
+var APP_VERSION='0.162';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1940,6 +1940,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.162',items:[
+    {icon:'📸',text:'Feedback-Screenshot zeigt jetzt den tatsächlich aktiven Screen — offene Overlays (z.B. Rezeptsuche, Picker) erscheinen korrekt im Bild, nicht nur der Hintergrund (#87)',where:'Feedback · Screenshot'},
+  ]},
   {v:'0.161',items:[
     {icon:'🗑️',text:'KI-Tagesreport entfernt — der „🤖 Tag bewerten"-Button ist nicht mehr auf der Heute-Seite (#81)',where:'Heute-Tab'},
     {icon:'📱',text:'Hinzufügen-Button und Bottom-Nav sind jetzt auch auf iPhone (Home-Indikator) und Android (Gesten-Navigation) vollständig sichtbar (#88)',where:'Alle Screens · Navigation'},
@@ -5784,23 +5787,33 @@ function attachFeedbackScreenshot(){
   if(_feedbackBusy)return;
   var btn=document.getElementById('feedbackShotBtn');
   if(btn){btn.disabled=true;btn.textContent='📸 Aufnahme…';}
-  // Modal kurz schließen, damit es nicht im Bild landet
+  // html2canvas rendert position:fixed falsch (erscheint nicht im Canvas) — alle
+  // sichtbaren Overlays außer feedbackOv auf position:absolute mit berechneten
+  // Pixel-Koordinaten umschreiben, nach dem Capture zurücksetzen (#87).
+  var scrollY=window.pageYOffset||document.documentElement.scrollTop||0;
+  var scrollX=window.pageXOffset||document.documentElement.scrollLeft||0;
+  var frozenEls=[];
+  document.querySelectorAll('.ov.open').forEach(function(el){
+    if(el.id==='feedbackOv')return;
+    var rect=el.getBoundingClientRect();
+    frozenEls.push({el:el,pos:el.style.position,top:el.style.top,left:el.style.left,w:el.style.width,h:el.style.height});
+    el.style.position='absolute';
+    el.style.top=(rect.top+scrollY)+'px';
+    el.style.left=(rect.left+scrollX)+'px';
+    el.style.width=rect.width+'px';
+    el.style.height=rect.height+'px';
+  });
   closeOv('feedbackOv');
   setTimeout(function(){
-    // Ganze Page erfassen — Viewport-Crop hat zu unzuverlässige Ergebnisse mit
-    // position:fixed Bottom-Sheets gebracht (#56/#67). Lieber die volle Page;
-    // max-Width-Resize unten begrenzt die Dateigröße.
     var baseOpts={scale:0.7,logging:false,backgroundColor:'#faf6f1',
       foreignObjectRendering:false,removeContainer:true,imageTimeout:8000,
       ignoreElements:function(el){return el&&el.id==='feedbackOv';}};
     var _h2c;
     _loadHtml2Canvas().then(function(h2c){
       _h2c=h2c;
-      // 1. Versuch: CORS-konform (sicher gegen tainted Canvas)
       return h2c(document.body,Object.assign({useCORS:true,allowTaint:false},baseOpts));
     }).catch(function(err1){
       try{console.error('[feedback] screenshot pass 1 failed',err1);}catch(e){}
-      // 2. Versuch: tainted erlauben — manche Mobile-Chromium-Builds brauchen das
       if(!_h2c)throw err1;
       return _h2c(document.body,Object.assign({useCORS:false,allowTaint:true},baseOpts))
         .catch(function(err2){
@@ -5808,7 +5821,6 @@ function attachFeedbackScreenshot(){
           throw err2;
         });
     }).then(function(canvas){
-      // Auf max 1200px Breite begrenzen
       var max=1200;
       var w=canvas.width,h=canvas.height;
       if(w>max){var f=max/w;var c2=document.createElement('canvas');c2.width=max;c2.height=Math.round(h*f);
@@ -5823,6 +5835,13 @@ function attachFeedbackScreenshot(){
       if(m.length>80)m=m.slice(0,80)+'…';
       showToast('Screenshot fehlgeschlagen: '+m+' — bitte „📁 Eigenes Foto…" nutzen');
     }).then(function(){
+      frozenEls.forEach(function(item){
+        item.el.style.position=item.pos;
+        item.el.style.top=item.top;
+        item.el.style.left=item.left;
+        item.el.style.width=item.w;
+        item.el.style.height=item.h;
+      });
       if(btn){btn.disabled=false;btn.textContent='📸 Screenshot';}
     });
   },120);

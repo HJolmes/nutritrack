@@ -534,8 +534,8 @@ button,input,select,textarea{font-family:var(--fs-body);}
 .list-row:active{background:var(--gl);}
 .list-row .lr-ic{width:40px;height:40px;border-radius:14px;background:var(--gl);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
 .list-row .lr-body{flex:1;min-width:0;}
-.list-row .lr-name{font-family:var(--fs-display);font-weight:500;font-size:16px;letter-spacing:-0.02em;}
-.list-row .lr-sub{font-size:11px;color:var(--mu);margin-top:2px;}
+.list-row .lr-name{font-family:var(--fs-display);font-weight:500;font-size:16px;letter-spacing:-0.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.list-row .lr-sub{font-size:11px;color:var(--mu);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .list-row .lr-val{font-family:var(--fs-display);font-weight:500;font-size:18px;color:var(--g1);letter-spacing:-0.02em;}
 
 /* TRENDS cards */
@@ -939,7 +939,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
   </div>
   <div class="main">
-    <div class="list-row" onclick="openSettings();setTimeout(function(){if(typeof switchSettingsTab==='function')switchSettingsTab('library');},50);">
+    <div class="list-row" onclick="openSettings();setTimeout(function(){settSetTab('bibliothek');},50);">
       <div class="lr-ic">📚</div>
       <div class="lr-body"><div class="lr-name">Bibliothek</div><div class="lr-sub">Rezepte &amp; eigene Lebensmittel</div></div>
       <div class="lr-val">›</div>
@@ -971,7 +971,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.159</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.160</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1625,7 +1625,6 @@ button,input,select,textarea{font-family:var(--fs-body);}
       <button type="button" class="stab" id="stab-ernaehrung" onclick="settSetTab('ernaehrung')">🥗 Ernährung</button>
       <button type="button" class="stab" id="stab-erinnerungen" onclick="settSetTab('erinnerungen')">⏰ Erinn.</button>
       <button type="button" class="stab" id="stab-daten" onclick="settSetTab('daten')">🗂 Daten</button>
-      <button type="button" class="stab" id="stab-bibliothek" onclick="settSetTab('bibliothek')">📚 Bibliothek</button>
     </div>
     <div class="mbd" style="padding-top:12px;">
 
@@ -1913,7 +1912,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.159';
+var APP_VERSION='0.160';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1942,6 +1941,10 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.160',items:[
+    {icon:'📚',text:'Bibliothek (Rezepte & eigene Lebensmittel) ist jetzt direkt über den Mehr-Tab erreichbar und nicht mehr als Tab in den Einstellungen versteckt (#84, #85)',where:'Mehr → Bibliothek'},
+    {icon:'🔧',text:'Layout-Fix im Mehr-Tab: lange Texte werden nun korrekt abgeschnitten statt umzubrechen (#86)',where:'Mehr-Tab'},
+  ]},
   {v:'0.159',items:[
     {icon:'☁️',text:'Läuft die OneDrive-Sitzung ab, erscheint jetzt sofort ein Dialog zum Neu-Verbinden — ein Tipp reicht, kein stiller Datenverlust mehr (#77)',where:'OneDrive · Verbindung'},
     {icon:'💾',text:'Autospeicher-Slots werden jetzt täglich automatisch befüllt — ein Fehler hatte die Slot-Rotation deaktiviert (#78)',where:'OneDrive · Autospeicher'},

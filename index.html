@@ -502,7 +502,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
 #updateBanner button{background:var(--g1);}
 
 /* MEAL DETAIL SUBSCREEN */
-#mealDetailScreen .md-head{padding:14px 18px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;background:white;z-index:1;border-bottom:1px solid var(--br);}
+#mealDetailScreen .md-head{padding:14px 18px 0;display:flex;align-items:center;gap:10px;}
 #mealDetailScreen .md-back{background:var(--gl);border:none;width:38px;height:38px;border-radius:50%;font-size:18px;color:var(--tx);display:flex;align-items:center;justify-content:center;cursor:pointer;}
 #mealDetailScreen .md-actions{margin-left:auto;display:flex;gap:6px;}
 #mealDetailScreen .md-actions button{background:var(--gl);border:none;width:38px;height:38px;border-radius:50%;font-size:16px;color:var(--tx);cursor:pointer;}
@@ -653,7 +653,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.155</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.156</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -889,35 +889,38 @@ button,input,select,textarea{font-family:var(--fs-body);}
 </div>
 
 <!-- MEAL DETAIL -->
-<div class="ov" id="mealDetailScreen" onclick="bgClose(event,'mealDetailScreen')">
-  <div class="mod">
-    <div class="mhan"></div>
-    <div class="md-head">
-      <button type="button" class="md-back" onclick="closeMealDetail()">✕</button>
-      <div class="md-actions">
-        <button type="button" id="mdCopy" title="Von gestern">⎘</button>
-        <button type="button" id="mdShare" title="Teilen">📤</button>
-      </div>
+<div id="mealDetailScreen" class="screen">
+  <div class="md-head">
+    <button type="button" class="md-back" onclick="closeMealDetail()">‹</button>
+    <div class="md-actions">
+      <button type="button" id="mdCopy" title="Von gestern">⎘</button>
+      <button type="button" id="mdShare" title="Teilen">📤</button>
     </div>
-    <div class="md-body">
-      <div>
-        <div class="md-cap" id="mdCap">— MAHLZEIT</div>
-        <div class="md-title" id="mdTitle"><em>Mahlzeit</em></div>
-      </div>
-      <div class="md-photo" id="mdPhoto">Foto-Platzhalter</div>
-      <div class="md-stats">
-        <div class="md-stat kcal"><div class="sv" id="mdKcal">0</div><div class="sl">kcal</div></div>
-        <div class="md-stat p"><div class="sv" id="mdP">0g</div><div class="sl">Protein</div></div>
-        <div class="md-stat c"><div class="sv" id="mdC">0g</div><div class="sl">Kohlenh.</div></div>
-        <div class="md-stat f"><div class="sv" id="mdF">0g</div><div class="sl">Fett</div></div>
-      </div>
-      <div class="md-list-head"><h4>Zutaten</h4><div class="meta" id="mdCount">0 Posten</div></div>
-      <div class="md-list" id="mdList"></div>
-      <div class="md-cta">
-        <button type="button" class="add" id="mdAdd">＋ Zutat</button>
-        <button type="button" class="tpl" id="mdTpl">📋 Vorlage</button>
-      </div>
+  </div>
+  <div class="md-body">
+    <div>
+      <div class="md-cap" id="mdCap">— MAHLZEIT</div>
+      <div class="md-title" id="mdTitle"><em>Mahlzeit</em></div>
     </div>
+    <div class="md-photo" id="mdPhoto">Foto-Platzhalter</div>
+    <div class="md-stats">
+      <div class="md-stat kcal"><div class="sv" id="mdKcal">0</div><div class="sl">kcal</div></div>
+      <div class="md-stat p"><div class="sv" id="mdP">0g</div><div class="sl">Protein</div></div>
+      <div class="md-stat c"><div class="sv" id="mdC">0g</div><div class="sl">Kohlenh.</div></div>
+      <div class="md-stat f"><div class="sv" id="mdF">0g</div><div class="sl">Fett</div></div>
+    </div>
+    <div class="md-list-head"><h4>Zutaten</h4><div class="meta" id="mdCount">0 Posten</div></div>
+    <div class="md-list" id="mdList"></div>
+    <div class="md-cta">
+      <button type="button" class="tpl" id="mdTpl">📋 Vorlage</button>
+    </div>
+  </div>
+  <div class="bnav">
+    <button type="button" class="ni on" data-tab="main" onclick="switchTab('main')"><span>🏠</span>Heute</button>
+    <button type="button" class="ni" data-tab="history" onclick="switchTab('history')"><span>📅</span>Verlauf</button>
+    <div class="cw"><button type="button" class="cb" id="cbMealDetail" onclick="openPicker(null,'search')">＋</button></div>
+    <button type="button" class="ni" data-tab="trends" onclick="switchTab('trends')"><span>📈</span>Trends</button>
+    <button type="button" class="ni" data-tab="more" onclick="switchTab('more')"><span>☰</span>Mehr</button>
   </div>
 </div>
 
@@ -962,7 +965,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.155</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.156</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1840,7 +1843,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.155';
+var APP_VERSION='0.156';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1869,6 +1872,10 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.156',items:[
+    {icon:'⚙️',text:'Einstellungs-Button oben rechts entfernt — Einstellungen erreichst du weiter über den Mehr-Tab (Issue #71)',where:'Heute-Tab & Trends · Header'},
+    {icon:'🆕',text:'„Was ist neu" zeigt jetzt die komplette Versionshistorie — nicht nur die Änderungen seit dem letzten Update (Issue #70)',where:'Mehr-Tab → Was ist neu · Header-Versions-Tag'},
+  ]},
   {v:'0.155',items:[
     {icon:'📋',text:'Mahlzeit-Detail öffnet jetzt als Bottom Sheet über der aktuellen Seite — kein eigener Screen mehr, kein Kontext-Verlust (Issue #72)',where:'Heute-Tab · Mahlzeit-Karten'},
     {icon:'⚙️',text:'Einstellungs-Button oben rechts entfernt — Einstellungen erreichst du weiter über den Mehr-Tab (Issue #71)',where:'Heute-Tab & Trends · Header'},
@@ -5475,7 +5482,7 @@ function openPromptSettings(){
 // ════════════════════════════════════════
 function switchTab(tab){
   if(tab==='stats')tab='trends'; // legacy alias
-  var screens={main:'mainScreen',history:'historyScreen',trends:'statsScreen',more:'moreScreen'};
+  var screens={main:'mainScreen',history:'historyScreen',trends:'statsScreen',more:'moreScreen',mealDetail:'mealDetailScreen'};
   document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
   var target=document.getElementById(screens[tab]||'mainScreen');
   if(target)target.classList.add('active');
@@ -5485,7 +5492,6 @@ function switchTab(tab){
   if(tab==='trends')switchStatsTab('stats');
   if(tab==='history')renderHistory();
   if(tab==='more')renderMore();
-  closeOv('mealDetailScreen');
   if(tab==='main')window._mealDetailOpen=null;
   try{window.scrollTo(0,0);}catch(e){}
 }
@@ -5509,9 +5515,9 @@ var MEAL_LABELS={breakfast:{label:'Frühstück',icon:'🌅',cap:'Frühstück'},l
 function openMealDetail(meal){
   window._mealDetailOpen=meal;
   renderMealDetail(meal);
-  openOv('mealDetailScreen');
+  switchTab('mealDetail');
 }
-function closeMealDetail(){window._mealDetailOpen=null;closeOv('mealDetailScreen');}
+function closeMealDetail(){window._mealDetailOpen=null;switchTab('main');}
 function renderMealDetail(meal){
   var info=MEAL_LABELS[meal];if(!info)return;
   var day=getDay(),en=day.meals[meal]||[],s=calcM(en);
@@ -5551,7 +5557,7 @@ function renderMealDetail(meal){
         +'</div>';
     }).join('');
   }
-  var ctaAdd=document.getElementById('mdAdd');if(ctaAdd)ctaAdd.setAttribute('onclick',"openPicker('"+meal+"')");
+  var cbMd=document.getElementById('cbMealDetail');if(cbMd)cbMd.setAttribute('onclick',"openPicker('"+meal+"')");
   var ctaTpl=document.getElementById('mdTpl');if(ctaTpl)ctaTpl.setAttribute('onclick',"openTemplateOv('"+meal+"')");
   var ctaCpy=document.getElementById('mdCopy');if(ctaCpy)ctaCpy.setAttribute('onclick',"copyMealFromYesterday('"+meal+"')");
   var ctaShr=document.getElementById('mdShare');if(ctaShr)ctaShr.setAttribute('onclick',"shareMeal('"+meal+"')");

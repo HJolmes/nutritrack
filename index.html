@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#e96e3c">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -86,7 +86,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 .logo{font-family:'Nunito',sans-serif;font-weight:900;font-size:21px;color:var(--g1);letter-spacing:-.5px;}
 .logo em{color:var(--g2);font-style:normal;}
 .hbtn{background:none;border:none;font-size:20px;color:var(--mu);padding:4px;}
-.fb-fab{position:fixed;right:12px;bottom:84px;width:44px;height:44px;border-radius:50%;background:var(--g1,#e96e3c);color:#fff;border:none;font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.22);z-index:400;}
+.fb-fab{position:fixed;right:12px;bottom:calc(84px + env(safe-area-inset-bottom, 0));width:44px;height:44px;border-radius:50%;background:var(--g1,#e96e3c);color:#fff;border:none;font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.22);z-index:400;}
 .fb-fab:active{transform:scale(.94);}
 body:has(#setupScreen.active) .fb-fab{display:none;}
 .dn{display:flex;align-items:center;gap:4px;margin-top:8px;}
@@ -332,7 +332,7 @@ body:has(#setupScreen.active) .fb-fab{display:none;}
   --fs-display:'Fraunces','Nunito',Georgia,serif;
   --fs-body:'Inter','Nunito Sans',system-ui,sans-serif;
 }
-body{font-family:var(--fs-body);background:var(--bg);color:var(--tx);letter-spacing:-0.005em;padding-bottom:96px;}
+body{font-family:var(--fs-body);background:var(--bg);color:var(--tx);letter-spacing:-0.005em;padding-bottom:calc(96px + env(safe-area-inset-bottom, 0));}
 button,input,select,textarea{font-family:var(--fs-body);}
 
 /* HEADER ─ "Hej Hannes" headline */
@@ -419,7 +419,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
 /* BOTTOM NAV — pill */
 .bnav{
   background:var(--tx);border-top:none;border-radius:32px;
-  margin:0 14px 14px;left:50%;transform:translateX(-50%);
+  margin:0 14px calc(14px + env(safe-area-inset-bottom, 0));left:50%;transform:translateX(-50%);
   width:calc(100% - 28px);max-width:402px;height:64px;
   padding:0 6px;box-shadow:0 16px 40px -16px rgba(0,0,0,0.4);
   align-items:center;justify-content:space-around;
@@ -708,7 +708,6 @@ button,input,select,textarea{font-family:var(--fs-body);}
         <button type="button" onclick="toggleNutrientAmpel()" style="background:none;border:none;color:var(--mu);font-size:12px;font-weight:600;cursor:pointer;padding:0;" id="nutriAmpelToggleBtn">▶ Nährwert-Details</button>
       </div>
       <div id="nutriAmpelWrap" style="overflow:hidden;max-height:0;transition:max-height .35s ease;"></div>
-      <div id="ki-day-wrap" style="display:none;margin-top:10px;border-top:1px solid var(--br);padding-top:10px;"></div>
       <!-- legacy progress bar (hidden via CSS) -->
       <div class="pt"><div class="pf" id="pFill" style="width:0%"></div></div>
     </div>
@@ -971,7 +970,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.160</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.161</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1912,7 +1911,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.160';
+var APP_VERSION='0.161';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1941,6 +1940,10 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.161',items:[
+    {icon:'🗑️',text:'KI-Tagesreport entfernt — der „🤖 Tag bewerten"-Button ist nicht mehr auf der Heute-Seite (#81)',where:'Heute-Tab'},
+    {icon:'📱',text:'Hinzufügen-Button und Bottom-Nav sind jetzt auch auf iPhone (Home-Indikator) und Android (Gesten-Navigation) vollständig sichtbar (#88)',where:'Alle Screens · Navigation'},
+  ]},
   {v:'0.160',items:[
     {icon:'📚',text:'Bibliothek (Rezepte & eigene Lebensmittel) ist jetzt direkt über den Mehr-Tab erreichbar und nicht mehr als Tab in den Einstellungen versteckt (#84, #85)',where:'Mehr → Bibliothek'},
     {icon:'🔧',text:'Layout-Fix im Mehr-Tab: lange Texte werden nun korrekt abgeschnitten statt umzubrechen (#86)',where:'Mehr-Tab'},
@@ -2823,7 +2826,6 @@ function renderAll(){
   renderWater();
   renderFasting();
   renderExercise();
-  renderKIButtons();
 }
 function renderWater(){
   var day=getDay(),w=day.water||0,goal=S.waterGoal||8;
@@ -4262,97 +4264,6 @@ function dietMacroTargets(kcal){
 // ════════════════════════════════════════
 // SECTION: KI-EINSCHÄTZUNG MAHLZEITEN
 // ════════════════════════════════════════
-function renderKIButtons(){
-  var dayWrap=document.getElementById('ki-day-wrap');
-  if(!dayWrap)return;
-  var day=getDay();
-  var hasAny=MEALS.some(function(m){return (day.meals[m]||[]).length>0;});
-  if(!hasAny){dayWrap.style.display='none';return;}
-  var hash=JSON.stringify(MEALS.map(function(m){
-    return(day.meals[m]||[]).map(function(e){return e.name+(e.amount||'')+(e.kcal||'');}).join('|');
-  }));
-  var changed=!day.kiRating||day.kiRating.hash!==hash;
-  var rating=day.kiRating&&day.kiRating.day;
-  var open=day.kiRating&&day.kiRating.open;
-  dayWrap.style.display='block';
-  var btnLabel=rating?(changed?'🔄 Neu bewerten':'✓ Bewertet'):'🤖 Tag bewerten';
-  var btnDisabled=rating&&!changed?' disabled':'';
-  var btnStyle=rating&&!changed
-    ?'font-size:12px;background:none;border:1.5px solid rgba(255,255,255,0.3);border-radius:8px;padding:5px 12px;color:rgba(255,255,255,0.4);font-weight:700;cursor:default;margin-left:8px;'
-    :'font-size:12px;background:rgba(255,255,255,0.2);border:1.5px solid rgba(255,255,255,0.6);border-radius:8px;padding:5px 12px;color:white;font-weight:700;cursor:pointer;margin-left:8px;';
-  var ratingHtml='';
-  if(rating){
-    ratingHtml='<div id="kiTextWrap" style="overflow:hidden;transition:max-height .3s ease;max-height:'+(open?'300px':'0')+';">'
-      +'<div style="font-size:12px;color:rgba(255,255,255,0.85);line-height:1.6;padding-top:8px;">'+rating+'</div>'
-      +'</div>';
-  }
-  dayWrap.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;">'
-    +(rating?'<button type="button" onclick="toggleKIText()" style="font-size:12px;background:none;border:none;color:rgba(255,255,255,0.7);font-weight:700;cursor:pointer;padding:0;">'+(open?'▲ Einschätzung':'▼ Einschätzung')+'</button>':'<span></span>')
-    +'<button type="button" onclick="requestKIRating(event)" '+btnDisabled+' style="'+btnStyle+'">'+btnLabel+'</button>'
-    +'</div>'
-    +ratingHtml;
-}
-
-function toggleKIText(){
-  var day=getDay();
-  if(!day.kiRating)return;
-  day.kiRating.open=!day.kiRating.open;
-  saveS();renderKIButtons();
-}
-
-function requestKIRating(ev){
-  if(!canUseAi()){showAiUnavailable();return;}
-  var day=getDay();
-  var btn=(ev&&ev.target)||(typeof event!=='undefined'&&event&&event.target)||null;
-  if(btn){btn.disabled=true;btn.textContent='⏳ Analysiere...';}
-  var items=[];
-  MEALS.forEach(function(m){
-    (day.meals[m]||[]).forEach(function(e){items.push(e);});
-  });
-  if(!items.length){if(btn){btn.disabled=false;btn.textContent='🤖 Tag bewerten';}return;}
-  var hash=JSON.stringify(MEALS.map(function(m){
-    return(day.meals[m]||[]).map(function(e){return e.name+(e.amount||'')+(e.kcal||'');}).join('|');
-  }));
-  var allPrefs=(S.dietPrefs||[]).concat(S.dietFree?[S.dietFree]:[]);
-  var prefStr=allPrefs.length?'\nErnährungspräferenzen: '+allPrefs.join(', '):'';
-  var goal=S.goal||2000;
-  var t=calcM(items);
-  var mtg=getMacroTargets()||{};
-  // Pro Mahlzeit Name + Makros anhängen, damit die KI eine vollständige Grundlage hat.
-  var byMeal=MEALS.map(function(m){
-    var en=day.meals[m]||[];
-    if(!en.length)return '';
-    var ms=calcM(en);
-    return MEAL_NAMES[m]+' ('+Math.round(ms.kcal)+' kcal · '+Math.round(ms.protein)+'g P · '+Math.round(ms.carbs)+'g K · '+Math.round(ms.fat)+'g F): '
-      +en.map(function(e){return e.name;}).join(', ');
-  }).filter(Boolean).join('\n');
-  var goalsStr='Tagesziel: '+goal+' kcal';
-  if(mtg.protein||mtg.carbs||mtg.fat){
-    goalsStr+=' · Protein '+Math.round(mtg.protein||0)+'g · Kohlenh. '+Math.round(mtg.carbs||0)+'g · Fett '+Math.round(mtg.fat||0)+'g';
-  }
-  var prompt='Bewerte den Ernährungstag auf Deutsch in maximal 2 kurzen Sätzen. Nur Fließtext, keine Aufzählung.\n'
-    +'Mahlzeiten:\n'+byMeal+'\n'
-    +'Gesamt: '+Math.round(t.kcal)+' kcal · Protein '+Math.round(t.protein)+'g · Kohlenh. '+Math.round(t.carbs)+'g · Fett '+Math.round(t.fat)+'g\n'
-    +goalsStr+prefStr+'\n'
-    +'1 Satz positiv, 1 Satz Verbesserungspotenzial mit Bezug auf Kalorien- und Makroziele. Maximal 60 Wörter gesamt.';
-  callClaude('claude-haiku-4-5',[{type:'text',text:prompt}],300,
-    function(text){
-      var clean=(text||'').trim();
-      if(!clean){
-        if(btn){btn.disabled=false;btn.textContent='🤖 Tag bewerten';}
-        showToast('KI-Antwort leer – bitte erneut versuchen');
-        return;
-      }
-      if(!day.kiRating)day.kiRating={};
-      day.kiRating.day=clean;
-      day.kiRating.hash=hash;
-      day.kiRating.open=true;
-      saveS();renderKIButtons();
-    },
-    function(err){if(btn){btn.disabled=false;btn.textContent='🤖 Tag bewerten';}showToast('Fehler: '+err);}
-  );
-}
-
 // ════════════════════════════════════════
 // SECTION: ERNÄHRUNGS-AMPEL
 // ════════════════════════════════════════

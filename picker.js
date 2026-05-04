@@ -111,7 +111,7 @@ function pickerFetchOnline(q){
       (data.products||[]).forEach(function(p){
         var nm=p.nutriments||{},name=(p.product_name_de||p.product_name||'').trim();
         if(!name||name.length<3)return;
-        var kcal=nm['energy-kcal_100g']||0;if(kcal<=0||kcal>950)return;
+        var kcal=nm['energy-kcal_100g']||Math.round((nm['energy_100g']||0)/4.184);if(kcal<=0||kcal>950)return;
         var k=name.toLowerCase();if(seen[k])return;seen[k]=true;
         var pr=nm['proteins_100g']||0,ca=nm['carbohydrates_100g']||0,fa=nm['fat_100g']||0,su=nm['sugars_100g']||0,fi=nm['fiber_100g']||0,sa=nm['salt_100g']||0;
         var ns=(k.startsWith(ql)||k.startsWith(eng||'__'))?2:0;
@@ -969,13 +969,12 @@ function pickerAnalyze(){
         pickerIngredients=resolved;
         pickerShowPhotoResult(parsed.rezept);
         pickerSetPhotoStatus('',false);
-        // Foto-Kontext in Chat übertragen — User kann jetzt Rückfragen stellen (#80)
+        // Foto-Kontext für spätere Chat-Rückfragen bereitstellen (#80)
         var names=resolved.slice(0,4).map(function(z){return z.name;}).join(', ')+(resolved.length>4?' u.a.':'');
         var msgs=document.getElementById('pickerChatMsgs');
-        msgs.innerHTML='<div class="cm a">📷 '+resolved.length+' Zutaten erkannt: '+names+'. Stelle Rückfragen oder ergänze Details — Zutaten-Liste im 📷 Foto-Tab bearbeiten.</div>';
+        msgs.innerHTML='<div class="cm a">📷 '+resolved.length+' Zutaten erkannt: '+names+'. Rückfragen? Wechsle in den 💬 Chat-Tab.</div>';
         var inp=document.getElementById('pickerChatInp');
         if(inp)inp.placeholder='📷 Rückfragen zum Foto stellen…';
-        pickerSetTab('chat');
       });
     },
     function(err){btn.disabled=false;btn.textContent='📷 Erneut analysieren';pickerSetPhotoStatus('Fehler: '+err,true);}
@@ -1089,7 +1088,7 @@ function pickerChatOftSearch(q,onDone){
         var nm=p.nutriments||{};
         var name=(p.product_name_de||p.product_name||'').trim();
         if(!name||name.length<3)return;
-        var kcal=nm['energy-kcal_100g']||0;
+        var kcal=nm['energy-kcal_100g']||Math.round((nm['energy_100g']||0)/4.184);
         if(kcal<=0||kcal>950)return;
         results.push({name:name,emoji:emo(name),per100:{kcal:kcal,protein:nm['proteins_100g']||0,carbs:nm['carbohydrates_100g']||0,fat:nm['fat_100g']||0,sugar:nm['sugars_100g']||0,fiber:nm['fiber_100g']||0,salt:nm['salt_100g']||0}});
       });

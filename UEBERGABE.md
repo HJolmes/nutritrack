@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.165 (2026-05-04)
+**Stand:** v0.166 (2026-05-04)
 
 ## URLs
 
@@ -25,7 +25,7 @@
 - **Payload-Schema (base64-JSON):** `{t:'r'|'f'|'m', …}`.
 - **OneDrive Reconnect (v0.159):** `_odGetToken()` unterscheidet Auth-Fehler (`invalid_grant`, `interaction_required`, `unauthorized_client`) von Netzwerkfehlern — nur bei echten Auth-Fehlern werden Tokens gelöscht + sofort `odReconnectOv`-Modal geöffnet (Bottom-Sheet, `.ov`-Klasse, `_odShowReconnect()`). Netzwerkfehler löschen Tokens nicht mehr.
 - **OneDrive Autospeicher-Fix (v0.159):** Doppelte `_odAutoSync()`-Definition entfernt — die zweite Definition (rief `oneDriveSyncUp()` auf) überschrieb die erste (rief `oneDriveSyncSlot()` auf). Jetzt wird täglich korrekt ein Autospeicher-Slot gefüllt.
-- **Picker Chat (v0.163/v0.164/v0.165):** Nach Foto-Analyse **bleibt der Picker im Foto-Tab** (kein Auto-Wechsel in Chat mehr); Rückfragen-Hinweis wird im Chat-Tab vorbelegt. Chat-Nachrichten mit aktivem Foto (`window._pickerPhotoB64`) gehen als Image-Content an `claude-sonnet-4-6`; ohne Foto bleibt es bei `claude-haiku-4-5`. `pickerResetPhoto()` setzt Chat-Placeholder zurück. Chat-Tab sucht zuerst in OpenFoodFacts (`pickerChatOftSearch` → corsproxy → `cgi/search.pl`); Treffer erscheinen als wählbare Karten (`pickerChatAddOft(i)`); kein Treffer → KI-Fallback via `pickerChatKiFallback(msg)`; „🤖 Stattdessen KI fragen"-Link überspringt OFT. OFT-Filter akzeptiert jetzt auch Einträge mit Energie nur in kJ (`energy_100g` / 4.184 als Fallback) — betrifft `pickerChatOftSearch`, `pickerFetchOnline` und `lookupNutrients`.
+- **Picker Chat (v0.163/v0.164/v0.165/v0.166):** Foto-Tab und Chat-Tab sind vollständig entkoppelt — kein Auto-Wechsel, keine Chat-Vorbelegung nach Foto-Analyse. Chat-Nachrichten mit aktivem Foto (`window._pickerPhotoB64`) gehen als Image-Content an `claude-sonnet-4-6`; ohne Foto bleibt es bei `claude-haiku-4-5`. Chat-Tab sucht zuerst in OpenFoodFacts (`pickerChatOftSearch` → corsproxy → `cgi/search.pl`); Treffer erscheinen als wählbare Karten (`pickerChatAddOft(i)`); kein Treffer → KI-Fallback via `pickerChatKiFallback(msg)`; „🤖 Stattdessen KI fragen"-Link überspringt OFT. OFT-Filter akzeptiert Einträge mit Energie nur in kJ (`energy_100g` / 4.184 als Fallback) — betrifft `pickerChatOftSearch`, `pickerFetchOnline` und `lookupNutrients`.
 - **Sport-Sync (v0.158):** Erstes ausgelagertes Modul `js/health-sync.js` (klassisches `<script>` vor `</body>`, exportiert `window.NTHealth`). User generiert in „Mehr → Sport-Sync" ein 32-Zeichen-Token (Base58-ish, `localStorage.nt_health_token`), trägt es in eine iOS-Shortcut-Automation („wenn Training endet") oder Android HTTP Request Shortcut ein. Automation POSTet `{id, source, type, start, kcal, durationSec?, distanceM?, hrAvg?}` mit Header `X-User-Token` an Worker `POST /workout` (KV-Key `wo:<token>:<id>`, TTL 60d). PWA pollt `GET /workouts?since=<lastpoll>` bei `DOMContentLoaded` (mit 800ms Delay) und `visibilitychange→visible`, dedupliziert via `_healthId`-Marker, hängt Workouts in `S.days[<localDate>].exercise[]` an (Schema bleibt kompatibel zur manuellen Erfassung) — die existierende `burned`-Subtraktion in `renderAll()` zieht die Kalorien automatisch vom Tagesziel ab. `renderExercise()` zeigt für `_source`-Einträge ein kleines „Apple"/„Samsung"-Badge.
 
 ## Worker-Endpoints
@@ -64,7 +64,7 @@
 - v0.161 Safe-Area: iPhone + Android — bnav + ＋-Button vollständig über System-UI sichtbar; KI-Tagesreport-Button ist verschwunden
 - v0.162 Feedback-Screenshot: Picker/Overlay offen → Feedback → Screenshot → Bild zeigt aktiven Overlay, nicht mainScreen
 - v0.163 Chat + Foto: Foto analysieren → Chat öffnet sich → Rückfrage stellen mit Foto-Kontext möglich
-- v0.165 OFT kJ-Fix: Produkt mit nur kJ-Angabe (z.B. Dean & David) suchen → OFT-Karte erscheint; Foto → Zutaten → Picker bleibt im Foto-Tab
+- v0.166 Foto-Tab: Analyse → Ergebnis bleibt in Foto-Tab, kein Chat-Wechsel, kein Chat-Vortext
 
 ## Versions-Historie (letzte 5)
 
@@ -74,7 +74,8 @@
 | v0.162 | #92 | Feedback-Screenshot zeigt aktiven Screen korrekt — fixed→absolute Freeze (#87) |
 | v0.163 | #93 | Foto-Analyse öffnet Chat-Tab; Foto als Kontext in Chat-Nachrichten (#80) |
 | v0.164 | #94 | OFT-Textsuche im Chat-Tab; Markenprodukte als Karten; KI-Fallback (#79) |
-| v0.165 | — | OFT kJ-Fallback (mehr Produkte gefunden); Foto-Tab bleibt aktiv nach Analyse (#79/#80) |
+| v0.165 | — | OFT kJ-Fallback (mehr Produkte gefunden) (#79) |
+| v0.166 | — | Foto-Tab vollständig entkoppelt vom Chat (#80) |
 
 ---
 

@@ -239,8 +239,6 @@ function pickerResetPhoto(){
   document.getElementById('pickerRecipeName').value='';
   document.getElementById('pickerChatRecipeName').value='';
   pickerIngredients=[];
-  var inp=document.getElementById('pickerChatInp');
-  if(inp)inp.placeholder='Was hast du gegessen?';
 }
 
 function pickerTryBarcode(canvas){
@@ -952,12 +950,6 @@ function pickerAnalyze(){
       btn.disabled=false;btn.textContent='📷 Erneut analysieren';
       if(!parsed.zutaten.length){
         pickerSetPhotoStatus(text.length?'KI: '+text.slice(0,120):'Kein Lebensmittel erkannt.',true);
-        // Ins Chat wechseln damit User das Foto erklären kann (#80)
-        var msgs=document.getElementById('pickerChatMsgs');
-        msgs.innerHTML='<div class="cm a">📷 Ich konnte keine klaren Zutaten erkennen. Beschreibe bitte was auf dem Bild zu sehen ist, dann helfe ich weiter.</div>';
-        var inp=document.getElementById('pickerChatInp');
-        if(inp)inp.placeholder='📷 Was ist auf dem Foto?';
-        pickerSetTab('chat');
         return;
       }
       if(parsed.rezept){
@@ -969,12 +961,6 @@ function pickerAnalyze(){
         pickerIngredients=resolved;
         pickerShowPhotoResult(parsed.rezept);
         pickerSetPhotoStatus('',false);
-        // Foto-Kontext für spätere Chat-Rückfragen bereitstellen (#80)
-        var names=resolved.slice(0,4).map(function(z){return z.name;}).join(', ')+(resolved.length>4?' u.a.':'');
-        var msgs=document.getElementById('pickerChatMsgs');
-        msgs.innerHTML='<div class="cm a">📷 '+resolved.length+' Zutaten erkannt: '+names+'. Rückfragen? Wechsle in den 💬 Chat-Tab.</div>';
-        var inp=document.getElementById('pickerChatInp');
-        if(inp)inp.placeholder='📷 Rückfragen zum Foto stellen…';
       });
     },
     function(err){btn.disabled=false;btn.textContent='📷 Erneut analysieren';pickerSetPhotoStatus('Fehler: '+err,true);}

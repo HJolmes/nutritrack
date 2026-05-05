@@ -419,7 +419,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
 /* BOTTOM NAV — pill */
 .bnav{
   background:var(--tx);border-top:none;border-radius:32px;
-  margin:0 14px calc(14px + env(safe-area-inset-bottom, 0));left:50%;transform:translateX(-50%);
+  margin:0 0 calc(14px + env(safe-area-inset-bottom, 0));left:50%;transform:translateX(-50%);
   width:calc(100% - 28px);max-width:402px;height:64px;
   padding:0 6px;box-shadow:0 16px 40px -16px rgba(0,0,0,0.4);
   align-items:center;justify-content:space-around;
@@ -970,7 +970,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.166</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.167</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1911,7 +1911,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.166';
+var APP_VERSION='0.167';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1940,6 +1940,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.167',items:[
+    {icon:'🔧',text:'Bottom-Nav auf Android zentriert (war 14 px nach rechts versetzt). Auf iPhone/iPad scrollt die App nach dem Schließen der Tastatur nicht mehr nach oben weg. (#97 #98 #99)',where:'Layout · iOS & Android'},
+  ]},
   {v:'0.166',items:[
     {icon:'📷',text:'Foto-Tab: Nach der Analyse kein automatischer Wechsel in den Chat mehr — Ergebnis bleibt sichtbar, Zutaten direkt eintragbar.',where:'Picker · Foto-Tab'},
   ]},
@@ -2278,6 +2281,16 @@ window.addEventListener('DOMContentLoaded',function(){
       window.NTHealth.sync();
     }
   });
+  // iOS Safari PWA: Tastatur-Dismiss scrollt den Viewport nicht automatisch zurück.
+  // Nach focusout auf Inputs kurz warten und dann auf 0 resetten.
+  if(_isIos()&&_isPwaStandalone()){
+    document.addEventListener('focusout',function(e){
+      var t=e.target;
+      if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT')){
+        setTimeout(function(){window.scrollTo(0,0);},100);
+      }
+    },true);
+  }
 });
 function updBadge(){var b=document.getElementById('offBadge');if(b)b.classList.toggle('hidden',isOnline);}
 

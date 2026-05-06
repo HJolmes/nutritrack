@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.167 (2026-05-05)
+**Stand:** v0.170 (2026-05-06)
 
 ## URLs
 
@@ -27,6 +27,9 @@
 - **OneDrive Autospeicher-Fix (v0.159):** Doppelte `_odAutoSync()`-Definition entfernt — die zweite Definition (rief `oneDriveSyncUp()` auf) überschrieb die erste (rief `oneDriveSyncSlot()` auf). Jetzt wird täglich korrekt ein Autospeicher-Slot gefüllt.
 - **Picker Chat (v0.163/v0.164/v0.165/v0.166):** Foto-Tab und Chat-Tab sind vollständig entkoppelt — kein Auto-Wechsel, keine Chat-Vorbelegung nach Foto-Analyse. Chat-Nachrichten mit aktivem Foto (`window._pickerPhotoB64`) gehen als Image-Content an `claude-sonnet-4-6`; ohne Foto bleibt es bei `claude-haiku-4-5`. Chat-Tab sucht zuerst in OpenFoodFacts (`pickerChatOftSearch` → corsproxy → `cgi/search.pl`); Treffer erscheinen als wählbare Karten (`pickerChatAddOft(i)`); kein Treffer → KI-Fallback via `pickerChatKiFallback(msg)`; „🤖 Stattdessen KI fragen"-Link überspringt OFT. OFT-Filter akzeptiert Einträge mit Energie nur in kJ (`energy_100g` / 4.184 als Fallback) — betrifft `pickerChatOftSearch`, `pickerFetchOnline` und `lookupNutrients`.
 - **Layout-Fixes (v0.167):** bnav `margin:0 14px` → `margin:0 0` (horizontale Margins verursachten 14 px Rechtsversatz bei `position:fixed`+`left:50%`+`translateX(-50%)`). iOS PWA: `focusout`-Handler setzt `window.scrollTo(0,0)` nach Tastatur-Dismiss (nur `_isIos()&&_isPwaStandalone()`).
+- **iOS Safe-Area-Top (v0.168):** `.hdr` und `#mealDetailScreen .md-head` erhalten `padding-top: calc(…px + env(safe-area-inset-top, 0px))` — Screen-Header-Buttons auf allen Screens unterhalb der iOS Status-Bar / Dynamic Island (#104).
+- **Trends (v0.169):** `renderWeekBars()` schließt heutigen Tag aus avg/cnt aus. `requestWeekReport()` erkennt Zielrichtung (lose/gain/maintain) aus `S.goalWeight vs S.weight`, übergibt sie an den Prompt, Format auf Stichpunkte + Empfehlung für nächste Woche, Token-Limit 200→400 (#102 #103).
+- **Picker OFT (v0.170):** kcal-Fallback `P*4+K*4+F*9` in `pickerChatOftSearch`, `pickerFetchOnline` und `lookupNutrients` wenn beide Energy-Felder fehlen. Chat-Tab `page_size` 6→10 (#96 #101).
 - **Sport-Sync (v0.158):** Erstes ausgelagertes Modul `js/health-sync.js` (klassisches `<script>` vor `</body>`, exportiert `window.NTHealth`). User generiert in „Mehr → Sport-Sync" ein 32-Zeichen-Token (Base58-ish, `localStorage.nt_health_token`), trägt es in eine iOS-Shortcut-Automation („wenn Training endet") oder Android HTTP Request Shortcut ein. Automation POSTet `{id, source, type, start, kcal, durationSec?, distanceM?, hrAvg?}` mit Header `X-User-Token` an Worker `POST /workout` (KV-Key `wo:<token>:<id>`, TTL 60d). PWA pollt `GET /workouts?since=<lastpoll>` bei `DOMContentLoaded` (mit 800ms Delay) und `visibilitychange→visible`, dedupliziert via `_healthId`-Marker, hängt Workouts in `S.days[<localDate>].exercise[]` an (Schema bleibt kompatibel zur manuellen Erfassung) — die existierende `burned`-Subtraktion in `renderAll()` zieht die Kalorien automatisch vom Tagesziel ab. `renderExercise()` zeigt für `_source`-Einträge ein kleines „Apple"/„Samsung"-Badge.
 
 ## Worker-Endpoints
@@ -62,21 +65,21 @@
 - v0.158 Sport-Sync: Worker-Endpoints `/workout` + `/workouts` deployen (`wrangler deploy` im `worker/`), in „Mehr → Sport-Sync" Token erzeugen, je eine iOS-Shortcut-Automation und ein Android-HTTP-Request-Shortcut bauen, echtes Workout durchspielen → in PWA muss „Apple"/„Samsung"-Badge erscheinen, Hero-kcal um den Wert reduziert sein
 - v0.159 OneDrive Reconnect-Modal: Token ablaufen lassen (oder manuell `_odClearTokens()` in DevTools), dann sync triggern → `odReconnectOv` muss aufgehen; „Neu verbinden" startet PKCE-Flow neu
 - v0.160 Mehr-Screen: Bibliothek-Row tippen → öffnet direkt Bibliothek (nicht allg. Einstellungen); Einstellungen hat keinen 📚-Tab mehr; Layout auf Android korrekt
-- v0.161 Safe-Area: iPhone + Android — bnav + ＋-Button vollständig über System-UI sichtbar; KI-Tagesreport-Button ist verschwunden
 - v0.162 Feedback-Screenshot: Picker/Overlay offen → Feedback → Screenshot → Bild zeigt aktiven Overlay, nicht mainScreen
 - v0.163 Chat + Foto: Foto analysieren → Chat öffnet sich → Rückfrage stellen mit Foto-Kontext möglich
-- v0.166 Foto-Tab: Analyse → Ergebnis bleibt in Foto-Tab, kein Chat-Wechsel, kein Chat-Vortext
-- v0.167 bnav zentriert auf Android; iPhone PWA: Seite scrollt nach Tastatur-Dismiss nicht mehr nach oben
+- v0.168 iOS: mealDetailScreen und alle anderen Screens — Buttons im Header tippbar trotz Dynamic Island / Status-Bar (#104)
+- v0.169 Trends: Kcal-Durchschnitt ohne heutigen Tag; KI-Bericht mit Stichpunkten + Zielrichtung + Empfehlung (#102 #103)
+- v0.170 Picker Chat: Curry / Dean & David → OFT findet mehr Produkte dank kcal-Macro-Fallback (#96 #101)
 
 ## Versions-Historie (letzte 5)
 
 | Version | PR | Was |
 |---|---|---|
-| v0.163 | #93 | Foto-Analyse öffnet Chat-Tab; Foto als Kontext in Chat-Nachrichten (#80) |
-| v0.164 | #94 | OFT-Textsuche im Chat-Tab; Markenprodukte als Karten; KI-Fallback (#79) |
-| v0.165 | — | OFT kJ-Fallback (mehr Produkte gefunden) (#79) |
 | v0.166 | — | Foto-Tab vollständig entkoppelt vom Chat (#80) |
 | v0.167 | #100 | bnav-Zentrierung (Android) + iOS Keyboard-Scroll-Reset (#97 #98 #99) |
+| v0.168 | — | iOS safe-area-inset-top für Screen-Header (#104) |
+| v0.169 | — | Trends: Heute aus Avg, KI-Bericht zielgerecht (#102 #103) |
+| v0.170 | — | Picker OFT: kcal-Macro-Fallback, page_size 6→10 (#96 #101) |
 
 ---
 

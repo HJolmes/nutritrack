@@ -970,7 +970,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.169</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.170</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1911,7 +1911,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.169';
+var APP_VERSION='0.170';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1940,6 +1940,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.170',items:[
+    {icon:'🔍',text:'Suche: Produkte ohne Energy-Felder (z. B. Curry, Dean & David) werden jetzt gefunden — kcal wird aus Protein/Kohlenhydrate/Fett berechnet wenn keine Energieangabe vorhanden. Chat-Suche prüft jetzt 10 statt 6 OFT-Ergebnisse. (#96 #101)',where:'Picker · Suche & Chat'},
+  ]},
   {v:'0.169',items:[
     {icon:'📊',text:'Trends: Kcal-Durchschnitt berücksichtigt den heutigen Tag nicht mehr (laufender Tag verfälscht Wochenwert). (#103)',where:'Trends · Statistik'},
     {icon:'🤖',text:'KI-Wochenbericht: Bewertet Tage jetzt relativ zur Zielrichtung (Abnehmen/Zunehmen/Halten) statt nach absolutem kcal. Format: Stichpunkte + konkrete Empfehlung für nächste Woche. (#102)',where:'Trends · KI-Bericht'},
@@ -3037,10 +3040,10 @@ function lookupNutrients(rawItems,onDone){
       var url='https://world.openfoodfacts.org/cgi/search.pl?search_terms='+encodeURIComponent(name)+'&search_simple=1&action=process&json=1&page_size=5&fields=product_name,nutriments';
       fetch(proxy+encodeURIComponent(url)).then(function(r){return r.json();})
         .then(function(data){
-          var prods=(data.products||[]).filter(function(p){var nm=(p.nutriments||{});return(nm['energy-kcal_100g']||nm['energy_100g'])>0;});
+          var prods=(data.products||[]).filter(function(p){var nm=(p.nutriments||{});return(nm['energy-kcal_100g']||nm['energy_100g']||(nm['proteins_100g']||0)+(nm['carbohydrates_100g']||0)+(nm['fat_100g']||0))>0;});
           if(prods.length>0){
             var p=prods[0],nm=p.nutriments||{};
-            var kcal=nm['energy-kcal_100g']||Math.round((nm['energy_100g']||0)/4.184);
+            var kcal=nm['energy-kcal_100g']||Math.round((nm['energy_100g']||0)/4.184)||Math.round((nm['proteins_100g']||0)*4+(nm['carbohydrates_100g']||0)*4+(nm['fat_100g']||0)*9);
             results.push({name:name,emoji:emoji,amount:grams||0,per100:{kcal:kcal,protein:nm['proteins_100g']||0,carbs:nm['carbohydrates_100g']||0,fat:nm['fat_100g']||0,sugar:nm['sugars_100g']||0,fiber:nm['fiber_100g']||0,salt:nm['salt_100g']||0},missingGrams:grams===null});
             pending--;if(!pending)onDone(results);
           } else {kiNutrientLookup(name,emoji,grams,function(res){results.push(res);pending--;if(!pending)onDone(results);});}

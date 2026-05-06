@@ -474,6 +474,9 @@ button,input,select,textarea{font-family:var(--fs-body);}
 .ri-bdg{background:var(--g1);}
 .ri-bdg.own{background:#f9c74f;}
 
+/* Hinzufügen-Button im Suche-Tab – immer am unteren Modalrand fixiert */
+#pickerAddSec{position:sticky;bottom:0;background:#fff;margin:0 -18px;padding:10px 18px calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--br);z-index:2;}
+
 /* BUTTONS */
 .svb,.cb2,.abt{background:var(--tx);border-radius:14px;font-weight:600;}
 .seb{background:var(--gl);border-color:var(--br);border-radius:14px;}
@@ -970,7 +973,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.171</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.172</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1911,7 +1914,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.171';
+var APP_VERSION='0.172';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1940,6 +1943,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.172',items:[
+    {icon:'🔧',text:'Picker · Suche: „Hinzufügen"-Button klebt jetzt immer am unteren Rand der Auswahl — kein Scrollen mehr nötig auf Android.',where:'Picker · Suche'},
+  ]},
   {v:'0.171',items:[
     {icon:'🔧',text:'iOS: Screen-Header jetzt korrekt unterhalb der Status-Bar (der BLOOM-Override hatte den Safe-Area-Fix überschrieben). (#104)',where:'iOS · Layout'},
     {icon:'🔍',text:'Picker Chat: Bei Marke + Produkt (z.B. „Dean David Red Thai Curry") wird zusätzlich nach dem Gericht ohne Markenname gesucht — mehr Treffer bei Markenprodukten.',where:'Picker · Chat-Tab'},

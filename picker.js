@@ -1065,22 +1065,32 @@ function pickerPhotoAdd(saveAsRecipe){_pickerAdd('📸','pickerRecipeName','pick
 
 function pickerChatOftSearch(q,onDone){
   var proxy='https://corsproxy.io/?';
-  var url='https://world.openfoodfacts.org/cgi/search.pl?search_simple=1&action=process&json=1&page_size=10&fields=product_name,product_name_de,nutriments&search_terms='+encodeURIComponent(q);
-  fetch(proxy+encodeURIComponent(url))
-    .then(function(r){return r.json();})
-    .then(function(data){
-      var results=[];
+  var base='https://world.openfoodfacts.org/cgi/search.pl?search_simple=1&action=process&json=1&page_size=10&fields=product_name,product_name_de,nutriments';
+  var words=q.trim().split(/\s+/);
+  // Bei langen Anfragen (Marke + Gericht) auch ohne die ersten 2 Wörter suchen
+  // z.B. "Dean David Red Thai Curry" → zusätzlich "Red Thai Curry"
+  var terms=[q];
+  if(words.length>=4)terms.push(words.slice(2).join(' '));
+  var fetches=terms.map(function(t){
+    return fetch(proxy+encodeURIComponent(base+'&search_terms='+encodeURIComponent(t)))
+      .then(function(r){return r.json();}).catch(function(){return{products:[]};});
+  });
+  Promise.all(fetches).then(function(responses){
+    var seen={};
+    var results=[];
+    responses.forEach(function(data){
       (data.products||[]).forEach(function(p){
         var nm=p.nutriments||{};
         var name=(p.product_name_de||p.product_name||'').trim();
         if(!name||name.length<3)return;
         var kcal=nm['energy-kcal_100g']||Math.round((nm['energy_100g']||0)/4.184)||Math.round((nm['proteins_100g']||0)*4+(nm['carbohydrates_100g']||0)*4+(nm['fat_100g']||0)*9);
         if(kcal<=0||kcal>950)return;
+        var k=name.toLowerCase();if(seen[k])return;seen[k]=true;
         results.push({name:name,emoji:emo(name),per100:{kcal:kcal,protein:nm['proteins_100g']||0,carbs:nm['carbohydrates_100g']||0,fat:nm['fat_100g']||0,sugar:nm['sugars_100g']||0,fiber:nm['fiber_100g']||0,salt:nm['salt_100g']||0}});
       });
-      onDone(results.slice(0,3));
-    })
-    .catch(function(){onDone([]);});
+    });
+    onDone(results.slice(0,3));
+  }).catch(function(){onDone([]);});
 }
 
 function pickerChatAddOft(i){

@@ -336,7 +336,7 @@ body{font-family:var(--fs-body);background:var(--bg);color:var(--tx);letter-spac
 button,input,select,textarea{font-family:var(--fs-body);}
 
 /* HEADER ─ "Hej Hannes" headline */
-.hdr{background:var(--bg);padding:18px 18px 8px;border-bottom:none;}
+.hdr{background:var(--bg);padding:calc(18px + env(safe-area-inset-top, 0px)) 18px 8px;border-bottom:none;}
 .logo{font-family:var(--fs-display);font-weight:500;font-size:26px;color:var(--tx);letter-spacing:-0.03em;line-height:1.1;}
 .logo em{color:var(--g1);font-style:italic;font-weight:400;}
 .hbtn{background:var(--gl)!important;border:none!important;border-radius:50%!important;width:38px!important;height:38px!important;display:inline-flex;align-items:center;justify-content:center;font-size:16px!important;color:var(--tx)!important;}
@@ -970,7 +970,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.170</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.171</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1911,7 +1911,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.170';
+var APP_VERSION='0.171';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1940,6 +1940,10 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.171',items:[
+    {icon:'🔧',text:'iOS: Screen-Header jetzt korrekt unterhalb der Status-Bar (der BLOOM-Override hatte den Safe-Area-Fix überschrieben). (#104)',where:'iOS · Layout'},
+    {icon:'🔍',text:'Picker Chat: Bei Marke + Produkt (z.B. „Dean David Red Thai Curry") wird zusätzlich nach dem Gericht ohne Markenname gesucht — mehr Treffer bei Markenprodukten.',where:'Picker · Chat-Tab'},
+  ]},
   {v:'0.170',items:[
     {icon:'🔍',text:'Suche: Produkte ohne Energy-Felder (z. B. Curry, Dean & David) werden jetzt gefunden — kcal wird aus Protein/Kohlenhydrate/Fett berechnet wenn keine Energieangabe vorhanden. Chat-Suche prüft jetzt 10 statt 6 OFT-Ergebnisse. (#96 #101)',where:'Picker · Suche & Chat'},
   ]},

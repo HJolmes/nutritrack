@@ -111,7 +111,7 @@ function pickerFetchOnline(q){
       (data.products||[]).forEach(function(p){
         var nm=p.nutriments||{},name=(p.product_name_de||p.product_name||'').trim();
         if(!name||name.length<3)return;
-        var kcal=nm['energy-kcal_100g']||Math.round((nm['energy_100g']||0)/4.184);if(kcal<=0||kcal>950)return;
+        var kcal=nm['energy-kcal_100g']||Math.round((nm['energy_100g']||0)/4.184)||Math.round((nm['proteins_100g']||0)*4+(nm['carbohydrates_100g']||0)*4+(nm['fat_100g']||0)*9);if(kcal<=0||kcal>950)return;
         var k=name.toLowerCase();if(seen[k])return;seen[k]=true;
         var pr=nm['proteins_100g']||0,ca=nm['carbohydrates_100g']||0,fa=nm['fat_100g']||0,su=nm['sugars_100g']||0,fi=nm['fiber_100g']||0,sa=nm['salt_100g']||0;
         var ns=(k.startsWith(ql)||k.startsWith(eng||'__'))?2:0;
@@ -1065,7 +1065,7 @@ function pickerPhotoAdd(saveAsRecipe){_pickerAdd('📸','pickerRecipeName','pick
 
 function pickerChatOftSearch(q,onDone){
   var proxy='https://corsproxy.io/?';
-  var url='https://world.openfoodfacts.org/cgi/search.pl?search_simple=1&action=process&json=1&page_size=6&fields=product_name,product_name_de,nutriments&search_terms='+encodeURIComponent(q);
+  var url='https://world.openfoodfacts.org/cgi/search.pl?search_simple=1&action=process&json=1&page_size=10&fields=product_name,product_name_de,nutriments&search_terms='+encodeURIComponent(q);
   fetch(proxy+encodeURIComponent(url))
     .then(function(r){return r.json();})
     .then(function(data){
@@ -1074,7 +1074,7 @@ function pickerChatOftSearch(q,onDone){
         var nm=p.nutriments||{};
         var name=(p.product_name_de||p.product_name||'').trim();
         if(!name||name.length<3)return;
-        var kcal=nm['energy-kcal_100g']||Math.round((nm['energy_100g']||0)/4.184);
+        var kcal=nm['energy-kcal_100g']||Math.round((nm['energy_100g']||0)/4.184)||Math.round((nm['proteins_100g']||0)*4+(nm['carbohydrates_100g']||0)*4+(nm['fat_100g']||0)*9);
         if(kcal<=0||kcal>950)return;
         results.push({name:name,emoji:emo(name),per100:{kcal:kcal,protein:nm['proteins_100g']||0,carbs:nm['carbohydrates_100g']||0,fat:nm['fat_100g']||0,sugar:nm['sugars_100g']||0,fiber:nm['fiber_100g']||0,salt:nm['salt_100g']||0}});
       });

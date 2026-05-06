@@ -81,7 +81,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 .s-btn{width:100%;background:linear-gradient(135deg,var(--g1),var(--g2));color:white;border:none;border-radius:12px;padding:14px;font-family:'Nunito',sans-serif;font-weight:800;font-size:16px;margin-top:4px;}
 
 /* ── HEADER ── */
-.hdr{background:white;padding:13px 15px 10px;position:sticky;top:0;z-index:100;border-bottom:1px solid var(--br);}
+.hdr{background:white;padding:calc(13px + env(safe-area-inset-top, 0px)) 15px 10px;position:sticky;top:0;z-index:100;border-bottom:1px solid var(--br);}
 .hr{display:flex;justify-content:space-between;align-items:center;}
 .logo{font-family:'Nunito',sans-serif;font-weight:900;font-size:21px;color:var(--g1);letter-spacing:-.5px;}
 .logo em{color:var(--g2);font-style:normal;}
@@ -502,7 +502,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
 #updateBanner button{background:var(--g1);}
 
 /* MEAL DETAIL SUBSCREEN */
-#mealDetailScreen .md-head{padding:14px 18px 0;display:flex;align-items:center;gap:10px;}
+#mealDetailScreen .md-head{padding:calc(14px + env(safe-area-inset-top, 0px)) 18px 0;display:flex;align-items:center;gap:10px;}
 #mealDetailScreen .md-back{background:var(--gl);border:none;width:38px;height:38px;border-radius:50%;font-size:18px;color:var(--tx);display:flex;align-items:center;justify-content:center;cursor:pointer;}
 #mealDetailScreen .md-actions{margin-left:auto;display:flex;gap:6px;}
 #mealDetailScreen .md-actions button{background:var(--gl);border:none;width:38px;height:38px;border-radius:50%;font-size:16px;color:var(--tx);cursor:pointer;}
@@ -970,7 +970,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.167</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.170</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1911,7 +1911,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.167';
+var APP_VERSION='0.170';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1940,6 +1940,16 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.170',items:[
+    {icon:'🔍',text:'Suche: Produkte ohne Energy-Felder (z. B. Curry, Dean & David) werden jetzt gefunden — kcal wird aus Protein/Kohlenhydrate/Fett berechnet wenn keine Energieangabe vorhanden. Chat-Suche prüft jetzt 10 statt 6 OFT-Ergebnisse. (#96 #101)',where:'Picker · Suche & Chat'},
+  ]},
+  {v:'0.169',items:[
+    {icon:'📊',text:'Trends: Kcal-Durchschnitt berücksichtigt den heutigen Tag nicht mehr (laufender Tag verfälscht Wochenwert). (#103)',where:'Trends · Statistik'},
+    {icon:'🤖',text:'KI-Wochenbericht: Bewertet Tage jetzt relativ zur Zielrichtung (Abnehmen/Zunehmen/Halten) statt nach absolutem kcal. Format: Stichpunkte + konkrete Empfehlung für nächste Woche. (#102)',where:'Trends · KI-Bericht'},
+  ]},
+  {v:'0.168',items:[
+    {icon:'🔧',text:'iOS: Screen-Header werden jetzt korrekt unterhalb der Status-Bar / Dynamic Island positioniert — Buttons auf dem Mahlzeit-Detail-Screen und allen anderen Screens sind tippbar. (#104)',where:'iOS · Layout'},
+  ]},
   {v:'0.167',items:[
     {icon:'🔧',text:'Bottom-Nav auf Android zentriert (war 14 px nach rechts versetzt). Auf iPhone/iPad scrollt die App nach dem Schließen der Tastatur nicht mehr nach oben weg. (#97 #98 #99)',where:'Layout · iOS & Android'},
   ]},
@@ -3030,10 +3040,10 @@ function lookupNutrients(rawItems,onDone){
       var url='https://world.openfoodfacts.org/cgi/search.pl?search_terms='+encodeURIComponent(name)+'&search_simple=1&action=process&json=1&page_size=5&fields=product_name,nutriments';
       fetch(proxy+encodeURIComponent(url)).then(function(r){return r.json();})
         .then(function(data){
-          var prods=(data.products||[]).filter(function(p){var nm=(p.nutriments||{});return(nm['energy-kcal_100g']||nm['energy_100g'])>0;});
+          var prods=(data.products||[]).filter(function(p){var nm=(p.nutriments||{});return(nm['energy-kcal_100g']||nm['energy_100g']||(nm['proteins_100g']||0)+(nm['carbohydrates_100g']||0)+(nm['fat_100g']||0))>0;});
           if(prods.length>0){
             var p=prods[0],nm=p.nutriments||{};
-            var kcal=nm['energy-kcal_100g']||Math.round((nm['energy_100g']||0)/4.184);
+            var kcal=nm['energy-kcal_100g']||Math.round((nm['energy_100g']||0)/4.184)||Math.round((nm['proteins_100g']||0)*4+(nm['carbohydrates_100g']||0)*4+(nm['fat_100g']||0)*9);
             results.push({name:name,emoji:emoji,amount:grams||0,per100:{kcal:kcal,protein:nm['proteins_100g']||0,carbs:nm['carbohydrates_100g']||0,fat:nm['fat_100g']||0,sugar:nm['sugars_100g']||0,fiber:nm['fiber_100g']||0,salt:nm['salt_100g']||0},missingGrams:grams===null});
             pending--;if(!pending)onDone(results);
           } else {kiNutrientLookup(name,emoji,grams,function(res){results.push(res);pending--;if(!pending)onDone(results);});}
@@ -4521,7 +4531,7 @@ function renderWeekBars(){
   }
   // Streak & Avg
   var avg=0,cnt=0;
-  kcals.forEach(function(k){if(k>0){avg+=k;cnt++;}});
+  kcals.forEach(function(k,i){if(k>0&&days[i]!==isToday){avg+=k;cnt++;}});
   var streak=0,d2=today();
   while(true){var dy=S.days[d2];if(!dy)break;var k=dy._compressed?dy.kcal:calcM(dy.meals.breakfast.concat(dy.meals.lunch,dy.meals.dinner,dy.meals.snack)).kcal;if(k<10)break;streak++;d2=addDays(d2,-1);}
   var streakEl=document.getElementById('streakNum');
@@ -4581,12 +4591,22 @@ function requestWeekReport(){
   }
   if(!cnt){showToast('Keine Daten dieser Woche');if(btn){btn.disabled=false;btn.textContent='Erstellen';}return;}
   var allPrefs=(S.dietPrefs||[]).concat(S.dietFree?[S.dietFree]:[]);
-  var prompt='Erstelle einen kurzen Wochenbericht zur Ernährung auf Deutsch. Maximal 4 Sätze, Fließtext.\n'
+  var dir='maintain';
+  if(S.goalWeight&&S.weight){
+    if(S.goalWeight<S.weight-0.5)dir='lose';
+    else if(S.goalWeight>S.weight+0.5)dir='gain';
+  }
+  var dirText=dir==='lose'?'Abnehmen (Kaloriendefizit)':dir==='gain'?'Zunehmen (Kalorienüberschuss)'  :'Gewicht halten';
+  var prompt='Erstelle einen deutschen Wochenbericht zur Ernährung.\n'
+    +'Format: 3–5 Stichpunkte (je 1 kurzer Satz, mit „–" einleiten), danach „Empfehlung für nächste Woche:" gefolgt von 1–2 konkreten Sätzen. Kein einleitender Satz.\n'
     +'Tagesdaten:\n'+lines.join('\n')+'\n'
-    +'Ziel: '+S.goal+' kcal/Tag'+(allPrefs.length?'\nPräferenzen: '+allPrefs.join(', '):'')+'\n'
+    +'Kalorienziel: '+S.goal+' kcal/Tag\n'
+    +'Zielrichtung: '+dirText+'\n'
+    +(S.goalWeight&&S.weight?'Gewicht: '+S.weight+' kg → Ziel: '+S.goalWeight+' kg\n':'')
+    +(allPrefs.length?'Ernährungspräferenzen: '+allPrefs.join(', ')+'\n':'')
     +'Durchschnitt: '+Math.round(avgKcal/cnt)+' kcal/Tag\n'
-    +'Beste und schlechteste Tage nennen, Gesamttrend bewerten, 1 konkreter Tipp.';
-  callClaude('claude-haiku-4-5',[{type:'text',text:prompt}],200,
+    +'Bewerte Tage relativ zur Zielrichtung (nicht nach absolutem kcal). Besten/schlechtesten Tag benennen.';
+  callClaude('claude-haiku-4-5',[{type:'text',text:prompt}],400,
     function(text){
       var el=document.getElementById('weekReportText');
       if(el)el.textContent=text.trim();

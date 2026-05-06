@@ -81,7 +81,7 @@ button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer
 .s-btn{width:100%;background:linear-gradient(135deg,var(--g1),var(--g2));color:white;border:none;border-radius:12px;padding:14px;font-family:'Nunito',sans-serif;font-weight:800;font-size:16px;margin-top:4px;}
 
 /* ── HEADER ── */
-.hdr{background:white;padding:13px 15px 10px;position:sticky;top:0;z-index:100;border-bottom:1px solid var(--br);}
+.hdr{background:white;padding:calc(13px + env(safe-area-inset-top, 0px)) 15px 10px;position:sticky;top:0;z-index:100;border-bottom:1px solid var(--br);}
 .hr{display:flex;justify-content:space-between;align-items:center;}
 .logo{font-family:'Nunito',sans-serif;font-weight:900;font-size:21px;color:var(--g1);letter-spacing:-.5px;}
 .logo em{color:var(--g2);font-style:normal;}
@@ -502,7 +502,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
 #updateBanner button{background:var(--g1);}
 
 /* MEAL DETAIL SUBSCREEN */
-#mealDetailScreen .md-head{padding:14px 18px 0;display:flex;align-items:center;gap:10px;}
+#mealDetailScreen .md-head{padding:calc(14px + env(safe-area-inset-top, 0px)) 18px 0;display:flex;align-items:center;gap:10px;}
 #mealDetailScreen .md-back{background:var(--gl);border:none;width:38px;height:38px;border-radius:50%;font-size:18px;color:var(--tx);display:flex;align-items:center;justify-content:center;cursor:pointer;}
 #mealDetailScreen .md-actions{margin-left:auto;display:flex;gap:6px;}
 #mealDetailScreen .md-actions button{background:var(--gl);border:none;width:38px;height:38px;border-radius:50%;font-size:16px;color:var(--tx);cursor:pointer;}
@@ -970,7 +970,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.167</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.168</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1911,7 +1911,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.167';
+var APP_VERSION='0.168';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1940,6 +1940,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.168',items:[
+    {icon:'🔧',text:'iOS: Screen-Header werden jetzt korrekt unterhalb der Status-Bar / Dynamic Island positioniert — Buttons auf dem Mahlzeit-Detail-Screen und allen anderen Screens sind tippbar. (#104)',where:'iOS · Layout'},
+  ]},
   {v:'0.167',items:[
     {icon:'🔧',text:'Bottom-Nav auf Android zentriert (war 14 px nach rechts versetzt). Auf iPhone/iPad scrollt die App nach dem Schließen der Tastatur nicht mehr nach oben weg. (#97 #98 #99)',where:'Layout · iOS & Android'},
   ]},

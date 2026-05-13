@@ -973,7 +973,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.173</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.174</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1913,7 +1913,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.173';
+var APP_VERSION='0.174';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1925,7 +1925,7 @@ function setProxySecret(pw){return _sha256hex(pw).then(function(h){localStorage.
 
 // ── OneDrive PKCE Config ──
 var OD_CLIENT_ID='ae62274b-87de-4369-b1e5-9d6e45a724f4';
-var OD_REDIRECT='https://hjolmes.github.io/nutritrack/';
+var OD_REDIRECT=location.origin+'/nutritrack/';
 var OD_SCOPES='Files.ReadWrite User.Read offline_access';
 var OD_FILE_PATH='/NutriTrack/nutritrack-backup.json';
 var OD_SLOTS=5;

@@ -63,14 +63,14 @@
 ## Live-Test offen
 
 - **v0.158 Sport-Sync (geparkt — UX zu umständlich):** Worker-Endpoints `/workout` + `/workouts` deployen, in „Mehr → Sport-Sync" Token erzeugen, iOS-Shortcut-Automation / Android-HTTP-Request-Shortcut bauen. Vor weiterer Arbeit: vereinfachtes Onboarding-Konzept nötig.
-- **v0.170/0.171 Picker Chat OFT (#96 #101) — bekannt fehlerhaft:** OFT-Suche (auch mit kcal-Macro-Fallback und Marken-Substring-Variante aus v0.171) findet in der Praxis kaum die gesuchten Produkte. **Alternative Lösung muss her** (KI-Primärsuche oder andere Datenquelle).
 - **v0.171 iOS Header-Fix:** Auf iPhone (Safari + installierte PWA) prüfen, dass die Header-Buttons aller Screens nicht mehr von Status-Bar / Dynamic Island überdeckt sind (BLOOM-Override-Regression aus v0.168 ist behoben).
 - **v0.172 Picker Sticky-Button (Android):** Auf Android-Gerät mit Bildschirm-Tastatur → Picker-Tab „Suche" öffnen → in Eingabefeld tippen → „Hinzufügen"-Button bleibt am unteren Modalrand sichtbar.
 - **v0.173 Share-Import alle Browser:** Share-Link in Android Edge / Firefox / Samsung Internet öffnen → `iosSwitchOv`-Anleitung muss erscheinen, Auto-Clipboard greift, User wechselt zur installierten PWA und Import per 📥 funktioniert. iOS-Safari-Flow muss weiterhin gehen.
 
-## Bekannte Regressionen / Reopen-Kandidaten
+## Zurückgestellt (kein aktiver Plan)
 
-- **Chat + Foto entkoppelt (#80):** v0.163 hatte die Foto-Bytes nach Analyse mit dem Chat verknüpft (Auto-Wechsel + Image-Content an Sonnet). v0.166 hat das wieder entfernt → User vermisst die Verknüpfung. Neue Iteration nötig (Spezifikation noch offen).
+- **Picker Chat-Suche / OFT-Ersatz (#96 #101):** OpenFoodFacts liefert in der Praxis zu wenig Treffer; auch die Fallbacks aus v0.170 (kcal-Macro) und v0.171 (Marken-Substring) lösen das Grundproblem nicht. Erste Lösungsideen (KI-Primärsuche, URL-/PDF-Quelle, andere Food-APIs) wurden als zu fehleranfällig oder zu umständlich verworfen. **Aktueller Stand bleibt erstmal so wie er ist, inkl. der bekannten Mängel.** Vor der nächsten Iteration braucht es ein grundsätzlich neues Konzept — bis dahin nichts am Picker-Chat-Pfad anfassen.
+- **Chat + Foto (#80):** v0.166 hat die in v0.163 eingeführte Foto/Chat-Verknüpfung entfernt. Aktueller Stand (entkoppelt) bleibt — kein Reopen geplant.
 
 ## Versions-Historie (letzte 5)
 

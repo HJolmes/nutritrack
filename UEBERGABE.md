@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.170 (2026-05-06)
+**Stand:** v0.173 (2026-05-06)
 
 ## URLs
 
@@ -21,15 +21,16 @@
 - **Mehr-Screen (v0.160):** 📚 Bibliothek-Row navigiert direkt zu `settSetTab('bibliothek')` — kein Umweg durch Settings nötig. Bibliothek-Tab ist aus der Settings-Tab-Bar entfernt (nur noch über Mehr → 📚 erreichbar). `.lr-name`/`.lr-sub` mit `text-overflow:ellipsis`.
 - **Safe-Area (v0.161):** `viewport-fit=cover` im Viewport-Meta; `.bnav` margin-bottom + `body` padding-bottom + `.fb-fab` bottom jeweils `calc(…px + env(safe-area-inset-bottom,0))` — Bottom-Nav auf iPhone (Home-Indikator) und Android (Gesten-Navigation) vollständig sichtbar.
 - **Mahlzeit-Detail (v0.151/0.157):** CTAs im Body: `📋 Vorlage` (`#mdTpl` → `openTemplateOv`) + `💾 Als Rezept` (`#mdSaveRecipe` → `saveMealAsRecipe`, nur sichtbar wenn Einträge vorhanden). Der zentrale `＋` der Bottom-Nav (`#cbMealDetail`) wird in `renderMealDetail` auf `openPicker('<meal>')` umgebogen. `saveMealAsRecipe(meal)` flacht alle Einträge zu Zutaten ab (Recipe-Einträge anteilig nach `portions`, Single-Foods 1:1), persistiert das Rezept sofort in `recipes`, setzt `recEditOpenedFrom='mealDetail'` und öffnet `recEditOv` direkt zum Benennen. `recEditSave`/`recEditDelete` springen nur dann zurück in Settings, wenn `recEditOpenedFrom!=='mealDetail'`.
-- **Share/Import:** Sender → `POST /share` (Worker, KV, 1y TTL) → `?s=<id>` auf PWA-Origin. Empfänger: Android öffnet PWA via `handle_links`; iOS-Safari (non-standalone) bekommt `iosSwitchOv`-Anleitung + Auto-Clipboard, User wechselt zur PWA und tippt 📥 (`openImportPaste()`). Legacy-URL-Formen `#x=`/`#r=`/`workers.dev/s/<id>` bleiben kompatibel.
+- **Share/Import (v0.173):** Sender → `POST /share` (Worker, KV, 1y TTL) → `?s=<id>` auf PWA-Origin. Empfänger: standalone-PWA (Android `handle_links` oder iOS Add-to-Home) öffnet direkt; jeder **nicht-standalone**-Browser (iOS Safari, Android Edge/Firefox/Samsung Internet, Desktop) bekommt `iosSwitchOv`-Anleitung + Auto-Clipboard, User wechselt zur installierten PWA und tippt 📥 (`openImportPaste()`). `_checkSharedItemOnBoot()` triggert auf `!_isPwaStandalone()` (vorher: nur iOS). Modal-Text generalisiert („Safari" → „Browser"). Legacy-URL-Formen `#x=`/`#r=`/`workers.dev/s/<id>` bleiben kompatibel.
 - **Payload-Schema (base64-JSON):** `{t:'r'|'f'|'m', …}`.
 - **OneDrive Reconnect (v0.159):** `_odGetToken()` unterscheidet Auth-Fehler (`invalid_grant`, `interaction_required`, `unauthorized_client`) von Netzwerkfehlern — nur bei echten Auth-Fehlern werden Tokens gelöscht + sofort `odReconnectOv`-Modal geöffnet (Bottom-Sheet, `.ov`-Klasse, `_odShowReconnect()`). Netzwerkfehler löschen Tokens nicht mehr.
 - **OneDrive Autospeicher-Fix (v0.159):** Doppelte `_odAutoSync()`-Definition entfernt — die zweite Definition (rief `oneDriveSyncUp()` auf) überschrieb die erste (rief `oneDriveSyncSlot()` auf). Jetzt wird täglich korrekt ein Autospeicher-Slot gefüllt.
 - **Picker Chat (v0.163/v0.164/v0.165/v0.166):** Foto-Tab und Chat-Tab sind vollständig entkoppelt — kein Auto-Wechsel, keine Chat-Vorbelegung nach Foto-Analyse. Chat-Nachrichten mit aktivem Foto (`window._pickerPhotoB64`) gehen als Image-Content an `claude-sonnet-4-6`; ohne Foto bleibt es bei `claude-haiku-4-5`. Chat-Tab sucht zuerst in OpenFoodFacts (`pickerChatOftSearch` → corsproxy → `cgi/search.pl`); Treffer erscheinen als wählbare Karten (`pickerChatAddOft(i)`); kein Treffer → KI-Fallback via `pickerChatKiFallback(msg)`; „🤖 Stattdessen KI fragen"-Link überspringt OFT. OFT-Filter akzeptiert Einträge mit Energie nur in kJ (`energy_100g` / 4.184 als Fallback) — betrifft `pickerChatOftSearch`, `pickerFetchOnline` und `lookupNutrients`.
 - **Layout-Fixes (v0.167):** bnav `margin:0 14px` → `margin:0 0` (horizontale Margins verursachten 14 px Rechtsversatz bei `position:fixed`+`left:50%`+`translateX(-50%)`). iOS PWA: `focusout`-Handler setzt `window.scrollTo(0,0)` nach Tastatur-Dismiss (nur `_isIos()&&_isPwaStandalone()`).
-- **iOS Safe-Area-Top (v0.168):** `.hdr` und `#mealDetailScreen .md-head` erhalten `padding-top: calc(…px + env(safe-area-inset-top, 0px))` — Screen-Header-Buttons auf allen Screens unterhalb der iOS Status-Bar / Dynamic Island (#104).
+- **iOS Safe-Area-Top (v0.168/0.171):** `.hdr` und `#mealDetailScreen .md-head` erhalten `padding-top: calc(…px + env(safe-area-inset-top, 0px))` — Screen-Header-Buttons auf allen Screens unterhalb der iOS Status-Bar / Dynamic Island. v0.171 zog die Regel zusätzlich in den BLOOM-Override-Block (`.hdr { padding: calc(18px + env(safe-area-inset-top, 0px)) … }`), weil der Override die v0.168-Regel überschrieb (#104).
 - **Trends (v0.169):** `renderWeekBars()` schließt heutigen Tag aus avg/cnt aus. `requestWeekReport()` erkennt Zielrichtung (lose/gain/maintain) aus `S.goalWeight vs S.weight`, übergibt sie an den Prompt, Format auf Stichpunkte + Empfehlung für nächste Woche, Token-Limit 200→400 (#102 #103).
-- **Picker OFT (v0.170):** kcal-Fallback `P*4+K*4+F*9` in `pickerChatOftSearch`, `pickerFetchOnline` und `lookupNutrients` wenn beide Energy-Felder fehlen. Chat-Tab `page_size` 6→10 (#96 #101).
+- **Picker OFT (v0.170/0.171):** kcal-Fallback `P*4+K*4+F*9` in `pickerChatOftSearch`, `pickerFetchOnline` und `lookupNutrients` wenn beide Energy-Felder fehlen. Chat-Tab `page_size` 6→10. v0.171: bei Anfragen mit ≥4 Wörtern (z. B. „Dean David Red Thai Curry") läuft parallel eine zweite Suche **ohne die ersten 2 Wörter** („Red Thai Curry"), um Markenprodukte über den Gerichtsnamen zu finden. **Status: liefert in der Praxis kaum Treffer (#96 #101) — alternative Lösung nötig.**
+- **Picker Add-Section (v0.172):** `#pickerAddSec` ist `position:sticky;bottom:0` mit weißem Hintergrund, negativen Margins zur `.mbd`-Padding-Kompensation und `safe-area-inset-bottom` — „Hinzufügen"-Button bleibt auf Android sichtbar, wenn die Bildschirm-Tastatur das 88vh-Modal verkleinert.
 - **Sport-Sync (v0.158):** Erstes ausgelagertes Modul `js/health-sync.js` (klassisches `<script>` vor `</body>`, exportiert `window.NTHealth`). User generiert in „Mehr → Sport-Sync" ein 32-Zeichen-Token (Base58-ish, `localStorage.nt_health_token`), trägt es in eine iOS-Shortcut-Automation („wenn Training endet") oder Android HTTP Request Shortcut ein. Automation POSTet `{id, source, type, start, kcal, durationSec?, distanceM?, hrAvg?}` mit Header `X-User-Token` an Worker `POST /workout` (KV-Key `wo:<token>:<id>`, TTL 60d). PWA pollt `GET /workouts?since=<lastpoll>` bei `DOMContentLoaded` (mit 800ms Delay) und `visibilitychange→visible`, dedupliziert via `_healthId`-Marker, hängt Workouts in `S.days[<localDate>].exercise[]` an (Schema bleibt kompatibel zur manuellen Erfassung) — die existierende `burned`-Subtraktion in `renderAll()` zieht die Kalorien automatisch vom Tagesziel ab. `renderExercise()` zeigt für `_source`-Einträge ein kleines „Apple"/„Samsung"-Badge.
 
 ## Worker-Endpoints
@@ -61,25 +62,25 @@
 
 ## Live-Test offen
 
-- v0.157 Mahlzeit-Detail „💾 Als Rezept" — Rezept aus Mahlzeit erstellen, Editor öffnet zum Benennen (#75)
-- v0.158 Sport-Sync: Worker-Endpoints `/workout` + `/workouts` deployen (`wrangler deploy` im `worker/`), in „Mehr → Sport-Sync" Token erzeugen, je eine iOS-Shortcut-Automation und ein Android-HTTP-Request-Shortcut bauen, echtes Workout durchspielen → in PWA muss „Apple"/„Samsung"-Badge erscheinen, Hero-kcal um den Wert reduziert sein
-- v0.159 OneDrive Reconnect-Modal: Token ablaufen lassen (oder manuell `_odClearTokens()` in DevTools), dann sync triggern → `odReconnectOv` muss aufgehen; „Neu verbinden" startet PKCE-Flow neu
-- v0.160 Mehr-Screen: Bibliothek-Row tippen → öffnet direkt Bibliothek (nicht allg. Einstellungen); Einstellungen hat keinen 📚-Tab mehr; Layout auf Android korrekt
-- v0.162 Feedback-Screenshot: Picker/Overlay offen → Feedback → Screenshot → Bild zeigt aktiven Overlay, nicht mainScreen
-- v0.163 Chat + Foto: Foto analysieren → Chat öffnet sich → Rückfrage stellen mit Foto-Kontext möglich
-- v0.168 iOS: mealDetailScreen und alle anderen Screens — Buttons im Header tippbar trotz Dynamic Island / Status-Bar (#104)
-- v0.169 Trends: Kcal-Durchschnitt ohne heutigen Tag; KI-Bericht mit Stichpunkten + Zielrichtung + Empfehlung (#102 #103)
-- v0.170 Picker Chat: Curry / Dean & David → OFT findet mehr Produkte dank kcal-Macro-Fallback (#96 #101)
+- **v0.158 Sport-Sync (geparkt — UX zu umständlich):** Worker-Endpoints `/workout` + `/workouts` deployen, in „Mehr → Sport-Sync" Token erzeugen, iOS-Shortcut-Automation / Android-HTTP-Request-Shortcut bauen. Vor weiterer Arbeit: vereinfachtes Onboarding-Konzept nötig.
+- **v0.170/0.171 Picker Chat OFT (#96 #101) — bekannt fehlerhaft:** OFT-Suche (auch mit kcal-Macro-Fallback und Marken-Substring-Variante aus v0.171) findet in der Praxis kaum die gesuchten Produkte. **Alternative Lösung muss her** (KI-Primärsuche oder andere Datenquelle).
+- **v0.171 iOS Header-Fix:** Auf iPhone (Safari + installierte PWA) prüfen, dass die Header-Buttons aller Screens nicht mehr von Status-Bar / Dynamic Island überdeckt sind (BLOOM-Override-Regression aus v0.168 ist behoben).
+- **v0.172 Picker Sticky-Button (Android):** Auf Android-Gerät mit Bildschirm-Tastatur → Picker-Tab „Suche" öffnen → in Eingabefeld tippen → „Hinzufügen"-Button bleibt am unteren Modalrand sichtbar.
+- **v0.173 Share-Import alle Browser:** Share-Link in Android Edge / Firefox / Samsung Internet öffnen → `iosSwitchOv`-Anleitung muss erscheinen, Auto-Clipboard greift, User wechselt zur installierten PWA und Import per 📥 funktioniert. iOS-Safari-Flow muss weiterhin gehen.
+
+## Bekannte Regressionen / Reopen-Kandidaten
+
+- **Chat + Foto entkoppelt (#80):** v0.163 hatte die Foto-Bytes nach Analyse mit dem Chat verknüpft (Auto-Wechsel + Image-Content an Sonnet). v0.166 hat das wieder entfernt → User vermisst die Verknüpfung. Neue Iteration nötig (Spezifikation noch offen).
 
 ## Versions-Historie (letzte 5)
 
 | Version | PR | Was |
 |---|---|---|
-| v0.166 | — | Foto-Tab vollständig entkoppelt vom Chat (#80) |
-| v0.167 | #100 | bnav-Zentrierung (Android) + iOS Keyboard-Scroll-Reset (#97 #98 #99) |
-| v0.168 | — | iOS safe-area-inset-top für Screen-Header (#104) |
 | v0.169 | — | Trends: Heute aus Avg, KI-Bericht zielgerecht (#102 #103) |
 | v0.170 | — | Picker OFT: kcal-Macro-Fallback, page_size 6→10 (#96 #101) |
+| v0.171 | — | iOS Header-Fix (BLOOM-Override) + OFT Marken-Substring-Fallback |
+| v0.172 | — | Picker „Hinzufügen"-Button sticky am Modalboden (Android-Keyboard) |
+| v0.173 | — | Share-Import-Flow für alle non-standalone-Browser (nicht nur iOS) |
 
 ---
 

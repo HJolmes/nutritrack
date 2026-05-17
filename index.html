@@ -973,7 +973,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.176</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.177</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1913,7 +1913,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.176';
+var APP_VERSION='0.177';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1942,6 +1942,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.177',items:[
+    {icon:'🔍',text:'Picker Chat: Suche nur noch in deinen eigenen Rezepten und gespeicherten Lebensmitteln (Cache und eingebaute DB raus). Alle Wörter deiner Eingabe müssen treffen — „Joghurt mit Früchten" liefert kein „Joghurt Natur" oder „Früchte gemischt" mehr.',where:'Picker · Chat-Tab'},
+  ]},
   {v:'0.176',items:[
     {icon:'🔍',text:'Picker Chat: Suche im eigenen Bestand ist jetzt tippfehler- und umlauttolerant. „Jogurt mit Frucht" findet „Joghurt mit Früchten und Müsli", „hänchen" findet „Hähnchenbrust". Teilformulierungen werden Wort-für-Wort gewichtet.',where:'Picker · Chat-Tab'},
   ]},

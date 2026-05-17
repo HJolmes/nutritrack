@@ -1072,10 +1072,88 @@ function _pickerChatRebind(){
 }
 
 // Suche im lokalen Bestand: Rezepte, Custom Foods, Cache, DB (#113).
+// Tokenisiert + tippfehlertolerant (Levenshtein), damit „Joghurt mit Früchten"
+// auch „Joghurt mit Früchten und Müsli" oder „Jogurt mit Frucht" trifft.
+var _PICKER_STOP={mit:1,und:1,von:1,vom:1,ein:1,eine:1,einen:1,einem:1,einer:1,der:1,die:1,das:1,den:1,dem:1,im:1,in:1,zum:1,zur:1,an:1,am:1,auf:1,bei:1,fuer:1,zu:1};
+// Umlaut-Folding: ä→a, ö→o, ü→u, ß→s — damit „Jogurt mit Frucht" auch „Joghurt mit Früchten" trifft.
+function _pickerFold(s){return (s||'').toLowerCase().replace(/ä/g,'a').replace(/ö/g,'o').replace(/ü/g,'u').replace(/ß/g,'s');}
+function _pickerTok(s){
+  return _pickerFold(s).replace(/[^a-z0-9\s-]/g,' ').split(/[\s-]+/).filter(function(w){return w.length>=2 && !_PICKER_STOP[w];});
+}
+function _pickerLev(a,b){
+  if(a===b)return 0;
+  var m=a.length,n=b.length;if(!m)return n;if(!n)return m;
+  var prev=new Array(n+1),curr=new Array(n+1),i,j;
+  for(j=0;j<=n;j++)prev[j]=j;
+  for(i=1;i<=m;i++){
+    curr[0]=i;
+    for(j=1;j<=n;j++){
+      var cost=a.charCodeAt(i-1)===b.charCodeAt(j-1)?0:1;
+      curr[j]=Math.min(curr[j-1]+1,prev[j]+1,prev[j-1]+cost);
+    }
+    for(j=0;j<=n;j++)prev[j]=curr[j];
+  }
+  return prev[n];
+}
+function _pickerScoreName(name,qTokens,qFull){
+  var nl=_pickerFold(name);
+  if(!nl)return 0;
+  var score=0;
+  if(qFull&&nl.indexOf(qFull)>=0)score+=10;
+  var nTokens=_pickerTok(name);
+  if(!nTokens.length)return score;
+  qTokens.forEach(function(qt){
+    var best=0;
+    for(var i=0;i<nTokens.length;i++){
+      var nt=nTokens[i];
+      if(nt===qt){best=Math.max(best,5);break;}
+      if(nt.indexOf(qt)===0){best=Math.max(best,4);continue;}
+      if(nt.indexOf(qt)>0){best=Math.max(best,3);continue;}
+      // Tippfehler-Toleranz: 1 Edit für kurze, 2 für längere Wörter
+      var maxLen=Math.max(nt.length,qt.length);
+      if(maxLen<3)continue;
+      var allowed=maxLen<=5?1:2;
+      var d=_pickerLev(nt,qt);
+      if(d<=allowed)best=Math.max(best,3-Math.min(d,2));
+    }
+    score+=best;
+  });
+  return score;
+}
 function pickerChatLocalSearch(q){
-  var hits=searchLocal(q);
-  // OFT-Suche entfernt — Chat nutzt lokalen Bestand und fällt direkt auf KI zurück.
-  return hits.slice(0,6);
+  var qFull=_pickerFold(q).trim();
+  var qTokens=_pickerTok(q);
+  if(!qTokens.length)return [];
+  var results=[],seen={};
+  function add(item,s){
+    var k=item.name.toLowerCase();
+    var prev=seen[k];
+    if(prev){if(s>prev.score)prev.score=s;return;}
+    var rec={score:s,item:item};seen[k]=rec;results.push(rec);
+  }
+  recipes.forEach(function(r){
+    var s=_pickerScoreName(r.name,qTokens,qFull);
+    if(s>0)add({name:r.name,emoji:r.emoji||'📋',isRecipe:true,recipeId:r.id,per100:null,badge:'📋'},s+10);
+  });
+  customFoods.forEach(function(f){
+    var s=_pickerScoreName(f.name,qTokens,qFull);
+    if(s>0)add({name:f.name,emoji:f.emoji,per100:f.per100,badge:'⭐'},s+6);
+  });
+  Object.keys(foodCache||{}).forEach(function(k){
+    var f=foodCache[k];if(!f||!f.name)return;
+    var s=_pickerScoreName(f.name,qTokens,qFull);
+    if(s>0)add({name:f.name,emoji:f.emoji,per100:f.per100,badge:'🕐'},s+3);
+  });
+  DB.forEach(function(f){
+    var s=_pickerScoreName(f.n,qTokens,qFull);
+    if(s>0)add({name:f.n,emoji:f.e,per100:{kcal:f.k,protein:f.p,carbs:f.c,fat:f.f,sugar:0,fiber:0,salt:0}},s);
+  });
+  // Mindest-Score-Schwelle: Tippfehler-only-Treffer für Einzel-Wort-Suchen aussortieren
+  // (vermeidet, dass „xy" zufällig per Levenshtein auf alles matcht)
+  var minScore=qTokens.length===1?2:1;
+  results=results.filter(function(r){return r.score>=minScore;});
+  results.sort(function(a,b){return b.score-a.score;});
+  return results.slice(0,6).map(function(x){return x.item;});
 }
 
 function pickerChatAddLocal(i){

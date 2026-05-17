@@ -973,7 +973,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.174</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.175</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1913,7 +1913,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.174';
+var APP_VERSION='0.175';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1942,6 +1942,10 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.175',items:[
+    {icon:'🔍',text:'Picker Chat: Sucht jetzt zuerst in deinen eigenen Lebensmitteln, Rezepten und früher getrackten Sachen — Treffer erscheinen als wählbare Karten. Erst wenn nichts gefunden wird, fragt die KI. (#113)',where:'Picker · Chat-Tab'},
+    {icon:'🐛',text:'Picker: Gelöschte Zutaten verschwinden jetzt sofort aus der Liste (vorher blieben die DOM-Zeilen sichtbar bis zum nächsten Render). (#112)',where:'Picker · Zutaten-Liste'},
+  ]},
   {v:'0.173',items:[
     {icon:'📲',text:'Share-Import: „In App öffnen"-Anleitung erscheint jetzt auf allen Browsern (Edge, Firefox, Samsung Internet …) — nicht mehr nur auf iOS Safari. Link wird automatisch in die Zwischenablage kopiert.',where:'Import · Alle Browser'},
   ]},

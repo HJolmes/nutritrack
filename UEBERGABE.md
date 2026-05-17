@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.170 (2026-05-06)
+**Stand:** v0.175 (2026-05-17)
 
 ## URLs
 
@@ -25,11 +25,12 @@
 - **Payload-Schema (base64-JSON):** `{t:'r'|'f'|'m', …}`.
 - **OneDrive Reconnect (v0.159):** `_odGetToken()` unterscheidet Auth-Fehler (`invalid_grant`, `interaction_required`, `unauthorized_client`) von Netzwerkfehlern — nur bei echten Auth-Fehlern werden Tokens gelöscht + sofort `odReconnectOv`-Modal geöffnet (Bottom-Sheet, `.ov`-Klasse, `_odShowReconnect()`). Netzwerkfehler löschen Tokens nicht mehr.
 - **OneDrive Autospeicher-Fix (v0.159):** Doppelte `_odAutoSync()`-Definition entfernt — die zweite Definition (rief `oneDriveSyncUp()` auf) überschrieb die erste (rief `oneDriveSyncSlot()` auf). Jetzt wird täglich korrekt ein Autospeicher-Slot gefüllt.
-- **Picker Chat (v0.163/v0.164/v0.165/v0.166):** Foto-Tab und Chat-Tab sind vollständig entkoppelt — kein Auto-Wechsel, keine Chat-Vorbelegung nach Foto-Analyse. Chat-Nachrichten mit aktivem Foto (`window._pickerPhotoB64`) gehen als Image-Content an `claude-sonnet-4-6`; ohne Foto bleibt es bei `claude-haiku-4-5`. Chat-Tab sucht zuerst in OpenFoodFacts (`pickerChatOftSearch` → corsproxy → `cgi/search.pl`); Treffer erscheinen als wählbare Karten (`pickerChatAddOft(i)`); kein Treffer → KI-Fallback via `pickerChatKiFallback(msg)`; „🤖 Stattdessen KI fragen"-Link überspringt OFT. OFT-Filter akzeptiert Einträge mit Energie nur in kJ (`energy_100g` / 4.184 als Fallback) — betrifft `pickerChatOftSearch`, `pickerFetchOnline` und `lookupNutrients`.
+- **Picker Chat (v0.175):** Foto-Tab und Chat-Tab vollständig entkoppelt. Chat-Nachrichten mit aktivem Foto (`window._pickerPhotoB64`) gehen als Image-Content an `claude-sonnet-4-6`; ohne Foto `claude-haiku-4-5`. Reihenfolge: `pickerSendChat` → `pickerChatLocalSearch(msg)` (intern `searchLocal`, max 6 Treffer: Rezepte, Custom Foods, Cache, DB) → Treffer als Karten via `pickerChatAddLocal(i)`; bei 0 Treffern oder Klick auf „🤖 Stattdessen KI fragen" → `pickerChatKiFallback(msg)`. Rezept-Treffer landen direkt in der Mahlzeit + `closePicker()`; per100-Treffer setzen `pickerIngredients` und rendern die Zutaten-Liste. OFT-Anbindung im Chat ist raus (Trefferquote zu schlecht). Lokale Suche funktioniert offline; KI-Fallback verlangt `isOnline`.
 - **Layout-Fixes (v0.167):** bnav `margin:0 14px` → `margin:0 0` (horizontale Margins verursachten 14 px Rechtsversatz bei `position:fixed`+`left:50%`+`translateX(-50%)`). iOS PWA: `focusout`-Handler setzt `window.scrollTo(0,0)` nach Tastatur-Dismiss (nur `_isIos()&&_isPwaStandalone()`).
 - **iOS Safe-Area-Top (v0.168):** `.hdr` und `#mealDetailScreen .md-head` erhalten `padding-top: calc(…px + env(safe-area-inset-top, 0px))` — Screen-Header-Buttons auf allen Screens unterhalb der iOS Status-Bar / Dynamic Island (#104).
 - **Trends (v0.169):** `renderWeekBars()` schließt heutigen Tag aus avg/cnt aus. `requestWeekReport()` erkennt Zielrichtung (lose/gain/maintain) aus `S.goalWeight vs S.weight`, übergibt sie an den Prompt, Format auf Stichpunkte + Empfehlung für nächste Woche, Token-Limit 200→400 (#102 #103).
-- **Picker OFT (v0.170):** kcal-Fallback `P*4+K*4+F*9` in `pickerChatOftSearch`, `pickerFetchOnline` und `lookupNutrients` wenn beide Energy-Felder fehlen. Chat-Tab `page_size` 6→10 (#96 #101).
+- **Picker Ing-Delete (v0.175):** `pickerRenderIngList`-Callbacks rendern nach `splice` neu (Helper `_pickerChatRebind` im Chat, lokale `rebindLink`-Closure im Link-Tab). Photo-Tab war via `pickerShowPhotoResult` schon ok. Vorher blieben gelöschte DOM-Zeilen sichtbar (#112).
+- **Picker OFT (v0.170):** kcal-Fallback `P*4+K*4+F*9` in `pickerFetchOnline` und `lookupNutrients` wenn beide Energy-Felder fehlen (#96 #101). OFT im Chat-Tab seit v0.175 nicht mehr genutzt.
 - **Sport-Sync (v0.158):** Erstes ausgelagertes Modul `js/health-sync.js` (klassisches `<script>` vor `</body>`, exportiert `window.NTHealth`). User generiert in „Mehr → Sport-Sync" ein 32-Zeichen-Token (Base58-ish, `localStorage.nt_health_token`), trägt es in eine iOS-Shortcut-Automation („wenn Training endet") oder Android HTTP Request Shortcut ein. Automation POSTet `{id, source, type, start, kcal, durationSec?, distanceM?, hrAvg?}` mit Header `X-User-Token` an Worker `POST /workout` (KV-Key `wo:<token>:<id>`, TTL 60d). PWA pollt `GET /workouts?since=<lastpoll>` bei `DOMContentLoaded` (mit 800ms Delay) und `visibilitychange→visible`, dedupliziert via `_healthId`-Marker, hängt Workouts in `S.days[<localDate>].exercise[]` an (Schema bleibt kompatibel zur manuellen Erfassung) — die existierende `burned`-Subtraktion in `renderAll()` zieht die Kalorien automatisch vom Tagesziel ab. `renderExercise()` zeigt für `_source`-Einträge ein kleines „Apple"/„Samsung"-Badge.
 
 ## Worker-Endpoints
@@ -70,16 +71,18 @@
 - v0.168 iOS: mealDetailScreen und alle anderen Screens — Buttons im Header tippbar trotz Dynamic Island / Status-Bar (#104)
 - v0.169 Trends: Kcal-Durchschnitt ohne heutigen Tag; KI-Bericht mit Stichpunkten + Zielrichtung + Empfehlung (#102 #103)
 - v0.170 Picker Chat: Curry / Dean & David → OFT findet mehr Produkte dank kcal-Macro-Fallback (#96 #101)
+- v0.175 Picker Chat: „Joghurt mit Müsli" (eigenes Rezept) tippen → erscheint als Lokal-Treffer-Karte; ＋ trägt das Rezept direkt in die Mahlzeit ein. Unbekanntes Lebensmittel → KI-Fallback springt ein (#113)
+- v0.175 Picker (Chat + Link): Zutat aus erkannter Liste löschen → DOM-Zeile verschwindet sofort (#112)
 
 ## Versions-Historie (letzte 5)
 
 | Version | PR | Was |
 |---|---|---|
-| v0.166 | — | Foto-Tab vollständig entkoppelt vom Chat (#80) |
-| v0.167 | #100 | bnav-Zentrierung (Android) + iOS Keyboard-Scroll-Reset (#97 #98 #99) |
-| v0.168 | — | iOS safe-area-inset-top für Screen-Header (#104) |
-| v0.169 | — | Trends: Heute aus Avg, KI-Bericht zielgerecht (#102 #103) |
-| v0.170 | — | Picker OFT: kcal-Macro-Fallback, page_size 6→10 (#96 #101) |
+| v0.171 | — | iOS Header-Fix (BLOOM-Override) + OFT Marken-Fallback |
+| v0.172 | — | Picker: Hinzufügen-Button sticky am unteren Rand (Android) |
+| v0.173 | — | Share-Import-Anleitung für alle Browser (Edge, Firefox, Samsung Internet) |
+| v0.174 | #110 | OneDrive-Redirect dynamisch via location.origin |
+| v0.175 | — | Picker Chat: Lokal-First statt OFT + Ing-Delete rendert neu (#112 #113) |
 
 ---
 

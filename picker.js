@@ -1063,55 +1063,49 @@ function pickerPhotoAdd(saveAsRecipe){_pickerAdd('📸','pickerRecipeName','pick
 
 // ─── PICKER: CHAT TAB ───
 
-function pickerChatOftSearch(q,onDone){
-  var proxy='https://corsproxy.io/?';
-  var base='https://world.openfoodfacts.org/cgi/search.pl?search_simple=1&action=process&json=1&page_size=10&fields=product_name,product_name_de,nutriments';
-  var words=q.trim().split(/\s+/);
-  // Bei langen Anfragen (Marke + Gericht) auch ohne die ersten 2 Wörter suchen
-  // z.B. "Dean David Red Thai Curry" → zusätzlich "Red Thai Curry"
-  var terms=[q];
-  if(words.length>=4)terms.push(words.slice(2).join(' '));
-  var fetches=terms.map(function(t){
-    return fetch(proxy+encodeURIComponent(base+'&search_terms='+encodeURIComponent(t)))
-      .then(function(r){return r.json();}).catch(function(){return{products:[]};});
-  });
-  Promise.all(fetches).then(function(responses){
-    var seen={};
-    var results=[];
-    responses.forEach(function(data){
-      (data.products||[]).forEach(function(p){
-        var nm=p.nutriments||{};
-        var name=(p.product_name_de||p.product_name||'').trim();
-        if(!name||name.length<3)return;
-        var kcal=nm['energy-kcal_100g']||Math.round((nm['energy_100g']||0)/4.184)||Math.round((nm['proteins_100g']||0)*4+(nm['carbohydrates_100g']||0)*4+(nm['fat_100g']||0)*9);
-        if(kcal<=0||kcal>950)return;
-        var k=name.toLowerCase();if(seen[k])return;seen[k]=true;
-        results.push({name:name,emoji:emo(name),per100:{kcal:kcal,protein:nm['proteins_100g']||0,carbs:nm['carbohydrates_100g']||0,fat:nm['fat_100g']||0,sugar:nm['sugars_100g']||0,fiber:nm['fiber_100g']||0,salt:nm['salt_100g']||0}});
-      });
-    });
-    onDone(results.slice(0,3));
-  }).catch(function(){onDone([]);});
+// Bind ingredient list to pickerIngredients with a delete that re-renders the DOM (#112).
+function _pickerChatRebind(){
+  pickerRenderIngList('pickerChatIngList',pickerIngredients,
+    function(i,v){pickerIngredients[i].amount=parseFloat(v)||0;pickerUpdateChatTotal();},
+    function(i){pickerIngredients.splice(i,1);_pickerChatRebind();pickerUpdateChatTotal();}
+  );
 }
 
-function pickerChatAddOft(i){
-  var p=(window._pickerOftResults||[])[i];if(!p)return;
+// Suche im lokalen Bestand: Rezepte, Custom Foods, Cache, DB (#113).
+function pickerChatLocalSearch(q){
+  var hits=searchLocal(q);
+  // OFT-Suche entfernt — Chat nutzt lokalen Bestand und fällt direkt auf KI zurück.
+  return hits.slice(0,6);
+}
+
+function pickerChatAddLocal(i){
+  var p=(window._pickerLocalResults||[])[i];if(!p)return;
+  var cards=document.getElementById('pickerLocalCards');if(cards)cards.remove();
+  var msgs=document.getElementById('pickerChatMsgs');
+  if(p.isRecipe){
+    // Rezept als Ganzes in die Mahlzeit übernehmen (analog pickerAddRecent).
+    var rec=recipes.find(function(r){return r.id===p.recipeId;});
+    if(!rec){msgs.innerHTML+='<div class="cm a">❌ Rezept nicht mehr vorhanden.</div>';return;}
+    var t=ingTotal(rec.ingredients||[]);
+    var portions=rec.portions||1;
+    getDay().meals[pickerMeal].push(Object.assign({name:rec.name,emoji:rec.emoji||'📋',isRecipe:true,recipeId:rec.id,portions:portions,ingredients:rec.ingredients||[]},scaleNutrients(t,portions)));
+    saveS();renderAll();closePicker();
+    showToast('📋 '+rec.name+' eingetragen');
+    return;
+  }
   pickerIngredients=[{name:p.name,emoji:p.emoji,g:100,amount:100,per100:p.per100}];
   if(!document.getElementById('pickerChatRecipeName').value)
     document.getElementById('pickerChatRecipeName').value=p.name.slice(0,50);
-  var oft=document.getElementById('pickerOftCards');if(oft)oft.remove();
-  var msgs=document.getElementById('pickerChatMsgs');
-  msgs.innerHTML+='<div class="cm a">✓ '+p.name+' aus OpenFoodFacts übernommen.</div>';
-  pickerRenderIngList('pickerChatIngList',pickerIngredients,
-    function(idx,v){pickerIngredients[idx].amount=parseFloat(v)||0;pickerUpdateChatTotal();},
-    function(idx){pickerIngredients.splice(idx,1);pickerUpdateChatTotal();}
-  );
+  msgs.innerHTML+='<div class="cm a">✓ '+p.name+' übernommen.</div>';
+  _pickerChatRebind();
   pickerUpdateChatTotal();
   document.getElementById('pickerChatResult').classList.remove('hidden');
 }
 
 function pickerChatKiFallback(msg){
   var msgs=document.getElementById('pickerChatMsgs');
-  var oft=document.getElementById('pickerOftCards');if(oft)oft.remove();
+  var cards=document.getElementById('pickerLocalCards');if(cards)cards.remove();
+  if(!isOnline){msgs.innerHTML+='<div class="cm a">📵 KI benötigt eine Internet-Verbindung.</div>';document.getElementById('pickerChatSend').disabled=false;return;}
   msgs.innerHTML+='<div class="cm a">🤖 KI schätzt Nährwerte...</div>';
   msgs.scrollTop=msgs.scrollHeight;
   document.getElementById('pickerChatSend').disabled=true;
@@ -1130,10 +1124,7 @@ function pickerChatKiFallback(msg){
         pickerIngredients=resolved;
         if(!document.getElementById('pickerChatRecipeName').value)
           document.getElementById('pickerChatRecipeName').value=msg.slice(0,50);
-        pickerRenderIngList('pickerChatIngList',pickerIngredients,
-          function(i,v){pickerIngredients[i].amount=parseFloat(v)||0;pickerUpdateChatTotal();},
-          function(i){pickerIngredients.splice(i,1);pickerUpdateChatTotal();pickerRenderIngList('pickerChatIngList',pickerIngredients,function(i,v){pickerIngredients[i].amount=parseFloat(v)||0;pickerUpdateChatTotal();},function(i){pickerIngredients.splice(i,1);pickerUpdateChatTotal();});}
-        );
+        _pickerChatRebind();
         pickerUpdateChatTotal();
         document.getElementById('pickerChatResult').classList.remove('hidden');
         document.getElementById('pickerChatSend').disabled=false;
@@ -1145,7 +1136,6 @@ function pickerChatKiFallback(msg){
 
 function pickerSendChat(){
   var msg=document.getElementById('pickerChatInp').value.trim();if(!msg)return;
-  if(!isOnline){showToast('Internet benötigt');return;}
   var msgs=document.getElementById('pickerChatMsgs');
   msgs.innerHTML+='<div class="cm u">'+msg+'</div>';
   document.getElementById('pickerChatInp').value='';
@@ -1153,32 +1143,30 @@ function pickerSendChat(){
   document.getElementById('pickerChatResult').classList.add('hidden');
   msgs.scrollTop=msgs.scrollHeight;
   window._pickerChatLastMsg=msg;
-  // OFT-Suche zuerst — Markenprodukte direkt aus OpenFoodFacts (#79)
-  msgs.innerHTML+='<div class="cm a" id="pickerChatThinking">🔍 Suche in OpenFoodFacts...</div>';
-  pickerChatOftSearch(msg,function(results){
-    var thinking=document.getElementById('pickerChatThinking');
-    if(thinking)thinking.remove();
-    if(results.length){
-      window._pickerOftResults=results;
-      var html='<div id="pickerOftCards" style="display:flex;flex-direction:column;gap:6px;margin-top:4px;">';
-      html+='<div class="cm a">🌐 '+results.length+' Treffer in OpenFoodFacts:</div>';
-      results.forEach(function(p,i){
-        var vals=Math.round(p.per100.kcal)+' kcal · P'+p.per100.protein.toFixed(1)+'g · K'+p.per100.carbs.toFixed(1)+'g · F'+p.per100.fat.toFixed(1)+'g /100g';
-        html+='<div style="background:var(--gl);border:1px solid var(--br);border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:8px;">'
-          +'<div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:13px;">'+p.emoji+' '+p.name+'</div>'
-          +'<div style="font-size:11px;color:var(--mu);">'+vals+'</div></div>'
-          +'<button type="button" onclick="pickerChatAddOft('+i+')" style="background:var(--g1);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:14px;font-weight:700;cursor:pointer;flex-shrink:0;">＋</button>'
-          +'</div>';
-      });
-      html+='<div style="text-align:center;padding-top:2px;"><button type="button" onclick="pickerChatKiFallback(window._pickerChatLastMsg)" style="background:none;border:none;color:var(--mu);font-size:12px;cursor:pointer;padding:4px 8px;text-decoration:underline;">🤖 Stattdessen KI fragen</button></div>';
-      html+='</div>';
-      msgs.innerHTML+=html;
-      msgs.scrollTop=msgs.scrollHeight;
-      document.getElementById('pickerChatSend').disabled=false;
-    } else {
-      pickerChatKiFallback(msg);
-    }
-  });
+  // Lokale Suche zuerst (#113): Rezepte, Custom Foods, Cache, DB. KI nur als Fallback.
+  var results=pickerChatLocalSearch(msg);
+  if(results.length){
+    window._pickerLocalResults=results;
+    var html='<div id="pickerLocalCards" style="display:flex;flex-direction:column;gap:6px;margin-top:4px;">';
+    html+='<div class="cm a">📚 '+results.length+' Treffer in deinem Bestand:</div>';
+    results.forEach(function(p,i){
+      var sub=p.isRecipe?'Rezept':(p.per100?Math.round(p.per100.kcal)+' kcal · P'+(p.per100.protein||0).toFixed(1)+'g · K'+(p.per100.carbs||0).toFixed(1)+'g · F'+(p.per100.fat||0).toFixed(1)+'g /100g':'');
+      var badge=p.badge||'';
+      html+='<div style="background:var(--gl);border:1px solid var(--br);border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:8px;">'
+        +'<div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:13px;">'+(p.emoji||'🍽')+' '+p.name+(badge?' <span style="font-size:11px;color:var(--mu);">'+badge+'</span>':'')+'</div>'
+        +(sub?'<div style="font-size:11px;color:var(--mu);">'+sub+'</div>':'')+'</div>'
+        +'<button type="button" onclick="pickerChatAddLocal('+i+')" style="background:var(--g1);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:14px;font-weight:700;cursor:pointer;flex-shrink:0;">＋</button>'
+        +'</div>';
+    });
+    html+='<div style="text-align:center;padding-top:2px;"><button type="button" onclick="pickerChatKiFallback(window._pickerChatLastMsg)" style="background:none;border:none;color:var(--mu);font-size:12px;cursor:pointer;padding:4px 8px;text-decoration:underline;">🤖 Stattdessen KI fragen</button></div>';
+    html+='</div>';
+    msgs.innerHTML+=html;
+    msgs.scrollTop=msgs.scrollHeight;
+    document.getElementById('pickerChatSend').disabled=false;
+    return;
+  }
+  if(!isOnline){msgs.innerHTML+='<div class="cm a">📵 Offline und nichts im Bestand gefunden. Verbinde dich oder lege es als „Eigenes Lebensmittel" an.</div>';document.getElementById('pickerChatSend').disabled=false;return;}
+  pickerChatKiFallback(msg);
 }
 
 function pickerUpdateChatTotal(){pickerUpdateTotal('Chat');}
@@ -1235,10 +1223,13 @@ function pickerLinkImport(){
             lookupNutrients(rawItems,function(ings){
               pickerIngredients=ings;
               document.getElementById('pickerLinkRecipeName').value=d.name;
-              pickerRenderIngList('pickerLinkIngList',pickerIngredients,
-                function(i,v){pickerIngredients[i].amount=parseFloat(v)||0;pickerUpdateLinkTotal();},
-                function(i){pickerIngredients.splice(i,1);pickerUpdateLinkTotal();}
-              );
+              function rebindLink(){
+                pickerRenderIngList('pickerLinkIngList',pickerIngredients,
+                  function(i,v){pickerIngredients[i].amount=parseFloat(v)||0;pickerUpdateLinkTotal();},
+                  function(i){pickerIngredients.splice(i,1);rebindLink();pickerUpdateLinkTotal();}
+                );
+              }
+              rebindLink();
               pickerUpdateLinkTotal();
               document.getElementById('pickerLinkResult').classList.remove('hidden');
               btn.disabled=false;btn.textContent='🔗 Neu laden';btn.style.opacity='1';

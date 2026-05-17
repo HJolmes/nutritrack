@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.176 (2026-05-17)
+**Stand:** v0.177 (2026-05-17)
 
 ## URLs
 
@@ -25,8 +25,8 @@
 - **Payload-Schema (base64-JSON):** `{t:'r'|'f'|'m', …}`.
 - **OneDrive Reconnect (v0.159):** `_odGetToken()` unterscheidet Auth-Fehler (`invalid_grant`, `interaction_required`, `unauthorized_client`) von Netzwerkfehlern — nur bei echten Auth-Fehlern werden Tokens gelöscht + sofort `odReconnectOv`-Modal geöffnet (Bottom-Sheet, `.ov`-Klasse, `_odShowReconnect()`). Netzwerkfehler löschen Tokens nicht mehr.
 - **OneDrive Autospeicher-Fix (v0.159):** Doppelte `_odAutoSync()`-Definition entfernt — die zweite Definition (rief `oneDriveSyncUp()` auf) überschrieb die erste (rief `oneDriveSyncSlot()` auf). Jetzt wird täglich korrekt ein Autospeicher-Slot gefüllt.
-- **Picker Chat (v0.175/v0.176):** Foto-Tab und Chat-Tab vollständig entkoppelt. Chat-Nachrichten mit aktivem Foto (`window._pickerPhotoB64`) gehen als Image-Content an `claude-sonnet-4-6`; ohne Foto `claude-haiku-4-5`. Reihenfolge: `pickerSendChat` → `pickerChatLocalSearch(msg)` (eigene tokenisierte Fuzzy-Suche über Rezepte, Custom Foods, Cache, DB; max 6 Treffer) → Treffer als Karten via `pickerChatAddLocal(i)`; bei 0 Treffern oder Klick auf „🤖 Stattdessen KI fragen" → `pickerChatKiFallback(msg)`. Rezept-Treffer landen direkt in der Mahlzeit + `closePicker()`; per100-Treffer setzen `pickerIngredients` und rendern die Zutaten-Liste. OFT-Anbindung im Chat ist raus. Lokale Suche funktioniert offline; KI-Fallback verlangt `isOnline`.
-- **Picker Chat Fuzzy-Suche (v0.176):** `_pickerFold` (ä→a, ö→o, ü→u, ß→s) + `_pickerTok` (Stoppwörter: mit/und/von/der/die/das/im/in/zum/zur/an/am/auf/bei/zu/…) + `_pickerLev` (Levenshtein) + `_pickerScoreName` (Score-Mix: qFull-Substring +10, Token === +5, startsWith +4, includes +3, Levenshtein ≤1 (kurz) bzw. ≤2 (lang) +1–2). `pickerChatLocalSearch` bevorzugt Rezepte (+10) vor Custom Foods (+6) vor Cache (+3) vor DB (+0). Min-Score 2 bei Einzelwort, 1 bei Multi-Wort — filtert zufällige Levenshtein-Treffer aus.
+- **Picker Chat (v0.175–v0.177):** Foto-Tab und Chat-Tab vollständig entkoppelt. Chat-Nachrichten mit aktivem Foto (`window._pickerPhotoB64`) gehen als Image-Content an `claude-sonnet-4-6`; ohne Foto `claude-haiku-4-5`. Reihenfolge: `pickerSendChat` → `pickerChatLocalSearch(msg)` (tokenisierte Fuzzy-Suche **nur** über Rezepte + Custom Foods, max 6 Treffer) → Treffer als Karten via `pickerChatAddLocal(i)`; bei 0 Treffern oder Klick auf „🤖 Stattdessen KI fragen" → `pickerChatKiFallback(msg)`. Rezept-Treffer landen direkt in der Mahlzeit + `closePicker()`; per100-Treffer setzen `pickerIngredients` und rendern die Zutaten-Liste. OFT-Anbindung im Chat ist raus. Lokale Suche funktioniert offline; KI-Fallback verlangt `isOnline`.
+- **Picker Chat Fuzzy-Suche (v0.176/v0.177):** `_pickerFold` (ä→a, ö→o, ü→u, ß→s) + `_pickerTok` (Stoppwörter: mit/und/von/der/die/das/im/in/zum/zur/an/am/auf/bei/zu/…) + `_pickerLev` (Levenshtein) + `_pickerScoreName`. **Alle** Query-Tokens müssen treffen (sonst Score 0) — kein „Joghurt Natur"-Treffer mehr für „Joghurt mit Früchten". Pro-Token-Score: === +5, startsWith +4, includes +3, Levenshtein ≤1 (kurz) bzw. ≤2 (lang) +1–2. Voller-Query-Substring zusätzlich +10. Rezepte werden um +10 geboostet vor Custom Foods (+6). Cache und eingebaute DB werden im Chat-Tab nicht durchsucht.
 - **Layout-Fixes (v0.167):** bnav `margin:0 14px` → `margin:0 0` (horizontale Margins verursachten 14 px Rechtsversatz bei `position:fixed`+`left:50%`+`translateX(-50%)`). iOS PWA: `focusout`-Handler setzt `window.scrollTo(0,0)` nach Tastatur-Dismiss (nur `_isIos()&&_isPwaStandalone()`).
 - **iOS Safe-Area-Top (v0.168):** `.hdr` und `#mealDetailScreen .md-head` erhalten `padding-top: calc(…px + env(safe-area-inset-top, 0px))` — Screen-Header-Buttons auf allen Screens unterhalb der iOS Status-Bar / Dynamic Island (#104).
 - **Trends (v0.169):** `renderWeekBars()` schließt heutigen Tag aus avg/cnt aus. `requestWeekReport()` erkennt Zielrichtung (lose/gain/maintain) aus `S.goalWeight vs S.weight`, übergibt sie an den Prompt, Format auf Stichpunkte + Empfehlung für nächste Woche, Token-Limit 200→400 (#102 #103).
@@ -75,16 +75,17 @@
 - v0.175 Picker Chat: „Joghurt mit Müsli" (eigenes Rezept) tippen → erscheint als Lokal-Treffer-Karte; ＋ trägt das Rezept direkt in die Mahlzeit ein. Unbekanntes Lebensmittel → KI-Fallback springt ein (#113)
 - v0.175 Picker (Chat + Link): Zutat aus erkannter Liste löschen → DOM-Zeile verschwindet sofort (#112)
 - v0.176 Picker Chat Fuzzy: „Jogurt mit Frucht" findet „Joghurt mit Früchten und Müsli"; „hänchen" findet „Hähnchenbrust"; Teil-Phrasen werden Wort-für-Wort gewichtet
+- v0.177 Picker Chat: Suche nur in Rezepten + Custom Foods, Alle-Tokens-müssen-treffen → „Joghurt mit Früchten" liefert kein „Joghurt Natur" oder „Früchte gemischt" mehr
 
 ## Versions-Historie (letzte 5)
 
 | Version | PR | Was |
 |---|---|---|
-| v0.172 | — | Picker: Hinzufügen-Button sticky am unteren Rand (Android) |
 | v0.173 | — | Share-Import-Anleitung für alle Browser (Edge, Firefox, Samsung Internet) |
 | v0.174 | #110 | OneDrive-Redirect dynamisch via location.origin |
 | v0.175 | #114 | Picker Chat: Lokal-First statt OFT + Ing-Delete rendert neu (#112 #113) |
-| v0.176 | — | Picker Chat: Fuzzy-Suche (Tippfehler + Umlaute + Token-Match) |
+| v0.176 | #115 | Picker Chat: Fuzzy-Suche (Tippfehler + Umlaute + Token-Match) |
+| v0.177 | — | Picker Chat: nur eigene Sachen, alle Tokens müssen treffen |
 
 ---
 

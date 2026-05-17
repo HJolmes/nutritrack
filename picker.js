@@ -1098,12 +1098,13 @@ function _pickerLev(a,b){
 function _pickerScoreName(name,qTokens,qFull){
   var nl=_pickerFold(name);
   if(!nl)return 0;
-  var score=0;
-  if(qFull&&nl.indexOf(qFull)>=0)score+=10;
   var nTokens=_pickerTok(name);
-  if(!nTokens.length)return score;
-  qTokens.forEach(function(qt){
-    var best=0;
+  if(!nTokens.length)return 0;
+  // Alle Query-Tokens müssen treffen — sonst kein sinnvoller Treffer.
+  // (Bei „Joghurt mit Früchten" wäre sonst „Joghurt Natur" ein Treffer.)
+  var score=0;
+  for(var qi=0;qi<qTokens.length;qi++){
+    var qt=qTokens[qi],best=0;
     for(var i=0;i<nTokens.length;i++){
       var nt=nTokens[i];
       if(nt===qt){best=Math.max(best,5);break;}
@@ -1116,8 +1117,10 @@ function _pickerScoreName(name,qTokens,qFull){
       var d=_pickerLev(nt,qt);
       if(d<=allowed)best=Math.max(best,3-Math.min(d,2));
     }
+    if(best===0)return 0;
     score+=best;
-  });
+  }
+  if(qFull&&nl.indexOf(qFull)>=0)score+=10;
   return score;
 }
 function pickerChatLocalSearch(q){
@@ -1131,6 +1134,8 @@ function pickerChatLocalSearch(q){
     if(prev){if(s>prev.score)prev.score=s;return;}
     var rec={score:s,item:item};seen[k]=rec;results.push(rec);
   }
+  // Nur selbst gespeicherte Sachen: Rezepte + Custom Foods.
+  // Cache und eingebaute DB sind ausgeschlossen (nicht „selbst gespeichert").
   recipes.forEach(function(r){
     var s=_pickerScoreName(r.name,qTokens,qFull);
     if(s>0)add({name:r.name,emoji:r.emoji||'📋',isRecipe:true,recipeId:r.id,per100:null,badge:'📋'},s+10);
@@ -1139,19 +1144,6 @@ function pickerChatLocalSearch(q){
     var s=_pickerScoreName(f.name,qTokens,qFull);
     if(s>0)add({name:f.name,emoji:f.emoji,per100:f.per100,badge:'⭐'},s+6);
   });
-  Object.keys(foodCache||{}).forEach(function(k){
-    var f=foodCache[k];if(!f||!f.name)return;
-    var s=_pickerScoreName(f.name,qTokens,qFull);
-    if(s>0)add({name:f.name,emoji:f.emoji,per100:f.per100,badge:'🕐'},s+3);
-  });
-  DB.forEach(function(f){
-    var s=_pickerScoreName(f.n,qTokens,qFull);
-    if(s>0)add({name:f.n,emoji:f.e,per100:{kcal:f.k,protein:f.p,carbs:f.c,fat:f.f,sugar:0,fiber:0,salt:0}},s);
-  });
-  // Mindest-Score-Schwelle: Tippfehler-only-Treffer für Einzel-Wort-Suchen aussortieren
-  // (vermeidet, dass „xy" zufällig per Levenshtein auf alles matcht)
-  var minScore=qTokens.length===1?2:1;
-  results=results.filter(function(r){return r.score>=minScore;});
   results.sort(function(a,b){return b.score-a.score;});
   return results.slice(0,6).map(function(x){return x.item;});
 }

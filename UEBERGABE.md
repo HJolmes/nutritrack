@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.178 (2026-05-21)
+**Stand:** v0.179 (2026-05-21)
 
 ## URLs
 
@@ -32,6 +32,7 @@
 - **Trends (v0.169):** `renderWeekBars()` schließt heutigen Tag aus avg/cnt aus. `requestWeekReport()` erkennt Zielrichtung (lose/gain/maintain) aus `S.goalWeight vs S.weight`, übergibt sie an den Prompt, Format auf Stichpunkte + Empfehlung für nächste Woche, Token-Limit 200→400 (#102 #103).
 - **Picker Ing-Delete (v0.175):** `pickerRenderIngList`-Callbacks rendern nach `splice` neu (Helper `_pickerChatRebind` im Chat, lokale `rebindLink`-Closure im Link-Tab). Photo-Tab war via `pickerShowPhotoResult` schon ok. Vorher blieben gelöschte DOM-Zeilen sichtbar (#112).
 - **Picker OFT (v0.170):** kcal-Fallback `P*4+K*4+F*9` in `pickerFetchOnline` und `lookupNutrients` wenn beide Energy-Felder fehlen (#96 #101). OFT im Chat-Tab seit v0.175 nicht mehr genutzt.
+- **Picker Foto-Save (v0.179):** Settings-Toggle `S.savePickerPhotos` (Default off) unter „🗂 Daten → 📷 Picker-Fotos". Wenn an, ruft `_pickerSavePhotoIfWanted()` in `_pickerAdd` (vor `closePicker()`) auf — versucht zuerst `navigator.share({files:[File]})` (iOS Safari + Android Chrome unterstützen Files seit iOS 15 / Chrome 89), Fallback `<a download>` (Android: nach `Downloads/`; iOS PWA: nicht garantiert). Hinweis-Zeile `#pickerPhotoSaveHint` unter `pickerPrevWrap` zeigt Status und navigiert tippbar zu Einstellungen/Daten. Web-Capture (`<input capture>`) legt das Foto sonst weder auf iOS noch zuverlässig auf Android in die Galerie (#118).
 - **Sport-Sync (v0.158):** Erstes ausgelagertes Modul `js/health-sync.js` (klassisches `<script>` vor `</body>`, exportiert `window.NTHealth`). User generiert in „Mehr → Sport-Sync" ein 32-Zeichen-Token (Base58-ish, `localStorage.nt_health_token`), trägt es in eine iOS-Shortcut-Automation („wenn Training endet") oder Android HTTP Request Shortcut ein. Automation POSTet `{id, source, type, start, kcal, durationSec?, distanceM?, hrAvg?}` mit Header `X-User-Token` an Worker `POST /workout` (KV-Key `wo:<token>:<id>`, TTL 60d). PWA pollt `GET /workouts?since=<lastpoll>` bei `DOMContentLoaded` (mit 800ms Delay) und `visibilitychange→visible`, dedupliziert via `_healthId`-Marker, hängt Workouts in `S.days[<localDate>].exercise[]` an (Schema bleibt kompatibel zur manuellen Erfassung) — die existierende `burned`-Subtraktion in `renderAll()` zieht die Kalorien automatisch vom Tagesziel ab. `renderExercise()` zeigt für `_source`-Einträge ein kleines „Apple"/„Samsung"-Badge.
 
 ## Worker-Endpoints
@@ -77,16 +78,17 @@
 - v0.176 Picker Chat Fuzzy: „Jogurt mit Frucht" findet „Joghurt mit Früchten und Müsli"; „hänchen" findet „Hähnchenbrust"; Teil-Phrasen werden Wort-für-Wort gewichtet
 - v0.177 Picker Chat: Suche nur in Rezepten + Custom Foods, Alle-Tokens-müssen-treffen → „Joghurt mit Früchten" liefert kein „Joghurt Natur" oder „Früchte gemischt" mehr
 - v0.178 Picker Chat: „Waffel" findet nicht mehr „Kaffee mit Milch"; „Jogurt" findet weiter „Joghurt"; „Frucht" findet weiter „Früchten" (#117)
+- v0.179 Picker Foto-Save: Toggle in Einstellungen → Daten aktivieren; Foto im Picker aufnehmen + Mahlzeit hinzufügen → System-Share-Sheet (iOS: „In Fotos sichern"; Android: Galerie/Download); Toggle aus → Hinweis-Link unter Foto zeigt Einstellungs-Verweis, kein Save (#118)
 
 ## Versions-Historie (letzte 5)
 
 | Version | PR | Was |
 |---|---|---|
-| v0.174 | #110 | OneDrive-Redirect dynamisch via location.origin |
 | v0.175 | #114 | Picker Chat: Lokal-First statt OFT + Ing-Delete rendert neu (#112 #113) |
 | v0.176 | #115 | Picker Chat: Fuzzy-Suche (Tippfehler + Umlaute + Token-Match) |
 | v0.177 | #116 | Picker Chat: nur eigene Sachen, alle Tokens müssen treffen |
 | v0.178 | — | Picker Chat: strengere Fuzzy-Toleranz — kein „Kaffee mit Milch" bei „Waffel" (#117) |
+| v0.179 | — | Picker Foto: optionales Sichern per Share-Sheet, Toggle in Einstellungen (#118) |
 
 ---
 

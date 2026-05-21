@@ -973,7 +973,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.177</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.179</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1039,6 +1039,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
         <div id="pickerPrevWrap" class="pprev-wrap hidden">
           <img id="pickerPrev"><button type="button" class="pchange" onclick="pickerResetPhoto()">Ändern</button>
         </div>
+        <div id="pickerPhotoSaveHint" class="hidden" onclick="openSettings();setTimeout(function(){settSetTab('daten');},50);" style="font-size:11px;color:var(--mu);margin:6px 4px 0;cursor:pointer;line-height:1.4;"></div>
         <div id="pickerBcConfirm" class="bc-confirm hidden">
           <div class="bc-confirm-name" id="pickerBcName"></div>
           <div class="bc-confirm-vals" id="pickerBcVals"></div>
@@ -1790,6 +1791,20 @@ button,input,select,textarea{font-family:var(--fs-body);}
           <button type="button" class="seb" onclick="openAutoSaves()">📂 Autospeicher anzeigen</button>
         </div>
         <div style="padding-top:12px;border-top:1px solid var(--br);margin-bottom:12px;">
+          <label class="lbl" style="margin-bottom:8px;">📷 Picker-Fotos</label>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--gl);border-radius:10px;border:1px solid var(--g3);">
+            <div style="flex:1;min-width:0;padding-right:10px;">
+              <div style="font-size:13px;font-weight:700;">Foto auf Handy sichern</div>
+              <div style="font-size:11px;color:var(--mu);margin-top:2px;line-height:1.4;">Nach dem Hinzufügen einer Mahlzeit das Foto via Teilen-Menü speichern (z. B. in „Fotos"/Galerie).</div>
+            </div>
+            <label style="position:relative;display:inline-block;width:44px;height:24px;flex:0 0 44px;">
+              <input type="checkbox" id="ssavepickerphotos" style="opacity:0;width:0;height:0;" onchange="updateSavePickerPhotosToggle()">
+              <span id="savePickerPhotosToggle" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#ccc;border-radius:24px;transition:.3s;"></span>
+              <span id="savePickerPhotosThumb" style="position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.3s;"></span>
+            </label>
+          </div>
+        </div>
+        <div style="padding-top:12px;border-top:1px solid var(--br);margin-bottom:12px;">
           <label class="lbl" style="margin-bottom:8px;">💾 Datensicherung</label>
           <button type="button" class="seb" onclick="exportData()">📤 Exportieren</button>
           <button type="button" class="seb" onclick="document.getElementById('impInp').click()">📥 Importieren</button>
@@ -1913,7 +1928,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.177';
+var APP_VERSION='0.179';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1942,6 +1957,12 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.179',items:[
+    {icon:'📷',text:'Picker · Foto: Neue Option in Einstellungen → Daten → „Foto auf Handy sichern". Wenn aktiv, wird das Foto nach dem Hinzufügen einer Mahlzeit übers System-Teilen-Menü angeboten (z. B. „In Fotos sichern" auf iOS, „In Galerie speichern" auf Android). Unter dem Foto-Preview gibt es einen Hinweis-Link zur Einstellung. (#118)',where:'Einstellungen · Daten · Picker-Fotos'},
+  ]},
+  {v:'0.178',items:[
+    {icon:'🐛',text:'Picker Chat: Fuzzy-Suche ist strenger — „Waffel" findet nicht mehr fälschlich „Kaffee mit Milch". Levenshtein-Toleranz für kurze Wörter (bis 7 Zeichen) auf 1 Edit reduziert. (#117)',where:'Picker · Chat-Tab'},
+  ]},
   {v:'0.177',items:[
     {icon:'🔍',text:'Picker Chat: Suche nur noch in deinen eigenen Rezepten und gespeicherten Lebensmitteln (Cache und eingebaute DB raus). Alle Wörter deiner Eingabe müssen treffen — „Joghurt mit Früchten" liefert kein „Joghurt Natur" oder „Früchte gemischt" mehr.',where:'Picker · Chat-Tab'},
   ]},
@@ -3929,9 +3950,12 @@ function openSettings(){
   if(dfi)dfi.value=S.dietFree||'';
   var dwchk=document.getElementById('sdietwarn');
   if(dwchk)dwchk.checked=!!S.dietWarn;
+  var spchk=document.getElementById('ssavepickerphotos');
+  if(spchk)spchk.checked=!!S.savePickerPhotos;
   updateDietPresetBtns();
   updateDietMacroInfo();
   updateDietWarnToggle();
+  renderSavePickerPhotosToggle();
   renderSavedDietFreeList();
   document.getElementById('cacheInfo').textContent=customFoods.length+' eigene Lebensmittel · '+recipes.length+' Rezepte · '+Object.keys(foodCache).length+' gespeichert';
   var aiStatus=document.getElementById('aiProxyStatus');
@@ -4308,6 +4332,26 @@ function updateDietWarnToggle(){
   if(chk&&tog&&thumb){
     tog.style.background=chk.checked?'var(--g1)':'#ccc';
     thumb.style.transform=chk.checked?'translateX(20px)':'translateX(0)';
+  }
+}
+
+function renderSavePickerPhotosToggle(){
+  var chk=document.getElementById('ssavepickerphotos');
+  var tog=document.getElementById('savePickerPhotosToggle');
+  var thumb=document.getElementById('savePickerPhotosThumb');
+  if(chk&&tog&&thumb){
+    tog.style.background=chk.checked?'var(--g1)':'#ccc';
+    thumb.style.transform=chk.checked?'translateX(20px)':'translateX(0)';
+  }
+}
+function updateSavePickerPhotosToggle(){
+  renderSavePickerPhotosToggle();
+  var chk=document.getElementById('ssavepickerphotos');
+  S.savePickerPhotos=!!(chk&&chk.checked);
+  saveS();
+  if(typeof _pickerRefreshPhotoSaveHint==='function'){
+    var prev=document.getElementById('pickerPrevWrap');
+    if(prev&&!prev.classList.contains('hidden'))_pickerRefreshPhotoSaveHint();
   }
 }
 

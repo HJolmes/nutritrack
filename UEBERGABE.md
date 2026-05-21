@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.177 (2026-05-17)
+**Stand:** v0.179 (2026-05-21)
 
 ## URLs
 
@@ -26,12 +26,13 @@
 - **OneDrive Reconnect (v0.159):** `_odGetToken()` unterscheidet Auth-Fehler (`invalid_grant`, `interaction_required`, `unauthorized_client`) von Netzwerkfehlern — nur bei echten Auth-Fehlern werden Tokens gelöscht + sofort `odReconnectOv`-Modal geöffnet (Bottom-Sheet, `.ov`-Klasse, `_odShowReconnect()`). Netzwerkfehler löschen Tokens nicht mehr.
 - **OneDrive Autospeicher-Fix (v0.159):** Doppelte `_odAutoSync()`-Definition entfernt — die zweite Definition (rief `oneDriveSyncUp()` auf) überschrieb die erste (rief `oneDriveSyncSlot()` auf). Jetzt wird täglich korrekt ein Autospeicher-Slot gefüllt.
 - **Picker Chat (v0.175–v0.177):** Foto-Tab und Chat-Tab vollständig entkoppelt. Chat-Nachrichten mit aktivem Foto (`window._pickerPhotoB64`) gehen als Image-Content an `claude-sonnet-4-6`; ohne Foto `claude-haiku-4-5`. Reihenfolge: `pickerSendChat` → `pickerChatLocalSearch(msg)` (tokenisierte Fuzzy-Suche **nur** über Rezepte + Custom Foods, max 6 Treffer) → Treffer als Karten via `pickerChatAddLocal(i)`; bei 0 Treffern oder Klick auf „🤖 Stattdessen KI fragen" → `pickerChatKiFallback(msg)`. Rezept-Treffer landen direkt in der Mahlzeit + `closePicker()`; per100-Treffer setzen `pickerIngredients` und rendern die Zutaten-Liste. OFT-Anbindung im Chat ist raus. Lokale Suche funktioniert offline; KI-Fallback verlangt `isOnline`.
-- **Picker Chat Fuzzy-Suche (v0.176/v0.177):** `_pickerFold` (ä→a, ö→o, ü→u, ß→s) + `_pickerTok` (Stoppwörter: mit/und/von/der/die/das/im/in/zum/zur/an/am/auf/bei/zu/…) + `_pickerLev` (Levenshtein) + `_pickerScoreName`. **Alle** Query-Tokens müssen treffen (sonst Score 0) — kein „Joghurt Natur"-Treffer mehr für „Joghurt mit Früchten". Pro-Token-Score: === +5, startsWith +4, includes +3, Levenshtein ≤1 (kurz) bzw. ≤2 (lang) +1–2. Voller-Query-Substring zusätzlich +10. Rezepte werden um +10 geboostet vor Custom Foods (+6). Cache und eingebaute DB werden im Chat-Tab nicht durchsucht.
+- **Picker Chat Fuzzy-Suche (v0.176/v0.177/v0.178):** `_pickerFold` (ä→a, ö→o, ü→u, ß→s) + `_pickerTok` (Stoppwörter: mit/und/von/der/die/das/im/in/zum/zur/an/am/auf/bei/zu/…) + `_pickerLev` (Levenshtein) + `_pickerScoreName`. **Alle** Query-Tokens müssen treffen (sonst Score 0) — kein „Joghurt Natur"-Treffer mehr für „Joghurt mit Früchten". Pro-Token-Score: === +5, startsWith +4, includes +3, Levenshtein ≤1 (Länge 5–7) bzw. ≤2 (Länge ≥8) +1–2 — kein Levenshtein unter Länge 5, sonst Distraktoren wie „kaffee"↔„waffel" (#117). Voller-Query-Substring zusätzlich +10. Rezepte werden um +10 geboostet vor Custom Foods (+6). Cache und eingebaute DB werden im Chat-Tab nicht durchsucht.
 - **Layout-Fixes (v0.167):** bnav `margin:0 14px` → `margin:0 0` (horizontale Margins verursachten 14 px Rechtsversatz bei `position:fixed`+`left:50%`+`translateX(-50%)`). iOS PWA: `focusout`-Handler setzt `window.scrollTo(0,0)` nach Tastatur-Dismiss (nur `_isIos()&&_isPwaStandalone()`).
 - **iOS Safe-Area-Top (v0.168):** `.hdr` und `#mealDetailScreen .md-head` erhalten `padding-top: calc(…px + env(safe-area-inset-top, 0px))` — Screen-Header-Buttons auf allen Screens unterhalb der iOS Status-Bar / Dynamic Island (#104).
 - **Trends (v0.169):** `renderWeekBars()` schließt heutigen Tag aus avg/cnt aus. `requestWeekReport()` erkennt Zielrichtung (lose/gain/maintain) aus `S.goalWeight vs S.weight`, übergibt sie an den Prompt, Format auf Stichpunkte + Empfehlung für nächste Woche, Token-Limit 200→400 (#102 #103).
 - **Picker Ing-Delete (v0.175):** `pickerRenderIngList`-Callbacks rendern nach `splice` neu (Helper `_pickerChatRebind` im Chat, lokale `rebindLink`-Closure im Link-Tab). Photo-Tab war via `pickerShowPhotoResult` schon ok. Vorher blieben gelöschte DOM-Zeilen sichtbar (#112).
 - **Picker OFT (v0.170):** kcal-Fallback `P*4+K*4+F*9` in `pickerFetchOnline` und `lookupNutrients` wenn beide Energy-Felder fehlen (#96 #101). OFT im Chat-Tab seit v0.175 nicht mehr genutzt.
+- **Picker Foto-Save (v0.179):** Settings-Toggle `S.savePickerPhotos` (Default off) unter „🗂 Daten → 📷 Picker-Fotos". Wenn an, ruft `_pickerSavePhotoIfWanted()` in `_pickerAdd` (vor `closePicker()`) auf — versucht zuerst `navigator.share({files:[File]})` (iOS Safari + Android Chrome unterstützen Files seit iOS 15 / Chrome 89), Fallback `<a download>` (Android: nach `Downloads/`; iOS PWA: nicht garantiert). Hinweis-Zeile `#pickerPhotoSaveHint` unter `pickerPrevWrap` zeigt Status und navigiert tippbar zu Einstellungen/Daten. Web-Capture (`<input capture>`) legt das Foto sonst weder auf iOS noch zuverlässig auf Android in die Galerie (#118).
 - **Sport-Sync (v0.158):** Erstes ausgelagertes Modul `js/health-sync.js` (klassisches `<script>` vor `</body>`, exportiert `window.NTHealth`). User generiert in „Mehr → Sport-Sync" ein 32-Zeichen-Token (Base58-ish, `localStorage.nt_health_token`), trägt es in eine iOS-Shortcut-Automation („wenn Training endet") oder Android HTTP Request Shortcut ein. Automation POSTet `{id, source, type, start, kcal, durationSec?, distanceM?, hrAvg?}` mit Header `X-User-Token` an Worker `POST /workout` (KV-Key `wo:<token>:<id>`, TTL 60d). PWA pollt `GET /workouts?since=<lastpoll>` bei `DOMContentLoaded` (mit 800ms Delay) und `visibilitychange→visible`, dedupliziert via `_healthId`-Marker, hängt Workouts in `S.days[<localDate>].exercise[]` an (Schema bleibt kompatibel zur manuellen Erfassung) — die existierende `burned`-Subtraktion in `renderAll()` zieht die Kalorien automatisch vom Tagesziel ab. `renderExercise()` zeigt für `_source`-Einträge ein kleines „Apple"/„Samsung"-Badge.
 
 ## Worker-Endpoints
@@ -76,16 +77,18 @@
 - v0.175 Picker (Chat + Link): Zutat aus erkannter Liste löschen → DOM-Zeile verschwindet sofort (#112)
 - v0.176 Picker Chat Fuzzy: „Jogurt mit Frucht" findet „Joghurt mit Früchten und Müsli"; „hänchen" findet „Hähnchenbrust"; Teil-Phrasen werden Wort-für-Wort gewichtet
 - v0.177 Picker Chat: Suche nur in Rezepten + Custom Foods, Alle-Tokens-müssen-treffen → „Joghurt mit Früchten" liefert kein „Joghurt Natur" oder „Früchte gemischt" mehr
+- v0.178 Picker Chat: „Waffel" findet nicht mehr „Kaffee mit Milch"; „Jogurt" findet weiter „Joghurt"; „Frucht" findet weiter „Früchten" (#117)
+- v0.179 Picker Foto-Save: Toggle in Einstellungen → Daten aktivieren; Foto im Picker aufnehmen + Mahlzeit hinzufügen → System-Share-Sheet (iOS: „In Fotos sichern"; Android: Galerie/Download); Toggle aus → Hinweis-Link unter Foto zeigt Einstellungs-Verweis, kein Save (#118)
 
 ## Versions-Historie (letzte 5)
 
 | Version | PR | Was |
 |---|---|---|
-| v0.173 | — | Share-Import-Anleitung für alle Browser (Edge, Firefox, Samsung Internet) |
-| v0.174 | #110 | OneDrive-Redirect dynamisch via location.origin |
 | v0.175 | #114 | Picker Chat: Lokal-First statt OFT + Ing-Delete rendert neu (#112 #113) |
 | v0.176 | #115 | Picker Chat: Fuzzy-Suche (Tippfehler + Umlaute + Token-Match) |
-| v0.177 | — | Picker Chat: nur eigene Sachen, alle Tokens müssen treffen |
+| v0.177 | #116 | Picker Chat: nur eigene Sachen, alle Tokens müssen treffen |
+| v0.178 | — | Picker Chat: strengere Fuzzy-Toleranz — kein „Kaffee mit Milch" bei „Waffel" (#117) |
+| v0.179 | — | Picker Foto: optionales Sichern per Share-Sheet, Toggle in Einstellungen (#118) |
 
 ---
 

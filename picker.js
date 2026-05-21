@@ -216,6 +216,7 @@ function pickerHandlePhoto(e){
       document.getElementById('pickerPrevWrap').classList.remove('hidden');
       document.getElementById('pickerPhotoPickArea').style.display='none';
       document.getElementById('pickerAnalyzeBtn').disabled=false;
+      _pickerRefreshPhotoSaveHint();
       // Barcode-Scan verzögert damit UI sofort reagiert
       setTimeout(function(){pickerTryBarcode(c);},100);
     };
@@ -239,6 +240,48 @@ function pickerResetPhoto(){
   document.getElementById('pickerRecipeName').value='';
   document.getElementById('pickerChatRecipeName').value='';
   pickerIngredients=[];
+  _pickerRefreshPhotoSaveHint(false);
+}
+
+// #118: Foto sichern, wenn vom User in den Einstellungen aktiviert (S.savePickerPhotos).
+// Web-Capture legt das Foto weder auf iOS noch zuverlässig auf Android in die Galerie —
+// daher aktiv via navigator.share (mit File) anbieten, Fallback: <a download> (Downloads/).
+function _pickerSavePhotoIfWanted(){
+  try{
+    if(!window._pickerPhotoB64)return;
+    if(typeof S==='undefined'||!S.savePickerPhotos)return;
+    var bin=atob(window._pickerPhotoB64);
+    var bytes=new Uint8Array(bin.length);
+    for(var i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+    var blob=new Blob([bytes],{type:'image/jpeg'});
+    var ts=new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
+    var fname='nutritrack-'+ts+'.jpg';
+    if(navigator.canShare&&typeof File!=='undefined'){
+      try{
+        var file=new File([blob],fname,{type:'image/jpeg'});
+        if(navigator.canShare({files:[file]})&&navigator.share){
+          navigator.share({files:[file],title:'NutriTrack Foto'}).catch(function(){});
+          return;
+        }
+      }catch(e){/* fall through to download */}
+    }
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url;a.download=fname;a.rel='noopener';a.style.display='none';
+    document.body.appendChild(a);a.click();
+    setTimeout(function(){if(a.parentNode)a.parentNode.removeChild(a);URL.revokeObjectURL(url);},100);
+  }catch(e){/* never block the meal-add flow */}
+}
+
+// Hinweis unter dem Foto-Preview synchronisieren (an/aus aus S.savePickerPhotos).
+// show=false versteckt den Hint (z. B. beim Reset, wenn kein Foto da ist).
+function _pickerRefreshPhotoSaveHint(show){
+  var el=document.getElementById('pickerPhotoSaveHint');if(!el)return;
+  if(show===false){el.classList.add('hidden');return;}
+  var on=!!(typeof S!=='undefined'&&S.savePickerPhotos);
+  el.textContent=on?'💾 Foto wird beim Hinzufügen gespeichert · in Einstellungen änderbar':'💡 Foto-Speicherung in Einstellungen aktivierbar';
+  el.style.color=on?'var(--g1)':'var(--mu)';
+  el.classList.remove('hidden');
 }
 
 function pickerTryBarcode(canvas){
@@ -1038,7 +1081,7 @@ function _pickerAdd(emoji,nameId,portionsId,defaultName,saveAsRecipe,hasEditMode
     var e=getDay().meals[window._editEntryMeal][window._editEntryIdx];
     if(e&&e.ingredients){
       ings.forEach(function(ing){e.ingredients.push(ing);});
-      saveS();closePicker();openEditEntry(window._editEntryMeal,window._editEntryIdx);
+      saveS();_pickerSavePhotoIfWanted();closePicker();openEditEntry(window._editEntryMeal,window._editEntryIdx);
       showToast(ings.length+' Zutat(en) hinzugefügt');return;
     }
   }
@@ -1056,7 +1099,7 @@ function _pickerAdd(emoji,nameId,portionsId,defaultName,saveAsRecipe,hasEditMode
     showToast(emoji+' '+name+' eingetragen');
   }
   var _idx=getDay().meals[pickerMeal].length-1;
-  saveS();renderAll();closePicker();animateAdd(pickerMeal);
+  saveS();renderAll();_pickerSavePhotoIfWanted();closePicker();animateAdd(pickerMeal);
   checkPregWarn(ings,pickerMeal,_idx);checkDietWarn(ings,pickerMeal,_idx);
 }
 function pickerPhotoAdd(saveAsRecipe){_pickerAdd('📸','pickerRecipeName','pickerPhotoPortions','Foto-Rezept',saveAsRecipe,true);}
@@ -1110,10 +1153,12 @@ function _pickerScoreName(name,qTokens,qFull){
       if(nt===qt){best=Math.max(best,5);break;}
       if(nt.indexOf(qt)===0){best=Math.max(best,4);continue;}
       if(nt.indexOf(qt)>0){best=Math.max(best,3);continue;}
-      // Tippfehler-Toleranz: 1 Edit für kurze, 2 für längere Wörter
+      // Tippfehler-Toleranz: kein Levenshtein für sehr kurze Wörter, sonst sammeln sich
+      // Fehltreffer wie „kaffee"↔„waffel" (Distanz 2 bei Länge 6). Erst ab Länge 5 prüfen,
+      // 1 Edit bis 7 Zeichen, 2 Edits für längere.
       var maxLen=Math.max(nt.length,qt.length);
-      if(maxLen<3)continue;
-      var allowed=maxLen<=5?1:2;
+      if(maxLen<5)continue;
+      var allowed=maxLen<=7?1:2;
       var d=_pickerLev(nt,qt);
       if(d<=allowed)best=Math.max(best,3-Math.min(d,2));
     }

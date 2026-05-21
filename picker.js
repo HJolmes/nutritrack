@@ -1110,10 +1110,12 @@ function _pickerScoreName(name,qTokens,qFull){
       if(nt===qt){best=Math.max(best,5);break;}
       if(nt.indexOf(qt)===0){best=Math.max(best,4);continue;}
       if(nt.indexOf(qt)>0){best=Math.max(best,3);continue;}
-      // Tippfehler-Toleranz: 1 Edit für kurze, 2 für längere Wörter
+      // Tippfehler-Toleranz: kein Levenshtein für sehr kurze Wörter, sonst sammeln sich
+      // Fehltreffer wie „kaffee"↔„waffel" (Distanz 2 bei Länge 6). Erst ab Länge 5 prüfen,
+      // 1 Edit bis 7 Zeichen, 2 Edits für längere.
       var maxLen=Math.max(nt.length,qt.length);
-      if(maxLen<3)continue;
-      var allowed=maxLen<=5?1:2;
+      if(maxLen<5)continue;
+      var allowed=maxLen<=7?1:2;
       var d=_pickerLev(nt,qt);
       if(d<=allowed)best=Math.max(best,3-Math.min(d,2));
     }

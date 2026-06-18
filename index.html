@@ -973,7 +973,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.180</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.181</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1928,7 +1928,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.180';
+var APP_VERSION='0.181';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1957,6 +1957,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.181',items:[
+    {icon:'🔁',text:'Wiederkehrende Mahlzeiten: In den Mahlzeit-Vorlagen (Mahlzeit-Detail → 📋 Vorlage) kannst du jetzt pro Vorlage Wochentage antippen (z. B. Mo–Fr). An diesen Tagen trägt sich die Vorlage automatisch in die passende Mahlzeit ein. An einem Ausnahmetag löschst du den Eintrag einfach — er kommt an dem Tag nicht wieder. (#122)',where:'Mahlzeit-Vorlagen'},
+  ]},
   {v:'0.180',items:[
     {icon:'🤖',text:'KI-Fehlermeldungen sind jetzt verständlich: Wenn die KI z. B. wegen eines erreichten Limits oder Überlastung nicht antworten kann, erscheint statt der englischen Originalmeldung ein klarer deutscher Hinweis mit Tipp (🔍 Suche / 📷 Foto / ＋ Eigenes nutzen oder später erneut versuchen). (#121)',where:'Picker · Chat & alle KI-Funktionen'},
   ]},
@@ -2794,6 +2797,7 @@ function _kcalAmpel(goal,eaten,S){
 }
 
 function renderAll(){
+  applyRecurringMeals();
   document.getElementById('dateLabel').textContent=fmtDate(S.currentDate);
   document.getElementById('btnNext').style.opacity=S.currentDate===today()?'0.3':'1';
   var day=getDay();
@@ -4932,19 +4936,78 @@ function applyMealTemplate(id,meal){
   closeOv('templateOv');
 }
 
+// ── Wiederkehrende Mahlzeiten (#122) ──
+// Eine Vorlage mit t.repeat=[Wochentage] (0=So..6=Sa) trägt sich am passenden
+// Tag automatisch einmalig in ihre Mahlzeit ein. day._recur[id] merkt das pro
+// Tag — so tauchen an einem Tag gelöschte Einträge nicht wieder auf. Nur der
+// echte heutige Tag wird befüllt (kein Backfill vergangener Tage).
+function applyRecurringMeals(){
+  if(S.currentDate!==today())return;
+  var tpls=(S.mealTemplates||[]).filter(function(t){return t.repeat&&t.repeat.length;});
+  if(!tpls.length)return;
+  var p=S.currentDate.split('-');
+  var wd=new Date(+p[0],+p[1]-1,+p[2]).getDay();
+  var day=getDay();
+  if(!day._recur)day._recur={};
+  var changed=false;
+  tpls.forEach(function(t){
+    if(t.repeat.indexOf(wd)<0||day._recur[t.id])return;
+    var meal=(t.meal&&day.meals[t.meal])?t.meal:'breakfast';
+    var copies=JSON.parse(JSON.stringify(t.entries||[]));
+    copies.forEach(function(e){e._recur=t.id;});
+    day.meals[meal]=day.meals[meal].concat(copies);
+    day._recur[t.id]=true;
+    changed=true;
+  });
+  if(changed)saveS();
+}
+
+function _recurLabel(rep){
+  if(!rep||!rep.length)return'';
+  if(rep.length===7)return'Täglich';
+  if(rep.length===5&&[1,2,3,4,5].every(function(d){return rep.indexOf(d)>=0;}))return'Werktags';
+  var L={0:'So',1:'Mo',2:'Di',3:'Mi',4:'Do',5:'Fr',6:'Sa'};
+  return[1,2,3,4,5,6,0].filter(function(d){return rep.indexOf(d)>=0;}).map(function(d){return L[d];}).join(' ');
+}
+
+function toggleTemplateWeekday(id,wd){
+  var t=(S.mealTemplates||[]).find(function(x){return x.id===id;});
+  if(!t)return;
+  if(!t.repeat)t.repeat=[];
+  var i=t.repeat.indexOf(wd);
+  if(i<0)t.repeat.push(wd);else t.repeat.splice(i,1);
+  // Heutigen Tag als „erledigt" markieren: eine gerade aus dem heutigen Essen
+  // gebaute Vorlage trägt sich nicht sofort doppelt ein — Auto-Eintrag startet
+  // ab dem nächsten passenden Tag.
+  if(S.currentDate===today()){var day=getDay();if(!day._recur)day._recur={};day._recur[id]=true;}
+  saveS();
+  openTemplateOv(pickerMeal);
+}
+
 function openTemplateOv(meal){
   pickerMeal=meal;
   var templates=S.mealTemplates||[];
   var el=document.getElementById('templateList');
   if(!el)return;
   if(!templates.length){el.innerHTML='<div style="text-align:center;color:var(--mu);padding:20px;font-size:13px;">Noch keine Vorlagen gespeichert</div>';openOv('templateOv');return;}
-  el.innerHTML=templates.map(function(t){
+  var WD=[[1,'Mo'],[2,'Di'],[3,'Mi'],[4,'Do'],[5,'Fr'],[6,'Sa'],[0,'So']];
+  el.innerHTML='<div style="font-size:11px;color:var(--mu);margin-bottom:8px;line-height:1.4;">🔁 Wochentage antippen → die Vorlage trägt sich an diesen Tagen automatisch ein (an Ausnahmetagen einzeln löschbar).</div>'
+    +templates.map(function(t){
     var total=t.entries.reduce(function(a,e){return a+(e.kcal||0);},0);
-    return'<div style="background:var(--card);border-radius:12px;padding:12px;box-shadow:var(--sh);display:flex;align-items:center;gap:10px;">'
-      +'<div style="flex:1;"><div style="font-weight:700;font-size:13px;">'+t.name+'</div>'
-      +'<div style="font-size:11px;color:var(--mu);">'+t.entries.length+' Einträge · '+Math.round(total)+' kcal</div></div>'
+    var rep=t.repeat||[];
+    var rl=_recurLabel(rep);
+    var chips=WD.map(function(w){
+      var on=rep.indexOf(w[0])>=0;
+      return'<button type="button" onclick="toggleTemplateWeekday(\''+t.id+'\','+w[0]+')" style="flex:1;min-width:0;padding:5px 0;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid '+(on?'var(--g1)':'var(--br)')+';background:'+(on?'var(--g1)':'transparent')+';color:'+(on?'#fff':'var(--mu)')+';">'+w[1]+'</button>';
+    }).join('');
+    return'<div style="background:var(--card);border-radius:12px;padding:12px;box-shadow:var(--sh);margin-bottom:8px;">'
+      +'<div style="display:flex;align-items:center;gap:10px;">'
+      +'<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:13px;">'+t.name+'</div>'
+      +'<div style="font-size:11px;color:var(--mu);">'+t.entries.length+' Einträge · '+Math.round(total)+' kcal'+(rl?' · 🔁 '+rl:'')+'</div></div>'
       +'<button type="button" onclick="applyMealTemplate(\''+t.id+'\',\''+meal+'\')" style="background:var(--g2);border:none;border-radius:8px;color:white;font-size:13px;padding:6px 12px;font-weight:700;">Laden</button>'
       +'<button type="button" onclick="deleteTemplate(\''+t.id+'\')" style="background:none;border:none;color:var(--re);font-size:16px;">✕</button>'
+      +'</div>'
+      +'<div style="display:flex;align-items:center;gap:4px;margin-top:8px;"><span style="font-size:12px;" title="Automatisch eintragen an…">🔁</span>'+chips+'</div>'
       +'</div>';
   }).join('');
   openOv('templateOv');

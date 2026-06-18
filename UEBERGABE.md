@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.179 (2026-05-21)
+**Stand:** v0.180 (2026-06-18)
 
 ## URLs
 
@@ -33,6 +33,7 @@
 - **Picker Ing-Delete (v0.175):** `pickerRenderIngList`-Callbacks rendern nach `splice` neu (Helper `_pickerChatRebind` im Chat, lokale `rebindLink`-Closure im Link-Tab). Photo-Tab war via `pickerShowPhotoResult` schon ok. Vorher blieben gelöschte DOM-Zeilen sichtbar (#112).
 - **Picker OFT (v0.170):** kcal-Fallback `P*4+K*4+F*9` in `pickerFetchOnline` und `lookupNutrients` wenn beide Energy-Felder fehlen (#96 #101). OFT im Chat-Tab seit v0.175 nicht mehr genutzt.
 - **Picker Foto-Save (v0.179):** Settings-Toggle `S.savePickerPhotos` (Default off) unter „🗂 Daten → 📷 Picker-Fotos". Wenn an, ruft `_pickerSavePhotoIfWanted()` in `_pickerAdd` (vor `closePicker()`) auf — versucht zuerst `navigator.share({files:[File]})` (iOS Safari + Android Chrome unterstützen Files seit iOS 15 / Chrome 89), Fallback `<a download>` (Android: nach `Downloads/`; iOS PWA: nicht garantiert). Hinweis-Zeile `#pickerPhotoSaveHint` unter `pickerPrevWrap` zeigt Status und navigiert tippbar zu Einstellungen/Daten. Web-Capture (`<input capture>`) legt das Foto sonst weder auf iOS noch zuverlässig auf Android in die Galerie (#118).
+- **KI-Fehler (v0.180):** `aiFriendlyError(raw)` direkt vor `callClaude()` übersetzt bekannte Transient-Fehler (Usage-/Spend-Limit, `429` Rate-Limit, `529`/Overload, Timeout) zentral in deutsche Nutzer-Hinweise; unbekannte Fehler bleiben unverändert. Gilt für **alle** KI-Aufrufer (Picker-Chat/Foto, Wochenbericht, Barcode-Fallback). Hinweis: das eigentliche Anthropic-Limit ist operativ (Konsole), nicht im Code (#121).
 - **Sport-Sync (v0.158):** Erstes ausgelagertes Modul `js/health-sync.js` (klassisches `<script>` vor `</body>`, exportiert `window.NTHealth`). User generiert in „Mehr → Sport-Sync" ein 32-Zeichen-Token (Base58-ish, `localStorage.nt_health_token`), trägt es in eine iOS-Shortcut-Automation („wenn Training endet") oder Android HTTP Request Shortcut ein. Automation POSTet `{id, source, type, start, kcal, durationSec?, distanceM?, hrAvg?}` mit Header `X-User-Token` an Worker `POST /workout` (KV-Key `wo:<token>:<id>`, TTL 60d). PWA pollt `GET /workouts?since=<lastpoll>` bei `DOMContentLoaded` (mit 800ms Delay) und `visibilitychange→visible`, dedupliziert via `_healthId`-Marker, hängt Workouts in `S.days[<localDate>].exercise[]` an (Schema bleibt kompatibel zur manuellen Erfassung) — die existierende `burned`-Subtraktion in `renderAll()` zieht die Kalorien automatisch vom Tagesziel ab. `renderExercise()` zeigt für `_source`-Einträge ein kleines „Apple"/„Samsung"-Badge.
 
 ## Worker-Endpoints
@@ -64,6 +65,7 @@
 
 ## Live-Test offen
 
+- v0.180 KI-Fehler: bei erschöpftem Limit/Überlastung zeigt der Picker-Chat (und Foto/Wochenbericht) einen deutschen Hinweis statt englischer Originalmeldung — schwer zu provozieren, ggf. Worker temporär einen 429/Limit-Fehler werfen lassen (#121)
 - v0.157 Mahlzeit-Detail „💾 Als Rezept" — Rezept aus Mahlzeit erstellen, Editor öffnet zum Benennen (#75)
 - v0.158 Sport-Sync: Worker-Endpoints `/workout` + `/workouts` deployen (`wrangler deploy` im `worker/`), in „Mehr → Sport-Sync" Token erzeugen, je eine iOS-Shortcut-Automation und ein Android-HTTP-Request-Shortcut bauen, echtes Workout durchspielen → in PWA muss „Apple"/„Samsung"-Badge erscheinen, Hero-kcal um den Wert reduziert sein
 - v0.159 OneDrive Reconnect-Modal: Token ablaufen lassen (oder manuell `_odClearTokens()` in DevTools), dann sync triggern → `odReconnectOv` muss aufgehen; „Neu verbinden" startet PKCE-Flow neu
@@ -84,11 +86,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.175 | #114 | Picker Chat: Lokal-First statt OFT + Ing-Delete rendert neu (#112 #113) |
 | v0.176 | #115 | Picker Chat: Fuzzy-Suche (Tippfehler + Umlaute + Token-Match) |
 | v0.177 | #116 | Picker Chat: nur eigene Sachen, alle Tokens müssen treffen |
 | v0.178 | — | Picker Chat: strengere Fuzzy-Toleranz — kein „Kaffee mit Milch" bei „Waffel" (#117) |
 | v0.179 | — | Picker Foto: optionales Sichern per Share-Sheet, Toggle in Einstellungen (#118) |
+| v0.180 | — | KI-Fehler: freundliche deutsche Hinweise bei Limit/Überlastung statt englischer Rohmeldung (#121) |
 
 ---
 

@@ -973,7 +973,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.179</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.180</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1928,7 +1928,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.179';
+var APP_VERSION='0.180';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1957,6 +1957,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.180',items:[
+    {icon:'🤖',text:'KI-Fehlermeldungen sind jetzt verständlich: Wenn die KI z. B. wegen eines erreichten Limits oder Überlastung nicht antworten kann, erscheint statt der englischen Originalmeldung ein klarer deutscher Hinweis mit Tipp (🔍 Suche / 📷 Foto / ＋ Eigenes nutzen oder später erneut versuchen). (#121)',where:'Picker · Chat & alle KI-Funktionen'},
+  ]},
   {v:'0.179',items:[
     {icon:'📷',text:'Picker · Foto: Neue Option in Einstellungen → Daten → „Foto auf Handy sichern". Wenn aktiv, wird das Foto nach dem Hinzufügen einer Mahlzeit übers System-Teilen-Menü angeboten (z. B. „In Fotos sichern" auf iOS, „In Galerie speichern" auf Android). Unter dem Foto-Preview gibt es einen Hinweis-Link zur Einstellung. (#118)',where:'Einstellungen · Daten · Picker-Fotos'},
   ]},
@@ -3164,6 +3167,19 @@ function parsePhotoResponse(text){
 // ════════════════════════════════════════
 // SECTION: API
 // ════════════════════════════════════════
+// Übersetzt bekannte (meist englische) KI/Proxy-Fehler in nutzerfreundliche
+// deutsche Hinweise. Zentral für alle callClaude-Aufrufer (Chat, Foto,
+// Wochenbericht, Barcode-Fallback …). Unbekannte Fehler bleiben unverändert. (#121)
+function aiFriendlyError(raw){
+  var m=(raw==null?'':''+raw),low=m.toLowerCase();
+  if(/usage limit|reached your specified|credit balance|insufficient_quota|\bquota\b|billing/.test(low))
+    return 'KI-Limit erreicht — die KI ist gerade nicht verfügbar. Nutze solange 🔍 Suche, 📷 Foto oder ＋ Eigenes, oder versuch es später noch einmal.';
+  if(/rate.?limit|too many requests|\b429\b/.test(low))
+    return 'KI gerade überlastet (zu viele Anfragen). Bitte ein paar Sekunden warten und erneut versuchen.';
+  if(/overloaded|\b529\b|\b503\b|\b502\b|timeout|timed out|temporarily/.test(low))
+    return 'KI gerade nicht erreichbar. Bitte gleich noch einmal versuchen.';
+  return m||'Unbekannter Fehler';
+}
 function callClaude(model,content,maxTok,onOk,onErr){
   if(!canUseAi()){onErr('KI Proxy nicht konfiguriert');return;}
   fetch(PROJECT_AI_PROXY_URL,{
@@ -3173,7 +3189,7 @@ function callClaude(model,content,maxTok,onOk,onErr){
   }).then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error((d.error&&d.error.message)||d.error||('HTTP '+r.status));return d;});}).then(function(d){
     if(d.error)throw new Error(d.error.message);
     onOk(d.content.map(function(c){return c.text||'';}).join(''));
-  }).catch(function(e){onErr(e.message||'Fehler');});
+  }).catch(function(e){onErr(aiFriendlyError(e&&e.message));});
 }
 
 // ════════════════════════════════════════

@@ -111,11 +111,15 @@ function isValidBarcodeChecksum(code) {
 
 // Calls the OSS-Decoder microservice (OpenCV BarcodeDetector + pyzbar) and
 // returns the parsed JSON or null on any error / timeout.
-async function tryExternalDecoder(decoderUrl, buffer, mediaType) {
+async function tryExternalDecoder(decoderUrl, buffer, mediaType, decoderSecret) {
   try {
+    const headers = { "Content-Type": mediaType };
+    // Shared secret between worker and decoder (only when configured on both
+    // sides) so the Cloud Run service can reject unauthenticated public calls.
+    if (decoderSecret) headers["x-decoder-secret"] = decoderSecret;
     const response = await fetch(decoderUrl.replace(/\/+$/, "") + "/decode", {
       method: "POST",
-      headers: { "Content-Type": mediaType },
+      headers,
       body: buffer,
       signal: AbortSignal.timeout(DECODER_TIMEOUT_MS),
     });
@@ -163,7 +167,7 @@ async function handleDecodeBarcode(request, origin, env) {
 
   // Primary path: OSS-Decoder (OpenCV + pyzbar). Skips Anthropic entirely on hit.
   if (env.DECODER_URL) {
-    const decoded = await tryExternalDecoder(env.DECODER_URL, buffer, mediaType);
+    const decoded = await tryExternalDecoder(env.DECODER_URL, buffer, mediaType, env.DECODER_SECRET);
     const decodedCode = decoded && typeof decoded.code === "string" ? decoded.code : null;
     if (decodedCode && isValidBarcodeChecksum(decodedCode)) {
       return jsonResponse(200, "ok", "ok", origin, env, {
@@ -333,6 +337,7 @@ const MAX_FEEDBACK_SCREENSHOT_BYTES = 1024 * 1024; // 1 MB raw base64
 const FEEDBACK_SCREENSHOT_BRANCH = "feedback-screenshots";
 const FEEDBACK_USER_AGENT = "nutritrack-feedback-worker";
 const FEEDBACK_DEFAULT_REPO = "hjolmes/nutritrack";
+const MAX_FEEDBACK_PER_IP_DAY = 30; // simple abuse cap (defense in depth)
 
 function ghHeaders(env) {
   return {
@@ -388,12 +393,39 @@ function mdEscapeCell(s) {
   return String(s == null ? "" : s).replace(/\|/g, "\\|").replace(/\r?\n/g, " ").slice(0, 240);
 }
 
+// Neutralises GitHub @mentions and #issue-refs in free-text so a feedback
+// description cannot trigger notifications or cross-link spam. A zero-width
+// space breaks the auto-link while rendering identically to the reader.
+function mdNeutralizeBody(s) {
+  const ZWSP = String.fromCharCode(0x200B);
+  return String(s == null ? "" : s)
+    .replace(/@(?=[A-Za-z0-9_-])/g, "@" + ZWSP)
+    .replace(/(^|[^\w`])#(?=\d)/g, "$1#" + ZWSP);
+}
+
 async function handleFeedback(request, origin, env) {
   if (origin && !allowedOrigins(env).has(origin)) {
     return jsonResponse(403, "origin_not_allowed", "Origin is not allowed", origin, env);
   }
   if (!env.GITHUB_TOKEN) {
     return jsonResponse(503, "github_not_configured", "Feedback endpoint is not configured", origin, env);
+  }
+  // Auth: same app proxy secret as /v1/messages. Closes the open GitHub-issue
+  // spam vector (the endpoint used to be reachable without any credential).
+  const proxyToken = request.headers.get("x-app-proxy-secret") || "";
+  if (!env.NUTRITRACK_PROXY_TOKEN || proxyToken !== env.NUTRITRACK_PROXY_TOKEN) {
+    return jsonResponse(401, "unauthorized", "Invalid app proxy secret", origin, env);
+  }
+  // Defense in depth: cap feedback submissions per IP per day (best-effort KV).
+  if (env.SHARE_KV) {
+    const ip = request.headers.get("cf-connecting-ip") || "unknown";
+    const day = new Date().toISOString().slice(0, 10);
+    const rlKey = "fbrl:" + ip + ":" + day;
+    const cnt = parseInt((await env.SHARE_KV.get(rlKey)) || "0", 10) || 0;
+    if (cnt >= MAX_FEEDBACK_PER_IP_DAY) {
+      return jsonResponse(429, "rate_limited", "Too many feedback submissions today", origin, env);
+    }
+    await env.SHARE_KV.put(rlKey, String(cnt + 1), { expirationTtl: 60 * 60 * 24 });
   }
   const repo = ((env.GITHUB_REPO || FEEDBACK_DEFAULT_REPO) + "").trim();
   if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo)) {
@@ -454,7 +486,7 @@ async function handleFeedback(request, origin, env) {
     `**Typ:** ${isBug ? "🐛 Bug" : "💡 Änderungswunsch"}`,
     "",
     "### Beschreibung",
-    description,
+    mdNeutralizeBody(description),
     "",
     "### Kontext",
     "| Feld | Wert |",
@@ -508,6 +540,7 @@ async function handleFeedback(request, origin, env) {
 const WORKOUT_TTL_SECONDS = 60 * 60 * 24 * 60; // 60 days
 const MAX_WORKOUT_BODY_BYTES = 1024 * 4; // 4 KB
 const MAX_WORKOUT_LIST_LIMIT = 200;
+const MAX_WORKOUT_LIST_PAGES = 20; // safety bound: up to 4000 keys per request
 const USER_TOKEN_RE = /^[A-Za-z0-9_-]{24,64}$/;
 const WORKOUT_ID_RE = /^[A-Za-z0-9_.:-]{1,80}$/;
 const WORKOUT_KV_PREFIX = "wo:";
@@ -603,12 +636,28 @@ async function handleWorkoutList(request, origin, env) {
   const since = Number(sinceRaw);
   const sinceMs = Number.isFinite(since) && since > 0 ? since : 0;
   const prefix = WORKOUT_KV_PREFIX + token + ":";
-  const list = await env.SHARE_KV.list({ prefix, limit: MAX_WORKOUT_LIST_LIMIT });
+  // Page through the whole namespace via cursor so tokens with >200 workouts
+  // don't silently lose older entries. Bounded by MAX_WORKOUT_LIST_PAGES.
+  const candidateKeys = [];
+  let cursor;
+  let pages = 0;
+  let complete = false;
+  do {
+    const list = await env.SHARE_KV.list({ prefix, limit: MAX_WORKOUT_LIST_LIMIT, cursor });
+    for (const k of list.keys) {
+      const meta = k.metadata && typeof k.metadata === "object" ? k.metadata : null;
+      if (sinceMs && meta && Number.isFinite(meta.startMs) && meta.startMs <= sinceMs) continue;
+      candidateKeys.push(k.name);
+    }
+    complete = list.list_complete !== false;
+    cursor = list.cursor;
+    pages++;
+  } while (!complete && cursor && pages < MAX_WORKOUT_LIST_PAGES);
+
+  // Fetch the surviving keys in parallel (KV has no batch-get).
+  const raws = await Promise.all(candidateKeys.map((name) => env.SHARE_KV.get(name)));
   const workouts = [];
-  for (const k of list.keys) {
-    const meta = k.metadata && typeof k.metadata === "object" ? k.metadata : null;
-    if (sinceMs && meta && Number.isFinite(meta.startMs) && meta.startMs <= sinceMs) continue;
-    const raw = await env.SHARE_KV.get(k.name);
+  for (const raw of raws) {
     if (!raw) continue;
     let parsed;
     try {
@@ -623,7 +672,7 @@ async function handleWorkoutList(request, origin, env) {
   return jsonResponse(200, "ok", "ok", origin, env, {
     workouts,
     count: workouts.length,
-    truncated: Boolean(list.list_complete === false),
+    truncated: Boolean(!complete),
   });
 }
 
@@ -672,7 +721,8 @@ export default {
         shareConfigured: Boolean(env.SHARE_KV),
         feedbackConfigured: Boolean(env.GITHUB_TOKEN),
         workoutsConfigured: Boolean(env.SHARE_KV),
-        codeVersion: "v0.158-workouts",
+        decoderSecretConfigured: Boolean(env.DECODER_SECRET),
+        codeVersion: "v0.182-hardening",
       });
     }
 

@@ -79,8 +79,9 @@
     return 'Workout';
   }
   function _dayKey(startIso){
-    // Use the local-date portion of the ISO string. Workouts at 23:50 in
-    // Europe/Berlin shouldn't get bucketed into the next UTC day.
+    // Bucket by the device's local date (same basis the rest of the app uses
+    // for day keys), so a workout at 23:50 stays on the day the user sees it
+    // instead of rolling into the next UTC day.
     var d=new Date(startIso);
     if(isNaN(d.getTime()))return null;
     var y=d.getFullYear();

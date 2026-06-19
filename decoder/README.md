@@ -88,6 +88,23 @@ two warm containers. The Cloud Run **Always-Free-Tier** (2M requests/month,
 360k vCPU-seconds, 180k GiB-seconds RAM) covers NutriTrack's expected volume
 by orders of magnitude.
 
+### Optional: shared secret (recommended)
+
+The service is deployed `--allow-unauthenticated` so the Cloudflare Worker can
+reach it without GCP IAM. To stop random callers from hitting the
+CPU-intensive `/decode` endpoint, set a shared secret on **both** sides — when
+`DECODER_SECRET` is set, `/decode` requires a matching `X-Decoder-Secret`
+header and returns `401` otherwise. When unset, the endpoint stays open
+(backward compatible).
+
+```bash
+# On Cloud Run (decoder):
+gcloud run services update nutritrack-decoder --region europe-west1 \
+  --set-env-vars DECODER_SECRET=<long-random-token>
+# On the Cloudflare Worker:
+cd ../worker && wrangler secret put DECODER_SECRET   # same value
+```
+
 After deploy, set the resulting URL on the Cloudflare Worker:
 
 ```bash

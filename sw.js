@@ -1,12 +1,23 @@
 // NutriTrack Service Worker
 // Version wird bei jedem Release hochgezählt - löst automatisches Update aus
-var VERSION = '0.181';
+var VERSION = '0.182';
 var CACHE = 'nt-' + VERSION;
 var SKIP = ['workers.dev','corsproxy.io','openfoodfacts.org','fonts.googleapis.com','fonts.gstatic.com','unpkg.com','esm.sh','jsdelivr.net','is.gd','v.gd'];
+// Kern-Assets, die für den Offline-Betrieb vorab gecacht werden. Relativ zur
+// SW-Position (/nutritrack/), damit der GitHub-Pages-Pfad korrekt aufgelöst wird.
+var CORE_ASSETS = ['./','index.html','picker.js','js/health-sync.js','manifest.json','icon.svg'];
 
 self.addEventListener('install', function(e) {
   // Sofort aktivieren ohne auf alte Tabs zu warten
   self.skipWaiting();
+  // Kern-Assets vorab cachen, damit die PWA auch bei Erst-Nutzung offline läuft.
+  // Best-effort pro Asset (allSettled) — ein einzelner Fehlschlag bricht die
+  // Installation nicht ab.
+  e.waitUntil(
+    caches.open(CACHE).then(function(c) {
+      return Promise.allSettled(CORE_ASSETS.map(function(u) { return c.add(u); }));
+    }).catch(function() {})
+  );
 });
 
 self.addEventListener('activate', function(e) {
@@ -54,7 +65,10 @@ self.addEventListener('fetch', function(e) {
         }
         return r;
       }).catch(function() {
-        return caches.match(e.request);
+        // Offline: erst den exakten Request, sonst die vorab gecachte Start-Seite.
+        return caches.match(e.request).then(function(m) {
+          return m || caches.match('/nutritrack/');
+        });
       })
     );
     return;
@@ -70,7 +84,11 @@ self.addEventListener('fetch', function(e) {
         }
         return r;
       }).catch(function() {
-        return caches.match('/nutritrack/') || caches.match('/nutritrack/index.html');
+        // caches.match liefert immer ein (truthy) Promise – daher den ersten
+        // Treffer awaiten und erst bei Miss auf index.html zurückfallen.
+        return caches.match('/nutritrack/').then(function(m) {
+          return m || caches.match('/nutritrack/index.html');
+        });
       });
     })
   );

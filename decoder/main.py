@@ -25,6 +25,10 @@ app = FastAPI(title="NutriTrack OSS-Barcode-Decoder", version="1.0.0")
 MAX_BYTES = 1024 * 1024  # 1 MB hard cap; live frames are ~50–200 KB.
 SR_PROTO = os.environ.get("OPENCV_SR_PROTOTXT")  # optional super-resolution
 SR_MODEL = os.environ.get("OPENCV_SR_MODEL")
+# Optional shared secret. When set, /decode requires a matching
+# X-Decoder-Secret header — protects the public Cloud Run service from
+# unauthenticated abuse. When unset, the endpoint stays open (backward compat).
+DECODER_SECRET = os.environ.get("DECODER_SECRET")
 
 _DIGITS_RE = re.compile(r"^\d+$")
 
@@ -106,6 +110,8 @@ def health():
 
 @app.post("/decode")
 async def decode(request: Request):
+    if DECODER_SECRET and request.headers.get("x-decoder-secret") != DECODER_SECRET:
+        raise HTTPException(status_code=401, detail="unauthorized")
     body = await request.body()
     if not body:
         raise HTTPException(status_code=400, detail="empty_body")

@@ -979,7 +979,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.183</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.184</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1965,7 +1965,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.183';
+var APP_VERSION='0.184';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 // HTML-Escaping für alle Namen/Freitexte aus untrusted Quellen (Import-Payloads,
 // OpenFoodFacts, KI-Antworten), die per innerHTML eingefügt werden — schützt vor XSS.
@@ -1997,6 +1997,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.184',items:[
+    {icon:'🐛',text:'Picker · Chat: Die Zutaten-Erkennung im Text-Chat nutzt jetzt das stärkere KI-Modell. „Kaffee mit Hafermilch und Sojamilch" wird damit korrekt als Kaffee (schwarz) + Hafermilch + Sojamilch erkannt statt als Cappuccino. (#127)',where:'Picker · Chat'},
+  ]},
   {v:'0.183',items:[
     {icon:'🐛',text:'Picker · Chat: Genannte Lebensmittel werden nicht mehr eigenmächtig „aufgewertet". Tippst du z. B. „Kaffee mit Hafermilch und Sojamilch", bleibt Kaffee jetzt Kaffee (schwarz) — statt fälschlich als Cappuccino erkannt zu werden. (#127)',where:'Picker · Chat'},
   ]},

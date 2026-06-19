@@ -3,6 +3,22 @@
 // Ausgelagert aus index.html (v0.119)
 // ════════════════════════════════════════
 
+// Wandelt rohe (oft englische) KI-/Proxy-Fehlermeldungen in eine kurze,
+// handlungsorientierte deutsche Meldung um (#121). Unbekannte Fehler werden
+// unverändert durchgereicht.
+function pickerFriendlyAiError(err){
+  var s=(err==null?'':String(err)).toLowerCase();
+  if(s.indexOf('usage limit')>=0||s.indexOf('credit balance')>=0||s.indexOf('billing')>=0)
+    return '🤖 KI-Kontingent ist gerade aufgebraucht. Trag die Zutat solange über „Suche", „Eigenes" oder die Quick-Buttons ein – die KI ist später wieder verfügbar.';
+  if(s.indexOf('overloaded')>=0||s.indexOf('rate limit')>=0||s.indexOf('rate_limit')>=0||s.indexOf('429')>=0||s.indexOf('529')>=0)
+    return '🤖 KI gerade überlastet. Bitte gleich nochmal versuchen – oder die Zutat über „Suche"/„Eigenes" eintragen.';
+  if(s.indexOf('proxy nicht konfiguriert')>=0||s.indexOf('not configured')>=0)
+    return '🤖 KI ist in dieser Installation nicht eingerichtet. Trag die Zutat über „Suche" oder „Eigenes" ein.';
+  if(s.indexOf('failed to fetch')>=0||s.indexOf('networkerror')>=0||s.indexOf('timeout')>=0)
+    return '📡 Keine Verbindung zur KI. Prüf deine Internet-Verbindung und versuch es nochmal.';
+  return 'Fehler: '+err;
+}
+
 // Picker state (global)
 var pickerMeal=null;          // which meal to add to (null = ask)
 var pickerOnAdd=null;         // callback: function(ingredient)
@@ -1006,7 +1022,7 @@ function pickerAnalyze(){
         pickerSetPhotoStatus('',false);
       });
     },
-    function(err){btn.disabled=false;btn.textContent='📷 Erneut analysieren';pickerSetPhotoStatus('Fehler: '+err,true);}
+    function(err){btn.disabled=false;btn.textContent='📷 Erneut analysieren';pickerSetPhotoStatus(pickerFriendlyAiError(err),true);}
   );
 }
 
@@ -1245,7 +1261,7 @@ function pickerChatKiFallback(msg){
         document.getElementById('pickerChatSend').disabled=false;
       });
     },
-    function(err){msgs.innerHTML+='<div class="cm a">❌ Fehler: '+err+'</div>';document.getElementById('pickerChatSend').disabled=false;}
+    function(err){msgs.innerHTML+='<div class="cm a">❌ '+pickerFriendlyAiError(err)+'</div>';document.getElementById('pickerChatSend').disabled=false;}
   );
 }
 

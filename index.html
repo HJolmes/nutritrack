@@ -915,6 +915,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     <div class="md-list" id="mdList"></div>
     <div class="md-cta">
       <button type="button" class="tpl" id="mdTpl">📋 Vorlage</button>
+      <button type="button" class="tpl" id="mdRecur">🔁 Wiederholen</button>
       <button type="button" class="tpl" id="mdSaveRecipe">💾 Als Rezept</button>
     </div>
   </div>
@@ -961,6 +962,11 @@ button,input,select,textarea{font-family:var(--fs-body);}
       <div class="lr-body"><div class="lr-name">Code / Link einlösen</div><div class="lr-sub">Geteilte Mahlzeit oder Rezept importieren</div></div>
       <div class="lr-val">›</div>
     </div>
+    <div class="list-row" onclick="openRecurManage()">
+      <div class="lr-ic">🔁</div>
+      <div class="lr-body"><div class="lr-name">Wiederkehrende Mahlzeiten</div><div class="lr-sub">Automatisch an festen Wochentagen eintragen</div></div>
+      <div class="lr-val">›</div>
+    </div>
     <div class="list-row" onclick="openHealthSync()">
       <div class="lr-ic">🏃</div>
       <div class="lr-body"><div class="lr-name">Sport-Sync</div><div class="lr-sub" id="healthSyncSub">Apple Health · Samsung Health</div></div>
@@ -973,7 +979,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.179</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.181</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1384,6 +1390,37 @@ button,input,select,textarea{font-family:var(--fs-body);}
       <div class="msu">Gespeicherte Mahlzeiten laden</div>
     </div>
     <div class="mbd" id="templateList"></div>
+  </div>
+</div>
+
+<!-- ══ WIEDERKEHRENDE MAHLZEIT ANLEGEN ══ -->
+<div class="ov" id="recurCreateOv" onclick="bgClose(event,'recurCreateOv')">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" onclick="closeOv('recurCreateOv')">✕</button>
+      <div class="mti">🔁 Automatisch wiederholen</div>
+      <div class="msu" id="recurCreateSub"></div>
+    </div>
+    <div class="mbd">
+      <div style="font-size:13px;color:var(--mu);margin-bottom:8px;">An welchen Tagen soll diese Mahlzeit automatisch eingetragen werden?</div>
+      <div id="recurWeekdayChips" style="display:flex;gap:5px;margin-bottom:14px;"></div>
+      <div style="font-size:11px;color:var(--mu);margin-bottom:14px;line-height:1.5;">Die Einträge erscheinen ab dem nächsten passenden Tag automatisch. An Tagen, wo es nicht stimmt, kannst du sie einfach löschen — sie kommen an dem Tag nicht zurück.</div>
+      <button type="button" class="svb" style="width:100%;" onclick="saveRecurringRule()">Wiederholung speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ WIEDERKEHRENDE MAHLZEITEN VERWALTEN ══ -->
+<div class="ov" id="recurMgmtOv" onclick="bgClose(event,'recurMgmtOv')">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" onclick="closeOv('recurMgmtOv')">✕</button>
+      <div class="mti">🔁 Wiederkehrende Mahlzeiten</div>
+      <div class="msu">Automatisch an festen Wochentagen eintragen</div>
+    </div>
+    <div class="mbd" id="recurMgmtList" style="display:flex;flex-direction:column;gap:8px;"></div>
   </div>
 </div>
 
@@ -1924,11 +1961,11 @@ var DE_EN={apfel:'apple',birne:'pear',banane:'banana',orange:'orange',erdbeere:'
 // ════════════════════════════════════════
 // SECTION: STATE
 // ════════════════════════════════════════
-var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:'',pregnant:0,pregnantET:'',pregWarn:false,goalWeight:0,goalDate:'',goalAchievedShown:'',dietPrefs:[],dietFree:'',savedDietFree:[],dietWarn:false,macroTargets:{protein:0,carbs:0,fat:0},macroGoalMode:'percent',macroGoalG:{protein:0,carbs:0,fat:0},reminders:[],weightLog:{},portionMemory:{},waterGoal:8,waterUnit:250,mealTemplates:[],exerciseLibrary:[],currentDate:'',days:{}};
+var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:'',pregnant:0,pregnantET:'',pregWarn:false,goalWeight:0,goalDate:'',goalAchievedShown:'',dietPrefs:[],dietFree:'',savedDietFree:[],dietWarn:false,macroTargets:{protein:0,carbs:0,fat:0},macroGoalMode:'percent',macroGoalG:{protein:0,carbs:0,fat:0},reminders:[],weightLog:{},portionMemory:{},waterGoal:8,waterUnit:250,mealTemplates:[],recurringMeals:[],exerciseLibrary:[],currentDate:'',days:{}};
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.179';
+var APP_VERSION='0.181';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -1957,6 +1994,12 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.181',items:[
+    {icon:'🔁',text:'Neu: Wiederkehrende Mahlzeiten. Öffne eine Mahlzeit (z. B. dein Frühstück), tippe „🔁 Wiederholen" und wähle die Wochentage (Standard Mo–Fr) — die Mahlzeit wird dann automatisch an diesen Tagen eingetragen. An Tagen, wo es mal nicht stimmt, einfach löschen; sie kommt an dem Tag nicht zurück. Verwalten/pausieren unter „Mehr → 🔁 Wiederkehrende Mahlzeiten". (#122)',where:'Mahlzeit-Detail · Mehr'},
+  ]},
+  {v:'0.180',items:[
+    {icon:'🐛',text:'Picker: Wenn die KI gerade nicht antwortet (Kontingent aufgebraucht, überlastet oder offline), erscheint jetzt eine klare deutsche Meldung mit Tipp, statt der kryptischen englischen Originalmeldung. (#121)',where:'Picker · Chat & Foto'},
+  ]},
   {v:'0.179',items:[
     {icon:'📷',text:'Picker · Foto: Neue Option in Einstellungen → Daten → „Foto auf Handy sichern". Wenn aktiv, wird das Foto nach dem Hinzufügen einer Mahlzeit übers System-Teilen-Menü angeboten (z. B. „In Fotos sichern" auf iOS, „In Galerie speichern" auf Android). Unter dem Foto-Preview gibt es einen Hinweis-Link zur Einstellung. (#118)',where:'Einstellungen · Daten · Picker-Fotos'},
   ]},
@@ -2315,6 +2358,8 @@ window.addEventListener('DOMContentLoaded',function(){
   document.getElementById('setupBtn').addEventListener('click',doSetup);
   var _mainShown=(S.setupDone||hadLegacyApiKey||S.name!=='Du');
   if(_mainShown)showMain();
+  // Wiederkehrende Mahlzeiten für heute eintragen (#122)
+  if(_mainShown)ensureRecurringForCurrentDay();
   // Auto-Import wenn die App über einen geteilten Rezept-Link geöffnet wurde
   if(_mainShown)_checkSharedItemOnBoot();
   // Service Worker
@@ -2732,7 +2777,7 @@ function doSetup(){
 // ════════════════════════════════════════
 // SECTION: DATA
 // ════════════════════════════════════════
-function changeDay(dir){var n=addDays(S.currentDate,dir);if(n>today()){showToast('Keine Zukunft 😄');return;}S.currentDate=n;renderAll();}
+function changeDay(dir){var n=addDays(S.currentDate,dir);if(n>today()){showToast('Keine Zukunft 😄');return;}S.currentDate=n;if(applyRecurringMeals(n))saveS();renderAll();}
 function getDay(){if(!S.days[S.currentDate])S.days[S.currentDate]={meals:{breakfast:[],lunch:[],dinner:[],snack:[]},water:0,exercise:[]};var d=S.days[S.currentDate];if(!d.exercise)d.exercise=[];return d;}
 function calcM(arr){return arr.reduce(function(a,e){return{kcal:a.kcal+(e.kcal||0),protein:a.protein+(e.protein||0),carbs:a.carbs+(e.carbs||0),fat:a.fat+(e.fat||0),sugar:a.sugar+(e.sugar||0),fiber:a.fiber+(e.fiber||0),salt:a.salt+(e.salt||0)};},{kcal:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0,salt:0});}
 function ingTotal(ings){return(ings||[]).reduce(function(a,g){var r=(g.amount||0)/100;return{kcal:a.kcal+(g.per100.kcal||0)*r,protein:a.protein+(g.per100.protein||0)*r,carbs:a.carbs+(g.per100.carbs||0)*r,fat:a.fat+(g.per100.fat||0)*r,sugar:a.sugar+(g.per100.sugar||0)*r,fiber:a.fiber+(g.per100.fiber||0)*r,salt:a.salt+(g.per100.salt||0)*r};},{kcal:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0,salt:0});}
@@ -2875,7 +2920,7 @@ function renderAll(){
         }
         return'<div class="fe'+(isR?' is-recipe':'')+'" onclick="'+(isR?'openEntryMenu':'openEditEntry')+'(\''+m+'\','+i+')">'
           +'<div class="fee">'+(e.emoji||'🍽')+'</div>'
-          +'<div class="fei"><div class="fen">'+e.name+'</div><div class="fem">'+sub+'</div></div>'
+          +'<div class="fei"><div class="fen">'+e.name+(e._recurId?' 🔁':'')+'</div><div class="fem">'+sub+'</div></div>'
           +'<div class="fek">'+Math.round(e.kcal)+' kcal</div>'
           +'<div style="display:flex;align-items:center;">'+dot+'<div class="fe-ic">✏️</div></div>'
           +'</div>';
@@ -4939,6 +4984,134 @@ function deleteTemplate(id){
   saveS();openTemplateOv(pickerMeal);
 }
 
+// ── Wiederkehrende Mahlzeiten (#122) ──
+// Regel-Schema: {id,name,meal,weekdays:[0..6],entries:[...],startDate,active}
+// weekdays nutzt JS getDay(): 0=So … 6=Sa. Default Mo–Fr = [1,2,3,4,5].
+var WEEKDAY_SHORT=['So','Mo','Di','Mi','Do','Fr','Sa'];
+var WEEKDAY_ORDER=[1,2,3,4,5,6,0]; // Anzeige: Mo zuerst
+var pendingRecurMeal=null;
+var pendingRecurWeekdays=null;
+
+function _recurWeekday(dateKey){var p=dateKey.split('-');return new Date(+p[0],+p[1]-1,+p[2]).getDay();}
+
+function _recurDaysLabel(wds){
+  var s=(wds||[]).slice().sort(function(a,b){return a-b;}).join(',');
+  if(s==='0,1,2,3,4,5,6')return'täglich';
+  if(s==='1,2,3,4,5')return'Mo–Fr';
+  if(s==='0,6')return'am Wochenende';
+  return WEEKDAY_ORDER.filter(function(d){return wds.indexOf(d)>=0;}).map(function(d){return WEEKDAY_SHORT[d];}).join(', ');
+}
+
+// Wendet alle aktiven Regeln auf den Tag an. Idempotent über day._recurMarks:
+// ist eine Regel-ID dort vermerkt, wird sie an diesem Tag nie erneut eingefügt —
+// auch nicht, wenn der Nutzer die Einträge gelöscht hat. Gibt true bei Änderung.
+function applyRecurringMeals(dateKey){
+  var rules=S.recurringMeals||[];if(!rules.length)return false;
+  if(dateKey>today())return false;
+  var day=S.days[dateKey];
+  if(day&&day._compressed)return false;
+  if(!day){day={meals:{breakfast:[],lunch:[],dinner:[],snack:[]},water:0,exercise:[]};S.days[dateKey]=day;}
+  if(!day.meals)day.meals={breakfast:[],lunch:[],dinner:[],snack:[]};
+  if(!day._recurMarks)day._recurMarks=[];
+  var wd=_recurWeekday(dateKey),changed=false;
+  rules.forEach(function(r){
+    if(!r.active)return;
+    if(dateKey<r.startDate)return;
+    if((r.weekdays||[]).indexOf(wd)<0)return;
+    if(day._recurMarks.indexOf(r.id)>=0)return;
+    var copies=JSON.parse(JSON.stringify(r.entries||[]));
+    copies.forEach(function(e){e._recurId=r.id;});
+    if(!day.meals[r.meal])day.meals[r.meal]=[];
+    day.meals[r.meal]=day.meals[r.meal].concat(copies);
+    day._recurMarks.push(r.id);
+    changed=true;
+  });
+  return changed;
+}
+
+// Für den aktuell angezeigten Tag anwenden und bei Änderung speichern + neu rendern.
+function ensureRecurringForCurrentDay(){
+  if(applyRecurringMeals(S.currentDate)){saveS();renderAll();}
+}
+
+// Regel aus der aktuellen Mahlzeit anlegen — öffnet Wochentag-Auswahl.
+function openRecurCreate(meal){
+  var day=getDay(),en=(day.meals[meal]||[]);
+  if(!en.length){showToast('Keine Einträge in dieser Mahlzeit');return;}
+  pendingRecurMeal=meal;
+  pendingRecurWeekdays=[1,2,3,4,5];
+  document.getElementById('recurCreateSub').textContent=MEAL_NAMES[meal]+' · '+en.length+' '+(en.length===1?'Eintrag':'Einträge');
+  _renderRecurWeekdayChips();
+  openOv('recurCreateOv');
+}
+
+function _renderRecurWeekdayChips(){
+  var el=document.getElementById('recurWeekdayChips');if(!el)return;
+  el.innerHTML=WEEKDAY_ORDER.map(function(d){
+    var on=pendingRecurWeekdays.indexOf(d)>=0;
+    return'<button type="button" onclick="toggleRecurWeekday('+d+')" style="flex:1;min-width:0;padding:9px 0;border-radius:10px;border:1px solid '+(on?'var(--g1)':'var(--br)')+';background:'+(on?'var(--g1)':'var(--card)')+';color:'+(on?'#fff':'var(--tx)')+';font-weight:700;font-size:13px;cursor:pointer;">'+WEEKDAY_SHORT[d]+'</button>';
+  }).join('');
+}
+
+function toggleRecurWeekday(d){
+  var i=pendingRecurWeekdays.indexOf(d);
+  if(i>=0)pendingRecurWeekdays.splice(i,1);else pendingRecurWeekdays.push(d);
+  _renderRecurWeekdayChips();
+}
+
+function saveRecurringRule(){
+  var meal=pendingRecurMeal;if(!meal)return;
+  var wds=(pendingRecurWeekdays||[]).slice();
+  if(!wds.length){showToast('Mindestens einen Wochentag wählen');return;}
+  var day=getDay(),en=(day.meals[meal]||[]);
+  if(!en.length){showToast('Keine Einträge');return;}
+  var entries=JSON.parse(JSON.stringify(en));
+  entries.forEach(function(e){delete e._recurId;});
+  var rule={id:Date.now().toString(),meal:meal,weekdays:wds,entries:entries,startDate:today(),active:true,
+    name:(en[0].name||MEAL_NAMES[meal])+(en.length>1?' +'+(en.length-1):'')};
+  if(!S.recurringMeals)S.recurringMeals=[];
+  S.recurringMeals.unshift(rule);
+  // Heutige Einträge gehören schon zur Regel → markieren (kein Doppel heute) + Badge.
+  if(!day._recurMarks)day._recurMarks=[];
+  if(day._recurMarks.indexOf(rule.id)<0)day._recurMarks.push(rule.id);
+  en.forEach(function(e){e._recurId=rule.id;});
+  saveS();renderAll();
+  closeOv('recurCreateOv');
+  showToast('🔁 Wird '+_recurDaysLabel(wds)+' automatisch eingetragen');
+}
+
+function openRecurManage(){renderRecurManage();openOv('recurMgmtOv');}
+
+function renderRecurManage(){
+  var el=document.getElementById('recurMgmtList');if(!el)return;
+  var rules=S.recurringMeals||[];
+  if(!rules.length){el.innerHTML='<div style="text-align:center;color:var(--mu);padding:24px 8px;font-size:13px;line-height:1.5;">Noch keine wiederkehrenden Mahlzeiten.<br>Öffne eine Mahlzeit und tippe „🔁 Wiederholen", um eine anzulegen.</div>';return;}
+  el.innerHTML=rules.map(function(r){
+    var total=(r.entries||[]).reduce(function(a,e){return a+(e.kcal||0);},0);
+    var dim=r.active?'':'opacity:0.5;';
+    return'<div style="background:var(--card);border-radius:12px;padding:12px;box-shadow:var(--sh);display:flex;align-items:center;gap:10px;'+dim+'">'
+      +'<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">🔁 '+r.name+'</div>'
+      +'<div style="font-size:11px;color:var(--mu);">'+MEAL_NAMES[r.meal]+' · '+_recurDaysLabel(r.weekdays)+' · '+Math.round(total)+' kcal</div></div>'
+      +'<button type="button" onclick="toggleRecurringRule(\''+r.id+'\')" title="'+(r.active?'Pausieren':'Aktivieren')+'" style="background:'+(r.active?'var(--g2)':'var(--gl)')+';color:'+(r.active?'#fff':'var(--mu)')+';border:none;border-radius:8px;font-size:12px;padding:6px 10px;font-weight:700;flex-shrink:0;">'+(r.active?'Aktiv':'Pause')+'</button>'
+      +'<button type="button" onclick="deleteRecurringRule(\''+r.id+'\')" style="background:none;border:none;color:var(--re);font-size:16px;flex-shrink:0;">✕</button>'
+      +'</div>';
+  }).join('');
+}
+
+function toggleRecurringRule(id){
+  var r=(S.recurringMeals||[]).find(function(x){return x.id===id;});
+  if(!r)return;
+  r.active=!r.active;
+  saveS();
+  if(r.active)ensureRecurringForCurrentDay();
+  renderRecurManage();
+}
+
+function deleteRecurringRule(id){
+  S.recurringMeals=(S.recurringMeals||[]).filter(function(r){return r.id!==id;});
+  saveS();renderRecurManage();
+}
+
 // ── Einkaufsliste aus Rezept ──
 function openShoppingList(recipeId){
   var rec=recipes.find(function(r){return r.id===recipeId;});
@@ -5686,7 +5859,7 @@ function renderMealDetail(meal){
       var sub=isR?(e.portions||1)+'× Portion · '+Math.round(e.kcal)+' kcal':e.amount+'g · '+Math.round(e.protein)+'g P · '+Math.round(e.carbs)+'g C · '+Math.round(e.fat)+'g F';
       return'<div class="fe" onclick="'+(isR?'openEntryMenu':'openEditEntry')+'(\''+meal+'\','+i+')">'
         +'<div class="fee" style="background:var(--gl);width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;">'+(e.emoji||'🍽')+'</div>'
-        +'<div class="fei"><div class="fen">'+e.name+'</div><div class="fem">'+sub+'</div></div>'
+        +'<div class="fei"><div class="fen">'+e.name+(e._recurId?' 🔁':'')+'</div><div class="fem">'+sub+'</div></div>'
         +'<div class="fek">'+Math.round(e.kcal)+'</div>'
         +'</div>';
     }).join('');
@@ -5695,6 +5868,8 @@ function renderMealDetail(meal){
   var ctaTpl=document.getElementById('mdTpl');if(ctaTpl)ctaTpl.setAttribute('onclick',"openTemplateOv('"+meal+"')");
   var ctaCpy=document.getElementById('mdCopy');if(ctaCpy)ctaCpy.setAttribute('onclick',"copyMealFromYesterday('"+meal+"')");
   var ctaShr=document.getElementById('mdShare');if(ctaShr)ctaShr.setAttribute('onclick',"shareMeal('"+meal+"')");
+  var ctaRec=document.getElementById('mdRecur');
+  if(ctaRec){ctaRec.setAttribute('onclick',"openRecurCreate('"+meal+"')");ctaRec.style.display=en.length?'':'none';}
   var ctaSav=document.getElementById('mdSaveRecipe');
   if(ctaSav){ctaSav.setAttribute('onclick',"saveMealAsRecipe('"+meal+"')");ctaSav.style.display=en.length?'':'none';}
 }
@@ -5751,7 +5926,7 @@ function renderHistory(){
       +'</div>';
   }).join('');
 }
-function goToDay(k){S.currentDate=k;saveS();switchTab('main');renderAll();}
+function goToDay(k){S.currentDate=k;applyRecurringMeals(k);saveS();switchTab('main');renderAll();}
 
 // ── MORE Hub ──
 function renderMore(){/* statisch, kein Render nötig */}

@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.179 (2026-05-21)
+**Stand:** v0.181 (2026-06-19)
 
 ## URLs
 
@@ -33,6 +33,8 @@
 - **Picker Ing-Delete (v0.175):** `pickerRenderIngList`-Callbacks rendern nach `splice` neu (Helper `_pickerChatRebind` im Chat, lokale `rebindLink`-Closure im Link-Tab). Photo-Tab war via `pickerShowPhotoResult` schon ok. Vorher blieben gelöschte DOM-Zeilen sichtbar (#112).
 - **Picker OFT (v0.170):** kcal-Fallback `P*4+K*4+F*9` in `pickerFetchOnline` und `lookupNutrients` wenn beide Energy-Felder fehlen (#96 #101). OFT im Chat-Tab seit v0.175 nicht mehr genutzt.
 - **Picker Foto-Save (v0.179):** Settings-Toggle `S.savePickerPhotos` (Default off) unter „🗂 Daten → 📷 Picker-Fotos". Wenn an, ruft `_pickerSavePhotoIfWanted()` in `_pickerAdd` (vor `closePicker()`) auf — versucht zuerst `navigator.share({files:[File]})` (iOS Safari + Android Chrome unterstützen Files seit iOS 15 / Chrome 89), Fallback `<a download>` (Android: nach `Downloads/`; iOS PWA: nicht garantiert). Hinweis-Zeile `#pickerPhotoSaveHint` unter `pickerPrevWrap` zeigt Status und navigiert tippbar zu Einstellungen/Daten. Web-Capture (`<input capture>`) legt das Foto sonst weder auf iOS noch zuverlässig auf Android in die Galerie (#118).
+- **Wiederkehrende Mahlzeiten (v0.181):** `S.recurringMeals[]` = `{id,name,meal,weekdays:[0..6 JS-getDay],entries[],startDate,active}`. Anlegen über `mealDetailScreen`-CTA „🔁 Wiederholen" (`#mdRecur`→`openRecurCreate`) → `recurCreateOv` mit Wochentag-Chips (Default Mo–Fr). `applyRecurringMeals(dateKey)` fügt aktive Regeln idempotent ein: pro Tag merkt `day._recurMarks[]` angewandte Regel-IDs → keine Doppel, und gelöschte Einträge kommen am selben Tag nicht zurück. Eingefügte Einträge tragen `_recurId` (🔁-Badge in Eintrags-Listen). Hooks: Boot (`ensureRecurringForCurrentDay`), `changeDay`, `goToDay`. Verwaltung „Mehr → 🔁 Wiederkehrende Mahlzeiten" (`openRecurManage`/`recurMgmtOv`): Aktiv/Pause + Löschen. `startDate=today` → nicht rückwirkend; Zukunft ausgeschlossen.
+- **Picker KI-Fehlertexte (v0.180):** `pickerFriendlyAiError(err)` in `picker.js` mappt bekannte KI-/Proxy-Fehler (Kontingent/Billing, overloaded/rate-limit/429/529, nicht konfiguriert, offline) auf deutsche Texte; unbekannte Fehler unverändert. Genutzt in `pickerChatKiFallback` + Foto-Analyse-`onErr` (#121).
 - **Sport-Sync (v0.158):** Erstes ausgelagertes Modul `js/health-sync.js` (klassisches `<script>` vor `</body>`, exportiert `window.NTHealth`). User generiert in „Mehr → Sport-Sync" ein 32-Zeichen-Token (Base58-ish, `localStorage.nt_health_token`), trägt es in eine iOS-Shortcut-Automation („wenn Training endet") oder Android HTTP Request Shortcut ein. Automation POSTet `{id, source, type, start, kcal, durationSec?, distanceM?, hrAvg?}` mit Header `X-User-Token` an Worker `POST /workout` (KV-Key `wo:<token>:<id>`, TTL 60d). PWA pollt `GET /workouts?since=<lastpoll>` bei `DOMContentLoaded` (mit 800ms Delay) und `visibilitychange→visible`, dedupliziert via `_healthId`-Marker, hängt Workouts in `S.days[<localDate>].exercise[]` an (Schema bleibt kompatibel zur manuellen Erfassung) — die existierende `burned`-Subtraktion in `renderAll()` zieht die Kalorien automatisch vom Tagesziel ab. `renderExercise()` zeigt für `_source`-Einträge ein kleines „Apple"/„Samsung"-Badge.
 
 ## Worker-Endpoints
@@ -64,6 +66,8 @@
 
 ## Live-Test offen
 
+- v0.180 Picker: KI-Limit/Überlast/offline → deutsche Meldung statt englischem Roh-Text im Chat- und Foto-Tab (#121)
+- v0.181 Wiederkehrende Mahlzeit: Mahlzeit → „🔁 Wiederholen" → Mo–Fr speichern; am nächsten Werktag automatisch eingetragen (🔁-Badge); löschen an einem Tag → kommt dort nicht zurück; „Mehr → 🔁" pausieren/löschen (#122)
 - v0.157 Mahlzeit-Detail „💾 Als Rezept" — Rezept aus Mahlzeit erstellen, Editor öffnet zum Benennen (#75)
 - v0.158 Sport-Sync: Worker-Endpoints `/workout` + `/workouts` deployen (`wrangler deploy` im `worker/`), in „Mehr → Sport-Sync" Token erzeugen, je eine iOS-Shortcut-Automation und ein Android-HTTP-Request-Shortcut bauen, echtes Workout durchspielen → in PWA muss „Apple"/„Samsung"-Badge erscheinen, Hero-kcal um den Wert reduziert sein
 - v0.159 OneDrive Reconnect-Modal: Token ablaufen lassen (oder manuell `_odClearTokens()` in DevTools), dann sync triggern → `odReconnectOv` muss aufgehen; „Neu verbinden" startet PKCE-Flow neu
@@ -84,11 +88,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.175 | #114 | Picker Chat: Lokal-First statt OFT + Ing-Delete rendert neu (#112 #113) |
-| v0.176 | #115 | Picker Chat: Fuzzy-Suche (Tippfehler + Umlaute + Token-Match) |
 | v0.177 | #116 | Picker Chat: nur eigene Sachen, alle Tokens müssen treffen |
 | v0.178 | — | Picker Chat: strengere Fuzzy-Toleranz — kein „Kaffee mit Milch" bei „Waffel" (#117) |
 | v0.179 | — | Picker Foto: optionales Sichern per Share-Sheet, Toggle in Einstellungen (#118) |
+| v0.180 | #123 | Picker: freundliche deutsche KI-Fehlermeldung statt englischem Roh-Text (#121) |
+| v0.181 | #124 | Wiederkehrende Mahlzeiten: automatisch an festen Wochentagen eintragen (#122) |
 
 ---
 

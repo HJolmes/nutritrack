@@ -3,6 +3,14 @@
 // Ausgelagert aus index.html (v0.119)
 // ════════════════════════════════════════
 
+// HTML-Escaping für Namen aus untrusted Quellen (OpenFoodFacts, KI-Antworten,
+// Suchtreffer), die per innerHTML eingefügt werden — Schutz vor XSS. Nutzt den
+// globalen esc() aus index.html, fällt aber auf eine eigene Variante zurück.
+function _esc(s){
+  if(typeof window!=='undefined'&&typeof window.esc==='function')return window.esc(s);
+  return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});
+}
+
 // Wandelt rohe (oft englische) KI-/Proxy-Fehlermeldungen in eine kurze,
 // handlungsorientierte deutsche Meldung um (#121). Unbekannte Fehler werden
 // unverändert durchgereicht.
@@ -21,7 +29,6 @@ function pickerFriendlyAiError(err){
 
 // Picker state (global)
 var pickerMeal=null;          // which meal to add to (null = ask)
-var pickerOnAdd=null;         // callback: function(ingredient)
 var pickerSelFood=null;       // selected food in search tab
 var pickerIngredients=[];     // photo/chat detected ingredients
 var pickerBcFound=null;       // barcode found pending confirm
@@ -150,7 +157,7 @@ function pickerRenderResults(products,loading){
     var isR=p.isRecipe;
     return'<div class="ri'+(isR?' is-recipe':'')+'" onclick="pickerSelResult('+i+')" id="pri'+i+'">'+bdg
       +'<div class="ri-e">'+(p.emoji||'🍽')+'</div>'
-      +'<div style="flex:1;min-width:0;"><div class="ri-n">'+p.name+'</div>'
+      +'<div style="flex:1;min-width:0;"><div class="ri-n">'+_esc(p.name)+'</div>'
       +(p.per100?'<div class="ri-d">P '+(p.per100.protein||0).toFixed(1)+'g · K '+(p.per100.carbs||0).toFixed(1)+'g · F '+(p.per100.fat||0).toFixed(1)+'g · /100g</div>':'<div class="ri-d">Rezept</div>')
       +'</div>'
       +(p.per100?'<div class="ri-k">'+Math.round(p.per100.kcal||0)+' kcal</div>':'')
@@ -203,7 +210,7 @@ function pickerConfirmAdd(){
   var _idx=getDay().meals[pickerMeal].length-1;
   saveS();renderAll();closePicker();
   animateAdd(pickerMeal);
-  rememberPortion(f.name,f.amount);
+  rememberPortion(f.name,amt);
   checkDataQuality(f);
   checkPregWarn([f],pickerMeal,_idx);
   checkDietWarn([f],pickerMeal,_idx);
@@ -828,13 +835,13 @@ function pickerFetchBarcodeForConfirm(code){
   fetch('https://world.openfoodfacts.org/api/v0/product/'+code+'.json')
     .then(function(r){return r.json();})
     .then(function(data){
-      if(data.status!==1||!data.product)return;
+      if(data.status!==1||!data.product){showToast('Barcode '+code+' nicht gefunden – bitte manuell eintragen');return;}
       var p=data.product,nm=p.nutriments||{};
       var name=p.product_name_de||p.product_name||'Unbekannt';
       var food={name:name,emoji:emo(name),barcode:code,per100:{kcal:nm['energy-kcal_100g']||0,protein:nm['proteins_100g']||0,carbs:nm['carbohydrates_100g']||0,fat:nm['fat_100g']||0,sugar:nm['sugars_100g']||0,fiber:nm['fiber_100g']||0,salt:nm['salt_100g']||0}};
       barcodeCache[code]=food;saveBarcodeCache();cacheFood(food);
       pickerShowBcConfirm(food);
-    }).catch(function(){});
+    }).catch(function(){showToast('Produkt-Abruf fehlgeschlagen – bist du online?');});
 }
 
 function pickerShowBcConfirm(food){
@@ -918,7 +925,7 @@ function pickerShowBarcodeResult(food,fromCache){
   el.innerHTML='<div style="background:var(--gl);border:1.5px solid var(--g3);border-radius:12px;padding:12px;">'
     +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'
     +'<div style="font-size:28px;">'+(food.emoji||'🍽')+'</div>'
-    +'<div style="flex:1;"><div style="font-weight:700;font-size:14px;">'+food.name+'</div>'
+    +'<div style="flex:1;"><div style="font-weight:700;font-size:14px;">'+_esc(food.name)+'</div>'
     +'<div style="font-size:11px;color:var(--mu);margin-top:2px;">P '+food.per100.protein+'g · K '+food.per100.carbs+'g · F '+food.per100.fat+'g pro 100g</div>'
     +(fromCache?'<div style="font-size:10px;color:var(--g2);margin-top:2px;">📴 Aus Cache</div>':'')
     +'</div>'
@@ -1004,7 +1011,6 @@ function pickerAnalyze(){
   var prompt=getFotoPrompt();
   callClaude('claude-sonnet-4-5',[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:window._pickerPhotoB64}},{type:'text',text:prompt}],600,
     function(text){
-      console.log('[NutriTrack KI-Antwort]',text);
       var parsed=parsePhotoResponse(text);
       btn.disabled=false;btn.textContent='📷 Erneut analysieren';
       if(!parsed.zutaten.length){
@@ -1043,13 +1049,6 @@ function pickerUpdateTotal(tab){
   document.getElementById('picker'+tab+'Total').textContent='1 Portion: '+totalStr(t)+(p!==1?'  ·  '+p+'× = '+totalStr(scaleNutrients(t,p)):'');
 }
 function pickerUpdatePhotoTotal(){pickerUpdateTotal('Photo');}
-function _pickerIngCallbacks(tab){
-  return {
-    onChange:function(i,v){pickerIngredients[i].amount=parseFloat(v)||0;pickerUpdateTotal(tab);},
-    onDelete:function(i){pickerIngredients.splice(i,1);pickerUpdateTotal(tab);}
-  };
-}
-
 function pickerSetPhotoStatus(msg,isErr){
   var el=document.getElementById('pickerPhotoStatus');
   if(!msg){el.classList.add('hidden');return;}
@@ -1070,7 +1069,7 @@ function pickerPhotoAddSearch(){
   el.innerHTML=results.slice(0,8).map(function(p,i){
     return'<div class="ri" onclick="pickerPhotoAddFromResult('+i+')">'
       +'<div class="ri-e">'+(p.emoji||'🍽')+'</div>'
-      +'<div style="flex:1;min-width:0;"><div class="ri-n">'+p.name+'</div>'
+      +'<div style="flex:1;min-width:0;"><div class="ri-n">'+_esc(p.name)+'</div>'
       +(p.per100?'<div class="ri-d">'+Math.round(p.per100.kcal)+' kcal/100g</div>':'')
       +'</div>'
       +'<div style="font-size:18px;color:var(--g2);font-weight:900;">＋</div>'
@@ -1105,10 +1104,11 @@ function _pickerAdd(emoji,nameId,portionsId,defaultName,saveAsRecipe,hasEditMode
   var portions=parseFloat(document.getElementById(portionsId).value)||1;
   var t=ingTotal(ings);
   var scaled=scaleNutrients(t,portions);
+  var createdRec=null;
   if(saveAsRecipe){
-    var rec={id:Date.now().toString(),name:name,emoji:emoji,ingredients:ings};
-    recipes.unshift(rec);saveX();
-    getDay().meals[pickerMeal].push(Object.assign({name:name,emoji:emoji,isRecipe:true,recipeId:rec.id,portions:portions,ingredients:ings},scaled));
+    createdRec={id:Date.now().toString(),name:name,emoji:emoji,ingredients:ings};
+    recipes.unshift(createdRec);saveX();
+    getDay().meals[pickerMeal].push(Object.assign({name:name,emoji:emoji,isRecipe:true,recipeId:createdRec.id,portions:portions,ingredients:ings},scaled));
     showToast(emoji+' '+name+' als Rezept gespeichert');
   } else {
     getDay().meals[pickerMeal].push(Object.assign({name:name,emoji:emoji,isRecipe:true,recipeId:null,portions:portions,ingredients:ings},scaled));
@@ -1117,6 +1117,7 @@ function _pickerAdd(emoji,nameId,portionsId,defaultName,saveAsRecipe,hasEditMode
   var _idx=getDay().meals[pickerMeal].length-1;
   saveS();renderAll();_pickerSavePhotoIfWanted();closePicker();animateAdd(pickerMeal);
   checkPregWarn(ings,pickerMeal,_idx);checkDietWarn(ings,pickerMeal,_idx);
+  return createdRec;
 }
 function pickerPhotoAdd(saveAsRecipe){_pickerAdd('📸','pickerRecipeName','pickerPhotoPortions','Foto-Rezept',saveAsRecipe,true);}
 
@@ -1227,7 +1228,7 @@ function pickerChatAddLocal(i){
   pickerIngredients=[{name:p.name,emoji:p.emoji,g:100,amount:100,per100:p.per100}];
   if(!document.getElementById('pickerChatRecipeName').value)
     document.getElementById('pickerChatRecipeName').value=p.name.slice(0,50);
-  msgs.innerHTML+='<div class="cm a">✓ '+p.name+' übernommen.</div>';
+  msgs.innerHTML+='<div class="cm a">✓ '+_esc(p.name)+' übernommen.</div>';
   _pickerChatRebind();
   pickerUpdateChatTotal();
   document.getElementById('pickerChatResult').classList.remove('hidden');
@@ -1284,7 +1285,7 @@ function pickerSendChat(){
       var sub=p.isRecipe?'Rezept':(p.per100?Math.round(p.per100.kcal)+' kcal · P'+(p.per100.protein||0).toFixed(1)+'g · K'+(p.per100.carbs||0).toFixed(1)+'g · F'+(p.per100.fat||0).toFixed(1)+'g /100g':'');
       var badge=p.badge||'';
       html+='<div style="background:var(--gl);border:1px solid var(--br);border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:8px;">'
-        +'<div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:13px;">'+(p.emoji||'🍽')+' '+p.name+(badge?' <span style="font-size:11px;color:var(--mu);">'+badge+'</span>':'')+'</div>'
+        +'<div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:13px;">'+(p.emoji||'🍽')+' '+_esc(p.name)+(badge?' <span style="font-size:11px;color:var(--mu);">'+_esc(badge)+'</span>':'')+'</div>'
         +(sub?'<div style="font-size:11px;color:var(--mu);">'+sub+'</div>':'')+'</div>'
         +'<button type="button" onclick="pickerChatAddLocal('+i+')" style="background:var(--g1);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:14px;font-weight:700;cursor:pointer;flex-shrink:0;">＋</button>'
         +'</div>';
@@ -1385,10 +1386,10 @@ function pickerLinkImport(){
 function pickerUpdateLinkTotal(){pickerUpdateTotal('Link');}
 
 function pickerLinkAdd(saveAsRecipe){
-  _pickerAdd('🔗','pickerLinkRecipeName','pickerLinkPortions','Rezept',saveAsRecipe,true);
-  // Kochanleitung auf das zuletzt gespeicherte Rezept übertragen
-  if(saveAsRecipe&&window._pickerLinkInstructions&&recipes.length){
-    recipes[0].instructions=window._pickerLinkInstructions;
+  var rec=_pickerAdd('🔗','pickerLinkRecipeName','pickerLinkPortions','Rezept',saveAsRecipe,true);
+  // Kochanleitung auf das tatsächlich erstellte Rezept übertragen (statt blind recipes[0])
+  if(saveAsRecipe&&window._pickerLinkInstructions&&rec){
+    rec.instructions=window._pickerLinkInstructions;
     saveX();
   }
   window._pickerLinkInstructions='';
@@ -1431,7 +1432,7 @@ function pickerRenderIngList(elId,ings,onAmtChange,onDel){
     return'<div class="ing-wrap">'
       +'<div class="ing-item">'
       +'<div class="ing-e" onclick="ingToggle(event,\''+nid+'\')">'+(ing.emoji||'🍽')+'</div>'
-      +'<div class="ing-n" onclick="ingToggle(event,\''+nid+'\')">'+ing.name+ampelDot+'</div>'
+      +'<div class="ing-n" onclick="ingToggle(event,\''+nid+'\')">'+_esc(ing.name)+ampelDot+'</div>'
       +'<input type="number" class="ing-amt" value="'+amtVal+'" min="1" placeholder="g?" style="'+borderStyle+'" data-i="'+i+'" onchange="pickerIngAmtChange(\''+elId+'\','+i+',this.value)">'
       +'<div class="ing-u">g</div>'
       +warn

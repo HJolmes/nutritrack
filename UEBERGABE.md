@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.181 (2026-06-19)
+**Stand:** v0.182 (2026-06-19)
 
 ## URLs
 
@@ -34,6 +34,7 @@
 - **Picker OFT (v0.170):** kcal-Fallback `P*4+K*4+F*9` in `pickerFetchOnline` und `lookupNutrients` wenn beide Energy-Felder fehlen (#96 #101). OFT im Chat-Tab seit v0.175 nicht mehr genutzt.
 - **Picker Foto-Save (v0.179):** Settings-Toggle `S.savePickerPhotos` (Default off) unter „🗂 Daten → 📷 Picker-Fotos". Wenn an, ruft `_pickerSavePhotoIfWanted()` in `_pickerAdd` (vor `closePicker()`) auf — versucht zuerst `navigator.share({files:[File]})` (iOS Safari + Android Chrome unterstützen Files seit iOS 15 / Chrome 89), Fallback `<a download>` (Android: nach `Downloads/`; iOS PWA: nicht garantiert). Hinweis-Zeile `#pickerPhotoSaveHint` unter `pickerPrevWrap` zeigt Status und navigiert tippbar zu Einstellungen/Daten. Web-Capture (`<input capture>`) legt das Foto sonst weder auf iOS noch zuverlässig auf Android in die Galerie (#118).
 - **Wiederkehrende Mahlzeiten (v0.181):** `S.recurringMeals[]` = `{id,name,meal,weekdays:[0..6 JS-getDay],entries[],startDate,active}`. Anlegen über `mealDetailScreen`-CTA „🔁 Wiederholen" (`#mdRecur`→`openRecurCreate`) → `recurCreateOv` mit Wochentag-Chips (Default Mo–Fr). `applyRecurringMeals(dateKey)` fügt aktive Regeln idempotent ein: pro Tag merkt `day._recurMarks[]` angewandte Regel-IDs → keine Doppel, und gelöschte Einträge kommen am selben Tag nicht zurück. Eingefügte Einträge tragen `_recurId` (🔁-Badge in Eintrags-Listen). Hooks: Boot (`ensureRecurringForCurrentDay`), `changeDay`, `goToDay`. Verwaltung „Mehr → 🔁 Wiederkehrende Mahlzeiten" (`openRecurManage`/`recurMgmtOv`): Aktiv/Pause + Löschen. `startDate=today` → nicht rückwirkend; Zukunft ausgeschlossen.
+- **Härtung (v0.182):** Globaler `esc()` in `index.html` + `_esc()` in `picker.js` escapen alle per `innerHTML` ausgegebenen Namen/Freitexte aus untrusted Quellen (Import-Payloads, OpenFoodFacts, KI-Antworten) → kein XSS mehr. SW `install` cacht `CORE_ASSETS` vorab (`./`,`index.html`,`picker.js`,`js/health-sync.js`,`manifest.json`,`icon.svg`, best-effort `allSettled`) → echte Offline-Erstnutzung; Offline-Fallbacks awaiten jetzt das `caches.match`-Promise korrekt. Worker `/feedback` verlangt `x-app-proxy-secret` (Client sendet `getProxySecret()`) + IP-Tages-Limit (`fbrl:<ip>:<tag>`, 30/Tag) + `mdNeutralizeBody` neutralisiert @-Mentions/#-Refs in der Beschreibung. `/workouts` paginiert via Cursor (bis 20 Seiten) + parallele KV-Reads → kein Datenverlust bei >200 Workouts. Decoder optional per `DECODER_SECRET`/`X-Decoder-Secret` absicherbar (beidseitig setzen; unset = offen). Bugfix `rememberPortion(f.name,amt)` (vorher `f.amount`=undefined). Toter Code entfernt (`toggleEye`,`shareCustomFood`,`triggerBackupDownload`,`pickerOnAdd`,`_pickerIngCallbacks`).
 - **Picker KI-Fehlertexte (v0.180):** `pickerFriendlyAiError(err)` in `picker.js` mappt bekannte KI-/Proxy-Fehler (Kontingent/Billing, overloaded/rate-limit/429/529, nicht konfiguriert, offline) auf deutsche Texte; unbekannte Fehler unverändert. Genutzt in `pickerChatKiFallback` + Foto-Analyse-`onErr` (#121).
 - **Sport-Sync (v0.158):** Erstes ausgelagertes Modul `js/health-sync.js` (klassisches `<script>` vor `</body>`, exportiert `window.NTHealth`). User generiert in „Mehr → Sport-Sync" ein 32-Zeichen-Token (Base58-ish, `localStorage.nt_health_token`), trägt es in eine iOS-Shortcut-Automation („wenn Training endet") oder Android HTTP Request Shortcut ein. Automation POSTet `{id, source, type, start, kcal, durationSec?, distanceM?, hrAvg?}` mit Header `X-User-Token` an Worker `POST /workout` (KV-Key `wo:<token>:<id>`, TTL 60d). PWA pollt `GET /workouts?since=<lastpoll>` bei `DOMContentLoaded` (mit 800ms Delay) und `visibilitychange→visible`, dedupliziert via `_healthId`-Marker, hängt Workouts in `S.days[<localDate>].exercise[]` an (Schema bleibt kompatibel zur manuellen Erfassung) — die existierende `burned`-Subtraktion in `renderAll()` zieht die Kalorien automatisch vom Tagesziel ab. `renderExercise()` zeigt für `_source`-Einträge ein kleines „Apple"/„Samsung"-Badge.
 
@@ -66,6 +67,7 @@
 
 ## Live-Test offen
 
+- v0.182 Offline: App installieren, sofort offline öffnen → lädt aus Cache (Pre-Caching); Feedback-Senden funktioniert weiter (Client sendet jetzt `x-app-proxy-secret`); Portion über Suche hinzufügen → Menge wird beim nächsten Mal vorgeschlagen (rememberPortion-Fix). Optional: Worker neu deployen (`wrangler deploy` in `worker/`); Decoder-Secret nur wenn `DECODER_SECRET` beidseitig gesetzt
 - v0.180 Picker: KI-Limit/Überlast/offline → deutsche Meldung statt englischem Roh-Text im Chat- und Foto-Tab (#121)
 - v0.181 Wiederkehrende Mahlzeit: Mahlzeit → „🔁 Wiederholen" → Mo–Fr speichern; am nächsten Werktag automatisch eingetragen (🔁-Badge); löschen an einem Tag → kommt dort nicht zurück; „Mehr → 🔁" pausieren/löschen (#122)
 - v0.157 Mahlzeit-Detail „💾 Als Rezept" — Rezept aus Mahlzeit erstellen, Editor öffnet zum Benennen (#75)
@@ -88,11 +90,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.177 | #116 | Picker Chat: nur eigene Sachen, alle Tokens müssen treffen |
 | v0.178 | — | Picker Chat: strengere Fuzzy-Toleranz — kein „Kaffee mit Milch" bei „Waffel" (#117) |
 | v0.179 | — | Picker Foto: optionales Sichern per Share-Sheet, Toggle in Einstellungen (#118) |
 | v0.180 | #123 | Picker: freundliche deutsche KI-Fehlermeldung statt englischem Roh-Text (#121) |
 | v0.181 | #124 | Wiederkehrende Mahlzeiten: automatisch an festen Wochentagen eintragen (#122) |
+| v0.182 | — | Härtung: XSS-Escaping, SW-Pre-Caching, Feedback-Auth+Rate-Limit, /workouts-Pagination, Decoder-Secret, rememberPortion-Fix |
 
 ---
 

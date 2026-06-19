@@ -5,5 +5,9 @@ ANTHROPIC_API_KEY=sk-ant-api03-example
 NUTRITRACK_PROXY_TOKEN=replace-with-a-long-random-token
 # URL of the OSS-Decoder microservice (Cloud Run). Primary decode path.
 DECODER_URL=https://nutritrack-decoder-xxxxx-ew.a.run.app
+# Optional shared secret with the decoder. When set here AND as DECODER_SECRET
+# on the Cloud Run service, the worker sends X-Decoder-Secret and the decoder
+# rejects unauthenticated calls. Leave unset to keep the decoder open.
+DECODER_SECRET=replace-with-a-long-random-token
 # Optional: set to "true" to enable Claude Vision as fallback when OSS-Decoder misses.
 ENABLE_VISION_FALLBACK=false

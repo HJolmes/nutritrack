@@ -979,7 +979,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.181</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.182</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1965,8 +1965,11 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.181';
+var APP_VERSION='0.182';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
+// HTML-Escaping für alle Namen/Freitexte aus untrusted Quellen (Import-Payloads,
+// OpenFoodFacts, KI-Antworten), die per innerHTML eingefügt werden — schützt vor XSS.
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
     return Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
@@ -1994,6 +1997,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.182',items:[
+    {icon:'🔒',text:'Stabilität & Sicherheit: Namen aus geteilten Links, Online-Datenbanken und KI-Antworten werden jetzt sicher dargestellt (Schutz vor manipulierten Inhalten). Die Offline-Nutzung wurde robuster gemacht, und das Portionsgedächtnis merkt sich nun auch Mengen, die du über die Suche hinzufügst.',where:'App-weit'},
+  ]},
   {v:'0.181',items:[
     {icon:'🔁',text:'Neu: Wiederkehrende Mahlzeiten. Öffne eine Mahlzeit (z. B. dein Frühstück), tippe „🔁 Wiederholen" und wähle die Wochentage (Standard Mo–Fr) — die Mahlzeit wird dann automatisch an diesen Tagen eingetragen. An Tagen, wo es mal nicht stimmt, einfach löschen; sie kommt an dem Tag nicht zurück. Verwalten/pausieren unter „Mehr → 🔁 Wiederkehrende Mahlzeiten". (#122)',where:'Mahlzeit-Detail · Mehr'},
   ]},
@@ -2763,7 +2769,6 @@ function recipeImportStart(){
     .catch(function(){showToast('URL konnte nicht geladen werden');});
 }
 
-function toggleEye(id){var el=document.getElementById(id);el.type=el.type==='password'?'text':'password';}
 function doSetup(){
   S.apiKey='';
   S.setupDone=true;
@@ -3693,13 +3698,6 @@ function shareLibFood(filteredIdx){
   var summary=Math.round(f.per100.kcal||0)+' kcal · '+Math.round(f.per100.protein||0)+'g P · '+Math.round(f.per100.carbs||0)+'g KH · '+Math.round(f.per100.fat||0)+'g F (pro 100g)';
   _shareItem(payload,f.name,summary);
 }
-function shareCustomFood(idx){
-  var f=customFoods[idx];
-  if(!f){showToast('Lebensmittel nicht gefunden');return;}
-  var payload={t:'f',n:f.name,em:f.emoji||'🍽',p:{k:Math.round(f.per100.kcal||0),pr:Math.round((f.per100.protein||0)*10)/10,c:Math.round((f.per100.carbs||0)*10)/10,f:Math.round((f.per100.fat||0)*10)/10}};
-  var summary=Math.round(f.per100.kcal||0)+' kcal · '+Math.round(f.per100.protein||0)+'g P · '+Math.round(f.per100.carbs||0)+'g KH · '+Math.round(f.per100.fat||0)+'g F (pro 100g)';
-  _shareItem(payload,f.name,summary);
-}
 function shareEntryAsFood(meal,idx){
   var e=getDay().meals[meal][idx];
   if(!e){showToast('Eintrag nicht gefunden');return;}
@@ -3752,7 +3750,7 @@ function _previewImport(d){
     subEl.textContent='Du hast einen Rezept-Link geöffnet';
     nameEl.textContent=(d.em||'📋')+' '+d.n;
     summaryEl.textContent=ings.length+' Zutat'+(ings.length===1?'':'en')+' · '+Math.round(totalK)+' kcal';
-    detailEl.innerHTML=ings.map(function(i){return(i.em||'🍽')+' '+i.n+' <span style="color:var(--mu);">('+(i.a||0)+'g)</span>';}).join(' · ');
+    detailEl.innerHTML=ings.map(function(i){return esc(i.em||'🍽')+' '+esc(i.n)+' <span style="color:var(--mu);">('+esc(i.a||0)+'g)</span>';}).join(' · ');
     if(d.ins){insEl.style.display='block';insEl.textContent=d.ins.length>240?d.ins.substring(0,240)+'…':d.ins;}
     btn.textContent='✅ In Bibliothek speichern';
   } else if(d.t==='f'){
@@ -3760,7 +3758,7 @@ function _previewImport(d){
     subEl.textContent='Du hast einen Lebensmittel-Link geöffnet';
     nameEl.textContent=(d.em||'🍽')+' '+d.n;
     summaryEl.textContent='Werte pro 100g';
-    detailEl.innerHTML='kcal: <strong>'+(d.p.k||0)+'</strong> · Protein: <strong>'+(d.p.pr||0)+'g</strong> · KH: <strong>'+(d.p.c||0)+'g</strong> · Fett: <strong>'+(d.p.f||0)+'g</strong>';
+    detailEl.innerHTML='kcal: <strong>'+esc(d.p.k||0)+'</strong> · Protein: <strong>'+esc(d.p.pr||0)+'g</strong> · KH: <strong>'+esc(d.p.c||0)+'g</strong> · Fett: <strong>'+esc(d.p.f||0)+'g</strong>';
     btn.textContent='✅ In Bibliothek speichern';
   } else if(d.t==='m'){
     var entries=d.e||[];
@@ -3775,7 +3773,7 @@ function _previewImport(d){
     subEl.textContent='Du hast einen Mahlzeit-Link geöffnet';
     nameEl.textContent='🍽 '+(MEAL_NAMES[d.m]||'Mahlzeit');
     summaryEl.textContent=entries.length+' Eintr'+(entries.length===1?'ag':'äge')+' · '+Math.round(totalKcal)+' kcal';
-    detailEl.innerHTML=entries.map(function(e){return(e.em||'🍽')+' '+e.n;}).join(' · ');
+    detailEl.innerHTML=entries.map(function(e){return esc(e.em||'🍽')+' '+esc(e.n);}).join(' · ');
     mealRow.style.display='block';
     document.getElementById('importConfirmMealTarget').value=d.m||'breakfast';
     btn.textContent='✅ Einträge übernehmen';
@@ -4234,8 +4232,8 @@ function showAmpelModal(results,title,subtitle){
     html+='<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:5px;padding:5px 8px;'
       +'background:'+{rot:'#fff3f3',gelb:'#fffbe6'}[r.ampel]+';border-left:3px solid '+colors[r.ampel]+';border-radius:6px;">'
       +'<span style="font-size:16px;flex-shrink:0;">'+icons[r.ampel]+'</span>'
-      +'<div><span style="font-weight:700;font-size:12px;">'+r.name+'</span>'
-      +' <span style="font-size:12px;color:#555;">– '+r.grund+'</span></div>'
+      +'<div><span style="font-weight:700;font-size:12px;">'+esc(r.name)+'</span>'
+      +' <span style="font-size:12px;color:#555;">– '+esc(r.grund)+'</span></div>'
       +'</div>';
   });
   html+='<div style="text-align:right;margin-top:4px;">'
@@ -4286,8 +4284,8 @@ function renderAmpelInfo(e){
       +'background:'+bg[w.ampel]+';border-left:3px solid '+colors[w.ampel]+';border-radius:8px;margin-bottom:5px;">'
       +'<span style="font-size:15px;">'+icons[w.ampel]+'</span>'
       +'<div><div style="font-size:11px;color:var(--mu);font-weight:700;margin-bottom:1px;">'+badge+'</div>'
-      +'<div style="font-size:12px;font-weight:700;">'+w.name+'</div>'
-      +'<div style="font-size:12px;color:#555;">'+w.grund+'</div>'
+      +'<div style="font-size:12px;font-weight:700;">'+esc(w.name)+'</div>'
+      +'<div style="font-size:12px;color:#555;">'+esc(w.grund)+'</div>'
       +'</div></div>';
   });
   html+='</div>';
@@ -5389,14 +5387,6 @@ function renderOneDriveStatus(){
   }
 }
 
-function triggerBackupDownload(){
-  var data={state:backupState(),foodCache:foodCache,customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache};
-  var blob=new Blob([JSON.stringify(data)],{type:'application/json'});
-  var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');a.href=url;a.download='nutritrack-backup-'+today()+'.json';a.click();
-  URL.revokeObjectURL(url);
-}
-
 // ════════════════════════════════════════
 // SECTION: SPORT & AKTIVITÄT
 // ════════════════════════════════════════
@@ -5710,9 +5700,9 @@ function renderLibrary(){
       filtered.forEach(function(r){
         var t=ingTotal(r.ingredients||[]);
         html+='<div style="background:white;border-radius:12px;padding:12px 14px;box-shadow:var(--sh);display:flex;align-items:center;gap:10px;">'
-          +'<div style="font-size:26px;">'+(r.emoji||'📋')+'</div>'
+          +'<div style="font-size:26px;">'+esc(r.emoji||'📋')+'</div>'
           +'<div style="flex:1;min-width:0;">'
-            +'<div style="font-weight:700;font-size:14px;">'+r.name+'</div>'
+            +'<div style="font-weight:700;font-size:14px;">'+esc(r.name)+'</div>'
             +'<div style="font-size:11px;color:var(--mu);margin-top:2px;">'+r.ingredients.length+' Zutaten · '+Math.round(t.kcal)+' kcal/Portion</div>'
           +'</div>'
           +'<button type="button" onclick="openRecipeEditor(this.dataset.rid)" data-rid="'+r.id+'" style="background:none;border:none;font-size:18px;color:var(--g2);padding:4px;">✏️</button>'
@@ -5738,9 +5728,9 @@ function renderLibrary(){
       var editBtn=f.isCustom?('<button type="button" onclick="openOwnFoodEdit('+i+')" style="background:none;border:none;font-size:16px;color:var(--g2);padding:4px;">&#9998;</button>'):'';
       var shareBtn='<button type="button" onclick="shareLibFood('+i+')" style="background:none;border:none;font-size:16px;color:var(--mu);padding:4px;" title="Teilen">📤</button>';
       html+='<div style="background:white;border-radius:12px;padding:10px 14px;box-shadow:var(--sh);display:flex;align-items:center;gap:10px;">'
-        +'<div style="font-size:22px;">'+(f.emoji||'&#127374;')+'</div>'
+        +'<div style="font-size:22px;">'+esc(f.emoji||'&#127374;')+'</div>'
         +'<div style="flex:1;min-width:0;">'
-          +'<div style="font-weight:700;font-size:13px;">'+f.name+'</div>'
+          +'<div style="font-weight:700;font-size:13px;">'+esc(f.name)+'</div>'
           +'<div style="font-size:11px;color:var(--mu);margin-top:1px;">'+Math.round(f.per100.kcal)+' kcal pro 100g</div>'
         +'</div>'
         +editBtn
@@ -6179,7 +6169,7 @@ function submitFeedback(){
   };
   fetch(FEEDBACK_WORKER_URL,{
     method:'POST',
-    headers:{'Content-Type':'application/json'},
+    headers:{'Content-Type':'application/json','x-app-proxy-secret':getProxySecret()},
     body:JSON.stringify(payload)
   }).then(function(r){return r.json().then(function(j){return {status:r.status,j:j};});})
   .then(function(res){

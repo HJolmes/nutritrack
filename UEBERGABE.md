@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.185 (2026-06-19)
+**Stand:** v0.186 (2026-06-19)
 
 ## URLs
 
@@ -26,7 +26,8 @@
 - **OneDrive Reconnect (v0.159):** `_odGetToken()` unterscheidet Auth-Fehler (`invalid_grant`, `interaction_required`, `unauthorized_client`) von Netzwerkfehlern — nur bei echten Auth-Fehlern werden Tokens gelöscht + sofort `odReconnectOv`-Modal geöffnet (Bottom-Sheet, `.ov`-Klasse, `_odShowReconnect()`). Netzwerkfehler löschen Tokens nicht mehr.
 - **OneDrive Autospeicher-Fix (v0.159):** Doppelte `_odAutoSync()`-Definition entfernt — die zweite Definition (rief `oneDriveSyncUp()` auf) überschrieb die erste (rief `oneDriveSyncSlot()` auf). Jetzt wird täglich korrekt ein Autospeicher-Slot gefüllt.
 - **Picker Chat (v0.175–v0.177):** Foto-Tab und Chat-Tab vollständig entkoppelt. Chat-Nachrichten mit aktivem Foto (`window._pickerPhotoB64`) gehen als Image-Content an `claude-sonnet-4-6`; ohne Foto `claude-haiku-4-5`. Reihenfolge: `pickerSendChat` → `pickerChatLocalSearch(msg)` (tokenisierte Fuzzy-Suche **nur** über Rezepte + Custom Foods, max 6 Treffer) → Treffer als Karten via `pickerChatAddLocal(i)`; bei 0 Treffern oder Klick auf „🤖 Stattdessen KI fragen" → `pickerChatKiFallback(msg)`. Rezept-Treffer landen direkt in der Mahlzeit + `closePicker()`; per100-Treffer setzen `pickerIngredients` und rendern die Zutaten-Liste. OFT-Anbindung im Chat ist raus. Lokale Suche funktioniert offline; KI-Fallback verlangt `isOnline`.
-- **Picker Chat Prompt — Few-Shot (v0.185):** `DEFAULT_CHAT_PROMPT` (`index.html`, `PROMPT_VERSION='6'`) arbeitet mit **Few-Shot-Beispielen** statt nur abstrakter Regeln — Haiku (`temperature:0`) befolgte die reine Negativ-Regel nicht und wertete „Kaffee" zu „Cappuccino" auf (#127). Das erste Beispiel demonstriert genau diesen Fall (Kaffee + Hafer-/Sojamilch bleiben getrennt, kein Cappuccino), ein weiteres lehrt das Aufschlüsseln echter Gerichtsnamen (Hamburger → Bestandteile). Bewusst **kein** Modell-Upgrade und **keine** deterministische Nachkorrektur/Lebensmittel-Tabelle.
+- **Picker Chat „Kaffee→Cappuccino" (v0.186, eigentliche Ursache, #127):** Lag **nicht** an KI/Prompt/Modell, sondern an einem Daten-Bug in der eingebauten DB (`var DB=[…]` in `index.html`): der `Cappuccino`-Eintrag beanspruchte `s:'kaffee'` als Synonym, der schwarze Kaffee hatte nur `'coffee espresso'`. `findInLocalDB(name)` (exakter Name → Synonym → startsWith) löste „Kaffee" daher deterministisch zu Cappuccino auf und `lookupNutrients` überschreibt den Namen mit `loc.n`. Fix: `'kaffee'` zum schwarzen Kaffee verschoben, Cappuccino bekam `'milchkaffee cappucino'`. **Lehre:** Bei „falsch erkanntem" Lebensmittel zuerst `findInLocalDB`/DB-Synonyme prüfen, nicht den KI-Prompt.
+- **Picker Chat Prompt — Few-Shot (v0.185):** `DEFAULT_CHAT_PROMPT` (`index.html`, `PROMPT_VERSION='6'`) nutzt **Few-Shot-Beispiele** statt nur abstrakter Regeln (Demonstrationen wirken bei Haiku zuverlässiger). Hilft, dass die KI getrennte Lebensmittel sauber liefert und echte Gerichtsnamen aufschlüsselt — war aber nicht die Ursache von #127 (siehe DB-Fix oben).
 - **Picker Chat Fuzzy-Suche (v0.176/v0.177/v0.178):** `_pickerFold` (ä→a, ö→o, ü→u, ß→s) + `_pickerTok` (Stoppwörter: mit/und/von/der/die/das/im/in/zum/zur/an/am/auf/bei/zu/…) + `_pickerLev` (Levenshtein) + `_pickerScoreName`. **Alle** Query-Tokens müssen treffen (sonst Score 0) — kein „Joghurt Natur"-Treffer mehr für „Joghurt mit Früchten". Pro-Token-Score: === +5, startsWith +4, includes +3, Levenshtein ≤1 (Länge 5–7) bzw. ≤2 (Länge ≥8) +1–2 — kein Levenshtein unter Länge 5, sonst Distraktoren wie „kaffee"↔„waffel" (#117). Voller-Query-Substring zusätzlich +10. Rezepte werden um +10 geboostet vor Custom Foods (+6). Cache und eingebaute DB werden im Chat-Tab nicht durchsucht.
 - **Layout-Fixes (v0.167):** bnav `margin:0 14px` → `margin:0 0` (horizontale Margins verursachten 14 px Rechtsversatz bei `position:fixed`+`left:50%`+`translateX(-50%)`). iOS PWA: `focusout`-Handler setzt `window.scrollTo(0,0)` nach Tastatur-Dismiss (nur `_isIos()&&_isPwaStandalone()`).
 - **iOS Safe-Area-Top (v0.168):** `.hdr` und `#mealDetailScreen .md-head` erhalten `padding-top: calc(…px + env(safe-area-inset-top, 0px))` — Screen-Header-Buttons auf allen Screens unterhalb der iOS Status-Bar / Dynamic Island (#104).
@@ -68,7 +69,7 @@
 
 ## Live-Test offen
 
-- v0.185 Picker Chat: „Kaffee mit Hafermilch und Sojamilch" tippen → KI (Haiku, Few-Shot-Prompt) listet „Kaffee" (schwarz) + Hafermilch + Sojamilch, keinen Cappuccino (#127)
+- v0.186 Picker Chat: „Kaffee mit Hafermilch" tippen → erste Zutat ist „Kaffee (schwarz)" (≈2 kcal), **kein** Cappuccino; Cappuccino bleibt über „Cappuccino"/„Milchkaffee" auffindbar (#127)
 - v0.182 Offline: App installieren, sofort offline öffnen → lädt aus Cache (Pre-Caching); Feedback-Senden funktioniert weiter (Client sendet jetzt `x-app-proxy-secret`); Portion über Suche hinzufügen → Menge wird beim nächsten Mal vorgeschlagen (rememberPortion-Fix). Optional: Worker neu deployen (`wrangler deploy` in `worker/`); Decoder-Secret nur wenn `DECODER_SECRET` beidseitig gesetzt
 - v0.180 Picker: KI-Limit/Überlast/offline → deutsche Meldung statt englischem Roh-Text im Chat- und Foto-Tab (#121)
 - v0.181 Wiederkehrende Mahlzeit: Mahlzeit → „🔁 Wiederholen" → Mo–Fr speichern; am nächsten Werktag automatisch eingetragen (🔁-Badge); löschen an einem Tag → kommt dort nicht zurück; „Mehr → 🔁" pausieren/löschen (#122)
@@ -95,8 +96,8 @@
 | v0.181 | #124 | Wiederkehrende Mahlzeiten: automatisch an festen Wochentagen eintragen (#122) |
 | v0.182 | #125 #126 | Härtung: XSS-Escaping, SW-Pre-Caching, Feedback-Auth+Rate-Limit, /workouts-Pagination, Decoder-Secret, rememberPortion-Fix |
 | v0.183 | #128 | Picker Chat: Prompt-Regel gegen Aufwerten genannter Lebensmittel (#127) |
-| v0.184 | #130 | Picker Chat: Text-Parse kurzzeitig auf Sonnet (in v0.185 zurückgenommen) (#127) |
-| v0.185 | — | Picker Chat: Few-Shot-Prompt löst Kaffee→Cappuccino ohne stärkeres Modell, zurück auf Haiku (#127) |
+| v0.185 | #131 | Picker Chat: Few-Shot-Prompt, zurück auf Haiku (#127) |
+| v0.186 | — | Picker Chat: eigentlicher Fix — DB-Synonym „kaffee" gehörte zum schwarzen Kaffee, nicht zum Cappuccino (#127) |
 
 ---
 

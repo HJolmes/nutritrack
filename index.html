@@ -979,7 +979,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.185</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.186</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1937,7 +1937,7 @@ var DB=[
   {n:'Honig',e:'🍯',k:304,p:0.3,c:82,f:0,s:'honey'},{n:'Marmelade',e:'🍓',k:278,p:0.4,c:69,f:0.1,s:'jam'},
   {n:'Pizza Margherita',e:'🍕',k:266,p:11,c:33,f:10,s:'pizza'},{n:'Hamburger',e:'🍔',k:295,p:17,c:24,f:14,s:'burger'},
   {n:'Pommes Frites',e:'🍟',k:312,p:3.4,c:41,f:15,s:'pommes fries'},{n:'Döner',e:'🥙',k:250,p:15,c:25,f:10,s:'kebab'},
-  {n:'Kaffee (schwarz)',e:'☕',k:2,p:0.3,c:0,f:0,s:'coffee espresso'},{n:'Cappuccino',e:'☕',k:40,p:1.6,c:4,f:1.8,s:'kaffee'},
+  {n:'Kaffee (schwarz)',e:'☕',k:2,p:0.3,c:0,f:0,s:'coffee espresso kaffee'},{n:'Cappuccino',e:'☕',k:40,p:1.6,c:4,f:1.8,s:'milchkaffee cappucino'},
   {n:'Latte Macchiato',e:'☕',k:67,p:3.3,c:6.5,f:3.5,s:'kaffee coffee'},{n:'Tee',e:'🍵',k:1,p:0,c:0.2,f:0,s:'tea'},
   {n:'Orangensaft',e:'🧃',k:45,p:0.7,c:10,f:0.2,s:'saft juice'},{n:'Cola',e:'🥤',k:42,p:0,c:10.6,f:0,s:'coke'},
   {n:'Cola Zero',e:'🥤',k:0,p:0,c:0,f:0,s:'diet'},{n:'Bier',e:'🍺',k:43,p:0.5,c:3.5,f:0,s:'beer'},
@@ -1965,7 +1965,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.185';
+var APP_VERSION='0.186';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 // HTML-Escaping für alle Namen/Freitexte aus untrusted Quellen (Import-Payloads,
 // OpenFoodFacts, KI-Antworten), die per innerHTML eingefügt werden — schützt vor XSS.
@@ -1997,8 +1997,8 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
-  {v:'0.185',items:[
-    {icon:'🐛',text:'Picker · Chat: Die Zutaten-Erkennung versteht jetzt zuverlässig, dass genannte Lebensmittel genau so übernommen werden. „Kaffee mit Hafermilch und Sojamilch" ergibt korrekt Kaffee (schwarz) + Hafermilch + Sojamilch statt Cappuccino. (#127)',where:'Picker · Chat'},
+  {v:'0.186',items:[
+    {icon:'🐛',text:'Picker · Chat: „Kaffee" wird endlich als schwarzer Kaffee erkannt statt als Cappuccino. Ursache war ein falscher Suchbegriff in der internen Lebensmittel-Datenbank (der Cappuccino-Eintrag hatte „kaffee" als Stichwort beansprucht). (#127)',where:'Picker · Chat'},
   ]},
   {v:'0.183',items:[
     {icon:'🐛',text:'Picker · Chat: Genannte Lebensmittel werden nicht mehr eigenmächtig „aufgewertet". Tippst du z. B. „Kaffee mit Hafermilch und Sojamilch", bleibt Kaffee jetzt Kaffee (schwarz) — statt fälschlich als Cappuccino erkannt zu werden. (#127)',where:'Picker · Chat'},

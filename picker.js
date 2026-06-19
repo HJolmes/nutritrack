@@ -1245,7 +1245,9 @@ function pickerChatKiFallback(msg){
   var content=hasPhoto
     ?[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:window._pickerPhotoB64}},{type:'text',text:getChatPrompt().replace('{MSG}',msg)}]
     :[{type:'text',text:getChatPrompt().replace('{MSG}',msg)}];
-  var model=hasPhoto?'claude-sonnet-4-6':'claude-haiku-4-5';
+  // Sonnet auch für Text-Parse: Haiku ignorierte die Negativ-Regel "genanntes
+  // Lebensmittel nicht aufwerten" (z.B. Kaffee→Cappuccino, #127).
+  var model='claude-sonnet-4-6';
   callClaude(model,content,300,
     function(text){
       var raw=parseIngJSON(text);

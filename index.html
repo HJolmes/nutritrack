@@ -979,7 +979,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.182</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.183</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1965,7 +1965,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.182';
+var APP_VERSION='0.183';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 // HTML-Escaping für alle Namen/Freitexte aus untrusted Quellen (Import-Payloads,
 // OpenFoodFacts, KI-Antworten), die per innerHTML eingefügt werden — schützt vor XSS.
@@ -1997,6 +1997,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.183',items:[
+    {icon:'🐛',text:'Picker · Chat: Genannte Lebensmittel werden nicht mehr eigenmächtig „aufgewertet". Tippst du z. B. „Kaffee mit Hafermilch und Sojamilch", bleibt Kaffee jetzt Kaffee (schwarz) — statt fälschlich als Cappuccino erkannt zu werden. (#127)',where:'Picker · Chat'},
+  ]},
   {v:'0.182',items:[
     {icon:'🔒',text:'Stabilität & Sicherheit: Namen aus geteilten Links, Online-Datenbanken und KI-Antworten werden jetzt sicher dargestellt (Schutz vor manipulierten Inhalten). Die Offline-Nutzung wurde robuster gemacht, und das Portionsgedächtnis merkt sich nun auch Mengen, die du über die Suche hinzufügst.',where:'App-weit'},
   ]},
@@ -2258,9 +2261,9 @@ var CHANGELOG=[
 // Default prompts - editable in settings
 var DEFAULT_FOTO_PROMPT='Analysiere dieses Bild auf Deutsch. Es kann ein Essensfoto ODER ein Screenshot einer Tracking-App (z.B. MyFitnessPal, Cronometer, Yazio, Samsung Health) sein.\n\nGib ein JSON-Objekt zurueck:\n{"rezept":"Gesamtgerichtname auf Deutsch","zutaten":[{"name":"Zutat auf Deutsch","emoji":"Emoji","g":GRAMM}]}\n\nFall 1 – Essensfoto:\n- zutaten: erkenne was SICHTBAR auf dem Teller/Bild liegt\n- Nenne das fertige Lebensmittel, nicht seine Rohzutaten\n- 1 Einheit schatzen (Nutzer gibt Menge selbst an)\n- Logisch notwendige Beilagen erganzen\n\nFall 2 – Screenshot einer Tracking-App oder Ernaehrungsuebersicht:\n- Lies ALLE eingetragenen Lebensmittel/Gerichte mit den angezeigten Gramm-/Portionsangaben aus\n- Falls kcal/Naehrwerte sichtbar: nutze diese fuer realistischere Schatzung\n- rezept: Name der Mahlzeit oder "Import aus App"\n\nFall 3 – Einkaufszettel / Zutatenliste:\n- Liste alle Zutaten mit typischen Mengen auf\n\nAllgemein:\n- Realistische Gramm pro Einheit\n- Alle Namen auf Deutsch\n- Wenn nichts erkennbar: {"rezept":"","zutaten":[]}';
 
-var DEFAULT_CHAT_PROMPT='Nutzer hat gegessen: {MSG}\nZerlege in einzelne Zutaten.\nRegeln:\n- Werden einzelne Lebensmittel genannt (z.B. "Brot mit Kaese, Senf, Schinken"): NUR die genannten Zutaten listen, nichts erganzen\n- Wird ein Gericht oder Rezept genannt (z.B. "Hamburger", "Aperol Spritz"): typische Bestandteile als fertige Produkte aufschluesseln\n- Immer fertige Produkte, keine Rohzutaten (Butterkeks nicht Butter)\n- Immer nur 1 Einheit schatzen - Nutzer gibt Menge selbst an\n- Realistische Gramm-Schatzung fuer 1 Einheit\n- Namen auf Deutsch\n- Format: [{"name":"Deutscher Name","emoji":"Emoji","g":80}]';
+var DEFAULT_CHAT_PROMPT='Nutzer hat gegessen: {MSG}\nZerlege in einzelne Zutaten.\nRegeln:\n- Werden einzelne Lebensmittel genannt (z.B. "Brot mit Kaese, Senf, Schinken"): NUR die genannten Zutaten listen, nichts erganzen\n- Verwende fuer ausdruecklich genannte Lebensmittel exakt den genannten Begriff - ersetze ihn NICHT durch eine reichhaltigere oder bereits kombinierte Variante (z.B. "Kaffee" bleibt "Kaffee" / schwarz, nicht Cappuccino oder Latte; "Brot" bleibt "Brot", nicht belegtes Broetchen). Wird Milch separat genannt, gehoert sie NICHT zusaetzlich in das genannte Grundprodukt hinein\n- Wird ein Gericht oder Rezept genannt (z.B. "Hamburger", "Aperol Spritz"): typische Bestandteile als fertige Produkte aufschluesseln\n- Immer fertige Produkte, keine Rohzutaten (Butterkeks nicht Butter)\n- Immer nur 1 Einheit schatzen - Nutzer gibt Menge selbst an\n- Realistische Gramm-Schatzung fuer 1 Einheit\n- Namen auf Deutsch\n- Format: [{"name":"Deutscher Name","emoji":"Emoji","g":80}]';
 
-var PROMPT_VERSION='4';
+var PROMPT_VERSION='5';
 function getFotoPrompt(){
   // Reset if prompt version changed
   if(localStorage.getItem('nt_prompt_ver')!==PROMPT_VERSION){

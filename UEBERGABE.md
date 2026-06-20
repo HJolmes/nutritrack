@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.188 (2026-06-20)
+**Stand:** v0.189 (2026-06-20)
 
 ## URLs
 
@@ -29,7 +29,7 @@
 - **Picker Chat (v0.175–v0.177):** Foto-Tab und Chat-Tab vollständig entkoppelt. Chat-Nachrichten mit aktivem Foto (`window._pickerPhotoB64`) gehen als Image-Content an `claude-sonnet-4-6`; ohne Foto `claude-haiku-4-5`. Reihenfolge: `pickerSendChat` → `pickerChatLocalSearch(msg)` (tokenisierte Fuzzy-Suche **nur** über Rezepte + Custom Foods, max 6 Treffer) → Treffer als Karten via `pickerChatAddLocal(i)`; bei 0 Treffern oder Klick auf „🤖 Stattdessen KI fragen" → `pickerChatKiFallback(msg)`. Rezept-Treffer landen direkt in der Mahlzeit + `closePicker()`; per100-Treffer setzen `pickerIngredients` und rendern die Zutaten-Liste. OFT-Anbindung im Chat ist raus. Lokale Suche funktioniert offline; KI-Fallback verlangt `isOnline`.
 - **Picker Chat „Kaffee→Cappuccino" (v0.186, eigentliche Ursache, #127):** Lag **nicht** an KI/Prompt/Modell, sondern an einem Daten-Bug in der eingebauten DB (`var DB=[…]` in `index.html`): der `Cappuccino`-Eintrag beanspruchte `s:'kaffee'` als Synonym, der schwarze Kaffee hatte nur `'coffee espresso'`. `findInLocalDB(name)` (exakter Name → Synonym → startsWith) löste „Kaffee" daher deterministisch zu Cappuccino auf und `lookupNutrients` überschreibt den Namen mit `loc.n`. Fix: `'kaffee'` zum schwarzen Kaffee verschoben, Cappuccino bekam `'milchkaffee cappucino'`. **Lehre:** Bei „falsch erkanntem" Lebensmittel zuerst `findInLocalDB`/DB-Synonyme prüfen, nicht den KI-Prompt.
 - **Picker Chat Prompt — Few-Shot (v0.185):** `DEFAULT_CHAT_PROMPT` (`index.html`, `PROMPT_VERSION='6'`) nutzt **Few-Shot-Beispiele** statt nur abstrakter Regeln (Demonstrationen wirken bei Haiku zuverlässiger). Hilft, dass die KI getrennte Lebensmittel sauber liefert und echte Gerichtsnamen aufschlüsselt — war aber nicht die Ursache von #127 (siehe DB-Fix oben).
-- **Picker Chat Fuzzy-Suche (v0.176/v0.177/v0.178):** `_pickerFold` (ä→a, ö→o, ü→u, ß→s) + `_pickerTok` (Stoppwörter: mit/und/von/der/die/das/im/in/zum/zur/an/am/auf/bei/zu/…) + `_pickerLev` (Levenshtein) + `_pickerScoreName`. **Alle** Query-Tokens müssen treffen (sonst Score 0) — kein „Joghurt Natur"-Treffer mehr für „Joghurt mit Früchten". Pro-Token-Score: === +5, startsWith +4, includes +3, Levenshtein ≤1 (Länge 5–7) bzw. ≤2 (Länge ≥8) +1–2 — kein Levenshtein unter Länge 5, sonst Distraktoren wie „kaffee"↔„waffel" (#117). Voller-Query-Substring zusätzlich +10. Rezepte werden um +10 geboostet vor Custom Foods (+6). Cache und eingebaute DB werden im Chat-Tab nicht durchsucht.
+- **Picker Chat Fuzzy-Suche (v0.176/v0.177/v0.178):** `_pickerFold` (ä→a, ö→o, ü→u, ß→s) + `_pickerTok` (Stoppwörter: mit/und/von/der/die/das/im/in/zum/zur/an/am/auf/bei/zu/…) + `_pickerLev` (Levenshtein) + `_pickerScoreName`. **Alle** Query-Tokens müssen treffen (sonst Score 0) — kein „Joghurt Natur"-Treffer mehr für „Joghurt mit Früchten". Pro-Token-Score: === +5, startsWith +4, includes +3, Levenshtein ≤1 (Länge 5–7) bzw. ≤2 (Länge ≥8) +1–2 — kein Levenshtein unter Länge 5, sonst Distraktoren wie „kaffee"↔„waffel" (#117). Voller-Query-Substring zusätzlich +10. Rezepte werden um +10 geboostet vor Custom Foods (+6). Der **Cache** wird im Chat-Tab nicht durchsucht. Die **eingebaute DB** liefert seit v0.189 genau einen **hochsicheren** Treffer via `_pickerDbHit(q)` → `findInLocalDB` (exakter Name/Synonym/`startsWith≥5`, **kein** Fuzzy → kein #117-Rauschen), inkl. Strip einer führenden Mengenangabe („1 weiswein", „ein Glas Wein"). So landen Standard-Getränke/-Lebensmittel wie „Weißwein"/„Sekt" sofort lokal statt im KI-Fallback (der bei Alkohol oft nichts Parsebares liefert, #135); derselbe `_pickerDbHit` rettet auch den KI-Pfad, wenn `parseIngJSON` leer ist. DB-Einträge `Weißwein`/`Sekt` ergänzt.
 - **Layout-Fixes (v0.167):** bnav `margin:0 14px` → `margin:0 0` (horizontale Margins verursachten 14 px Rechtsversatz bei `position:fixed`+`left:50%`+`translateX(-50%)`). iOS PWA: `focusout`-Handler setzt `window.scrollTo(0,0)` nach Tastatur-Dismiss (nur `_isIos()&&_isPwaStandalone()`).
 - **iOS Safe-Area-Top (v0.168):** `.hdr` und `#mealDetailScreen .md-head` erhalten `padding-top: calc(…px + env(safe-area-inset-top, 0px))` — Screen-Header-Buttons auf allen Screens unterhalb der iOS Status-Bar / Dynamic Island (#104).
 - **Trends (v0.169):** `renderWeekBars()` schließt heutigen Tag aus avg/cnt aus. `requestWeekReport()` erkennt Zielrichtung (lose/gain/maintain) aus `S.goalWeight vs S.weight`, übergibt sie an den Prompt, Format auf Stichpunkte + Empfehlung für nächste Woche, Token-Limit 200→400 (#102 #103).
@@ -70,6 +70,7 @@
 
 ## Live-Test offen
 
+- v0.189 Picker Chat: „Weißwein" tippen → erscheint sofort als Treffer-Karte (≈82 kcal/100g), ＋ trägt ihn ein; „1 weiswein" (Tippfehler + Menge) funktioniert ebenso; „Sekt"/„Prosecco" findbar; kein „Konnte nicht parsen" mehr (#135)
 - v0.188 Einstellungen → Ernährung: „Eigene Präferenz" — Eingabefeld hat volle Restbreite, der „+ Hinzufügen"-Button sitzt kompakt rechts daneben (nicht mehr volle Zeile); nicht mit „Speichern ✓" unten verwechselbar (#134)
 - v0.187 Einstellungen: Mehr → ⚙️ → Tab-Bar zeigt 6 Tabs inkl. „🤖 KI" + „💾 Backup"; Proxy-Passwort + KI-Prompts nur noch unter KI; Autospeicher/Export/Import/OneDrive nur noch unter Backup; Picker-Foto-Toggle unter Ernährung; keine doppelte Lebensmittel-Liste mehr; Bibliothek (Mehr → 📚) zeigt Rezepte/Lebensmittel wie zuvor inkl. Bearbeiten/Löschen
 - v0.186 Picker Chat: „Kaffee mit Hafermilch" tippen → erste Zutat ist „Kaffee (schwarz)" (≈2 kcal), **kein** Cappuccino; Cappuccino bleibt über „Cappuccino"/„Milchkaffee" auffindbar (#127)
@@ -96,11 +97,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.183 | #128 | Picker Chat: Prompt-Regel gegen Aufwerten genannter Lebensmittel (#127) |
 | v0.185 | #131 | Picker Chat: Few-Shot-Prompt, zurück auf Haiku (#127) |
 | v0.186 | — | Picker Chat: eigentlicher Fix — DB-Synonym „kaffee" gehörte zum schwarzen Kaffee, nicht zum Cappuccino (#127) |
 | v0.187 | #133 | Einstellungen aufgeräumt: „Daten"-Tab → „🤖 KI" + „💾 Backup", Picker-Foto-Toggle zu Ernährung, doppelte Lebensmittel-Liste raus, Hilfe-Dedup, OneDrive-Banner-Label |
 | v0.188 | — | Fix: verrutschter „+ Hinzufügen"-Button im Ernährung-Tab (war volle Breite, drückte das Eingabefeld platt) (#134) |
+| v0.189 | — | Picker Chat: Weißwein/Sekt erkannt — hochsicherer DB-Treffer im Chat statt KI-„Konnte nicht parsen" (#135) |
 
 ---
 

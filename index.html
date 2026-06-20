@@ -656,7 +656,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.188</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.189</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -976,7 +976,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.188</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.189</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1941,7 +1941,7 @@ var DB=[
   {n:'Latte Macchiato',e:'☕',k:67,p:3.3,c:6.5,f:3.5,s:'kaffee coffee'},{n:'Tee',e:'🍵',k:1,p:0,c:0.2,f:0,s:'tea'},
   {n:'Orangensaft',e:'🧃',k:45,p:0.7,c:10,f:0.2,s:'saft juice'},{n:'Cola',e:'🥤',k:42,p:0,c:10.6,f:0,s:'coke'},
   {n:'Cola Zero',e:'🥤',k:0,p:0,c:0,f:0,s:'diet'},{n:'Bier',e:'🍺',k:43,p:0.5,c:3.5,f:0,s:'beer'},
-  {n:'Rotwein',e:'🍷',k:85,p:0.1,c:2.6,f:0,s:'wein wine'},{n:'Schinken',e:'🍖',k:107,p:17,c:1,f:4,s:'ham'},
+  {n:'Rotwein',e:'🍷',k:85,p:0.1,c:2.6,f:0,s:'wein wine red'},{n:'Weißwein',e:'🍷',k:82,p:0.1,c:2.6,f:0,s:'weisswein weiswein weisser wein white'},{n:'Sekt',e:'🥂',k:80,p:0.2,c:1.5,f:0,s:'prosecco champagner champagne'},{n:'Schinken',e:'🍖',k:107,p:17,c:1,f:4,s:'ham'},
   {n:'Salami',e:'🍖',k:425,p:22,c:2,f:37,s:'wurst'},{n:'Speck',e:'🥓',k:541,p:37,c:1.4,f:42,s:'bacon'},
   {n:'Bratwurst',e:'🌭',k:312,p:13,c:2,f:28,s:'wurst'},
   // ── Zusätzliche fehlende Lebensmittel ──
@@ -1965,7 +1965,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.188';
+var APP_VERSION='0.189';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 // HTML-Escaping für alle Namen/Freitexte aus untrusted Quellen (Import-Payloads,
 // OpenFoodFacts, KI-Antworten), die per innerHTML eingefügt werden — schützt vor XSS.
@@ -1997,6 +1997,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.189',items:[
+    {icon:'🍷',text:'Picker · Chat: Weißwein, Sekt & Co. werden jetzt direkt erkannt. „Weißwein" (auch „1 weiswein") landet sofort als Treffer in deinem Eintrag, statt mit „Konnte nicht parsen" abzubrechen — gängige Getränke kommen jetzt deterministisch aus der internen Datenbank statt über die KI. (#135)',where:'Picker · Chat'},
+  ]},
   {v:'0.188',items:[
     {icon:'🐛',text:'Einstellungen · Ernährung: Der Button zum Hinzufügen einer eigenen Präferenz war über die volle Breite verrutscht und hat das Eingabefeld verdrängt. Er sitzt jetzt wieder kompakt neben dem Feld und heißt „+ Hinzufügen" (statt „+ Speichern"), damit er nicht mit dem Speichern-Button verwechselt wird. (#134)',where:'Einstellungen · Ernährung'},
   ]},

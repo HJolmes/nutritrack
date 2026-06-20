@@ -226,8 +226,8 @@ function pickerHandlePhoto(e){
   reader.onload=function(ev){
     var img=new Image();
     img.onload=function(){
-      // MAX 800px reicht für KI-Analyse – schneller, weniger RAM
-      var c=document.createElement('canvas'),MAX=800,w=img.width,h=img.height;
+      // MAX 1280px: genug Detail für KI-Erkennung (Teller-Komponenten, Screenshot-Zahlen) bei moderater Größe
+      var c=document.createElement('canvas'),MAX=1280,w=img.width,h=img.height;
       if(w>h){if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}}else{if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}}
       c.width=w;c.height=h;
       var ctx=c.getContext('2d');
@@ -1009,7 +1009,7 @@ function pickerAnalyze(){
   btn.disabled=true;btn.innerHTML='<span style="display:inline-flex;gap:5px;align-items:center;"><span class="spin"></span>KI analysiert...</span>';
   pickerSetPhotoStatus('KI analysiert das Foto...',false);
   var prompt=getFotoPrompt();
-  callClaude('claude-sonnet-4-5',[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:window._pickerPhotoB64}},{type:'text',text:prompt}],600,
+  callClaude('claude-sonnet-4-6',[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:window._pickerPhotoB64}},{type:'text',text:prompt}],1024,
     function(text){
       var parsed=parsePhotoResponse(text);
       btn.disabled=false;btn.textContent='📷 Erneut analysieren';

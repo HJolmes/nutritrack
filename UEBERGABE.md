@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.190 (2026-06-20)
+**Stand:** v0.191 (2026-06-20)
 
 ## URLs
 
@@ -39,6 +39,7 @@
 - **Picker Foto-Save (v0.179):** Settings-Toggle `S.savePickerPhotos` (Default off) unter „🗂 Daten → 📷 Picker-Fotos". Wenn an, ruft `_pickerSavePhotoIfWanted()` in `_pickerAdd` (vor `closePicker()`) auf — versucht zuerst `navigator.share({files:[File]})` (iOS Safari + Android Chrome unterstützen Files seit iOS 15 / Chrome 89), Fallback `<a download>` (Android: nach `Downloads/`; iOS PWA: nicht garantiert). Hinweis-Zeile `#pickerPhotoSaveHint` unter `pickerPrevWrap` zeigt Status und navigiert tippbar zu Einstellungen/Daten. Web-Capture (`<input capture>`) legt das Foto sonst weder auf iOS noch zuverlässig auf Android in die Galerie (#118).
 - **Wiederkehrende Mahlzeiten (v0.181):** `S.recurringMeals[]` = `{id,name,meal,weekdays:[0..6 JS-getDay],entries[],startDate,active}`. Anlegen über `mealDetailScreen`-CTA „🔁 Wiederholen" (`#mdRecur`→`openRecurCreate`) → `recurCreateOv` mit Wochentag-Chips (Default Mo–Fr). `applyRecurringMeals(dateKey)` fügt aktive Regeln idempotent ein: pro Tag merkt `day._recurMarks[]` angewandte Regel-IDs → keine Doppel, und gelöschte Einträge kommen am selben Tag nicht zurück. Eingefügte Einträge tragen `_recurId` (🔁-Badge in Eintrags-Listen). Hooks: Boot (`ensureRecurringForCurrentDay`), `changeDay`, `goToDay`. Verwaltung „Mehr → 🔁 Wiederkehrende Mahlzeiten" (`openRecurManage`/`recurMgmtOv`): Aktiv/Pause + Löschen. `startDate=today` → nicht rückwirkend; Zukunft ausgeschlossen.
 - **Härtung (v0.182):** Globaler `esc()` in `index.html` + `_esc()` in `picker.js` escapen alle per `innerHTML` ausgegebenen Namen/Freitexte aus untrusted Quellen (Import-Payloads, OpenFoodFacts, KI-Antworten) → kein XSS mehr. SW `install` cacht `CORE_ASSETS` vorab (`./`,`index.html`,`picker.js`,`js/health-sync.js`,`manifest.json`,`icon.svg`, best-effort `allSettled`) → echte Offline-Erstnutzung; Offline-Fallbacks awaiten jetzt das `caches.match`-Promise korrekt. Worker `/feedback` verlangt `x-app-proxy-secret` (Client sendet `getProxySecret()`) + IP-Tages-Limit (`fbrl:<ip>:<tag>`, 30/Tag) + `mdNeutralizeBody` neutralisiert @-Mentions/#-Refs in der Beschreibung. `/workouts` paginiert via Cursor (bis 20 Seiten) + parallele KV-Reads → kein Datenverlust bei >200 Workouts. Decoder optional per `DECODER_SECRET`/`X-Decoder-Secret` absicherbar (beidseitig setzen; unset = offen). Bugfix `rememberPortion(f.name,amt)` (vorher `f.amount`=undefined). Toter Code entfernt (`toggleEye`,`shareCustomFood`,`triggerBackupDownload`,`pickerOnAdd`,`_pickerIngCallbacks`).
+- **Picker Foto-Analyse (v0.191):** `pickerAnalyze` (`picker.js`) skaliert das Foto auf **max. 1280 px** (JPEG 0.85) und ruft **`claude-sonnet-4-6`** mit `max_tokens:1024`, `temperature:0` und `getFotoPrompt()` auf. `getFotoPrompt()` liefert immer `DEFAULT_FOTO_PROMPT` (kein localStorage-Override) — Prompt-Änderungen greifen sofort, kein `PROMPT_VERSION`-Bump nötig. Prompt-Regeln: nur sichtbare Lebensmittel (keine Halluzination), Komponenten getrennt, höchstens eine verdeckte Beilage, Portions-Schätzung über Referenzgrößen, bei Screenshots angezeigte Gramm/kcal **exakt** übernehmen. `processOfflineQueue()` ruft denselben `pickerAnalyze`-Pfad → profitiert mit. Foto-Tab und Chat-mit-Foto (`claude-sonnet-4-6`) nutzen damit dasselbe aktuelle Modell.
 - **Picker KI-Fehlertexte (v0.180):** `pickerFriendlyAiError(err)` in `picker.js` mappt bekannte KI-/Proxy-Fehler (Kontingent/Billing, overloaded/rate-limit/429/529, nicht konfiguriert, offline) auf deutsche Texte; unbekannte Fehler unverändert. Genutzt in `pickerChatKiFallback` + Foto-Analyse-`onErr` (#121).
 - **Sport-Sync (v0.158):** Erstes ausgelagertes Modul `js/health-sync.js` (klassisches `<script>` vor `</body>`, exportiert `window.NTHealth`). User generiert in „Mehr → Sport-Sync" ein 32-Zeichen-Token (Base58-ish, `localStorage.nt_health_token`), trägt es in eine iOS-Shortcut-Automation („wenn Training endet") oder Android HTTP Request Shortcut ein. Automation POSTet `{id, source, type, start, kcal, durationSec?, distanceM?, hrAvg?}` mit Header `X-User-Token` an Worker `POST /workout` (KV-Key `wo:<token>:<id>`, TTL 60d). PWA pollt `GET /workouts?since=<lastpoll>` bei `DOMContentLoaded` (mit 800ms Delay) und `visibilitychange→visible`, dedupliziert via `_healthId`-Marker, hängt Workouts in `S.days[<localDate>].exercise[]` an (Schema bleibt kompatibel zur manuellen Erfassung) — die existierende `burned`-Subtraktion in `renderAll()` zieht die Kalorien automatisch vom Tagesziel ab. `renderExercise()` zeigt für `_source`-Einträge ein kleines „Apple"/„Samsung"-Badge.
 
@@ -83,6 +84,7 @@
 - v0.159 OneDrive Reconnect-Modal: Token ablaufen lassen (oder manuell `_odClearTokens()` in DevTools), dann sync triggern → `odReconnectOv` muss aufgehen; „Neu verbinden" startet PKCE-Flow neu
 - v0.160 Mehr-Screen: Bibliothek-Row tippen → öffnet direkt Bibliothek (nicht allg. Einstellungen); Einstellungen hat keinen 📚-Tab mehr; Layout auf Android korrekt
 - v0.162 Feedback-Screenshot: Picker/Overlay offen → Feedback → Screenshot → Bild zeigt aktiven Overlay, nicht mainScreen
+- v0.191 Foto-Analyse: Teller mit mehreren Komponenten (z.B. Schnitzel + Pommes + Salat) wird in getrennte Zutaten zerlegt; App-Screenshot (MyFitnessPal o.ä.) übernimmt angezeigte Gramm/kcal exakt; Modell `claude-sonnet-4-6`, 1280px, 1024 Token
 - v0.163 Chat + Foto: Foto analysieren → Chat öffnet sich → Rückfrage stellen mit Foto-Kontext möglich
 - v0.168 iOS: mealDetailScreen und alle anderen Screens — Buttons im Header tippbar trotz Dynamic Island / Status-Bar (#104)
 - v0.169 Trends: Kcal-Durchschnitt ohne heutigen Tag; KI-Bericht mit Stichpunkten + Zielrichtung + Empfehlung (#102 #103)
@@ -98,11 +100,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.185 | #131 | Picker Chat: Few-Shot-Prompt, zurück auf Haiku (#127) |
 | v0.186 | — | Picker Chat: eigentlicher Fix — DB-Synonym „kaffee" gehörte zum schwarzen Kaffee, nicht zum Cappuccino (#127) |
 | v0.187 | #133 | Einstellungen aufgeräumt: „Daten"-Tab → „🤖 KI" + „💾 Backup", Picker-Foto-Toggle zu Ernährung, doppelte Lebensmittel-Liste raus, Hilfe-Dedup, OneDrive-Banner-Label |
 | v0.188 | — | Fix: verrutschter „+ Hinzufügen"-Button im Ernährung-Tab (war volle Breite, drückte das Eingabefeld platt) (#134) |
 | v0.190 | — | Picker Chat: Lebensmittel-Erkennung generell robust — gehärteter Prompt + Sackgassen-Fallback statt „Konnte nicht parsen" (#135) |
+| v0.191 | — | Foto-Analyse: aktuelles Modell (Sonnet 4.6), höhere Auflösung (1280px), mehr Token, geschärfter Prompt |
 
 ---
 

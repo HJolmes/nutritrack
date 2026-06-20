@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.186 (2026-06-19)
+**Stand:** v0.187 (2026-06-20)
 
 ## URLs
 
@@ -18,7 +18,8 @@
 - **Feedback (v0.154/v0.162):** Globaler FAB `#feedbackFab` (`bottom:calc(84px + env(safe-area-inset-bottom,0));right:12px`, `z-index:400`) vor `</body>`, auf `setupScreen` versteckt. Modal `feedbackOv` (eigener `z-index:350`). `attachFeedbackScreenshot` friert alle `.ov.open`-Elemente (außer `feedbackOv`) vor dem Capture als `position:absolute` mit berechneten Pixel-Koordinaten ein und stellt sie danach zurück — damit werden offene Overlays korrekt erfasst (#87). `scale:0.7`, `foreignObjectRendering:false`, `imageTimeout:8000`, `ignoreElements`-Filter für `feedbackOv`, Auto-Retry mit `allowTaint:true`. Section-Marker: `// SECTION: FEEDBACK`.
 - **Header (v0.149/0.155):** `mainScreen`/`statsScreen` ohne `📤 shareData` und ohne `⚙️` — nur `?` `📥`. Backup nur via Settings/Datensicherung, „Mehr"-Hub-Eintrag, OneDrive-Banner und Backup-Reminder. `historyScreen`/`mealDetailScreen`/`moreScreen` haben minimale Header. `mainScreen` zeigt zusätzlich rechts neben „Hej <Name>" einen kleinen klickbaren Versions-Tag `#appVersionTag` (öffnet `whatsNewOv`); Text kommt beim DOMContentLoaded aus `APP_VERSION`.
 - **Kalorien-Ampel (v0.149):** `_kcalAmpel(goal,eaten,S)` vor `renderAll()` — ±10 % grün; darüber/darunter abhängig von Diät-Richtung (lose/gain/maintain), abgeleitet aus `S.goalWeight` vs `S.weight ±0.5`. `kcalTrendPill`-Klassen `balanced`/`over`.
-- **Mehr-Screen (v0.160):** 📚 Bibliothek-Row navigiert direkt zu `settSetTab('bibliothek')` — kein Umweg durch Settings nötig. Bibliothek-Tab ist aus der Settings-Tab-Bar entfernt (nur noch über Mehr → 📚 erreichbar). `.lr-name`/`.lr-sub` mit `text-overflow:ellipsis`.
+- **Mehr-Screen (v0.160/0.187):** 📚 Bibliothek-Row navigiert direkt zu `settSetTab('bibliothek')`. Bibliothek-Panel (`spanel-bibliothek`) existiert im DOM, hat aber **keinen** Tab in der Settings-Tab-Bar (nur über Mehr → 📚). `.lr-name`/`.lr-sub` mit `text-overflow:ellipsis`. v0.187: redundanter `?`-Header-Button im Mehr-Screen entfernt (die beschriftete „❓ Hilfe & FAQ"-Row deckt ihn ab).
+- **Settings-Tabs (v0.187):** Tab-Bar = `👤 Profil · 🎯 Ziele · 🥗 Ernährung · ⏰ Erinnerungen · 🤖 KI · 💾 Backup` (`stab-*`/`spanel-*`, `settSetTab(tab)` toggelt `.act`+`display`). Der frühere überladene „🗂 Daten"-Tab ist aufgelöst: **KI** = Proxy-Passwort + KI-Prompts; **Backup** = Autospeicher, Datei-Export/Import, OneDrive (`renderOneDriveStatus` bei `tab==='backup'`) + `cacheInfo`-Statszeile. Picker-Foto-Toggle (`ssavepickerphotos`) sitzt jetzt im Ernährung-Tab (`pickerPhotoSaveHint` → `settSetTab('ernaehrung')`). Die früher doppelte Lebensmittel/Rezept-Liste im Daten-Tab (`settFoodList`/`renderSettFoodList`/`deleteOwnFood`/`deleteRecipeById`) ist entfernt — einzige Liste ist die Bibliothek (`renderLibrary`). OneDrive-Banner-Button auf `mainScreen` heißt „💾 Sichern" (Aktion `shareData` = lokale Sicherung).
 - **Safe-Area (v0.161):** `viewport-fit=cover` im Viewport-Meta; `.bnav` margin-bottom + `body` padding-bottom + `.fb-fab` bottom jeweils `calc(…px + env(safe-area-inset-bottom,0))` — Bottom-Nav auf iPhone (Home-Indikator) und Android (Gesten-Navigation) vollständig sichtbar.
 - **Mahlzeit-Detail (v0.151/0.157):** CTAs im Body: `📋 Vorlage` (`#mdTpl` → `openTemplateOv`) + `💾 Als Rezept` (`#mdSaveRecipe` → `saveMealAsRecipe`, nur sichtbar wenn Einträge vorhanden). Der zentrale `＋` der Bottom-Nav (`#cbMealDetail`) wird in `renderMealDetail` auf `openPicker('<meal>')` umgebogen. `saveMealAsRecipe(meal)` flacht alle Einträge zu Zutaten ab (Recipe-Einträge anteilig nach `portions`, Single-Foods 1:1), persistiert das Rezept sofort in `recipes`, setzt `recEditOpenedFrom='mealDetail'` und öffnet `recEditOv` direkt zum Benennen. `recEditSave`/`recEditDelete` springen nur dann zurück in Settings, wenn `recEditOpenedFrom!=='mealDetail'`.
 - **Share/Import:** Sender → `POST /share` (Worker, KV, 1y TTL) → `?s=<id>` auf PWA-Origin. Empfänger: Android öffnet PWA via `handle_links`; iOS-Safari (non-standalone) bekommt `iosSwitchOv`-Anleitung + Auto-Clipboard, User wechselt zur PWA und tippt 📥 (`openImportPaste()`). Legacy-URL-Formen `#x=`/`#r=`/`workers.dev/s/<id>` bleiben kompatibel.
@@ -69,6 +70,7 @@
 
 ## Live-Test offen
 
+- v0.187 Einstellungen: Mehr → ⚙️ → Tab-Bar zeigt 6 Tabs inkl. „🤖 KI" + „💾 Backup"; Proxy-Passwort + KI-Prompts nur noch unter KI; Autospeicher/Export/Import/OneDrive nur noch unter Backup; Picker-Foto-Toggle unter Ernährung; keine doppelte Lebensmittel-Liste mehr; Bibliothek (Mehr → 📚) zeigt Rezepte/Lebensmittel wie zuvor inkl. Bearbeiten/Löschen
 - v0.186 Picker Chat: „Kaffee mit Hafermilch" tippen → erste Zutat ist „Kaffee (schwarz)" (≈2 kcal), **kein** Cappuccino; Cappuccino bleibt über „Cappuccino"/„Milchkaffee" auffindbar (#127)
 - v0.182 Offline: App installieren, sofort offline öffnen → lädt aus Cache (Pre-Caching); Feedback-Senden funktioniert weiter (Client sendet jetzt `x-app-proxy-secret`); Portion über Suche hinzufügen → Menge wird beim nächsten Mal vorgeschlagen (rememberPortion-Fix). Optional: Worker neu deployen (`wrangler deploy` in `worker/`); Decoder-Secret nur wenn `DECODER_SECRET` beidseitig gesetzt
 - v0.180 Picker: KI-Limit/Überlast/offline → deutsche Meldung statt englischem Roh-Text im Chat- und Foto-Tab (#121)
@@ -93,11 +95,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.181 | #124 | Wiederkehrende Mahlzeiten: automatisch an festen Wochentagen eintragen (#122) |
 | v0.182 | #125 #126 | Härtung: XSS-Escaping, SW-Pre-Caching, Feedback-Auth+Rate-Limit, /workouts-Pagination, Decoder-Secret, rememberPortion-Fix |
 | v0.183 | #128 | Picker Chat: Prompt-Regel gegen Aufwerten genannter Lebensmittel (#127) |
 | v0.185 | #131 | Picker Chat: Few-Shot-Prompt, zurück auf Haiku (#127) |
 | v0.186 | — | Picker Chat: eigentlicher Fix — DB-Synonym „kaffee" gehörte zum schwarzen Kaffee, nicht zum Cappuccino (#127) |
+| v0.187 | — | Einstellungen aufgeräumt: „Daten"-Tab → „🤖 KI" + „💾 Backup", Picker-Foto-Toggle zu Ernährung, doppelte Lebensmittel-Liste raus, Hilfe-Dedup, OneDrive-Banner-Label |
 
 ---
 

@@ -656,7 +656,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.189</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.190</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -976,7 +976,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.189</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.190</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1941,7 +1941,7 @@ var DB=[
   {n:'Latte Macchiato',e:'☕',k:67,p:3.3,c:6.5,f:3.5,s:'kaffee coffee'},{n:'Tee',e:'🍵',k:1,p:0,c:0.2,f:0,s:'tea'},
   {n:'Orangensaft',e:'🧃',k:45,p:0.7,c:10,f:0.2,s:'saft juice'},{n:'Cola',e:'🥤',k:42,p:0,c:10.6,f:0,s:'coke'},
   {n:'Cola Zero',e:'🥤',k:0,p:0,c:0,f:0,s:'diet'},{n:'Bier',e:'🍺',k:43,p:0.5,c:3.5,f:0,s:'beer'},
-  {n:'Rotwein',e:'🍷',k:85,p:0.1,c:2.6,f:0,s:'wein wine red'},{n:'Weißwein',e:'🍷',k:82,p:0.1,c:2.6,f:0,s:'weisswein weiswein weisser wein white'},{n:'Sekt',e:'🥂',k:80,p:0.2,c:1.5,f:0,s:'prosecco champagner champagne'},{n:'Schinken',e:'🍖',k:107,p:17,c:1,f:4,s:'ham'},
+  {n:'Rotwein',e:'🍷',k:85,p:0.1,c:2.6,f:0,s:'wein wine'},{n:'Schinken',e:'🍖',k:107,p:17,c:1,f:4,s:'ham'},
   {n:'Salami',e:'🍖',k:425,p:22,c:2,f:37,s:'wurst'},{n:'Speck',e:'🥓',k:541,p:37,c:1.4,f:42,s:'bacon'},
   {n:'Bratwurst',e:'🌭',k:312,p:13,c:2,f:28,s:'wurst'},
   // ── Zusätzliche fehlende Lebensmittel ──
@@ -1965,7 +1965,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.189';
+var APP_VERSION='0.190';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 // HTML-Escaping für alle Namen/Freitexte aus untrusted Quellen (Import-Payloads,
 // OpenFoodFacts, KI-Antworten), die per innerHTML eingefügt werden — schützt vor XSS.
@@ -1997,8 +1997,8 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
-  {v:'0.189',items:[
-    {icon:'🍷',text:'Picker · Chat: Weißwein, Sekt & Co. werden jetzt direkt erkannt. „Weißwein" (auch „1 weiswein") landet sofort als Treffer in deinem Eintrag, statt mit „Konnte nicht parsen" abzubrechen — gängige Getränke kommen jetzt deterministisch aus der internen Datenbank statt über die KI. (#135)',where:'Picker · Chat'},
+  {v:'0.190',items:[
+    {icon:'🍷',text:'Picker · Chat erkennt jetzt zuverlässig jedes Lebensmittel — auch einzelne Begriffe und Getränke wie „Weißwein" oder „2 Bier". Die KI antwortet nicht mehr mit Ausreden, und falls doch mal nichts Brauchbares zurückkommt, wird deine Eingabe trotzdem als Lebensmittel übernommen statt mit „Konnte nicht parsen" abzubrechen. (#135)',where:'Picker · Chat'},
   ]},
   {v:'0.188',items:[
     {icon:'🐛',text:'Einstellungen · Ernährung: Der Button zum Hinzufügen einer eigenen Präferenz war über die volle Breite verrutscht und hat das Eingabefeld verdrängt. Er sitzt jetzt wieder kompakt neben dem Feld und heißt „+ Hinzufügen" (statt „+ Speichern"), damit er nicht mit dem Speichern-Button verwechselt wird. (#134)',where:'Einstellungen · Ernährung'},
@@ -2273,19 +2273,19 @@ var CHANGELOG=[
 // Default prompts - editable in settings
 var DEFAULT_FOTO_PROMPT='Analysiere dieses Bild auf Deutsch. Es kann ein Essensfoto ODER ein Screenshot einer Tracking-App (z.B. MyFitnessPal, Cronometer, Yazio, Samsung Health) sein.\n\nGib ein JSON-Objekt zurueck:\n{"rezept":"Gesamtgerichtname auf Deutsch","zutaten":[{"name":"Zutat auf Deutsch","emoji":"Emoji","g":GRAMM}]}\n\nFall 1 – Essensfoto:\n- zutaten: erkenne was SICHTBAR auf dem Teller/Bild liegt\n- Nenne das fertige Lebensmittel, nicht seine Rohzutaten\n- 1 Einheit schatzen (Nutzer gibt Menge selbst an)\n- Logisch notwendige Beilagen erganzen\n\nFall 2 – Screenshot einer Tracking-App oder Ernaehrungsuebersicht:\n- Lies ALLE eingetragenen Lebensmittel/Gerichte mit den angezeigten Gramm-/Portionsangaben aus\n- Falls kcal/Naehrwerte sichtbar: nutze diese fuer realistischere Schatzung\n- rezept: Name der Mahlzeit oder "Import aus App"\n\nFall 3 – Einkaufszettel / Zutatenliste:\n- Liste alle Zutaten mit typischen Mengen auf\n\nAllgemein:\n- Realistische Gramm pro Einheit\n- Alle Namen auf Deutsch\n- Wenn nichts erkennbar: {"rezept":"","zutaten":[]}';
 
-var DEFAULT_CHAT_PROMPT='Du zerlegst eine Mahlzeit in Zutaten und gibst NUR ein JSON-Array zurueck: [{"name":"Deutscher Name","emoji":"Emoji","g":80}]\n\nRegeln:\n- Werden einzelne Lebensmittel genannt: jedes GENAU so uebernehmen wie genannt - nicht umbenennen, nicht zu einer reichhaltigeren Variante zusammenfassen, nichts ergaenzen. Separat genannte Milch gehoert NICHT in ein anderes Getraenk hinein.\n- Nur bei einem echten Gericht- oder Rezeptnamen (z.B. Hamburger, Aperol Spritz) in typische fertige Bestandteile aufschluesseln.\n- Immer fertige Produkte, keine Rohzutaten (Butterkeks nicht Butter).\n- Immer nur 1 Einheit schaetzen, realistische Gramm. Namen auf Deutsch.\n\nBeispiele:\nEingabe: Kaffee mit Hafermilch und Sojamilch\nAusgabe: [{"name":"Kaffee","emoji":"☕","g":200},{"name":"Hafermilch","emoji":"🥛","g":50},{"name":"Sojamilch","emoji":"🥛","g":50}]\nEingabe: Brot mit Kaese und Schinken\nAusgabe: [{"name":"Brot","emoji":"🍞","g":50},{"name":"Kaese","emoji":"🧀","g":20},{"name":"Schinken","emoji":"🥓","g":25}]\nEingabe: Hamburger\nAusgabe: [{"name":"Burger-Broetchen","emoji":"🍔","g":80},{"name":"Rinderhackfleisch","emoji":"🥩","g":100},{"name":"Salat","emoji":"🥬","g":15},{"name":"Tomate","emoji":"🍅","g":20}]\n\nEingabe: {MSG}\nAusgabe:';
+var DEFAULT_CHAT_PROMPT='Du zerlegst eine Mahlzeit in Zutaten und gibst NUR ein JSON-Array zurueck: [{"name":"Deutscher Name","emoji":"Emoji","g":80}]\n\nRegeln:\n- Antworte AUSSCHLIESSLICH mit dem JSON-Array. NIEMALS Erklaerungen, Rueckfragen, Hinweise, Warnungen oder Ablehnungen. JEDE Eingabe wird erfasst - auch alkoholische Getraenke (Wein, Weisswein, Bier, Cocktails), Suessigkeiten oder Fast Food. Du beraetst nicht, du erfasst nur.\n- Auch ein einzelnes Lebensmittel ist eine vollstaendige, gueltige Eingabe: dann ein Array mit GENAU einem Eintrag. Niemals leer lassen.\n- Werden einzelne Lebensmittel genannt: jedes GENAU so uebernehmen wie genannt - nicht umbenennen, nicht zu einer reichhaltigeren Variante zusammenfassen, nichts ergaenzen. Separat genannte Milch gehoert NICHT in ein anderes Getraenk hinein.\n- Nur bei einem echten Gericht- oder Rezeptnamen (z.B. Hamburger, Aperol Spritz) in typische fertige Bestandteile aufschluesseln.\n- Immer fertige Produkte, keine Rohzutaten (Butterkeks nicht Butter).\n- Immer nur 1 Einheit schaetzen, realistische Gramm. Namen auf Deutsch. Tippfehler still korrigieren (weiswein -> Weisswein).\n\nBeispiele:\nEingabe: Weisswein\nAusgabe: [{"name":"Weisswein","emoji":"🍷","g":150}]\nEingabe: 2 Bier\nAusgabe: [{"name":"Bier","emoji":"🍺","g":500}]\nEingabe: Kaffee mit Hafermilch und Sojamilch\nAusgabe: [{"name":"Kaffee","emoji":"☕","g":200},{"name":"Hafermilch","emoji":"🥛","g":50},{"name":"Sojamilch","emoji":"🥛","g":50}]\nEingabe: Brot mit Kaese und Schinken\nAusgabe: [{"name":"Brot","emoji":"🍞","g":50},{"name":"Kaese","emoji":"🧀","g":20},{"name":"Schinken","emoji":"🥓","g":25}]\nEingabe: Hamburger\nAusgabe: [{"name":"Burger-Broetchen","emoji":"🍔","g":80},{"name":"Rinderhackfleisch","emoji":"🥩","g":100},{"name":"Salat","emoji":"🥬","g":15},{"name":"Tomate","emoji":"🍅","g":20}]\n\nEingabe: {MSG}\nAusgabe:';
 
-var PROMPT_VERSION='6';
-function getFotoPrompt(){
-  // Reset if prompt version changed
+var PROMPT_VERSION='7';
+function _promptMigrate(){
+  // Bei Prompt-Versionswechsel alte gespeicherte Prompts löschen, damit die neuen Defaults greifen.
   if(localStorage.getItem('nt_prompt_ver')!==PROMPT_VERSION){
-    localStorage.removeItem('nt_foto_prompt'); // Migration: alten gespeicherten Prompt löschen
+    localStorage.removeItem('nt_foto_prompt');
     localStorage.removeItem('nt_chat_prompt');
     localStorage.setItem('nt_prompt_ver',PROMPT_VERSION);
   }
-  return DEFAULT_FOTO_PROMPT;
 }
-function getChatPrompt(){return localStorage.getItem('nt_chat_prompt')||DEFAULT_CHAT_PROMPT;}
+function getFotoPrompt(){_promptMigrate();return DEFAULT_FOTO_PROMPT;}
+function getChatPrompt(){_promptMigrate();return localStorage.getItem('nt_chat_prompt')||DEFAULT_CHAT_PROMPT;}
 var foodCache={}, customFoods=[], recipes=[], barcodeCache={};
 
 

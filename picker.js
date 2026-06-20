@@ -1185,15 +1185,19 @@ function _pickerScoreName(name,qTokens,qFull){
   if(qFull&&nl.indexOf(qFull)>=0)score+=10;
   return score;
 }
+// Entfernt eine führende Mengenangabe („1 weiswein", „2 Bier", „ein Glas Wein") vom Anfang.
+function _pickerStripQty(s){
+  return (s||'').trim().replace(/^\s*(\d+[.,]?\d*\s*)?(x\s*)?(gl(a|ä)s(er|chen)?|stk|stück|portion(en)?|flasche|dose|becher|tasse|ein|eine|einen|einer)?\s+/i,'').trim();
+}
 // Hochsicherer Treffer in der eingebauten DB: exakter Name/Synonym via findInLocalDB,
-// optional nach Entfernen einer führenden Mengenangabe („1 weiswein", „ein Glas Wein").
-// KEIN Fuzzy → kein #117-Rauschen. Gibt den DB-Eintrag oder null zurück.
+// optional nach Entfernen einer führenden Mengenangabe. KEIN Fuzzy → kein #117-Rauschen.
+// Gibt den DB-Eintrag oder null zurück.
 function _pickerDbHit(q){
   if(typeof findInLocalDB!=='function')return null;
   var dbQ=(q||'').trim();if(!dbQ)return null;
   var hit=findInLocalDB(dbQ);
   if(hit)return hit;
-  var stripped=dbQ.replace(/^\s*(\d+[.,]?\d*\s*)?(x\s*)?(gl(a|ä)s(er|chen)?|stk|stück|portion(en)?|flasche|dose|becher|ein|eine|einen|einer)?\s+/i,'').trim();
+  var stripped=_pickerStripQty(dbQ);
   if(stripped&&stripped!==dbQ)return findInLocalDB(stripped);
   return null;
 }
@@ -1266,9 +1270,12 @@ function pickerChatKiFallback(msg){
     function(text){
       var raw=parseIngJSON(text);
       if(!raw.length){
-        // KI hat nichts Brauchbares geliefert (z.B. Ablehnung bei Alkohol). Letzter Versuch: bekanntes Lebensmittel direkt aus der DB (#135).
-        var rescue=_pickerDbHit(msg);
-        if(rescue){raw=[{name:rescue.n,emoji:rescue.e,g:null}];}
+        // KI lieferte kein verwertbares JSON (z.B. Ablehnung/Prosa bei Alkohol). Keine Sackgasse:
+        // Die Eingabe selbst als ein Lebensmittel an die Nährwert-Suche geben (DB → OpenFoodFacts →
+        // KI-Nährwerte → Schätzung). Nur bei kurzer Eingabe (sieht nach einem Einzel-Lebensmittel
+        // aus); echte Mehr-Zutaten-Sätze brauchen die KI-Zerlegung und bleiben beim Hinweis (#135).
+        var clean=_pickerStripQty(msg)||(msg||'').trim();
+        if(clean&&clean.split(/\s+/).length<=4){raw=[{name:clean,g:null}];}
         else{msgs.innerHTML+='<div class="cm a">❌ Konnte nicht parsen. Genauer beschreiben.</div>';document.getElementById('pickerChatSend').disabled=false;return;}
       }
       msgs.innerHTML+='<div class="cm a">✨ '+raw.length+' Zutaten erkannt. Suche Nährwerte...</div>';

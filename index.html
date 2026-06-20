@@ -656,7 +656,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.187</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.188</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -976,7 +976,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.187</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.188</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1767,7 +1767,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
         <div id="savedDietFreeList" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;"></div>
         <div style="display:flex;gap:6px;margin-bottom:8px;">
           <input type="text" class="sinp" id="sdietfree" placeholder="Eigene Präferenz (z.B. Histaminintoleranz)..." style="flex:1;margin-bottom:0;">
-          <button type="button" class="svb" style="flex:0 0 auto;padding:8px 12px;margin-top:0;white-space:nowrap;" onclick="addDietFree()">+ Speichern</button>
+          <button type="button" class="svb" style="flex:0 0 auto;width:auto;padding:8px 12px;margin-top:0;white-space:nowrap;" onclick="addDietFree()">+ Hinzufügen</button>
         </div>
         <div id="dietMacroInfo" style="font-size:12px;color:var(--g1);margin-bottom:8px;min-height:14px;"></div>
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--gl);border-radius:10px;border:1px solid var(--g3);">
@@ -1965,7 +1965,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.187';
+var APP_VERSION='0.188';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 // HTML-Escaping für alle Namen/Freitexte aus untrusted Quellen (Import-Payloads,
 // OpenFoodFacts, KI-Antworten), die per innerHTML eingefügt werden — schützt vor XSS.
@@ -1997,6 +1997,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.188',items:[
+    {icon:'🐛',text:'Einstellungen · Ernährung: Der Button zum Hinzufügen einer eigenen Präferenz war über die volle Breite verrutscht und hat das Eingabefeld verdrängt. Er sitzt jetzt wieder kompakt neben dem Feld und heißt „+ Hinzufügen" (statt „+ Speichern"), damit er nicht mit dem Speichern-Button verwechselt wird. (#134)',where:'Einstellungen · Ernährung'},
+  ]},
   {v:'0.187',items:[
     {icon:'🧹',text:'Einstellungen aufgeräumt: Der überladene „Daten"-Tab ist jetzt in zwei klare Tabs geteilt — „🤖 KI" (Proxy-Passwort & KI-Prompts) und „💾 Backup" (Autospeicher, Datei-Export/Import, OneDrive). Der Picker-Foto-Schalter sitzt jetzt logisch unter „🥗 Ernährung", die doppelte Lebensmittel-/Rezept-Liste wurde entfernt (alles in der Bibliothek), und der „⏰ Erinnerungen"-Tab ist nicht mehr abgekürzt.',where:'Einstellungen'},
   ]},

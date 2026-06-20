@@ -1185,6 +1185,22 @@ function _pickerScoreName(name,qTokens,qFull){
   if(qFull&&nl.indexOf(qFull)>=0)score+=10;
   return score;
 }
+// Entfernt eine führende Mengenangabe („1 weiswein", „2 Bier", „ein Glas Wein") vom Anfang.
+function _pickerStripQty(s){
+  return (s||'').trim().replace(/^\s*(\d+[.,]?\d*\s*)?(x\s*)?(gl(a|ä)s(er|chen)?|stk|stück|portion(en)?|flasche|dose|becher|tasse|ein|eine|einen|einer)?\s+/i,'').trim();
+}
+// Hochsicherer Treffer in der eingebauten DB: exakter Name/Synonym via findInLocalDB,
+// optional nach Entfernen einer führenden Mengenangabe. KEIN Fuzzy → kein #117-Rauschen.
+// Gibt den DB-Eintrag oder null zurück.
+function _pickerDbHit(q){
+  if(typeof findInLocalDB!=='function')return null;
+  var dbQ=(q||'').trim();if(!dbQ)return null;
+  var hit=findInLocalDB(dbQ);
+  if(hit)return hit;
+  var stripped=_pickerStripQty(dbQ);
+  if(stripped&&stripped!==dbQ)return findInLocalDB(stripped);
+  return null;
+}
 function pickerChatLocalSearch(q){
   var qFull=_pickerFold(q).trim();
   var qTokens=_pickerTok(q);
@@ -1206,6 +1222,10 @@ function pickerChatLocalSearch(q){
     var s=_pickerScoreName(f.name,qTokens,qFull);
     if(s>0)add({name:f.name,emoji:f.emoji,per100:f.per100,badge:'⭐'},s+6);
   });
+  // Einzelne Standard-Lebensmittel wie „Weißwein" direkt aus der eingebauten DB abfangen,
+  // statt sie an die KI weiterzureichen (die bei Alkohol gern nichts Parsebares liefert, #135).
+  var dbHit=_pickerDbHit(q);
+  if(dbHit)add({name:dbHit.n,emoji:dbHit.e,per100:{kcal:dbHit.k,protein:dbHit.p,carbs:dbHit.c,fat:dbHit.f,sugar:0,fiber:0,salt:0},badge:'📦'},9);
   results.sort(function(a,b){return b.score-a.score;});
   return results.slice(0,6).map(function(x){return x.item;});
 }
@@ -1249,7 +1269,15 @@ function pickerChatKiFallback(msg){
   callClaude(model,content,300,
     function(text){
       var raw=parseIngJSON(text);
-      if(!raw.length){msgs.innerHTML+='<div class="cm a">❌ Konnte nicht parsen. Genauer beschreiben.</div>';document.getElementById('pickerChatSend').disabled=false;return;}
+      if(!raw.length){
+        // KI lieferte kein verwertbares JSON (z.B. Ablehnung/Prosa bei Alkohol). Keine Sackgasse:
+        // Die Eingabe selbst als ein Lebensmittel an die Nährwert-Suche geben (DB → OpenFoodFacts →
+        // KI-Nährwerte → Schätzung). Nur bei kurzer Eingabe (sieht nach einem Einzel-Lebensmittel
+        // aus); echte Mehr-Zutaten-Sätze brauchen die KI-Zerlegung und bleiben beim Hinweis (#135).
+        var clean=_pickerStripQty(msg)||(msg||'').trim();
+        if(clean&&clean.split(/\s+/).length<=4){raw=[{name:clean,g:null}];}
+        else{msgs.innerHTML+='<div class="cm a">❌ Konnte nicht parsen. Genauer beschreiben.</div>';document.getElementById('pickerChatSend').disabled=false;return;}
+      }
       msgs.innerHTML+='<div class="cm a">✨ '+raw.length+' Zutaten erkannt. Suche Nährwerte...</div>';
       msgs.scrollTop=msgs.scrollHeight;
       lookupNutrients(raw,function(resolved){

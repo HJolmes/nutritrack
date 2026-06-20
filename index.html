@@ -656,7 +656,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.158</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.187</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -666,7 +666,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div id="odMissingBanner" style="display:none;align-items:center;gap:10px;background:#fff3e0;border-bottom:1px solid #ffe0b2;padding:10px 16px;">
       <div style="flex:1;font-size:12px;color:#e65100;font-weight:600;">☁️ OneDrive nicht verbunden – Sichere deine Daten einmal täglich lokal.</div>
-      <button type="button" onclick="shareData()" style="font-size:12px;font-weight:700;color:#e65100;background:none;border:1px solid #e65100;padding:4px 8px;border-radius:8px;cursor:pointer;">💾 Jetzt</button>
+      <button type="button" onclick="shareData()" style="font-size:12px;font-weight:700;color:#e65100;background:none;border:1px solid #e65100;padding:4px 8px;border-radius:8px;cursor:pointer;">💾 Sichern</button>
       <button type="button" onclick="dismissOdBanner()" style="font-size:14px;color:#e65100;background:none;border:none;cursor:pointer;padding:4px;">✕</button>
     </div>
     <div class="dn">
@@ -936,9 +936,6 @@ button,input,select,textarea{font-family:var(--fs-body);}
         <div class="logo"><em>Mehr</em></div>
         <div class="greet-sub">Bibliothek, Einstellungen &amp; Daten</div>
       </div>
-      <div style="display:flex;gap:6px;">
-        <button type="button" class="hbtn" onclick="openHelp()" title="Hilfe">?</button>
-      </div>
     </div>
   </div>
   <div class="main">
@@ -979,7 +976,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.186</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.187</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1045,7 +1042,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
         <div id="pickerPrevWrap" class="pprev-wrap hidden">
           <img id="pickerPrev"><button type="button" class="pchange" onclick="pickerResetPhoto()">Ändern</button>
         </div>
-        <div id="pickerPhotoSaveHint" class="hidden" onclick="openSettings();setTimeout(function(){settSetTab('daten');},50);" style="font-size:11px;color:var(--mu);margin:6px 4px 0;cursor:pointer;line-height:1.4;"></div>
+        <div id="pickerPhotoSaveHint" class="hidden" onclick="openSettings();setTimeout(function(){settSetTab('ernaehrung');},50);" style="font-size:11px;color:var(--mu);margin:6px 4px 0;cursor:pointer;line-height:1.4;"></div>
         <div id="pickerBcConfirm" class="bc-confirm hidden">
           <div class="bc-confirm-name" id="pickerBcName"></div>
           <div class="bc-confirm-vals" id="pickerBcVals"></div>
@@ -1662,8 +1659,9 @@ button,input,select,textarea{font-family:var(--fs-body);}
       <button type="button" class="stab" id="stab-profil" onclick="settSetTab('profil')">👤 Profil</button>
       <button type="button" class="stab" id="stab-ziele" onclick="settSetTab('ziele')">🎯 Ziele</button>
       <button type="button" class="stab" id="stab-ernaehrung" onclick="settSetTab('ernaehrung')">🥗 Ernährung</button>
-      <button type="button" class="stab" id="stab-erinnerungen" onclick="settSetTab('erinnerungen')">⏰ Erinn.</button>
-      <button type="button" class="stab" id="stab-daten" onclick="settSetTab('daten')">🗂 Daten</button>
+      <button type="button" class="stab" id="stab-erinnerungen" onclick="settSetTab('erinnerungen')">⏰ Erinnerungen</button>
+      <button type="button" class="stab" id="stab-ki" onclick="settSetTab('ki')">🤖 KI</button>
+      <button type="button" class="stab" id="stab-backup" onclick="settSetTab('backup')">💾 Backup</button>
     </div>
     <div class="mbd" style="padding-top:12px;">
 
@@ -1783,6 +1781,20 @@ button,input,select,textarea{font-family:var(--fs-body);}
             <span id="dietWarnThumb" style="position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.3s;"></span>
           </label>
         </div>
+        <div style="padding-top:12px;border-top:1px solid var(--br);margin-top:12px;">
+          <label class="lbl" style="margin-bottom:8px;">📷 Picker-Fotos</label>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--gl);border-radius:10px;border:1px solid var(--g3);">
+            <div style="flex:1;min-width:0;padding-right:10px;">
+              <div style="font-size:13px;font-weight:700;">Foto auf Handy sichern</div>
+              <div style="font-size:11px;color:var(--mu);margin-top:2px;line-height:1.4;">Nach dem Hinzufügen einer Mahlzeit das Foto via Teilen-Menü speichern (z. B. in „Fotos"/Galerie).</div>
+            </div>
+            <label style="position:relative;display:inline-block;width:44px;height:24px;flex:0 0 44px;">
+              <input type="checkbox" id="ssavepickerphotos" style="opacity:0;width:0;height:0;" onchange="updateSavePickerPhotosToggle()">
+              <span id="savePickerPhotosToggle" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#ccc;border-radius:24px;transition:.3s;"></span>
+              <span id="savePickerPhotosThumb" style="position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.3s;"></span>
+            </label>
+          </div>
+        </div>
         <button type="button" class="svb" style="margin-top:12px;" onclick="saveSettings()">Speichern ✓</button>
       </div>
 
@@ -1811,54 +1823,42 @@ button,input,select,textarea{font-family:var(--fs-body);}
         <div id="libraryList" style="display:flex;flex-direction:column;gap:8px;"></div>
       </div>
 
-      <!-- TAB: DATEN -->
-      <div id="spanel-daten" style="display:none;">
-        <div class="sf" style="margin-bottom:12px;"><label class="lbl">🔑 Proxy-Passwort</label>
-          <div style="font-size:12px;color:var(--mu);line-height:1.5;margin-bottom:8px;">Passwort sichert den KI-Zugang. Das Passwort wird als SHA-256 Hash gespeichert – nie im Klartext.</div>
+      <!-- TAB: KI -->
+      <div id="spanel-ki" style="display:none;">
+        <div class="sf" style="margin-bottom:0;"><label class="lbl">🔑 Proxy-Passwort</label>
+          <div style="font-size:12px;color:var(--mu);line-height:1.5;margin-bottom:8px;">Passwort sichert den KI-Zugang (Foto-Erkennung, Chat, Wochenbericht). Es wird als SHA-256 Hash gespeichert – nie im Klartext.</div>
           <div id="aiProxyStatus" style="font-size:12px;color:var(--g1);font-weight:700;margin-bottom:10px;"></div>
           <input type="password" id="settProxyPwInput" placeholder="Neues Passwort eingeben" autocomplete="new-password"
             style="width:100%;box-sizing:border-box;padding:10px 12px;border:2px solid var(--br);border-radius:10px;font-size:14px;outline:none;margin-bottom:8px;"
             onkeydown="if(event.key==='Enter')saveProxyPwFromSettings()">
           <button type="button" class="seb" onclick="saveProxyPwFromSettings()">Passwort speichern ✓</button>
         </div>
-        <button type="button" class="svb" onclick="saveSettings()" style="margin-bottom:12px;">Speichern ✓</button>
+        <div style="padding-top:12px;border-top:1px solid var(--br);margin-top:12px;">
+          <label class="lbl" style="margin-bottom:8px;">🛠 KI-Prompts</label>
+          <div style="font-size:12px;color:var(--mu);margin-bottom:8px;">Sieh dir die Anweisungen an, die NutriTrack an die KI schickt.</div>
+          <button type="button" class="seb" onclick="openPromptSettings()">⚙️ KI-Prompts anzeigen</button>
+        </div>
+      </div>
+
+      <!-- TAB: BACKUP -->
+      <div id="spanel-backup" style="display:none;">
         <div style="padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--br);">
           <label class="lbl" style="margin-bottom:8px;">🕹️ Autospeicher</label>
           <div style="font-size:12px;color:var(--mu);margin-bottom:8px;">Wird bei jedem App-Start automatisch gespeichert. Bis zu 5 Stände.</div>
           <button type="button" class="seb" onclick="openAutoSaves()">📂 Autospeicher anzeigen</button>
         </div>
-        <div style="padding-top:12px;border-top:1px solid var(--br);margin-bottom:12px;">
-          <label class="lbl" style="margin-bottom:8px;">📷 Picker-Fotos</label>
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--gl);border-radius:10px;border:1px solid var(--g3);">
-            <div style="flex:1;min-width:0;padding-right:10px;">
-              <div style="font-size:13px;font-weight:700;">Foto auf Handy sichern</div>
-              <div style="font-size:11px;color:var(--mu);margin-top:2px;line-height:1.4;">Nach dem Hinzufügen einer Mahlzeit das Foto via Teilen-Menü speichern (z. B. in „Fotos"/Galerie).</div>
-            </div>
-            <label style="position:relative;display:inline-block;width:44px;height:24px;flex:0 0 44px;">
-              <input type="checkbox" id="ssavepickerphotos" style="opacity:0;width:0;height:0;" onchange="updateSavePickerPhotosToggle()">
-              <span id="savePickerPhotosToggle" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#ccc;border-radius:24px;transition:.3s;"></span>
-              <span id="savePickerPhotosThumb" style="position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.3s;"></span>
-            </label>
-          </div>
-        </div>
-        <div style="padding-top:12px;border-top:1px solid var(--br);margin-bottom:12px;">
-          <label class="lbl" style="margin-bottom:8px;">💾 Datensicherung</label>
+        <div style="padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--br);">
+          <label class="lbl" style="margin-bottom:8px;">💾 Datensicherung (Datei)</label>
+          <div style="font-size:12px;color:var(--mu);margin-bottom:8px;">Alle Daten als JSON-Datei exportieren oder wieder einlesen.</div>
           <button type="button" class="seb" onclick="exportData()">📤 Exportieren</button>
           <button type="button" class="seb" onclick="document.getElementById('impInp').click()">📥 Importieren</button>
           <input type="file" id="impInp" accept=".json" style="display:none" onchange="importData(event)">
         </div>
-        <div style="padding-top:12px;border-top:1px solid var(--br);margin-bottom:12px;">
+        <div style="padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--br);">
           <label class="lbl" style="margin-bottom:8px;">☁️ OneDrive Sync</label>
           <div id="odStatusWrap"></div>
         </div>
-        <div style="padding-top:12px;border-top:1px solid var(--br);margin-bottom:12px;">
-          <button type="button" class="seb" onclick="openPromptSettings()">⚙️ KI-Prompts anzeigen</button>
-          <div style="font-size:12px;color:var(--mu);margin-top:8px;text-align:center;" id="cacheInfo"></div>
-        </div>
-        <div style="padding-top:12px;border-top:1px solid var(--br);">
-          <label class="lbl" style="margin-bottom:8px;">🥘 Eigene Lebensmittel &amp; Rezepte</label>
-          <div id="settFoodList"></div>
-        </div>
+        <div style="font-size:12px;color:var(--mu);text-align:center;" id="cacheInfo"></div>
       </div>
 
     </div>
@@ -1965,7 +1965,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.186';
+var APP_VERSION='0.187';
 var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
 // HTML-Escaping für alle Namen/Freitexte aus untrusted Quellen (Import-Payloads,
 // OpenFoodFacts, KI-Antworten), die per innerHTML eingefügt werden — schützt vor XSS.
@@ -1997,6 +1997,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.187',items:[
+    {icon:'🧹',text:'Einstellungen aufgeräumt: Der überladene „Daten"-Tab ist jetzt in zwei klare Tabs geteilt — „🤖 KI" (Proxy-Passwort & KI-Prompts) und „💾 Backup" (Autospeicher, Datei-Export/Import, OneDrive). Der Picker-Foto-Schalter sitzt jetzt logisch unter „🥗 Ernährung", die doppelte Lebensmittel-/Rezept-Liste wurde entfernt (alles in der Bibliothek), und der „⏰ Erinnerungen"-Tab ist nicht mehr abgekürzt.',where:'Einstellungen'},
+  ]},
   {v:'0.186',items:[
     {icon:'🐛',text:'Picker · Chat: „Kaffee" wird endlich als schwarzer Kaffee erkannt statt als Cappuccino. Ursache war ein falscher Suchbegriff in der internen Lebensmittel-Datenbank (der Cappuccino-Eintrag hatte „kaffee" als Stichwort beansprucht). (#127)',where:'Picker · Chat'},
   ]},
@@ -3525,7 +3528,7 @@ function recEditSave(){
 function recEditDelete(){
   recipes=recipes.filter(function(r){return r.id!==recEditId;});
   saveX();
-  if(recEditOpenedFrom!=='mealDetail'){renderSettFoodList();}
+  if(recEditOpenedFrom!=='mealDetail'){renderLibrary();}
   closeOv('recEditOv');
   recEditOpenedFrom=null;
   showToast('Rezept gelöscht');
@@ -3809,7 +3812,6 @@ function importConfirm(){
   closeOv('importConfirmOv');
   if(typeof renderAll==='function')renderAll();
   if(typeof renderLibrary==='function')renderLibrary();
-  if(typeof renderSettFoodList==='function')renderSettFoodList();
 }
 
 // Extracts a Worker-stored share id from input. Returns the id string or null.
@@ -3954,14 +3956,14 @@ function _checkSharedItemOnBoot(){
 // SECTION: SETTINGS
 // ════════════════════════════════════════
 function settSetTab(tab){
-  ['profil','ziele','ernaehrung','erinnerungen','daten','bibliothek'].forEach(function(t){
+  ['profil','ziele','ernaehrung','erinnerungen','ki','backup','bibliothek'].forEach(function(t){
     var btn=document.getElementById('stab-'+t);
     var panel=document.getElementById('spanel-'+t);
     if(btn)btn.classList.toggle('act',t===tab);
     if(panel)panel.style.display=t===tab?'block':'none';
   });
   if(tab==='bibliothek')renderLibrary();
-  if(tab==='daten')renderOneDriveStatus();
+  if(tab==='backup')renderOneDriveStatus();
 }
 
 function openSettings(){
@@ -4011,7 +4013,6 @@ function openSettings(){
   if(aiStatus)aiStatus.textContent=getProxySecret()?'Passwort gesetzt ✓':'Noch kein Passwort – KI nicht verfügbar';
   var settPwInput=document.getElementById('settProxyPwInput');
   if(settPwInput)settPwInput.value='';
-  renderSettFoodList();
   settSetTab('profil');
   openOv('settOv');
 }
@@ -5570,36 +5571,6 @@ function calcMacroTargets(kcal){
   };
 }
 
-function renderSettFoodList(){
-  var el=document.getElementById('settFoodList');if(!el)return;
-  var html='';
-  if(customFoods.length){
-    html+='<div style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:6px;">Eigene Lebensmittel</div>';
-    customFoods.forEach(function(f,i){
-      var ii=i;
-      html+='<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--br);">'
-        +'<div style="font-size:18px;">'+f.emoji+'</div>'
-        +'<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:13px;">'+f.name+'</div>'
-        +'<div style="font-size:11px;color:var(--mu);">'+f.per100.kcal+' kcal pro 100g</div></div>'
-        +'<button type="button" onclick="openOwnFoodEdit('+ii+')" style="background:none;border:none;font-size:16px;color:var(--g2);margin-right:4px;">✏️</button>'
-        +'<button type="button" onclick="deleteOwnFood('+ii+')" style="background:none;border:none;font-size:16px;color:var(--re);opacity:.6;">🗑️</button></div>';
-    });
-  }
-  if(recipes.length){
-    html+='<div style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;margin:12px 0 6px;">Rezepte</div>';
-    recipes.forEach(function(r){
-      html+='<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--br);">'
-        +'<div style="font-size:18px;">'+(r.emoji||'📋')+'</div>'
-        +'<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:13px;">'+r.name+'</div>'
-        +'<div style="font-size:11px;color:var(--mu);">'+r.ingredients.length+' Zutaten</div></div>'
-        +'<button type="button" onclick="openRecipeEditor(\''+r.id+'\')" style="background:none;border:none;font-size:16px;color:var(--g2);margin-right:4px;">✏️</button>'
-        +'<button type="button" onclick="deleteRecipeById(\''+r.id+'\')" style="background:none;border:none;font-size:16px;color:var(--re);opacity:.6;">🗑️</button></div>';
-    });
-  }
-  if(!html)html='<div style="font-size:13px;color:var(--mu);font-style:italic;">Noch keine eigenen Lebensmittel oder Rezepte.</div>';
-  el.innerHTML=html;
-}
-
 var _ownFoodEditIdx=null;
 
 function openOwnFoodEdit(i){
@@ -5645,9 +5616,6 @@ function deleteOwnFoodEdit(){
   setTimeout(function(){openSettings();},200);
   showToast('Gelöscht');
 }
-
-function deleteOwnFood(i){customFoods.splice(i,1);saveX();renderSettFoodList();}
-function deleteRecipeById(id){recipes=recipes.filter(function(r){return r.id!==id;});saveX();renderSettFoodList();}
 
 function exportData(){
   var blob=new Blob([JSON.stringify({state:backupState(),foodCache:foodCache,customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache},null,2)],{type:'application/json'});

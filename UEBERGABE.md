@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.187 (2026-06-20)
+**Stand:** v0.188 (2026-06-20)
 
 ## URLs
 
@@ -70,6 +70,7 @@
 
 ## Live-Test offen
 
+- v0.188 Einstellungen → Ernährung: „Eigene Präferenz" — Eingabefeld hat volle Restbreite, der „+ Hinzufügen"-Button sitzt kompakt rechts daneben (nicht mehr volle Zeile); nicht mit „Speichern ✓" unten verwechselbar (#134)
 - v0.187 Einstellungen: Mehr → ⚙️ → Tab-Bar zeigt 6 Tabs inkl. „🤖 KI" + „💾 Backup"; Proxy-Passwort + KI-Prompts nur noch unter KI; Autospeicher/Export/Import/OneDrive nur noch unter Backup; Picker-Foto-Toggle unter Ernährung; keine doppelte Lebensmittel-Liste mehr; Bibliothek (Mehr → 📚) zeigt Rezepte/Lebensmittel wie zuvor inkl. Bearbeiten/Löschen
 - v0.186 Picker Chat: „Kaffee mit Hafermilch" tippen → erste Zutat ist „Kaffee (schwarz)" (≈2 kcal), **kein** Cappuccino; Cappuccino bleibt über „Cappuccino"/„Milchkaffee" auffindbar (#127)
 - v0.182 Offline: App installieren, sofort offline öffnen → lädt aus Cache (Pre-Caching); Feedback-Senden funktioniert weiter (Client sendet jetzt `x-app-proxy-secret`); Portion über Suche hinzufügen → Menge wird beim nächsten Mal vorgeschlagen (rememberPortion-Fix). Optional: Worker neu deployen (`wrangler deploy` in `worker/`); Decoder-Secret nur wenn `DECODER_SECRET` beidseitig gesetzt
@@ -95,11 +96,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.182 | #125 #126 | Härtung: XSS-Escaping, SW-Pre-Caching, Feedback-Auth+Rate-Limit, /workouts-Pagination, Decoder-Secret, rememberPortion-Fix |
 | v0.183 | #128 | Picker Chat: Prompt-Regel gegen Aufwerten genannter Lebensmittel (#127) |
 | v0.185 | #131 | Picker Chat: Few-Shot-Prompt, zurück auf Haiku (#127) |
 | v0.186 | — | Picker Chat: eigentlicher Fix — DB-Synonym „kaffee" gehörte zum schwarzen Kaffee, nicht zum Cappuccino (#127) |
-| v0.187 | — | Einstellungen aufgeräumt: „Daten"-Tab → „🤖 KI" + „💾 Backup", Picker-Foto-Toggle zu Ernährung, doppelte Lebensmittel-Liste raus, Hilfe-Dedup, OneDrive-Banner-Label |
+| v0.187 | #133 | Einstellungen aufgeräumt: „Daten"-Tab → „🤖 KI" + „💾 Backup", Picker-Foto-Toggle zu Ernährung, doppelte Lebensmittel-Liste raus, Hilfe-Dedup, OneDrive-Banner-Label |
+| v0.188 | — | Fix: verrutschter „+ Hinzufügen"-Button im Ernährung-Tab (war volle Breite, drückte das Eingabefeld platt) (#134) |
 
 ---
 

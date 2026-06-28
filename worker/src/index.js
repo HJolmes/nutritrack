@@ -11,6 +11,12 @@ const MAX_BODY_BYTES = 1024 * 1024 * 4;
 const MAX_BARCODE_BODY_BYTES = 1024 * 200; // 200 KB pro Frame reicht
 const BARCODE_MODEL = "claude-haiku-4-5";
 const DECODER_TIMEOUT_MS = 1500;
+// OpenFoodFacts verlangt einen aussagekräftigen User-Agent und blockt anonyme
+// Browser-Requests; deshalb läuft jeder OFF-Aufruf serverseitig über /off.
+const OFF_USER_AGENT = "NutriTrack/1.0 (+https://hjolmes.github.io/nutritrack/; h.jolmes@jolmes.de)";
+const OFF_TIMEOUT_MS = 6000;
+const URL_FETCH_TIMEOUT_MS = 8000;
+const MAX_URL_FETCH_BYTES = 1024 * 512; // 512 KB reichen für eine Rezept-Seite
 
 function allowedOrigins(env) {
   const raw = env.ALLOWED_ORIGINS || DEFAULT_ALLOWED_ORIGINS.join(",");
@@ -703,6 +709,104 @@ async function handleShareRedirect(request, env) {
   });
 }
 
+// ─── OPENFOODFACTS PROXY ──────────────────────────────────────────────
+// Serverseitiger OFF-Aufruf mit korrektem User-Agent. Host-gesperrt auf
+// openfoodfacts.org (kein offener Proxy). Ersetzt den ausgefallenen
+// Drittanbieter corsproxy.io im Lebensmittel-/Chat-Pfad.
+async function handleOffProxy(request, origin, env) {
+  const target = new URL(request.url).searchParams.get("u") || "";
+  let t;
+  try {
+    t = new URL(target);
+  } catch (e) {
+    return jsonResponse(400, "bad_url", "Invalid 'u' parameter", origin, env);
+  }
+  if (t.protocol !== "https:" || !/(^|\.)openfoodfacts\.org$/i.test(t.hostname)) {
+    return jsonResponse(403, "host_not_allowed", "Only openfoodfacts.org is allowed", origin, env);
+  }
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), OFF_TIMEOUT_MS);
+  try {
+    const res = await fetch(t.toString(), {
+      headers: { "User-Agent": OFF_USER_AGENT, Accept: "application/json" },
+      signal: ctrl.signal,
+    });
+    const body = await res.text();
+    return new Response(body, {
+      status: res.status,
+      headers: {
+        ...corsHeaders(origin, env),
+        "Content-Type": res.headers.get("Content-Type") || "application/json; charset=utf-8",
+        "Cache-Control": "public, max-age=3600",
+      },
+    });
+  } catch (e) {
+    // Timeout/Netzwerk → leeres OFF-Resultat, damit der Client sauber auf die
+    // KI-Schätzung zurückfällt statt zu hängen.
+    return new Response(JSON.stringify({ products: [], error: "off_unavailable" }), {
+      status: 200,
+      headers: {
+        ...corsHeaders(origin, env),
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+      },
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// ─── URL FETCH PROXY (Rezept-Import) ──────────────────────────────────
+// Holt eine beliebige Rezept-Seite serverseitig als Text. Durch das
+// App-Proxy-Secret abgesichert (kein offener Proxy) + SSRF-Schutz + Größenlimit.
+async function handleUrlProxy(request, origin, env) {
+  const token = request.headers.get("x-app-proxy-secret") || "";
+  if (!env.NUTRITRACK_PROXY_TOKEN || token !== env.NUTRITRACK_PROXY_TOKEN) {
+    return jsonResponse(401, "unauthorized", "Invalid app proxy secret", origin, env);
+  }
+  const target = new URL(request.url).searchParams.get("u") || "";
+  let t;
+  try {
+    t = new URL(target);
+  } catch (e) {
+    return jsonResponse(400, "bad_url", "Invalid 'u' parameter", origin, env);
+  }
+  if (t.protocol !== "https:" && t.protocol !== "http:") {
+    return jsonResponse(403, "bad_scheme", "Only http(s) is allowed", origin, env);
+  }
+  const host = t.hostname.toLowerCase();
+  if (
+    host === "localhost" || host === "0.0.0.0" || host.endsWith(".internal") ||
+    /^127\./.test(host) || /^10\./.test(host) || /^192\.168\./.test(host) ||
+    /^169\.254\./.test(host) || /^172\.(1[6-9]|2\d|3[01])\./.test(host)
+  ) {
+    return jsonResponse(403, "host_not_allowed", "Host not allowed", origin, env);
+  }
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), URL_FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(t.toString(), {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; NutriTrack/1.0)" },
+      redirect: "follow",
+      signal: ctrl.signal,
+    });
+    const raw = await res.text();
+    const body = raw.length > MAX_URL_FETCH_BYTES ? raw.slice(0, MAX_URL_FETCH_BYTES) : raw;
+    return new Response(body, {
+      status: res.status,
+      headers: {
+        ...corsHeaders(origin, env),
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-store",
+      },
+    });
+  } catch (e) {
+    return jsonResponse(504, "fetch_failed", "Upstream fetch failed or timed out", origin, env);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get("Origin") || "";
@@ -722,7 +826,7 @@ export default {
         feedbackConfigured: Boolean(env.GITHUB_TOKEN),
         workoutsConfigured: Boolean(env.SHARE_KV),
         decoderSecretConfigured: Boolean(env.DECODER_SECRET),
-        codeVersion: "v0.182-hardening",
+        codeVersion: "v0.192-off-proxy",
       });
     }
 
@@ -741,6 +845,12 @@ export default {
     }
     if (request.method === "GET" && url.pathname === "/workouts") {
       return handleWorkoutList(request, origin, env);
+    }
+    if (request.method === "GET" && url.pathname === "/off") {
+      return handleOffProxy(request, origin, env);
+    }
+    if (request.method === "GET" && url.pathname === "/fetch") {
+      return handleUrlProxy(request, origin, env);
     }
     if (request.method === "GET" && url.pathname.startsWith("/share/")) {
       return handleShareLookup(request, origin, env);

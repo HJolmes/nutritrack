@@ -122,10 +122,9 @@ function pickerFetchOnline(q){
   var btn=document.getElementById('pickerSearchBtn');
   btn.innerHTML='<span class="spin"></span>';btn.disabled=true;
   var ql=q.toLowerCase(),eng=DE_EN[ql]||null;
-  var proxy='https://corsproxy.io/?';
   var base='https://world.openfoodfacts.org/cgi/search.pl?search_simple=1&action=process&json=1&page_size=20&fields=product_name,product_name_de,nutriments,image_front_thumb_url';
   var terms=[q];if(eng)terms.push(eng);
-  var fetches=terms.map(function(t){return fetch(proxy+encodeURIComponent(base+'&search_terms='+encodeURIComponent(t))).then(function(r){return r.json();}).catch(function(){return{products:[]};});});
+  var fetches=terms.map(function(t){return fetchT(offProxyUrl(base+'&search_terms='+encodeURIComponent(t)),{},6000).then(function(r){return r.json();}).catch(function(){return{products:[]};});});
   Promise.all(fetches).then(function(res){
     var local=searchLocal(q);
     var seen={};local.forEach(function(p){seen[p.name.toLowerCase()]=true;});
@@ -832,7 +831,7 @@ function pickerFetchBarcodeForConfirm(code){
   var cached=barcodeCache[code];
   if(cached){pickerShowBcConfirm(cached);return;}
   if(!isOnline)return;
-  fetch('https://world.openfoodfacts.org/api/v0/product/'+code+'.json')
+  fetchT(offProxyUrl('https://world.openfoodfacts.org/api/v0/product/'+code+'.json'),{},6000)
     .then(function(r){return r.json();})
     .then(function(data){
       if(data.status!==1||!data.product){showToast('Barcode '+code+' nicht gefunden – bitte manuell eintragen');return;}
@@ -901,7 +900,7 @@ function pickerLookupBarcode(code){
     pickerShowBarcodeNotFound(code,'📴 Offline – nicht im Cache. Werte manuell eintragen:');
     return;
   }
-  fetch('https://world.openfoodfacts.org/api/v0/product/'+code+'.json')
+  fetchT(offProxyUrl('https://world.openfoodfacts.org/api/v0/product/'+code+'.json'),{},6000)
     .then(function(r){return r.json();})
     .then(function(data){
       if(data.status!==1||!data.product){
@@ -1358,7 +1357,7 @@ function pickerLinkImport(){
   if(!canUseAi()){showAiUnavailable();return;}
   var btn=document.getElementById('pickerLinkImportBtn');
   btn.disabled=true;btn.textContent='⏳ Laden...';btn.style.opacity='.6';
-  fetch('https://corsproxy.io/?'+encodeURIComponent(url))
+  fetchT(urlProxyUrl(url),{headers:{'x-app-proxy-secret':getProxySecret()}},9000)
     .then(function(r){return r.text();})
     .then(function(html){
       var text=html.replace(/<script[\s\S]*?<\/script>/gi,'')

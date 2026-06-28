@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.191 (2026-06-20)
+**Stand:** v0.192 (2026-06-28)
 
 ## URLs
 
@@ -41,6 +41,7 @@
 - **Härtung (v0.182):** Globaler `esc()` in `index.html` + `_esc()` in `picker.js` escapen alle per `innerHTML` ausgegebenen Namen/Freitexte aus untrusted Quellen (Import-Payloads, OpenFoodFacts, KI-Antworten) → kein XSS mehr. SW `install` cacht `CORE_ASSETS` vorab (`./`,`index.html`,`picker.js`,`js/health-sync.js`,`manifest.json`,`icon.svg`, best-effort `allSettled`) → echte Offline-Erstnutzung; Offline-Fallbacks awaiten jetzt das `caches.match`-Promise korrekt. Worker `/feedback` verlangt `x-app-proxy-secret` (Client sendet `getProxySecret()`) + IP-Tages-Limit (`fbrl:<ip>:<tag>`, 30/Tag) + `mdNeutralizeBody` neutralisiert @-Mentions/#-Refs in der Beschreibung. `/workouts` paginiert via Cursor (bis 20 Seiten) + parallele KV-Reads → kein Datenverlust bei >200 Workouts. Decoder optional per `DECODER_SECRET`/`X-Decoder-Secret` absicherbar (beidseitig setzen; unset = offen). Bugfix `rememberPortion(f.name,amt)` (vorher `f.amount`=undefined). Toter Code entfernt (`toggleEye`,`shareCustomFood`,`triggerBackupDownload`,`pickerOnAdd`,`_pickerIngCallbacks`).
 - **Picker Foto-Analyse (v0.191):** `pickerAnalyze` (`picker.js`) skaliert das Foto auf **max. 1280 px** (JPEG 0.85) und ruft **`claude-sonnet-4-6`** mit `max_tokens:1024`, `temperature:0` und `getFotoPrompt()` auf. `getFotoPrompt()` liefert immer `DEFAULT_FOTO_PROMPT` (kein localStorage-Override) — Prompt-Änderungen greifen sofort, kein `PROMPT_VERSION`-Bump nötig. Prompt-Regeln: nur sichtbare Lebensmittel (keine Halluzination), Komponenten getrennt, höchstens eine verdeckte Beilage, Portions-Schätzung über Referenzgrößen, bei Screenshots angezeigte Gramm/kcal **exakt** übernehmen. `processOfflineQueue()` ruft denselben `pickerAnalyze`-Pfad → profitiert mit. Foto-Tab und Chat-mit-Foto (`claude-sonnet-4-6`) nutzen damit dasselbe aktuelle Modell.
 - **Picker KI-Fehlertexte (v0.180):** `pickerFriendlyAiError(err)` in `picker.js` mappt bekannte KI-/Proxy-Fehler (Kontingent/Billing, overloaded/rate-limit/429/529, nicht konfiguriert, offline) auf deutsche Texte; unbekannte Fehler unverändert. Genutzt in `pickerChatKiFallback` + Foto-Analyse-`onErr` (#121).
+- **OpenFoodFacts via eigenem Worker (v0.192):** Der Drittanbieter-CORS-Proxy `corsproxy.io` ist tot (Gratis-Zugang nur noch `localhost`), und OFF blockt anonyme Browser-Requests. Beides lief im Picker-Chat/-Suche zusammen → extreme Langsamkeit (jede Zutat fiel auf doppelte KI-Calls zurück). Fix: **alle** OFF-Aufrufe laufen jetzt serverseitig über den eigenen Worker — `GET /off?u=<OFF-URL>` (host-gesperrt auf `openfoodfacts.org`, korrekter `User-Agent`, OFF verlangt den). Rezept-Import-Link läuft über `GET /fetch?u=<URL>` (per `x-app-proxy-secret` abgesichert, SSRF-Guards, 512 KB Cap). Client: `offProxyUrl()`/`urlProxyUrl()` + `fetchT(url,opts,ms)` (AbortController-Timeout) in `index.html`; alle `fetch`-Stellen (`lookupNutrients`, `pickerFetchOnline`, Barcode-Lookup ×2, `recipeImportStart`, `pickerLinkImport`) sowie `callClaude` (25 s) haben jetzt harte Timeouts → ein hängender Dienst friert die App nicht mehr ein, sondern fällt schnell auf DB/KI-Schätzung zurück. **Worker muss neu deployt werden** (Action `Deploy Cloudflare Worker` bei Merge nach `main`, benötigt Repo-Secrets `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID`).
 - **Sport-Sync (v0.158):** Erstes ausgelagertes Modul `js/health-sync.js` (klassisches `<script>` vor `</body>`, exportiert `window.NTHealth`). User generiert in „Mehr → Sport-Sync" ein 32-Zeichen-Token (Base58-ish, `localStorage.nt_health_token`), trägt es in eine iOS-Shortcut-Automation („wenn Training endet") oder Android HTTP Request Shortcut ein. Automation POSTet `{id, source, type, start, kcal, durationSec?, distanceM?, hrAvg?}` mit Header `X-User-Token` an Worker `POST /workout` (KV-Key `wo:<token>:<id>`, TTL 60d). PWA pollt `GET /workouts?since=<lastpoll>` bei `DOMContentLoaded` (mit 800ms Delay) und `visibilitychange→visible`, dedupliziert via `_healthId`-Marker, hängt Workouts in `S.days[<localDate>].exercise[]` an (Schema bleibt kompatibel zur manuellen Erfassung) — die existierende `burned`-Subtraktion in `renderAll()` zieht die Kalorien automatisch vom Tagesziel ab. `renderExercise()` zeigt für `_source`-Einträge ein kleines „Apple"/„Samsung"-Badge.
 
 ## Worker-Endpoints
@@ -55,6 +56,8 @@
 | `POST /feedback` | erstellt GitHub-Issue, optional Screenshot-Commit auf Branch `feedback-screenshots` |
 | `POST /workout` | Apple/Samsung Workout-Ingest (Header `X-User-Token`, KV `wo:<token>:<id>`, 60d TTL) |
 | `GET /workouts?since=<ms>` | Liste aller Workouts eines Tokens seit Timestamp (PWA-Polling) |
+| `GET /off?u=<OFF-URL>` | OpenFoodFacts-Proxy (host-gesperrt, korrekter User-Agent, 6 s Timeout) |
+| `GET /fetch?u=<URL>` | Rezept-Seiten-Proxy (Secret-gated, SSRF-Guards, 512 KB Cap, 8 s Timeout) |
 
 **Bindings/Secrets:** `ANTHROPIC_API_KEY`, `NUTRITRACK_PROXY_TOKEN`, `DECODER_URL`, `SHARE_KV` (KV `873c9976307f4af087ff8205ba957b1c`), `GITHUB_TOKEN` (fine-grained PAT, `hjolmes/nutritrack`, Issues+Contents read+write), opt. `GITHUB_REPO`.
 
@@ -72,6 +75,7 @@
 
 ## Live-Test offen
 
+- v0.192 Picker Chat & Suche: **Voraussetzung: Worker neu deployt** (`/off`, `/fetch` live — `GET …/off?u=…openfoodfacts.org/cgi/search.pl?...` muss OFF-JSON liefern, nicht 403/404). Dann: „Brot mit Käse" im Chat → Zutaten kommen zügig (kein langes Hängen); Lebensmittel-Suche (Picker-Suche-Tab) zeigt Online-Treffer mit 🌐-Badge; Barcode-Scan findet Produkt; Rezept-Import per Link funktioniert wieder. Bei Worker/OFF-Ausfall: schneller Fallback auf KI-Schätzung statt Einfrieren (#137-Performance)
 - v0.190 Picker Chat: „Weißwein", „2 Bier", „1 weiswein" (Tippfehler) und beliebige Einzel-Lebensmittel werden erfasst (Zutat erscheint, Nährwerte via DB/OpenFoodFacts/KI) — kein „Konnte nicht parsen" mehr; Mehr-Zutaten-Sätze („Brot mit Käse und Schinken") werden weiterhin korrekt zerlegt (#135)
 - v0.188 Einstellungen → Ernährung: „Eigene Präferenz" — Eingabefeld hat volle Restbreite, der „+ Hinzufügen"-Button sitzt kompakt rechts daneben (nicht mehr volle Zeile); nicht mit „Speichern ✓" unten verwechselbar (#134)
 - v0.187 Einstellungen: Mehr → ⚙️ → Tab-Bar zeigt 6 Tabs inkl. „🤖 KI" + „💾 Backup"; Proxy-Passwort + KI-Prompts nur noch unter KI; Autospeicher/Export/Import/OneDrive nur noch unter Backup; Picker-Foto-Toggle unter Ernährung; keine doppelte Lebensmittel-Liste mehr; Bibliothek (Mehr → 📚) zeigt Rezepte/Lebensmittel wie zuvor inkl. Bearbeiten/Löschen
@@ -100,11 +104,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.186 | — | Picker Chat: eigentlicher Fix — DB-Synonym „kaffee" gehörte zum schwarzen Kaffee, nicht zum Cappuccino (#127) |
 | v0.187 | #133 | Einstellungen aufgeräumt: „Daten"-Tab → „🤖 KI" + „💾 Backup", Picker-Foto-Toggle zu Ernährung, doppelte Lebensmittel-Liste raus, Hilfe-Dedup, OneDrive-Banner-Label |
 | v0.188 | — | Fix: verrutschter „+ Hinzufügen"-Button im Ernährung-Tab (war volle Breite, drückte das Eingabefeld platt) (#134) |
 | v0.190 | — | Picker Chat: Lebensmittel-Erkennung generell robust — gehärteter Prompt + Sackgassen-Fallback statt „Konnte nicht parsen" (#135) |
 | v0.191 | — | Foto-Analyse: aktuelles Modell (Sonnet 4.6), höhere Auflösung (1280px), mehr Token, geschärfter Prompt |
+| v0.192 | — | Performance: `corsproxy.io` (tot) raus → OFF/Rezept-Import über eigenen Worker (`/off`, `/fetch`) + harte Timeouts auf allen externen Calls; behebt extreme Chat-Langsamkeit |
 
 ---
 

@@ -656,7 +656,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.191</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.192</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -976,7 +976,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.191</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.192</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1965,8 +1965,23 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.191';
-var PROJECT_AI_PROXY_URL='https://nutritrack-ai-proxy.h-jolmes.workers.dev/v1/messages';
+var APP_VERSION='0.192';
+var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
+var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
+// OpenFoodFacts + Rezept-Seiten laufen über den eigenen Worker statt über den
+// ausgefallenen Drittanbieter corsproxy.io. /off ist host-gesperrt auf OFF,
+// /fetch ist per Proxy-Secret abgesichert.
+function offProxyUrl(offUrl){return PROJECT_WORKER_BASE+'/off?u='+encodeURIComponent(offUrl);}
+function urlProxyUrl(u){return PROJECT_WORKER_BASE+'/fetch?u='+encodeURIComponent(u);}
+// fetch mit hartem Timeout → ein langsamer/ausgefallener Dienst friert die App
+// nicht mehr ein, sondern fällt schnell auf den jeweiligen Fallback zurück.
+function fetchT(url,opts,ms){
+  opts=opts||{};ms=ms||7000;
+  var ctrl=new AbortController();
+  var timer=setTimeout(function(){ctrl.abort();},ms);
+  opts.signal=ctrl.signal;
+  return fetch(url,opts).finally(function(){clearTimeout(timer);});
+}
 // HTML-Escaping für alle Namen/Freitexte aus untrusted Quellen (Import-Payloads,
 // OpenFoodFacts, KI-Antworten), die per innerHTML eingefügt werden — schützt vor XSS.
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
@@ -1997,6 +2012,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.192',items:[
+    {icon:'⚡',text:'Lebensmittel-Suche & Chat wieder schnell: Der externe Dienst, über den die Nährwerte von OpenFoodFacts geladen wurden, hatte seinen Gratis-Zugang abgeschaltet — dadurch wurde besonders der Picker-Chat extrem langsam. Die Nährwert-Abfrage läuft jetzt direkt über den eigenen Server, mit Zeitlimit, damit nichts mehr einfriert. Auch der Rezept-Import per Link funktioniert wieder.',where:'Picker · Chat & Suche'},
+  ]},
   {v:'0.191',items:[
     {icon:'📷',text:'Foto-Erkennung verbessert: Die Bild-Analyse nutzt jetzt das aktuelle, stärkere KI-Modell, schickt das Foto in höherer Auflösung und hat mehr Platz für Ergebnisse. Damit werden Teller mit mehreren Komponenten und App-Screenshots zuverlässiger und vollständiger erkannt.',where:'Picker · Foto'},
   ]},
@@ -2752,7 +2770,7 @@ function recipeImportStart(){
   if(!canUseAi()){showAiUnavailable();return;}
   closeOv('recipeImportOv');
   showToast('⏳ Rezept wird importiert...');
-  fetch('https://corsproxy.io/?'+encodeURIComponent(url))
+  fetchT(urlProxyUrl(url),{headers:{'x-app-proxy-secret':getProxySecret()}},9000)
     .then(function(r){return r.text();})
     .then(function(html){
       var text=html.replace(/<script[\s\S]*?<\/script>/gi,'')
@@ -3147,9 +3165,8 @@ function lookupNutrients(rawItems,onDone){
     }
     // 2. Open Food Facts
     if(isOnline){
-      var proxy='https://corsproxy.io/?';
       var url='https://world.openfoodfacts.org/cgi/search.pl?search_terms='+encodeURIComponent(name)+'&search_simple=1&action=process&json=1&page_size=5&fields=product_name,nutriments';
-      fetch(proxy+encodeURIComponent(url)).then(function(r){return r.json();})
+      fetchT(offProxyUrl(url),{},6000).then(function(r){return r.json();})
         .then(function(data){
           var prods=(data.products||[]).filter(function(p){var nm=(p.nutriments||{});return(nm['energy-kcal_100g']||nm['energy_100g']||(nm['proteins_100g']||0)+(nm['carbohydrates_100g']||0)+(nm['fat_100g']||0))>0;});
           if(prods.length>0){
@@ -3234,14 +3251,14 @@ function parsePhotoResponse(text){
 // ════════════════════════════════════════
 function callClaude(model,content,maxTok,onOk,onErr){
   if(!canUseAi()){onErr('KI Proxy nicht konfiguriert');return;}
-  fetch(PROJECT_AI_PROXY_URL,{
+  fetchT(PROJECT_AI_PROXY_URL,{
     method:'POST',
     headers:{'Content-Type':'application/json','x-app-proxy-secret':getProxySecret()},
     body:JSON.stringify({model:model,max_tokens:maxTok,temperature:0,messages:[{role:'user',content:content}]})
-  }).then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error((d.error&&d.error.message)||d.error||('HTTP '+r.status));return d;});}).then(function(d){
+  },25000).then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error((d.error&&d.error.message)||d.error||('HTTP '+r.status));return d;});}).then(function(d){
     if(d.error)throw new Error(d.error.message);
     onOk(d.content.map(function(c){return c.text||'';}).join(''));
-  }).catch(function(e){onErr(e.message||'Fehler');});
+  }).catch(function(e){onErr(e.name==='AbortError'?'Zeitüberschreitung – bitte erneut versuchen':(e.message||'Fehler'));});
 }
 
 // ════════════════════════════════════════

@@ -30,7 +30,7 @@ function corsHeaders(origin, env) {
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, x-app-proxy-secret, x-user-token",
+    "Access-Control-Allow-Headers": "Content-Type, x-app-proxy-secret, x-user-token, x-ai-provider, x-ai-key",
     "Access-Control-Max-Age": "86400",
     Vary: "Origin",
   };
@@ -807,6 +807,205 @@ async function handleUrlProxy(request, origin, env) {
   }
 }
 
+// ─── KONFIGURIERBARER KI-ANBIETER ──────────────────────────────────────────
+// Übersetzt das eingehende Anthropic-Messages-Format in das Format des
+// gewählten Fremd-Anbieters und die Antwort wieder zurück ins Anthropic-Schema
+// ({content:[{type:"text",text}]}), sodass der Client unverändert weiterläuft.
+// Der Anbieter-Key kommt pro Request vom Client (Header x-ai-key) und wird
+// niemals geloggt oder gespeichert.
+const AI_PROVIDER_TIMEOUT_MS = 22000;
+const AI_PROVIDERS = {
+  openai: {
+    type: "openai",
+    url: "https://api.openai.com/v1/chat/completions",
+    models: { fast: "gpt-4o-mini", strong: "gpt-4o" },
+    vision: true,
+  },
+  openrouter: {
+    type: "openai",
+    url: "https://openrouter.ai/api/v1/chat/completions",
+    models: { fast: "openai/gpt-4o-mini", strong: "openai/gpt-4o" },
+    vision: true,
+  },
+  mistral: {
+    type: "openai",
+    url: "https://api.mistral.ai/v1/chat/completions",
+    models: { fast: "mistral-small-latest", strong: "pixtral-12b-2409" },
+    vision: true,
+  },
+  deepseek: {
+    type: "openai",
+    url: "https://api.deepseek.com/chat/completions",
+    models: { fast: "deepseek-chat", strong: "deepseek-chat" },
+    vision: false,
+  },
+  gemini: {
+    type: "gemini",
+    url: "https://generativelanguage.googleapis.com/v1beta/models/",
+    models: { fast: "gemini-2.0-flash", strong: "gemini-2.0-flash" },
+    vision: true,
+  },
+};
+
+function payloadHasImage(messages) {
+  return (messages || []).some(
+    (m) => Array.isArray(m.content) && m.content.some((b) => b && b.type === "image")
+  );
+}
+
+// Anthropic content-Blöcke → OpenAI-Chat-Format (text / image_url data-URL).
+function anthropicToOpenAiMessages(messages) {
+  return (messages || []).map((m) => {
+    if (!Array.isArray(m.content)) return { role: m.role, content: String(m.content || "") };
+    return {
+      role: m.role,
+      content: m.content.map((b) => {
+        if (b.type === "text") return { type: "text", text: b.text || "" };
+        if (b.type === "image" && b.source && b.source.type === "base64") {
+          return {
+            type: "image_url",
+            image_url: { url: "data:" + b.source.media_type + ";base64," + b.source.data },
+          };
+        }
+        return { type: "text", text: "" };
+      }),
+    };
+  });
+}
+
+// Anthropic content-Blöcke → Gemini contents (parts: text / inlineData).
+function anthropicToGeminiContents(messages) {
+  return (messages || []).map((m) => {
+    const parts = (Array.isArray(m.content) ? m.content : [{ type: "text", text: String(m.content || "") }]).map((b) => {
+      if (b.type === "text") return { text: b.text || "" };
+      if (b.type === "image" && b.source && b.source.type === "base64") {
+        return { inlineData: { mimeType: b.source.media_type, data: b.source.data } };
+      }
+      return { text: "" };
+    });
+    return { role: m.role === "assistant" ? "model" : "user", parts };
+  });
+}
+
+async function handleAiProvider(request, origin, env) {
+  if (origin && !allowedOrigins(env).has(origin)) {
+    return jsonResponse(403, "origin_not_allowed", "Origin is not allowed", origin, env);
+  }
+  if (!env.NUTRITRACK_PROXY_TOKEN) {
+    return jsonResponse(500, "worker_not_configured", "Required Worker secrets are missing", origin, env);
+  }
+  const token = request.headers.get("x-app-proxy-secret") || "";
+  if (token !== env.NUTRITRACK_PROXY_TOKEN) {
+    return jsonResponse(401, "unauthorized", "Invalid app proxy secret", origin, env);
+  }
+  if (getContentLength(request) > MAX_BODY_BYTES) {
+    return jsonResponse(413, "request_too_large", "Request body is too large", origin, env);
+  }
+
+  const providerId = (request.headers.get("x-ai-provider") || "").toLowerCase();
+  const apiKey = request.headers.get("x-ai-key") || "";
+  const cfg = AI_PROVIDERS[providerId];
+  if (!cfg) {
+    return jsonResponse(400, "unknown_provider", "Unknown AI provider", origin, env);
+  }
+  if (!apiKey) {
+    return jsonResponse(400, "missing_provider_key", "Missing provider API key", origin, env);
+  }
+
+  let payload;
+  try {
+    payload = await request.json();
+  } catch (error) {
+    return jsonResponse(400, "invalid_json", "Request body must be valid JSON", origin, env);
+  }
+
+  const messages = payload.messages || [];
+  const hasImage = payloadHasImage(messages);
+  if (hasImage && !cfg.vision) {
+    // Anbieter kann keine Bilder → Client fällt auf Anthropic zurück.
+    return jsonResponse(415, "vision_unsupported", "Provider does not support images", origin, env);
+  }
+  // Modellwahl: Foto oder Nicht-Haiku-Anfrage → starkes Modell, sonst schnell.
+  const tier = hasImage || !/haiku/i.test(String(payload.model || "")) ? "strong" : "fast";
+  const model = cfg.models[tier] || cfg.models.fast;
+  const maxTokens = Number(payload.max_tokens) || 1024;
+  const temperature = typeof payload.temperature === "number" ? payload.temperature : 0;
+
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), AI_PROVIDER_TIMEOUT_MS);
+  try {
+    let text;
+    if (cfg.type === "gemini") {
+      const geminiUrl =
+        cfg.url + encodeURIComponent(model) + ":generateContent?key=" + encodeURIComponent(apiKey);
+      const resp = await fetch(geminiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: anthropicToGeminiContents(messages),
+          generationConfig: { maxOutputTokens: maxTokens, temperature },
+        }),
+        signal: ctrl.signal,
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        const msg = (data && data.error && data.error.message) || "Provider error";
+        return jsonResponse(resp.status === 429 ? 429 : 502, "provider_error", msg, origin, env);
+      }
+      const cand = (data.candidates && data.candidates[0]) || null;
+      text = cand && cand.content && Array.isArray(cand.content.parts)
+        ? cand.content.parts.map((p) => p.text || "").join("")
+        : "";
+    } else {
+      const headers = { "Content-Type": "application/json", Authorization: "Bearer " + apiKey };
+      if (providerId === "openrouter") {
+        headers["HTTP-Referer"] = "https://hjolmes.github.io/nutritrack/";
+        headers["X-Title"] = "NutriTrack";
+      }
+      const resp = await fetch(cfg.url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          model,
+          max_tokens: maxTokens,
+          temperature,
+          messages: anthropicToOpenAiMessages(messages),
+        }),
+        signal: ctrl.signal,
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        const msg = (data && data.error && (data.error.message || data.error)) || "Provider error";
+        return jsonResponse(resp.status === 429 ? 429 : 502, "provider_error", String(msg), origin, env);
+      }
+      const choice = (data.choices && data.choices[0]) || null;
+      const content = choice && choice.message ? choice.message.content : "";
+      text = typeof content === "string"
+        ? content
+        : Array.isArray(content)
+          ? content.map((c) => (c && (c.text || c.content)) || "").join("")
+          : "";
+    }
+    // Antwort im Anthropic-Schema zurückgeben → Client-Parsing bleibt gleich.
+    return new Response(
+      JSON.stringify({ content: [{ type: "text", text: text || "" }] }),
+      {
+        status: 200,
+        headers: {
+          ...corsHeaders(origin, env),
+          "Content-Type": "application/json; charset=utf-8",
+          "Cache-Control": "no-store",
+        },
+      }
+    );
+  } catch (e) {
+    const aborted = e && e.name === "AbortError";
+    return jsonResponse(aborted ? 504 : 502, "provider_unreachable", aborted ? "Provider timed out" : "Provider request failed", origin, env);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get("Origin") || "";
@@ -826,7 +1025,7 @@ export default {
         feedbackConfigured: Boolean(env.GITHUB_TOKEN),
         workoutsConfigured: Boolean(env.SHARE_KV),
         decoderSecretConfigured: Boolean(env.DECODER_SECRET),
-        codeVersion: "v0.192-off-proxy",
+        codeVersion: "v0.193-ai-provider",
       });
     }
 
@@ -851,6 +1050,9 @@ export default {
     }
     if (request.method === "GET" && url.pathname === "/fetch") {
       return handleUrlProxy(request, origin, env);
+    }
+    if (request.method === "POST" && url.pathname === "/ai/messages") {
+      return handleAiProvider(request, origin, env);
     }
     if (request.method === "GET" && url.pathname.startsWith("/share/")) {
       return handleShareLookup(request, origin, env);

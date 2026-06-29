@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.192 (2026-06-28)
+**Stand:** v0.193 (2026-06-29)
 
 ## URLs
 
@@ -42,6 +42,7 @@
 - **Picker Foto-Analyse (v0.191):** `pickerAnalyze` (`picker.js`) skaliert das Foto auf **max. 1280 px** (JPEG 0.85) und ruft **`claude-sonnet-4-6`** mit `max_tokens:1024`, `temperature:0` und `getFotoPrompt()` auf. `getFotoPrompt()` liefert immer `DEFAULT_FOTO_PROMPT` (kein localStorage-Override) — Prompt-Änderungen greifen sofort, kein `PROMPT_VERSION`-Bump nötig. Prompt-Regeln: nur sichtbare Lebensmittel (keine Halluzination), Komponenten getrennt, höchstens eine verdeckte Beilage, Portions-Schätzung über Referenzgrößen, bei Screenshots angezeigte Gramm/kcal **exakt** übernehmen. `processOfflineQueue()` ruft denselben `pickerAnalyze`-Pfad → profitiert mit. Foto-Tab und Chat-mit-Foto (`claude-sonnet-4-6`) nutzen damit dasselbe aktuelle Modell.
 - **Picker KI-Fehlertexte (v0.180):** `pickerFriendlyAiError(err)` in `picker.js` mappt bekannte KI-/Proxy-Fehler (Kontingent/Billing, overloaded/rate-limit/429/529, nicht konfiguriert, offline) auf deutsche Texte; unbekannte Fehler unverändert. Genutzt in `pickerChatKiFallback` + Foto-Analyse-`onErr` (#121).
 - **OpenFoodFacts via eigenem Worker (v0.192):** Der Drittanbieter-CORS-Proxy `corsproxy.io` ist tot (Gratis-Zugang nur noch `localhost`), und OFF blockt anonyme Browser-Requests. Beides lief im Picker-Chat/-Suche zusammen → extreme Langsamkeit (jede Zutat fiel auf doppelte KI-Calls zurück). Fix: **alle** OFF-Aufrufe laufen jetzt serverseitig über den eigenen Worker — `GET /off?u=<OFF-URL>` (host-gesperrt auf `openfoodfacts.org`, korrekter `User-Agent`, OFF verlangt den). Rezept-Import-Link läuft über `GET /fetch?u=<URL>` (per `x-app-proxy-secret` abgesichert, SSRF-Guards, 512 KB Cap). Client: `offProxyUrl()`/`urlProxyUrl()` + `fetchT(url,opts,ms)` (AbortController-Timeout) in `index.html`; alle `fetch`-Stellen (`lookupNutrients`, `pickerFetchOnline`, Barcode-Lookup ×2, `recipeImportStart`, `pickerLinkImport`) sowie `callClaude` (25 s) haben jetzt harte Timeouts → ein hängender Dienst friert die App nicht mehr ein, sondern fällt schnell auf DB/KI-Schätzung zurück. **Worker muss neu deployt werden** (Action `Deploy Cloudflare Worker` bei Merge nach `main`, benötigt Repo-Secrets `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID`).
+- **Konfigurierbarer KI-Anbieter (v0.193):** Settings → „🤖 KI → KI-Anbieter": Dropdown (Anthropic-Standard, OpenAI, Gemini, OpenRouter, Mistral, DeepSeek) + Key-Eingabe. localStorage: `nt_ai_provider`, `nt_ai_key` (Key plaintext, nur lokal). Helfer in `index.html`: `AI_PROVIDERS`, `getAiProvider/setAiProvider`, `getAiProviderKey/setAiProviderKey`, `hasCustomAiProvider`. `callClaude` ist gesplittet: `_callAiProvider(provider,…)` zuerst, bei Fehler/Limit/leerem Ergebnis Fallback `_callAnthropic(…)` (Standard-Proxy `/v1/messages`). Fremd-Calls laufen über **Worker** `POST /ai/messages` (Header `x-app-proxy-secret`, `x-ai-provider`, `x-ai-key`) — der Worker übersetzt Anthropic-Format ↔ OpenAI-Chat bzw. Gemini und gibt die Antwort wieder im Anthropic-Schema zurück (`worker/src/index.js`: `handleAiProvider`, `AI_PROVIDERS`, `anthropicToOpenAiMessages`, `anthropicToGeminiContents`, `payloadHasImage`). Modellwahl serverseitig nach Tier: Foto/Nicht-Haiku → `strong`, sonst `fast`. Anbieter ohne Vision (DeepSeek) → bei Foto `415` → Client-Fallback auf Anthropic. **Worker muss neu deployt werden.** Kein neues Worker-Secret nötig (Key kommt vom Client).
 - **Sport-Sync (v0.158):** Erstes ausgelagertes Modul `js/health-sync.js` (klassisches `<script>` vor `</body>`, exportiert `window.NTHealth`). User generiert in „Mehr → Sport-Sync" ein 32-Zeichen-Token (Base58-ish, `localStorage.nt_health_token`), trägt es in eine iOS-Shortcut-Automation („wenn Training endet") oder Android HTTP Request Shortcut ein. Automation POSTet `{id, source, type, start, kcal, durationSec?, distanceM?, hrAvg?}` mit Header `X-User-Token` an Worker `POST /workout` (KV-Key `wo:<token>:<id>`, TTL 60d). PWA pollt `GET /workouts?since=<lastpoll>` bei `DOMContentLoaded` (mit 800ms Delay) und `visibilitychange→visible`, dedupliziert via `_healthId`-Marker, hängt Workouts in `S.days[<localDate>].exercise[]` an (Schema bleibt kompatibel zur manuellen Erfassung) — die existierende `burned`-Subtraktion in `renderAll()` zieht die Kalorien automatisch vom Tagesziel ab. `renderExercise()` zeigt für `_source`-Einträge ein kleines „Apple"/„Samsung"-Badge.
 
 ## Worker-Endpoints
@@ -50,6 +51,7 @@
 |---|---|
 | `GET /health` | Status + `codeVersion` |
 | `POST /v1/messages` | Anthropic-Proxy (Token-Auth) |
+| `POST /ai/messages` | Fremd-KI-Anbieter-Proxy (Header `x-ai-provider`/`x-ai-key`, Format-Übersetzung, Anthropic-Schema zurück) |
 | `POST /decode-barcode` | OSS-Decoder + optional Vision-Fallback |
 | `POST /share` / `GET /share/<id>` | KV-Shortener |
 | `GET /s/<id>` | Legacy-Redirect |
@@ -75,6 +77,7 @@
 
 ## Live-Test offen
 
+- v0.193 KI-Anbieter (**Voraussetzung: Worker neu deployt** — `/ai/messages` live): Settings → 🤖 KI → Anbieter „OpenAI" wählen, gültigen Key eintragen, speichern → Picker-Chat „Brot mit Käse" liefert Zutaten über OpenAI; Foto-Analyse nutzt das stärkere Modell des Anbieters. Ungültigen/abgelaufenen Key oder „DeepSeek" + Foto → automatischer Fallback auf Anthropic (Ergebnis kommt trotzdem). Anbieter wieder auf „Anthropic (Standard)" → Key-Feld verschwindet, alles wie vorher. Ohne gesetzten Anbieter: unverändertes Verhalten.
 - v0.192 Picker Chat & Suche: **Voraussetzung: Worker neu deployt** (`/off`, `/fetch` live — `GET …/off?u=…openfoodfacts.org/cgi/search.pl?...` muss OFF-JSON liefern, nicht 403/404). Dann: „Brot mit Käse" im Chat → Zutaten kommen zügig (kein langes Hängen); Lebensmittel-Suche (Picker-Suche-Tab) zeigt Online-Treffer mit 🌐-Badge; Barcode-Scan findet Produkt; Rezept-Import per Link funktioniert wieder. Bei Worker/OFF-Ausfall: schneller Fallback auf KI-Schätzung statt Einfrieren (#137-Performance)
 - v0.190 Picker Chat: „Weißwein", „2 Bier", „1 weiswein" (Tippfehler) und beliebige Einzel-Lebensmittel werden erfasst (Zutat erscheint, Nährwerte via DB/OpenFoodFacts/KI) — kein „Konnte nicht parsen" mehr; Mehr-Zutaten-Sätze („Brot mit Käse und Schinken") werden weiterhin korrekt zerlegt (#135)
 - v0.188 Einstellungen → Ernährung: „Eigene Präferenz" — Eingabefeld hat volle Restbreite, der „+ Hinzufügen"-Button sitzt kompakt rechts daneben (nicht mehr volle Zeile); nicht mit „Speichern ✓" unten verwechselbar (#134)
@@ -104,11 +107,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.187 | #133 | Einstellungen aufgeräumt: „Daten"-Tab → „🤖 KI" + „💾 Backup", Picker-Foto-Toggle zu Ernährung, doppelte Lebensmittel-Liste raus, Hilfe-Dedup, OneDrive-Banner-Label |
 | v0.188 | — | Fix: verrutschter „+ Hinzufügen"-Button im Ernährung-Tab (war volle Breite, drückte das Eingabefeld platt) (#134) |
 | v0.190 | — | Picker Chat: Lebensmittel-Erkennung generell robust — gehärteter Prompt + Sackgassen-Fallback statt „Konnte nicht parsen" (#135) |
 | v0.191 | — | Foto-Analyse: aktuelles Modell (Sonnet 4.6), höhere Auflösung (1280px), mehr Token, geschärfter Prompt |
 | v0.192 | — | Performance: `corsproxy.io` (tot) raus → OFF/Rezept-Import über eigenen Worker (`/off`, `/fetch`) + harte Timeouts auf allen externen Calls; behebt extreme Chat-Langsamkeit |
+| v0.193 | — | Konfigurierbarer KI-Anbieter: Dropdown (OpenAI/Gemini/OpenRouter/Mistral/DeepSeek) + eigener Key in Settings, eigener Key zuerst, Fallback auf Anthropic; Worker `/ai/messages` mit Format-Übersetzung |
 
 ---
 

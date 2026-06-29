@@ -656,7 +656,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.193</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.194</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -848,6 +848,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
           <button type="button" onclick="requestWeekReport()" id="weekReportBtn" style="font-size:12px;background:var(--g1);border:none;border-radius:999px;padding:6px 12px;color:white;font-weight:600;cursor:pointer;">Erstellen</button>
         </div>
         <div id="weekReportText" style="font-size:13px;color:var(--mu);line-height:1.6;margin-top:8px;"></div>
+        <div id="weekReportSource" style="margin-top:6px;"></div>
       </div>
       <div class="trend-card" id="offlineQueueWrap" style="display:none;">
         <div class="head"><h4>📷 Offline-Fotos</h4></div>
@@ -976,7 +977,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.193</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.194</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1054,7 +1055,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
         <div id="pickerPhotoStatus" class="hidden" style="background:var(--gl);border:1.5px solid var(--g3);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--g1);margin-bottom:10px;"></div>
         <button type="button" class="abt" id="pickerAnalyzeBtn" disabled onclick="pickerAnalyze()">📷 KI-Analyse starten</button>
         <div id="pickerPhotoResult" class="hidden" style="margin-top:10px;">
-          <div style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:6px;">Erkannte Zutaten</div>
+          <div style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:6px;">Erkannte Zutaten<span id="pickerPhotoSource"></span></div>
           <div style="margin-bottom:6px;">
             <label class="lbl" style="margin-bottom:4px;">Rezeptname (optional)</label>
             <input type="text" class="finp" id="pickerRecipeName" placeholder="z.B. Cheeseburger mit Pommes">
@@ -1978,7 +1979,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.193';
+var APP_VERSION='0.194';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -2029,6 +2030,19 @@ function getAiProviderKey(){return localStorage.getItem('nt_ai_key')||'';}
 function setAiProviderKey(k){if(k){localStorage.setItem('nt_ai_key',k);}else{localStorage.removeItem('nt_ai_key');}}
 // Eigener Anbieter aktiv? (≠ Anthropic UND Key hinterlegt)
 function hasCustomAiProvider(){var p=getAiProvider();return p!=='anthropic'&&!!getAiProviderKey();}
+// Welche KI hat zuletzt erfolgreich geantwortet (für das Ergebnis-Badge)?
+function _setLastAiSource(provider,model,fallback){window._lastAiSource={provider:provider,model:model||'',fallback:!!fallback,at:Date.now()};}
+function _friendlyModel(m){m=String(m||'');if(/haiku/i.test(m))return 'Claude Haiku';if(/sonnet/i.test(m))return 'Claude Sonnet';if(/opus/i.test(m))return 'Claude Opus';return m;}
+function aiSourceText(){
+  var s=window._lastAiSource;if(!s)return '';
+  var name=s.fallback?'Anthropic (Fallback)':(s.provider==='anthropic'?'Anthropic':_aiProviderMeta(s.provider).label.replace(/\s*\(.*\)$/,''));
+  var m=_friendlyModel(s.model);
+  return name+(m?(' · '+m):'');
+}
+function aiSourceBadgeHtml(){
+  var t=aiSourceText();if(!t)return '';
+  return '<span style="display:inline-block;font-size:10px;font-weight:600;color:var(--mu);background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 7px;margin-left:6px;vertical-align:middle;white-space:nowrap;">über '+esc(t)+'</span>';
+}
 
 // ── OneDrive PKCE Config ──
 var OD_CLIENT_ID='ae62274b-87de-4369-b1e5-9d6e45a724f4';
@@ -2049,6 +2063,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.194',items:[
+    {icon:'🔖',text:'Du siehst jetzt, welche KI tatsächlich geantwortet hat: Am Ergebnis (Picker-Chat, Foto-Erkennung, Wochenbericht) erscheint ein kleines Badge „über …" mit Anbieter und Modell. Springt bei einem Limit oder Fehler der Anthropic-Fallback ein, zeigt das Badge das ebenfalls an.',where:'Picker · Chat & Foto · Trends'},
+  ]},
   {v:'0.193',items:[
     {icon:'🤖',text:'Du kannst jetzt selbst wählen, welche KI deine Schätzungen übernimmt: Unter „⚙️ → 🤖 KI → KI-Anbieter" einen Anbieter (OpenAI, Google Gemini, OpenRouter, Mistral, DeepSeek) auswählen und den eigenen API-Key eintragen. Dieser wird dann zuerst genutzt; ist das Kontingent aufgebraucht oder kommt kein Ergebnis, schaltet NutriTrack automatisch auf Anthropic (Standard) zurück. Ohne eigenen Key bleibt alles wie bisher.',where:'Einstellungen · KI'},
   ]},
@@ -3343,19 +3360,20 @@ function callClaude(model,content,maxTok,onOk,onErr){
   // Ergebnis transparent auf Anthropic (Standard-Proxy) zurückfallen.
   if(hasCustomAiProvider()){
     _callAiProvider(getAiProvider(),model,content,maxTok,onOk,function(){
-      _callAnthropic(model,content,maxTok,onOk,onErr);
+      _callAnthropic(model,content,maxTok,onOk,onErr,true);
     });
   }else{
-    _callAnthropic(model,content,maxTok,onOk,onErr);
+    _callAnthropic(model,content,maxTok,onOk,onErr,false);
   }
 }
-function _callAnthropic(model,content,maxTok,onOk,onErr){
+function _callAnthropic(model,content,maxTok,onOk,onErr,isFallback){
   fetchT(PROJECT_AI_PROXY_URL,{
     method:'POST',
     headers:{'Content-Type':'application/json','x-app-proxy-secret':getProxySecret()},
     body:JSON.stringify({model:model,max_tokens:maxTok,temperature:0,messages:[{role:'user',content:content}]})
   },25000).then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error((d.error&&d.error.message)||d.error||('HTTP '+r.status));return d;});}).then(function(d){
     if(d.error)throw new Error(d.error.message);
+    _setLastAiSource('anthropic',model,!!isFallback);
     onOk((d.content||[]).map(function(c){return c.text||'';}).join(''));
   }).catch(function(e){onErr(e.name==='AbortError'?'Zeitüberschreitung – bitte erneut versuchen':(e.message||'Fehler'));});
 }
@@ -3371,6 +3389,7 @@ function _callAiProvider(provider,model,content,maxTok,onOk,onErr){
     if(d.error)throw new Error(d.error.message);
     var txt=(d.content||[]).map(function(c){return c.text||'';}).join('');
     if(!txt.trim()){onErr('Leeres Ergebnis');return;} // kein Ergebnis → Fallback
+    _setLastAiSource(d._provider||provider,d._model||'',false);
     onOk(txt);
   }).catch(function(e){onErr(e.message||'Fehler');});
 }
@@ -4867,6 +4886,8 @@ function requestWeekReport(){
     function(text){
       var el=document.getElementById('weekReportText');
       if(el)el.textContent=text.trim();
+      var srcEl=document.getElementById('weekReportSource');
+      if(srcEl)srcEl.innerHTML=aiSourceBadgeHtml();
       if(btn){btn.disabled=false;btn.textContent='Aktualisieren';}
     },
     function(err){if(btn){btn.disabled=false;btn.textContent='Erstellen';}showToast('Fehler: '+err);}

@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.194 (2026-06-29)
+**Stand:** v0.195 (2026-06-29)
 
 ## URLs
 
@@ -73,10 +73,11 @@
 
 `manifest.json`: `handle_links: "preferred"`, `launch_handler.client_mode: "navigate-existing"`.
 
-`sw.js`: SKIP-Liste enthält `workers.dev`, `is.gd`, `v.gd`, `unpkg.com`.
+`sw.js`: SKIP-Liste enthält `workers.dev`, `is.gd`, `v.gd`, `unpkg.com`. **Asset-Strategie:** `index.html` network-first, restliche `CORE_ASSETS` (u.a. `picker.js`, `js/*`) cache-first. `install` cacht die Core-Assets per `fetch(new Request(u,{cache:'reload'}))`+`c.put` (v0.195) — **nicht** `cache.add()`, da das den Browser-HTTP-Cache nutzt und sonst eine alte `picker.js` in den neuen versionierten Cache schreiben kann, während `index.html` schon aktuell ist (führte zu „Badge fehlt", weil index.html neu / picker.js alt).
 
 ## Live-Test offen
 
+- v0.195 SW-Asset-Fix: Auf bestehendem Gerät (das v0.194 mit fehlendem Badge zeigte) App neu laden → nach SW-Update (0.195) erscheint im Picker-Chat das Badge „über Anthropic · Claude Haiku" hinter „N Zutaten erkannt" (bzw. der gewählte Anbieter). Bestätigt damit, dass `picker.js` nicht mehr veraltet aus dem Cache kommt.
 - v0.194 KI-Badge (**Voraussetzung: Worker neu deployt** für Fremd-Anbieter-Modell im Badge): Eigenen Anbieter setzen → Picker-Chat/Foto/Wochenbericht zeigt am Ergebnis „über OpenAI · gpt-4o" o.ä.; bei Limit/Fehler steht „über Anthropic (Fallback) · Claude …"; ohne eigenen Anbieter „über Anthropic · Claude Haiku/Sonnet".
 - v0.193 KI-Anbieter (**Voraussetzung: Worker neu deployt** — `/ai/messages` live): Settings → 🤖 KI → Anbieter „OpenAI" wählen, gültigen Key eintragen, speichern → Picker-Chat „Brot mit Käse" liefert Zutaten über OpenAI; Foto-Analyse nutzt das stärkere Modell des Anbieters. Ungültigen/abgelaufenen Key oder „DeepSeek" + Foto → automatischer Fallback auf Anthropic (Ergebnis kommt trotzdem). Anbieter wieder auf „Anthropic (Standard)" → Key-Feld verschwindet, alles wie vorher. Ohne gesetzten Anbieter: unverändertes Verhalten.
 - v0.192 Picker Chat & Suche: **Voraussetzung: Worker neu deployt** (`/off`, `/fetch` live — `GET …/off?u=…openfoodfacts.org/cgi/search.pl?...` muss OFF-JSON liefern, nicht 403/404). Dann: „Brot mit Käse" im Chat → Zutaten kommen zügig (kein langes Hängen); Lebensmittel-Suche (Picker-Suche-Tab) zeigt Online-Treffer mit 🌐-Badge; Barcode-Scan findet Produkt; Rezept-Import per Link funktioniert wieder. Bei Worker/OFF-Ausfall: schneller Fallback auf KI-Schätzung statt Einfrieren (#137-Performance)
@@ -108,11 +109,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.190 | — | Picker Chat: Lebensmittel-Erkennung generell robust — gehärteter Prompt + Sackgassen-Fallback statt „Konnte nicht parsen" (#135) |
-| v0.191 | — | Foto-Analyse: aktuelles Modell (Sonnet 4.6), höhere Auflösung (1280px), mehr Token, geschärfter Prompt |
-| v0.192 | — | Performance: `corsproxy.io` (tot) raus → OFF/Rezept-Import über eigenen Worker (`/off`, `/fetch`) + harte Timeouts auf allen externen Calls; behebt extreme Chat-Langsamkeit |
+| v0.191 | #137 | Foto-Analyse: aktuelles Modell (Sonnet 4.6), höhere Auflösung (1280px), mehr Token, geschärfter Prompt |
+| v0.192 | #139 | Performance: `corsproxy.io` (tot) raus → OFF/Rezept-Import über eigenen Worker (`/off`, `/fetch`) + harte Timeouts; behebt extreme Chat-Langsamkeit |
 | v0.193 | #140 | Konfigurierbarer KI-Anbieter: Dropdown (OpenAI/Gemini/OpenRouter/Mistral/DeepSeek) + eigener Key in Settings, eigener Key zuerst, Fallback auf Anthropic; Worker `/ai/messages` mit Format-Übersetzung |
-| v0.194 | — | Badge „über <Anbieter · Modell>" am KI-Ergebnis (Chat, Foto, Wochenbericht); Worker liefert `_provider`/`_model`, markiert auch Anthropic-Fallback |
+| v0.194 | #141 | Badge „über <Anbieter · Modell>" am KI-Ergebnis (Chat, Foto, Wochenbericht); Worker liefert `_provider`/`_model`, markiert auch Anthropic-Fallback |
+| v0.195 | — | Fix: Service Worker cacht Core-Assets jetzt per `fetch({cache:'reload'})` statt `cache.add()` → keine alte `picker.js` mehr neben neuem `index.html` (Badge fehlte) |
 
 ---
 

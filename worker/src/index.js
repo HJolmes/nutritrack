@@ -987,8 +987,9 @@ async function handleAiProvider(request, origin, env) {
           : "";
     }
     // Antwort im Anthropic-Schema zurückgeben → Client-Parsing bleibt gleich.
+    // _provider/_model verraten dem Client, welche KI tatsächlich geantwortet hat.
     return new Response(
-      JSON.stringify({ content: [{ type: "text", text: text || "" }] }),
+      JSON.stringify({ content: [{ type: "text", text: text || "" }], _provider: providerId, _model: model }),
       {
         status: 200,
         headers: {
@@ -1025,7 +1026,7 @@ export default {
         feedbackConfigured: Boolean(env.GITHUB_TOKEN),
         workoutsConfigured: Boolean(env.SHARE_KV),
         decoderSecretConfigured: Boolean(env.DECODER_SECRET),
-        codeVersion: "v0.193-ai-provider",
+        codeVersion: "v0.194-ai-badge",
       });
     }
 

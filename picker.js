@@ -1007,6 +1007,7 @@ function pickerAnalyze(){
   var btn=document.getElementById('pickerAnalyzeBtn');
   btn.disabled=true;btn.innerHTML='<span style="display:inline-flex;gap:5px;align-items:center;"><span class="spin"></span>KI analysiert...</span>';
   pickerSetPhotoStatus('KI analysiert das Foto...',false);
+  var _srcEl=document.getElementById('pickerPhotoSource');if(_srcEl)_srcEl.innerHTML='';
   var prompt=getFotoPrompt();
   callClaude('claude-sonnet-4-6',[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:window._pickerPhotoB64}},{type:'text',text:prompt}],1024,
     function(text){
@@ -1024,6 +1025,8 @@ function pickerAnalyze(){
         checkGramPlausibility(resolved);
         pickerIngredients=resolved;
         pickerShowPhotoResult(parsed.rezept);
+        var srcEl=document.getElementById('pickerPhotoSource');
+        if(srcEl)srcEl.innerHTML=(typeof aiSourceBadgeHtml==='function')?aiSourceBadgeHtml():'';
         pickerSetPhotoStatus('',false);
       });
     },
@@ -1277,7 +1280,8 @@ function pickerChatKiFallback(msg){
         if(clean&&clean.split(/\s+/).length<=4){raw=[{name:clean,g:null}];}
         else{msgs.innerHTML+='<div class="cm a">❌ Konnte nicht parsen. Genauer beschreiben.</div>';document.getElementById('pickerChatSend').disabled=false;return;}
       }
-      msgs.innerHTML+='<div class="cm a">✨ '+raw.length+' Zutaten erkannt. Suche Nährwerte...</div>';
+      var _src=(typeof aiSourceBadgeHtml==='function')?aiSourceBadgeHtml():'';
+      msgs.innerHTML+='<div class="cm a">✨ '+raw.length+' Zutaten erkannt'+_src+'. Suche Nährwerte...</div>';
       msgs.scrollTop=msgs.scrollHeight;
       lookupNutrients(raw,function(resolved){
         pickerIngredients=resolved;

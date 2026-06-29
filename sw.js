@@ -1,6 +1,6 @@
 // NutriTrack Service Worker
 // Version wird bei jedem Release hochgezählt - löst automatisches Update aus
-var VERSION = '0.194';
+var VERSION = '0.195';
 var CACHE = 'nt-' + VERSION;
 var SKIP = ['workers.dev','corsproxy.io','openfoodfacts.org','fonts.googleapis.com','fonts.gstatic.com','unpkg.com','esm.sh','jsdelivr.net','is.gd','v.gd'];
 // Kern-Assets, die für den Offline-Betrieb vorab gecacht werden. Relativ zur
@@ -11,11 +11,21 @@ self.addEventListener('install', function(e) {
   // Sofort aktivieren ohne auf alte Tabs zu warten
   self.skipWaiting();
   // Kern-Assets vorab cachen, damit die PWA auch bei Erst-Nutzung offline läuft.
+  // WICHTIG: {cache:'reload'} erzwingt frische Netzwerk-Kopien. Sonst kann der
+  // Browser-HTTP-Cache (GitHub Pages liefert max-age) eine ALTE Asset-Version —
+  // z.B. picker.js — in den neuen, versionierten SW-Cache schreiben, obwohl das
+  // network-first geladene index.html bereits aktuell ist. Das führte dazu, dass
+  // index.html (neu) und picker.js (alt) auseinanderliefen. cache.add() nutzt den
+  // HTTP-Cache und ist daher hier ungeeignet → manueller fetch+put mit reload.
   // Best-effort pro Asset (allSettled) — ein einzelner Fehlschlag bricht die
   // Installation nicht ab.
   e.waitUntil(
     caches.open(CACHE).then(function(c) {
-      return Promise.allSettled(CORE_ASSETS.map(function(u) { return c.add(u); }));
+      return Promise.allSettled(CORE_ASSETS.map(function(u) {
+        return fetch(new Request(u, { cache: 'reload' })).then(function(r) {
+          if (r && r.ok) return c.put(u, r);
+        });
+      }));
     }).catch(function() {})
   );
 });

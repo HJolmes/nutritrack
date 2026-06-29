@@ -656,7 +656,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.192</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.193</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -976,7 +976,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.192</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.193</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1834,6 +1834,19 @@ button,input,select,textarea{font-family:var(--fs-body);}
           <button type="button" class="seb" onclick="saveProxyPwFromSettings()">Passwort speichern ✓</button>
         </div>
         <div style="padding-top:12px;border-top:1px solid var(--br);margin-top:12px;">
+          <label class="lbl" style="margin-bottom:8px;">🤖 KI-Anbieter</label>
+          <div style="font-size:12px;color:var(--mu);line-height:1.5;margin-bottom:8px;">Wähle, an welchen KI-Anbieter die Schätzungen (Foto-Erkennung, Chat, Wochenbericht) gehen. Mit eigenem API-Key wird dieser <b>zuerst</b> genutzt; ist das Kontingent aufgebraucht oder kommt kein Ergebnis, fällt NutriTrack automatisch auf Anthropic (Standard) zurück. Der Key wird nur auf diesem Gerät gespeichert.</div>
+          <select id="aiProviderSelect" onchange="onAiProviderChange()"
+            style="width:100%;box-sizing:border-box;padding:10px 12px;border:2px solid var(--br);border-radius:10px;font-size:14px;outline:none;margin-bottom:8px;background:#fff;"></select>
+          <div id="aiProviderKeyWrap" style="display:none;">
+            <input type="password" id="aiProviderKeyInput" placeholder="API-Key des Anbieters" autocomplete="off"
+              style="width:100%;box-sizing:border-box;padding:10px 12px;border:2px solid var(--br);border-radius:10px;font-size:14px;outline:none;margin-bottom:8px;"
+              onkeydown="if(event.key==='Enter')saveAiProviderSettings()">
+          </div>
+          <div id="aiProviderHint" style="font-size:11px;color:var(--mu);line-height:1.5;margin-bottom:8px;"></div>
+          <button type="button" class="seb" onclick="saveAiProviderSettings()">Anbieter speichern ✓</button>
+        </div>
+        <div style="padding-top:12px;border-top:1px solid var(--br);margin-top:12px;">
           <label class="lbl" style="margin-bottom:8px;">🛠 KI-Prompts</label>
           <div style="font-size:12px;color:var(--mu);margin-bottom:8px;">Sieh dir die Anweisungen an, die NutriTrack an die KI schickt.</div>
           <button type="button" class="seb" onclick="openPromptSettings()">⚙️ KI-Prompts anzeigen</button>
@@ -1965,9 +1978,12 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.192';
+var APP_VERSION='0.193';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
+// Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
+// serverseitig), der eigene Anbieter-Key wird pro Request mitgeschickt.
+var PROJECT_AI_PROVIDER_URL=PROJECT_WORKER_BASE+'/ai/messages';
 // OpenFoodFacts + Rezept-Seiten laufen über den eigenen Worker statt über den
 // ausgefallenen Drittanbieter corsproxy.io. /off ist host-gesperrt auf OFF,
 // /fetch ist per Proxy-Secret abgesichert.
@@ -1993,6 +2009,27 @@ function _sha256hex(str){
 function getProxySecret(){return localStorage.getItem('nt_proxy_pw')||'';}
 function setProxySecret(pw){return _sha256hex(pw).then(function(h){localStorage.setItem('nt_proxy_pw',h);return h;});}
 
+// ── Konfigurierbarer KI-Anbieter ──────────────────────────────────────────
+// Standard = Anthropic über den eingebauten Proxy (kein eigener Key nötig).
+// Bei gewähltem Fremd-Anbieter + Key wird dieser zuerst genutzt; bei Limit,
+// Fehler oder leerem Ergebnis fällt callClaude automatisch auf Anthropic zurück.
+// Der Key wird nur lokal (localStorage) auf diesem Gerät gespeichert.
+var AI_PROVIDERS=[
+  {id:'anthropic',label:'Anthropic (Standard)',keyless:true,models:'Claude Haiku/Sonnet'},
+  {id:'openai',label:'OpenAI (GPT)',models:'gpt-4o-mini / gpt-4o'},
+  {id:'gemini',label:'Google Gemini',models:'gemini-2.0-flash'},
+  {id:'openrouter',label:'OpenRouter',models:'gpt-4o-mini / gpt-4o'},
+  {id:'mistral',label:'Mistral',models:'mistral-small / pixtral'},
+  {id:'deepseek',label:'DeepSeek',models:'deepseek-chat (ohne Foto)'}
+];
+function _aiProviderMeta(id){for(var i=0;i<AI_PROVIDERS.length;i++){if(AI_PROVIDERS[i].id===id)return AI_PROVIDERS[i];}return AI_PROVIDERS[0];}
+function getAiProvider(){var p=localStorage.getItem('nt_ai_provider')||'anthropic';return _aiProviderMeta(p).id;}
+function setAiProvider(p){localStorage.setItem('nt_ai_provider',_aiProviderMeta(p).id);}
+function getAiProviderKey(){return localStorage.getItem('nt_ai_key')||'';}
+function setAiProviderKey(k){if(k){localStorage.setItem('nt_ai_key',k);}else{localStorage.removeItem('nt_ai_key');}}
+// Eigener Anbieter aktiv? (≠ Anthropic UND Key hinterlegt)
+function hasCustomAiProvider(){var p=getAiProvider();return p!=='anthropic'&&!!getAiProviderKey();}
+
 // ── OneDrive PKCE Config ──
 var OD_CLIENT_ID='ae62274b-87de-4369-b1e5-9d6e45a724f4';
 var OD_REDIRECT=location.origin+'/nutritrack/';
@@ -2012,6 +2049,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.193',items:[
+    {icon:'🤖',text:'Du kannst jetzt selbst wählen, welche KI deine Schätzungen übernimmt: Unter „⚙️ → 🤖 KI → KI-Anbieter" einen Anbieter (OpenAI, Google Gemini, OpenRouter, Mistral, DeepSeek) auswählen und den eigenen API-Key eintragen. Dieser wird dann zuerst genutzt; ist das Kontingent aufgebraucht oder kommt kein Ergebnis, schaltet NutriTrack automatisch auf Anthropic (Standard) zurück. Ohne eigenen Key bleibt alles wie bisher.',where:'Einstellungen · KI'},
+  ]},
   {v:'0.192',items:[
     {icon:'⚡',text:'Lebensmittel-Suche & Chat wieder schnell: Der externe Dienst, über den die Nährwerte von OpenFoodFacts geladen wurden, hatte seinen Gratis-Zugang abgeschaltet — dadurch wurde besonders der Picker-Chat extrem langsam. Die Nährwert-Abfrage läuft jetzt direkt über den eigenen Server, mit Zeitlimit, damit nichts mehr einfriert. Auch der Rezept-Import per Link funktioniert wieder.',where:'Picker · Chat & Suche'},
   ]},
@@ -2591,6 +2631,54 @@ function saveProxyPwFromSettings(){
     if(aiStatus)aiStatus.textContent='Passwort gesetzt ✓';
     showToast('Proxy-Passwort gespeichert');
   });
+}
+// ── KI-Anbieter-Einstellungen ──
+function renderAiProviderSettings(){
+  var sel=document.getElementById('aiProviderSelect');
+  if(sel){
+    if(!sel.options.length){
+      AI_PROVIDERS.forEach(function(p){
+        var o=document.createElement('option');o.value=p.id;o.textContent=p.label;sel.appendChild(o);
+      });
+    }
+    sel.value=getAiProvider();
+  }
+  var key=document.getElementById('aiProviderKeyInput');
+  if(key)key.value=getAiProviderKey();
+  onAiProviderChange();
+}
+function onAiProviderChange(){
+  var sel=document.getElementById('aiProviderSelect');
+  var wrap=document.getElementById('aiProviderKeyWrap');
+  var hint=document.getElementById('aiProviderHint');
+  if(!sel)return;
+  var meta=_aiProviderMeta(sel.value);
+  if(wrap)wrap.style.display=meta.keyless?'none':'block';
+  if(hint){
+    if(meta.keyless){
+      hint.textContent='Standard – läuft über den eingebauten Proxy, kein eigener Key nötig.';
+    }else{
+      var saved=(getAiProvider()===meta.id&&getAiProviderKey())?' · aktiver Key gespeichert ✓':'';
+      hint.textContent='Modelle: '+meta.models+' · Fallback bei Limit/Fehler: Anthropic'+saved;
+    }
+  }
+}
+function saveAiProviderSettings(){
+  var sel=document.getElementById('aiProviderSelect');
+  var key=document.getElementById('aiProviderKeyInput');
+  var p=sel?sel.value:'anthropic';
+  var meta=_aiProviderMeta(p);
+  if(meta.keyless){
+    setAiProvider('anthropic');setAiProviderKey('');
+    if(key)key.value='';
+    showToast('KI-Anbieter: Anthropic (Standard)');
+  }else{
+    var k=key?key.value.trim():'';
+    if(!k){showToast('Bitte API-Key eingeben');return;}
+    setAiProvider(p);setAiProviderKey(k);
+    showToast('KI-Anbieter gespeichert: '+meta.label);
+  }
+  onAiProviderChange();
 }
 function showMain(){
   document.getElementById('setupScreen').classList.remove('active');
@@ -3251,14 +3339,40 @@ function parsePhotoResponse(text){
 // ════════════════════════════════════════
 function callClaude(model,content,maxTok,onOk,onErr){
   if(!canUseAi()){onErr('KI Proxy nicht konfiguriert');return;}
+  // Eigener Anbieter konfiguriert → zuerst versuchen, bei Limit/Fehler/leerem
+  // Ergebnis transparent auf Anthropic (Standard-Proxy) zurückfallen.
+  if(hasCustomAiProvider()){
+    _callAiProvider(getAiProvider(),model,content,maxTok,onOk,function(){
+      _callAnthropic(model,content,maxTok,onOk,onErr);
+    });
+  }else{
+    _callAnthropic(model,content,maxTok,onOk,onErr);
+  }
+}
+function _callAnthropic(model,content,maxTok,onOk,onErr){
   fetchT(PROJECT_AI_PROXY_URL,{
     method:'POST',
     headers:{'Content-Type':'application/json','x-app-proxy-secret':getProxySecret()},
     body:JSON.stringify({model:model,max_tokens:maxTok,temperature:0,messages:[{role:'user',content:content}]})
   },25000).then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error((d.error&&d.error.message)||d.error||('HTTP '+r.status));return d;});}).then(function(d){
     if(d.error)throw new Error(d.error.message);
-    onOk(d.content.map(function(c){return c.text||'';}).join(''));
+    onOk((d.content||[]).map(function(c){return c.text||'';}).join(''));
   }).catch(function(e){onErr(e.name==='AbortError'?'Zeitüberschreitung – bitte erneut versuchen':(e.message||'Fehler'));});
+}
+// Ruft den gewählten Fremd-Anbieter über den Worker auf. Der Worker übersetzt
+// das Anthropic-Format und liefert es im selben Schema zurück. onErr triggert
+// im Aufrufer den Anthropic-Fallback (Limit/Fehler/Timeout/leeres Ergebnis).
+function _callAiProvider(provider,model,content,maxTok,onOk,onErr){
+  fetchT(PROJECT_AI_PROVIDER_URL,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-app-proxy-secret':getProxySecret(),'x-ai-provider':provider,'x-ai-key':getAiProviderKey()},
+    body:JSON.stringify({model:model,max_tokens:maxTok,temperature:0,messages:[{role:'user',content:content}]})
+  },25000).then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error((d.error&&d.error.message)||d.error||('HTTP '+r.status));return d;});}).then(function(d){
+    if(d.error)throw new Error(d.error.message);
+    var txt=(d.content||[]).map(function(c){return c.text||'';}).join('');
+    if(!txt.trim()){onErr('Leeres Ergebnis');return;} // kein Ergebnis → Fallback
+    onOk(txt);
+  }).catch(function(e){onErr(e.message||'Fehler');});
 }
 
 // ════════════════════════════════════════
@@ -4039,6 +4153,7 @@ function openSettings(){
   if(aiStatus)aiStatus.textContent=getProxySecret()?'Passwort gesetzt ✓':'Noch kein Passwort – KI nicht verfügbar';
   var settPwInput=document.getElementById('settProxyPwInput');
   if(settPwInput)settPwInput.value='';
+  renderAiProviderSettings();
   settSetTab('profil');
   openOv('settOv');
 }

@@ -12,20 +12,39 @@
 <link rel="apple-touch-icon" href="/nutritrack/icon.svg">
 <title>NutriTrack</title>
 <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
-<script type="module">
-  // zxing-wasm: modern C++ ZXing port (~10× schneller und robuster als JS-Port).
-  // iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
-  // den langsamen JS-Decoder. Bei Ladefehler fällt picker.js auf @zxing/library zurück.
-  import("https://esm.sh/zxing-wasm@2/reader").then(function(m){
-    window.ZXingWasm={readBarcodes:m.readBarcodes};
+<!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
+     iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
+     den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
+     cache-first ausgeliefert) statt per esm.sh-Import, damit der Scanner nicht
+     bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
+     IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
+     @zxing/library zurück. -->
+<script src="js/zxing/zxing-reader.iife.js"></script>
+<script>
+  (function(){
+    if(typeof ZXingWASM==='undefined'){console.warn('zxing-wasm load failed, ZXing-JS fallback aktiv');return;}
+    // .wasm lokal laden statt vom CDN – sonst hängt der erste Scan am Netz.
+    try{ZXingWASM.setZXingModuleOverrides({locateFile:function(){return 'js/zxing/zxing_reader.wasm';}});}catch(e){}
+    // zxing-wasm v2 nimmt ImageData/Blob, KEIN <canvas>. picker.js übergibt aber
+    // ein Canvas – daher hier zentral zu ImageData konvertieren. (Vorher lief der
+    // Canvas-Aufruf ins Leere/„Invalid input type" und wurde verschluckt → der
+    // WASM-Decoder trug faktisch nie bei. Jetzt liefert er echte Treffer.)
+    window.ZXingWasm={readBarcodes:function(input,opts){
+      if(input&&typeof input.getContext==='function'){
+        try{input=input.getContext('2d').getImageData(0,0,input.width,input.height);}catch(e){}
+      }
+      return ZXingWASM.readBarcodes(input,opts);
+    }};
     // Pre-warm: kompiliert das WASM-Modul jetzt, damit der erste Scan-Frame nicht wartet.
     var c=document.createElement('canvas');c.width=1;c.height=1;
-    m.readBarcodes(c,{formats:['EAN-13'],tryHarder:false}).catch(function(){});
-  }).catch(function(e){console.warn('zxing-wasm load failed, ZXing-JS fallback aktiv',e);});
-
+    try{window.ZXingWasm.readBarcodes(c,{formats:['EAN-13'],tryHarder:false}).catch(function(){});}catch(e){}
+  })();
+</script>
+<script type="module">
   // zbar-wasm: zweiter robuster Barcode-Decoder (gleiche Library wie OpenFoodFacts-App).
   // Andere Algorithmen als ZXing – oft erfolgreich bei schlechtem Kontrast oder
-  // kleinen 1D-Codes, wo ZXing aufgibt. Läuft parallel zu zxing-wasm.
+  // kleinen 1D-Codes, wo ZXing aufgibt. Optionaler Zusatz-Decoder, weiterhin per
+  // esm.sh (best effort) – fehlt er, läuft der Scan über zxing-wasm.
   import("https://esm.sh/@undecaf/zbar-wasm@0.10.1").then(function(m){
     window.ZBarWasm={scanImageData:m.scanImageData};
   }).catch(function(e){console.warn('zbar-wasm load failed',e);});
@@ -656,7 +675,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.195</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.196</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -977,7 +996,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.195</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.196</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1979,7 +1998,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.195';
+var APP_VERSION='0.196';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -2063,6 +2082,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.196',items:[
+    {icon:'⚡',text:'Barcode-Scanner startet jetzt deutlich schneller, vor allem auf dem iPhone: Der Decoder wird mit der App ausgeliefert und gecacht, statt bei jedem Scan sekundenlang aus dem Netz nachzuladen. Funktioniert dadurch auch offline.',where:'Mahlzeit → ＋ → Barcode'},
+  ]},
   {v:'0.194',items:[
     {icon:'🔖',text:'Du siehst jetzt, welche KI tatsächlich geantwortet hat: Am Ergebnis (Picker-Chat, Foto-Erkennung, Wochenbericht) erscheint ein kleines Badge „über …" mit Anbieter und Modell. Springt bei einem Limit oder Fehler der Anthropic-Fallback ein, zeigt das Badge das ebenfalls an.',where:'Picker · Chat & Foto · Trends'},
   ]},

@@ -635,8 +635,10 @@ function pickerStartScan(){
         },'ZXing-JS+ZBar');
       }
 
-      // Polling auf 15s erhöht – auf iOS Safari mit mobiler Verbindung kann
-      // esm.sh 5–10s brauchen, vorher haben wir vorzeitig auf JS-Fallback gewechselt.
+      // zxing-wasm wird seit v0.196 lokal als synchrones <script> geladen
+      // (js/zxing/), ist also normalerweise schon vor dem ersten Scan bereit.
+      // Das kurze Polling deckt nur den seltenen Fall ab, dass das lokale
+      // Script gar nicht lud – dann zügig (2s) auf den ZXing-JS-Fallback.
       function startWasmOrFallback(){
         if(!pickerBcActive)return;
         if(window.ZXingWasm&&window.ZXingWasm.readBarcodes){startZXingWasm();return;}
@@ -645,7 +647,7 @@ function pickerStartScan(){
           if(!pickerBcActive){clearInterval(poll);return;}
           waited+=100;
           if(window.ZXingWasm&&window.ZXingWasm.readBarcodes){clearInterval(poll);startZXingWasm();}
-          else if(waited>=15000){clearInterval(poll);startZXingJs();}
+          else if(waited>=2000){clearInterval(poll);startZXingJs();}
         },100);
       }
 

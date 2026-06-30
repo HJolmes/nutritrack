@@ -1,11 +1,11 @@
 // NutriTrack Service Worker
 // Version wird bei jedem Release hochgezählt - löst automatisches Update aus
-var VERSION = '0.195';
+var VERSION = '0.196';
 var CACHE = 'nt-' + VERSION;
 var SKIP = ['workers.dev','corsproxy.io','openfoodfacts.org','fonts.googleapis.com','fonts.gstatic.com','unpkg.com','esm.sh','jsdelivr.net','is.gd','v.gd'];
 // Kern-Assets, die für den Offline-Betrieb vorab gecacht werden. Relativ zur
 // SW-Position (/nutritrack/), damit der GitHub-Pages-Pfad korrekt aufgelöst wird.
-var CORE_ASSETS = ['./','index.html','picker.js','js/health-sync.js','manifest.json','icon.svg'];
+var CORE_ASSETS = ['./','index.html','picker.js','js/health-sync.js','js/zxing/zxing-reader.iife.js','js/zxing/zxing_reader.wasm','manifest.json','icon.svg'];
 
 self.addEventListener('install', function(e) {
   // Sofort aktivieren ohne auf alte Tabs zu warten

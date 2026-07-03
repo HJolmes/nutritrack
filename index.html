@@ -999,7 +999,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.198</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.199</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -2002,7 +2002,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.198';
+var APP_VERSION='0.199';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -2031,13 +2031,14 @@ function _sha256hex(str){
   });
 }
 function getProxySecret(){return localStorage.getItem('nt_proxy_pw')||'';}
-function setProxySecret(pw){return _sha256hex(pw).then(function(h){localStorage.setItem('nt_proxy_pw',h);return h;});}
+function setProxySecret(pw){return _sha256hex(pw).then(function(h){localStorage.setItem('nt_proxy_pw',h);_aiKeyEncRefresh();_aiKeyEncTryDecrypt();return h;});}
 
 // ── Konfigurierbarer KI-Anbieter ──────────────────────────────────────────
 // Standard = Anthropic über den eingebauten Proxy (kein eigener Key nötig).
 // Bei gewähltem Fremd-Anbieter + Key wird dieser zuerst genutzt; bei Limit,
 // Fehler oder leerem Ergebnis fällt callClaude automatisch auf Anthropic zurück.
-// Der Key wird nur lokal (localStorage) auf diesem Gerät gespeichert.
+// Der Klartext-Key liegt nur lokal (localStorage); in Backups wandert er
+// ausschließlich AES-GCM-verschlüsselt (siehe _aiKeyEnc*-Helfer unten).
 var AI_PROVIDERS=[
   {id:'anthropic',label:'Anthropic (Standard)',keyless:true,models:'Claude Haiku/Sonnet'},
   {id:'openai',label:'OpenAI (GPT)',models:'gpt-4o-mini / gpt-4o'},
@@ -2050,7 +2051,79 @@ function _aiProviderMeta(id){for(var i=0;i<AI_PROVIDERS.length;i++){if(AI_PROVID
 function getAiProvider(){var p=localStorage.getItem('nt_ai_provider')||'anthropic';return _aiProviderMeta(p).id;}
 function setAiProvider(p){localStorage.setItem('nt_ai_provider',_aiProviderMeta(p).id);}
 function getAiProviderKey(){return localStorage.getItem('nt_ai_key')||'';}
-function setAiProviderKey(k){if(k){localStorage.setItem('nt_ai_key',k);}else{localStorage.removeItem('nt_ai_key');}}
+function setAiProviderKey(k){if(k){localStorage.setItem('nt_ai_key',k);_aiKeyEncRefresh();}else{localStorage.removeItem('nt_ai_key');localStorage.removeItem('nt_ai_key_enc');}}
+// ── KI-Key verschlüsselt in Backups (AES-GCM, Schlüssel aus dem Proxy-Passwort) ──
+// Klartext-Key (nt_ai_key) verlässt das Gerät nie. Für Backups liegt unter
+// nt_ai_key_enc eine mit PBKDF2(Proxy-Passwort)→AES-GCM verschlüsselte Kopie
+// bereit — das Proxy-Passwort selbst ist nie Teil eines Backups, ist aber auf
+// jedem Gerät des Nutzers gesetzt (Pflicht für alle KI-Funktionen). Backup-Pfade
+// bleiben dadurch synchron. Beim Import wird sofort entschlüsselt; fehlt das
+// Proxy-Passwort noch, automatisch sobald es gesetzt wird.
+function _aiKeyB64(buf){var b=new Uint8Array(buf),s='';for(var i=0;i<b.length;i++)s+=String.fromCharCode(b[i]);return btoa(s);}
+function _aiKeyB64d(s){var bin=atob(s),b=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)b[i]=bin.charCodeAt(i);return b;}
+function _aiKeyCryptoOk(){return !!(window.crypto&&crypto.subtle&&window.TextEncoder);}
+function _aiKeyDerive(salt){
+  return crypto.subtle.importKey('raw',new TextEncoder().encode(getProxySecret()),'PBKDF2',false,['deriveKey']).then(function(km){
+    return crypto.subtle.deriveKey({name:'PBKDF2',salt:salt,iterations:100000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+  });
+}
+function encryptAiKeyForBackup(){
+  var key=getAiProviderKey();
+  if(!key||!getProxySecret()||!_aiKeyCryptoOk())return Promise.resolve(null);
+  var salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12));
+  return _aiKeyDerive(salt).then(function(k){
+    return crypto.subtle.encrypt({name:'AES-GCM',iv:iv},k,new TextEncoder().encode(key));
+  }).then(function(ct){
+    return {v:1,salt:_aiKeyB64(salt),iv:_aiKeyB64(iv),ct:_aiKeyB64(ct)};
+  }).catch(function(){return null;});
+}
+function decryptAiKeyFromBackup(enc){
+  if(!enc||!enc.ct||!enc.salt||!enc.iv||!getProxySecret()||!_aiKeyCryptoOk())return Promise.resolve(null);
+  return _aiKeyDerive(_aiKeyB64d(enc.salt)).then(function(k){
+    return crypto.subtle.decrypt({name:'AES-GCM',iv:_aiKeyB64d(enc.iv)},k,_aiKeyB64d(enc.ct));
+  }).then(function(buf){return new TextDecoder().decode(buf);}).catch(function(){return null;});
+}
+// Klartext-Key vorhanden → verschlüsselte Kopie (neu) erzeugen
+function _aiKeyEncRefresh(){
+  if(!getAiProviderKey())return Promise.resolve();
+  return encryptAiKeyForBackup().then(function(enc){
+    if(enc){try{localStorage.setItem('nt_ai_key_enc',JSON.stringify(enc));}catch(e){}}
+  });
+}
+// Verschlüsselte Kopie da (z.B. aus Import), aber kein Klartext → entschlüsseln
+function _aiKeyEncTryDecrypt(){
+  if(getAiProviderKey())return Promise.resolve();
+  var raw=localStorage.getItem('nt_ai_key_enc');
+  if(!raw)return Promise.resolve();
+  var enc=null;try{enc=JSON.parse(raw);}catch(e){return Promise.resolve();}
+  return decryptAiKeyFromBackup(enc).then(function(plain){
+    if(plain){setAiProviderKey(plain);showToast('🔑 KI-Anbieter-Key aus Backup übernommen ✓');}
+  });
+}
+// KI-Anbieter + verschlüsselten Key in ein Backup-Objekt aufnehmen (Klartext nie)
+function _backupAiFields(o){
+  var p=getAiProvider();
+  if(p==='anthropic')return o;
+  o.aiProvider=p;
+  try{var enc=localStorage.getItem('nt_ai_key_enc');if(enc)o.aiKeyEnc=JSON.parse(enc);}catch(e){}
+  return o;
+}
+// Gegenstück beim Import/Restore: Anbieter setzen, Key entschlüsseln (ggf. später)
+function _importAiFields(d){
+  if(!d||!d.aiProvider)return;
+  try{
+    setAiProvider(d.aiProvider);
+    if(d.aiKeyEnc&&d.aiKeyEnc.ct){
+      decryptAiKeyFromBackup(d.aiKeyEnc).then(function(plain){
+        if(plain){setAiProviderKey(plain);}
+        else if(!getAiProviderKey()){
+          try{localStorage.setItem('nt_ai_key_enc',JSON.stringify(d.aiKeyEnc));}catch(e){}
+          showToast('🔑 KI-Key im Backup ist verschlüsselt – nach Eingabe des Proxy-Passworts wird er automatisch übernommen',5000);
+        }
+      });
+    }
+  }catch(e){}
+}
 // Eigener Anbieter aktiv? (≠ Anthropic UND Key hinterlegt)
 function hasCustomAiProvider(){var p=getAiProvider();return p!=='anthropic'&&!!getAiProviderKey();}
 // Welche KI hat zuletzt erfolgreich geantwortet (für das Ergebnis-Badge)?
@@ -2086,6 +2159,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.199',items:[
+    {icon:'🔐',text:'Der API-Key deines eigenen KI-Anbieters wird jetzt mitgesichert: Datei-Export, OneDrive-Sicherung und Autospeicher enthalten ihn verschlüsselt (AES, Schlüssel aus deinem Proxy-Passwort abgeleitet) — im Klartext taucht er in keinem Backup auf. Beim Import wird er automatisch wiederhergestellt; fehlt das Proxy-Passwort auf dem neuen Gerät noch, wird der Key übernommen, sobald du es einträgst.',where:'Einstellungen · Backup'},
+  ]},
   {v:'0.198',items:[
     {icon:'🎨',text:'Nährwert-Details repariert: Die Kacheln (Protein, Carbs, Fett, Zucker, Ballaststoffe, Salz) waren noch für den alten dunklen Hintergrund gestylt — weißer Text war kaum lesbar und die „grüne" Kachel komplett unsichtbar. Jetzt dunkle Schrift auf dezent getönten Ampel-Farben. Außerdem überlappt die Prozentzahl in den Makro-Karten nicht mehr mit dem Namen.',where:'Heute · Nährwert-Details'},
   ]},
@@ -2465,6 +2541,7 @@ function setAppleTouchIconPNG(){
 }
 window.addEventListener('DOMContentLoaded',function(){
   var _vt=document.getElementById('appVersionTag');if(_vt)_vt.textContent='v'+APP_VERSION;
+  _aiKeyEncRefresh();_aiKeyEncTryDecrypt();
   // Handle OneDrive OAuth callback
   var _params=new URLSearchParams(window.location.search);
   var _odCode=_params.get('code');
@@ -2587,7 +2664,7 @@ var AUTOSAVE_MAX=5;
 function _autosaveCreate(){
   var saves=[];
   try{saves=JSON.parse(localStorage.getItem('nt_autosaves')||'[]');}catch(e){}
-  saves.unshift({savedAt:new Date().toISOString(),state:backupState(),customFoods:JSON.parse(JSON.stringify(customFoods)),recipes:JSON.parse(JSON.stringify(recipes))});
+  saves.unshift(_backupAiFields({savedAt:new Date().toISOString(),state:backupState(),customFoods:JSON.parse(JSON.stringify(customFoods)),recipes:JSON.parse(JSON.stringify(recipes))}));
   if(saves.length>AUTOSAVE_MAX)saves=saves.slice(0,AUTOSAVE_MAX);
   try{localStorage.setItem('nt_autosaves',JSON.stringify(saves));}catch(e){}
 }
@@ -2602,6 +2679,7 @@ function _autosaveLoad(idx){
   if(save.state){delete save.state.apiKey;Object.assign(S,save.state);S.apiKey='';S.setupDone=true;}
   if(save.customFoods)customFoods=save.customFoods;
   if(save.recipes)recipes=save.recipes;
+  _importAiFields(save);
   saveS();saveX();renderAll();closeOv('autoSavesOv');
   showToast('Stand geladen ✓');
 }
@@ -2708,7 +2786,7 @@ function onAiProviderChange(){
       hint.textContent='Standard – läuft über den eingebauten Proxy, kein eigener Key nötig.';
     }else{
       var saved=(getAiProvider()===meta.id&&getAiProviderKey())?' · aktiver Key gespeichert ✓':'';
-      hint.textContent='Modelle: '+meta.models+' · Fallback bei Limit/Fehler: Anthropic'+saved;
+      hint.textContent='Modelle: '+meta.models+' · Fallback bei Limit/Fehler: Anthropic · Key wandert nur verschlüsselt ins Backup'+saved;
     }
   }
 }
@@ -5451,7 +5529,7 @@ function oneDriveSyncUp(){
   if(!isOnline){showToast('Kein Internet');return Promise.reject('offline');}
   showToast('☁️ Hochladen...');
   return _odGetToken().then(function(token){
-    var data=JSON.stringify({state:backupState(),foodCache:foodCache,customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache,syncedAt:new Date().toISOString()});
+    var data=JSON.stringify(_backupAiFields({state:backupState(),foodCache:foodCache,customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache,syncedAt:new Date().toISOString()}));
     var kb=Math.round(data.length/1024);
     return fetch('https://graph.microsoft.com/v1.0/me/drive/root:'+_odFolder()+'/nutritrack-backup.json:/content',{
       method:'PUT',
@@ -5488,6 +5566,7 @@ function oneDriveSyncDown(){
       if(backup.customFoods)customFoods=backup.customFoods;
       if(backup.recipes)recipes=backup.recipes;
       if(backup.barcodeCache)barcodeCache=backup.barcodeCache;
+      _importAiFields(backup);
       saveS();saveX();saveBarcodeCache();
       renderAll();
       showToast('☁️ Daten aus OneDrive geladen ✓');
@@ -5511,7 +5590,7 @@ function oneDriveSyncSlot(){
   showToast('☁️ Autospeicher '+(idx+1)+'/'+OD_SLOTS+' ...');
   return _odGetToken().then(function(token){
     var savedAt=new Date().toISOString();
-    var data=JSON.stringify({state:backupState(),customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache,savedAt:savedAt});
+    var data=JSON.stringify(_backupAiFields({state:backupState(),customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache,savedAt:savedAt}));
     var kb=Math.round(data.length/1024);
     return fetch('https://graph.microsoft.com/v1.0/me/drive/root:'+_odSlotPath(idx)+':/content',{
       method:'PUT',
@@ -5554,6 +5633,7 @@ function _odSlotLoad(idx){
       if(d.customFoods)customFoods=d.customFoods;
       if(d.recipes)recipes=d.recipes;
       if(d.barcodeCache)Object.assign(barcodeCache,d.barcodeCache);
+      _importAiFields(d);
       saveS();saveX();saveBarcodeCache();renderAll();closeOv('autoSavesOv');
       showToast('Stand geladen ✓');
     });
@@ -5812,7 +5892,7 @@ function deleteOwnFoodEdit(){
 }
 
 function exportData(){
-  var blob=new Blob([JSON.stringify({state:backupState(),foodCache:foodCache,customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache},null,2)],{type:'application/json'});
+  var blob=new Blob([JSON.stringify(_backupAiFields({state:backupState(),foodCache:foodCache,customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache}),null,2)],{type:'application/json'});
   var url=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=url;a.download='nutritrack-backup-'+today()+'.json';a.click();URL.revokeObjectURL(url);showToast('Backup exportiert 📤');
 }
@@ -5828,6 +5908,7 @@ function importData(e){
       if(d.customFoods)customFoods=d.customFoods;
       if(d.recipes)recipes=d.recipes;
       if(d.barcodeCache)Object.assign(barcodeCache,d.barcodeCache);
+      _importAiFields(d);
       saveS();saveX();saveBarcodeCache();renderAll();closeOv('settOv');showToast('Importiert ✓');
     }catch(e){showToast('Fehler beim Import');}
   };
@@ -6107,7 +6188,7 @@ function shareData(){
     oneDriveSyncUp().catch(function(){exportData();});
     return;
   }
-  var data={state:backupState(),foodCache:foodCache,customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache};
+  var data=_backupAiFields({state:backupState(),foodCache:foodCache,customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache});
   var json=JSON.stringify(data,null,2);
   var filename='nutritrack-backup-'+today()+'.json';
   if(navigator.share){

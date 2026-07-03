@@ -85,12 +85,14 @@ function openPicker(meal, defaultTab){
 
 function closePicker(){
   pickerStopScan();
+  if(typeof pickerVoiceStop==='function')pickerVoiceStop();
   closeOv('pickerOv');
 }
 
 function pickerSetTab(tab){
   // Always stop barcode scan when switching tabs
   pickerStopScan();
+  if(typeof pickerVoiceStop==='function')pickerVoiceStop();
   document.querySelectorAll('.picker-tab').forEach(function(b){b.classList.remove('act');});
   document.querySelectorAll('.picker-panel').forEach(function(p){p.classList.remove('act');});
   var tabEl=document.getElementById('ptab-'+tab);
@@ -1333,6 +1335,49 @@ function pickerSendChat(){
   if(!isOnline){msgs.innerHTML+='<div class="cm a">📵 Offline und nichts im Bestand gefunden. Verbinde dich oder lege es als „Eigenes Lebensmittel" an.</div>';document.getElementById('pickerChatSend').disabled=false;return;}
   pickerChatKiFallback(msg);
 }
+
+// ─── PICKER: CHAT-DIKTIERFUNKTION (Web Speech API, de-DE) ───
+// Nutzt die native Spracherkennung des Geräts (iOS Safari ≥14.5: webkit-Prefix,
+// Android Chrome: über Google-Dienste). Kein Server-Roundtrip über den Worker.
+var _pickerRec=null,_pickerRecActive=false,_pickerRecBase='';
+function _pickerSpeechCtor(){return window.SpeechRecognition||window.webkitSpeechRecognition||null;}
+function pickerVoiceToggle(){
+  var Ctor=_pickerSpeechCtor();
+  if(!Ctor)return;
+  if(_pickerRecActive){pickerVoiceStop();return;}
+  var inp=document.getElementById('pickerChatInp');
+  _pickerRecBase=inp.value.trim();
+  var r=new Ctor();
+  r.lang='de-DE';r.interimResults=true;r.continuous=false;r.maxAlternatives=1;
+  r.onresult=function(ev){
+    var t='';
+    for(var i=0;i<ev.results.length;i++)t+=ev.results[i][0].transcript;
+    inp.value=(_pickerRecBase?_pickerRecBase+' ':'')+t.trim();
+  };
+  r.onerror=function(ev){
+    _pickerVoiceReset();
+    if(ev.error==='not-allowed'||ev.error==='service-not-allowed'||ev.error==='audio-capture'){
+      var msgs=document.getElementById('pickerChatMsgs');
+      msgs.innerHTML+='<div class="cm a">🎙️ Kein Mikrofon-Zugriff. Bitte erlaube das Mikrofon für diese App in den Browser-/System-Einstellungen.</div>';
+      msgs.scrollTop=msgs.scrollHeight;
+    }
+    // 'no-speech'/'aborted' bewusst still — Button-Zustand ist schon zurückgesetzt.
+  };
+  r.onend=function(){_pickerVoiceReset();};
+  _pickerRec=r;_pickerRecActive=true;
+  document.getElementById('pickerChatMic').classList.add('rec');
+  inp.placeholder='🎙️ Sprich jetzt …';
+  try{r.start();}catch(e){_pickerVoiceReset();}
+}
+function pickerVoiceStop(){if(_pickerRec){try{_pickerRec.stop();}catch(e){}}_pickerVoiceReset();}
+function _pickerVoiceReset(){
+  _pickerRecActive=false;_pickerRec=null;
+  var mic=document.getElementById('pickerChatMic'),inp=document.getElementById('pickerChatInp');
+  if(mic)mic.classList.remove('rec');
+  if(inp)inp.placeholder='Was hast du gegessen?';
+}
+// Ohne Web-Speech-Unterstützung (z.B. Firefox) Button ausblenden.
+(function(){var m=document.getElementById('pickerChatMic');if(m&&!_pickerSpeechCtor())m.style.display='none';})();
 
 function pickerUpdateChatTotal(){pickerUpdateTotal('Chat');}
 

@@ -254,6 +254,9 @@ body:has(#setupScreen.active) .fb-fab{display:none;}
 .chat-inp:focus{border-color:var(--g2);}
 .chat-send{background:var(--g2);color:white;border:none;border-radius:11px;padding:10px 14px;font-size:18px;flex-shrink:0;}
 .chat-send:disabled{opacity:.5;}
+.chat-mic{background:rgba(0,0,0,.05);border:1.5px solid var(--br);border-radius:11px;padding:10px 12px;font-size:17px;flex-shrink:0;cursor:pointer;}
+.chat-mic.rec{background:#d9534f;border-color:#d9534f;animation:micPulse 1.2s ease-in-out infinite;}
+@keyframes micPulse{0%,100%{opacity:1;}50%{opacity:.55;}}
 
 /* Barcode tab */
 .barcode-wrap{position:relative;width:100%;border-radius:12px;overflow:hidden;background:#000;margin-bottom:10px;}
@@ -675,7 +678,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.196</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.197</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -996,7 +999,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.196</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.197</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1139,6 +1142,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
         </div>
         <div class="chat-row">
           <textarea class="chat-inp" id="pickerChatInp" rows="1" placeholder="Was hast du gegessen?" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();pickerSendChat();}"></textarea>
+          <button type="button" class="chat-mic" id="pickerChatMic" onclick="pickerVoiceToggle()" title="Diktieren">🎙️</button>
           <button type="button" class="chat-send" id="pickerChatSend" onclick="pickerSendChat()">➤</button>
         </div>
       </div>
@@ -1998,7 +2002,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.196';
+var APP_VERSION='0.197';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -2082,6 +2086,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.197',items:[
+    {icon:'🎙️',text:'Diktierfunktion im Chat: Neben dem Eingabefeld gibt es jetzt einen Mikrofon-Button. Antippen, sprechen — der gesprochene Text erscheint direkt im Eingabefeld und lässt sich vor dem Senden noch bearbeiten. Die Erkennung nutzt die Spracherkennung deines Geräts (Deutsch); auf Geräten ohne Unterstützung wird der Button automatisch ausgeblendet.',where:'Mahlzeit → ＋ → Chat'},
+  ]},
   {v:'0.196',items:[
     {icon:'⚡',text:'Barcode-Scanner startet jetzt deutlich schneller, vor allem auf dem iPhone: Der Decoder wird mit der App ausgeliefert und gecacht, statt bei jedem Scan sekundenlang aus dem Netz nachzuladen. Funktioniert dadurch auch offline.',where:'Mahlzeit → ＋ → Barcode'},
   ]},

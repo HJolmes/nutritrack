@@ -394,7 +394,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
 .mac .mac-pct{position:absolute;top:10px;right:12px;font-size:11px;color:var(--mu);font-weight:600;}
 .mv{font-family:var(--fs-display);font-weight:500;font-size:22px;letter-spacing:-0.025em;color:var(--tx);}
 .mv .mv-goal{font-family:var(--fs-body);font-size:12px;color:var(--mu);font-weight:500;letter-spacing:0;}
-.mn{font-size:11px;color:var(--mu);text-transform:none;letter-spacing:0.02em;font-weight:600;margin-top:0;}
+.mn{font-size:11px;color:var(--mu);text-transform:none;letter-spacing:0.02em;font-weight:600;margin-top:0;padding-right:38px;}
 .mb{background:rgba(0,0,0,0.06);height:5px;border-radius:999px;margin-top:8px;overflow:hidden;}
 .mf{border-radius:999px;height:100%;}
 .mac:nth-child(1) .mf{background:linear-gradient(90deg,#d97757,#e89571);}
@@ -678,7 +678,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.197</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.198</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -999,7 +999,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.197</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.198</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -2002,7 +2002,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.197';
+var APP_VERSION='0.198';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -2086,6 +2086,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.198',items:[
+    {icon:'🎨',text:'Nährwert-Details repariert: Die Kacheln (Protein, Carbs, Fett, Zucker, Ballaststoffe, Salz) waren noch für den alten dunklen Hintergrund gestylt — weißer Text war kaum lesbar und die „grüne" Kachel komplett unsichtbar. Jetzt dunkle Schrift auf dezent getönten Ampel-Farben. Außerdem überlappt die Prozentzahl in den Makro-Karten nicht mehr mit dem Namen.',where:'Heute · Nährwert-Details'},
+  ]},
   {v:'0.197',items:[
     {icon:'🎙️',text:'Diktierfunktion im Chat: Neben dem Eingabefeld gibt es jetzt einen Mikrofon-Button. Antippen, sprechen — der gesprochene Text erscheint direkt im Eingabefeld und lässt sich vor dem Senden noch bearbeiten. Die Erkennung nutzt die Spracherkennung deines Geräts (Deutsch); auf Geräten ohne Unterstützung wird der Button automatisch ausgeblendet.',where:'Mahlzeit → ＋ → Chat'},
   ]},
@@ -2853,13 +2856,13 @@ function renderNutrientAmpel(t){
     {label:'Salz',val:Math.round(t.salt*10)/10+'g',st:t.salt>6?'rot':t.salt>4?'gelb':'gruen'},
   ];
   var colors={gruen:'#2d7d52',gelb:'#f07700',rot:'#c62828'};
-  var bg={gruen:'rgba(255,255,255,0.15)',gelb:'rgba(249,168,37,0.25)',rot:'rgba(198,40,40,0.25)'};
+  var bg={gruen:'rgba(45,125,82,0.10)',gelb:'rgba(240,119,0,0.10)',rot:'rgba(198,40,40,0.09)'};
   return'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:8px;">'
     +items.map(function(it){
-      return'<div style="background:'+bg[it.st]+';border-radius:8px;padding:6px 4px;text-align:center;">'
-        +'<div style="font-size:11px;font-weight:800;color:white;">'+it.val+'</div>'
-        +'<div style="font-size:9px;color:rgba(255,255,255,0.75);margin-top:1px;">'+it.label+'</div>'
-        +'<div style="width:6px;height:6px;border-radius:50%;background:'+colors[it.st]+';margin:3px auto 0;border:1.5px solid rgba(255,255,255,0.5);"></div>'
+      return'<div style="background:'+bg[it.st]+';border-radius:10px;padding:7px 4px;text-align:center;">'
+        +'<div style="font-size:13px;font-weight:700;color:var(--tx);">'+it.val+'</div>'
+        +'<div style="font-size:10px;color:var(--mu);margin-top:1px;">'+it.label+'</div>'
+        +'<div style="width:6px;height:6px;border-radius:50%;background:'+colors[it.st]+';margin:4px auto 0;"></div>'
         +'</div>';
     }).join('')
     +'</div>';

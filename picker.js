@@ -60,6 +60,7 @@ function openPicker(meal, defaultTab){
   document.getElementById('pickerChatMsgs').innerHTML='<div class="cm h">Beschreibe was du gegessen hast, z.B.:<br>„Körnerbrötchen mit Marmelade und Skyr"</div>';
   document.getElementById('pickerChatResult').classList.add('hidden');
   document.getElementById('pickerChatInp').value='';
+  _pickerChatShrink();
   document.getElementById('pickerCam').value='';
   document.getElementById('pickerGal').value='';
   document.getElementById('pickerBarcodeResult').innerHTML='';
@@ -1306,6 +1307,7 @@ function pickerSendChat(){
   var msgs=document.getElementById('pickerChatMsgs');
   msgs.innerHTML+='<div class="cm u">'+msg+'</div>';
   document.getElementById('pickerChatInp').value='';
+  _pickerChatShrink();
   document.getElementById('pickerChatSend').disabled=true;
   document.getElementById('pickerChatResult').classList.add('hidden');
   msgs.scrollTop=msgs.scrollHeight;
@@ -1339,22 +1341,28 @@ function pickerSendChat(){
 // ─── PICKER: CHAT-DIKTIERFUNKTION (Web Speech API, de-DE) ───
 // Nutzt die native Spracherkennung des Geräts (iOS Safari ≥14.5: webkit-Prefix,
 // Android Chrome: über Google-Dienste). Kein Server-Roundtrip über den Worker.
-var _pickerRec=null,_pickerRecActive=false,_pickerRecBase='';
+// Bedienung (#150): kurz tippen = Start/Stopp (Auto-Stopp nach Sprechpause),
+// gedrückt halten (≥350 ms) = Push-to-Talk, Aufnahme läuft bis zum Loslassen.
+var _pickerRec=null,_pickerRecActive=false,_pickerRecBase='',_pickerRecHold=false;
+var _pickerHoldTimer=null,_pickerHoldStarted=false,PICKER_HOLD_MS=350;
 function _pickerSpeechCtor(){return window.SpeechRecognition||window.webkitSpeechRecognition||null;}
-function pickerVoiceToggle(){
+function _pickerVoiceStart(hold){
   var Ctor=_pickerSpeechCtor();
   if(!Ctor)return;
-  if(_pickerRecActive){pickerVoiceStop();return;}
   var inp=document.getElementById('pickerChatInp');
   _pickerRecBase=inp.value.trim();
+  _pickerRecHold=!!hold;
   var r=new Ctor();
-  r.lang='de-DE';r.interimResults=true;r.continuous=false;r.maxAlternatives=1;
+  r.lang='de-DE';r.interimResults=true;r.continuous=_pickerRecHold;r.maxAlternatives=1;
   r.onresult=function(ev){
     var t='';
     for(var i=0;i<ev.results.length;i++)t+=ev.results[i][0].transcript;
     inp.value=(_pickerRecBase?_pickerRecBase+' ':'')+t.trim();
+    _pickerChatGrow();
   };
   r.onerror=function(ev){
+    // Im Hold-Modus sind 'no-speech'/'aborted' nicht fatal — onend startet neu, solange gehalten wird.
+    if(_pickerRecHold&&_pickerRecActive&&(ev.error==='no-speech'||ev.error==='aborted'))return;
     _pickerVoiceReset();
     if(ev.error==='not-allowed'||ev.error==='service-not-allowed'||ev.error==='audio-capture'){
       var msgs=document.getElementById('pickerChatMsgs');
@@ -1363,21 +1371,78 @@ function pickerVoiceToggle(){
     }
     // 'no-speech'/'aborted' bewusst still — Button-Zustand ist schon zurückgesetzt.
   };
-  r.onend=function(){_pickerVoiceReset();};
+  r.onend=function(){
+    // iOS Safari beendet die Erkennung teils trotz continuous — im Hold-Modus
+    // neu starten, solange der Finger unten ist (Feldinhalt wird neue Basis).
+    if(_pickerRecHold&&_pickerRecActive&&_pickerRec===r){
+      _pickerRecBase=inp.value.trim();
+      try{r.start();return;}catch(e){}
+    }
+    _pickerVoiceReset();
+  };
   _pickerRec=r;_pickerRecActive=true;
   document.getElementById('pickerChatMic').classList.add('rec');
-  inp.placeholder='🎙️ Sprich jetzt …';
+  inp.placeholder=_pickerRecHold?'🎙️ Halten & sprechen …':'🎙️ Sprich jetzt …';
   try{r.start();}catch(e){_pickerVoiceReset();}
 }
-function pickerVoiceStop(){if(_pickerRec){try{_pickerRec.stop();}catch(e){}}_pickerVoiceReset();}
+function pickerVoiceToggle(){
+  if(_pickerRecActive){pickerVoiceStop();return;}
+  _pickerVoiceStart(false);
+}
+function pickerVoiceStop(){
+  // Flags vor stop() löschen, damit das asynchrone onend nicht neu startet.
+  _pickerRecActive=false;_pickerRecHold=false;
+  if(_pickerRec){try{_pickerRec.stop();}catch(e){}}
+  _pickerVoiceReset();
+}
 function _pickerVoiceReset(){
-  _pickerRecActive=false;_pickerRec=null;
+  _pickerRecActive=false;_pickerRec=null;_pickerRecHold=false;
   var mic=document.getElementById('pickerChatMic'),inp=document.getElementById('pickerChatInp');
   if(mic)mic.classList.remove('rec');
   if(inp)inp.placeholder='Was hast du gegessen?';
 }
-// Ohne Web-Speech-Unterstützung (z.B. Firefox) Button ausblenden.
-(function(){var m=document.getElementById('pickerChatMic');if(m&&!_pickerSpeechCtor())m.style.display='none';})();
+// Auto-Grow fürs Chat-Eingabefeld (#149): wächst mit dem Text bis max-height
+// (120px ≈ 5 Zeilen), danach scrollt es intern. +4px = 2×2px Rahmen (border-box).
+function _pickerChatGrow(){
+  var inp=document.getElementById('pickerChatInp');if(!inp)return;
+  inp.style.height='auto';
+  inp.style.height=Math.min(inp.scrollHeight+4,120)+'px';
+}
+function _pickerChatShrink(){var inp=document.getElementById('pickerChatInp');if(inp)inp.style.height='';}
+(function(){
+  var inp=document.getElementById('pickerChatInp');
+  if(inp)inp.addEventListener('input',_pickerChatGrow);
+  var m=document.getElementById('pickerChatMic');
+  if(!m)return;
+  // Ohne Web-Speech-Unterstützung (z.B. Firefox) Button ausblenden.
+  if(!_pickerSpeechCtor()){m.style.display='none';return;}
+  m.addEventListener('contextmenu',function(ev){ev.preventDefault();});
+  m.addEventListener('pointerdown',function(ev){
+    ev.preventDefault();
+    if(ev.pointerId!==undefined){try{m.setPointerCapture(ev.pointerId);}catch(e){}}
+    _pickerHoldStarted=false;
+    clearTimeout(_pickerHoldTimer);
+    _pickerHoldTimer=setTimeout(function(){
+      _pickerHoldStarted=true;
+      if(!_pickerRecActive){
+        _pickerVoiceStart(true);
+        if(navigator.vibrate){try{navigator.vibrate(20);}catch(e){}}
+      }
+    },PICKER_HOLD_MS);
+  });
+  function micUp(ev){
+    clearTimeout(_pickerHoldTimer);
+    if(_pickerHoldStarted){_pickerHoldStarted=false;pickerVoiceStop();}
+    else if(ev.type==='pointerup'){pickerVoiceToggle();}
+  }
+  m.addEventListener('pointerup',micUp);
+  m.addEventListener('pointercancel',micUp);
+  // Tastatur/Screenreader: Enter/Leertaste toggelt wie ein kurzer Tap.
+  m.addEventListener('keydown',function(ev){
+    if(ev.repeat)return;
+    if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();pickerVoiceToggle();}
+  });
+})();
 
 function pickerUpdateChatTotal(){pickerUpdateTotal('Chat');}
 

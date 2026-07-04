@@ -249,12 +249,12 @@ body:has(#setupScreen.active) .fb-fab{display:none;}
 .cm.u{background:var(--g2);color:white;align-self:flex-end;border-bottom-right-radius:4px;}
 .cm.a{background:var(--gl);color:var(--tx);align-self:flex-start;border-bottom-left-radius:4px;border:1px solid var(--g3);}
 .cm.h{background:var(--bg);color:var(--mu);align-self:center;font-style:italic;font-size:12px;text-align:center;border:none;padding:6px;}
-.chat-row{display:flex;gap:8px;}
-.chat-inp{flex:1;border:2px solid var(--br);border-radius:11px;padding:10px 13px;font-size:15px;outline:none;resize:none;line-height:1.4;}
+.chat-row{display:flex;gap:8px;align-items:flex-end;}
+.chat-inp{flex:1;border:2px solid var(--br);border-radius:11px;padding:10px 13px;font-size:15px;outline:none;resize:none;line-height:1.4;max-height:120px;overflow-y:auto;}
 .chat-inp:focus{border-color:var(--g2);}
 .chat-send{background:var(--g2);color:white;border:none;border-radius:11px;padding:10px 14px;font-size:18px;flex-shrink:0;}
 .chat-send:disabled{opacity:.5;}
-.chat-mic{background:rgba(0,0,0,.05);border:1.5px solid var(--br);border-radius:11px;padding:10px 12px;font-size:17px;flex-shrink:0;cursor:pointer;}
+.chat-mic{background:rgba(0,0,0,.05);border:1.5px solid var(--br);border-radius:11px;padding:10px 12px;font-size:17px;flex-shrink:0;cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation;}
 .chat-mic.rec{background:#d9534f;border-color:#d9534f;animation:micPulse 1.2s ease-in-out infinite;}
 @keyframes micPulse{0%,100%{opacity:1;}50%{opacity:.55;}}
 
@@ -390,11 +390,11 @@ button,input,select,textarea{font-family:var(--fs-body);}
 .sum .hero-meta b{font-family:var(--fs-display);font-weight:500;color:var(--tx);font-size:13px;display:block;letter-spacing:-0.01em;}
 
 .macs{gap:10px;position:relative;z-index:1;}
-.mac{background:var(--gl);border-radius:18px;padding:12px 12px 10px;text-align:left;position:relative;}
+.mac{background:var(--gl);border-radius:18px;padding:12px 12px 10px;text-align:left;position:relative;min-width:0;}
 .mac .mac-pct{position:absolute;top:10px;right:12px;font-size:11px;color:var(--mu);font-weight:600;}
-.mv{font-family:var(--fs-display);font-weight:500;font-size:22px;letter-spacing:-0.025em;color:var(--tx);}
+.mv{font-family:var(--fs-display);font-weight:500;font-size:22px;letter-spacing:-0.025em;color:var(--tx);display:flex;align-items:baseline;flex-wrap:wrap;column-gap:3px;}
 .mv .mv-goal{font-family:var(--fs-body);font-size:12px;color:var(--mu);font-weight:500;letter-spacing:0;}
-.mn{font-size:11px;color:var(--mu);text-transform:none;letter-spacing:0.02em;font-weight:600;margin-top:0;padding-right:38px;}
+.mn{font-size:11px;color:var(--mu);text-transform:none;letter-spacing:0.02em;font-weight:600;margin-top:0;padding-right:30px;}
 .mb{background:rgba(0,0,0,0.06);height:5px;border-radius:999px;margin-top:8px;overflow:hidden;}
 .mf{border-radius:999px;height:100%;}
 .mac:nth-child(1) .mf{background:linear-gradient(90deg,#d97757,#e89571);}
@@ -810,7 +810,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="bnav">
     <button type="button" class="ni on" data-tab="main" onclick="switchTab('main')"><span>🏠</span>Heute</button>
     <button type="button" class="ni" data-tab="history" onclick="switchTab('history')"><span>📅</span>Verlauf</button>
-    <div class="cw"><button type="button" class="cb" onclick="openPicker(null,'search')">＋</button></div>
+    <div class="cw"><button type="button" class="cb" onclick="openPicker(null)">＋</button></div>
     <button type="button" class="ni" data-tab="trends" onclick="switchTab('trends')"><span>📈</span>Trends</button>
     <button type="button" class="ni" data-tab="more" onclick="switchTab('more')"><span>☰</span>Mehr</button>
   </div>
@@ -882,7 +882,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="bnav">
     <button type="button" class="ni" data-tab="main" onclick="switchTab('main')"><span>🏠</span>Heute</button>
     <button type="button" class="ni" data-tab="history" onclick="switchTab('history')"><span>📅</span>Verlauf</button>
-    <div class="cw"><button type="button" class="cb" onclick="openPicker(null,'search')">＋</button></div>
+    <div class="cw"><button type="button" class="cb" onclick="openPicker(null)">＋</button></div>
     <button type="button" class="ni on" data-tab="trends" onclick="switchTab('trends')"><span>📈</span>Trends</button>
     <button type="button" class="ni" data-tab="more" onclick="switchTab('more')"><span>☰</span>Mehr</button>
   </div>
@@ -907,7 +907,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="bnav">
     <button type="button" class="ni" data-tab="main" onclick="switchTab('main')"><span>🏠</span>Heute</button>
     <button type="button" class="ni on" data-tab="history" onclick="switchTab('history')"><span>📅</span>Verlauf</button>
-    <div class="cw"><button type="button" class="cb" onclick="openPicker(null,'search')">＋</button></div>
+    <div class="cw"><button type="button" class="cb" onclick="openPicker(null)">＋</button></div>
     <button type="button" class="ni" data-tab="trends" onclick="switchTab('trends')"><span>📈</span>Trends</button>
     <button type="button" class="ni" data-tab="more" onclick="switchTab('more')"><span>☰</span>Mehr</button>
   </div>
@@ -945,7 +945,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="bnav">
     <button type="button" class="ni on" data-tab="main" onclick="switchTab('main')"><span>🏠</span>Heute</button>
     <button type="button" class="ni" data-tab="history" onclick="switchTab('history')"><span>📅</span>Verlauf</button>
-    <div class="cw"><button type="button" class="cb" id="cbMealDetail" onclick="openPicker(null,'search')">＋</button></div>
+    <div class="cw"><button type="button" class="cb" id="cbMealDetail" onclick="openPicker(null)">＋</button></div>
     <button type="button" class="ni" data-tab="trends" onclick="switchTab('trends')"><span>📈</span>Trends</button>
     <button type="button" class="ni" data-tab="more" onclick="switchTab('more')"><span>☰</span>Mehr</button>
   </div>
@@ -999,14 +999,14 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.199</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.200</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
   <div class="bnav">
     <button type="button" class="ni" data-tab="main" onclick="switchTab('main')"><span>🏠</span>Heute</button>
     <button type="button" class="ni" data-tab="history" onclick="switchTab('history')"><span>📅</span>Verlauf</button>
-    <div class="cw"><button type="button" class="cb" onclick="openPicker(null,'search')">＋</button></div>
+    <div class="cw"><button type="button" class="cb" onclick="openPicker(null)">＋</button></div>
     <button type="button" class="ni" data-tab="trends" onclick="switchTab('trends')"><span>📈</span>Trends</button>
     <button type="button" class="ni on" data-tab="more" onclick="switchTab('more')"><span>☰</span>Mehr</button>
   </div>
@@ -1142,7 +1142,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
         </div>
         <div class="chat-row">
           <textarea class="chat-inp" id="pickerChatInp" rows="1" placeholder="Was hast du gegessen?" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();pickerSendChat();}"></textarea>
-          <button type="button" class="chat-mic" id="pickerChatMic" onclick="pickerVoiceToggle()" title="Diktieren">🎙️</button>
+          <button type="button" class="chat-mic" id="pickerChatMic" title="Tippen oder halten zum Diktieren">🎙️</button>
           <button type="button" class="chat-send" id="pickerChatSend" onclick="pickerSendChat()">➤</button>
         </div>
       </div>
@@ -2002,7 +2002,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.199';
+var APP_VERSION='0.200';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -2159,6 +2159,12 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.200',items:[
+    {icon:'💬',text:'Beim Hinzufügen einer Zutat öffnet sich jetzt immer zuerst der Chat statt der Datenbank-Suche. Die Suche bleibt einen Tab-Tipp entfernt; aus der Bibliothek heraus landest du weiterhin direkt in der vorbefüllten Suche.',where:'Mahlzeit → ＋'},
+    {icon:'🎙️',text:'Diktieren jetzt auch per Gedrückthalten: Mikrofon-Button halten → Aufnahme läuft, solange du hältst, und stoppt beim Loslassen. Kurzes Antippen startet/stoppt weiterhin wie bisher.',where:'Mahlzeit → ＋ → Chat'},
+    {icon:'📝',text:'Das Chat-Eingabefeld wächst mit deinem Text mit (bis ca. 5 Zeilen) — auch beim Diktieren. Nach dem Senden schrumpft es wieder auf eine Zeile.',where:'Mahlzeit → ＋ → Chat'},
+    {icon:'📐',text:'Layout-Fix: Die drei Nährwert-Karten (Protein, Kohlenhydrate, Fett) liefen auf schmalen Displays rechts aus dem Bildschirm — die Fett-Karte war abgeschnitten. Jetzt passen alle drei immer in die Breite.',where:'Heute'},
+  ]},
   {v:'0.199',items:[
     {icon:'🔐',text:'Der API-Key deines eigenen KI-Anbieters wird jetzt mitgesichert: Datei-Export, OneDrive-Sicherung und Autospeicher enthalten ihn verschlüsselt (AES, Schlüssel aus deinem Proxy-Passwort abgeleitet) — im Klartext taucht er in keinem Backup auf. Beim Import wird er automatisch wiederhergestellt; fehlt das Proxy-Passwort auf dem neuen Gerät noch, wird der Key übernommen, sobald du es einträgst.',where:'Einstellungen · Backup'},
   ]},

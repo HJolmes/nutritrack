@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.208',items:[
+    {icon:'📷',text:'Mahlzeit-Fotos werden jetzt platzsparend in der Browser-Datenbank (IndexedDB) gespeichert — die „Speicher fast voll"-Warnung sollte damit Geschichte sein. Bestehende Fotos werden beim ersten Start automatisch umgezogen. Hinweis: Fotos sind gerätelokal und nicht mehr Teil der Backup-Datei.',where:'App-weit'},
+  ]},
   {v:'0.207',items:[
     {icon:'📖',text:'Die Hilfe ist jetzt eine richtige, scrollbare Anleitung in der App (aufklappbare Themen, auch offline verfügbar) statt eines PDF-Fensters, das auf dem iPhone nur die erste Seite zeigte. Das PDF gibt es weiterhin als Download-Link.',where:'? · Hilfe'},
     {icon:'🎨',text:'Android-Splash-Screen und Task-Switcher zeigen jetzt die aktuellen App-Farben (Cream/Koralle) statt des alten Grüns; auch die Gewichtskurve in den Trends ist auf das neue Farbschema umgestellt und der Trend bezieht sich jetzt auf den angezeigten Chart-Zeitraum.',where:'System & Trends'},

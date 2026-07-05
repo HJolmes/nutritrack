@@ -680,7 +680,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.207</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.208</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -1001,7 +1001,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.207</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.208</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1892,6 +1892,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
 <script src="js/fooddb.js"></script>
+<script src="js/idb-photos.js"></script>
 <script src="js/changelog.js"></script>
 <script>
 // ════════════════════════════════════════
@@ -1907,7 +1908,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.207';
+var APP_VERSION='0.208';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -2309,7 +2310,7 @@ function _autosaveLoad(idx){
   if(save.state){delete save.state.apiKey;Object.assign(S,save.state);S.apiKey='';S.setupDone=true;}
   if(save.customFoods)customFoods=save.customFoods;
   if(save.recipes)recipes=save.recipes;
-  _importAiFields(save);
+  _importAiFields(save);_migratePhotosAfterImport();
   saveS();saveX();renderAll();closeOv('autoSavesOv');
   showToast('Stand geladen ✓');
 }
@@ -2456,6 +2457,7 @@ function showMain(){
   if(!localStorage.getItem('nt_install_dismissed'))checkFullscreen();
   scheduleReminders();
   setTimeout(compressOldDays,5000);
+  setTimeout(_migratePhotosToIdb,2000);
   checkProxyPwGate();
   setTimeout(_autosaveCreate,1000);
   setTimeout(_odAutoSync,3000);
@@ -3110,6 +3112,21 @@ function openEditEntry(meal,idx){
   openOv('editOv');
 }
 
+// Foto-HTML für den Bearbeiten-Dialog: Base64 direkt, IDB-Foto via data-phid
+// (wird nach dem innerHTML-Set von _hydratePhotoImgs asynchron nachgeladen).
+function _mealPhotoImgHtml(e){
+  if(e.mealPhoto)return'<div style="margin:8px 0;"><img src="'+e.mealPhoto+'" style="width:100%;border-radius:10px;max-height:160px;object-fit:cover;"></div>';
+  if(e.mealPhotoId)return'<div style="margin:8px 0;"><img data-phid="'+esc(e.mealPhotoId)+'" alt="" style="width:100%;border-radius:10px;max-height:160px;object-fit:cover;"></div>';
+  return'';
+}
+function _hydratePhotoImgs(){
+  if(!window.NTPhotos||!NTPhotos.ok())return;
+  document.querySelectorAll('img[data-phid]').forEach(function(im){
+    var id=im.getAttribute('data-phid');
+    im.removeAttribute('data-phid');
+    NTPhotos.get(id).then(function(d){if(d)im.src=d;});
+  });
+}
 function renderEditBody(e){
   var body=document.getElementById('editBody');
   if(e.isRecipe){
@@ -3145,7 +3162,7 @@ function renderEditBody(e){
       +(function(){var rec=e.recipeId&&recipes.find(function(r){return r.id===e.recipeId;});var ins=(rec&&rec.instructions)||e.instructions||'';return ins?'<div style="margin:10px 0;padding:12px;background:var(--gl);border-radius:12px;border:1px solid var(--g3);"><div style="font-size:12px;font-weight:700;color:var(--g1);margin-bottom:6px;">📝 Kochanleitung</div><div style="font-size:13px;white-space:pre-wrap;color:var(--tx);">'+esc(ins)+'</div></div>':'';}())
       +renderAmpelInfo(e)
       +renderNutrientDetail({kcal:t.kcal,protein:t.protein,carbs:t.carbs,fat:t.fat,sugar:t.sugar||0,fiber:t.fiber||0,salt:t.salt||0},p)
-      +(e.mealPhoto?'<div style="margin:8px 0;"><img src="'+e.mealPhoto+'" style="width:100%;border-radius:10px;max-height:160px;object-fit:cover;"></div>':'')
+      +_mealPhotoImgHtml(e)
       +'<button type="button" class="cb2" onclick="saveEditEntry()">Speichern ✓</button>'
       +'<button type="button" class="seb" style="margin-bottom:8px;border-color:var(--mu);color:var(--mu);" onclick="saveMealAsTemplate(\''+editMeal+'\')" >📋 Als Vorlage speichern</button>'
       +'<button type="button" class="seb" style="margin-bottom:8px;" onclick="openMoveEntry()">↕ Mahlzeit wechseln</button>'
@@ -3163,9 +3180,9 @@ function renderEditBody(e){
       +'<div class="ar" style="margin-top:0;"><input type="number" class="ai2" id="editAmt" value="'+e.amount+'" min="1"><div class="au">Gramm</div></div>'
       +renderAmpelInfo(e)
       +renderNutrientDetail(_ts,1)
-      +(e.mealPhoto?'<div style="margin:8px 0;"><img src="'+e.mealPhoto+'" style="width:100%;border-radius:10px;max-height:160px;object-fit:cover;"></div>':'')
+      +_mealPhotoImgHtml(e)
       +'<input type="file" id="editMealPhoto" accept="image/*" capture="environment" style="display:none" onchange="handleEditMealPhoto(event)">'
-      +'<button type="button" class="seb" style="margin-bottom:8px;" onclick="document.getElementById(\'editMealPhoto\').click()">📷 '+(e.mealPhoto?'Foto ändern':'Foto hinzufügen')+'</button>'
+      +'<button type="button" class="seb" style="margin-bottom:8px;" onclick="document.getElementById(\'editMealPhoto\').click()">📷 '+((e.mealPhoto||e.mealPhotoId)?'Foto ändern':'Foto hinzufügen')+'</button>'
       +'<button type="button" class="cb2" onclick="saveEditEntry()">Speichern ✓</button>'
       +'<button type="button" class="seb" style="margin-bottom:8px;" onclick="openMoveEntry()">↕ Mahlzeit wechseln</button>'
       +'<div id="moveEntryPanel" style="display:none;background:var(--gl);border-radius:12px;padding:12px;margin-bottom:8px;">'
@@ -3175,6 +3192,7 @@ function renderEditBody(e){
       +'</div></div>'
       +'<button type="button" class="del-btn" onclick="deleteEntry()">🗑️ Eintrag löschen</button>';
   }
+  _hydratePhotoImgs();
 }
 
 function editUpdateTotal(pVal){
@@ -3235,6 +3253,8 @@ function editSaveAsRecipe(){
 }
 
 function deleteEntry(){
+  var _e=getDay().meals[editMeal][editIdx];
+  if(_e&&_e.mealPhotoId&&window.NTPhotos&&NTPhotos.ok())NTPhotos.del(_e.mealPhotoId).catch(function(){});
   getDay().meals[editMeal].splice(editIdx,1);
   saveS();renderAll();closeOv('editOv');
 }
@@ -4514,10 +4534,22 @@ var _offlineQueue=JSON.parse(localStorage.getItem('nt_offline_queue')||'[]');
 function saveOfflineQueue(){localStorage.setItem('nt_offline_queue',JSON.stringify(_offlineQueue));}
 
 function addToOfflineQueue(b64,meal,date){
-  _offlineQueue.push({b64:b64,meal:meal,date:date||today(),ts:Date.now()});
-  saveOfflineQueue();
+  // Foto nach IndexedDB, in localStorage nur die Referenz (phid) — ganze
+  // JPEGs in nt_offline_queue liefen sonst aufs 5-MB-Limit zu.
+  if(window.NTPhotos&&NTPhotos.ok()){
+    var pid='ph'+Date.now()+Math.random().toString(36).slice(2,8);
+    NTPhotos.put(pid,b64).then(function(){
+      _offlineQueue.push({phid:pid,meal:meal,date:date||today(),ts:Date.now()});
+      saveOfflineQueue();renderOfflineQueuePanel();
+    }).catch(function(){
+      _offlineQueue.push({b64:b64,meal:meal,date:date||today(),ts:Date.now()});
+      saveOfflineQueue();renderOfflineQueuePanel();
+    });
+  }else{
+    _offlineQueue.push({b64:b64,meal:meal,date:date||today(),ts:Date.now()});
+    saveOfflineQueue();renderOfflineQueuePanel();
+  }
   showToast('📷 Foto für später gespeichert');
-  renderOfflineQueuePanel();
 }
 
 function renderOfflineQueuePanel(){
@@ -4536,11 +4568,21 @@ function processOfflineQueue(){
   if(!_offlineQueue.length){showToast('Keine ausstehenden Fotos');return;}
   var item=_offlineQueue.shift();
   saveOfflineQueue();
-  window._pickerPhotoB64=item.b64;
-  pickerMeal=item.meal;
-  S.currentDate=item.date;
-  pickerAnalyze();
-  renderOfflineQueuePanel();
+  var start=function(b64){
+    renderOfflineQueuePanel();
+    if(!b64){showToast('Foto nicht mehr vorhanden');return;}
+    window._pickerPhotoB64=b64;
+    pickerMeal=item.meal;
+    S.currentDate=item.date;
+    pickerAnalyze();
+  };
+  if(item.phid&&window.NTPhotos&&NTPhotos.ok()){
+    // Blob aus IDB holen; löschen ist ok — schlägt die Analyse fehl, re-queued
+    // der Fehlerpfad das Foto ohnehin neu (addToOfflineQueue).
+    NTPhotos.get(item.phid).then(function(b64){NTPhotos.del(item.phid).catch(function(){});start(b64);}).catch(function(){start(null);});
+  }else{
+    start(item.b64);
+  }
 }
 
 // ── KI-Wochenbericht ──
@@ -4740,6 +4782,7 @@ function compressOldDays(){
       var day=S.days[d];
       var all=day.meals.breakfast.concat(day.meals.lunch,day.meals.dinner,day.meals.snack);
       var t=calcM(all);
+      if(window.NTPhotos&&NTPhotos.ok())all.forEach(function(e){if(e&&e.mealPhotoId)NTPhotos.del(e.mealPhotoId).catch(function(){});});
       // Nur Summen behalten, Details + Fotos löschen
       S.days[d]={_compressed:true,kcal:Math.round(t.kcal),protein:Math.round(t.protein),carbs:Math.round(t.carbs),fat:Math.round(t.fat),water:day.water||0};
       changed=true;
@@ -4788,14 +4831,48 @@ function addWater(ml){
 }
 
 // ── Mahlzeit-Foto speichern ──
+// Fotos wandern nach IndexedDB (window.NTPhotos), am Eintrag bleibt nur die
+// mealPhotoId. Ohne IndexedDB (Private-Mode-Edge-Fälle) Fallback auf das alte
+// Base64-Feld mealPhoto im localStorage-State.
 function saveMealPhoto(meal,idx,b64){
   var day=getDay();
-  if(day.meals[meal]&&day.meals[meal][idx]){
-    day.meals[meal][idx].mealPhoto=b64;
-    saveS();
-    showToast('📷 Foto gespeichert');
+  var entry=day.meals[meal]&&day.meals[meal][idx];
+  if(!entry)return;
+  if(window.NTPhotos&&NTPhotos.ok()){
+    var pid='ph'+Date.now()+Math.random().toString(36).slice(2,8);
+    var old=entry.mealPhotoId;
+    NTPhotos.put(pid,b64).then(function(){
+      entry.mealPhotoId=pid;delete entry.mealPhoto;
+      if(old)NTPhotos.del(old).catch(function(){});
+      saveS();
+      showToast('📷 Foto gespeichert');
+    }).catch(function(){entry.mealPhoto=b64;saveS();showToast('📷 Foto gespeichert');});
+  }else{
+    entry.mealPhoto=b64;saveS();showToast('📷 Foto gespeichert');
   }
 }
+// Einmalige, idempotente Migration bestehender Base64-Fotos nach IndexedDB.
+// Bei IDB-Fehler wird nichts gelöscht (lieber alt und groß als Fotoverlust).
+function _migratePhotosToIdb(){
+  if(localStorage.getItem('nt_photos_migrated'))return;
+  if(!window.NTPhotos||!NTPhotos.ok())return;
+  var puts=[];
+  Object.keys(S.days||{}).forEach(function(dk){
+    var day=S.days[dk];if(!day||!day.meals)return;
+    Object.keys(day.meals).forEach(function(m){
+      (day.meals[m]||[]).forEach(function(entry){
+        if(entry&&entry.mealPhoto){
+          var pid='ph'+Date.now()+Math.random().toString(36).slice(2,8);
+          puts.push(NTPhotos.put(pid,entry.mealPhoto).then(function(){entry.mealPhotoId=pid;delete entry.mealPhoto;}));
+        }
+      });
+    });
+  });
+  if(!puts.length){localStorage.setItem('nt_photos_migrated','1');return;}
+  Promise.all(puts).then(function(){saveS();localStorage.setItem('nt_photos_migrated','1');}).catch(function(){});
+}
+// Nach einem Import/Restore können wieder Base64-Fotos im State liegen (alte Backups).
+function _migratePhotosAfterImport(){localStorage.removeItem('nt_photos_migrated');setTimeout(_migratePhotosToIdb,500);}
 
 // ── Mahlzeit-Vorlagen ──
 function saveMealAsTemplate(meal){
@@ -5149,7 +5226,7 @@ function oneDriveSyncDown(){
       if(backup.customFoods)customFoods=backup.customFoods;
       if(backup.recipes)recipes=backup.recipes;
       if(backup.barcodeCache)barcodeCache=backup.barcodeCache;
-      _importAiFields(backup);
+      _importAiFields(backup);_migratePhotosAfterImport();
       saveS();saveX();saveBarcodeCache();
       renderAll();
       showToast('☁️ Daten aus OneDrive geladen ✓');
@@ -5216,7 +5293,7 @@ function _odSlotLoad(idx){
       if(d.customFoods)customFoods=d.customFoods;
       if(d.recipes)recipes=d.recipes;
       if(d.barcodeCache)Object.assign(barcodeCache,d.barcodeCache);
-      _importAiFields(d);
+      _importAiFields(d);_migratePhotosAfterImport();
       saveS();saveX();saveBarcodeCache();renderAll();closeOv('autoSavesOv');
       showToast('Stand geladen ✓');
     });
@@ -5491,7 +5568,7 @@ function importData(e){
       if(d.customFoods)customFoods=d.customFoods;
       if(d.recipes)recipes=d.recipes;
       if(d.barcodeCache)Object.assign(barcodeCache,d.barcodeCache);
-      _importAiFields(d);
+      _importAiFields(d);_migratePhotosAfterImport();
       saveS();saveX();saveBarcodeCache();renderAll();closeOv('settOv');showToast('Importiert ✓');
     }catch(e){showToast('Fehler beim Import');}
   };
@@ -5663,8 +5740,15 @@ function renderMealDetail(meal){
   }
   var photoEl=document.getElementById('mdPhoto');
   if(photoEl){
-    var ph=en.find(function(e){return e.photo;});
-    if(ph&&ph.photo){photoEl.style.backgroundImage='url('+ph.photo+')';photoEl.textContent='';}
+    var ph=en.find(function(e){return e.mealPhoto||e.mealPhotoId;});
+    if(ph&&ph.mealPhoto){photoEl.style.backgroundImage='url('+ph.mealPhoto+')';photoEl.textContent='';}
+    else if(ph&&ph.mealPhotoId&&window.NTPhotos&&NTPhotos.ok()){
+      photoEl.style.backgroundImage='';photoEl.textContent='';
+      NTPhotos.get(ph.mealPhotoId).then(function(d){
+        if(d){photoEl.style.backgroundImage='url('+d+')';photoEl.textContent='';}
+        else photoEl.textContent='Foto-Platzhalter';
+      });
+    }
     else{photoEl.style.backgroundImage='';photoEl.textContent='Foto-Platzhalter';}
   }
   var setS=function(id,val){var e=document.getElementById(id);if(e)e.textContent=val;};

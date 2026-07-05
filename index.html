@@ -11,7 +11,10 @@
 <link rel="manifest" href="/nutritrack/manifest.json">
 <link rel="apple-touch-icon" href="/nutritrack/icon.svg">
 <title>NutriTrack</title>
-<script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
+<!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
+     synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
+     SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
+<script defer src="js/zxing/zxing-js.umd.min.js"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -280,11 +283,6 @@ body:has(#setupScreen.active) .fb-fab{display:none;}
 .frow{display:flex;gap:8px;margin-bottom:8px;}
 .frow .finp{margin-bottom:0;flex:1;}
 .fsave{width:100%;background:var(--g2);color:white;border:none;border-radius:9px;padding:10px;font-family:'Nunito',sans-serif;font-weight:700;font-size:14px;margin-top:4px;}
-
-/* Quicktrack tab */
-.qt-panel{background:#fffde7;border:1.5px solid #f9c74f;border-radius:12px;padding:13px;}
-.qt-title{font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;color:#7d5a00;margin-bottom:10px;}
-.fsave.qt{background:#f9c74f;color:#7d5a00;}
 
 /* Ingredient list (universal) */
 .ing-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;}
@@ -591,6 +589,10 @@ button,input,select,textarea{font-family:var(--fs-body);}
       style="width:100%;padding:14px;background:#2d7d52;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;margin-top:4px;">
       Weiter →
     </button>
+    <button type="button" onclick="skipProxyPwGate()"
+      style="width:100%;padding:10px;background:none;color:#7a9487;border:none;font-size:13px;font-weight:600;cursor:pointer;margin-top:8px;text-decoration:underline;">
+      Später – App ohne KI nutzen
+    </button>
   </div>
 </div>
 
@@ -678,7 +680,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.198</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.208</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -688,7 +690,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div id="odMissingBanner" style="display:none;align-items:center;gap:10px;background:#fff3e0;border-bottom:1px solid #ffe0b2;padding:10px 16px;">
       <div style="flex:1;font-size:12px;color:#e65100;font-weight:600;">☁️ OneDrive nicht verbunden – Sichere deine Daten einmal täglich lokal.</div>
-      <button type="button" onclick="shareData()" style="font-size:12px;font-weight:700;color:#e65100;background:none;border:1px solid #e65100;padding:4px 8px;border-radius:8px;cursor:pointer;">💾 Sichern</button>
+      <button type="button" onclick="openBackupSettings()" style="font-size:12px;font-weight:700;color:#e65100;background:none;border:1px solid #e65100;padding:4px 8px;border-radius:8px;cursor:pointer;">💾 Sichern</button>
       <button type="button" onclick="dismissOdBanner()" style="font-size:14px;color:#e65100;background:none;border:none;cursor:pointer;padding:4px;">✕</button>
     </div>
     <div class="dn">
@@ -711,7 +713,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div id="backupReminder" class="hidden" style="background:#fff8e1;border:1.5px solid #f9c74f;border-radius:12px;padding:11px 14px;margin:10px 12px 0;display:flex;align-items:center;gap:10px;">
     <div style="font-size:20px;">💾</div>
     <div style="flex:1;font-size:13px;color:#7d5a00;font-weight:600;">Tipp: Daten heute sichern?</div>
-    <button type="button" onclick="shareData();dismissBackupReminder();" style="background:#f9c74f;border:none;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;color:#7d5a00;flex-shrink:0;">Teilen 📤</button>
+    <button type="button" onclick="openBackupSettings();dismissBackupReminder();" style="background:#f9c74f;border:none;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;color:#7d5a00;flex-shrink:0;">Sichern →</button>
     <button type="button" onclick="dismissBackupReminder()" style="background:none;border:none;font-size:18px;color:#aaa;flex-shrink:0;">✕</button>
   </div>
   <div class="main">
@@ -972,9 +974,9 @@ button,input,select,textarea{font-family:var(--fs-body);}
       <div class="lr-body"><div class="lr-name">Einstellungen</div><div class="lr-sub">Profil, Ziele, Ernährung, Erinnerungen</div></div>
       <div class="lr-val">›</div>
     </div>
-    <div class="list-row" onclick="shareData()">
+    <div class="list-row" onclick="openBackupSettings()">
       <div class="lr-ic">💾</div>
-      <div class="lr-body"><div class="lr-name">Daten teilen / sichern</div><div class="lr-sub">Backup als Code oder Link</div></div>
+      <div class="lr-body"><div class="lr-name">Daten teilen / sichern</div><div class="lr-sub">Export, Import, OneDrive, Autospeicher</div></div>
       <div class="lr-val">›</div>
     </div>
     <div class="list-row" onclick="if(typeof openImportPaste==='function')openImportPaste();else openSettings();">
@@ -999,7 +1001,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.200</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.208</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1031,7 +1033,6 @@ button,input,select,textarea{font-family:var(--fs-body);}
         <button type="button" class="picker-tab" id="ptab-barcode" onclick="pickerSetTab('barcode')"><span>📊</span>Barcode</button>
         <button type="button" class="picker-tab" id="ptab-own" onclick="pickerSetTab('own')"><span>✚</span>Eigenes</button>
         <button type="button" class="picker-tab" id="ptab-link" onclick="pickerSetTab('link')"><span>🔗</span>Link</button>
-        <button type="button" class="picker-tab" id="ptab-quick" onclick="pickerSetTab('quick')"><span>⚡</span>Quick</button>
       </div>
 
       <!-- Tab: Zuletzt / Favoriten -->
@@ -1041,7 +1042,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
       <!-- Tab: Suche -->
       <div class="picker-panel act" id="ppanel-search">
         <div class="psb">
-          <input type="text" class="psi" id="pickerSearchQ" placeholder="z.B. Banane, Skyr..." onkeydown="if(event.key==='Enter')pickerSearch()">
+          <input type="text" class="psi" id="pickerSearchQ" placeholder="z.B. Banane, Skyr..." oninput="pickerSearchLocalLive()" onkeydown="if(event.key==='Enter')pickerSearch()">
           <button type="button" class="psg" id="pickerSearchBtn" onclick="pickerSearch()">Suchen</button>
         </div>
         <div class="src-hint" id="pickerSearchHint">Lokale Treffer sofort · Online bei Suche</div>
@@ -1156,7 +1157,12 @@ button,input,select,textarea{font-family:var(--fs-body);}
           <input type="text" class="finp" id="ownEmoji" placeholder="Emoji (optional)">
           <div class="frow"><input type="number" class="finp" id="ownKcal" placeholder="kcal"><input type="number" class="finp" id="ownProtein" placeholder="Protein g"></div>
           <div class="frow"><input type="number" class="finp" id="ownCarbs" placeholder="Kohlenhydrate g"><input type="number" class="finp" id="ownFat" placeholder="Fett g"></div>
-          <button type="button" class="fsave" onclick="pickerSaveOwn()">💾 Speichern & zur Suche</button>
+          <label style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--tx);margin:8px 2px 2px;cursor:pointer;">
+            <input type="checkbox" id="ownOnce" style="margin-top:2px;">
+            <span>Nur einmal eintragen (nicht in „Eigene Lebensmittel" speichern)</span>
+          </label>
+          <div style="font-size:11px;color:var(--mu);margin:2px 2px 6px 26px;line-height:1.4;">Angehakt: Werte gelten als Gesamtwerte der Portion. Sonst: pro 100 g.</div>
+          <button type="button" class="fsave" onclick="pickerSaveOwn()">✓ Übernehmen</button>
         </div>
       </div>
 
@@ -1181,17 +1187,6 @@ button,input,select,textarea{font-family:var(--fs-body);}
             <button type="button" class="cb2" style="margin-top:0;" onclick="pickerLinkAdd(false)">✓ Eintragen</button>
             <button type="button" class="cb2" style="margin-top:0;background:linear-gradient(135deg,#2d5f8a,#3d8bc4);" onclick="pickerLinkAdd(true)">📋 Als Rezept</button>
           </div>
-        </div>
-      </div>
-
-      <!-- Tab: Quicktrack -->
-      <div class="picker-panel" id="ppanel-quick">
-        <div class="qt-panel">
-          <div class="qt-title">⚡ Quicktrack – Gesamtwerte (wird nicht gespeichert)</div>
-          <input type="text" class="finp" id="qtName" placeholder="Bezeichnung">
-          <div class="frow"><input type="number" class="finp" id="qtKcal" placeholder="kcal gesamt"><input type="number" class="finp" id="qtProtein" placeholder="Protein g"></div>
-          <div class="frow"><input type="number" class="finp" id="qtCarbs" placeholder="Kohlenhydrate g"><input type="number" class="finp" id="qtFat" placeholder="Fett g"></div>
-          <button type="button" class="fsave qt" onclick="pickerQuicktrack()">⚡ Direkt eintragen</button>
         </div>
       </div>
 
@@ -1273,12 +1268,18 @@ button,input,select,textarea{font-family:var(--fs-body);}
       <div class="mti">❓ Hilfe & Anleitung</div>
       <div class="msu">NutriTrack Benutzerhandbuch</div>
     </div>
-    <div class="mbd" style="padding:0;height:calc(92vh - 80px);">
-      <iframe id="helpFrame"
-        src="https://hjolmes.github.io/nutritrack/nutritrack_anleitung.pdf"
-        style="width:100%;height:100%;border:none;display:block;"
-        title="NutriTrack Anleitung">
-      </iframe>
+    <div class="mbd" style="height:calc(92vh - 80px);overflow-y:auto;-webkit-overflow-scrolling:touch;">
+      <style>#helpOv details{border:1px solid var(--br);border-radius:12px;margin-bottom:8px;background:var(--card);}#helpOv summary{padding:12px 14px;font-weight:700;font-size:14px;cursor:pointer;list-style:none;}#helpOv summary::-webkit-details-marker{display:none;}#helpOv summary::before{content:'▸ ';color:var(--mu);}#helpOv details[open] summary::before{content:'▾ ';}#helpOv .hb{padding:0 14px 12px;font-size:13px;line-height:1.6;color:var(--tx);}#helpOv .hb ul{margin:6px 0;padding-left:18px;}</style>
+      <details open><summary>🏠 Heute-Tab</summary><div class="hb">Der Startbildschirm zeigt dein Tagesziel, die verbleibenden Kalorien und die drei Makro-Karten (Protein, Kohlenhydrate, Fett). Darunter liegen die vier Mahlzeiten-Karten — antippen öffnet die Detail-Ansicht. Mit den Pfeilen <strong>‹ ›</strong> blätterst du zwischen Tagen. „▶ Nährwert-Details" klappt die Ampel-Kacheln (Zucker, Ballaststoffe, Salz …) auf. Wasser trackst du über die Gläser-Reihe, Sport über „+ Aktivität" — verbrannte Kalorien werden vom Ziel abgezogen.</div></details>
+      <details><summary>➕ Mahlzeit erfassen</summary><div class="hb">Der <strong>＋</strong>-Knopf in der Mitte der unteren Leiste öffnet den Picker, standardmäßig im <strong>Chat</strong>: Einfach tippen oder per 🎙️ diktieren, was du gegessen hast („Brot mit Käse und Schinken") — die App zerlegt es in Zutaten und schätzt Nährwerte. Weitere Wege:<ul><li><strong>Suche</strong> — lokale Treffer sofort beim Tippen, Enter lädt Online-Ergebnisse</li><li><strong>Zuletzt</strong> — kürzlich verwendete Einträge</li><li><strong>Foto</strong> — Teller fotografieren, KI erkennt die Komponenten</li><li><strong>Barcode</strong> — Verpackung scannen</li><li><strong>Eigenes</strong> — Nährwerte selbst eintragen; mit Häkchen „Nur einmal eintragen" wird nichts dauerhaft gespeichert</li><li><strong>Link</strong> — Rezept-URL (z. B. Chefkoch) importieren</li></ul></div></details>
+      <details><summary>🍽 Mahlzeit-Detail</summary><div class="hb">Die Karte einer Mahlzeit öffnet die Detail-Ansicht mit allen Posten. Unten findest du: <strong>📋 Vorlage</strong> (Mahlzeit als Vorlage laden/speichern), <strong>🔁 Wiederholen</strong> (an festen Wochentagen automatisch eintragen) und <strong>💾 Als Rezept</strong> (alle Einträge als Rezept in die Bibliothek übernehmen). Einzelne Einträge antippen zum Bearbeiten, Verschieben oder Löschen.</div></details>
+      <details><summary>📚 Bibliothek</summary><div class="hb">Unter „Mehr → Bibliothek" liegen deine Rezepte und eigenen Lebensmittel. Rezepte kannst du bearbeiten, duplizieren, teilen, als Einkaufsliste anzeigen und direkt in eine Mahlzeit übernehmen. Der 🔗-Knopf importiert ein Rezept per URL, 📥 löst einen geteilten Code/Link ein.</div></details>
+      <details><summary>📤 Teilen &amp; Import</summary><div class="hb">Rezepte, Lebensmittel und Mahlzeiten lassen sich als Link teilen (📤-Symbole). Der Empfänger öffnet den Link — auf dem iPhone ggf. über „Mehr → 📥 Code / Link einlösen" in der installierten App einfügen.</div></details>
+      <details><summary>💾 Backup</summary><div class="hb">Alle Sicherungswege liegen unter <strong>Einstellungen → 💾 Backup</strong>: „Jetzt sichern"-Knopf, Datei-Export/-Import (JSON), OneDrive-Sync mit täglichem Autospeicher sowie lokale Autospeicher-Stände. Tipp: Vor einem Gerätewechsel einmal exportieren. Hinweis: Mahlzeit-Fotos sind gerätelokal und nicht Teil der Backup-Datei.</div></details>
+      <details><summary>🏃 Sport-Sync</summary><div class="hb">Unter „Mehr → Sport-Sync" erzeugst du ein Token und verbindest eine iOS-Kurzbefehl-Automation („Wenn Training endet") oder einen Android-HTTP-Shortcut. Abgeschlossene Workouts erscheinen dann automatisch mit Apple-/Samsung-Badge und reduzieren dein Tagesziel.</div></details>
+      <details><summary>🤖 KI</summary><div class="hb">Foto-Erkennung, Chat und Wochenbericht laufen über einen geschützten KI-Zugang — dafür brauchst du das Proxy-Passwort (Einstellungen → 🤖 KI). Optional kannst du dort einen eigenen KI-Anbieter (OpenAI, Gemini, …) mit eigenem API-Key hinterlegen. Ohne Passwort funktioniert alles außer den KI-Funktionen.</div></details>
+      <details><summary>❓ FAQ</summary><div class="hb"><strong>Warum stimmt eine Schätzung nicht?</strong> KI-Werte sind Näherungen — Menge und Zutaten lassen sich jederzeit anpassen.<br><strong>Funktioniert die App offline?</strong> Ja, Tagebuch, Suche (lokale Datenbank) und Bibliothek laufen offline; KI und Online-Suche brauchen Netz.<br><strong>Erinnerungen kommen nicht?</strong> Technisch bedingt erscheinen sie nur, solange die App geöffnet ist.<br><strong>Daten weg?</strong> Einstellungen → Backup → Autospeicher anzeigen — dort liegen die letzten Stände.</div></details>
+      <div style="text-align:center;margin:14px 0 6px;"><a href="nutritrack_anleitung.pdf" target="_blank" style="font-size:13px;color:var(--g2);font-weight:700;">📄 Anleitung als PDF öffnen</a></div>
     </div>
   </div>
 </div>
@@ -1470,25 +1471,6 @@ button,input,select,textarea{font-family:var(--fs-body);}
 </div>
 
 <!-- ══ REZEPT URL-IMPORT ══ -->
-<div class="ov" id="recipeImportOv" onclick="bgClose(event,'recipeImportOv')">
-  <div class="mod">
-    <div class="mhan"></div>
-    <div class="mhd">
-      <button type="button" class="mcl" onclick="closeOv('recipeImportOv')">✕</button>
-      <div class="mti">🔗 Rezept importieren</div>
-      <div class="msu">URL oder kopierten Text einfügen</div>
-    </div>
-    <div class="mbd">
-      <textarea id="recipeImportInput" rows="5"
-        style="width:100%;box-sizing:border-box;border:1.5px solid var(--br);border-radius:12px;padding:12px;font-size:14px;font-family:inherit;resize:vertical;min-height:100px;outline:none;color:var(--tx);"
-        placeholder="URL einfügen – oder beliebigen Text der Seite (z.B. Chefkoch kopiert manchmal Werbetext mit). Die URL wird automatisch erkannt."
-        oninput="recipeImportDetect()"></textarea>
-      <div id="recipeImportUrlInfo" style="margin-top:8px;min-height:36px;"></div>
-      <button type="button" class="cb2" id="recipeImportBtn" onclick="recipeImportStart()" disabled style="width:100%;margin-top:4px;opacity:.4;">Rezept importieren</button>
-    </div>
-  </div>
-</div>
-
 <!-- ══ EINTRAG KURZMENÜ ══ -->
 <div class="ov" id="entryMenuOv" onclick="bgClose(event,'entryMenuOv')">
   <div class="mod">
@@ -1825,6 +1807,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
       <!-- TAB: ERINNERUNGEN -->
       <div id="spanel-erinnerungen" style="display:none;">
         <label class="lbl" style="margin-bottom:6px;">⏰ Erinnerungen</label>
+        <div style="background:#fff8e1;border:1.5px solid #f9c74f;border-radius:10px;padding:8px 12px;font-size:11px;color:#7d5a00;line-height:1.5;margin-bottom:8px;">⚠️ Hinweis: Erinnerungen können technisch nur erscheinen, solange NutriTrack geöffnet ist.</div>
         <div id="reminderList"></div>
         <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px;">
           <div style="display:flex;gap:6px;">
@@ -1841,7 +1824,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
         <div style="display:flex;gap:8px;margin-bottom:10px;">
           <button type="button" id="libTabRec" onclick="libSetTab('recipes')" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--g2);background:var(--g2);color:white;font-weight:700;font-size:13px;">📋 Rezepte</button>
           <button type="button" id="libTabFoods" onclick="libSetTab('foods')" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--br);background:white;color:var(--mu);font-weight:700;font-size:13px;">🥗 Lebensmittel</button>
-          <button type="button" onclick="openRecipeImport()" style="padding:9px 14px;border-radius:10px;border:1.5px solid var(--g2);background:white;color:var(--g2);font-weight:700;font-size:13px;" title="Rezept per URL importieren">🔗</button>
+          <button type="button" onclick="closeOv('settOv');openPicker(null,'link')" style="padding:9px 14px;border-radius:10px;border:1.5px solid var(--g2);background:white;color:var(--g2);font-weight:700;font-size:13px;" title="Rezept per URL importieren">🔗</button>
           <button type="button" onclick="openImportPaste()" style="padding:9px 14px;border-radius:10px;border:1.5px solid var(--g2);background:white;color:var(--g2);font-weight:700;font-size:13px;" title="Link oder Code einlösen">📥</button>
         </div>
         <div id="libraryList" style="display:flex;flex-direction:column;gap:8px;"></div>
@@ -1880,6 +1863,10 @@ button,input,select,textarea{font-family:var(--fs-body);}
       <!-- TAB: BACKUP -->
       <div id="spanel-backup" style="display:none;">
         <div style="padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--br);">
+          <button type="button" class="cb2" onclick="backupNow()">💾 Jetzt sichern</button>
+          <div id="backupNowHint" style="font-size:12px;color:var(--mu);margin-top:6px;"></div>
+        </div>
+        <div style="padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--br);">
           <label class="lbl" style="margin-bottom:8px;">🕹️ Autospeicher</label>
           <div style="font-size:12px;color:var(--mu);margin-bottom:8px;">Wird bei jedem App-Start automatisch gespeichert. Bis zu 5 Stände.</div>
           <button type="button" class="seb" onclick="openAutoSaves()">📂 Autospeicher anzeigen</button>
@@ -1903,97 +1890,16 @@ button,input,select,textarea{font-family:var(--fs-body);}
 </div>
 
 <div class="tst" id="toast"></div>
+<!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
+<script src="js/fooddb.js"></script>
+<script src="js/idb-photos.js"></script>
+<script src="js/changelog.js"></script>
 <script>
 // ════════════════════════════════════════
 // SECTION: DATABASE
 // ════════════════════════════════════════
-var DB=[
-  {n:'Apfel',e:'🍎',k:52,p:0.3,c:14,f:0.2,s:'apple äpfel'},{n:'Birne',e:'🍐',k:57,p:0.4,c:15,f:0.1,s:'pear birnen'},
-  {n:'Banane',e:'🍌',k:89,p:1.1,c:23,f:0.3,s:'banana'},{n:'Orange',e:'🍊',k:47,p:0.9,c:12,f:0.1,s:'orangen mandarine'},
-  {n:'Mandarine',e:'🍊',k:53,p:0.8,c:13,f:0.3,s:'clementine'},{n:'Erdbeeren',e:'🍓',k:32,p:0.7,c:7.7,f:0.3,s:'erdbeere strawberry'},
-  {n:'Blaubeeren',e:'🫐',k:57,p:0.7,c:14,f:0.3,s:'heidelbeere blueberry'},{n:'Himbeeren',e:'🫐',k:52,p:1.2,c:11,f:0.6,s:'himbeere raspberry'},
-  {n:'Brombeeren',e:'🫐',k:43,p:1.4,c:9.8,f:0.5,s:'blackberry'},{n:'Kirschen',e:'🍒',k:63,p:1,c:16,f:0.2,s:'kirsche cherry'},
-  {n:'Weintrauben',e:'🍇',k:67,p:0.6,c:17,f:0.4,s:'trauben grape'},{n:'Kiwi',e:'🥝',k:61,p:1.1,c:15,f:0.5,s:''},
-  {n:'Mango',e:'🥭',k:60,p:0.8,c:15,f:0.4,s:''},{n:'Ananas',e:'🍍',k:50,p:0.5,c:13,f:0.1,s:'pineapple'},
-  {n:'Avocado',e:'🥑',k:160,p:2,c:9,f:15,s:''},{n:'Wassermelone',e:'🍉',k:30,p:0.6,c:7.6,f:0.2,s:'melone watermelon'},
-  {n:'Pfirsich',e:'🍑',k:39,p:0.9,c:9.5,f:0.3,s:'peach'},{n:'Pflaume',e:'🍇',k:46,p:0.7,c:11,f:0.3,s:'zwetschge plum'},
-  {n:'Aprikose',e:'🍑',k:48,p:1.4,c:11,f:0.4,s:'apricot'},{n:'Grapefruit',e:'🍊',k:42,p:0.8,c:11,f:0.1,s:''},
-  {n:'Zitrone',e:'🍋',k:29,p:1.1,c:9,f:0.3,s:'lemon'},{n:'Tomate',e:'🍅',k:18,p:0.9,c:3.5,f:0.2,s:'tomaten tomato'},
-  {n:'Cherrytomaten',e:'🍅',k:18,p:0.9,c:3.5,f:0.2,s:'cherry'},{n:'Gurke',e:'🥒',k:15,p:0.7,c:3.1,f:0.1,s:'cucumber'},
-  {n:'Möhre',e:'🥕',k:41,p:0.9,c:9.6,f:0.2,s:'karotte carrot mohre'},{n:'Karotte',e:'🥕',k:41,p:0.9,c:9.6,f:0.2,s:'möhre carrot'},
-  {n:'Brokkoli',e:'🥦',k:35,p:2.4,c:5.2,f:0.4,s:'broccoli'},{n:'Blumenkohl',e:'🥦',k:25,p:1.9,c:5,f:0.3,s:'cauliflower'},
-  {n:'Spinat',e:'🥬',k:23,p:2.9,c:3.6,f:0.4,s:'spinach'},{n:'Rucola',e:'🥬',k:25,p:2.6,c:3.7,f:0.7,s:'arugula'},
-  {n:'Eisbergsalat',e:'🥬',k:14,p:0.9,c:2.9,f:0.1,s:'salat lettuce'},{n:'Paprika rot',e:'🫑',k:31,p:1,c:6,f:0.3,s:'pepper'},
-  {n:'Paprika gelb',e:'🫑',k:27,p:1,c:6.3,f:0.2,s:'pepper'},{n:'Paprika grün',e:'🫑',k:20,p:0.9,c:4.6,f:0.2,s:'pepper'},
-  {n:'Zucchini',e:'🥒',k:17,p:1.2,c:3.1,f:0.3,s:'courgette'},{n:'Aubergine',e:'🍆',k:25,p:1,c:5.7,f:0.2,s:'eggplant'},
-  {n:'Weißkohl',e:'🥬',k:25,p:1.3,c:5.8,f:0.1,s:'kohl cabbage'},{n:'Zwiebel',e:'🧅',k:40,p:1.1,c:9.3,f:0.1,s:'onion'},
-  {n:'Knoblauch',e:'🧄',k:149,p:6.4,c:33,f:0.5,s:'garlic'},{n:'Pilze',e:'🍄',k:22,p:3.1,c:3.3,f:0.3,s:'champignons mushroom'},
-  {n:'Erbsen',e:'🟢',k:81,p:5.4,c:14,f:0.4,s:'peas'},{n:'Mais',e:'🌽',k:86,p:3.2,c:19,f:1.2,s:'corn'},
-  {n:'Süßkartoffel',e:'🍠',k:90,p:2,c:21,f:0.1,s:'sweet potato'},{n:'Kartoffel',e:'🥔',k:77,p:2,c:17,f:0.1,s:'potato'},
-  {n:'Spargel',e:'🌿',k:20,p:2.2,c:3.9,f:0.1,s:'asparagus'},{n:'Grüne Bohnen',e:'🌿',k:31,p:1.8,c:7,f:0.1,s:'bohnen beans'},
-  {n:'Kürbis',e:'🎃',k:26,p:1,c:6.5,f:0.1,s:'pumpkin hokkaido'},{n:'Edamame',e:'🟢',k:121,p:11,c:8.9,f:5.2,s:'sojabohnen'},
-  {n:'Weißbrot',e:'🥖',k:265,p:9,c:51,f:3.2,s:'baguette white bread'},{n:'Vollkornbrot',e:'🍞',k:247,p:9,c:41,f:3.5,s:'wholegrain'},
-  {n:'Schwarzbrot',e:'🍞',k:226,p:7.2,c:45,f:1.7,s:'pumpernickel roggen'},{n:'Brötchen',e:'🥖',k:270,p:9,c:53,f:3,s:'semmel roll'},
-  {n:'Toastbrot',e:'🍞',k:250,p:8,c:47,f:3,s:'toast'},{n:'Laugenbrezel',e:'🥨',k:340,p:10,c:66,f:3,s:'brezel pretzel'},
-  {n:'Croissant',e:'🥐',k:406,p:8.2,c:46,f:21,s:''},{n:'Haferflocken',e:'🌾',k:368,p:13,c:58,f:7,s:'oat oats porridge'},
-  {n:'Haferbrei',e:'🌾',k:88,p:3.5,c:15,f:1.8,s:'porridge oatmeal'},{n:'Müsli',e:'🥣',k:360,p:10,c:60,f:6,s:'muesli granola'},
-  {n:'Cornflakes',e:'🥣',k:357,p:7,c:84,f:0.9,s:'cereals'},{n:'Reis (gekocht)',e:'🍚',k:130,p:2.7,c:28,f:0.3,s:'rice basmati'},
-  {n:'Vollkornreis (gekocht)',e:'🍚',k:123,p:2.6,c:26,f:0.9,s:'brown rice'},{n:'Pasta (gekocht)',e:'🍝',k:158,p:5.5,c:31,f:0.9,s:'nudeln spaghetti penne'},
-  {n:'Vollkornnudeln (gekocht)',e:'🍝',k:149,p:5.9,c:29,f:1.1,s:'pasta'},{n:'Quinoa (gekocht)',e:'🌾',k:120,p:4.4,c:21,f:1.9,s:''},
-  {n:'Couscous (gekocht)',e:'🫙',k:112,p:3.8,c:23,f:0.2,s:''},{n:'Bulgur (gekocht)',e:'🌾',k:83,p:3.1,c:19,f:0.2,s:''},
-  {n:'Hühnerbrust',e:'🍗',k:165,p:31,c:0,f:3.6,s:'hähnchenbrust chicken breast'},{n:'Hähnchenschenkel',e:'🍗',k:216,p:26,c:0,f:12,s:'chicken'},
-  {n:'Putenbrust',e:'🦃',k:107,p:24,c:0,f:1,s:'pute turkey'},{n:'Rinderhack',e:'🥩',k:215,p:26,c:0,f:12,s:'hackfleisch ground beef'},
-  {n:'Rinderfilet',e:'🥩',k:158,p:29,c:0,f:4,s:'steak beef'},{n:'Schweineschnitzel',e:'🥩',k:143,p:22,c:0,f:6,s:'schnitzel pork'},
-  {n:'Lachs',e:'🐟',k:208,p:20,c:0,f:13,s:'salmon'},{n:'Thunfisch (Dose)',e:'🐠',k:116,p:26,c:0,f:1,s:'tuna'},
-  {n:'Garnelen',e:'🦐',k:99,p:21,c:0,f:1.1,s:'shrimp'},{n:'Kabeljau',e:'🐟',k:82,p:18,c:0,f:0.7,s:'cod'},
-  {n:'Ei (gekocht)',e:'🥚',k:155,p:13,c:1.1,f:11,s:'eier egg'},{n:'Rührei',e:'🍳',k:149,p:10,c:1.6,f:11,s:'ei egg scrambled'},
-  {n:'Milch (3,5%)',e:'🥛',k:64,p:3.3,c:4.8,f:3.5,s:'vollmilch milk'},{n:'Milch (1,5%)',e:'🥛',k:47,p:3.4,c:4.9,f:1.5,s:'fettarme milch'},
-  {n:'Hafermilch',e:'🥛',k:45,p:1,c:7,f:1.5,s:'oat milk'},{n:'Sojamilch',e:'🥛',k:54,p:3.3,c:6,f:1.8,s:'soy milk'},
-  {n:'Mandelmilch',e:'🥛',k:24,p:0.5,c:3.5,f:1,s:'almond milk'},{n:'Naturjoghurt',e:'🥣',k:61,p:3.5,c:4.7,f:3.5,s:'joghurt yogurt'},
-  {n:'Griechischer Joghurt',e:'🥣',k:97,p:9,c:3.6,f:5,s:'joghurt greek'},{n:'Magerjoghurt',e:'🥣',k:36,p:3.4,c:4.4,f:0.2,s:'joghurt'},
-  {n:'Magerquark',e:'🥄',k:67,p:12,c:3.3,f:0.5,s:'quark'},{n:'Speisequark',e:'🥄',k:95,p:12,c:3.4,f:2,s:'quark'},
-  {n:'Frischkäse',e:'🧀',k:342,p:6,c:4.1,f:33,s:'cream cheese'},{n:'Hüttenkäse',e:'🧀',k:72,p:11,c:3.4,f:1.2,s:'cottage cheese'},
-  {n:'Gouda',e:'🧀',k:356,p:25,c:2.2,f:27,s:'gouda cheese'},{n:'Mozzarella',e:'🧀',k:257,p:18,c:3.1,f:19,s:''},
-  {n:'Feta',e:'🧀',k:264,p:14,c:4,f:21,s:'schafskase feta'},{n:'Parmesan',e:'🧀',k:431,p:38,c:0,f:29,s:''},
-  {n:'Butter',e:'🧈',k:717,p:0.9,c:0.1,f:81,s:''},{n:'Margarine',e:'🧈',k:717,p:0.2,c:0.7,f:80,s:''},
-  {n:'Sahne',e:'🥛',k:296,p:2.4,c:2.8,f:30,s:'schlagsahne cream'},{n:'Sauerrahm',e:'🥄',k:213,p:2.5,c:3.4,f:21,s:'sour cream'},
-  {n:'Linsen (gekocht)',e:'🫘',k:116,p:9,c:20,f:0.4,s:'lentils'},{n:'Kichererbsen',e:'🫘',k:139,p:7.5,c:23,f:2.3,s:'chickpeas'},
-  {n:'Kidneybohnen',e:'🫘',k:127,p:8.7,c:22,f:0.5,s:'bohnen beans'},{n:'Tofu',e:'🧆',k:76,p:8,c:1.9,f:4.8,s:''},
-  {n:'Tempeh',e:'🧆',k:193,p:19,c:9.4,f:11,s:''},{n:'Mandeln',e:'🥜',k:579,p:21,c:22,f:50,s:'almonds'},
-  {n:'Walnüsse',e:'🥜',k:654,p:15,c:14,f:65,s:'walnuts'},{n:'Cashews',e:'🥜',k:553,p:18,c:30,f:44,s:''},
-  {n:'Erdnüsse',e:'🥜',k:567,p:26,c:16,f:49,s:'peanuts'},{n:'Erdnussbutter',e:'🥜',k:588,p:25,c:20,f:50,s:'peanut butter'},
-  {n:'Chiasamen',e:'🌱',k:486,p:17,c:42,f:31,s:'chia'},{n:'Leinsamen',e:'🌱',k:534,p:18,c:29,f:42,s:'flaxseed'},
-  {n:'Olivenöl',e:'🫙',k:884,p:0,c:0,f:100,s:'olive oil öl'},{n:'Rapsöl',e:'🫙',k:884,p:0,c:0,f:100,s:'öl'},
-  {n:'Mayonnaise',e:'🫙',k:680,p:1.3,c:1.8,f:75,s:'mayo'},{n:'Hummus',e:'🫙',k:166,p:8,c:14,f:10,s:''},
-  {n:'Pesto',e:'🌿',k:476,p:5.9,c:5.1,f:49,s:''},{n:'Tomatensauce',e:'🍅',k:68,p:2.7,c:9.7,f:2.3,s:'sugo passata'},
-  {n:'Tomatenmark',e:'🍅',k:82,p:4.2,c:15,f:0.4,s:''},{n:'Ketchup',e:'🍅',k:112,p:1.5,c:27,f:0.1,s:''},
-  {n:'Senf',e:'🌭',k:60,p:3.8,c:5.4,f:3.3,s:'mustard'},{n:'Sojasauce',e:'🫙',k:60,p:5.6,c:8.3,f:0.1,s:'soy sauce'},
-  {n:'Whey Protein',e:'💪',k:380,p:75,c:10,f:4,s:'protein pulver'},{n:'Proteinriegel',e:'💪',k:370,p:30,c:40,f:8,s:'protein bar'},
-  {n:'Schokolade (70%)',e:'🍫',k:598,p:8,c:46,f:43,s:'dark chocolate'},{n:'Vollmilchschokolade',e:'🍫',k:535,p:8,c:57,f:30,s:'schokolade'},
-  {n:'Nutella',e:'🍫',k:539,p:6.3,c:57,f:31,s:''},{n:'Chips',e:'🥔',k:536,p:7,c:53,f:35,s:'crisps'},
-  {n:'Honig',e:'🍯',k:304,p:0.3,c:82,f:0,s:'honey'},{n:'Marmelade',e:'🍓',k:278,p:0.4,c:69,f:0.1,s:'jam'},
-  {n:'Pizza Margherita',e:'🍕',k:266,p:11,c:33,f:10,s:'pizza'},{n:'Hamburger',e:'🍔',k:295,p:17,c:24,f:14,s:'burger'},
-  {n:'Pommes Frites',e:'🍟',k:312,p:3.4,c:41,f:15,s:'pommes fries'},{n:'Döner',e:'🥙',k:250,p:15,c:25,f:10,s:'kebab'},
-  {n:'Kaffee (schwarz)',e:'☕',k:2,p:0.3,c:0,f:0,s:'coffee espresso kaffee'},{n:'Cappuccino',e:'☕',k:40,p:1.6,c:4,f:1.8,s:'milchkaffee cappucino'},
-  {n:'Latte Macchiato',e:'☕',k:67,p:3.3,c:6.5,f:3.5,s:'kaffee coffee'},{n:'Tee',e:'🍵',k:1,p:0,c:0.2,f:0,s:'tea'},
-  {n:'Orangensaft',e:'🧃',k:45,p:0.7,c:10,f:0.2,s:'saft juice'},{n:'Cola',e:'🥤',k:42,p:0,c:10.6,f:0,s:'coke'},
-  {n:'Cola Zero',e:'🥤',k:0,p:0,c:0,f:0,s:'diet'},{n:'Bier',e:'🍺',k:43,p:0.5,c:3.5,f:0,s:'beer'},
-  {n:'Rotwein',e:'🍷',k:85,p:0.1,c:2.6,f:0,s:'wein wine'},{n:'Schinken',e:'🍖',k:107,p:17,c:1,f:4,s:'ham'},
-  {n:'Salami',e:'🍖',k:425,p:22,c:2,f:37,s:'wurst'},{n:'Speck',e:'🥓',k:541,p:37,c:1.4,f:42,s:'bacon'},
-  {n:'Bratwurst',e:'🌭',k:312,p:13,c:2,f:28,s:'wurst'},
-  // ── Zusätzliche fehlende Lebensmittel ──
-  {n:'Skyr',e:'🥛',k:63,p:11,c:4,f:0.2,s:'skyr'},
-  {n:'Fleischsalat',e:'🥗',k:285,p:9,c:5,f:26,s:'fleisch salat wurstsalat'},
-  {n:'Käse',e:'🧀',k:356,p:25,c:2,f:27,s:'kaese cheese'},
-  {n:'Körnerbrötchen',e:'🥖',k:260,p:10,c:46,f:4,s:'koernerbroetchen kornbroetchen brötchen'},
-  {n:'Vollkornbrötchen',e:'🥖',k:250,p:9,c:44,f:3.5,s:'vollkorn brötchen'},
-  {n:'Mehrkornbrötchen',e:'🥖',k:258,p:10,c:45,f:4,s:'mehrkorn brötchen körner'},
-  {n:'Quark',e:'🥄',k:80,p:11,c:3.5,f:1.5,s:'quark'},
-  {n:'Wurst',e:'🌭',k:280,p:14,c:2,f:24,s:'aufschnitt wurstwaren'},
-  {n:'Aufschnitt',e:'🌭',k:200,p:15,c:1,f:15,s:'wurst aufschnitt'},
-];
+// DB + DE_EN sind nach js/fooddb.js ausgelagert (window.DB / window.DE_EN).
 
-var DE_EN={apfel:'apple',birne:'pear',banane:'banana',orange:'orange',erdbeere:'strawberry',blaubeere:'blueberry',himbeere:'raspberry',kirsche:'cherry',trauben:'grapes',kiwi:'kiwi',mango:'mango',avocado:'avocado',wassermelone:'watermelon',pfirsich:'peach',tomate:'tomato',gurke:'cucumber','möhre':'carrot',karotte:'carrot',brokkoli:'broccoli',spinat:'spinach',paprika:'bell pepper',zucchini:'zucchini',blumenkohl:'cauliflower',zwiebel:'onion',knoblauch:'garlic',pilze:'mushroom',kartoffel:'potato',mais:'corn',erbsen:'peas','hähnchen':'chicken','hühnerbrust':'chicken breast',putenbrust:'turkey',rinderhack:'ground beef',lachs:'salmon',thunfisch:'tuna',garnelen:'shrimp',ei:'egg',eier:'eggs',milch:'milk','käse':'cheese',joghurt:'yogurt',butter:'butter',brot:'bread',haferflocken:'oats','müsli':'muesli',reis:'rice',nudeln:'pasta',quinoa:'quinoa',mandeln:'almonds','walnüsse':'walnuts',linsen:'lentils',kichererbsen:'chickpeas',tofu:'tofu',schokolade:'chocolate',honig:'honey','olivenöl':'olive oil',kaffee:'coffee',tee:'tea'};
 
 // ════════════════════════════════════════
 // SECTION: STATE
@@ -2002,7 +1908,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.200';
+var APP_VERSION='0.208';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -2158,309 +2064,7 @@ function _odSaveFolder(path){
 function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slots_meta')||'[null,null,null,null,null]');}catch(e){return [null,null,null,null,null];}}
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
-var CHANGELOG=[
-  {v:'0.200',items:[
-    {icon:'💬',text:'Beim Hinzufügen einer Zutat öffnet sich jetzt immer zuerst der Chat statt der Datenbank-Suche. Die Suche bleibt einen Tab-Tipp entfernt; aus der Bibliothek heraus landest du weiterhin direkt in der vorbefüllten Suche.',where:'Mahlzeit → ＋'},
-    {icon:'🎙️',text:'Diktieren jetzt auch per Gedrückthalten: Mikrofon-Button halten → Aufnahme läuft, solange du hältst, und stoppt beim Loslassen. Kurzes Antippen startet/stoppt weiterhin wie bisher.',where:'Mahlzeit → ＋ → Chat'},
-    {icon:'📝',text:'Das Chat-Eingabefeld wächst mit deinem Text mit (bis ca. 5 Zeilen) — auch beim Diktieren. Nach dem Senden schrumpft es wieder auf eine Zeile.',where:'Mahlzeit → ＋ → Chat'},
-    {icon:'📐',text:'Layout-Fix: Die drei Nährwert-Karten (Protein, Kohlenhydrate, Fett) liefen auf schmalen Displays rechts aus dem Bildschirm — die Fett-Karte war abgeschnitten. Jetzt passen alle drei immer in die Breite.',where:'Heute'},
-  ]},
-  {v:'0.199',items:[
-    {icon:'🔐',text:'Der API-Key deines eigenen KI-Anbieters wird jetzt mitgesichert: Datei-Export, OneDrive-Sicherung und Autospeicher enthalten ihn verschlüsselt (AES, Schlüssel aus deinem Proxy-Passwort abgeleitet) — im Klartext taucht er in keinem Backup auf. Beim Import wird er automatisch wiederhergestellt; fehlt das Proxy-Passwort auf dem neuen Gerät noch, wird der Key übernommen, sobald du es einträgst.',where:'Einstellungen · Backup'},
-  ]},
-  {v:'0.198',items:[
-    {icon:'🎨',text:'Nährwert-Details repariert: Die Kacheln (Protein, Carbs, Fett, Zucker, Ballaststoffe, Salz) waren noch für den alten dunklen Hintergrund gestylt — weißer Text war kaum lesbar und die „grüne" Kachel komplett unsichtbar. Jetzt dunkle Schrift auf dezent getönten Ampel-Farben. Außerdem überlappt die Prozentzahl in den Makro-Karten nicht mehr mit dem Namen.',where:'Heute · Nährwert-Details'},
-  ]},
-  {v:'0.197',items:[
-    {icon:'🎙️',text:'Diktierfunktion im Chat: Neben dem Eingabefeld gibt es jetzt einen Mikrofon-Button. Antippen, sprechen — der gesprochene Text erscheint direkt im Eingabefeld und lässt sich vor dem Senden noch bearbeiten. Die Erkennung nutzt die Spracherkennung deines Geräts (Deutsch); auf Geräten ohne Unterstützung wird der Button automatisch ausgeblendet.',where:'Mahlzeit → ＋ → Chat'},
-  ]},
-  {v:'0.196',items:[
-    {icon:'⚡',text:'Barcode-Scanner startet jetzt deutlich schneller, vor allem auf dem iPhone: Der Decoder wird mit der App ausgeliefert und gecacht, statt bei jedem Scan sekundenlang aus dem Netz nachzuladen. Funktioniert dadurch auch offline.',where:'Mahlzeit → ＋ → Barcode'},
-  ]},
-  {v:'0.194',items:[
-    {icon:'🔖',text:'Du siehst jetzt, welche KI tatsächlich geantwortet hat: Am Ergebnis (Picker-Chat, Foto-Erkennung, Wochenbericht) erscheint ein kleines Badge „über …" mit Anbieter und Modell. Springt bei einem Limit oder Fehler der Anthropic-Fallback ein, zeigt das Badge das ebenfalls an.',where:'Picker · Chat & Foto · Trends'},
-  ]},
-  {v:'0.193',items:[
-    {icon:'🤖',text:'Du kannst jetzt selbst wählen, welche KI deine Schätzungen übernimmt: Unter „⚙️ → 🤖 KI → KI-Anbieter" einen Anbieter (OpenAI, Google Gemini, OpenRouter, Mistral, DeepSeek) auswählen und den eigenen API-Key eintragen. Dieser wird dann zuerst genutzt; ist das Kontingent aufgebraucht oder kommt kein Ergebnis, schaltet NutriTrack automatisch auf Anthropic (Standard) zurück. Ohne eigenen Key bleibt alles wie bisher.',where:'Einstellungen · KI'},
-  ]},
-  {v:'0.192',items:[
-    {icon:'⚡',text:'Lebensmittel-Suche & Chat wieder schnell: Der externe Dienst, über den die Nährwerte von OpenFoodFacts geladen wurden, hatte seinen Gratis-Zugang abgeschaltet — dadurch wurde besonders der Picker-Chat extrem langsam. Die Nährwert-Abfrage läuft jetzt direkt über den eigenen Server, mit Zeitlimit, damit nichts mehr einfriert. Auch der Rezept-Import per Link funktioniert wieder.',where:'Picker · Chat & Suche'},
-  ]},
-  {v:'0.191',items:[
-    {icon:'📷',text:'Foto-Erkennung verbessert: Die Bild-Analyse nutzt jetzt das aktuelle, stärkere KI-Modell, schickt das Foto in höherer Auflösung und hat mehr Platz für Ergebnisse. Damit werden Teller mit mehreren Komponenten und App-Screenshots zuverlässiger und vollständiger erkannt.',where:'Picker · Foto'},
-  ]},
-  {v:'0.190',items:[
-    {icon:'🍷',text:'Picker · Chat erkennt jetzt zuverlässig jedes Lebensmittel — auch einzelne Begriffe und Getränke wie „Weißwein" oder „2 Bier". Die KI antwortet nicht mehr mit Ausreden, und falls doch mal nichts Brauchbares zurückkommt, wird deine Eingabe trotzdem als Lebensmittel übernommen statt mit „Konnte nicht parsen" abzubrechen. (#135)',where:'Picker · Chat'},
-  ]},
-  {v:'0.188',items:[
-    {icon:'🐛',text:'Einstellungen · Ernährung: Der Button zum Hinzufügen einer eigenen Präferenz war über die volle Breite verrutscht und hat das Eingabefeld verdrängt. Er sitzt jetzt wieder kompakt neben dem Feld und heißt „+ Hinzufügen" (statt „+ Speichern"), damit er nicht mit dem Speichern-Button verwechselt wird. (#134)',where:'Einstellungen · Ernährung'},
-  ]},
-  {v:'0.187',items:[
-    {icon:'🧹',text:'Einstellungen aufgeräumt: Der überladene „Daten"-Tab ist jetzt in zwei klare Tabs geteilt — „🤖 KI" (Proxy-Passwort & KI-Prompts) und „💾 Backup" (Autospeicher, Datei-Export/Import, OneDrive). Der Picker-Foto-Schalter sitzt jetzt logisch unter „🥗 Ernährung", die doppelte Lebensmittel-/Rezept-Liste wurde entfernt (alles in der Bibliothek), und der „⏰ Erinnerungen"-Tab ist nicht mehr abgekürzt.',where:'Einstellungen'},
-  ]},
-  {v:'0.186',items:[
-    {icon:'🐛',text:'Picker · Chat: „Kaffee" wird endlich als schwarzer Kaffee erkannt statt als Cappuccino. Ursache war ein falscher Suchbegriff in der internen Lebensmittel-Datenbank (der Cappuccino-Eintrag hatte „kaffee" als Stichwort beansprucht). (#127)',where:'Picker · Chat'},
-  ]},
-  {v:'0.183',items:[
-    {icon:'🐛',text:'Picker · Chat: Genannte Lebensmittel werden nicht mehr eigenmächtig „aufgewertet". Tippst du z. B. „Kaffee mit Hafermilch und Sojamilch", bleibt Kaffee jetzt Kaffee (schwarz) — statt fälschlich als Cappuccino erkannt zu werden. (#127)',where:'Picker · Chat'},
-  ]},
-  {v:'0.182',items:[
-    {icon:'🔒',text:'Stabilität & Sicherheit: Namen aus geteilten Links, Online-Datenbanken und KI-Antworten werden jetzt sicher dargestellt (Schutz vor manipulierten Inhalten). Die Offline-Nutzung wurde robuster gemacht, und das Portionsgedächtnis merkt sich nun auch Mengen, die du über die Suche hinzufügst.',where:'App-weit'},
-  ]},
-  {v:'0.181',items:[
-    {icon:'🔁',text:'Neu: Wiederkehrende Mahlzeiten. Öffne eine Mahlzeit (z. B. dein Frühstück), tippe „🔁 Wiederholen" und wähle die Wochentage (Standard Mo–Fr) — die Mahlzeit wird dann automatisch an diesen Tagen eingetragen. An Tagen, wo es mal nicht stimmt, einfach löschen; sie kommt an dem Tag nicht zurück. Verwalten/pausieren unter „Mehr → 🔁 Wiederkehrende Mahlzeiten". (#122)',where:'Mahlzeit-Detail · Mehr'},
-  ]},
-  {v:'0.180',items:[
-    {icon:'🐛',text:'Picker: Wenn die KI gerade nicht antwortet (Kontingent aufgebraucht, überlastet oder offline), erscheint jetzt eine klare deutsche Meldung mit Tipp, statt der kryptischen englischen Originalmeldung. (#121)',where:'Picker · Chat & Foto'},
-  ]},
-  {v:'0.179',items:[
-    {icon:'📷',text:'Picker · Foto: Neue Option in Einstellungen → Daten → „Foto auf Handy sichern". Wenn aktiv, wird das Foto nach dem Hinzufügen einer Mahlzeit übers System-Teilen-Menü angeboten (z. B. „In Fotos sichern" auf iOS, „In Galerie speichern" auf Android). Unter dem Foto-Preview gibt es einen Hinweis-Link zur Einstellung. (#118)',where:'Einstellungen · Daten · Picker-Fotos'},
-  ]},
-  {v:'0.178',items:[
-    {icon:'🐛',text:'Picker Chat: Fuzzy-Suche ist strenger — „Waffel" findet nicht mehr fälschlich „Kaffee mit Milch". Levenshtein-Toleranz für kurze Wörter (bis 7 Zeichen) auf 1 Edit reduziert. (#117)',where:'Picker · Chat-Tab'},
-  ]},
-  {v:'0.177',items:[
-    {icon:'🔍',text:'Picker Chat: Suche nur noch in deinen eigenen Rezepten und gespeicherten Lebensmitteln (Cache und eingebaute DB raus). Alle Wörter deiner Eingabe müssen treffen — „Joghurt mit Früchten" liefert kein „Joghurt Natur" oder „Früchte gemischt" mehr.',where:'Picker · Chat-Tab'},
-  ]},
-  {v:'0.176',items:[
-    {icon:'🔍',text:'Picker Chat: Suche im eigenen Bestand ist jetzt tippfehler- und umlauttolerant. „Jogurt mit Frucht" findet „Joghurt mit Früchten und Müsli", „hänchen" findet „Hähnchenbrust". Teilformulierungen werden Wort-für-Wort gewichtet.',where:'Picker · Chat-Tab'},
-  ]},
-  {v:'0.175',items:[
-    {icon:'🔍',text:'Picker Chat: Sucht jetzt zuerst in deinen eigenen Lebensmitteln, Rezepten und früher getrackten Sachen — Treffer erscheinen als wählbare Karten. Erst wenn nichts gefunden wird, fragt die KI. (#113)',where:'Picker · Chat-Tab'},
-    {icon:'🐛',text:'Picker: Gelöschte Zutaten verschwinden jetzt sofort aus der Liste (vorher blieben die DOM-Zeilen sichtbar bis zum nächsten Render). (#112)',where:'Picker · Zutaten-Liste'},
-  ]},
-  {v:'0.173',items:[
-    {icon:'📲',text:'Share-Import: „In App öffnen"-Anleitung erscheint jetzt auf allen Browsern (Edge, Firefox, Samsung Internet …) — nicht mehr nur auf iOS Safari. Link wird automatisch in die Zwischenablage kopiert.',where:'Import · Alle Browser'},
-  ]},
-  {v:'0.172',items:[
-    {icon:'🔧',text:'Picker · Suche: „Hinzufügen"-Button klebt jetzt immer am unteren Rand der Auswahl — kein Scrollen mehr nötig auf Android.',where:'Picker · Suche'},
-  ]},
-  {v:'0.171',items:[
-    {icon:'🔧',text:'iOS: Screen-Header jetzt korrekt unterhalb der Status-Bar (der BLOOM-Override hatte den Safe-Area-Fix überschrieben). (#104)',where:'iOS · Layout'},
-    {icon:'🔍',text:'Picker Chat: Bei Marke + Produkt (z.B. „Dean David Red Thai Curry") wird zusätzlich nach dem Gericht ohne Markenname gesucht — mehr Treffer bei Markenprodukten.',where:'Picker · Chat-Tab'},
-  ]},
-  {v:'0.170',items:[
-    {icon:'🔍',text:'Suche: Produkte ohne Energy-Felder (z. B. Curry, Dean & David) werden jetzt gefunden — kcal wird aus Protein/Kohlenhydrate/Fett berechnet wenn keine Energieangabe vorhanden. Chat-Suche prüft jetzt 10 statt 6 OFT-Ergebnisse. (#96 #101)',where:'Picker · Suche & Chat'},
-  ]},
-  {v:'0.169',items:[
-    {icon:'📊',text:'Trends: Kcal-Durchschnitt berücksichtigt den heutigen Tag nicht mehr (laufender Tag verfälscht Wochenwert). (#103)',where:'Trends · Statistik'},
-    {icon:'🤖',text:'KI-Wochenbericht: Bewertet Tage jetzt relativ zur Zielrichtung (Abnehmen/Zunehmen/Halten) statt nach absolutem kcal. Format: Stichpunkte + konkrete Empfehlung für nächste Woche. (#102)',where:'Trends · KI-Bericht'},
-  ]},
-  {v:'0.168',items:[
-    {icon:'🔧',text:'iOS: Screen-Header werden jetzt korrekt unterhalb der Status-Bar / Dynamic Island positioniert — Buttons auf dem Mahlzeit-Detail-Screen und allen anderen Screens sind tippbar. (#104)',where:'iOS · Layout'},
-  ]},
-  {v:'0.167',items:[
-    {icon:'🔧',text:'Bottom-Nav auf Android zentriert (war 14 px nach rechts versetzt). Auf iPhone/iPad scrollt die App nach dem Schließen der Tastatur nicht mehr nach oben weg. (#97 #98 #99)',where:'Layout · iOS & Android'},
-  ]},
-  {v:'0.166',items:[
-    {icon:'📷',text:'Foto-Tab: Nach der Analyse kein automatischer Wechsel in den Chat mehr — Ergebnis bleibt sichtbar, Zutaten direkt eintragbar.',where:'Picker · Foto-Tab'},
-  ]},
-  {v:'0.165',items:[
-    {icon:'🌐',text:'OpenFoodFacts findet jetzt deutlich mehr Produkte: Einträge mit Energie-Angabe in kJ (statt kcal) werden korrekt erkannt und umgerechnet — betrifft Chat-Suche, Suche-Tab und Nährwert-Lookup. (#79)',where:'Picker · Chat & Suche'},
-  ]},
-  {v:'0.164',items:[
-    {icon:'🌐',text:'Im Chat-Tab sucht die App jetzt zuerst in OpenFoodFacts — Markenprodukte (z.B. Dean & David) werden direkt mit echten Nährwerten als Karte angezeigt. Kein Treffer → KI schätzt wie bisher. „🤖 Stattdessen KI fragen" überspringt OFT. (#79)',where:'Picker · Chat-Tab'},
-  ]},
-  {v:'0.163',items:[
-    {icon:'💬',text:'Nach der Foto-Analyse wechselt der Picker automatisch in den Chat — die KI kann jetzt Rückfragen stellen, und du kannst weitere Details zum Foto ergänzen. Fotos werden als Bildkontext mitgeschickt (Modell: claude-sonnet-4-6). (#80)',where:'Picker · Foto → Chat'},
-  ]},
-  {v:'0.162',items:[
-    {icon:'📸',text:'Feedback-Screenshot zeigt jetzt den tatsächlich aktiven Screen — offene Overlays (z.B. Rezeptsuche, Picker) erscheinen korrekt im Bild, nicht nur der Hintergrund (#87)',where:'Feedback · Screenshot'},
-  ]},
-  {v:'0.161',items:[
-    {icon:'🗑️',text:'KI-Tagesreport entfernt — der „🤖 Tag bewerten"-Button ist nicht mehr auf der Heute-Seite (#81)',where:'Heute-Tab'},
-    {icon:'📱',text:'Hinzufügen-Button und Bottom-Nav sind jetzt auch auf iPhone (Home-Indikator) und Android (Gesten-Navigation) vollständig sichtbar (#88)',where:'Alle Screens · Navigation'},
-  ]},
-  {v:'0.160',items:[
-    {icon:'📚',text:'Bibliothek (Rezepte & eigene Lebensmittel) ist jetzt direkt über den Mehr-Tab erreichbar und nicht mehr als Tab in den Einstellungen versteckt (#84, #85)',where:'Mehr → Bibliothek'},
-    {icon:'🔧',text:'Layout-Fix im Mehr-Tab: lange Texte werden nun korrekt abgeschnitten statt umzubrechen (#86)',where:'Mehr-Tab'},
-  ]},
-  {v:'0.159',items:[
-    {icon:'☁️',text:'Läuft die OneDrive-Sitzung ab, erscheint jetzt sofort ein Dialog zum Neu-Verbinden — ein Tipp reicht, kein stiller Datenverlust mehr (#77)',where:'OneDrive · Verbindung'},
-    {icon:'💾',text:'Autospeicher-Slots werden jetzt täglich automatisch befüllt — ein Fehler hatte die Slot-Rotation deaktiviert (#78)',where:'OneDrive · Autospeicher'},
-  ]},
-  {v:'0.158',items:[
-    {icon:'🏃',text:'Sport-Sync: Workouts aus Apple Health (über iOS-Kurzbefehle) und Samsung Health / Health Connect (über Android HTTP-Shortcuts oder Tasker) werden automatisch importiert. Die verbrannten Kalorien werden vom Tagesziel abgezogen. Einrichten unter „Mehr" → „Sport-Sync".',where:'Mehr · Sport-Sync'},
-  ]},
-  {v:'0.157',items:[
-    {icon:'📋',text:'Aus einer Mahlzeit lässt sich jetzt ein Rezept erstellen: im Mahlzeit-Detail neuer Button „💾 Als Rezept" — bündelt alle Einträge der Mahlzeit (inkl. enthaltener Rezepte, anteilig nach Portionen) zu einem neuen Rezept und öffnet direkt den Editor zum Benennen (Issue #75)',where:'Mahlzeit-Detail · 💾 Als Rezept'},
-  ]},
-  {v:'0.156',items:[
-    {icon:'⚙️',text:'Einstellungs-Button oben rechts entfernt — Einstellungen erreichst du weiter über den Mehr-Tab (Issue #71)',where:'Heute-Tab & Trends · Header'},
-    {icon:'🆕',text:'„Was ist neu" zeigt jetzt die komplette Versionshistorie — nicht nur die Änderungen seit dem letzten Update (Issue #70)',where:'Mehr-Tab → Was ist neu · Header-Versions-Tag'},
-  ]},
-  {v:'0.155',items:[
-    {icon:'📋',text:'Mahlzeit-Detail öffnet jetzt als Bottom Sheet über der aktuellen Seite — kein eigener Screen mehr, kein Kontext-Verlust (Issue #72)',where:'Heute-Tab · Mahlzeit-Karten'},
-    {icon:'⚙️',text:'Einstellungs-Button oben rechts entfernt — Einstellungen erreichst du weiter über den Mehr-Tab (Issue #71)',where:'Heute-Tab & Trends · Header'},
-    {icon:'🆕',text:'„Was ist neu" zeigt jetzt die komplette Versionshistorie — nicht nur die Änderungen seit dem letzten Update (Issue #70)',where:'Mehr-Tab → Was ist neu · Header-Versions-Tag'},
-  ]},
-  {v:'0.154',items:[
-    {icon:'📸',text:'Screenshot beim Feedback erfasst wieder die ganze Seite (statt nur den sichtbaren Ausschnitt). Das war zuverlässiger – der Viewport-Crop hat bei offenen Bottom-Sheet-Modalen Teile abgeschnitten. Button heißt jetzt schlicht „📸 Screenshot" (Issue #67, revertiert #56)',where:'Feedback-Modal · 📸 Screenshot'},
-  ]},
-  {v:'0.153',items:[
-    {icon:'📸',text:'Screenshot beim Feedback erfasst Bottom-Sheet-Modale (z.B. „Zutat hinzufügen") jetzt komplett — vorher wurde nur der obere Header-Streifen abgelichtet, weil html2canvas die Modal-Position falsch berechnet hat. Vor dem Capture friert die Funktion die tatsächliche Viewport-Position des offenen Modals als Pixel-Werte ein und stellt sie hinterher zurück (Issue #67)',where:'Feedback-Modal · 📸 Sichtbarer Ausschnitt'},
-  ]},
-  {v:'0.152',items:[
-    {icon:'📸',text:'Screenshot beim Feedback ist robuster: weniger Mobile-Chromium-Stolpersteine (deaktiviertes ForeignObject-Rendering, Bild-Timeout 8 s, Feedback-Modal selbst wird ignoriert) und ein automatischer Zweit-Versuch mit toleranteren Optionen, falls der erste fehlschlägt. Schlägt es trotzdem fehl, zeigt der Toast jetzt den genauen Fehlertext und verweist auf „📁 Eigenes Foto…" (Issue #61)',where:'Feedback-Modal · 📸 Sichtbarer Ausschnitt'},
-  ]},
-  {v:'0.151',items:[
-    {icon:'🔢',text:'Versionsnummer ist jetzt im Heute-Header sichtbar (kleiner Tag rechts neben „Hej …") – Tippen öffnet „Was ist neu" (Issue #62)',where:'Heute-Tab · Header'},
-    {icon:'➕',text:'Mahlzeit-Detail entrümpelt: der separate „+ Zutat"-Button im Body fällt weg. Stattdessen kennt der zentrale ＋ in der unteren Leiste jetzt die geöffnete Mahlzeit und legt direkt dort an (Issue #64)',where:'Mahlzeit-Detail'},
-  ]},
-  {v:'0.150',items:[
-    {icon:'🤖',text:'KI-Tagesbewertung („🤖 Tag bewerten" auf der Heute-Seite): Prompt enthält jetzt Makros pro Mahlzeit (kcal · P · K · F) plus Gesamt-Makros und Makro-Ziele – die Bewertung bezieht sich nun konkret auf Kalorien- und Makroziele. Bei leerer KI-Antwort kommt eine Hinweis-Toast statt einem stummen leeren Feld; Token-Limit auf 300 erhöht (Issue #55)',where:'Heute-Tab · KI-Tagesbewertung'},
-  ]},
-  {v:'0.149',items:[
-    {icon:'🐛',text:'Header aufgeräumt: „📤 Sichern" ist nicht mehr im Header neben „📥 Importieren" (zu ähnlich, zu nah). Daten-Sicherung läuft jetzt nur noch über Einstellungen → Datensicherung bzw. den „Mehr"-Hub → Daten teilen / sichern (Issue #53)',where:'Heute · Trends'},
-    {icon:'🎯',text:'Kalorien-Ampel auf der Heute-Seite richtet sich nach deinem Diät-Ziel: ±10 % vom Kalorienziel = grün („im Plan"); darüber/darunter ist abhängig vom Zielgewicht. Wer abnehmen will, bekommt Unterschreitungen grün („gut für dein Defizit") und Überschreitungen rot mit Bewegungstipp. Wer zunehmen will, bekommt es genau umgekehrt. Ohne Zielgewicht (Halten) wird beides als Hinweis markiert (Issue #52)',where:'Heute-Tab · Hero-Pill unter der kcal-Zahl'},
-  ]},
-  {v:'0.148',items:[
-    {icon:'🐛',text:'Feedback-Modal liegt jetzt über allen anderen Modalen (vorher konnte es hinter offenen Dialogen verschwinden, Issue #57)',where:'Feedback-Modal'},
-    {icon:'🐛',text:'Screenshot beim Feedback nimmt nur noch den sichtbaren Ausschnitt auf (vorher die ganze Seite) – kleinere Datei, präzisere Suche (Issue #56)',where:'Feedback-Modal · 📸 Sichtbarer Ausschnitt'},
-    {icon:'🐛',text:'Feedback-Modal aufgeräumt: „📤 Senden" sitzt jetzt direkt unter dem Textfeld, der Screenshot-Bereich ist ausklappbar und enthält neben dem Auto-Screenshot auch „📁 Eigenes Foto…" als Fallback (Issue #54)',where:'Feedback-Modal'},
-  ]},
-  {v:'0.147',items:[
-    {icon:'🐛',text:'Feedback-Modal: „✕ Screenshot entfernen" liegt jetzt unter dem „Screenshot anhängen"-Button (vorher daneben mit unsauber breiter leerer Fläche)',where:'Feedback-Modal'},
-  ]},
-  {v:'0.146',items:[
-    {icon:'🐛',text:'Feedback-Button (🐛) ist jetzt ein globaler Floating-Button unten rechts und auf jeder Seite sowie über jedem geöffneten Modal erreichbar (Issue #48). Die Header-Buttons und der eigene Listen-Eintrag im „Mehr"-Hub entfallen dafür ersatzlos',where:'App-weit (außer Setup)'},
-  ]},
-  {v:'0.145',items:[
-    {icon:'🐛',text:'Neuer Feedback-Button (🐛) im Top-Header jedes Screens und im „Mehr"-Hub: Bug melden oder Änderungswunsch einreichen — landet automatisch als GitHub-Issue auf hjolmes/nutritrack. Optional kann ein Auto-Screenshot der aktuellen Seite angehängt werden (Vorschau vor dem Senden, Screenshot kann persönliche Daten enthalten — bitte prüfen). Mitgesendet werden Tab, Screen, App-Version, User-Agent und Zeitpunkt',where:'Top-Header jedes Screens · Mehr-Hub'},
-  ]},
-  {v:'0.144',items:[
-    {icon:'🌸',text:'Bloom-Redesign: warmes Cream-Theme mit Coral-Akzent und Fraunces-Serif-Typografie – ruhigere, redaktionelle Optik auf jedem Screen',where:'App-weit'},
-    {icon:'🏠',text:'Heute personalisiert: „Hej {Name}" mit Wochentag und Kalenderwoche, große Hero-Zahl „kcal verbleibend" plus Trend-Pill (über/unter Soll)',where:'Heute-Tab'},
-    {icon:'🍱',text:'Mahlzeiten als 2×2-Grid: jede Karte zeigt Icon-Tile, Uhrzeit, kcal-Wert und Vorschau der Zutaten – Tap öffnet die neue Mahlzeit-Detail-Subseite',where:'Heute-Tab'},
-    {icon:'🧭',text:'5-Tab-Navigation als schwebende Pille: Heute · Verlauf · + · Trends · Mehr – inklusive Verlauf-Liste der vergangenen Tage und „Mehr"-Hub für Bibliothek/Einstellungen/Daten/Hilfe',where:'Bottom-Nav'},
-  ]},
-  {v:'0.143',items:[
-    {icon:'📲',text:'Auf iOS isoliert Apple seit iOS 17.4 den Safari-Speicher von der installierten PWA – Imports landeten in Safari-Daten und waren in der App nicht sichtbar. Neuer Flow: Wenn du einen geteilten Link in Safari öffnest, kopiert NutriTrack die URL automatisch in die Zwischenablage und zeigt eine 3-Schritt-Anleitung. In der App tippst du oben auf 📥 – der Link wird automatisch eingefügt und du bestätigst nur noch die Vorschau',where:'Geteilter Link in Safari öffnen'},
-    {icon:'📋',text:'Beim 📥-Tap in der App wird die Zwischenablage geprüft. Wenn ein NutriTrack-Link drin liegt, wird er automatisch ins Eingabefeld übernommen – ein Tap weniger',where:'Hauptansicht → 📥'},
-    {icon:'🆘',text:'„Trotzdem in Safari importieren"-Option für reine Browser-Nutzer ohne installierte App – Daten bleiben dann in Safari, nicht in der App',where:'iOS-Switch-to-App-Dialog'},
-  ]},
-  {v:'0.142',items:[
-    {icon:'📲',text:'Geteilte Links öffnen jetzt direkt die installierte PWA (auf Android Chrome) statt einem neuen Browser-Tab. Dafür liegt der Kurzlink ab jetzt auf der PWA-Origin selbst (hjolmes.github.io/nutritrack/?s=Ab12X), nicht mehr auf der Worker-Origin – Chrome erkennt den PWA-Scope und routet via handle_links zur App. Auf iOS bleibt der Safari-Pfad (Apple bietet keine PWA-URL-Routing-API), aber Safari und PWA teilen sich denselben Storage – das Rezept landet trotzdem in der App',where:'Jeder geteilte Link'},
-    {icon:'🔗',text:'Kurzlink ist jetzt sogar 11 Zeichen kürzer (~47 statt ~58), weil hjolmes.github.io kürzer ist als nutritrack-ai-proxy.h-jolmes.workers.dev. Alte v0.140-Links bleiben gültig – der Worker leitet sie automatisch auf das neue Format um',where:''},
-  ]},
-  {v:'0.141',items:[
-    {icon:'📥',text:'Import-Button direkt in der Hauptansicht: oben rechts neben „📤 Sichern" jetzt „📥 Importieren". Link oder Code einfügen — die App erkennt automatisch ob es ein Rezept (→ Bibliothek), eine Mahlzeit (→ Eintrag in gewählte Tageszeit) oder ein Lebensmittel (→ eigene Lebensmittel) ist und legt eine Vorschau zur Bestätigung vor',where:'Hauptansicht oben rechts: 📥'},
-  ]},
-  {v:'0.140',items:[
-    {icon:'🔗',text:'Eigener Kurzlink-Service auf dem Cloudflare Worker statt is.gd: aus dem ~570-Zeichen-Link wird "https://nutritrack-ai-proxy.h-jolmes.workers.dev/s/Ab12X3y" (~58 Zeichen). Funktioniert dauerhaft (kein Drittanbieter, eigene KV-Storage), 1 Jahr Lebenszeit pro Link, ID alphanumerisch ohne 0/O/1/I/l. Fallback weiterhin: is.gd → langer Link',where:'Jeder 📤 Share-Button'},
-  ]},
-  {v:'0.139',items:[
-    {icon:'🔗',text:'Teilen via Kurzlink: Lange Base64-URLs werden über is.gd zu „is.gd/abc123" verkürzt – passt in jede WhatsApp-Vorschau, kein Zeilenumbruch mehr. Fallback auf Original-Link wenn der Shortener offline ist',where:'Jeder 📤 Share-Button'},
-    {icon:'📲',text:'Auf Android (Chrome ≥97) öffnen geteilte Links jetzt direkt die installierte PWA statt den Browser-Tab. Auf iOS bleibt der Safari-Pfad (Apple bietet keine PWA-URL-Routing-API), aber das Rezept landet trotzdem in der App – Safari und PWA teilen sich denselben Speicher',where:'Manifest: handle_links + launch_handler'},
-    {icon:'🌐',text:'Eine Funktion für alles: Mahlzeiten, Lebensmittel und Rezepte teilen jetzt über einen einzigen Code-Pfad. Eigene Lebensmittel können erstmals geteilt und importiert werden – per Link wie Rezepte',where:'Bibliothek + Eintragsmenü + Mahlzeit-Header'},
-    {icon:'📥',text:'Import-Dialog erkennt automatisch was kommt: Rezept, Lebensmittel oder ganze Mahlzeit – mit passender Vorschau (Zutaten, Nährwerte, Anzahl Einträge). Bei Mahlzeiten wählst du das Ziel (Frühstück/Mittag/Abend/Snack)',where:'Geteilten Link öffnen → Bestätigungs-Dialog'},
-  ]},
-  {v:'0.138',items:[
-    {icon:'🔗',text:'Rezepte teilen jetzt per Link statt Code: 📤 öffnet das System-Share-Sheet (WhatsApp, Mail, Signal, …). Empfänger tippt den Link an → Rezept-Vorschau mit Zutaten und Kalorien → ein Tap zum Importieren. Funktioniert auf iOS und Android. Code-Eingabefeld bleibt als Fallback erhalten und akzeptiert sowohl Link als auch alten Code',where:'Bibliothek → Rezept → 📤 oder Rezept bearbeiten → „Rezept teilen"'},
-  ]},
-  {v:'0.137',items:[
-    {icon:'🚀',text:'iOS-Server-Decode komplett umgebaut: statt Claude Vision (KI, teuer) läuft jetzt ein dedizierter OSS-Decoder (OpenCV BarcodeDetector + pyzbar) auf Cloud Run als Primärpfad. Echter Strichcode-Decoder, kein KI-Bias, ~30–150 ms warm, dauerhaft kostenlos im Free-Tier. Vision bleibt nur als optionaler Fallback verkabelt (per Env-Flag aktivierbar)',where:'Barcode-Tab'},
-  ]},
-  {v:'0.136',items:[
-    {icon:'📸',text:'Barcode: „Foto aufnehmen"-Knopf jetzt immer sichtbar als Plan B. Hochauflösendes Foto wird durch alle Decoder geschickt: zxing-wasm → zbar-wasm → ZXing-JS → Claude Vision. Foto hat ~5× mehr Pixel als Live-Stream-Frame – schafft auch Codes ohne Klartext-Ziffern (z.B. Rügenwalder)',where:'Barcode-Tab'},
-  ]},
-  {v:'0.135',items:[
-    {icon:'📝',text:'Barcode: „Code manuell eingeben"-Knopf als Notnagel wenn die Decoder versagen. Auf iPhone kannst du im Eingabefeld via long-press Apples Live Text nutzen – das liest EAN-Ziffern brilliant. Plus Schwarz-Weiß-Filter mit erhöhtem Kontrast vor jedem Decode (hilft bei reflektiven Verpackungen wie Joghurtbechern)',where:'Barcode-Tab'},
-  ]},
-  {v:'0.134',items:[
-    {icon:'⏳',text:'Barcode: WASM-Module-Polling von 2s auf 15s erhöht – auf iOS Safari mit langsamer Verbindung kann esm.sh länger brauchen. Wenn JS-Fallback aktiv ist, werden trotzdem alle Decoder pro Frame geprüft. Debug-Label zeigt jetzt live, welche Engines aktiv sind',where:'Barcode-Tab'},
-  ]},
-  {v:'0.133',items:[
-    {icon:'📷',text:'Barcode: zbar-wasm als zweiter lokaler Decoder (gleiche Library wie OpenFoodFacts-App), pro Frame parallel zu zxing-wasm – fängt Codes mit niedrigem Kontrast oder dünnen Strichen, wo ZXing aufgibt. Plus iOS Auto-Focus aktiviert + engerer Crop (70×35)',where:'Barcode-Tab'},
-  ]},
-  {v:'0.132',items:[
-    {icon:'📐',text:'Barcode iOS: höhere Kamera-Auflösung erzwungen (ideal 1920×1080) – iOS Safari liefert sonst manchmal nur 480×640, was für Decode zu wenig ist. Debug-Label zeigt jetzt Stream-Auflösung',where:'Barcode-Tab'},
-  ]},
-  {v:'0.131',items:[
-    {icon:'🛡️',text:'Barcode iOS: EAN-13-Prüfziffer + 2× identische Bestätigung gegen halluzinierte Codes von Claude Vision – falsche Codes landen nicht mehr im Lookup',where:'Barcode-Tab'},
-  ]},
-  {v:'0.130',items:[
-    {icon:'📷',text:'Barcode: erkannter Code wird jetzt oben in der „Produkt nicht in der Datenbank"-Box angezeigt – damit sichtbar ist, dass der Scan funktioniert hat (auch wenn OpenFoodFacts das Produkt nicht kennt)',where:'Barcode-Tab'},
-  ]},
-  {v:'0.129',items:[
-    {icon:'🔍',text:'Barcode-Diagnose: Debug-Label zeigt Claudes Roh-Antwort + Request-Zähler – damit sichtbar wird, was die KI tatsächlich erkennt (oder nicht)',where:'Barcode-Tab → Debug-Label unter dem Sucher'},
-  ]},
-  {v:'0.128',items:[
-    {icon:'📷',text:'iOS Barcode-Scanner: Live-Frames laufen parallel an den Cloudflare-Worker und werden dort via Claude Haiku Vision dekodiert – Live-Sucher unverändert, aber endlich Treffer auf iPhone',where:'Barcode-Tab'},
-  ]},
-  {v:'0.127',items:[
-    {icon:'📷',text:'Barcode-Scanner: zxing-wasm (C++/WebAssembly) ersetzt langsamen JS-Decoder – iOS Safari erkennt jetzt EAN-13 zuverlässig',where:'Barcode-Tab'},
-  ]},
-  {v:'0.126',items:[
-    {icon:'📷',text:'Barcode-Scanner: Crop auf Sucher-Region + Downscale auf 800px – ZXing erkennt jetzt Codes statt am vollen 1080p-Bild zu scheitern',where:'Barcode-Tab'},
-  ]},
-  {v:'0.125',items:[
-    {icon:'🔍',text:'Debug-Vorschau: kleines Bild zeigt was der Decoder sieht + Frame-Zähler + aktiver Pfad',where:'Barcode-Tab'},
-  ]},
-  {v:'0.124',items:[
-    {icon:'📷',text:'iOS Barcode-Scanner: requestVideoFrameCallback + BarcodeDetector.getSupportedFormats() – zuverlässige Erkennung auf iPhone',where:'Barcode-Tab'},
-  ]},
-  {v:'0.123',items:[
-    {icon:'📷',text:'iOS Barcode-Scanner: Canvas ans DOM gehängt – behebt leere Frames bei ZXing auf iPhone',where:'Barcode-Tab'},
-  ]},
-  {v:'0.122',items:[
-    {icon:'📷',text:'iOS Barcode-Scanner: createImageBitmap behebt schwarze Frames – Live-Scan funktioniert jetzt auf iPhone',where:'Barcode-Tab'},
-    {icon:'➕',text:'Barcode nicht gefunden → Produkt manuell eintragen (wird dauerhaft gespeichert)',where:'Barcode-Tab'},
-  ]},
-  {v:'0.121',items:[
-    {icon:'📷',text:'Barcode-Scanner auf iPhone: ZXing-Live-Scan statt Foto-Fallback',where:'Mahlzeit → + → Barcode'},
-  ]},
-  {v:'0.120',items:[
-    {icon:'🗂️',text:'Picker-Code in eigene Datei picker.js ausgelagert – Seite ~900 Zeilen schlanker',where:'Intern'},
-  ]},
-  {v:'0.119',items:[
-    {icon:'☁️',text:'OneDrive Auto-Sync täglich beim App-Start (wenn verbunden)',where:'Automatisch im Hintergrund'},
-    {icon:'🔄',text:'5 rotierende OneDrive-Slots (1→2→3→4→5→1…) – frühere Stände wählbar',where:'⚙️ → Daten → Autospeicher'},
-    {icon:'📁',text:'OneDrive-Ordnerpfad frei wählbar',where:'⚙️ → Daten → OneDrive'},
-  ]},
-  {v:'0.118',items:[
-    {icon:'🕹️',text:'Autospeicher – App speichert bei jedem Start automatisch; frühere Stände laden',where:'⚙️ → Daten → Autospeicher'},
-    {icon:'☁️',text:'Täglicher Hinweis wenn OneDrive nicht verbunden',where:'Banner oben im Hauptbildschirm'},
-  ]},
-  {v:'0.117',items:[
-    {icon:'☁️',text:'Export-Button speichert zuerst in OneDrive – lokaler Download als Fallback',where:'📤 Button oben rechts'},
-  ]},
-  {v:'0.116',items:[
-    {icon:'🔑',text:'Proxy-Passwort: KI-Zugang per Passwort sichern – kein Token mehr im Code',where:'⚙️ → Daten → Proxy-Passwort'},
-  ]},
-  {v:'0.115',items:[
-    {icon:'🔒',text:'KI-Anfragen laufen jetzt über einen geschützten Cloudflare Proxy statt direkt aus dem Browser',where:'Cloudflare Worker + sichere Secrets'},
-  ]},
-  {v:'0.114',items:[
-    {icon:'☁️',text:'OneDrive Sync – Daten automatisch in Microsoft OneDrive sichern',where:'⚙️ → Daten → OneDrive verbinden'},
-  ]},
-  {v:'0.113',items:[
-    {icon:'📚',text:'Bibliothek (Rezepte & Lebensmittel) jetzt in den Einstellungen',where:'⚙️ → Tab „📚 Bibliothek"'},
-    {icon:'👆',text:'Rezept in Mahlzeit antippen: Bearbeiten, Teilen, Kochanleitung',where:'Rezept-Eintrag in der Hauptansicht antippen'},
-    {icon:'📤',text:'Ganze Mahlzeit als Code teilen – andere können direkt importieren',where:'Mahlzeit-Header → 📤 Button'},
-  ]},
-  {v:'0.112',items:[
-    {icon:'🔍',text:'Nährwerte pro Zutat aufklappbar – überall (Picker, Bearbeiten, Rezept-Editor)',where:'Zutat antippen → Emoji oder Name'},
-  ]},
-  {v:'0.111',items:[
-    {icon:'📱',text:'Live-Barcode-Scanner auf iPhone/iPad (iOS 18.6.2+)',where:'+ → Barcode → Scanner starten'},
-  ]},
-  {v:'0.110',items:[
-    {icon:'↕',text:'Mahlzeiten verschieben: Einträge per Knopf zwischen Mahlzeiten wechseln',where:'Eintrag antippen → „↕ Mahlzeit wechseln"'},
-    {icon:'📤',text:'Rezept als Code teilen und einlösen (inkl. Kochanleitung)',where:'Bibliothek → Rezept → 📤 oder Rezept bearbeiten → „Rezept teilen"'},
-    {icon:'📝',text:'Kochanleitung pro Rezept – Freitext, wird beim URL-Import automatisch erkannt',where:'Einstellungen → Rezept bearbeiten → Kochanleitung'},
-    {icon:'➕',text:'Rezept aus allen Quellen erweitern: Chat, Foto, Barcode, Suche, Link',where:'Eintrag antippen → „+ Zutat hinzufügen"'},
-    {icon:'📷',text:'Screenshot-Import verbessert: Tracking-Apps, Einkaufszettel, Übersichten',where:'+ → Foto → Bild auswählen'},
-    {icon:'⚙️',text:'Einstellungen in übersichtliche Tabs aufgeteilt',where:'⚙️ oben rechts'},
-  ]},
-  {v:'0.109',items:[
-    {icon:'🆕',text:'Automatischer Update-Hinweis beim App-Start',where:'Erscheint nach Update automatisch'},
-    {icon:'📄',text:'Benutzerhandbuch aktualisiert',where:'❓ Hilfe'},
-  ]},
-  {v:'0.108',items:[
-    {icon:'🔗',text:'Rezept-Import per Link direkt beim Eintragen',where:'+ drücken → Tab „🔗 Link"'},
-  ]},
-];
+// CHANGELOG ist nach js/changelog.js ausgelagert (window.CHANGELOG).
 
 // Default prompts - editable in settings
 var DEFAULT_FOTO_PROMPT='Analysiere dieses Bild auf Deutsch. Es kann ein Essensfoto ODER ein Screenshot einer Tracking-App (z.B. MyFitnessPal, Cronometer, Yazio, Samsung Health) sein.\n\nGib NUR ein JSON-Objekt zurueck, keine Erklaerungen davor oder danach:\n{"rezept":"Gesamtgerichtname auf Deutsch","zutaten":[{"name":"Zutat auf Deutsch","emoji":"Emoji","g":GRAMM}]}\n\nFall 1 – Essensfoto:\n- Erfasse nur, was WIRKLICH sichtbar ist. Erfinde nichts, was nicht erkennbar ist.\n- Nenne das fertige Lebensmittel, nicht seine Rohzutaten (Pommes, nicht Kartoffel+Oel).\n- Trenne klar unterscheidbare Komponenten in einzelne Zutaten (z.B. Schnitzel, Pommes, Salat getrennt statt "Schnitzelteller").\n- Hoechstens EINE offensichtlich dazugehoerige, aber teils verdeckte Beilage ergaenzen (z.B. Reis unter Curry); im Zweifel weglassen.\n- Schaetze realistische Gramm pro 1 Portion anhand sichtbarer Referenzen (Teller ca. 26 cm, Gabel, Glas ca. 200 ml, Hand). Der Nutzer korrigiert die Menge selbst.\n\nFall 2 – Screenshot einer Tracking-App oder Ernaehrungsuebersicht:\n- Lies ALLE eingetragenen Lebensmittel/Gerichte aus.\n- Uebernimm angezeigte Gramm-/Portions-/kcal-Werte EXAKT wie abgebildet, nicht runden, nicht schaetzen wenn ein Wert dasteht.\n- rezept: Name der Mahlzeit oder "Import aus App".\n\nFall 3 – Einkaufszettel / Zutatenliste:\n- Liste alle Zutaten mit typischen Mengen auf.\n\nAllgemein:\n- Realistische Gramm pro Einheit. Alle Namen auf Deutsch, knapp und konkret.\n- Wenn wirklich nichts Essbares erkennbar ist: {"rezept":"","zutaten":[]}';
@@ -2642,12 +2246,26 @@ function dismissInstall(){
   localStorage.setItem('nt_install_dismissed','1');
 }
 function checkProxyPwGate(){
+  if(localStorage.getItem('nt_gate_skipped'))return;
   var gate=document.getElementById('proxyPwGate');
   if(!gate)return;
   if(!getProxySecret()){
     gate.style.display='flex';
     setTimeout(function(){var i=document.getElementById('proxyPwInput');if(i)i.focus();},50);
   }
+}
+function skipProxyPwGate(){
+  localStorage.setItem('nt_gate_skipped','1');
+  var gate=document.getElementById('proxyPwGate');
+  if(gate)gate.style.display='none';
+  showToast('KI-Funktionen deaktiviert – Passwort jederzeit unter Einstellungen → 🤖 KI nachtragen');
+}
+// Prüft das gesetzte Passwort mit einem 1-Token-Ping gegen den Worker.
+// true = akzeptiert, false = 401/403 (falsch), null = offline/unklar.
+function verifyProxySecret(){
+  return fetchT(PROJECT_AI_PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json','x-app-proxy-secret':getProxySecret()},body:JSON.stringify({model:'claude-haiku-4-5',max_tokens:1,messages:[{role:'user',content:[{type:'text',text:'ping'}]}]})},10000)
+    .then(function(r){return r.status!==401&&r.status!==403;})
+    .catch(function(){return null;});
 }
 function submitProxyPw(){
   var input=document.getElementById('proxyPwInput');
@@ -2657,13 +2275,20 @@ function submitProxyPw(){
     if(errEl){errEl.textContent='Bitte Passwort eingeben.';errEl.style.display='block';}
     return;
   }
-  setProxySecret(pw).then(function(){
+  setProxySecret(pw).then(function(){return verifyProxySecret();}).then(function(ok){
+    var aiStatus=document.getElementById('aiProxyStatus');
+    if(ok===false){
+      // Server lehnt ab → Gate offen lassen, klare Fehlermeldung statt späterem KI-Fehler.
+      if(errEl){errEl.textContent='❌ Passwort scheint falsch (Server lehnt ab).';errEl.style.display='block';}
+      if(aiStatus)aiStatus.textContent='❌ Passwort scheint falsch';
+      return;
+    }
+    localStorage.removeItem('nt_gate_skipped');
     var gate=document.getElementById('proxyPwGate');
     if(gate)gate.style.display='none';
     if(input)input.value='';
     if(errEl)errEl.style.display='none';
-    var aiStatus=document.getElementById('aiProxyStatus');
-    if(aiStatus)aiStatus.textContent='Proxy-Passwort gesetzt ✓';
+    if(aiStatus)aiStatus.textContent=ok===true?'✓ Passwort geprüft':'Gespeichert (offline nicht prüfbar)';
   });
 }
 var AUTOSAVE_MAX=5;
@@ -2685,7 +2310,7 @@ function _autosaveLoad(idx){
   if(save.state){delete save.state.apiKey;Object.assign(S,save.state);S.apiKey='';S.setupDone=true;}
   if(save.customFoods)customFoods=save.customFoods;
   if(save.recipes)recipes=save.recipes;
-  _importAiFields(save);
+  _importAiFields(save);_migratePhotosAfterImport();
   saveS();saveX();renderAll();closeOv('autoSavesOv');
   showToast('Stand geladen ✓');
 }
@@ -2761,8 +2386,17 @@ function saveProxyPwFromSettings(){
   setProxySecret(pw).then(function(){
     if(input)input.value='';
     var aiStatus=document.getElementById('aiProxyStatus');
-    if(aiStatus)aiStatus.textContent='Passwort gesetzt ✓';
-    showToast('Proxy-Passwort gespeichert');
+    if(aiStatus){aiStatus.textContent='Prüfe Passwort …';aiStatus.style.color='';}
+    return verifyProxySecret().then(function(ok){
+      if(ok===false){
+        if(aiStatus){aiStatus.textContent='❌ Passwort scheint falsch (Server lehnt ab)';aiStatus.style.color='var(--re)';}
+        showToast('❌ Passwort scheint falsch');
+        return;
+      }
+      localStorage.removeItem('nt_gate_skipped');
+      if(aiStatus)aiStatus.textContent=ok===true?'✓ Passwort geprüft':'Gespeichert (offline nicht prüfbar)';
+      showToast('Proxy-Passwort gespeichert');
+    });
   });
 }
 // ── KI-Anbieter-Einstellungen ──
@@ -2823,6 +2457,7 @@ function showMain(){
   if(!localStorage.getItem('nt_install_dismissed'))checkFullscreen();
   scheduleReminders();
   setTimeout(compressOldDays,5000);
+  setTimeout(_migratePhotosToIdb,2000);
   checkProxyPwGate();
   setTimeout(_autosaveCreate,1000);
   setTimeout(_odAutoSync,3000);
@@ -2953,78 +2588,11 @@ function renderNutrientAmpel(t){
 }
 
 // ── Rezept-Import per URL ──
-function openRecipeImport(){
-  var inp=document.getElementById('recipeImportInput');
-  inp.value='';
-  document.getElementById('recipeImportUrlInfo').innerHTML='';
-  document.getElementById('recipeImportBtn').disabled=true;
-  document.getElementById('recipeImportBtn').style.opacity='.4';
-  openOv('recipeImportOv');
-  setTimeout(function(){inp.focus();},300);
-}
 function recipeImportExtractUrl(text){
   var m=text.match(/https?:\/\/[^\s"<>]+/);
   return m?m[0].replace(/[.,;:!?)\]]+$/,''):null;
 }
-function recipeImportDetect(){
-  var raw=document.getElementById('recipeImportInput').value;
-  var url=recipeImportExtractUrl(raw);
-  var info=document.getElementById('recipeImportUrlInfo');
-  var btn=document.getElementById('recipeImportBtn');
-  if(url){
-    info.innerHTML='<div style="background:#f0faf4;border:1.5px solid var(--g2);border-radius:10px;padding:8px 12px;font-size:12px;word-break:break-all;">'
-      +'<span style="color:var(--g2);font-weight:800;">✓ URL erkannt</span><br>'
-      +'<span style="color:#555;">'+url+'</span></div>';
-    btn.disabled=false;btn.style.opacity='1';
-  } else if(raw.trim()){
-    info.innerHTML='<div style="background:#fff8e1;border:1.5px solid #f9a825;border-radius:10px;padding:8px 12px;font-size:12px;color:#888;">Keine URL gefunden – bitte Link einfügen.</div>';
-    btn.disabled=true;btn.style.opacity='.4';
-  } else {
-    info.innerHTML='';
-    btn.disabled=true;btn.style.opacity='.4';
-  }
-}
-function recipeImportStart(){
-  var raw=document.getElementById('recipeImportInput').value;
-  var url=recipeImportExtractUrl(raw);
-  if(!url)return;
-  if(!canUseAi()){showAiUnavailable();return;}
-  closeOv('recipeImportOv');
-  showToast('⏳ Rezept wird importiert...');
-  fetchT(urlProxyUrl(url),{headers:{'x-app-proxy-secret':getProxySecret()}},9000)
-    .then(function(r){return r.text();})
-    .then(function(html){
-      var text=html.replace(/<script[\s\S]*?<\/script>/gi,'')
-                   .replace(/<style[\s\S]*?<\/style>/gi,'')
-                   .replace(/<[^>]+>/g,' ')
-                   .replace(/\s+/g,' ')
-                   .slice(0,3000);
-      callClaude('claude-haiku-4-5',[{type:'text',text:
-        'Extrahiere das Rezept aus diesem Text und gib NUR gültiges JSON zurück:\n'
-        +'{"name":"Rezeptname","zutaten":[{"name":"Zutat","menge":"100g"}],"anleitung":"Zubereitungsschritte als einzelner Text (optional, leer lassen wenn nicht vorhanden)"}\n'
-        +'Text: '+text}],800,
-        function(resp){
-          try{
-            var a=resp.indexOf('{'),z=resp.lastIndexOf('}');
-            var d=JSON.parse(resp.slice(a,z+1));
-            if(!d.name||!d.zutaten||!d.zutaten.length)throw new Error();
-            var rawItems=d.zutaten.map(function(z){
-              var g=parseFloat((z.menge||'').replace(/[^\d.]/g,''))||100;
-              return{name:z.name,g:g,emoji:emo(z.name)};
-            });
-            lookupNutrients(rawItems,function(ings){
-              var rec={id:Date.now().toString(),name:d.name,emoji:'🔗',ingredients:ings,importedFrom:url};
-              if(d.anleitung&&d.anleitung.trim())rec.instructions=d.anleitung.trim();
-              recipes.unshift(rec);saveX();
-              showToast('✓ "'+d.name+'" importiert ('+ings.length+' Zutaten'+(rec.instructions?' + Anleitung':'')+')');
-            });
-          }catch(e){showToast('Rezept konnte nicht erkannt werden');}
-        },
-        function(){showToast('Import fehlgeschlagen');}
-      );
-    })
-    .catch(function(){showToast('URL konnte nicht geladen werden');});
-}
+// Rezept-Import per URL läuft ausschließlich über den Picker-Link-Tab (picker.js).
 
 function doSetup(){
   S.apiKey='';
@@ -3040,7 +2608,17 @@ function doSetup(){
 // SECTION: DATA
 // ════════════════════════════════════════
 function changeDay(dir){var n=addDays(S.currentDate,dir);if(n>today()){showToast('Keine Zukunft 😄');return;}S.currentDate=n;if(applyRecurringMeals(n))saveS();renderAll();}
-function getDay(){if(!S.days[S.currentDate])S.days[S.currentDate]={meals:{breakfast:[],lunch:[],dinner:[],snack:[]},water:0,exercise:[]};var d=S.days[S.currentDate];if(!d.exercise)d.exercise=[];return d;}
+function getDay(){
+  var d=S.days[S.currentDate];
+  if(!d){d={meals:{breakfast:[],lunch:[],dinner:[],snack:[]},water:0,exercise:[]};S.days[S.currentDate]=d;}
+  // Komprimierte Alt-Tage (siehe compressOldDays) haben kein meals-Objekt.
+  // Temporäres leeres Tages-Objekt zurückgeben, damit renderAll nicht crasht.
+  // Änderungen an diesem Objekt werden bewusst NICHT gespeichert (Tag ist archiviert).
+  if(d._compressed){return {meals:{breakfast:[],lunch:[],dinner:[],snack:[]},water:d.water||0,exercise:[],_compressed:true};}
+  if(!d.meals)d.meals={breakfast:[],lunch:[],dinner:[],snack:[]};
+  if(!d.exercise)d.exercise=[];
+  return d;
+}
 function calcM(arr){return arr.reduce(function(a,e){return{kcal:a.kcal+(e.kcal||0),protein:a.protein+(e.protein||0),carbs:a.carbs+(e.carbs||0),fat:a.fat+(e.fat||0),sugar:a.sugar+(e.sugar||0),fiber:a.fiber+(e.fiber||0),salt:a.salt+(e.salt||0)};},{kcal:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0,salt:0});}
 function ingTotal(ings){return(ings||[]).reduce(function(a,g){var r=(g.amount||0)/100;return{kcal:a.kcal+(g.per100.kcal||0)*r,protein:a.protein+(g.per100.protein||0)*r,carbs:a.carbs+(g.per100.carbs||0)*r,fat:a.fat+(g.per100.fat||0)*r,sugar:a.sugar+(g.per100.sugar||0)*r,fiber:a.fiber+(g.per100.fiber||0)*r,salt:a.salt+(g.per100.salt||0)*r};},{kcal:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0,salt:0});}
 function scaleNutrients(t,factor){return{kcal:t.kcal*factor,protein:t.protein*factor,carbs:t.carbs*factor,fat:t.fat*factor,sugar:(t.sugar||0)*factor,fiber:(t.fiber||0)*factor,salt:(t.salt||0)*factor};}
@@ -3182,7 +2760,7 @@ function renderAll(){
         }
         return'<div class="fe'+(isR?' is-recipe':'')+'" onclick="'+(isR?'openEntryMenu':'openEditEntry')+'(\''+m+'\','+i+')">'
           +'<div class="fee">'+(e.emoji||'🍽')+'</div>'
-          +'<div class="fei"><div class="fen">'+e.name+(e._recurId?' 🔁':'')+'</div><div class="fem">'+sub+'</div></div>'
+          +'<div class="fei"><div class="fen">'+esc(e.name)+(e._recurId?' 🔁':'')+'</div><div class="fem">'+sub+'</div></div>'
           +'<div class="fek">'+Math.round(e.kcal)+' kcal</div>'
           +'<div style="display:flex;align-items:center;">'+dot+'<div class="fe-ic">✏️</div></div>'
           +'</div>';
@@ -3370,9 +2948,9 @@ function searchLocal(q){
 // SECTION: NUTRIENT LOOKUP
 // ════════════════════════════════════════
 function lookupNutrients(rawItems,onDone){
-  var results=[],pending=rawItems.length;
+  var results=new Array(rawItems.length),pending=rawItems.length;
   if(!pending){onDone([]);return;}
-  rawItems.forEach(function(item){
+  rawItems.forEach(function(item,idx){
     var name=item.name||'';
     var grams=item.g||item.amount||null;
     if(grams!==null)grams=parseFloat(grams);
@@ -3381,7 +2959,7 @@ function lookupNutrients(rawItems,onDone){
     // 1. Local DB
     var loc=findInLocalDB(name);
     if(loc){
-      results.push({name:loc.n,emoji:loc.e,amount:grams||0,per100:{kcal:loc.k,protein:loc.p,carbs:loc.c,fat:loc.f,sugar:0,fiber:0,salt:0},missingGrams:grams===null});
+      results[idx]={name:loc.n,emoji:loc.e,amount:grams||0,per100:{kcal:loc.k,protein:loc.p,carbs:loc.c,fat:loc.f,sugar:0,fiber:0,salt:0},missingGrams:grams===null};
       pending--;if(!pending)onDone(results);return;
     }
     // 2. Open Food Facts
@@ -3393,12 +2971,12 @@ function lookupNutrients(rawItems,onDone){
           if(prods.length>0){
             var p=prods[0],nm=p.nutriments||{};
             var kcal=nm['energy-kcal_100g']||Math.round((nm['energy_100g']||0)/4.184)||Math.round((nm['proteins_100g']||0)*4+(nm['carbohydrates_100g']||0)*4+(nm['fat_100g']||0)*9);
-            results.push({name:name,emoji:emoji,amount:grams||0,per100:{kcal:kcal,protein:nm['proteins_100g']||0,carbs:nm['carbohydrates_100g']||0,fat:nm['fat_100g']||0,sugar:nm['sugars_100g']||0,fiber:nm['fiber_100g']||0,salt:nm['salt_100g']||0},missingGrams:grams===null});
+            results[idx]={name:name,emoji:emoji,amount:grams||0,per100:{kcal:kcal,protein:nm['proteins_100g']||0,carbs:nm['carbohydrates_100g']||0,fat:nm['fat_100g']||0,sugar:nm['sugars_100g']||0,fiber:nm['fiber_100g']||0,salt:nm['salt_100g']||0},missingGrams:grams===null};
             pending--;if(!pending)onDone(results);
-          } else {kiNutrientLookup(name,emoji,grams,function(res){results.push(res);pending--;if(!pending)onDone(results);});}
-        }).catch(function(){kiNutrientLookup(name,emoji,grams,function(res){results.push(res);pending--;if(!pending)onDone(results);});});
+          } else {kiNutrientLookup(name,emoji,grams,function(res){results[idx]=res;pending--;if(!pending)onDone(results);});}
+        }).catch(function(){kiNutrientLookup(name,emoji,grams,function(res){results[idx]=res;pending--;if(!pending)onDone(results);});});
     } else {
-      results.push(kiEstimate(name,emoji,grams));pending--;if(!pending)onDone(results);
+      results[idx]=kiEstimate(name,emoji,grams);pending--;if(!pending)onDone(results);
     }
   });
 }
@@ -3534,6 +3112,21 @@ function openEditEntry(meal,idx){
   openOv('editOv');
 }
 
+// Foto-HTML für den Bearbeiten-Dialog: Base64 direkt, IDB-Foto via data-phid
+// (wird nach dem innerHTML-Set von _hydratePhotoImgs asynchron nachgeladen).
+function _mealPhotoImgHtml(e){
+  if(e.mealPhoto)return'<div style="margin:8px 0;"><img src="'+e.mealPhoto+'" style="width:100%;border-radius:10px;max-height:160px;object-fit:cover;"></div>';
+  if(e.mealPhotoId)return'<div style="margin:8px 0;"><img data-phid="'+esc(e.mealPhotoId)+'" alt="" style="width:100%;border-radius:10px;max-height:160px;object-fit:cover;"></div>';
+  return'';
+}
+function _hydratePhotoImgs(){
+  if(!window.NTPhotos||!NTPhotos.ok())return;
+  document.querySelectorAll('img[data-phid]').forEach(function(im){
+    var id=im.getAttribute('data-phid');
+    im.removeAttribute('data-phid');
+    NTPhotos.get(id).then(function(d){if(d)im.src=d;});
+  });
+}
 function renderEditBody(e){
   var body=document.getElementById('editBody');
   if(e.isRecipe){
@@ -3549,7 +3142,7 @@ function renderEditBody(e){
       return'<div class="ing-wrap">'
         +'<div class="ing-item">'
         +'<div class="ing-e" onclick="ingToggle(event,\''+nid+'\')">'+(ing.emoji||'🍽')+'</div>'
-        +'<div class="ing-n" onclick="ingToggle(event,\''+nid+'\')">'+ing.name+ampelDot+'</div>'
+        +'<div class="ing-n" onclick="ingToggle(event,\''+nid+'\')">'+esc(ing.name)+ampelDot+'</div>'
         +'<input type="number" class="ing-amt" value="'+amtVal+'" min="1" placeholder="g?" style="'+bStyle+'" onchange="editIngAmt('+i+',this.value)">'
         +'<div class="ing-u">g</div>'+warn
         +'<button type="button" class="ing-del" onclick="editIngDel('+i+')">✕</button>'
@@ -3558,7 +3151,7 @@ function renderEditBody(e){
         +'</div>';
     }).join('');
     body.innerHTML='<label class="lbl">Name</label>'
-      +'<input type="text" class="finp" id="editName" value="'+e.name+'" style="margin-bottom:10px;">'
+      +'<input type="text" class="finp" id="editName" value="'+esc(e.name)+'" style="margin-bottom:10px;">'
       +'<label class="lbl">Portionen</label>'
       +'<div class="ar" style="margin-top:0;"><input type="number" class="ai2" id="editPortions" value="'+p+'" min="0.1" step="0.1" onchange="editUpdateTotal(this.value)"><div class="au">Portion(en)</div></div>'
       +'<div id="editTotal" class="rec-total" style="margin-top:8px;">1 Portion: '+totalStr(t)+'<br>'+p+'× = '+totalStr(scaleNutrients(t,p))+'</div>'
@@ -3566,10 +3159,10 @@ function renderEditBody(e){
       +'<div class="ing-list" id="editIngList">'+ingHtml+'</div>'
       +'<button type="button" class="seb" style="margin-bottom:8px;" onclick="editAddIng()">+ Zutat hinzufügen</button>'
       +(e.recipeId?'':'<button type="button" class="seb" style="margin-bottom:8px;border-color:var(--g2);color:var(--g2);" onclick="editSaveAsRecipe()">📋 Als Rezept speichern</button>')
-      +(function(){var rec=e.recipeId&&recipes.find(function(r){return r.id===e.recipeId;});var ins=(rec&&rec.instructions)||e.instructions||'';return ins?'<div style="margin:10px 0;padding:12px;background:var(--gl);border-radius:12px;border:1px solid var(--g3);"><div style="font-size:12px;font-weight:700;color:var(--g1);margin-bottom:6px;">📝 Kochanleitung</div><div style="font-size:13px;white-space:pre-wrap;color:var(--tx);">'+ins+'</div></div>':'';}())
+      +(function(){var rec=e.recipeId&&recipes.find(function(r){return r.id===e.recipeId;});var ins=(rec&&rec.instructions)||e.instructions||'';return ins?'<div style="margin:10px 0;padding:12px;background:var(--gl);border-radius:12px;border:1px solid var(--g3);"><div style="font-size:12px;font-weight:700;color:var(--g1);margin-bottom:6px;">📝 Kochanleitung</div><div style="font-size:13px;white-space:pre-wrap;color:var(--tx);">'+esc(ins)+'</div></div>':'';}())
       +renderAmpelInfo(e)
       +renderNutrientDetail({kcal:t.kcal,protein:t.protein,carbs:t.carbs,fat:t.fat,sugar:t.sugar||0,fiber:t.fiber||0,salt:t.salt||0},p)
-      +(e.mealPhoto?'<div style="margin:8px 0;"><img src="'+e.mealPhoto+'" style="width:100%;border-radius:10px;max-height:160px;object-fit:cover;"></div>':'')
+      +_mealPhotoImgHtml(e)
       +'<button type="button" class="cb2" onclick="saveEditEntry()">Speichern ✓</button>'
       +'<button type="button" class="seb" style="margin-bottom:8px;border-color:var(--mu);color:var(--mu);" onclick="saveMealAsTemplate(\''+editMeal+'\')" >📋 Als Vorlage speichern</button>'
       +'<button type="button" class="seb" style="margin-bottom:8px;" onclick="openMoveEntry()">↕ Mahlzeit wechseln</button>'
@@ -3587,9 +3180,9 @@ function renderEditBody(e){
       +'<div class="ar" style="margin-top:0;"><input type="number" class="ai2" id="editAmt" value="'+e.amount+'" min="1"><div class="au">Gramm</div></div>'
       +renderAmpelInfo(e)
       +renderNutrientDetail(_ts,1)
-      +(e.mealPhoto?'<div style="margin:8px 0;"><img src="'+e.mealPhoto+'" style="width:100%;border-radius:10px;max-height:160px;object-fit:cover;"></div>':'')
+      +_mealPhotoImgHtml(e)
       +'<input type="file" id="editMealPhoto" accept="image/*" capture="environment" style="display:none" onchange="handleEditMealPhoto(event)">'
-      +'<button type="button" class="seb" style="margin-bottom:8px;" onclick="document.getElementById(\'editMealPhoto\').click()">📷 '+(e.mealPhoto?'Foto ändern':'Foto hinzufügen')+'</button>'
+      +'<button type="button" class="seb" style="margin-bottom:8px;" onclick="document.getElementById(\'editMealPhoto\').click()">📷 '+((e.mealPhoto||e.mealPhotoId)?'Foto ändern':'Foto hinzufügen')+'</button>'
       +'<button type="button" class="cb2" onclick="saveEditEntry()">Speichern ✓</button>'
       +'<button type="button" class="seb" style="margin-bottom:8px;" onclick="openMoveEntry()">↕ Mahlzeit wechseln</button>'
       +'<div id="moveEntryPanel" style="display:none;background:var(--gl);border-radius:12px;padding:12px;margin-bottom:8px;">'
@@ -3599,6 +3192,7 @@ function renderEditBody(e){
       +'</div></div>'
       +'<button type="button" class="del-btn" onclick="deleteEntry()">🗑️ Eintrag löschen</button>';
   }
+  _hydratePhotoImgs();
 }
 
 function editUpdateTotal(pVal){
@@ -3659,6 +3253,8 @@ function editSaveAsRecipe(){
 }
 
 function deleteEntry(){
+  var _e=getDay().meals[editMeal][editIdx];
+  if(_e&&_e.mealPhotoId&&window.NTPhotos&&NTPhotos.ok())NTPhotos.del(_e.mealPhotoId).catch(function(){});
   getDay().meals[editMeal].splice(editIdx,1);
   saveS();renderAll();closeOv('editOv');
 }
@@ -3692,7 +3288,7 @@ function openEntryMenu(meal,idx){
     '<button type="button" class="svb" style="margin-bottom:8px;" onclick="closeOv(\'entryMenuOv\');openEditEntry(\''+meal+'\','+idx+')">✏️ Eintrag bearbeiten</button>'
     +'<button type="button" class="seb" style="margin-bottom:8px;" onclick="closeOv(\'entryMenuOv\');'+shareCall+'">'+shareLabel+'</button>'
     +(ins?'<button type="button" class="seb" style="margin-bottom:8px;" onclick="showEntryInstructions()">📝 Kochanleitung anzeigen</button>':'')
-    +'<div id="entryInstructionsPanel" style="display:none;background:var(--gl);border-radius:12px;padding:12px;margin-bottom:8px;white-space:pre-wrap;font-size:13px;color:var(--tx);">'+ins+'</div>';
+    +'<div id="entryInstructionsPanel" style="display:none;background:var(--gl);border-radius:12px;padding:12px;margin-bottom:8px;white-space:pre-wrap;font-size:13px;color:var(--tx);">'+esc(ins)+'</div>';
   openOv('entryMenuOv');
 }
 function showEntryInstructions(){
@@ -3734,7 +3330,7 @@ function recEditRenderIng(ings){
     return'<div class="ing-wrap">'
       +'<div class="ing-item">'
       +'<div class="ing-e" onclick="ingToggle(event,\''+nid+'\')">'+(ing.emoji||'🍽')+'</div>'
-      +'<div class="ing-n" onclick="ingToggle(event,\''+nid+'\')">'+ing.name+'</div>'
+      +'<div class="ing-n" onclick="ingToggle(event,\''+nid+'\')">'+esc(ing.name)+'</div>'
       +'<input type="number" class="ing-amt" value="'+amtVal+'" min="1" placeholder="g?" style="'+bStyle+'" onchange="recEditIngAmt('+i+',this.value)">'
       +'<div class="ing-u">g</div>'
       +'<button type="button" class="ing-del" onclick="recEditIngDel('+i+')">✕</button>'
@@ -3768,7 +3364,7 @@ function recEditSearch(){
   el.innerHTML=results.map(function(p,i){
     return'<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1.5px solid var(--br);border-radius:10px;cursor:pointer;margin-bottom:4px;background:white;" onclick="recEditAddFood('+i+')">'
       +'<div style="font-size:18px;">'+(p.emoji||'🍽')+'</div>'
-      +'<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:13px;">'+p.name+'</div>'
+      +'<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:13px;">'+esc(p.name)+'</div>'
       +'<div style="font-size:11px;color:var(--mu);">'+Math.round(p.per100.kcal)+' kcal pro 100g</div></div>'
       +'<div style="font-size:18px;color:var(--g2);font-weight:900;">＋</div></div>';
   }).join('');
@@ -4241,6 +3837,7 @@ function settSetTab(tab){
   if(tab==='backup')renderOneDriveStatus();
 }
 
+function openBackupSettings(){openSettings();settSetTab('backup');}
 function openSettings(){
   document.getElementById('sn').value=S.name;
   document.getElementById('sg').value=S.goal;
@@ -4602,9 +4199,9 @@ function renderSavedDietFreeList(){
     var isAct=p===active;
     return'<div style="display:inline-flex;align-items:center;gap:4px;background:'+(isAct?'var(--g1)':'var(--gl)')+';border:1.5px solid '+(isAct?'var(--g1)':'var(--g3)')+';'
       +'border-radius:20px;padding:4px 8px;font-size:12px;font-weight:700;color:'+(isAct?'white':'var(--g1)')+';cursor:pointer;" '
-      +'onclick="selectDietFree(\''+p.replace(/'/g,"\\'")+'\')">'
-      +p
-      +' <span onclick="event.stopPropagation();deleteDietFree(\''+p.replace(/'/g,"\\'")+'\') " '
+      +'onclick="selectDietFree(\''+esc(p.replace(/'/g,"\\'"))+'\')">'
+      +esc(p)
+      +' <span onclick="event.stopPropagation();deleteDietFree(\''+esc(p.replace(/'/g,"\\'"))+'\') " '
       +'style="font-size:10px;color:'+(isAct?'rgba(255,255,255,0.7)':'var(--re)')+';cursor:pointer;">✕</span>'
       +'</div>';
   }).join('');
@@ -4774,7 +4371,7 @@ function renderRecentList(){
   el.innerHTML=items.map(function(item,i){
     return'<div class="ri" onclick="pickerAddRecent('+i+')">'
       +'<div class="ri-e">'+(item.emoji||'🍽')+'</div>'
-      +'<div style="flex:1;min-width:0;"><div class="ri-n">'+item.name+'</div>'
+      +'<div style="flex:1;min-width:0;"><div class="ri-n">'+esc(item.name)+'</div>'
       +(item.per100?'<div class="ri-d">'+Math.round(item.per100.kcal)+' kcal/100g</div>':'<div class="ri-d">'+(item.kcal?Math.round(item.kcal)+' kcal':'')+'</div>')
       +'</div>'
       +'<div style="font-size:18px;color:var(--g2);font-weight:900;">＋</div>'
@@ -4813,18 +4410,18 @@ function renderStatsPanel(){
   var dates=Object.keys(wlog).sort();
   var trendEl=document.getElementById('weightTrend');
   if(dates.length>=2){
-    var diff=wlog[dates[dates.length-1]]-wlog[dates[0]];
-    trendEl.textContent=(diff>0?'▲ +':diff<0?'▼ ':'')+Math.abs(diff).toFixed(1)+'kg seit '+fmtDate(dates[0]);
+    // Trend bezieht sich auf das Chart-Fenster (letzte 14 Einträge), nicht auf den allerersten Log-Eintrag.
+    var win=dates.slice(-14);
+    var diff=wlog[win[win.length-1]]-wlog[win[0]];
+    trendEl.textContent=(diff>0?'▲ +':diff<0?'▼ ':'')+Math.abs(diff).toFixed(1)+'kg seit '+fmtDate(win[0]);
     trendEl.style.color=diff>0?'var(--re)':'var(--g1)';
   } else {
     trendEl.textContent='';
   }
   // Gewichtsverlauf-Chart
   renderWeightChart();
-  // 7-Tage-Balken
+  // 7-Tage-Balken (rendert auch die Streak-Kachel)
   renderWeekBars();
-  // Streak
-  renderStreak();
   // Offline-Queue
   renderOfflineQueuePanel();
   // Zielüberprüfung
@@ -4854,7 +4451,7 @@ function renderWeightChart(){
     ctx.fillStyle='#f9c74f';ctx.font='10px sans-serif';ctx.fillText('Ziel',w-pad-20,gy-3);
   }
   // Gewichtslinie
-  ctx.strokeStyle='#2d7d52';ctx.lineWidth=2;ctx.setLineDash([]);
+  ctx.strokeStyle='#e96e3c';ctx.lineWidth=2;ctx.setLineDash([]);
   ctx.beginPath();
   dates.forEach(function(d,i){
     var x=pad+(w-2*pad)*i/(dates.length-1);
@@ -4866,9 +4463,9 @@ function renderWeightChart(){
   dates.forEach(function(d,i){
     var x=pad+(w-2*pad)*i/(dates.length-1);
     var y=h-pad-(vals[i]-min)/(max-min)*(h-2*pad);
-    ctx.fillStyle='#2d7d52';ctx.beginPath();ctx.arc(x,y,3,0,2*Math.PI);ctx.fill();
+    ctx.fillStyle='#e96e3c';ctx.beginPath();ctx.arc(x,y,3,0,2*Math.PI);ctx.fill();
     if(i===dates.length-1||i===0){
-      ctx.fillStyle='#333';ctx.font='10px sans-serif';
+      ctx.fillStyle='#1f1a14';ctx.font='10px sans-serif';
       ctx.fillText(vals[i]+'kg',x-12,y-6);
     }
   });
@@ -4937,10 +4534,22 @@ var _offlineQueue=JSON.parse(localStorage.getItem('nt_offline_queue')||'[]');
 function saveOfflineQueue(){localStorage.setItem('nt_offline_queue',JSON.stringify(_offlineQueue));}
 
 function addToOfflineQueue(b64,meal,date){
-  _offlineQueue.push({b64:b64,meal:meal,date:date||today(),ts:Date.now()});
-  saveOfflineQueue();
+  // Foto nach IndexedDB, in localStorage nur die Referenz (phid) — ganze
+  // JPEGs in nt_offline_queue liefen sonst aufs 5-MB-Limit zu.
+  if(window.NTPhotos&&NTPhotos.ok()){
+    var pid='ph'+Date.now()+Math.random().toString(36).slice(2,8);
+    NTPhotos.put(pid,b64).then(function(){
+      _offlineQueue.push({phid:pid,meal:meal,date:date||today(),ts:Date.now()});
+      saveOfflineQueue();renderOfflineQueuePanel();
+    }).catch(function(){
+      _offlineQueue.push({b64:b64,meal:meal,date:date||today(),ts:Date.now()});
+      saveOfflineQueue();renderOfflineQueuePanel();
+    });
+  }else{
+    _offlineQueue.push({b64:b64,meal:meal,date:date||today(),ts:Date.now()});
+    saveOfflineQueue();renderOfflineQueuePanel();
+  }
   showToast('📷 Foto für später gespeichert');
-  renderOfflineQueuePanel();
 }
 
 function renderOfflineQueuePanel(){
@@ -4959,11 +4568,21 @@ function processOfflineQueue(){
   if(!_offlineQueue.length){showToast('Keine ausstehenden Fotos');return;}
   var item=_offlineQueue.shift();
   saveOfflineQueue();
-  window._pickerPhotoB64=item.b64;
-  pickerMeal=item.meal;
-  S.currentDate=item.date;
-  pickerAnalyze();
-  renderOfflineQueuePanel();
+  var start=function(b64){
+    renderOfflineQueuePanel();
+    if(!b64){showToast('Foto nicht mehr vorhanden');return;}
+    window._pickerPhotoB64=b64;
+    pickerMeal=item.meal;
+    S.currentDate=item.date;
+    pickerAnalyze();
+  };
+  if(item.phid&&window.NTPhotos&&NTPhotos.ok()){
+    // Blob aus IDB holen; löschen ist ok — schlägt die Analyse fehl, re-queued
+    // der Fehlerpfad das Foto ohnehin neu (addToOfflineQueue).
+    NTPhotos.get(item.phid).then(function(b64){NTPhotos.del(item.phid).catch(function(){});start(b64);}).catch(function(){start(null);});
+  }else{
+    start(item.b64);
+  }
 }
 
 // ── KI-Wochenbericht ──
@@ -5050,7 +4669,7 @@ function renderReminders(){
   if(!reminders.length){el.innerHTML='<div style="font-size:12px;color:var(--mu);">Keine Erinnerungen</div>';return;}
   el.innerHTML=reminders.map(function(r,i){
     return'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--br);">'
-      +'<div style="flex:1;font-size:13px;font-weight:600;">'+r.time+' – '+r.label+'</div>'
+      +'<div style="flex:1;font-size:13px;font-weight:600;">'+esc(r.time)+' – '+esc(r.label)+'</div>'
       +'<button type="button" onclick="deleteReminder('+i+')" style="background:none;border:none;color:var(--re);font-size:16px;cursor:pointer;">✕</button>'
       +'</div>';
   }).join('');
@@ -5163,6 +4782,7 @@ function compressOldDays(){
       var day=S.days[d];
       var all=day.meals.breakfast.concat(day.meals.lunch,day.meals.dinner,day.meals.snack);
       var t=calcM(all);
+      if(window.NTPhotos&&NTPhotos.ok())all.forEach(function(e){if(e&&e.mealPhotoId)NTPhotos.del(e.mealPhotoId).catch(function(){});});
       // Nur Summen behalten, Details + Fotos löschen
       S.days[d]={_compressed:true,kcal:Math.round(t.kcal),protein:Math.round(t.protein),carbs:Math.round(t.carbs),fat:Math.round(t.fat),water:day.water||0};
       changed=true;
@@ -5211,14 +4831,48 @@ function addWater(ml){
 }
 
 // ── Mahlzeit-Foto speichern ──
+// Fotos wandern nach IndexedDB (window.NTPhotos), am Eintrag bleibt nur die
+// mealPhotoId. Ohne IndexedDB (Private-Mode-Edge-Fälle) Fallback auf das alte
+// Base64-Feld mealPhoto im localStorage-State.
 function saveMealPhoto(meal,idx,b64){
   var day=getDay();
-  if(day.meals[meal]&&day.meals[meal][idx]){
-    day.meals[meal][idx].mealPhoto=b64;
-    saveS();
-    showToast('📷 Foto gespeichert');
+  var entry=day.meals[meal]&&day.meals[meal][idx];
+  if(!entry)return;
+  if(window.NTPhotos&&NTPhotos.ok()){
+    var pid='ph'+Date.now()+Math.random().toString(36).slice(2,8);
+    var old=entry.mealPhotoId;
+    NTPhotos.put(pid,b64).then(function(){
+      entry.mealPhotoId=pid;delete entry.mealPhoto;
+      if(old)NTPhotos.del(old).catch(function(){});
+      saveS();
+      showToast('📷 Foto gespeichert');
+    }).catch(function(){entry.mealPhoto=b64;saveS();showToast('📷 Foto gespeichert');});
+  }else{
+    entry.mealPhoto=b64;saveS();showToast('📷 Foto gespeichert');
   }
 }
+// Einmalige, idempotente Migration bestehender Base64-Fotos nach IndexedDB.
+// Bei IDB-Fehler wird nichts gelöscht (lieber alt und groß als Fotoverlust).
+function _migratePhotosToIdb(){
+  if(localStorage.getItem('nt_photos_migrated'))return;
+  if(!window.NTPhotos||!NTPhotos.ok())return;
+  var puts=[];
+  Object.keys(S.days||{}).forEach(function(dk){
+    var day=S.days[dk];if(!day||!day.meals)return;
+    Object.keys(day.meals).forEach(function(m){
+      (day.meals[m]||[]).forEach(function(entry){
+        if(entry&&entry.mealPhoto){
+          var pid='ph'+Date.now()+Math.random().toString(36).slice(2,8);
+          puts.push(NTPhotos.put(pid,entry.mealPhoto).then(function(){entry.mealPhotoId=pid;delete entry.mealPhoto;}));
+        }
+      });
+    });
+  });
+  if(!puts.length){localStorage.setItem('nt_photos_migrated','1');return;}
+  Promise.all(puts).then(function(){saveS();localStorage.setItem('nt_photos_migrated','1');}).catch(function(){});
+}
+// Nach einem Import/Restore können wieder Base64-Fotos im State liegen (alte Backups).
+function _migratePhotosAfterImport(){localStorage.removeItem('nt_photos_migrated');setTimeout(_migratePhotosToIdb,500);}
 
 // ── Mahlzeit-Vorlagen ──
 function saveMealAsTemplate(meal){
@@ -5253,7 +4907,7 @@ function openTemplateOv(meal){
   el.innerHTML=templates.map(function(t){
     var total=t.entries.reduce(function(a,e){return a+(e.kcal||0);},0);
     return'<div style="background:var(--card);border-radius:12px;padding:12px;box-shadow:var(--sh);display:flex;align-items:center;gap:10px;">'
-      +'<div style="flex:1;"><div style="font-weight:700;font-size:13px;">'+t.name+'</div>'
+      +'<div style="flex:1;"><div style="font-weight:700;font-size:13px;">'+esc(t.name)+'</div>'
       +'<div style="font-size:11px;color:var(--mu);">'+t.entries.length+' Einträge · '+Math.round(total)+' kcal</div></div>'
       +'<button type="button" onclick="applyMealTemplate(\''+t.id+'\',\''+meal+'\')" style="background:var(--g2);border:none;border-radius:8px;color:white;font-size:13px;padding:6px 12px;font-weight:700;">Laden</button>'
       +'<button type="button" onclick="deleteTemplate(\''+t.id+'\')" style="background:none;border:none;color:var(--re);font-size:16px;">✕</button>'
@@ -5373,7 +5027,7 @@ function renderRecurManage(){
     var total=(r.entries||[]).reduce(function(a,e){return a+(e.kcal||0);},0);
     var dim=r.active?'':'opacity:0.5;';
     return'<div style="background:var(--card);border-radius:12px;padding:12px;box-shadow:var(--sh);display:flex;align-items:center;gap:10px;'+dim+'">'
-      +'<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">🔁 '+r.name+'</div>'
+      +'<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">🔁 '+esc(r.name)+'</div>'
       +'<div style="font-size:11px;color:var(--mu);">'+MEAL_NAMES[r.meal]+' · '+_recurDaysLabel(r.weekdays)+' · '+Math.round(total)+' kcal</div></div>'
       +'<button type="button" onclick="toggleRecurringRule(\''+r.id+'\')" title="'+(r.active?'Pausieren':'Aktivieren')+'" style="background:'+(r.active?'var(--g2)':'var(--gl)')+';color:'+(r.active?'#fff':'var(--mu)')+';border:none;border-radius:8px;font-size:12px;padding:6px 10px;font-weight:700;flex-shrink:0;">'+(r.active?'Aktiv':'Pause')+'</button>'
       +'<button type="button" onclick="deleteRecurringRule(\''+r.id+'\')" style="background:none;border:none;color:var(--re);font-size:16px;flex-shrink:0;">✕</button>'
@@ -5420,7 +5074,7 @@ function renderShoppingItems(recipeId){
   el.innerHTML=rec.ingredients.map(function(ing){
     var amt=Math.round((ing.amount||100)*p);
     return'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--br);">'
-      +'<div style="font-size:13px;">'+(ing.emoji||'🍽')+' '+ing.name+'</div>'
+      +'<div style="font-size:13px;">'+(ing.emoji||'🍽')+' '+esc(ing.name)+'</div>'
       +'<div style="font-size:13px;font-weight:700;color:var(--g1);">'+amt+'g</div>'
       +'</div>';
   }).join('');
@@ -5572,7 +5226,7 @@ function oneDriveSyncDown(){
       if(backup.customFoods)customFoods=backup.customFoods;
       if(backup.recipes)recipes=backup.recipes;
       if(backup.barcodeCache)barcodeCache=backup.barcodeCache;
-      _importAiFields(backup);
+      _importAiFields(backup);_migratePhotosAfterImport();
       saveS();saveX();saveBarcodeCache();
       renderAll();
       showToast('☁️ Daten aus OneDrive geladen ✓');
@@ -5639,7 +5293,7 @@ function _odSlotLoad(idx){
       if(d.customFoods)customFoods=d.customFoods;
       if(d.recipes)recipes=d.recipes;
       if(d.barcodeCache)Object.assign(barcodeCache,d.barcodeCache);
-      _importAiFields(d);
+      _importAiFields(d);_migratePhotosAfterImport();
       saveS();saveX();saveBarcodeCache();renderAll();closeOv('autoSavesOv');
       showToast('Stand geladen ✓');
     });
@@ -5661,7 +5315,7 @@ function renderOneDriveStatus(){
       +'<div style="margin-bottom:8px;">'
       +'<div style="font-size:12px;color:var(--mu);margin-bottom:4px;">📁 OneDrive-Ordner</div>'
       +'<div style="display:flex;gap:6px;">'
-      +'<input id="odPathInput" type="text" value="'+folder+'" placeholder="/NutriTrack" style="flex:1;padding:8px 10px;border:2px solid var(--br);border-radius:8px;font-size:13px;outline:none;">'
+      +'<input id="odPathInput" type="text" value="'+esc(folder)+'" placeholder="/NutriTrack" style="flex:1;padding:8px 10px;border:2px solid var(--br);border-radius:8px;font-size:13px;outline:none;">'
       +'<button type="button" class="seb" style="width:auto;margin-top:0;flex-shrink:0;" onclick="_odSaveFolder(document.getElementById(\'odPathInput\').value)">✓</button>'
       +'</div>'
       +'</div>'
@@ -5720,8 +5374,8 @@ function renderExercisePresets(){
   el.innerHTML=all.map(function(p){
     var isLib=!EXERCISE_PRESETS.find(function(x){return x.name===p.name;});
     var safeName=(p.name||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-    var delBtn=isLib?('<span onclick="event.stopPropagation();deleteExerciseFromLibrary(\''+safeName+'\');void(0)" style="font-size:10px;color:var(--re);cursor:pointer;margin-left:4px;">✕</span>'):'';
-    return'<div style="display:inline-flex;align-items:center;background:var(--gl);border:1.5px solid var(--g3);border-radius:20px;padding:5px 10px;font-size:12px;font-weight:700;color:var(--g1);margin:2px;cursor:pointer;" onclick="selectExercisePreset(\''+safeName+'\')">'      +(p.emoji||'🏃')+' '+p.name+delBtn+'</div>';
+    var delBtn=isLib?('<span onclick="event.stopPropagation();deleteExerciseFromLibrary(\''+esc(safeName)+'\');void(0)" style="font-size:10px;color:var(--re);cursor:pointer;margin-left:4px;">✕</span>'):'';
+    return'<div style="display:inline-flex;align-items:center;background:var(--gl);border:1.5px solid var(--g3);border-radius:20px;padding:5px 10px;font-size:12px;font-weight:700;color:var(--g1);margin:2px;cursor:pointer;" onclick="selectExercisePreset(\''+esc(safeName)+'\')">'      +(p.emoji||'🏃')+' '+esc(p.name)+delBtn+'</div>';
   }).join('');
 }
 
@@ -5832,7 +5486,7 @@ function renderExercise(){
     return'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--br);">'
       +'<div style="font-size:20px;">'+(e.emoji||'🏃')+'</div>'
       +'<div style="flex:1;">'
-        +'<div style="font-size:13px;font-weight:700;">'+e.name+'</div>'
+        +'<div style="font-size:13px;font-weight:700;">'+esc(e.name)+'</div>'
         +'<div style="font-size:11px;color:var(--mu);">'+(e.duration?e.duration+' Min. · ':'')+intLabel+srcBadge+'</div>'
       +'</div>'
       +'<div style="font-size:13px;font-weight:800;color:var(--g1);">−'+Math.round(e.kcal)+' kcal</div>'
@@ -5914,7 +5568,7 @@ function importData(e){
       if(d.customFoods)customFoods=d.customFoods;
       if(d.recipes)recipes=d.recipes;
       if(d.barcodeCache)Object.assign(barcodeCache,d.barcodeCache);
-      _importAiFields(d);
+      _importAiFields(d);_migratePhotosAfterImport();
       saveS();saveX();saveBarcodeCache();renderAll();closeOv('settOv');showToast('Importiert ✓');
     }catch(e){showToast('Fehler beim Import');}
   };
@@ -6077,7 +5731,7 @@ function renderMealDetail(meal){
   var titleEl=document.getElementById('mdTitle');
   if(titleEl){
     if(en.length){
-      var names=en.slice(0,3).map(function(e){return e.name;});
+      var names=en.slice(0,3).map(function(e){return esc(e.name);});
       var head=names.length>1?names.slice(0,-1).join(', ')+' & <em>'+names[names.length-1]+'</em>':'<em>'+names[0]+'</em>';
       titleEl.innerHTML=head;
     } else {
@@ -6086,8 +5740,15 @@ function renderMealDetail(meal){
   }
   var photoEl=document.getElementById('mdPhoto');
   if(photoEl){
-    var ph=en.find(function(e){return e.photo;});
-    if(ph&&ph.photo){photoEl.style.backgroundImage='url('+ph.photo+')';photoEl.textContent='';}
+    var ph=en.find(function(e){return e.mealPhoto||e.mealPhotoId;});
+    if(ph&&ph.mealPhoto){photoEl.style.backgroundImage='url('+ph.mealPhoto+')';photoEl.textContent='';}
+    else if(ph&&ph.mealPhotoId&&window.NTPhotos&&NTPhotos.ok()){
+      photoEl.style.backgroundImage='';photoEl.textContent='';
+      NTPhotos.get(ph.mealPhotoId).then(function(d){
+        if(d){photoEl.style.backgroundImage='url('+d+')';photoEl.textContent='';}
+        else photoEl.textContent='Foto-Platzhalter';
+      });
+    }
     else{photoEl.style.backgroundImage='';photoEl.textContent='Foto-Platzhalter';}
   }
   var setS=function(id,val){var e=document.getElementById(id);if(e)e.textContent=val;};
@@ -6104,7 +5765,7 @@ function renderMealDetail(meal){
       var sub=isR?(e.portions||1)+'× Portion · '+Math.round(e.kcal)+' kcal':e.amount+'g · '+Math.round(e.protein)+'g P · '+Math.round(e.carbs)+'g C · '+Math.round(e.fat)+'g F';
       return'<div class="fe" onclick="'+(isR?'openEntryMenu':'openEditEntry')+'(\''+meal+'\','+i+')">'
         +'<div class="fee" style="background:var(--gl);width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;">'+(e.emoji||'🍽')+'</div>'
-        +'<div class="fei"><div class="fen">'+e.name+(e._recurId?' 🔁':'')+'</div><div class="fem">'+sub+'</div></div>'
+        +'<div class="fei"><div class="fen">'+esc(e.name)+(e._recurId?' 🔁':'')+'</div><div class="fem">'+sub+'</div></div>'
         +'<div class="fek">'+Math.round(e.kcal)+'</div>'
         +'</div>';
     }).join('');
@@ -6188,12 +5849,18 @@ function bgClose(e,id){if(e.target.id===id)closeOv(id);}
 // ════════════════════════════════════════
 // SECTION: TOAST
 // ════════════════════════════════════════
-function shareData(){
+// Einziger Sicherungs-Einstieg (früher shareData mit drei unvorhersehbaren
+// Verhalten). Zeigt in #backupNowHint an, welche Strategie gerade läuft.
+function backupNow(){
+  var hint=document.getElementById('backupNowHint');
   var tok=_odLoadTokens();
   if(tok&&isOnline){
-    oneDriveSyncUp().catch(function(){exportData();});
+    if(hint)hint.textContent='Sichert nach OneDrive …';
+    oneDriveSyncUp().then(function(){if(hint)hint.textContent='✓ In OneDrive gesichert';})
+      .catch(function(){if(hint)hint.textContent='OneDrive fehlgeschlagen – Datei-Export gestartet';exportData();});
     return;
   }
+  if(hint)hint.textContent=navigator.share?'Öffnet System-Teilen …':'Startet Datei-Download …';
   var data=_backupAiFields({state:backupState(),foodCache:foodCache,customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache});
   var json=JSON.stringify(data,null,2);
   var filename='nutritrack-backup-'+today()+'.json';
@@ -6209,13 +5876,7 @@ function shareData(){
   exportData();
 }
 
-function openHelp(){
-  // Force reload of PDF so latest version from GitHub is shown
-  var frame=document.getElementById('helpFrame');
-  var base='https://hjolmes.github.io/nutritrack/nutritrack_anleitung.pdf';
-  frame.src=base+'?v='+Date.now();
-  openOv('helpOv');
-}
+function openHelp(){openOv('helpOv');}
 
 // ════════════════════════════════════════
 // SECTION: FEEDBACK (Bug-Report / Änderungswunsch)

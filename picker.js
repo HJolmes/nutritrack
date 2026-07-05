@@ -17,7 +17,7 @@ function _esc(s){
 function pickerFriendlyAiError(err){
   var s=(err==null?'':String(err)).toLowerCase();
   if(s.indexOf('usage limit')>=0||s.indexOf('credit balance')>=0||s.indexOf('billing')>=0)
-    return '🤖 KI-Kontingent ist gerade aufgebraucht. Trag die Zutat solange über „Suche", „Eigenes" oder die Quick-Buttons ein – die KI ist später wieder verfügbar.';
+    return '🤖 KI-Kontingent ist gerade aufgebraucht. Trag die Zutat solange über „Suche" oder „Eigenes" ein – die KI ist später wieder verfügbar.';
   if(s.indexOf('overloaded')>=0||s.indexOf('rate limit')>=0||s.indexOf('rate_limit')>=0||s.indexOf('429')>=0||s.indexOf('529')>=0)
     return '🤖 KI gerade überlastet. Bitte gleich nochmal versuchen – oder die Zutat über „Suche"/„Eigenes" eintragen.';
   if(s.indexOf('proxy nicht konfiguriert')>=0||s.indexOf('not configured')>=0)
@@ -72,6 +72,7 @@ function openPicker(meal, defaultTab){
   document.getElementById('pickerLinkImportBtn').disabled=true;
   document.getElementById('pickerLinkImportBtn').style.opacity='.4';
   document.getElementById('pickerLinkImportBtn').textContent='🔗 Rezept laden';
+  var _ownOnce=document.getElementById('ownOnce');if(_ownOnce)_ownOnce.checked=false;
   pickerStopScan();
   // Title
   document.getElementById('pickerTitle').textContent=(MEAL_NAMES[pickerMeal]||'Mahlzeit')+' – Zutat hinzufügen';
@@ -112,6 +113,15 @@ function pickerLoadDefaultResults(){
 }
 
 // ─── PICKER: SEARCH TAB ───
+// Live-Suche bei jedem Tastendruck: nur lokale Quellen (Rezepte, Custom Foods,
+// Cache, DB) — synchron, kein Debounce nötig. Online weiterhin nur per Enter/Button.
+function pickerSearchLocalLive(){
+  var q=document.getElementById('pickerSearchQ').value.trim();
+  pickerSelFood=null;
+  document.getElementById('pickerAddSec').classList.add('hidden');
+  pickerRenderResults(searchLocal(q),false);
+  document.getElementById('pickerSearchHint').textContent=q?'Lokale Treffer · Enter für Online-Suche':'Lokale Treffer sofort · Online bei Suche';
+}
 function pickerSearch(){
   var q=document.getElementById('pickerSearchQ').value.trim();
   pickerSelFood=null;
@@ -898,7 +908,7 @@ function pickerLookupBarcode(code){
   var el=document.getElementById('pickerBarcodeResult');
   var startBtn=document.getElementById('pickerBcStartBtn');
   if(startBtn)startBtn.style.display='none';
-  if(el)el.innerHTML='<div style="font-size:13px;color:var(--g1);padding:8px;text-align:center;">🔍 Suche Barcode '+code+'...</div>';
+  if(el)el.innerHTML='<div style="font-size:13px;color:var(--g1);padding:8px;text-align:center;">🔍 Suche Barcode '+_esc(code)+'...</div>';
   var cached=barcodeCache[code];
   if(cached){pickerShowBarcodeResult(cached,true);return;}
   if(!isOnline){
@@ -973,7 +983,7 @@ function pickerShowBarcodeNotFound(code,msg){
   if(!el)return;
   window._pickerBarcodeNotFoundCode=code;
   el.innerHTML='<div style="background:var(--gl);border:1.5px solid var(--br);border-radius:12px;padding:12px;">'
-    +'<div style="font-size:11px;color:var(--mu);text-align:center;margin-bottom:8px;letter-spacing:.3px;">📷 Erkannt: <strong style="font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--g1);">'+code+'</strong></div>'
+    +'<div style="font-size:11px;color:var(--mu);text-align:center;margin-bottom:8px;letter-spacing:.3px;">📷 Erkannt: <strong style="font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--g1);">'+_esc(code)+'</strong></div>'
     +'<div style="font-size:12px;color:var(--mu);margin-bottom:10px;">'+msg+'</div>'
     +'<input type="text" id="bcManualName" placeholder="Produktname *" style="width:100%;box-sizing:border-box;border:2px solid var(--br);border-radius:9px;padding:8px;font-size:14px;margin-bottom:8px;outline:none;">'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">'
@@ -982,7 +992,7 @@ function pickerShowBarcodeNotFound(code,msg){
     +'<label style="font-size:11px;color:var(--mu);">Kohlenhydrate g<input type="number" id="bcManualCarbs" placeholder="0" min="0" style="width:100%;box-sizing:border-box;border:1.5px solid var(--br);border-radius:8px;padding:6px;font-size:13px;margin-top:2px;outline:none;"></label>'
     +'<label style="font-size:11px;color:var(--mu);">Fett g<input type="number" id="bcManualFat" placeholder="0" min="0" style="width:100%;box-sizing:border-box;border:1.5px solid var(--br);border-radius:8px;padding:6px;font-size:13px;margin-top:2px;outline:none;"></label>'
     +'</div>'
-    +'<button type="button" onclick="pickerBarcodeManualSave(\''+code+'\')" style="width:100%;background:linear-gradient(135deg,var(--g1),var(--g2));color:white;border:none;border-radius:10px;padding:11px;font-weight:800;font-size:14px;">Speichern & hinzufügen ✓</button>'
+    +'<button type="button" onclick="pickerBarcodeManualSave(\''+_esc(String(code).replace(/[\\']/g,''))+'\')" style="width:100%;background:linear-gradient(135deg,var(--g1),var(--g2));color:white;border:none;border-radius:10px;padding:11px;font-weight:800;font-size:14px;">Speichern & hinzufügen ✓</button>'
     +'</div>';
 }
 
@@ -1305,7 +1315,7 @@ function pickerChatKiFallback(msg){
 function pickerSendChat(){
   var msg=document.getElementById('pickerChatInp').value.trim();if(!msg)return;
   var msgs=document.getElementById('pickerChatMsgs');
-  msgs.innerHTML+='<div class="cm u">'+msg+'</div>';
+  msgs.innerHTML+='<div class="cm u">'+_esc(msg)+'</div>';
   document.getElementById('pickerChatInp').value='';
   _pickerChatShrink();
   document.getElementById('pickerChatSend').disabled=true;
@@ -1354,10 +1364,18 @@ function _pickerVoiceStart(hold){
   _pickerRecHold=!!hold;
   var r=new Ctor();
   r.lang='de-DE';r.interimResults=true;r.continuous=_pickerRecHold;r.maxAlternatives=1;
+  // Finale Transkripte der laufenden Erkennungs-Session getrennt akkumulieren:
+  // Android Chrome liefert bei continuous:true bereits finalisierte Ergebnisse
+  // in späteren Events erneut — deshalb nur ab ev.resultIndex lesen (#154).
+  var finalT='';
   r.onresult=function(ev){
-    var t='';
-    for(var i=0;i<ev.results.length;i++)t+=ev.results[i][0].transcript;
-    inp.value=(_pickerRecBase?_pickerRecBase+' ':'')+t.trim();
+    var interim='';
+    for(var i=ev.resultIndex;i<ev.results.length;i++){
+      var tr=ev.results[i][0].transcript;
+      if(ev.results[i].isFinal)finalT+=tr+' ';
+      else interim+=tr;
+    }
+    inp.value=((_pickerRecBase?_pickerRecBase+' ':'')+finalT+interim).trim();
     _pickerChatGrow();
   };
   r.onerror=function(ev){
@@ -1375,7 +1393,11 @@ function _pickerVoiceStart(hold){
     // iOS Safari beendet die Erkennung teils trotz continuous — im Hold-Modus
     // neu starten, solange der Finger unten ist (Feldinhalt wird neue Basis).
     if(_pickerRecHold&&_pickerRecActive&&_pickerRec===r){
-      _pickerRecBase=inp.value.trim();
+      // Nur echte Finals in die Basis übernehmen — nicht den kompletten
+      // Feldinhalt (inkl. Interim), sonst liefert die neue Session das
+      // zuletzt Gesagte erneut und der Text verdoppelt sich (#154).
+      _pickerRecBase=((_pickerRecBase?_pickerRecBase+' ':'')+finalT).trim();
+      finalT='';
       try{r.start();return;}catch(e){}
     }
     _pickerVoiceReset();
@@ -1456,7 +1478,7 @@ function pickerLinkDetect(){
   var btn=document.getElementById('pickerLinkImportBtn');
   if(url){
     info.innerHTML='<div style="background:#f0faf4;border:1.5px solid var(--g2);border-radius:10px;padding:6px 10px;font-size:11px;word-break:break-all;">'
-      +'<span style="color:var(--g2);font-weight:800;">✓ URL erkannt: </span><span style="color:#555;">'+url+'</span></div>';
+      +'<span style="color:var(--g2);font-weight:800;">✓ URL erkannt: </span><span style="color:#555;">'+_esc(url)+'</span></div>';
     btn.disabled=false;btn.style.opacity='1';
   } else if(raw.trim()){
     info.innerHTML='<div style="background:#fff8e1;border:1.5px solid #f9a825;border-radius:10px;padding:6px 10px;font-size:11px;color:#888;">Keine URL gefunden – bitte Link einfügen.</div>';
@@ -1538,28 +1560,28 @@ function pickerLinkAdd(saveAsRecipe){
   window._pickerLinkInstructions='';
 }
 
-// ─── PICKER: EIGENES TAB ───
+// ─── PICKER: EIGENES TAB (inkl. ehem. Quick: Checkbox „Nur einmal eintragen") ───
 function pickerSaveOwn(){
   var name=document.getElementById('ownName').value.trim();if(!name){showToast('Name eingeben');return;}
   var emoji=document.getElementById('ownEmoji').value.trim()||emo(name);
-  var food={name:name,emoji:emoji,per100:{kcal:parseFloat(document.getElementById('ownKcal').value)||0,protein:parseFloat(document.getElementById('ownProtein').value)||0,carbs:parseFloat(document.getElementById('ownCarbs').value)||0,fat:parseFloat(document.getElementById('ownFat').value)||0,sugar:0,fiber:0,salt:0}};
+  var kcal=parseFloat(document.getElementById('ownKcal').value)||0;
+  var p=parseFloat(document.getElementById('ownProtein').value)||0;
+  var c=parseFloat(document.getElementById('ownCarbs').value)||0;
+  var f=parseFloat(document.getElementById('ownFat').value)||0;
+  var onceEl=document.getElementById('ownOnce');
+  if(onceEl&&onceEl.checked){
+    // Einmalig eintragen: Werte gelten als Gesamtwerte der Portion (nicht pro 100 g).
+    if(!kcal){showToast('Kalorien eingeben');return;}
+    getDay().meals[pickerMeal].push({name:name,emoji:emoji,amount:100,per100:{kcal:kcal,protein:p,carbs:c,fat:f,sugar:0,fiber:0,salt:0},kcal:kcal,protein:p,carbs:c,fat:f,sugar:0,fiber:0,salt:0});
+    saveS();renderAll();closePicker();
+    showToast(emoji+' '+name+' eingetragen');
+    return;
+  }
+  var food={name:name,emoji:emoji,per100:{kcal:kcal,protein:p,carbs:c,fat:f,sugar:0,fiber:0,salt:0}};
   customFoods.unshift(food);saveX();
   ['ownName','ownEmoji','ownKcal','ownProtein','ownCarbs','ownFat'].forEach(function(id){document.getElementById(id).value='';});
   showToast(emoji+' '+name+' gespeichert');
   pickerSetTab('search');pickerLoadDefaultResults();
-}
-
-// ─── PICKER: QUICKTRACK TAB ───
-function pickerQuicktrack(){
-  var name=document.getElementById('qtName').value.trim()||'Quicktrack';
-  var kcal=parseFloat(document.getElementById('qtKcal').value)||0;
-  if(!kcal){showToast('Kalorien eingeben');return;}
-  var p=parseFloat(document.getElementById('qtProtein').value)||0;
-  var c=parseFloat(document.getElementById('qtCarbs').value)||0;
-  var f=parseFloat(document.getElementById('qtFat').value)||0;
-  getDay().meals[pickerMeal].push({name:name,emoji:'⚡',amount:100,per100:{kcal:kcal,protein:p,carbs:c,fat:f,sugar:0,fiber:0,salt:0},kcal:kcal,protein:p,carbs:c,fat:f,sugar:0,fiber:0,salt:0});
-  saveS();renderAll();closePicker();
-  showToast('⚡ '+name+' eingetragen');
 }
 
 // ─── PICKER: universal ingredient list renderer ───

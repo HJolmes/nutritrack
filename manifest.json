@@ -10,8 +10,8 @@
     "client_mode": "navigate-existing"
   },
   "orientation": "portrait-primary",
-  "background_color": "#2d7d52",
-  "theme_color": "#2d7d52",
+  "background_color": "#faf6f1",
+  "theme_color": "#e96e3c",
   "icons": [
     {
       "src": "/nutritrack/icon.svg",

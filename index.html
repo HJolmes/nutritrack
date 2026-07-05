@@ -284,11 +284,6 @@ body:has(#setupScreen.active) .fb-fab{display:none;}
 .frow .finp{margin-bottom:0;flex:1;}
 .fsave{width:100%;background:var(--g2);color:white;border:none;border-radius:9px;padding:10px;font-family:'Nunito',sans-serif;font-weight:700;font-size:14px;margin-top:4px;}
 
-/* Quicktrack tab */
-.qt-panel{background:#fffde7;border:1.5px solid #f9c74f;border-radius:12px;padding:13px;}
-.qt-title{font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;color:#7d5a00;margin-bottom:10px;}
-.fsave.qt{background:#f9c74f;color:#7d5a00;}
-
 /* Ingredient list (universal) */
 .ing-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;}
 .ing-item{display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:9px;padding:8px 10px;}
@@ -685,7 +680,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.205</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.206</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -1006,7 +1001,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.205</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.206</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1038,7 +1033,6 @@ button,input,select,textarea{font-family:var(--fs-body);}
         <button type="button" class="picker-tab" id="ptab-barcode" onclick="pickerSetTab('barcode')"><span>📊</span>Barcode</button>
         <button type="button" class="picker-tab" id="ptab-own" onclick="pickerSetTab('own')"><span>✚</span>Eigenes</button>
         <button type="button" class="picker-tab" id="ptab-link" onclick="pickerSetTab('link')"><span>🔗</span>Link</button>
-        <button type="button" class="picker-tab" id="ptab-quick" onclick="pickerSetTab('quick')"><span>⚡</span>Quick</button>
       </div>
 
       <!-- Tab: Zuletzt / Favoriten -->
@@ -1048,7 +1042,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
       <!-- Tab: Suche -->
       <div class="picker-panel act" id="ppanel-search">
         <div class="psb">
-          <input type="text" class="psi" id="pickerSearchQ" placeholder="z.B. Banane, Skyr..." onkeydown="if(event.key==='Enter')pickerSearch()">
+          <input type="text" class="psi" id="pickerSearchQ" placeholder="z.B. Banane, Skyr..." oninput="pickerSearchLocalLive()" onkeydown="if(event.key==='Enter')pickerSearch()">
           <button type="button" class="psg" id="pickerSearchBtn" onclick="pickerSearch()">Suchen</button>
         </div>
         <div class="src-hint" id="pickerSearchHint">Lokale Treffer sofort · Online bei Suche</div>
@@ -1163,7 +1157,12 @@ button,input,select,textarea{font-family:var(--fs-body);}
           <input type="text" class="finp" id="ownEmoji" placeholder="Emoji (optional)">
           <div class="frow"><input type="number" class="finp" id="ownKcal" placeholder="kcal"><input type="number" class="finp" id="ownProtein" placeholder="Protein g"></div>
           <div class="frow"><input type="number" class="finp" id="ownCarbs" placeholder="Kohlenhydrate g"><input type="number" class="finp" id="ownFat" placeholder="Fett g"></div>
-          <button type="button" class="fsave" onclick="pickerSaveOwn()">💾 Speichern & zur Suche</button>
+          <label style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--tx);margin:8px 2px 2px;cursor:pointer;">
+            <input type="checkbox" id="ownOnce" style="margin-top:2px;">
+            <span>Nur einmal eintragen (nicht in „Eigene Lebensmittel" speichern)</span>
+          </label>
+          <div style="font-size:11px;color:var(--mu);margin:2px 2px 6px 26px;line-height:1.4;">Angehakt: Werte gelten als Gesamtwerte der Portion. Sonst: pro 100 g.</div>
+          <button type="button" class="fsave" onclick="pickerSaveOwn()">✓ Übernehmen</button>
         </div>
       </div>
 
@@ -1188,17 +1187,6 @@ button,input,select,textarea{font-family:var(--fs-body);}
             <button type="button" class="cb2" style="margin-top:0;" onclick="pickerLinkAdd(false)">✓ Eintragen</button>
             <button type="button" class="cb2" style="margin-top:0;background:linear-gradient(135deg,#2d5f8a,#3d8bc4);" onclick="pickerLinkAdd(true)">📋 Als Rezept</button>
           </div>
-        </div>
-      </div>
-
-      <!-- Tab: Quicktrack -->
-      <div class="picker-panel" id="ppanel-quick">
-        <div class="qt-panel">
-          <div class="qt-title">⚡ Quicktrack – Gesamtwerte (wird nicht gespeichert)</div>
-          <input type="text" class="finp" id="qtName" placeholder="Bezeichnung">
-          <div class="frow"><input type="number" class="finp" id="qtKcal" placeholder="kcal gesamt"><input type="number" class="finp" id="qtProtein" placeholder="Protein g"></div>
-          <div class="frow"><input type="number" class="finp" id="qtCarbs" placeholder="Kohlenhydrate g"><input type="number" class="finp" id="qtFat" placeholder="Fett g"></div>
-          <button type="button" class="fsave qt" onclick="pickerQuicktrack()">⚡ Direkt eintragen</button>
         </div>
       </div>
 
@@ -1477,25 +1465,6 @@ button,input,select,textarea{font-family:var(--fs-body);}
 </div>
 
 <!-- ══ REZEPT URL-IMPORT ══ -->
-<div class="ov" id="recipeImportOv" onclick="bgClose(event,'recipeImportOv')">
-  <div class="mod">
-    <div class="mhan"></div>
-    <div class="mhd">
-      <button type="button" class="mcl" onclick="closeOv('recipeImportOv')">✕</button>
-      <div class="mti">🔗 Rezept importieren</div>
-      <div class="msu">URL oder kopierten Text einfügen</div>
-    </div>
-    <div class="mbd">
-      <textarea id="recipeImportInput" rows="5"
-        style="width:100%;box-sizing:border-box;border:1.5px solid var(--br);border-radius:12px;padding:12px;font-size:14px;font-family:inherit;resize:vertical;min-height:100px;outline:none;color:var(--tx);"
-        placeholder="URL einfügen – oder beliebigen Text der Seite (z.B. Chefkoch kopiert manchmal Werbetext mit). Die URL wird automatisch erkannt."
-        oninput="recipeImportDetect()"></textarea>
-      <div id="recipeImportUrlInfo" style="margin-top:8px;min-height:36px;"></div>
-      <button type="button" class="cb2" id="recipeImportBtn" onclick="recipeImportStart()" disabled style="width:100%;margin-top:4px;opacity:.4;">Rezept importieren</button>
-    </div>
-  </div>
-</div>
-
 <!-- ══ EINTRAG KURZMENÜ ══ -->
 <div class="ov" id="entryMenuOv" onclick="bgClose(event,'entryMenuOv')">
   <div class="mod">
@@ -1848,7 +1817,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
         <div style="display:flex;gap:8px;margin-bottom:10px;">
           <button type="button" id="libTabRec" onclick="libSetTab('recipes')" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--g2);background:var(--g2);color:white;font-weight:700;font-size:13px;">📋 Rezepte</button>
           <button type="button" id="libTabFoods" onclick="libSetTab('foods')" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--br);background:white;color:var(--mu);font-weight:700;font-size:13px;">🥗 Lebensmittel</button>
-          <button type="button" onclick="openRecipeImport()" style="padding:9px 14px;border-radius:10px;border:1.5px solid var(--g2);background:white;color:var(--g2);font-weight:700;font-size:13px;" title="Rezept per URL importieren">🔗</button>
+          <button type="button" onclick="closeOv('settOv');openPicker(null,'link')" style="padding:9px 14px;border-radius:10px;border:1.5px solid var(--g2);background:white;color:var(--g2);font-weight:700;font-size:13px;" title="Rezept per URL importieren">🔗</button>
           <button type="button" onclick="openImportPaste()" style="padding:9px 14px;border-radius:10px;border:1.5px solid var(--g2);background:white;color:var(--g2);font-weight:700;font-size:13px;" title="Link oder Code einlösen">📥</button>
         </div>
         <div id="libraryList" style="display:flex;flex-direction:column;gap:8px;"></div>
@@ -1931,7 +1900,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.205';
+var APP_VERSION='0.206';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -2610,78 +2579,11 @@ function renderNutrientAmpel(t){
 }
 
 // ── Rezept-Import per URL ──
-function openRecipeImport(){
-  var inp=document.getElementById('recipeImportInput');
-  inp.value='';
-  document.getElementById('recipeImportUrlInfo').innerHTML='';
-  document.getElementById('recipeImportBtn').disabled=true;
-  document.getElementById('recipeImportBtn').style.opacity='.4';
-  openOv('recipeImportOv');
-  setTimeout(function(){inp.focus();},300);
-}
 function recipeImportExtractUrl(text){
   var m=text.match(/https?:\/\/[^\s"<>]+/);
   return m?m[0].replace(/[.,;:!?)\]]+$/,''):null;
 }
-function recipeImportDetect(){
-  var raw=document.getElementById('recipeImportInput').value;
-  var url=recipeImportExtractUrl(raw);
-  var info=document.getElementById('recipeImportUrlInfo');
-  var btn=document.getElementById('recipeImportBtn');
-  if(url){
-    info.innerHTML='<div style="background:#f0faf4;border:1.5px solid var(--g2);border-radius:10px;padding:8px 12px;font-size:12px;word-break:break-all;">'
-      +'<span style="color:var(--g2);font-weight:800;">✓ URL erkannt</span><br>'
-      +'<span style="color:#555;">'+esc(url)+'</span></div>';
-    btn.disabled=false;btn.style.opacity='1';
-  } else if(raw.trim()){
-    info.innerHTML='<div style="background:#fff8e1;border:1.5px solid #f9a825;border-radius:10px;padding:8px 12px;font-size:12px;color:#888;">Keine URL gefunden – bitte Link einfügen.</div>';
-    btn.disabled=true;btn.style.opacity='.4';
-  } else {
-    info.innerHTML='';
-    btn.disabled=true;btn.style.opacity='.4';
-  }
-}
-function recipeImportStart(){
-  var raw=document.getElementById('recipeImportInput').value;
-  var url=recipeImportExtractUrl(raw);
-  if(!url)return;
-  if(!canUseAi()){showAiUnavailable();return;}
-  closeOv('recipeImportOv');
-  showToast('⏳ Rezept wird importiert...');
-  fetchT(urlProxyUrl(url),{headers:{'x-app-proxy-secret':getProxySecret()}},9000)
-    .then(function(r){return r.text();})
-    .then(function(html){
-      var text=html.replace(/<script[\s\S]*?<\/script>/gi,'')
-                   .replace(/<style[\s\S]*?<\/style>/gi,'')
-                   .replace(/<[^>]+>/g,' ')
-                   .replace(/\s+/g,' ')
-                   .slice(0,3000);
-      callClaude('claude-haiku-4-5',[{type:'text',text:
-        'Extrahiere das Rezept aus diesem Text und gib NUR gültiges JSON zurück:\n'
-        +'{"name":"Rezeptname","zutaten":[{"name":"Zutat","menge":"100g"}],"anleitung":"Zubereitungsschritte als einzelner Text (optional, leer lassen wenn nicht vorhanden)"}\n'
-        +'Text: '+text}],800,
-        function(resp){
-          try{
-            var a=resp.indexOf('{'),z=resp.lastIndexOf('}');
-            var d=JSON.parse(resp.slice(a,z+1));
-            if(!d.name||!d.zutaten||!d.zutaten.length)throw new Error();
-            var rawItems=d.zutaten.map(function(z){
-              var g=parseFloat((z.menge||'').replace(/[^\d.]/g,''))||100;
-              return{name:z.name,g:g,emoji:emo(z.name)};
-            });
-            lookupNutrients(rawItems,function(ings){
-              var rec={id:Date.now().toString(),name:d.name,emoji:'🔗',ingredients:ings,importedFrom:url};
-              if(d.anleitung&&d.anleitung.trim())rec.instructions=d.anleitung.trim();
-              recipes.unshift(rec);saveX();
-              showToast('✓ "'+d.name+'" importiert ('+ings.length+' Zutaten'+(rec.instructions?' + Anleitung':'')+')');
-            });
-          }catch(e){showToast('Rezept konnte nicht erkannt werden');}
-        },
-        function(){showToast('Import fehlgeschlagen');}
-      );
-    })
-    .catch(function(){showToast('URL konnte nicht geladen werden');});
-}
+// Rezept-Import per URL läuft ausschließlich über den Picker-Link-Tab (picker.js).
 
 function doSetup(){
   S.apiKey='';

@@ -1,6 +1,11 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.206',items:[
+    {icon:'🔍',text:'Die Lebensmittel-Suche zeigt lokale Treffer jetzt sofort beim Tippen — Enter lädt zusätzlich Online-Ergebnisse.',where:'Mahlzeit → ＋ → Suche'},
+    {icon:'⚡',text:'„Quick" ist in „Eigenes" aufgegangen: Häkchen „Nur einmal eintragen" setzen, dann gelten die Werte als Gesamtwerte der Portion und nichts wird dauerhaft gespeichert. Ein Tab weniger im Picker.',where:'Mahlzeit → ＋ → Eigenes'},
+    {icon:'🔗',text:'Rezept-Import per Link gibt es nur noch an einem Ort: Picker → Link. Der 🔗-Button in der Bibliothek führt jetzt dorthin.',where:'Bibliothek & Picker'},
+  ]},
   {v:'0.205',items:[
     {icon:'💾',text:'Alle Sicherungs-Wege führen jetzt an einen Ort: Einstellungen → Backup, mit klarem „Jetzt sichern"-Button, der anzeigt, was passiert (OneDrive, Teilen oder Datei-Download).',where:'Einstellungen · Backup'},
     {icon:'🔑',text:'Das Proxy-Passwort wird beim Speichern gegen den Server geprüft — Tippfehler fallen sofort auf. Außerdem lässt sich der Start-Dialog mit „Später" überspringen: Die App ist auch ohne KI-Passwort voll nutzbar.',where:'Start & Einstellungen · KI'},

@@ -17,7 +17,7 @@ function _esc(s){
 function pickerFriendlyAiError(err){
   var s=(err==null?'':String(err)).toLowerCase();
   if(s.indexOf('usage limit')>=0||s.indexOf('credit balance')>=0||s.indexOf('billing')>=0)
-    return '🤖 KI-Kontingent ist gerade aufgebraucht. Trag die Zutat solange über „Suche", „Eigenes" oder die Quick-Buttons ein – die KI ist später wieder verfügbar.';
+    return '🤖 KI-Kontingent ist gerade aufgebraucht. Trag die Zutat solange über „Suche" oder „Eigenes" ein – die KI ist später wieder verfügbar.';
   if(s.indexOf('overloaded')>=0||s.indexOf('rate limit')>=0||s.indexOf('rate_limit')>=0||s.indexOf('429')>=0||s.indexOf('529')>=0)
     return '🤖 KI gerade überlastet. Bitte gleich nochmal versuchen – oder die Zutat über „Suche"/„Eigenes" eintragen.';
   if(s.indexOf('proxy nicht konfiguriert')>=0||s.indexOf('not configured')>=0)
@@ -72,6 +72,7 @@ function openPicker(meal, defaultTab){
   document.getElementById('pickerLinkImportBtn').disabled=true;
   document.getElementById('pickerLinkImportBtn').style.opacity='.4';
   document.getElementById('pickerLinkImportBtn').textContent='🔗 Rezept laden';
+  var _ownOnce=document.getElementById('ownOnce');if(_ownOnce)_ownOnce.checked=false;
   pickerStopScan();
   // Title
   document.getElementById('pickerTitle').textContent=(MEAL_NAMES[pickerMeal]||'Mahlzeit')+' – Zutat hinzufügen';
@@ -112,6 +113,15 @@ function pickerLoadDefaultResults(){
 }
 
 // ─── PICKER: SEARCH TAB ───
+// Live-Suche bei jedem Tastendruck: nur lokale Quellen (Rezepte, Custom Foods,
+// Cache, DB) — synchron, kein Debounce nötig. Online weiterhin nur per Enter/Button.
+function pickerSearchLocalLive(){
+  var q=document.getElementById('pickerSearchQ').value.trim();
+  pickerSelFood=null;
+  document.getElementById('pickerAddSec').classList.add('hidden');
+  pickerRenderResults(searchLocal(q),false);
+  document.getElementById('pickerSearchHint').textContent=q?'Lokale Treffer · Enter für Online-Suche':'Lokale Treffer sofort · Online bei Suche';
+}
 function pickerSearch(){
   var q=document.getElementById('pickerSearchQ').value.trim();
   pickerSelFood=null;
@@ -1550,28 +1560,28 @@ function pickerLinkAdd(saveAsRecipe){
   window._pickerLinkInstructions='';
 }
 
-// ─── PICKER: EIGENES TAB ───
+// ─── PICKER: EIGENES TAB (inkl. ehem. Quick: Checkbox „Nur einmal eintragen") ───
 function pickerSaveOwn(){
   var name=document.getElementById('ownName').value.trim();if(!name){showToast('Name eingeben');return;}
   var emoji=document.getElementById('ownEmoji').value.trim()||emo(name);
-  var food={name:name,emoji:emoji,per100:{kcal:parseFloat(document.getElementById('ownKcal').value)||0,protein:parseFloat(document.getElementById('ownProtein').value)||0,carbs:parseFloat(document.getElementById('ownCarbs').value)||0,fat:parseFloat(document.getElementById('ownFat').value)||0,sugar:0,fiber:0,salt:0}};
+  var kcal=parseFloat(document.getElementById('ownKcal').value)||0;
+  var p=parseFloat(document.getElementById('ownProtein').value)||0;
+  var c=parseFloat(document.getElementById('ownCarbs').value)||0;
+  var f=parseFloat(document.getElementById('ownFat').value)||0;
+  var onceEl=document.getElementById('ownOnce');
+  if(onceEl&&onceEl.checked){
+    // Einmalig eintragen: Werte gelten als Gesamtwerte der Portion (nicht pro 100 g).
+    if(!kcal){showToast('Kalorien eingeben');return;}
+    getDay().meals[pickerMeal].push({name:name,emoji:emoji,amount:100,per100:{kcal:kcal,protein:p,carbs:c,fat:f,sugar:0,fiber:0,salt:0},kcal:kcal,protein:p,carbs:c,fat:f,sugar:0,fiber:0,salt:0});
+    saveS();renderAll();closePicker();
+    showToast(emoji+' '+name+' eingetragen');
+    return;
+  }
+  var food={name:name,emoji:emoji,per100:{kcal:kcal,protein:p,carbs:c,fat:f,sugar:0,fiber:0,salt:0}};
   customFoods.unshift(food);saveX();
   ['ownName','ownEmoji','ownKcal','ownProtein','ownCarbs','ownFat'].forEach(function(id){document.getElementById(id).value='';});
   showToast(emoji+' '+name+' gespeichert');
   pickerSetTab('search');pickerLoadDefaultResults();
-}
-
-// ─── PICKER: QUICKTRACK TAB ───
-function pickerQuicktrack(){
-  var name=document.getElementById('qtName').value.trim()||'Quicktrack';
-  var kcal=parseFloat(document.getElementById('qtKcal').value)||0;
-  if(!kcal){showToast('Kalorien eingeben');return;}
-  var p=parseFloat(document.getElementById('qtProtein').value)||0;
-  var c=parseFloat(document.getElementById('qtCarbs').value)||0;
-  var f=parseFloat(document.getElementById('qtFat').value)||0;
-  getDay().meals[pickerMeal].push({name:name,emoji:'⚡',amount:100,per100:{kcal:kcal,protein:p,carbs:c,fat:f,sugar:0,fiber:0,salt:0},kcal:kcal,protein:p,carbs:c,fat:f,sugar:0,fiber:0,salt:0});
-  saveS();renderAll();closePicker();
-  showToast('⚡ '+name+' eingetragen');
 }
 
 // ─── PICKER: universal ingredient list renderer ───

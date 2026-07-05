@@ -678,7 +678,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.198</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.201</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -999,7 +999,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.200</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.201</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -2002,7 +2002,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.200';
+var APP_VERSION='0.201';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -2159,6 +2159,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.201',items:[
+    {icon:'🐛',text:'Zurückblättern auf sehr alte (archivierte) Tage lässt die App nicht mehr einfrieren.',where:'Heute · ‹-Pfeil'},
+  ]},
   {v:'0.200',items:[
     {icon:'💬',text:'Beim Hinzufügen einer Zutat öffnet sich jetzt immer zuerst der Chat statt der Datenbank-Suche. Die Suche bleibt einen Tab-Tipp entfernt; aus der Bibliothek heraus landest du weiterhin direkt in der vorbefüllten Suche.',where:'Mahlzeit → ＋'},
     {icon:'🎙️',text:'Diktieren jetzt auch per Gedrückthalten: Mikrofon-Button halten → Aufnahme läuft, solange du hältst, und stoppt beim Loslassen. Kurzes Antippen startet/stoppt weiterhin wie bisher.',where:'Mahlzeit → ＋ → Chat'},
@@ -3040,7 +3043,17 @@ function doSetup(){
 // SECTION: DATA
 // ════════════════════════════════════════
 function changeDay(dir){var n=addDays(S.currentDate,dir);if(n>today()){showToast('Keine Zukunft 😄');return;}S.currentDate=n;if(applyRecurringMeals(n))saveS();renderAll();}
-function getDay(){if(!S.days[S.currentDate])S.days[S.currentDate]={meals:{breakfast:[],lunch:[],dinner:[],snack:[]},water:0,exercise:[]};var d=S.days[S.currentDate];if(!d.exercise)d.exercise=[];return d;}
+function getDay(){
+  var d=S.days[S.currentDate];
+  if(!d){d={meals:{breakfast:[],lunch:[],dinner:[],snack:[]},water:0,exercise:[]};S.days[S.currentDate]=d;}
+  // Komprimierte Alt-Tage (siehe compressOldDays) haben kein meals-Objekt.
+  // Temporäres leeres Tages-Objekt zurückgeben, damit renderAll nicht crasht.
+  // Änderungen an diesem Objekt werden bewusst NICHT gespeichert (Tag ist archiviert).
+  if(d._compressed){return {meals:{breakfast:[],lunch:[],dinner:[],snack:[]},water:d.water||0,exercise:[],_compressed:true};}
+  if(!d.meals)d.meals={breakfast:[],lunch:[],dinner:[],snack:[]};
+  if(!d.exercise)d.exercise=[];
+  return d;
+}
 function calcM(arr){return arr.reduce(function(a,e){return{kcal:a.kcal+(e.kcal||0),protein:a.protein+(e.protein||0),carbs:a.carbs+(e.carbs||0),fat:a.fat+(e.fat||0),sugar:a.sugar+(e.sugar||0),fiber:a.fiber+(e.fiber||0),salt:a.salt+(e.salt||0)};},{kcal:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0,salt:0});}
 function ingTotal(ings){return(ings||[]).reduce(function(a,g){var r=(g.amount||0)/100;return{kcal:a.kcal+(g.per100.kcal||0)*r,protein:a.protein+(g.per100.protein||0)*r,carbs:a.carbs+(g.per100.carbs||0)*r,fat:a.fat+(g.per100.fat||0)*r,sugar:a.sugar+(g.per100.sugar||0)*r,fiber:a.fiber+(g.per100.fiber||0)*r,salt:a.salt+(g.per100.salt||0)*r};},{kcal:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0,salt:0});}
 function scaleNutrients(t,factor){return{kcal:t.kcal*factor,protein:t.protein*factor,carbs:t.carbs*factor,fat:t.fat*factor,sugar:(t.sugar||0)*factor,fiber:(t.fiber||0)*factor,salt:(t.salt||0)*factor};}
@@ -3370,9 +3383,9 @@ function searchLocal(q){
 // SECTION: NUTRIENT LOOKUP
 // ════════════════════════════════════════
 function lookupNutrients(rawItems,onDone){
-  var results=[],pending=rawItems.length;
+  var results=new Array(rawItems.length),pending=rawItems.length;
   if(!pending){onDone([]);return;}
-  rawItems.forEach(function(item){
+  rawItems.forEach(function(item,idx){
     var name=item.name||'';
     var grams=item.g||item.amount||null;
     if(grams!==null)grams=parseFloat(grams);
@@ -3381,7 +3394,7 @@ function lookupNutrients(rawItems,onDone){
     // 1. Local DB
     var loc=findInLocalDB(name);
     if(loc){
-      results.push({name:loc.n,emoji:loc.e,amount:grams||0,per100:{kcal:loc.k,protein:loc.p,carbs:loc.c,fat:loc.f,sugar:0,fiber:0,salt:0},missingGrams:grams===null});
+      results[idx]={name:loc.n,emoji:loc.e,amount:grams||0,per100:{kcal:loc.k,protein:loc.p,carbs:loc.c,fat:loc.f,sugar:0,fiber:0,salt:0},missingGrams:grams===null};
       pending--;if(!pending)onDone(results);return;
     }
     // 2. Open Food Facts
@@ -3393,12 +3406,12 @@ function lookupNutrients(rawItems,onDone){
           if(prods.length>0){
             var p=prods[0],nm=p.nutriments||{};
             var kcal=nm['energy-kcal_100g']||Math.round((nm['energy_100g']||0)/4.184)||Math.round((nm['proteins_100g']||0)*4+(nm['carbohydrates_100g']||0)*4+(nm['fat_100g']||0)*9);
-            results.push({name:name,emoji:emoji,amount:grams||0,per100:{kcal:kcal,protein:nm['proteins_100g']||0,carbs:nm['carbohydrates_100g']||0,fat:nm['fat_100g']||0,sugar:nm['sugars_100g']||0,fiber:nm['fiber_100g']||0,salt:nm['salt_100g']||0},missingGrams:grams===null});
+            results[idx]={name:name,emoji:emoji,amount:grams||0,per100:{kcal:kcal,protein:nm['proteins_100g']||0,carbs:nm['carbohydrates_100g']||0,fat:nm['fat_100g']||0,sugar:nm['sugars_100g']||0,fiber:nm['fiber_100g']||0,salt:nm['salt_100g']||0},missingGrams:grams===null};
             pending--;if(!pending)onDone(results);
-          } else {kiNutrientLookup(name,emoji,grams,function(res){results.push(res);pending--;if(!pending)onDone(results);});}
-        }).catch(function(){kiNutrientLookup(name,emoji,grams,function(res){results.push(res);pending--;if(!pending)onDone(results);});});
+          } else {kiNutrientLookup(name,emoji,grams,function(res){results[idx]=res;pending--;if(!pending)onDone(results);});}
+        }).catch(function(){kiNutrientLookup(name,emoji,grams,function(res){results[idx]=res;pending--;if(!pending)onDone(results);});});
     } else {
-      results.push(kiEstimate(name,emoji,grams));pending--;if(!pending)onDone(results);
+      results[idx]=kiEstimate(name,emoji,grams);pending--;if(!pending)onDone(results);
     }
   });
 }
@@ -4821,10 +4834,8 @@ function renderStatsPanel(){
   }
   // Gewichtsverlauf-Chart
   renderWeightChart();
-  // 7-Tage-Balken
+  // 7-Tage-Balken (rendert auch die Streak-Kachel)
   renderWeekBars();
-  // Streak
-  renderStreak();
   // Offline-Queue
   renderOfflineQueuePanel();
   // Zielüberprüfung

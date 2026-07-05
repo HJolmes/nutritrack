@@ -1354,10 +1354,18 @@ function _pickerVoiceStart(hold){
   _pickerRecHold=!!hold;
   var r=new Ctor();
   r.lang='de-DE';r.interimResults=true;r.continuous=_pickerRecHold;r.maxAlternatives=1;
+  // Finale Transkripte der laufenden Erkennungs-Session getrennt akkumulieren:
+  // Android Chrome liefert bei continuous:true bereits finalisierte Ergebnisse
+  // in späteren Events erneut — deshalb nur ab ev.resultIndex lesen (#154).
+  var finalT='';
   r.onresult=function(ev){
-    var t='';
-    for(var i=0;i<ev.results.length;i++)t+=ev.results[i][0].transcript;
-    inp.value=(_pickerRecBase?_pickerRecBase+' ':'')+t.trim();
+    var interim='';
+    for(var i=ev.resultIndex;i<ev.results.length;i++){
+      var tr=ev.results[i][0].transcript;
+      if(ev.results[i].isFinal)finalT+=tr+' ';
+      else interim+=tr;
+    }
+    inp.value=((_pickerRecBase?_pickerRecBase+' ':'')+finalT+interim).trim();
     _pickerChatGrow();
   };
   r.onerror=function(ev){
@@ -1375,7 +1383,11 @@ function _pickerVoiceStart(hold){
     // iOS Safari beendet die Erkennung teils trotz continuous — im Hold-Modus
     // neu starten, solange der Finger unten ist (Feldinhalt wird neue Basis).
     if(_pickerRecHold&&_pickerRecActive&&_pickerRec===r){
-      _pickerRecBase=inp.value.trim();
+      // Nur echte Finals in die Basis übernehmen — nicht den kompletten
+      // Feldinhalt (inkl. Interim), sonst liefert die neue Session das
+      // zuletzt Gesagte erneut und der Text verdoppelt sich (#154).
+      _pickerRecBase=((_pickerRecBase?_pickerRecBase+' ':'')+finalT).trim();
+      finalT='';
       try{r.start();return;}catch(e){}
     }
     _pickerVoiceReset();

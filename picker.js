@@ -898,7 +898,7 @@ function pickerLookupBarcode(code){
   var el=document.getElementById('pickerBarcodeResult');
   var startBtn=document.getElementById('pickerBcStartBtn');
   if(startBtn)startBtn.style.display='none';
-  if(el)el.innerHTML='<div style="font-size:13px;color:var(--g1);padding:8px;text-align:center;">🔍 Suche Barcode '+code+'...</div>';
+  if(el)el.innerHTML='<div style="font-size:13px;color:var(--g1);padding:8px;text-align:center;">🔍 Suche Barcode '+_esc(code)+'...</div>';
   var cached=barcodeCache[code];
   if(cached){pickerShowBarcodeResult(cached,true);return;}
   if(!isOnline){
@@ -973,7 +973,7 @@ function pickerShowBarcodeNotFound(code,msg){
   if(!el)return;
   window._pickerBarcodeNotFoundCode=code;
   el.innerHTML='<div style="background:var(--gl);border:1.5px solid var(--br);border-radius:12px;padding:12px;">'
-    +'<div style="font-size:11px;color:var(--mu);text-align:center;margin-bottom:8px;letter-spacing:.3px;">📷 Erkannt: <strong style="font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--g1);">'+code+'</strong></div>'
+    +'<div style="font-size:11px;color:var(--mu);text-align:center;margin-bottom:8px;letter-spacing:.3px;">📷 Erkannt: <strong style="font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--g1);">'+_esc(code)+'</strong></div>'
     +'<div style="font-size:12px;color:var(--mu);margin-bottom:10px;">'+msg+'</div>'
     +'<input type="text" id="bcManualName" placeholder="Produktname *" style="width:100%;box-sizing:border-box;border:2px solid var(--br);border-radius:9px;padding:8px;font-size:14px;margin-bottom:8px;outline:none;">'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">'
@@ -982,7 +982,7 @@ function pickerShowBarcodeNotFound(code,msg){
     +'<label style="font-size:11px;color:var(--mu);">Kohlenhydrate g<input type="number" id="bcManualCarbs" placeholder="0" min="0" style="width:100%;box-sizing:border-box;border:1.5px solid var(--br);border-radius:8px;padding:6px;font-size:13px;margin-top:2px;outline:none;"></label>'
     +'<label style="font-size:11px;color:var(--mu);">Fett g<input type="number" id="bcManualFat" placeholder="0" min="0" style="width:100%;box-sizing:border-box;border:1.5px solid var(--br);border-radius:8px;padding:6px;font-size:13px;margin-top:2px;outline:none;"></label>'
     +'</div>'
-    +'<button type="button" onclick="pickerBarcodeManualSave(\''+code+'\')" style="width:100%;background:linear-gradient(135deg,var(--g1),var(--g2));color:white;border:none;border-radius:10px;padding:11px;font-weight:800;font-size:14px;">Speichern & hinzufügen ✓</button>'
+    +'<button type="button" onclick="pickerBarcodeManualSave(\''+_esc(String(code).replace(/[\\']/g,''))+'\')" style="width:100%;background:linear-gradient(135deg,var(--g1),var(--g2));color:white;border:none;border-radius:10px;padding:11px;font-weight:800;font-size:14px;">Speichern & hinzufügen ✓</button>'
     +'</div>';
 }
 
@@ -1305,7 +1305,7 @@ function pickerChatKiFallback(msg){
 function pickerSendChat(){
   var msg=document.getElementById('pickerChatInp').value.trim();if(!msg)return;
   var msgs=document.getElementById('pickerChatMsgs');
-  msgs.innerHTML+='<div class="cm u">'+msg+'</div>';
+  msgs.innerHTML+='<div class="cm u">'+_esc(msg)+'</div>';
   document.getElementById('pickerChatInp').value='';
   _pickerChatShrink();
   document.getElementById('pickerChatSend').disabled=true;
@@ -1468,7 +1468,7 @@ function pickerLinkDetect(){
   var btn=document.getElementById('pickerLinkImportBtn');
   if(url){
     info.innerHTML='<div style="background:#f0faf4;border:1.5px solid var(--g2);border-radius:10px;padding:6px 10px;font-size:11px;word-break:break-all;">'
-      +'<span style="color:var(--g2);font-weight:800;">✓ URL erkannt: </span><span style="color:#555;">'+url+'</span></div>';
+      +'<span style="color:var(--g2);font-weight:800;">✓ URL erkannt: </span><span style="color:#555;">'+_esc(url)+'</span></div>';
     btn.disabled=false;btn.style.opacity='1';
   } else if(raw.trim()){
     info.innerHTML='<div style="background:#fff8e1;border:1.5px solid #f9a825;border-radius:10px;padding:6px 10px;font-size:11px;color:#888;">Keine URL gefunden – bitte Link einfügen.</div>';

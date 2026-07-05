@@ -678,7 +678,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.202</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.203</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -999,7 +999,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.202</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.203</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -2002,7 +2002,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.202';
+var APP_VERSION='0.203';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -2159,6 +2159,9 @@ function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slo
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 var CHANGELOG=[
+  {v:'0.203',items:[
+    {icon:'🔒',text:'Namen aus geteilten Links, Online-Datenbanken und KI-Antworten werden jetzt in allen Ansichten sicher dargestellt.',where:'App-weit'},
+  ]},
   {v:'0.202',items:[
     {icon:'🎙️',text:'Diktat-Fix: Beim Gedrückthalten des Mikrofon-Buttons wiederholten sich bereits erkannte Wörter nach jedem neuen Wort. Der Text läuft jetzt sauber weiter.',where:'Mahlzeit → ＋ → Chat'},
   ]},
@@ -2980,7 +2983,7 @@ function recipeImportDetect(){
   if(url){
     info.innerHTML='<div style="background:#f0faf4;border:1.5px solid var(--g2);border-radius:10px;padding:8px 12px;font-size:12px;word-break:break-all;">'
       +'<span style="color:var(--g2);font-weight:800;">✓ URL erkannt</span><br>'
-      +'<span style="color:#555;">'+url+'</span></div>';
+      +'<span style="color:#555;">'+esc(url)+'</span></div>';
     btn.disabled=false;btn.style.opacity='1';
   } else if(raw.trim()){
     info.innerHTML='<div style="background:#fff8e1;border:1.5px solid #f9a825;border-radius:10px;padding:8px 12px;font-size:12px;color:#888;">Keine URL gefunden – bitte Link einfügen.</div>';
@@ -3198,7 +3201,7 @@ function renderAll(){
         }
         return'<div class="fe'+(isR?' is-recipe':'')+'" onclick="'+(isR?'openEntryMenu':'openEditEntry')+'(\''+m+'\','+i+')">'
           +'<div class="fee">'+(e.emoji||'🍽')+'</div>'
-          +'<div class="fei"><div class="fen">'+e.name+(e._recurId?' 🔁':'')+'</div><div class="fem">'+sub+'</div></div>'
+          +'<div class="fei"><div class="fen">'+esc(e.name)+(e._recurId?' 🔁':'')+'</div><div class="fem">'+sub+'</div></div>'
           +'<div class="fek">'+Math.round(e.kcal)+' kcal</div>'
           +'<div style="display:flex;align-items:center;">'+dot+'<div class="fe-ic">✏️</div></div>'
           +'</div>';
@@ -3565,7 +3568,7 @@ function renderEditBody(e){
       return'<div class="ing-wrap">'
         +'<div class="ing-item">'
         +'<div class="ing-e" onclick="ingToggle(event,\''+nid+'\')">'+(ing.emoji||'🍽')+'</div>'
-        +'<div class="ing-n" onclick="ingToggle(event,\''+nid+'\')">'+ing.name+ampelDot+'</div>'
+        +'<div class="ing-n" onclick="ingToggle(event,\''+nid+'\')">'+esc(ing.name)+ampelDot+'</div>'
         +'<input type="number" class="ing-amt" value="'+amtVal+'" min="1" placeholder="g?" style="'+bStyle+'" onchange="editIngAmt('+i+',this.value)">'
         +'<div class="ing-u">g</div>'+warn
         +'<button type="button" class="ing-del" onclick="editIngDel('+i+')">✕</button>'
@@ -3574,7 +3577,7 @@ function renderEditBody(e){
         +'</div>';
     }).join('');
     body.innerHTML='<label class="lbl">Name</label>'
-      +'<input type="text" class="finp" id="editName" value="'+e.name+'" style="margin-bottom:10px;">'
+      +'<input type="text" class="finp" id="editName" value="'+esc(e.name)+'" style="margin-bottom:10px;">'
       +'<label class="lbl">Portionen</label>'
       +'<div class="ar" style="margin-top:0;"><input type="number" class="ai2" id="editPortions" value="'+p+'" min="0.1" step="0.1" onchange="editUpdateTotal(this.value)"><div class="au">Portion(en)</div></div>'
       +'<div id="editTotal" class="rec-total" style="margin-top:8px;">1 Portion: '+totalStr(t)+'<br>'+p+'× = '+totalStr(scaleNutrients(t,p))+'</div>'
@@ -3582,7 +3585,7 @@ function renderEditBody(e){
       +'<div class="ing-list" id="editIngList">'+ingHtml+'</div>'
       +'<button type="button" class="seb" style="margin-bottom:8px;" onclick="editAddIng()">+ Zutat hinzufügen</button>'
       +(e.recipeId?'':'<button type="button" class="seb" style="margin-bottom:8px;border-color:var(--g2);color:var(--g2);" onclick="editSaveAsRecipe()">📋 Als Rezept speichern</button>')
-      +(function(){var rec=e.recipeId&&recipes.find(function(r){return r.id===e.recipeId;});var ins=(rec&&rec.instructions)||e.instructions||'';return ins?'<div style="margin:10px 0;padding:12px;background:var(--gl);border-radius:12px;border:1px solid var(--g3);"><div style="font-size:12px;font-weight:700;color:var(--g1);margin-bottom:6px;">📝 Kochanleitung</div><div style="font-size:13px;white-space:pre-wrap;color:var(--tx);">'+ins+'</div></div>':'';}())
+      +(function(){var rec=e.recipeId&&recipes.find(function(r){return r.id===e.recipeId;});var ins=(rec&&rec.instructions)||e.instructions||'';return ins?'<div style="margin:10px 0;padding:12px;background:var(--gl);border-radius:12px;border:1px solid var(--g3);"><div style="font-size:12px;font-weight:700;color:var(--g1);margin-bottom:6px;">📝 Kochanleitung</div><div style="font-size:13px;white-space:pre-wrap;color:var(--tx);">'+esc(ins)+'</div></div>':'';}())
       +renderAmpelInfo(e)
       +renderNutrientDetail({kcal:t.kcal,protein:t.protein,carbs:t.carbs,fat:t.fat,sugar:t.sugar||0,fiber:t.fiber||0,salt:t.salt||0},p)
       +(e.mealPhoto?'<div style="margin:8px 0;"><img src="'+e.mealPhoto+'" style="width:100%;border-radius:10px;max-height:160px;object-fit:cover;"></div>':'')
@@ -3708,7 +3711,7 @@ function openEntryMenu(meal,idx){
     '<button type="button" class="svb" style="margin-bottom:8px;" onclick="closeOv(\'entryMenuOv\');openEditEntry(\''+meal+'\','+idx+')">✏️ Eintrag bearbeiten</button>'
     +'<button type="button" class="seb" style="margin-bottom:8px;" onclick="closeOv(\'entryMenuOv\');'+shareCall+'">'+shareLabel+'</button>'
     +(ins?'<button type="button" class="seb" style="margin-bottom:8px;" onclick="showEntryInstructions()">📝 Kochanleitung anzeigen</button>':'')
-    +'<div id="entryInstructionsPanel" style="display:none;background:var(--gl);border-radius:12px;padding:12px;margin-bottom:8px;white-space:pre-wrap;font-size:13px;color:var(--tx);">'+ins+'</div>';
+    +'<div id="entryInstructionsPanel" style="display:none;background:var(--gl);border-radius:12px;padding:12px;margin-bottom:8px;white-space:pre-wrap;font-size:13px;color:var(--tx);">'+esc(ins)+'</div>';
   openOv('entryMenuOv');
 }
 function showEntryInstructions(){
@@ -3750,7 +3753,7 @@ function recEditRenderIng(ings){
     return'<div class="ing-wrap">'
       +'<div class="ing-item">'
       +'<div class="ing-e" onclick="ingToggle(event,\''+nid+'\')">'+(ing.emoji||'🍽')+'</div>'
-      +'<div class="ing-n" onclick="ingToggle(event,\''+nid+'\')">'+ing.name+'</div>'
+      +'<div class="ing-n" onclick="ingToggle(event,\''+nid+'\')">'+esc(ing.name)+'</div>'
       +'<input type="number" class="ing-amt" value="'+amtVal+'" min="1" placeholder="g?" style="'+bStyle+'" onchange="recEditIngAmt('+i+',this.value)">'
       +'<div class="ing-u">g</div>'
       +'<button type="button" class="ing-del" onclick="recEditIngDel('+i+')">✕</button>'
@@ -3784,7 +3787,7 @@ function recEditSearch(){
   el.innerHTML=results.map(function(p,i){
     return'<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1.5px solid var(--br);border-radius:10px;cursor:pointer;margin-bottom:4px;background:white;" onclick="recEditAddFood('+i+')">'
       +'<div style="font-size:18px;">'+(p.emoji||'🍽')+'</div>'
-      +'<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:13px;">'+p.name+'</div>'
+      +'<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:13px;">'+esc(p.name)+'</div>'
       +'<div style="font-size:11px;color:var(--mu);">'+Math.round(p.per100.kcal)+' kcal pro 100g</div></div>'
       +'<div style="font-size:18px;color:var(--g2);font-weight:900;">＋</div></div>';
   }).join('');
@@ -4618,9 +4621,9 @@ function renderSavedDietFreeList(){
     var isAct=p===active;
     return'<div style="display:inline-flex;align-items:center;gap:4px;background:'+(isAct?'var(--g1)':'var(--gl)')+';border:1.5px solid '+(isAct?'var(--g1)':'var(--g3)')+';'
       +'border-radius:20px;padding:4px 8px;font-size:12px;font-weight:700;color:'+(isAct?'white':'var(--g1)')+';cursor:pointer;" '
-      +'onclick="selectDietFree(\''+p.replace(/'/g,"\\'")+'\')">'
-      +p
-      +' <span onclick="event.stopPropagation();deleteDietFree(\''+p.replace(/'/g,"\\'")+'\') " '
+      +'onclick="selectDietFree(\''+esc(p.replace(/'/g,"\\'"))+'\')">'
+      +esc(p)
+      +' <span onclick="event.stopPropagation();deleteDietFree(\''+esc(p.replace(/'/g,"\\'"))+'\') " '
       +'style="font-size:10px;color:'+(isAct?'rgba(255,255,255,0.7)':'var(--re)')+';cursor:pointer;">✕</span>'
       +'</div>';
   }).join('');
@@ -4790,7 +4793,7 @@ function renderRecentList(){
   el.innerHTML=items.map(function(item,i){
     return'<div class="ri" onclick="pickerAddRecent('+i+')">'
       +'<div class="ri-e">'+(item.emoji||'🍽')+'</div>'
-      +'<div style="flex:1;min-width:0;"><div class="ri-n">'+item.name+'</div>'
+      +'<div style="flex:1;min-width:0;"><div class="ri-n">'+esc(item.name)+'</div>'
       +(item.per100?'<div class="ri-d">'+Math.round(item.per100.kcal)+' kcal/100g</div>':'<div class="ri-d">'+(item.kcal?Math.round(item.kcal)+' kcal':'')+'</div>')
       +'</div>'
       +'<div style="font-size:18px;color:var(--g2);font-weight:900;">＋</div>'
@@ -5064,7 +5067,7 @@ function renderReminders(){
   if(!reminders.length){el.innerHTML='<div style="font-size:12px;color:var(--mu);">Keine Erinnerungen</div>';return;}
   el.innerHTML=reminders.map(function(r,i){
     return'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--br);">'
-      +'<div style="flex:1;font-size:13px;font-weight:600;">'+r.time+' – '+r.label+'</div>'
+      +'<div style="flex:1;font-size:13px;font-weight:600;">'+esc(r.time)+' – '+esc(r.label)+'</div>'
       +'<button type="button" onclick="deleteReminder('+i+')" style="background:none;border:none;color:var(--re);font-size:16px;cursor:pointer;">✕</button>'
       +'</div>';
   }).join('');
@@ -5267,7 +5270,7 @@ function openTemplateOv(meal){
   el.innerHTML=templates.map(function(t){
     var total=t.entries.reduce(function(a,e){return a+(e.kcal||0);},0);
     return'<div style="background:var(--card);border-radius:12px;padding:12px;box-shadow:var(--sh);display:flex;align-items:center;gap:10px;">'
-      +'<div style="flex:1;"><div style="font-weight:700;font-size:13px;">'+t.name+'</div>'
+      +'<div style="flex:1;"><div style="font-weight:700;font-size:13px;">'+esc(t.name)+'</div>'
       +'<div style="font-size:11px;color:var(--mu);">'+t.entries.length+' Einträge · '+Math.round(total)+' kcal</div></div>'
       +'<button type="button" onclick="applyMealTemplate(\''+t.id+'\',\''+meal+'\')" style="background:var(--g2);border:none;border-radius:8px;color:white;font-size:13px;padding:6px 12px;font-weight:700;">Laden</button>'
       +'<button type="button" onclick="deleteTemplate(\''+t.id+'\')" style="background:none;border:none;color:var(--re);font-size:16px;">✕</button>'
@@ -5387,7 +5390,7 @@ function renderRecurManage(){
     var total=(r.entries||[]).reduce(function(a,e){return a+(e.kcal||0);},0);
     var dim=r.active?'':'opacity:0.5;';
     return'<div style="background:var(--card);border-radius:12px;padding:12px;box-shadow:var(--sh);display:flex;align-items:center;gap:10px;'+dim+'">'
-      +'<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">🔁 '+r.name+'</div>'
+      +'<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">🔁 '+esc(r.name)+'</div>'
       +'<div style="font-size:11px;color:var(--mu);">'+MEAL_NAMES[r.meal]+' · '+_recurDaysLabel(r.weekdays)+' · '+Math.round(total)+' kcal</div></div>'
       +'<button type="button" onclick="toggleRecurringRule(\''+r.id+'\')" title="'+(r.active?'Pausieren':'Aktivieren')+'" style="background:'+(r.active?'var(--g2)':'var(--gl)')+';color:'+(r.active?'#fff':'var(--mu)')+';border:none;border-radius:8px;font-size:12px;padding:6px 10px;font-weight:700;flex-shrink:0;">'+(r.active?'Aktiv':'Pause')+'</button>'
       +'<button type="button" onclick="deleteRecurringRule(\''+r.id+'\')" style="background:none;border:none;color:var(--re);font-size:16px;flex-shrink:0;">✕</button>'
@@ -5434,7 +5437,7 @@ function renderShoppingItems(recipeId){
   el.innerHTML=rec.ingredients.map(function(ing){
     var amt=Math.round((ing.amount||100)*p);
     return'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--br);">'
-      +'<div style="font-size:13px;">'+(ing.emoji||'🍽')+' '+ing.name+'</div>'
+      +'<div style="font-size:13px;">'+(ing.emoji||'🍽')+' '+esc(ing.name)+'</div>'
       +'<div style="font-size:13px;font-weight:700;color:var(--g1);">'+amt+'g</div>'
       +'</div>';
   }).join('');
@@ -5675,7 +5678,7 @@ function renderOneDriveStatus(){
       +'<div style="margin-bottom:8px;">'
       +'<div style="font-size:12px;color:var(--mu);margin-bottom:4px;">📁 OneDrive-Ordner</div>'
       +'<div style="display:flex;gap:6px;">'
-      +'<input id="odPathInput" type="text" value="'+folder+'" placeholder="/NutriTrack" style="flex:1;padding:8px 10px;border:2px solid var(--br);border-radius:8px;font-size:13px;outline:none;">'
+      +'<input id="odPathInput" type="text" value="'+esc(folder)+'" placeholder="/NutriTrack" style="flex:1;padding:8px 10px;border:2px solid var(--br);border-radius:8px;font-size:13px;outline:none;">'
       +'<button type="button" class="seb" style="width:auto;margin-top:0;flex-shrink:0;" onclick="_odSaveFolder(document.getElementById(\'odPathInput\').value)">✓</button>'
       +'</div>'
       +'</div>'
@@ -5734,8 +5737,8 @@ function renderExercisePresets(){
   el.innerHTML=all.map(function(p){
     var isLib=!EXERCISE_PRESETS.find(function(x){return x.name===p.name;});
     var safeName=(p.name||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-    var delBtn=isLib?('<span onclick="event.stopPropagation();deleteExerciseFromLibrary(\''+safeName+'\');void(0)" style="font-size:10px;color:var(--re);cursor:pointer;margin-left:4px;">✕</span>'):'';
-    return'<div style="display:inline-flex;align-items:center;background:var(--gl);border:1.5px solid var(--g3);border-radius:20px;padding:5px 10px;font-size:12px;font-weight:700;color:var(--g1);margin:2px;cursor:pointer;" onclick="selectExercisePreset(\''+safeName+'\')">'      +(p.emoji||'🏃')+' '+p.name+delBtn+'</div>';
+    var delBtn=isLib?('<span onclick="event.stopPropagation();deleteExerciseFromLibrary(\''+esc(safeName)+'\');void(0)" style="font-size:10px;color:var(--re);cursor:pointer;margin-left:4px;">✕</span>'):'';
+    return'<div style="display:inline-flex;align-items:center;background:var(--gl);border:1.5px solid var(--g3);border-radius:20px;padding:5px 10px;font-size:12px;font-weight:700;color:var(--g1);margin:2px;cursor:pointer;" onclick="selectExercisePreset(\''+esc(safeName)+'\')">'      +(p.emoji||'🏃')+' '+esc(p.name)+delBtn+'</div>';
   }).join('');
 }
 
@@ -5846,7 +5849,7 @@ function renderExercise(){
     return'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--br);">'
       +'<div style="font-size:20px;">'+(e.emoji||'🏃')+'</div>'
       +'<div style="flex:1;">'
-        +'<div style="font-size:13px;font-weight:700;">'+e.name+'</div>'
+        +'<div style="font-size:13px;font-weight:700;">'+esc(e.name)+'</div>'
         +'<div style="font-size:11px;color:var(--mu);">'+(e.duration?e.duration+' Min. · ':'')+intLabel+srcBadge+'</div>'
       +'</div>'
       +'<div style="font-size:13px;font-weight:800;color:var(--g1);">−'+Math.round(e.kcal)+' kcal</div>'
@@ -6091,7 +6094,7 @@ function renderMealDetail(meal){
   var titleEl=document.getElementById('mdTitle');
   if(titleEl){
     if(en.length){
-      var names=en.slice(0,3).map(function(e){return e.name;});
+      var names=en.slice(0,3).map(function(e){return esc(e.name);});
       var head=names.length>1?names.slice(0,-1).join(', ')+' & <em>'+names[names.length-1]+'</em>':'<em>'+names[0]+'</em>';
       titleEl.innerHTML=head;
     } else {
@@ -6118,7 +6121,7 @@ function renderMealDetail(meal){
       var sub=isR?(e.portions||1)+'× Portion · '+Math.round(e.kcal)+' kcal':e.amount+'g · '+Math.round(e.protein)+'g P · '+Math.round(e.carbs)+'g C · '+Math.round(e.fat)+'g F';
       return'<div class="fe" onclick="'+(isR?'openEntryMenu':'openEditEntry')+'(\''+meal+'\','+i+')">'
         +'<div class="fee" style="background:var(--gl);width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;">'+(e.emoji||'🍽')+'</div>'
-        +'<div class="fei"><div class="fen">'+e.name+(e._recurId?' 🔁':'')+'</div><div class="fem">'+sub+'</div></div>'
+        +'<div class="fei"><div class="fen">'+esc(e.name)+(e._recurId?' 🔁':'')+'</div><div class="fem">'+sub+'</div></div>'
         +'<div class="fek">'+Math.round(e.kcal)+'</div>'
         +'</div>';
     }).join('');

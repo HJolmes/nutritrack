@@ -594,6 +594,10 @@ button,input,select,textarea{font-family:var(--fs-body);}
       style="width:100%;padding:14px;background:#2d7d52;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;margin-top:4px;">
       Weiter →
     </button>
+    <button type="button" onclick="skipProxyPwGate()"
+      style="width:100%;padding:10px;background:none;color:#7a9487;border:none;font-size:13px;font-weight:600;cursor:pointer;margin-top:8px;text-decoration:underline;">
+      Später – App ohne KI nutzen
+    </button>
   </div>
 </div>
 
@@ -681,7 +685,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.204</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.205</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -691,7 +695,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div id="odMissingBanner" style="display:none;align-items:center;gap:10px;background:#fff3e0;border-bottom:1px solid #ffe0b2;padding:10px 16px;">
       <div style="flex:1;font-size:12px;color:#e65100;font-weight:600;">☁️ OneDrive nicht verbunden – Sichere deine Daten einmal täglich lokal.</div>
-      <button type="button" onclick="shareData()" style="font-size:12px;font-weight:700;color:#e65100;background:none;border:1px solid #e65100;padding:4px 8px;border-radius:8px;cursor:pointer;">💾 Sichern</button>
+      <button type="button" onclick="openBackupSettings()" style="font-size:12px;font-weight:700;color:#e65100;background:none;border:1px solid #e65100;padding:4px 8px;border-radius:8px;cursor:pointer;">💾 Sichern</button>
       <button type="button" onclick="dismissOdBanner()" style="font-size:14px;color:#e65100;background:none;border:none;cursor:pointer;padding:4px;">✕</button>
     </div>
     <div class="dn">
@@ -714,7 +718,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div id="backupReminder" class="hidden" style="background:#fff8e1;border:1.5px solid #f9c74f;border-radius:12px;padding:11px 14px;margin:10px 12px 0;display:flex;align-items:center;gap:10px;">
     <div style="font-size:20px;">💾</div>
     <div style="flex:1;font-size:13px;color:#7d5a00;font-weight:600;">Tipp: Daten heute sichern?</div>
-    <button type="button" onclick="shareData();dismissBackupReminder();" style="background:#f9c74f;border:none;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;color:#7d5a00;flex-shrink:0;">Teilen 📤</button>
+    <button type="button" onclick="openBackupSettings();dismissBackupReminder();" style="background:#f9c74f;border:none;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;color:#7d5a00;flex-shrink:0;">Sichern →</button>
     <button type="button" onclick="dismissBackupReminder()" style="background:none;border:none;font-size:18px;color:#aaa;flex-shrink:0;">✕</button>
   </div>
   <div class="main">
@@ -975,9 +979,9 @@ button,input,select,textarea{font-family:var(--fs-body);}
       <div class="lr-body"><div class="lr-name">Einstellungen</div><div class="lr-sub">Profil, Ziele, Ernährung, Erinnerungen</div></div>
       <div class="lr-val">›</div>
     </div>
-    <div class="list-row" onclick="shareData()">
+    <div class="list-row" onclick="openBackupSettings()">
       <div class="lr-ic">💾</div>
-      <div class="lr-body"><div class="lr-name">Daten teilen / sichern</div><div class="lr-sub">Backup als Code oder Link</div></div>
+      <div class="lr-body"><div class="lr-name">Daten teilen / sichern</div><div class="lr-sub">Export, Import, OneDrive, Autospeicher</div></div>
       <div class="lr-val">›</div>
     </div>
     <div class="list-row" onclick="if(typeof openImportPaste==='function')openImportPaste();else openSettings();">
@@ -1002,7 +1006,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.204</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.205</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1883,6 +1887,10 @@ button,input,select,textarea{font-family:var(--fs-body);}
       <!-- TAB: BACKUP -->
       <div id="spanel-backup" style="display:none;">
         <div style="padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--br);">
+          <button type="button" class="cb2" onclick="backupNow()">💾 Jetzt sichern</button>
+          <div id="backupNowHint" style="font-size:12px;color:var(--mu);margin-top:6px;"></div>
+        </div>
+        <div style="padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--br);">
           <label class="lbl" style="margin-bottom:8px;">🕹️ Autospeicher</label>
           <div style="font-size:12px;color:var(--mu);margin-bottom:8px;">Wird bei jedem App-Start automatisch gespeichert. Bis zu 5 Stände.</div>
           <button type="button" class="seb" onclick="openAutoSaves()">📂 Autospeicher anzeigen</button>
@@ -1923,7 +1931,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.204';
+var APP_VERSION='0.205';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -2261,12 +2269,26 @@ function dismissInstall(){
   localStorage.setItem('nt_install_dismissed','1');
 }
 function checkProxyPwGate(){
+  if(localStorage.getItem('nt_gate_skipped'))return;
   var gate=document.getElementById('proxyPwGate');
   if(!gate)return;
   if(!getProxySecret()){
     gate.style.display='flex';
     setTimeout(function(){var i=document.getElementById('proxyPwInput');if(i)i.focus();},50);
   }
+}
+function skipProxyPwGate(){
+  localStorage.setItem('nt_gate_skipped','1');
+  var gate=document.getElementById('proxyPwGate');
+  if(gate)gate.style.display='none';
+  showToast('KI-Funktionen deaktiviert – Passwort jederzeit unter Einstellungen → 🤖 KI nachtragen');
+}
+// Prüft das gesetzte Passwort mit einem 1-Token-Ping gegen den Worker.
+// true = akzeptiert, false = 401/403 (falsch), null = offline/unklar.
+function verifyProxySecret(){
+  return fetchT(PROJECT_AI_PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json','x-app-proxy-secret':getProxySecret()},body:JSON.stringify({model:'claude-haiku-4-5',max_tokens:1,messages:[{role:'user',content:[{type:'text',text:'ping'}]}]})},10000)
+    .then(function(r){return r.status!==401&&r.status!==403;})
+    .catch(function(){return null;});
 }
 function submitProxyPw(){
   var input=document.getElementById('proxyPwInput');
@@ -2276,13 +2298,20 @@ function submitProxyPw(){
     if(errEl){errEl.textContent='Bitte Passwort eingeben.';errEl.style.display='block';}
     return;
   }
-  setProxySecret(pw).then(function(){
+  setProxySecret(pw).then(function(){return verifyProxySecret();}).then(function(ok){
+    var aiStatus=document.getElementById('aiProxyStatus');
+    if(ok===false){
+      // Server lehnt ab → Gate offen lassen, klare Fehlermeldung statt späterem KI-Fehler.
+      if(errEl){errEl.textContent='❌ Passwort scheint falsch (Server lehnt ab).';errEl.style.display='block';}
+      if(aiStatus)aiStatus.textContent='❌ Passwort scheint falsch';
+      return;
+    }
+    localStorage.removeItem('nt_gate_skipped');
     var gate=document.getElementById('proxyPwGate');
     if(gate)gate.style.display='none';
     if(input)input.value='';
     if(errEl)errEl.style.display='none';
-    var aiStatus=document.getElementById('aiProxyStatus');
-    if(aiStatus)aiStatus.textContent='Proxy-Passwort gesetzt ✓';
+    if(aiStatus)aiStatus.textContent=ok===true?'✓ Passwort geprüft':'Gespeichert (offline nicht prüfbar)';
   });
 }
 var AUTOSAVE_MAX=5;
@@ -2380,8 +2409,17 @@ function saveProxyPwFromSettings(){
   setProxySecret(pw).then(function(){
     if(input)input.value='';
     var aiStatus=document.getElementById('aiProxyStatus');
-    if(aiStatus)aiStatus.textContent='Passwort gesetzt ✓';
-    showToast('Proxy-Passwort gespeichert');
+    if(aiStatus){aiStatus.textContent='Prüfe Passwort …';aiStatus.style.color='';}
+    return verifyProxySecret().then(function(ok){
+      if(ok===false){
+        if(aiStatus){aiStatus.textContent='❌ Passwort scheint falsch (Server lehnt ab)';aiStatus.style.color='var(--re)';}
+        showToast('❌ Passwort scheint falsch');
+        return;
+      }
+      localStorage.removeItem('nt_gate_skipped');
+      if(aiStatus)aiStatus.textContent=ok===true?'✓ Passwort geprüft':'Gespeichert (offline nicht prüfbar)';
+      showToast('Proxy-Passwort gespeichert');
+    });
   });
 }
 // ── KI-Anbieter-Einstellungen ──
@@ -3870,6 +3908,7 @@ function settSetTab(tab){
   if(tab==='backup')renderOneDriveStatus();
 }
 
+function openBackupSettings(){openSettings();settSetTab('backup');}
 function openSettings(){
   document.getElementById('sn').value=S.name;
   document.getElementById('sg').value=S.goal;
@@ -5815,12 +5854,18 @@ function bgClose(e,id){if(e.target.id===id)closeOv(id);}
 // ════════════════════════════════════════
 // SECTION: TOAST
 // ════════════════════════════════════════
-function shareData(){
+// Einziger Sicherungs-Einstieg (früher shareData mit drei unvorhersehbaren
+// Verhalten). Zeigt in #backupNowHint an, welche Strategie gerade läuft.
+function backupNow(){
+  var hint=document.getElementById('backupNowHint');
   var tok=_odLoadTokens();
   if(tok&&isOnline){
-    oneDriveSyncUp().catch(function(){exportData();});
+    if(hint)hint.textContent='Sichert nach OneDrive …';
+    oneDriveSyncUp().then(function(){if(hint)hint.textContent='✓ In OneDrive gesichert';})
+      .catch(function(){if(hint)hint.textContent='OneDrive fehlgeschlagen – Datei-Export gestartet';exportData();});
     return;
   }
+  if(hint)hint.textContent=navigator.share?'Öffnet System-Teilen …':'Startet Datei-Download …';
   var data=_backupAiFields({state:backupState(),foodCache:foodCache,customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache});
   var json=JSON.stringify(data,null,2);
   var filename='nutritrack-backup-'+today()+'.json';

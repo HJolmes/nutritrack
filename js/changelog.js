@@ -1,6 +1,10 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.205',items:[
+    {icon:'💾',text:'Alle Sicherungs-Wege führen jetzt an einen Ort: Einstellungen → Backup, mit klarem „Jetzt sichern"-Button, der anzeigt, was passiert (OneDrive, Teilen oder Datei-Download).',where:'Einstellungen · Backup'},
+    {icon:'🔑',text:'Das Proxy-Passwort wird beim Speichern gegen den Server geprüft — Tippfehler fallen sofort auf. Außerdem lässt sich der Start-Dialog mit „Später" überspringen: Die App ist auch ohne KI-Passwort voll nutzbar.',where:'Start & Einstellungen · KI'},
+  ]},
   {v:'0.203',items:[
     {icon:'🔒',text:'Namen aus geteilten Links, Online-Datenbanken und KI-Antworten werden jetzt in allen Ansichten sicher dargestellt.',where:'App-weit'},
   ]},

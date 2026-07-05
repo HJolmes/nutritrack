@@ -1,6 +1,11 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.207',items:[
+    {icon:'📖',text:'Die Hilfe ist jetzt eine richtige, scrollbare Anleitung in der App (aufklappbare Themen, auch offline verfügbar) statt eines PDF-Fensters, das auf dem iPhone nur die erste Seite zeigte. Das PDF gibt es weiterhin als Download-Link.',where:'? · Hilfe'},
+    {icon:'🎨',text:'Android-Splash-Screen und Task-Switcher zeigen jetzt die aktuellen App-Farben (Cream/Koralle) statt des alten Grüns; auch die Gewichtskurve in den Trends ist auf das neue Farbschema umgestellt und der Trend bezieht sich jetzt auf den angezeigten Chart-Zeitraum.',where:'System & Trends'},
+    {icon:'⏰',text:'Ehrlicher Hinweis bei den Erinnerungen: Sie können technisch nur erscheinen, solange die App geöffnet ist.',where:'Einstellungen · Erinnerungen'},
+  ]},
   {v:'0.206',items:[
     {icon:'🔍',text:'Die Lebensmittel-Suche zeigt lokale Treffer jetzt sofort beim Tippen — Enter lädt zusätzlich Online-Ergebnisse.',where:'Mahlzeit → ＋ → Suche'},
     {icon:'⚡',text:'„Quick" ist in „Eigenes" aufgegangen: Häkchen „Nur einmal eintragen" setzen, dann gelten die Werte als Gesamtwerte der Portion und nichts wird dauerhaft gespeichert. Ein Tab weniger im Picker.',where:'Mahlzeit → ＋ → Eigenes'},

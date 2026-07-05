@@ -680,7 +680,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.206</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.207</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -1001,7 +1001,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.206</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.207</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1268,12 +1268,18 @@ button,input,select,textarea{font-family:var(--fs-body);}
       <div class="mti">❓ Hilfe & Anleitung</div>
       <div class="msu">NutriTrack Benutzerhandbuch</div>
     </div>
-    <div class="mbd" style="padding:0;height:calc(92vh - 80px);">
-      <iframe id="helpFrame"
-        src="https://hjolmes.github.io/nutritrack/nutritrack_anleitung.pdf"
-        style="width:100%;height:100%;border:none;display:block;"
-        title="NutriTrack Anleitung">
-      </iframe>
+    <div class="mbd" style="height:calc(92vh - 80px);overflow-y:auto;-webkit-overflow-scrolling:touch;">
+      <style>#helpOv details{border:1px solid var(--br);border-radius:12px;margin-bottom:8px;background:var(--card);}#helpOv summary{padding:12px 14px;font-weight:700;font-size:14px;cursor:pointer;list-style:none;}#helpOv summary::-webkit-details-marker{display:none;}#helpOv summary::before{content:'▸ ';color:var(--mu);}#helpOv details[open] summary::before{content:'▾ ';}#helpOv .hb{padding:0 14px 12px;font-size:13px;line-height:1.6;color:var(--tx);}#helpOv .hb ul{margin:6px 0;padding-left:18px;}</style>
+      <details open><summary>🏠 Heute-Tab</summary><div class="hb">Der Startbildschirm zeigt dein Tagesziel, die verbleibenden Kalorien und die drei Makro-Karten (Protein, Kohlenhydrate, Fett). Darunter liegen die vier Mahlzeiten-Karten — antippen öffnet die Detail-Ansicht. Mit den Pfeilen <strong>‹ ›</strong> blätterst du zwischen Tagen. „▶ Nährwert-Details" klappt die Ampel-Kacheln (Zucker, Ballaststoffe, Salz …) auf. Wasser trackst du über die Gläser-Reihe, Sport über „+ Aktivität" — verbrannte Kalorien werden vom Ziel abgezogen.</div></details>
+      <details><summary>➕ Mahlzeit erfassen</summary><div class="hb">Der <strong>＋</strong>-Knopf in der Mitte der unteren Leiste öffnet den Picker, standardmäßig im <strong>Chat</strong>: Einfach tippen oder per 🎙️ diktieren, was du gegessen hast („Brot mit Käse und Schinken") — die App zerlegt es in Zutaten und schätzt Nährwerte. Weitere Wege:<ul><li><strong>Suche</strong> — lokale Treffer sofort beim Tippen, Enter lädt Online-Ergebnisse</li><li><strong>Zuletzt</strong> — kürzlich verwendete Einträge</li><li><strong>Foto</strong> — Teller fotografieren, KI erkennt die Komponenten</li><li><strong>Barcode</strong> — Verpackung scannen</li><li><strong>Eigenes</strong> — Nährwerte selbst eintragen; mit Häkchen „Nur einmal eintragen" wird nichts dauerhaft gespeichert</li><li><strong>Link</strong> — Rezept-URL (z. B. Chefkoch) importieren</li></ul></div></details>
+      <details><summary>🍽 Mahlzeit-Detail</summary><div class="hb">Die Karte einer Mahlzeit öffnet die Detail-Ansicht mit allen Posten. Unten findest du: <strong>📋 Vorlage</strong> (Mahlzeit als Vorlage laden/speichern), <strong>🔁 Wiederholen</strong> (an festen Wochentagen automatisch eintragen) und <strong>💾 Als Rezept</strong> (alle Einträge als Rezept in die Bibliothek übernehmen). Einzelne Einträge antippen zum Bearbeiten, Verschieben oder Löschen.</div></details>
+      <details><summary>📚 Bibliothek</summary><div class="hb">Unter „Mehr → Bibliothek" liegen deine Rezepte und eigenen Lebensmittel. Rezepte kannst du bearbeiten, duplizieren, teilen, als Einkaufsliste anzeigen und direkt in eine Mahlzeit übernehmen. Der 🔗-Knopf importiert ein Rezept per URL, 📥 löst einen geteilten Code/Link ein.</div></details>
+      <details><summary>📤 Teilen &amp; Import</summary><div class="hb">Rezepte, Lebensmittel und Mahlzeiten lassen sich als Link teilen (📤-Symbole). Der Empfänger öffnet den Link — auf dem iPhone ggf. über „Mehr → 📥 Code / Link einlösen" in der installierten App einfügen.</div></details>
+      <details><summary>💾 Backup</summary><div class="hb">Alle Sicherungswege liegen unter <strong>Einstellungen → 💾 Backup</strong>: „Jetzt sichern"-Knopf, Datei-Export/-Import (JSON), OneDrive-Sync mit täglichem Autospeicher sowie lokale Autospeicher-Stände. Tipp: Vor einem Gerätewechsel einmal exportieren. Hinweis: Mahlzeit-Fotos sind gerätelokal und nicht Teil der Backup-Datei.</div></details>
+      <details><summary>🏃 Sport-Sync</summary><div class="hb">Unter „Mehr → Sport-Sync" erzeugst du ein Token und verbindest eine iOS-Kurzbefehl-Automation („Wenn Training endet") oder einen Android-HTTP-Shortcut. Abgeschlossene Workouts erscheinen dann automatisch mit Apple-/Samsung-Badge und reduzieren dein Tagesziel.</div></details>
+      <details><summary>🤖 KI</summary><div class="hb">Foto-Erkennung, Chat und Wochenbericht laufen über einen geschützten KI-Zugang — dafür brauchst du das Proxy-Passwort (Einstellungen → 🤖 KI). Optional kannst du dort einen eigenen KI-Anbieter (OpenAI, Gemini, …) mit eigenem API-Key hinterlegen. Ohne Passwort funktioniert alles außer den KI-Funktionen.</div></details>
+      <details><summary>❓ FAQ</summary><div class="hb"><strong>Warum stimmt eine Schätzung nicht?</strong> KI-Werte sind Näherungen — Menge und Zutaten lassen sich jederzeit anpassen.<br><strong>Funktioniert die App offline?</strong> Ja, Tagebuch, Suche (lokale Datenbank) und Bibliothek laufen offline; KI und Online-Suche brauchen Netz.<br><strong>Erinnerungen kommen nicht?</strong> Technisch bedingt erscheinen sie nur, solange die App geöffnet ist.<br><strong>Daten weg?</strong> Einstellungen → Backup → Autospeicher anzeigen — dort liegen die letzten Stände.</div></details>
+      <div style="text-align:center;margin:14px 0 6px;"><a href="nutritrack_anleitung.pdf" target="_blank" style="font-size:13px;color:var(--g2);font-weight:700;">📄 Anleitung als PDF öffnen</a></div>
     </div>
   </div>
 </div>
@@ -1801,6 +1807,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
       <!-- TAB: ERINNERUNGEN -->
       <div id="spanel-erinnerungen" style="display:none;">
         <label class="lbl" style="margin-bottom:6px;">⏰ Erinnerungen</label>
+        <div style="background:#fff8e1;border:1.5px solid #f9c74f;border-radius:10px;padding:8px 12px;font-size:11px;color:#7d5a00;line-height:1.5;margin-bottom:8px;">⚠️ Hinweis: Erinnerungen können technisch nur erscheinen, solange NutriTrack geöffnet ist.</div>
         <div id="reminderList"></div>
         <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px;">
           <div style="display:flex;gap:6px;">
@@ -1900,7 +1907,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.206';
+var APP_VERSION='0.207';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -4383,8 +4390,10 @@ function renderStatsPanel(){
   var dates=Object.keys(wlog).sort();
   var trendEl=document.getElementById('weightTrend');
   if(dates.length>=2){
-    var diff=wlog[dates[dates.length-1]]-wlog[dates[0]];
-    trendEl.textContent=(diff>0?'▲ +':diff<0?'▼ ':'')+Math.abs(diff).toFixed(1)+'kg seit '+fmtDate(dates[0]);
+    // Trend bezieht sich auf das Chart-Fenster (letzte 14 Einträge), nicht auf den allerersten Log-Eintrag.
+    var win=dates.slice(-14);
+    var diff=wlog[win[win.length-1]]-wlog[win[0]];
+    trendEl.textContent=(diff>0?'▲ +':diff<0?'▼ ':'')+Math.abs(diff).toFixed(1)+'kg seit '+fmtDate(win[0]);
     trendEl.style.color=diff>0?'var(--re)':'var(--g1)';
   } else {
     trendEl.textContent='';
@@ -4422,7 +4431,7 @@ function renderWeightChart(){
     ctx.fillStyle='#f9c74f';ctx.font='10px sans-serif';ctx.fillText('Ziel',w-pad-20,gy-3);
   }
   // Gewichtslinie
-  ctx.strokeStyle='#2d7d52';ctx.lineWidth=2;ctx.setLineDash([]);
+  ctx.strokeStyle='#e96e3c';ctx.lineWidth=2;ctx.setLineDash([]);
   ctx.beginPath();
   dates.forEach(function(d,i){
     var x=pad+(w-2*pad)*i/(dates.length-1);
@@ -4434,9 +4443,9 @@ function renderWeightChart(){
   dates.forEach(function(d,i){
     var x=pad+(w-2*pad)*i/(dates.length-1);
     var y=h-pad-(vals[i]-min)/(max-min)*(h-2*pad);
-    ctx.fillStyle='#2d7d52';ctx.beginPath();ctx.arc(x,y,3,0,2*Math.PI);ctx.fill();
+    ctx.fillStyle='#e96e3c';ctx.beginPath();ctx.arc(x,y,3,0,2*Math.PI);ctx.fill();
     if(i===dates.length-1||i===0){
-      ctx.fillStyle='#333';ctx.font='10px sans-serif';
+      ctx.fillStyle='#1f1a14';ctx.font='10px sans-serif';
       ctx.fillText(vals[i]+'kg',x-12,y-6);
     }
   });
@@ -5783,13 +5792,7 @@ function backupNow(){
   exportData();
 }
 
-function openHelp(){
-  // Force reload of PDF so latest version from GitHub is shown
-  var frame=document.getElementById('helpFrame');
-  var base='https://hjolmes.github.io/nutritrack/nutritrack_anleitung.pdf';
-  frame.src=base+'?v='+Date.now();
-  openOv('helpOv');
-}
+function openHelp(){openOv('helpOv');}
 
 // ════════════════════════════════════════
 // SECTION: FEEDBACK (Bug-Report / Änderungswunsch)

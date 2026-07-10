@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.210',items:[
+    {icon:'🎙️',text:'Diktat: doppelte Wörter (v. a. auf dem iPhone) behoben — erneut gelieferte Erkennungs-Ergebnisse werden jetzt überschrieben statt angehängt.',where:'Mahlzeit → ＋ → Chat → 🎙️'},
+  ]},
   {v:'0.209',items:[
     {icon:'🥚',text:'„Ei" ist jetzt ein rohes Ei mit eigenen Nährwerten — vorher landete fälschlich Rührei im Tagebuch. „Ei (gekocht)" und „Rührei" gibt es weiterhin.',where:'Suche & Chat'},
   ]},

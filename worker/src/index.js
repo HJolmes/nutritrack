@@ -836,8 +836,11 @@ const AI_PROVIDERS = {
   deepseek: {
     type: "openai",
     url: "https://api.deepseek.com/chat/completions",
+    // deepseek-chat = rollender Alias auf das jeweils aktuelle Modell (bewusst kein Pin).
     models: { fast: "deepseek-chat", strong: "deepseek-chat" },
-    vision: false,
+    // Bilder werden durchgereicht (Wunsch des Betreibers); lehnt die DeepSeek-API
+    // sie ab, greift clientseitig der Anthropic-Fallback.
+    vision: true,
   },
   gemini: {
     type: "gemini",
@@ -1026,7 +1029,7 @@ export default {
         feedbackConfigured: Boolean(env.GITHUB_TOKEN),
         workoutsConfigured: Boolean(env.SHARE_KV),
         decoderSecretConfigured: Boolean(env.DECODER_SECRET),
-        codeVersion: "v0.194-ai-badge",
+        codeVersion: "v0.212-deepseek-default",
       });
     }
 

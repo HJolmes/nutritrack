@@ -1028,6 +1028,9 @@ function pickerAnalyze(){
     function(text){
       var parsed=parsePhotoResponse(text);
       btn.disabled=false;btn.textContent='📷 Erneut analysieren';
+      // Badge sofort einfrieren: es soll die Vision-Anfrage zeigen, nicht die
+      // späteren Text-Anfragen aus lookupNutrients (wie im Chat-Pfad).
+      var _src=(typeof aiSourceBadgeHtml==='function')?aiSourceBadgeHtml():'';
       if(!parsed.zutaten.length){
         pickerSetPhotoStatus(text.length?'KI: '+text.slice(0,120):'Kein Lebensmittel erkannt.',true);
         return;
@@ -1041,7 +1044,7 @@ function pickerAnalyze(){
         pickerIngredients=resolved;
         pickerShowPhotoResult(parsed.rezept);
         var srcEl=document.getElementById('pickerPhotoSource');
-        if(srcEl)srcEl.innerHTML=(typeof aiSourceBadgeHtml==='function')?aiSourceBadgeHtml():'';
+        if(srcEl)srcEl.innerHTML=_src;
         pickerSetPhotoStatus('',false);
       });
     },
@@ -1356,6 +1359,23 @@ function pickerSendChat(){
 var _pickerRec=null,_pickerRecActive=false,_pickerRecBase='',_pickerRecHold=false;
 var _pickerHoldTimer=null,_pickerHoldStarted=false,PICKER_HOLD_MS=350;
 function _pickerSpeechCtor(){return window.SpeechRecognition||window.webkitSpeechRecognition||null;}
+// Entfernt aus `add` den Teil, der das Ende von `base` wortweise wiederholt.
+// iOS Safari liefert nach einem Session-Neustart (onend→start) bereits
+// übernommene Phrasen erneut als frische Ergebnisse (#156). Nur Overlaps ab
+// 2 Wörtern (oder komplettes add) werden gestrichen, damit absichtliche
+// Einzelwort-Wiederholungen („sehr sehr lecker") erhalten bleiben.
+function _pickerDedupOverlap(base,add){
+  if(!base||!add)return add;
+  var b=base.toLowerCase().split(/\s+/),a=add.toLowerCase().split(/\s+/);
+  var n=Math.min(b.length,a.length);
+  for(;n>0;n--){
+    if(b.slice(b.length-n).join(' ')===a.slice(0,n).join(' ')){
+      if(n>=2||n===a.length)return add.split(/\s+/).slice(n).join(' ');
+      break;
+    }
+  }
+  return add;
+}
 function _pickerVoiceStart(hold){
   var Ctor=_pickerSpeechCtor();
   if(!Ctor)return;
@@ -1367,15 +1387,25 @@ function _pickerVoiceStart(hold){
   // Finale Transkripte der laufenden Erkennungs-Session getrennt akkumulieren:
   // Android Chrome liefert bei continuous:true bereits finalisierte Ergebnisse
   // in späteren Events erneut — deshalb nur ab ev.resultIndex lesen (#154).
-  var finalT='';
+  // iOS Safari liefert zusätzlich denselben Result-Index mehrfach mit
+  // kumuliertem, erneut als final markiertem Transkript — deshalb Finals
+  // pro Index speichern (überschreiben statt anhängen) (#156).
+  var finals=[];
+  function _finalsJoined(){
+    var out=[],i;
+    for(i=0;i<finals.length;i++){if(finals[i]&&finals[i].trim())out.push(finals[i].trim());}
+    return out.join(' ');
+  }
   r.onresult=function(ev){
     var interim='';
     for(var i=ev.resultIndex;i<ev.results.length;i++){
       var tr=ev.results[i][0].transcript;
-      if(ev.results[i].isFinal)finalT+=tr+' ';
+      if(ev.results[i].isFinal)finals[i]=tr;
       else interim+=tr;
     }
-    inp.value=((_pickerRecBase?_pickerRecBase+' ':'')+finalT+interim).trim();
+    var joined=_finalsJoined();
+    var add=_pickerDedupOverlap(_pickerRecBase,(joined+(interim?' '+interim:'')).trim());
+    inp.value=((_pickerRecBase?_pickerRecBase+' ':'')+add).trim();
     _pickerChatGrow();
   };
   r.onerror=function(ev){
@@ -1396,8 +1426,10 @@ function _pickerVoiceStart(hold){
       // Nur echte Finals in die Basis übernehmen — nicht den kompletten
       // Feldinhalt (inkl. Interim), sonst liefert die neue Session das
       // zuletzt Gesagte erneut und der Text verdoppelt sich (#154).
-      _pickerRecBase=((_pickerRecBase?_pickerRecBase+' ':'')+finalT).trim();
-      finalT='';
+      // Overlap-Guard gegen erneut gelieferte Phrasen der Vor-Session (#156).
+      var fold=_pickerDedupOverlap(_pickerRecBase,_finalsJoined());
+      _pickerRecBase=((_pickerRecBase?_pickerRecBase+' ':'')+fold).trim();
+      finals=[];
       try{r.start();return;}catch(e){}
     }
     _pickerVoiceReset();

@@ -680,7 +680,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.208</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.212</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -959,29 +959,46 @@ button,input,select,textarea{font-family:var(--fs-body);}
     <div class="hr">
       <div>
         <div class="logo"><em>Mehr</em></div>
-        <div class="greet-sub">Bibliothek, Einstellungen &amp; Daten</div>
+        <div class="greet-sub">Einstellungen, Inhalte &amp; Hilfe</div>
       </div>
     </div>
   </div>
   <div class="main">
-    <div class="list-row" onclick="openSettings();setTimeout(function(){settSetTab('bibliothek');},50);">
+    <div style="font-size:11px;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin:2px 4px 6px;">Einstellungen</div>
+    <div class="list-row" onclick="openSettings('profil')">
+      <div class="lr-ic">👤</div>
+      <div class="lr-body"><div class="lr-name">Profil</div><div class="lr-sub">Name, Körperdaten, Aktivität</div></div>
+      <div class="lr-val">›</div>
+    </div>
+    <div class="list-row" onclick="openSettings('ziele')">
+      <div class="lr-ic">🎯</div>
+      <div class="lr-body"><div class="lr-name">Ziele</div><div class="lr-sub">Kalorien, Makros, Gewicht, Wasser</div></div>
+      <div class="lr-val">›</div>
+    </div>
+    <div class="list-row" onclick="openSettings('ernaehrung')">
+      <div class="lr-ic">🥗</div>
+      <div class="lr-body"><div class="lr-name">Ernährung</div><div class="lr-sub">Präferenzen &amp; Lebensmittel-Ampel</div></div>
+      <div class="lr-val">›</div>
+    </div>
+    <div class="list-row" onclick="openSettings('erinnerungen')">
+      <div class="lr-ic">⏰</div>
+      <div class="lr-body"><div class="lr-name">Erinnerungen</div><div class="lr-sub">Mahlzeiten &amp; Wasser</div></div>
+      <div class="lr-val">›</div>
+    </div>
+    <div class="list-row" onclick="openSettings('ki')">
+      <div class="lr-ic">🤖</div>
+      <div class="lr-body"><div class="lr-name">KI</div><div class="lr-sub">Proxy-Passwort &amp; KI-Anbieter</div></div>
+      <div class="lr-val">›</div>
+    </div>
+    <div class="list-row" onclick="openSettings('backup')">
+      <div class="lr-ic">💾</div>
+      <div class="lr-body"><div class="lr-name">Backup &amp; Daten</div><div class="lr-sub">Sichern, Export/Import, OneDrive</div></div>
+      <div class="lr-val">›</div>
+    </div>
+    <div style="font-size:11px;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin:14px 4px 6px;">Meine Inhalte</div>
+    <div class="list-row" onclick="openLibrary()">
       <div class="lr-ic">📚</div>
       <div class="lr-body"><div class="lr-name">Bibliothek</div><div class="lr-sub">Rezepte &amp; eigene Lebensmittel</div></div>
-      <div class="lr-val">›</div>
-    </div>
-    <div class="list-row" onclick="openSettings()">
-      <div class="lr-ic">⚙️</div>
-      <div class="lr-body"><div class="lr-name">Einstellungen</div><div class="lr-sub">Profil, Ziele, Ernährung, Erinnerungen</div></div>
-      <div class="lr-val">›</div>
-    </div>
-    <div class="list-row" onclick="openBackupSettings()">
-      <div class="lr-ic">💾</div>
-      <div class="lr-body"><div class="lr-name">Daten teilen / sichern</div><div class="lr-sub">Export, Import, OneDrive, Autospeicher</div></div>
-      <div class="lr-val">›</div>
-    </div>
-    <div class="list-row" onclick="if(typeof openImportPaste==='function')openImportPaste();else openSettings();">
-      <div class="lr-ic">📥</div>
-      <div class="lr-body"><div class="lr-name">Code / Link einlösen</div><div class="lr-sub">Geteilte Mahlzeit oder Rezept importieren</div></div>
       <div class="lr-val">›</div>
     </div>
     <div class="list-row" onclick="openRecurManage()">
@@ -989,11 +1006,18 @@ button,input,select,textarea{font-family:var(--fs-body);}
       <div class="lr-body"><div class="lr-name">Wiederkehrende Mahlzeiten</div><div class="lr-sub">Automatisch an festen Wochentagen eintragen</div></div>
       <div class="lr-val">›</div>
     </div>
+    <div style="font-size:11px;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin:14px 4px 6px;">Daten &amp; Sync</div>
+    <div class="list-row" onclick="if(typeof openImportPaste==='function')openImportPaste();else openSettings();">
+      <div class="lr-ic">📥</div>
+      <div class="lr-body"><div class="lr-name">Code / Link einlösen</div><div class="lr-sub">Geteilte Mahlzeit oder Rezept importieren</div></div>
+      <div class="lr-val">›</div>
+    </div>
     <div class="list-row" onclick="openHealthSync()">
       <div class="lr-ic">🏃</div>
       <div class="lr-body"><div class="lr-name">Sport-Sync</div><div class="lr-sub" id="healthSyncSub">Apple Health · Samsung Health</div></div>
       <div class="lr-val">›</div>
     </div>
+    <div style="font-size:11px;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin:14px 4px 6px;">App</div>
     <div class="list-row" onclick="openHelp()">
       <div class="lr-ic">❓</div>
       <div class="lr-body"><div class="lr-name">Hilfe &amp; FAQ</div><div class="lr-sub">Funktionen erklärt</div></div>
@@ -1001,7 +1025,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.208</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.212</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1066,7 +1090,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
         <div id="pickerPrevWrap" class="pprev-wrap hidden">
           <img id="pickerPrev"><button type="button" class="pchange" onclick="pickerResetPhoto()">Ändern</button>
         </div>
-        <div id="pickerPhotoSaveHint" class="hidden" onclick="openSettings();setTimeout(function(){settSetTab('ernaehrung');},50);" style="font-size:11px;color:var(--mu);margin:6px 4px 0;cursor:pointer;line-height:1.4;"></div>
+        <div id="pickerPhotoSaveHint" class="hidden" onclick="openSettings('ernaehrung');" style="font-size:11px;color:var(--mu);margin:6px 4px 0;cursor:pointer;line-height:1.4;"></div>
         <div id="pickerBcConfirm" class="bc-confirm hidden">
           <div class="bc-confirm-name" id="pickerBcName"></div>
           <div class="bc-confirm-vals" id="pickerBcVals"></div>
@@ -1275,10 +1299,10 @@ button,input,select,textarea{font-family:var(--fs-body);}
       <details><summary>🍽 Mahlzeit-Detail</summary><div class="hb">Die Karte einer Mahlzeit öffnet die Detail-Ansicht mit allen Posten. Unten findest du: <strong>📋 Vorlage</strong> (Mahlzeit als Vorlage laden/speichern), <strong>🔁 Wiederholen</strong> (an festen Wochentagen automatisch eintragen) und <strong>💾 Als Rezept</strong> (alle Einträge als Rezept in die Bibliothek übernehmen). Einzelne Einträge antippen zum Bearbeiten, Verschieben oder Löschen.</div></details>
       <details><summary>📚 Bibliothek</summary><div class="hb">Unter „Mehr → Bibliothek" liegen deine Rezepte und eigenen Lebensmittel. Rezepte kannst du bearbeiten, duplizieren, teilen, als Einkaufsliste anzeigen und direkt in eine Mahlzeit übernehmen. Der 🔗-Knopf importiert ein Rezept per URL, 📥 löst einen geteilten Code/Link ein.</div></details>
       <details><summary>📤 Teilen &amp; Import</summary><div class="hb">Rezepte, Lebensmittel und Mahlzeiten lassen sich als Link teilen (📤-Symbole). Der Empfänger öffnet den Link — auf dem iPhone ggf. über „Mehr → 📥 Code / Link einlösen" in der installierten App einfügen.</div></details>
-      <details><summary>💾 Backup</summary><div class="hb">Alle Sicherungswege liegen unter <strong>Einstellungen → 💾 Backup</strong>: „Jetzt sichern"-Knopf, Datei-Export/-Import (JSON), OneDrive-Sync mit täglichem Autospeicher sowie lokale Autospeicher-Stände. Tipp: Vor einem Gerätewechsel einmal exportieren. Hinweis: Mahlzeit-Fotos sind gerätelokal und nicht Teil der Backup-Datei.</div></details>
+      <details><summary>💾 Backup</summary><div class="hb">Alle Sicherungswege liegen unter <strong>Mehr → 💾 Backup &amp; Daten</strong>: „Jetzt sichern"-Knopf, Datei-Export/-Import (JSON), OneDrive-Sync mit täglichem Autospeicher sowie lokale Autospeicher-Stände. Tipp: Vor einem Gerätewechsel einmal exportieren. Hinweis: Mahlzeit-Fotos sind gerätelokal und nicht Teil der Backup-Datei.</div></details>
       <details><summary>🏃 Sport-Sync</summary><div class="hb">Unter „Mehr → Sport-Sync" erzeugst du ein Token und verbindest eine iOS-Kurzbefehl-Automation („Wenn Training endet") oder einen Android-HTTP-Shortcut. Abgeschlossene Workouts erscheinen dann automatisch mit Apple-/Samsung-Badge und reduzieren dein Tagesziel.</div></details>
-      <details><summary>🤖 KI</summary><div class="hb">Foto-Erkennung, Chat und Wochenbericht laufen über einen geschützten KI-Zugang — dafür brauchst du das Proxy-Passwort (Einstellungen → 🤖 KI). Optional kannst du dort einen eigenen KI-Anbieter (OpenAI, Gemini, …) mit eigenem API-Key hinterlegen. Ohne Passwort funktioniert alles außer den KI-Funktionen.</div></details>
-      <details><summary>❓ FAQ</summary><div class="hb"><strong>Warum stimmt eine Schätzung nicht?</strong> KI-Werte sind Näherungen — Menge und Zutaten lassen sich jederzeit anpassen.<br><strong>Funktioniert die App offline?</strong> Ja, Tagebuch, Suche (lokale Datenbank) und Bibliothek laufen offline; KI und Online-Suche brauchen Netz.<br><strong>Erinnerungen kommen nicht?</strong> Technisch bedingt erscheinen sie nur, solange die App geöffnet ist.<br><strong>Daten weg?</strong> Einstellungen → Backup → Autospeicher anzeigen — dort liegen die letzten Stände.</div></details>
+      <details><summary>🤖 KI</summary><div class="hb">Foto-Erkennung, Chat und Wochenbericht laufen über einen geschützten KI-Zugang — dafür brauchst du das Proxy-Passwort (Mehr → 🤖 KI). Optional kannst du dort einen eigenen KI-Anbieter (DeepSeek, OpenAI, Gemini, …) mit eigenem API-Key hinterlegen. Ohne Passwort funktioniert alles außer den KI-Funktionen.</div></details>
+      <details><summary>❓ FAQ</summary><div class="hb"><strong>Warum stimmt eine Schätzung nicht?</strong> KI-Werte sind Näherungen — Menge und Zutaten lassen sich jederzeit anpassen.<br><strong>Funktioniert die App offline?</strong> Ja, Tagebuch, Suche (lokale Datenbank) und Bibliothek laufen offline; KI und Online-Suche brauchen Netz.<br><strong>Erinnerungen kommen nicht?</strong> Technisch bedingt erscheinen sie nur, solange die App geöffnet ist.<br><strong>Daten weg?</strong> Mehr → Backup &amp; Daten → Autospeicher anzeigen — dort liegen die letzten Stände.</div></details>
       <div style="text-align:center;margin:14px 0 6px;"><a href="nutritrack_anleitung.pdf" target="_blank" style="font-size:13px;color:var(--g2);font-weight:700;">📄 Anleitung als PDF öffnen</a></div>
     </div>
   </div>
@@ -1656,6 +1680,26 @@ button,input,select,textarea{font-family:var(--fs-body);}
 </div>
 
 <!-- ══ EINSTELLUNGEN ══ -->
+<div class="ov" id="libraryOv" onclick="bgClose(event,'libraryOv')">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" onclick="closeOv('libraryOv')">✕</button>
+      <div class="mti">📚 Bibliothek</div>
+      <div class="msu">Rezepte &amp; eigene Lebensmittel</div>
+    </div>
+    <div class="mbd">
+      <input type="text" id="libSearchQ" class="psi" placeholder="Suchen..." onkeyup="renderLibrary()" style="width:100%;margin-bottom:8px;">
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <button type="button" id="libTabRec" onclick="libSetTab('recipes')" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--g2);background:var(--g2);color:white;font-weight:700;font-size:13px;">📋 Rezepte</button>
+        <button type="button" id="libTabFoods" onclick="libSetTab('foods')" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--br);background:white;color:var(--mu);font-weight:700;font-size:13px;">🥗 Lebensmittel</button>
+        <button type="button" onclick="closeOv('libraryOv');openPicker(null,'link')" style="padding:9px 14px;border-radius:10px;border:1.5px solid var(--g2);background:white;color:var(--g2);font-weight:700;font-size:13px;" title="Rezept per URL importieren">🔗</button>
+        <button type="button" onclick="openImportPaste()" style="padding:9px 14px;border-radius:10px;border:1.5px solid var(--g2);background:white;color:var(--g2);font-weight:700;font-size:13px;" title="Link oder Code einlösen">📥</button>
+      </div>
+      <div id="libraryList" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+  </div>
+</div>
 <div class="ov" id="settOv" onclick="bgClose(event,'settOv')">
   <div class="mod">
     <div class="mhan"></div>
@@ -1818,18 +1862,6 @@ button,input,select,textarea{font-family:var(--fs-body);}
         </div>
       </div>
 
-      <!-- TAB: BIBLIOTHEK -->
-      <div id="spanel-bibliothek" style="display:none;">
-        <input type="text" id="libSearchQ" class="psi" placeholder="Suchen..." onkeyup="renderLibrary()" style="width:100%;margin-bottom:8px;">
-        <div style="display:flex;gap:8px;margin-bottom:10px;">
-          <button type="button" id="libTabRec" onclick="libSetTab('recipes')" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--g2);background:var(--g2);color:white;font-weight:700;font-size:13px;">📋 Rezepte</button>
-          <button type="button" id="libTabFoods" onclick="libSetTab('foods')" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--br);background:white;color:var(--mu);font-weight:700;font-size:13px;">🥗 Lebensmittel</button>
-          <button type="button" onclick="closeOv('settOv');openPicker(null,'link')" style="padding:9px 14px;border-radius:10px;border:1.5px solid var(--g2);background:white;color:var(--g2);font-weight:700;font-size:13px;" title="Rezept per URL importieren">🔗</button>
-          <button type="button" onclick="openImportPaste()" style="padding:9px 14px;border-radius:10px;border:1.5px solid var(--g2);background:white;color:var(--g2);font-weight:700;font-size:13px;" title="Link oder Code einlösen">📥</button>
-        </div>
-        <div id="libraryList" style="display:flex;flex-direction:column;gap:8px;"></div>
-      </div>
-
       <!-- TAB: KI -->
       <div id="spanel-ki" style="display:none;">
         <div class="sf" style="margin-bottom:0;"><label class="lbl">🔑 Proxy-Passwort</label>
@@ -1908,7 +1940,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.208';
+var APP_VERSION='0.212';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -1946,15 +1978,17 @@ function setProxySecret(pw){return _sha256hex(pw).then(function(h){localStorage.
 // Der Klartext-Key liegt nur lokal (localStorage); in Backups wandert er
 // ausschließlich AES-GCM-verschlüsselt (siehe _aiKeyEnc*-Helfer unten).
 var AI_PROVIDERS=[
-  {id:'anthropic',label:'Anthropic (Standard)',keyless:true,models:'Claude Haiku/Sonnet'},
+  {id:'anthropic',label:'Anthropic (integriert)',keyless:true,models:'Claude Haiku/Sonnet'},
   {id:'openai',label:'OpenAI (GPT)',models:'gpt-4o-mini / gpt-4o'},
   {id:'gemini',label:'Google Gemini',models:'gemini-2.0-flash'},
   {id:'openrouter',label:'OpenRouter',models:'gpt-4o-mini / gpt-4o'},
   {id:'mistral',label:'Mistral',models:'mistral-small / pixtral'},
-  {id:'deepseek',label:'DeepSeek',models:'deepseek-chat (ohne Foto)'}
+  {id:'deepseek',label:'DeepSeek (Standard)',models:'deepseek-chat'}
 ];
 function _aiProviderMeta(id){for(var i=0;i<AI_PROVIDERS.length;i++){if(AI_PROVIDERS[i].id===id)return AI_PROVIDERS[i];}return AI_PROVIDERS[0];}
-function getAiProvider(){var p=localStorage.getItem('nt_ai_provider')||'anthropic';return _aiProviderMeta(p).id;}
+// Standard-Anbieter ist DeepSeek — aktiv wird er aber erst mit gespeichertem
+// Key (hasCustomAiProvider); ohne Key läuft alles über den Anthropic-Proxy.
+function getAiProvider(){var p=localStorage.getItem('nt_ai_provider')||'deepseek';return _aiProviderMeta(p).id;}
 function setAiProvider(p){localStorage.setItem('nt_ai_provider',_aiProviderMeta(p).id);}
 function getAiProviderKey(){return localStorage.getItem('nt_ai_key')||'';}
 function setAiProviderKey(k){if(k){localStorage.setItem('nt_ai_key',k);_aiKeyEncRefresh();}else{localStorage.removeItem('nt_ai_key');localStorage.removeItem('nt_ai_key_enc');}}
@@ -2009,7 +2043,9 @@ function _aiKeyEncTryDecrypt(){
 // KI-Anbieter + verschlüsselten Key in ein Backup-Objekt aufnehmen (Klartext nie)
 function _backupAiFields(o){
   var p=getAiProvider();
-  if(p==='anthropic')return o;
+  // Ohne gespeicherten Key nichts mitgeben — sonst würde der bloße
+  // DeepSeek-Default jedes Backups beim Restore als explizite Wahl gepinnt.
+  if(p==='anthropic'||!getAiProviderKey())return o;
   o.aiProvider=p;
   try{var enc=localStorage.getItem('nt_ai_key_enc');if(enc)o.aiKeyEnc=JSON.parse(enc);}catch(e){}
   return o;
@@ -2258,7 +2294,7 @@ function skipProxyPwGate(){
   localStorage.setItem('nt_gate_skipped','1');
   var gate=document.getElementById('proxyPwGate');
   if(gate)gate.style.display='none';
-  showToast('KI-Funktionen deaktiviert – Passwort jederzeit unter Einstellungen → 🤖 KI nachtragen');
+  showToast('KI-Funktionen deaktiviert – Passwort jederzeit unter Mehr → 🤖 KI nachtragen');
 }
 // Prüft das gesetzte Passwort mit einem 1-Token-Ping gegen den Worker.
 // true = akzeptiert, false = 401/403 (falsch), null = offline/unklar.
@@ -2425,8 +2461,10 @@ function onAiProviderChange(){
     if(meta.keyless){
       hint.textContent='Standard – läuft über den eingebauten Proxy, kein eigener Key nötig.';
     }else{
-      var saved=(getAiProvider()===meta.id&&getAiProviderKey())?' · aktiver Key gespeichert ✓':'';
-      hint.textContent='Modelle: '+meta.models+' · Fallback bei Limit/Fehler: Anthropic · Key wandert nur verschlüsselt ins Backup'+saved;
+      var hasKey=getAiProvider()===meta.id&&getAiProviderKey();
+      var saved=hasKey?' · aktiver Key gespeichert ✓':'';
+      hint.textContent='Modelle: '+meta.models+' · Fallback bei Limit/Fehler: Anthropic · Key wandert nur verschlüsselt ins Backup'+saved
+        +(hasKey?'':' — Ohne gespeicherten Key nutzt NutriTrack weiterhin Anthropic.');
     }
   }
 }
@@ -2438,7 +2476,7 @@ function saveAiProviderSettings(){
   if(meta.keyless){
     setAiProvider('anthropic');setAiProviderKey('');
     if(key)key.value='';
-    showToast('KI-Anbieter: Anthropic (Standard)');
+    showToast('KI-Anbieter: Anthropic (integriert)');
   }else{
     var k=key?key.value.trim():'';
     if(!k){showToast('Bitte API-Key eingeben');return;}
@@ -3315,7 +3353,7 @@ function openRecipeEditor(recipeId){
   if(insEl)insEl.value=rec.instructions||'';
   recEditRenderIng(rec.ingredients||[]);
   recEditSearch();
-  closeOv('settOv');
+  closeOv('libraryOv');
   setTimeout(function(){openOv('recEditOv');},200);
 }
 
@@ -3392,16 +3430,17 @@ function recEditSave(){
   var from=recEditOpenedFrom;
   closeOv('recEditOv');
   recEditOpenedFrom=null;
-  if(from!=='mealDetail'){setTimeout(function(){openSettings();},200);}
+  if(from!=='mealDetail'){setTimeout(function(){openLibrary();},200);}
   showToast('Rezept gespeichert ✓');
 }
 
 function recEditDelete(){
   recipes=recipes.filter(function(r){return r.id!==recEditId;});
   saveX();
-  if(recEditOpenedFrom!=='mealDetail'){renderLibrary();}
+  var from=recEditOpenedFrom;
   closeOv('recEditOv');
   recEditOpenedFrom=null;
+  if(from!=='mealDetail'){setTimeout(function(){openLibrary();},200);}
   showToast('Rezept gelöscht');
 }
 
@@ -3827,18 +3866,17 @@ function _checkSharedItemOnBoot(){
 // SECTION: SETTINGS
 // ════════════════════════════════════════
 function settSetTab(tab){
-  ['profil','ziele','ernaehrung','erinnerungen','ki','backup','bibliothek'].forEach(function(t){
+  ['profil','ziele','ernaehrung','erinnerungen','ki','backup'].forEach(function(t){
     var btn=document.getElementById('stab-'+t);
     var panel=document.getElementById('spanel-'+t);
     if(btn)btn.classList.toggle('act',t===tab);
     if(panel)panel.style.display=t===tab?'block':'none';
   });
-  if(tab==='bibliothek')renderLibrary();
   if(tab==='backup')renderOneDriveStatus();
 }
 
-function openBackupSettings(){openSettings();settSetTab('backup');}
-function openSettings(){
+function openBackupSettings(){openSettings('backup');}
+function openSettings(tab){
   document.getElementById('sn').value=S.name;
   document.getElementById('sg').value=S.goal;
   document.getElementById('sw').value=S.weight||'';
@@ -3886,7 +3924,7 @@ function openSettings(){
   var settPwInput=document.getElementById('settProxyPwInput');
   if(settPwInput)settPwInput.value='';
   renderAiProviderSettings();
-  settSetTab('profil');
+  settSetTab(tab||'profil');
   openOv('settOv');
 }
 
@@ -5018,6 +5056,7 @@ function saveRecurringRule(){
 }
 
 function openRecurManage(){renderRecurManage();openOv('recurMgmtOv');}
+function openLibrary(){renderLibrary();openOv('libraryOv');}
 
 function renderRecurManage(){
   var el=document.getElementById('recurMgmtList');if(!el)return;
@@ -5516,7 +5555,7 @@ function openOwnFoodEdit(i){
   document.getElementById('ownEditProtein').value=f.per100.protein||0;
   document.getElementById('ownEditCarbs').value=f.per100.carbs||0;
   document.getElementById('ownEditFat').value=f.per100.fat||0;
-  closeOv('settOv');
+  closeOv('libraryOv');
   setTimeout(function(){openOv('ownFoodEditOv');},200);
 }
 
@@ -5537,7 +5576,7 @@ function saveOwnFoodEdit(){
   };
   saveX();
   closeOv('ownFoodEditOv');
-  setTimeout(function(){openSettings();},200);
+  setTimeout(function(){openLibrary();},200);
   showToast('Gespeichert ✓');
 }
 
@@ -5547,7 +5586,7 @@ function deleteOwnFoodEdit(){
   customFoods.splice(i,1);
   saveX();
   closeOv('ownFoodEditOv');
-  setTimeout(function(){openSettings();},200);
+  setTimeout(function(){openLibrary();},200);
   showToast('Gelöscht');
 }
 
@@ -5654,6 +5693,7 @@ function renderLibrary(){
 
 function libAddRecipe(id){
   var rec=recipes.find(function(r){return r.id===id;});if(!rec)return;
+  closeOv('libraryOv');
   switchTab('main');
   setTimeout(function(){
     openPicker(mealByTime(),'search');
@@ -5665,6 +5705,7 @@ function libAddRecipe(id){
 
 function libAddFood(i){
   var f=(window._libFoods||[])[i];if(!f)return;
+  closeOv('libraryOv');
   switchTab('main');
   setTimeout(function(){
     openPicker(mealByTime(),'search');

@@ -39,7 +39,7 @@ window.DB=[
   {n:'Rinderfilet',e:'🥩',k:158,p:29,c:0,f:4,s:'steak beef'},{n:'Schweineschnitzel',e:'🥩',k:143,p:22,c:0,f:6,s:'schnitzel pork'},
   {n:'Lachs',e:'🐟',k:208,p:20,c:0,f:13,s:'salmon'},{n:'Thunfisch (Dose)',e:'🐠',k:116,p:26,c:0,f:1,s:'tuna'},
   {n:'Garnelen',e:'🦐',k:99,p:21,c:0,f:1.1,s:'shrimp'},{n:'Kabeljau',e:'🐟',k:82,p:18,c:0,f:0.7,s:'cod'},
-  {n:'Ei (gekocht)',e:'🥚',k:155,p:13,c:1.1,f:11,s:'eier egg'},{n:'Rührei',e:'🍳',k:149,p:10,c:1.6,f:11,s:'ei egg scrambled'},
+  {n:'Ei',e:'🥚',k:143,p:12.6,c:0.7,f:9.5,s:'eier egg roh'},{n:'Ei (gekocht)',e:'🥚',k:155,p:13,c:1.1,f:11,s:'gekocht boiled'},{n:'Rührei',e:'🍳',k:149,p:10,c:1.6,f:11,s:'scrambled eggs'},
   {n:'Milch (3,5%)',e:'🥛',k:64,p:3.3,c:4.8,f:3.5,s:'vollmilch milk'},{n:'Milch (1,5%)',e:'🥛',k:47,p:3.4,c:4.9,f:1.5,s:'fettarme milch'},
   {n:'Hafermilch',e:'🥛',k:45,p:1,c:7,f:1.5,s:'oat milk'},{n:'Sojamilch',e:'🥛',k:54,p:3.3,c:6,f:1.8,s:'soy milk'},
   {n:'Mandelmilch',e:'🥛',k:24,p:0.5,c:3.5,f:1,s:'almond milk'},{n:'Naturjoghurt',e:'🥣',k:61,p:3.5,c:4.7,f:3.5,s:'joghurt yogurt'},

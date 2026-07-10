@@ -848,6 +848,14 @@ const AI_PROVIDERS = {
     models: { fast: "gemini-2.0-flash", strong: "gemini-2.0-flash" },
     vision: true,
   },
+  qwen: {
+    type: "openai",
+    // OpenAI-kompatibler DashScope-Endpoint (International/Alibaba Cloud Model Studio).
+    url: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
+    // qwen-vl-max = rollender Alias auf das jeweils stärkste Vision-Modell (kein Pin).
+    models: { fast: "qwen-vl-max", strong: "qwen-vl-max" },
+    vision: true,
+  },
 };
 
 function payloadHasImage(messages) {
@@ -1029,7 +1037,7 @@ export default {
         feedbackConfigured: Boolean(env.GITHUB_TOKEN),
         workoutsConfigured: Boolean(env.SHARE_KV),
         decoderSecretConfigured: Boolean(env.DECODER_SECRET),
-        codeVersion: "v0.212-deepseek-default",
+        codeVersion: "v0.213-qwen-vision",
       });
     }
 

@@ -680,7 +680,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.212</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.213</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -1025,7 +1025,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.212</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.213</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1873,8 +1873,8 @@ button,input,select,textarea{font-family:var(--fs-body);}
           <button type="button" class="seb" onclick="saveProxyPwFromSettings()">Passwort speichern ✓</button>
         </div>
         <div style="padding-top:12px;border-top:1px solid var(--br);margin-top:12px;">
-          <label class="lbl" style="margin-bottom:8px;">🤖 KI-Anbieter</label>
-          <div style="font-size:12px;color:var(--mu);line-height:1.5;margin-bottom:8px;">Wähle, an welchen KI-Anbieter die Schätzungen (Foto-Erkennung, Chat, Wochenbericht) gehen. Mit eigenem API-Key wird dieser <b>zuerst</b> genutzt; ist das Kontingent aufgebraucht oder kommt kein Ergebnis, fällt NutriTrack automatisch auf Anthropic (Standard) zurück. Der Key wird nur auf diesem Gerät gespeichert.</div>
+          <label class="lbl" style="margin-bottom:8px;">🤖 KI-Anbieter (Chat &amp; Text)</label>
+          <div style="font-size:12px;color:var(--mu);line-height:1.5;margin-bottom:8px;">Wähle, an welchen KI-Anbieter die Text-Schätzungen (Chat, Wochenbericht) gehen. Fotos steuerst du separat unter „📷 Foto-KI". Mit eigenem API-Key wird dieser <b>zuerst</b> genutzt; ist das Kontingent aufgebraucht oder kommt kein Ergebnis, fällt NutriTrack automatisch auf Anthropic (Standard) zurück. Der Key wird nur auf diesem Gerät gespeichert.</div>
           <select id="aiProviderSelect" onchange="onAiProviderChange()"
             style="width:100%;box-sizing:border-box;padding:10px 12px;border:2px solid var(--br);border-radius:10px;font-size:14px;outline:none;margin-bottom:8px;background:#fff;"></select>
           <div id="aiProviderKeyWrap" style="display:none;">
@@ -1884,6 +1884,19 @@ button,input,select,textarea{font-family:var(--fs-body);}
           </div>
           <div id="aiProviderHint" style="font-size:11px;color:var(--mu);line-height:1.5;margin-bottom:8px;"></div>
           <button type="button" class="seb" onclick="saveAiProviderSettings()">Anbieter speichern ✓</button>
+        </div>
+        <div style="padding-top:12px;border-top:1px solid var(--br);margin-top:12px;">
+          <label class="lbl" style="margin-bottom:8px;">📷 Foto-KI</label>
+          <div style="font-size:12px;color:var(--mu);line-height:1.5;margin-bottom:8px;">Wähle, welche KI deine <b>Fotos</b> erkennt. Standard ist Qwen (Alibaba) mit eigenem API-Key. Der Chat bleibt unabhängig davon bei deinem oben gewählten Anbieter. Der Key wird nur auf diesem Gerät gespeichert und wandert nur verschlüsselt ins Backup.</div>
+          <select id="aiVisionSelect" onchange="onAiVisionChange()"
+            style="width:100%;box-sizing:border-box;padding:10px 12px;border:2px solid var(--br);border-radius:10px;font-size:14px;outline:none;margin-bottom:8px;background:#fff;"></select>
+          <div id="aiVisionKeyWrap" style="display:none;">
+            <input type="password" id="aiVisionKeyInput" placeholder="API-Key des Foto-Anbieters" autocomplete="off"
+              style="width:100%;box-sizing:border-box;padding:10px 12px;border:2px solid var(--br);border-radius:10px;font-size:14px;outline:none;margin-bottom:8px;"
+              onkeydown="if(event.key==='Enter')saveAiVisionSettings()">
+          </div>
+          <div id="aiVisionHint" style="font-size:11px;color:var(--mu);line-height:1.5;margin-bottom:8px;"></div>
+          <button type="button" class="seb" onclick="saveAiVisionSettings()">Foto-KI speichern ✓</button>
         </div>
         <div style="padding-top:12px;border-top:1px solid var(--br);margin-top:12px;">
           <label class="lbl" style="margin-bottom:8px;">🛠 KI-Prompts</label>
@@ -1940,7 +1953,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.212';
+var APP_VERSION='0.213';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -1977,13 +1990,17 @@ function setProxySecret(pw){return _sha256hex(pw).then(function(h){localStorage.
 // Fehler oder leerem Ergebnis fällt callClaude automatisch auf Anthropic zurück.
 // Der Klartext-Key liegt nur lokal (localStorage); in Backups wandert er
 // ausschließlich AES-GCM-verschlüsselt (siehe _aiKeyEnc*-Helfer unten).
+// vision:true = Anbieter kann Fotos direkt entgegennehmen (im Worker im strong-Tier).
+// Wird sowohl für das separate Foto-KI-Routing als auch als Fallback genutzt, wenn
+// kein eigener Vision-Key gesetzt ist, aber der Text-Anbieter Bilder verarbeitet.
 var AI_PROVIDERS=[
-  {id:'anthropic',label:'Anthropic (integriert)',keyless:true,models:'Claude Haiku/Sonnet'},
-  {id:'openai',label:'OpenAI (GPT)',models:'gpt-4o-mini / gpt-4o'},
-  {id:'gemini',label:'Google Gemini',models:'gemini-2.0-flash'},
-  {id:'openrouter',label:'OpenRouter',models:'gpt-4o-mini / gpt-4o'},
-  {id:'mistral',label:'Mistral',models:'mistral-small / pixtral'},
-  {id:'deepseek',label:'DeepSeek (Standard)',models:'deepseek-chat'}
+  {id:'anthropic',label:'Anthropic (integriert)',keyless:true,models:'Claude Haiku/Sonnet',vision:true},
+  {id:'openai',label:'OpenAI (GPT)',models:'gpt-4o-mini / gpt-4o',vision:true},
+  {id:'gemini',label:'Google Gemini',models:'gemini-2.0-flash',vision:true},
+  {id:'openrouter',label:'OpenRouter',models:'gpt-4o-mini / gpt-4o',vision:true},
+  {id:'mistral',label:'Mistral',models:'mistral-small / pixtral',vision:true},
+  {id:'deepseek',label:'DeepSeek (Standard)',models:'deepseek-chat',vision:true},
+  {id:'qwen',label:'Qwen (Alibaba)',models:'qwen-vl-max',vision:true}
 ];
 function _aiProviderMeta(id){for(var i=0;i<AI_PROVIDERS.length;i++){if(AI_PROVIDERS[i].id===id)return AI_PROVIDERS[i];}return AI_PROVIDERS[0];}
 // Standard-Anbieter ist DeepSeek — aktiv wird er aber erst mit gespeichertem
@@ -1992,6 +2009,17 @@ function getAiProvider(){var p=localStorage.getItem('nt_ai_provider')||'deepseek
 function setAiProvider(p){localStorage.setItem('nt_ai_provider',_aiProviderMeta(p).id);}
 function getAiProviderKey(){return localStorage.getItem('nt_ai_key')||'';}
 function setAiProviderKey(k){if(k){localStorage.setItem('nt_ai_key',k);_aiKeyEncRefresh();}else{localStorage.removeItem('nt_ai_key');localStorage.removeItem('nt_ai_key_enc');}}
+// ── Separater Foto-KI-Slot (Vision) ──────────────────────────────────────────
+// Fotos gehen standardmäßig an einen eigenen Anbieter (Default Qwen/qwen-vl-max),
+// unabhängig vom Text-Anbieter. Eigener Key (nt_ai_vision_key), eigenes
+// verschlüsseltes Backup-Feld (nt_ai_vision_key_enc). Ohne Vision-Key greift die
+// Routing-Kette in callClaude auf Text-Anbieter (falls vision:true) bzw. Anthropic.
+function getAiVisionProvider(){var p=localStorage.getItem('nt_ai_vision_provider')||'qwen';return _aiProviderMeta(p).id;}
+function setAiVisionProvider(p){localStorage.setItem('nt_ai_vision_provider',_aiProviderMeta(p).id);}
+function getAiVisionKey(){return localStorage.getItem('nt_ai_vision_key')||'';}
+function setAiVisionKey(k){if(k){localStorage.setItem('nt_ai_vision_key',k);_aiKeyEncRefresh();}else{localStorage.removeItem('nt_ai_vision_key');localStorage.removeItem('nt_ai_vision_key_enc');}}
+// Eigener Foto-Anbieter aktiv? (≠ Anthropic UND Vision-Key hinterlegt)
+function hasVisionAiProvider(){var p=getAiVisionProvider();return p!=='anthropic'&&!!getAiVisionKey();}
 // ── KI-Key verschlüsselt in Backups (AES-GCM, Schlüssel aus dem Proxy-Passwort) ──
 // Klartext-Key (nt_ai_key) verlässt das Gerät nie. Für Backups liegt unter
 // nt_ai_key_enc eine mit PBKDF2(Proxy-Passwort)→AES-GCM verschlüsselte Kopie
@@ -2007,8 +2035,8 @@ function _aiKeyDerive(salt){
     return crypto.subtle.deriveKey({name:'PBKDF2',salt:salt,iterations:100000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
   });
 }
-function encryptAiKeyForBackup(){
-  var key=getAiProviderKey();
+function encryptAiKeyForBackup(plain){
+  var key=plain||getAiProviderKey();
   if(!key||!getProxySecret()||!_aiKeyCryptoOk())return Promise.resolve(null);
   var salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12));
   return _aiKeyDerive(salt).then(function(k){
@@ -2023,48 +2051,73 @@ function decryptAiKeyFromBackup(enc){
     return crypto.subtle.decrypt({name:'AES-GCM',iv:_aiKeyB64d(enc.iv)},k,_aiKeyB64d(enc.ct));
   }).then(function(buf){return new TextDecoder().decode(buf);}).catch(function(){return null;});
 }
-// Klartext-Key vorhanden → verschlüsselte Kopie (neu) erzeugen
-function _aiKeyEncRefresh(){
-  if(!getAiProviderKey())return Promise.resolve();
-  return encryptAiKeyForBackup().then(function(enc){
-    if(enc){try{localStorage.setItem('nt_ai_key_enc',JSON.stringify(enc));}catch(e){}}
+// Klartext-Key vorhanden → verschlüsselte Kopie (neu) erzeugen — für beide Slots
+// (Text: nt_ai_key/nt_ai_key_enc · Vision: nt_ai_vision_key/nt_ai_vision_key_enc).
+function _aiKeyEncRefreshSlot(plain,encStore){
+  if(!plain)return Promise.resolve();
+  return encryptAiKeyForBackup(plain).then(function(enc){
+    if(enc){try{localStorage.setItem(encStore,JSON.stringify(enc));}catch(e){}}
   });
 }
+function _aiKeyEncRefresh(){
+  return Promise.all([
+    _aiKeyEncRefreshSlot(getAiProviderKey(),'nt_ai_key_enc'),
+    _aiKeyEncRefreshSlot(getAiVisionKey(),'nt_ai_vision_key_enc')
+  ]);
+}
 // Verschlüsselte Kopie da (z.B. aus Import), aber kein Klartext → entschlüsseln
-function _aiKeyEncTryDecrypt(){
-  if(getAiProviderKey())return Promise.resolve();
-  var raw=localStorage.getItem('nt_ai_key_enc');
+function _aiKeyEncTryDecryptSlot(hasPlain,encStore,setKey,toast){
+  if(hasPlain)return Promise.resolve();
+  var raw=localStorage.getItem(encStore);
   if(!raw)return Promise.resolve();
   var enc=null;try{enc=JSON.parse(raw);}catch(e){return Promise.resolve();}
   return decryptAiKeyFromBackup(enc).then(function(plain){
-    if(plain){setAiProviderKey(plain);showToast('🔑 KI-Anbieter-Key aus Backup übernommen ✓');}
+    if(plain){setKey(plain);showToast(toast);}
   });
+}
+function _aiKeyEncTryDecrypt(){
+  return Promise.all([
+    _aiKeyEncTryDecryptSlot(!!getAiProviderKey(),'nt_ai_key_enc',setAiProviderKey,'🔑 KI-Anbieter-Key aus Backup übernommen ✓'),
+    _aiKeyEncTryDecryptSlot(!!getAiVisionKey(),'nt_ai_vision_key_enc',setAiVisionKey,'📷 Foto-KI-Key aus Backup übernommen ✓')
+  ]);
 }
 // KI-Anbieter + verschlüsselten Key in ein Backup-Objekt aufnehmen (Klartext nie)
 function _backupAiFields(o){
   var p=getAiProvider();
   // Ohne gespeicherten Key nichts mitgeben — sonst würde der bloße
   // DeepSeek-Default jedes Backups beim Restore als explizite Wahl gepinnt.
-  if(p==='anthropic'||!getAiProviderKey())return o;
-  o.aiProvider=p;
-  try{var enc=localStorage.getItem('nt_ai_key_enc');if(enc)o.aiKeyEnc=JSON.parse(enc);}catch(e){}
+  if(p!=='anthropic'&&getAiProviderKey()){
+    o.aiProvider=p;
+    try{var enc=localStorage.getItem('nt_ai_key_enc');if(enc)o.aiKeyEnc=JSON.parse(enc);}catch(e){}
+  }
+  // Foto-KI-Slot unabhängig davon — gleiche Nicht-Pinnen-Logik (nur mit Vision-Key).
+  var vp=getAiVisionProvider();
+  if(vp!=='anthropic'&&getAiVisionKey()){
+    o.aiVisionProvider=vp;
+    try{var venc=localStorage.getItem('nt_ai_vision_key_enc');if(venc)o.aiVisionKeyEnc=JSON.parse(venc);}catch(e){}
+  }
   return o;
 }
 // Gegenstück beim Import/Restore: Anbieter setzen, Key entschlüsseln (ggf. später)
-function _importAiFields(d){
-  if(!d||!d.aiProvider)return;
+function _importAiFieldsSlot(prov,keyEnc,setProv,setKey,getKey,encStore){
+  if(!prov)return;
   try{
-    setAiProvider(d.aiProvider);
-    if(d.aiKeyEnc&&d.aiKeyEnc.ct){
-      decryptAiKeyFromBackup(d.aiKeyEnc).then(function(plain){
-        if(plain){setAiProviderKey(plain);}
-        else if(!getAiProviderKey()){
-          try{localStorage.setItem('nt_ai_key_enc',JSON.stringify(d.aiKeyEnc));}catch(e){}
+    setProv(prov);
+    if(keyEnc&&keyEnc.ct){
+      decryptAiKeyFromBackup(keyEnc).then(function(plain){
+        if(plain){setKey(plain);}
+        else if(!getKey()){
+          try{localStorage.setItem(encStore,JSON.stringify(keyEnc));}catch(e){}
           showToast('🔑 KI-Key im Backup ist verschlüsselt – nach Eingabe des Proxy-Passworts wird er automatisch übernommen',5000);
         }
       });
     }
   }catch(e){}
+}
+function _importAiFields(d){
+  if(!d)return;
+  _importAiFieldsSlot(d.aiProvider,d.aiKeyEnc,setAiProvider,setAiProviderKey,getAiProviderKey,'nt_ai_key_enc');
+  _importAiFieldsSlot(d.aiVisionProvider,d.aiVisionKeyEnc,setAiVisionProvider,setAiVisionKey,getAiVisionKey,'nt_ai_vision_key_enc');
 }
 // Eigener Anbieter aktiv? (≠ Anthropic UND Key hinterlegt)
 function hasCustomAiProvider(){var p=getAiProvider();return p!=='anthropic'&&!!getAiProviderKey();}
@@ -2449,6 +2502,56 @@ function renderAiProviderSettings(){
   var key=document.getElementById('aiProviderKeyInput');
   if(key)key.value=getAiProviderKey();
   onAiProviderChange();
+  // Foto-KI-Block mitbefüllen
+  var vsel=document.getElementById('aiVisionSelect');
+  if(vsel){
+    if(!vsel.options.length){
+      AI_PROVIDERS.filter(function(p){return p.keyless||p.vision;}).forEach(function(p){
+        var o=document.createElement('option');o.value=p.id;
+        // Anthropic = „integriert" (keyless), Qwen als Standard markieren.
+        o.textContent=p.keyless?p.label:(p.id==='qwen'?'Qwen (Alibaba) (Standard)':p.label);
+        vsel.appendChild(o);
+      });
+    }
+    vsel.value=getAiVisionProvider();
+  }
+  var vkey=document.getElementById('aiVisionKeyInput');
+  if(vkey)vkey.value=getAiVisionKey();
+  onAiVisionChange();
+}
+function onAiVisionChange(){
+  var sel=document.getElementById('aiVisionSelect');
+  var wrap=document.getElementById('aiVisionKeyWrap');
+  var hint=document.getElementById('aiVisionHint');
+  if(!sel)return;
+  var meta=_aiProviderMeta(sel.value);
+  if(wrap)wrap.style.display=meta.keyless?'none':'block';
+  if(hint){
+    if(meta.keyless){
+      hint.textContent='Fotos werden von Claude (integriert) erkannt – kein eigener Key nötig.';
+    }else{
+      var hasKey=getAiVisionProvider()===meta.id&&getAiVisionKey();
+      var saved=hasKey?' · aktiver Key gespeichert ✓':'';
+      hint.textContent='Modell '+meta.models+' · ohne Key erkennt Claude die Fotos'+saved;
+    }
+  }
+}
+function saveAiVisionSettings(){
+  var sel=document.getElementById('aiVisionSelect');
+  var key=document.getElementById('aiVisionKeyInput');
+  var p=sel?sel.value:'anthropic';
+  var meta=_aiProviderMeta(p);
+  if(meta.keyless){
+    setAiVisionProvider('anthropic');setAiVisionKey('');
+    if(key)key.value='';
+    showToast('Foto-KI: Anthropic (integriert)');
+  }else{
+    var k=key?key.value.trim():'';
+    if(!k){showToast('Bitte API-Key eingeben');return;}
+    setAiVisionProvider(p);setAiVisionKey(k);
+    showToast('Foto-KI gespeichert: '+meta.label);
+  }
+  onAiVisionChange();
 }
 function onAiProviderChange(){
   var sel=document.getElementById('aiProviderSelect');
@@ -3088,10 +3191,37 @@ function parsePhotoResponse(text){
 // ════════════════════════════════════════
 function callClaude(model,content,maxTok,onOk,onErr){
   if(!canUseAi()){onErr('KI Proxy nicht konfiguriert');return;}
-  // Eigener Anbieter konfiguriert → zuerst versuchen, bei Limit/Fehler/leerem
-  // Ergebnis transparent auf Anthropic (Standard-Proxy) zurückfallen.
+  var hasImg=Array.isArray(content)&&content.some(function(b){return b&&b.type==='image';});
+  // ── Fotos: eigener Vision-Slot vor dem Text-Anbieter ──────────────────────
+  if(hasImg){
+    // (1) Eigener Foto-Anbieter mit Key → dorthin, Fallback Anthropic.
+    if(hasVisionAiProvider()){
+      _callAiProvider(getAiVisionProvider(),getAiVisionKey(),model,content,maxTok,onOk,function(){
+        _callAnthropic(model,content,maxTok,onOk,onErr,true);
+      });
+      return;
+    }
+    // (2) Foto-KI explizit auf Anthropic gestellt → direkt Anthropic.
+    if(getAiVisionProvider()==='anthropic'){
+      _callAnthropic(model,content,maxTok,onOk,onErr,false);
+      return;
+    }
+    // (3) Kein Vision-Key, aber Text-Anbieter aktiv und bildfähig → dorthin
+    //     durchreichen (bewahrt das v0.212-Verhalten „Fotos an DeepSeek").
+    if(hasCustomAiProvider()&&_aiProviderMeta(getAiProvider()).vision){
+      _callAiProvider(getAiProvider(),getAiProviderKey(),model,content,maxTok,onOk,function(){
+        _callAnthropic(model,content,maxTok,onOk,onErr,true);
+      });
+      return;
+    }
+    // (4) sonst Anthropic.
+    _callAnthropic(model,content,maxTok,onOk,onErr,false);
+    return;
+  }
+  // ── Text: eigener Anbieter konfiguriert → zuerst versuchen, bei Limit/Fehler/
+  //    leerem Ergebnis transparent auf Anthropic (Standard-Proxy) zurückfallen.
   if(hasCustomAiProvider()){
-    _callAiProvider(getAiProvider(),model,content,maxTok,onOk,function(){
+    _callAiProvider(getAiProvider(),getAiProviderKey(),model,content,maxTok,onOk,function(){
       _callAnthropic(model,content,maxTok,onOk,onErr,true);
     });
   }else{
@@ -3112,10 +3242,10 @@ function _callAnthropic(model,content,maxTok,onOk,onErr,isFallback){
 // Ruft den gewählten Fremd-Anbieter über den Worker auf. Der Worker übersetzt
 // das Anthropic-Format und liefert es im selben Schema zurück. onErr triggert
 // im Aufrufer den Anthropic-Fallback (Limit/Fehler/Timeout/leeres Ergebnis).
-function _callAiProvider(provider,model,content,maxTok,onOk,onErr){
+function _callAiProvider(provider,key,model,content,maxTok,onOk,onErr){
   fetchT(PROJECT_AI_PROVIDER_URL,{
     method:'POST',
-    headers:{'Content-Type':'application/json','x-app-proxy-secret':getProxySecret(),'x-ai-provider':provider,'x-ai-key':getAiProviderKey()},
+    headers:{'Content-Type':'application/json','x-app-proxy-secret':getProxySecret(),'x-ai-provider':provider,'x-ai-key':key},
     body:JSON.stringify({model:model,max_tokens:maxTok,temperature:0,messages:[{role:'user',content:content}]})
   },25000).then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error((d.error&&d.error.message)||d.error||('HTTP '+r.status));return d;});}).then(function(d){
     if(d.error)throw new Error(d.error.message);

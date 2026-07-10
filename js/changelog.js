@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.211',items:[
+    {icon:'🧭',text:'„Mehr" ist jetzt die zentrale Übersicht: Alle Einstellungs-Bereiche (Profil, Ziele, Ernährung, Erinnerungen, KI, Backup) sind als eigene Einträge direkt erreichbar — ein Tipp, ein Ziel. Die Bibliothek hat ein eigenes Fenster statt eines versteckten Einstellungs-Tabs.',where:'Mehr'},
+  ]},
   {v:'0.210',items:[
     {icon:'🎙️',text:'Diktat: doppelte Wörter (v. a. auf dem iPhone) behoben — erneut gelieferte Erkennungs-Ergebnisse werden jetzt überschrieben statt angehängt.',where:'Mahlzeit → ＋ → Chat → 🎙️'},
   ]},

@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.209',items:[
+    {icon:'🥚',text:'„Ei" ist jetzt ein rohes Ei mit eigenen Nährwerten — vorher landete fälschlich Rührei im Tagebuch. „Ei (gekocht)" und „Rührei" gibt es weiterhin.',where:'Suche & Chat'},
+  ]},
   {v:'0.208',items:[
     {icon:'📷',text:'Mahlzeit-Fotos werden jetzt platzsparend in der Browser-Datenbank (IndexedDB) gespeichert — die „Speicher fast voll"-Warnung sollte damit Geschichte sein. Bestehende Fotos werden beim ersten Start automatisch umgezogen. Hinweis: Fotos sind gerätelokal und nicht mehr Teil der Backup-Datei.',where:'App-weit'},
   ]},

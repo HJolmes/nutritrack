@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.212',items:[
+    {icon:'🤖',text:'DeepSeek ist jetzt der vorausgewählte KI-Anbieter (Modell deepseek-chat — immer automatisch die neueste Version). Aktiv wird er mit eigenem API-Key unter Mehr → 🤖 KI; ohne Key läuft alles weiter über Anthropic. Auch Fotos gehen jetzt an DeepSeek — kann deren API sie nicht verarbeiten, springt automatisch Claude ein. Das Quellen-Badge unter dem Foto-Ergebnis zeigt jetzt ehrlich, wer das Bild erkannt hat.',where:'Mehr → 🤖 KI'},
+  ]},
   {v:'0.211',items:[
     {icon:'🧭',text:'„Mehr" ist jetzt die zentrale Übersicht: Alle Einstellungs-Bereiche (Profil, Ziele, Ernährung, Erinnerungen, KI, Backup) sind als eigene Einträge direkt erreichbar — ein Tipp, ein Ziel. Die Bibliothek hat ein eigenes Fenster statt eines versteckten Einstellungs-Tabs.',where:'Mehr'},
   ]},

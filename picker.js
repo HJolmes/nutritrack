@@ -1028,6 +1028,9 @@ function pickerAnalyze(){
     function(text){
       var parsed=parsePhotoResponse(text);
       btn.disabled=false;btn.textContent='📷 Erneut analysieren';
+      // Badge sofort einfrieren: es soll die Vision-Anfrage zeigen, nicht die
+      // späteren Text-Anfragen aus lookupNutrients (wie im Chat-Pfad).
+      var _src=(typeof aiSourceBadgeHtml==='function')?aiSourceBadgeHtml():'';
       if(!parsed.zutaten.length){
         pickerSetPhotoStatus(text.length?'KI: '+text.slice(0,120):'Kein Lebensmittel erkannt.',true);
         return;
@@ -1041,7 +1044,7 @@ function pickerAnalyze(){
         pickerIngredients=resolved;
         pickerShowPhotoResult(parsed.rezept);
         var srcEl=document.getElementById('pickerPhotoSource');
-        if(srcEl)srcEl.innerHTML=(typeof aiSourceBadgeHtml==='function')?aiSourceBadgeHtml():'';
+        if(srcEl)srcEl.innerHTML=_src;
         pickerSetPhotoStatus('',false);
       });
     },

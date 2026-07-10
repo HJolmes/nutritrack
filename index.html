@@ -680,7 +680,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.211</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.212</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -1025,7 +1025,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.211</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.212</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1940,7 +1940,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.211';
+var APP_VERSION='0.212';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -1978,15 +1978,17 @@ function setProxySecret(pw){return _sha256hex(pw).then(function(h){localStorage.
 // Der Klartext-Key liegt nur lokal (localStorage); in Backups wandert er
 // ausschließlich AES-GCM-verschlüsselt (siehe _aiKeyEnc*-Helfer unten).
 var AI_PROVIDERS=[
-  {id:'anthropic',label:'Anthropic (Standard)',keyless:true,models:'Claude Haiku/Sonnet'},
+  {id:'anthropic',label:'Anthropic (integriert)',keyless:true,models:'Claude Haiku/Sonnet'},
   {id:'openai',label:'OpenAI (GPT)',models:'gpt-4o-mini / gpt-4o'},
   {id:'gemini',label:'Google Gemini',models:'gemini-2.0-flash'},
   {id:'openrouter',label:'OpenRouter',models:'gpt-4o-mini / gpt-4o'},
   {id:'mistral',label:'Mistral',models:'mistral-small / pixtral'},
-  {id:'deepseek',label:'DeepSeek',models:'deepseek-chat (ohne Foto)'}
+  {id:'deepseek',label:'DeepSeek (Standard)',models:'deepseek-chat'}
 ];
 function _aiProviderMeta(id){for(var i=0;i<AI_PROVIDERS.length;i++){if(AI_PROVIDERS[i].id===id)return AI_PROVIDERS[i];}return AI_PROVIDERS[0];}
-function getAiProvider(){var p=localStorage.getItem('nt_ai_provider')||'anthropic';return _aiProviderMeta(p).id;}
+// Standard-Anbieter ist DeepSeek — aktiv wird er aber erst mit gespeichertem
+// Key (hasCustomAiProvider); ohne Key läuft alles über den Anthropic-Proxy.
+function getAiProvider(){var p=localStorage.getItem('nt_ai_provider')||'deepseek';return _aiProviderMeta(p).id;}
 function setAiProvider(p){localStorage.setItem('nt_ai_provider',_aiProviderMeta(p).id);}
 function getAiProviderKey(){return localStorage.getItem('nt_ai_key')||'';}
 function setAiProviderKey(k){if(k){localStorage.setItem('nt_ai_key',k);_aiKeyEncRefresh();}else{localStorage.removeItem('nt_ai_key');localStorage.removeItem('nt_ai_key_enc');}}
@@ -2041,7 +2043,9 @@ function _aiKeyEncTryDecrypt(){
 // KI-Anbieter + verschlüsselten Key in ein Backup-Objekt aufnehmen (Klartext nie)
 function _backupAiFields(o){
   var p=getAiProvider();
-  if(p==='anthropic')return o;
+  // Ohne gespeicherten Key nichts mitgeben — sonst würde der bloße
+  // DeepSeek-Default jedes Backups beim Restore als explizite Wahl gepinnt.
+  if(p==='anthropic'||!getAiProviderKey())return o;
   o.aiProvider=p;
   try{var enc=localStorage.getItem('nt_ai_key_enc');if(enc)o.aiKeyEnc=JSON.parse(enc);}catch(e){}
   return o;
@@ -2457,8 +2461,10 @@ function onAiProviderChange(){
     if(meta.keyless){
       hint.textContent='Standard – läuft über den eingebauten Proxy, kein eigener Key nötig.';
     }else{
-      var saved=(getAiProvider()===meta.id&&getAiProviderKey())?' · aktiver Key gespeichert ✓':'';
-      hint.textContent='Modelle: '+meta.models+' · Fallback bei Limit/Fehler: Anthropic · Key wandert nur verschlüsselt ins Backup'+saved;
+      var hasKey=getAiProvider()===meta.id&&getAiProviderKey();
+      var saved=hasKey?' · aktiver Key gespeichert ✓':'';
+      hint.textContent='Modelle: '+meta.models+' · Fallback bei Limit/Fehler: Anthropic · Key wandert nur verschlüsselt ins Backup'+saved
+        +(hasKey?'':' — Ohne gespeicherten Key nutzt NutriTrack weiterhin Anthropic.');
     }
   }
 }
@@ -2470,7 +2476,7 @@ function saveAiProviderSettings(){
   if(meta.keyless){
     setAiProvider('anthropic');setAiProviderKey('');
     if(key)key.value='';
-    showToast('KI-Anbieter: Anthropic (Standard)');
+    showToast('KI-Anbieter: Anthropic (integriert)');
   }else{
     var k=key?key.value.trim():'';
     if(!k){showToast('Bitte API-Key eingeben');return;}

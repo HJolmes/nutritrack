@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.214',items:[
+    {icon:'📷',text:'Bessere Foto-Erkennung: Die Foto-KI nutzt jetzt Qwen3-VL (qwen3-vl-plus) statt des Vorgängermodells — schärfere Bilderkennung, weiterhin automatisch die neueste Version. Nichts zu tun; dein Qwen-Key gilt unverändert.',where:'Mehr → 🤖 KI'},
+  ]},
   {v:'0.213',items:[
     {icon:'📷',text:'Neue Foto-KI-Einstellung: Fotos werden jetzt standardmäßig von Qwen (qwen-vl-max — immer automatisch die neueste Version) erkannt, mit eigenem API-Key unter Mehr → 🤖 KI. Der Chat bleibt bei deinem bisherigen Anbieter; ohne Qwen-Key erkennt weiterhin Claude die Fotos.',where:'Mehr → 🤖 KI'},
   ]},

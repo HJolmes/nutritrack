@@ -852,8 +852,9 @@ const AI_PROVIDERS = {
     type: "openai",
     // OpenAI-kompatibler DashScope-Endpoint (International/Alibaba Cloud Model Studio).
     url: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
-    // qwen-vl-max = rollender Alias auf das jeweils stärkste Vision-Modell (kein Pin).
-    models: { fast: "qwen-vl-max", strong: "qwen-vl-max" },
+    // qwen3-vl-plus = aktueller Qwen3-VL-Alias (Nachfolger des Legacy-qwen-vl-max),
+    // rollend auf die jeweils neueste Version (kein Pin).
+    models: { fast: "qwen3-vl-plus", strong: "qwen3-vl-plus" },
     vision: true,
   },
 };
@@ -1037,7 +1038,7 @@ export default {
         feedbackConfigured: Boolean(env.GITHUB_TOKEN),
         workoutsConfigured: Boolean(env.SHARE_KV),
         decoderSecretConfigured: Boolean(env.DECODER_SECRET),
-        codeVersion: "v0.213-qwen-vision",
+        codeVersion: "v0.214-qwen-vision",
       });
     }
 

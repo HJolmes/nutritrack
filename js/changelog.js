@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.213',items:[
+    {icon:'📷',text:'Neue Foto-KI-Einstellung: Fotos werden jetzt standardmäßig von Qwen (qwen-vl-max — immer automatisch die neueste Version) erkannt, mit eigenem API-Key unter Mehr → 🤖 KI. Der Chat bleibt bei deinem bisherigen Anbieter; ohne Qwen-Key erkennt weiterhin Claude die Fotos.',where:'Mehr → 🤖 KI'},
+  ]},
   {v:'0.212',items:[
     {icon:'🤖',text:'DeepSeek ist jetzt der vorausgewählte KI-Anbieter (Modell deepseek-chat — immer automatisch die neueste Version). Aktiv wird er mit eigenem API-Key unter Mehr → 🤖 KI; ohne Key läuft alles weiter über Anthropic. Auch Fotos gehen jetzt an DeepSeek — kann deren API sie nicht verarbeiten, springt automatisch Claude ein. Das Quellen-Badge unter dem Foto-Ergebnis zeigt jetzt ehrlich, wer das Bild erkannt hat.',where:'Mehr → 🤖 KI'},
   ]},

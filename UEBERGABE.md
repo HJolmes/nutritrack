@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.213 (2026-07-10) — Branch `claude/nutritrack-qwen-vision-qhjlsu` (separate Foto-KI: Qwen als Standard-Vision-Anbieter)
+**Stand:** v0.214 (2026-07-10) — Branch `claude/nutritrack-qwen-vision-qhjlsu` (Foto-KI-Modell auf Qwen3-VL `qwen3-vl-plus`)
 
 ## URLs
 
@@ -37,8 +37,8 @@
 - **Share/Import:** Sender → `POST /share` (KV, 1y) → `?s=<id>`; iOS non-standalone → `iosSwitchOv` + 📥 `openImportPaste()`. Payload `{t:'r'|'f'|'m',…}`.
 - **OneDrive (v0.159):** `_odGetToken()` löscht Tokens nur bei echten Auth-Fehlern (+ `odReconnectOv`); täglicher Autospeicher-Slot via `_odAutoSync`→`oneDriveSyncSlot`.
 - **Picker Chat (v0.175–0.190):** Lokale Fuzzy-Suche (nur Rezepte+Custom Foods, alle Tokens müssen treffen, `_pickerDbHit` für DB-Exakt-Treffer) → KI-Fallback (`DEFAULT_CHAT_PROMPT`, `PROMPT_VERSION='7'`, Few-Shot, keine Sackgasse: kurze Eingaben gehen als Einzel-Lebensmittel an `lookupNutrients`).
-- **Foto-Analyse (v0.191/v0.213):** `pickerAnalyze` skaliert auf 1280 px, `getFotoPrompt()` immer Default. `callClaude` erkennt Bilder (`content` mit `type:'image'`) und routet über eine eigene Kette: (1) eigener Vision-Slot mit Key → dessen API (Default Qwen/`qwen-vl-max`), (2) Foto-KI explizit auf Anthropic → `claude-sonnet-4-6`, (3) kein Vision-Key, aber Text-Anbieter aktiv und `vision:true` → dorthin durchreichen (bewahrt v0.212-DeepSeek-Verhalten), (4) sonst Anthropic. Fallback bei Fehler/leer immer Anthropic. Quellen-Badge direkt nach der Vision-Antwort eingefroren (nicht die lookupNutrients-Quelle).
-- **KI-Anbieter (v0.193–v0.213):** Mehr → 🤖 KI: Fremd-Anbieter via Worker `POST /ai/messages`; `callClaude` = `_callAiProvider(provider,key,…)` → Fallback `_callAnthropic`; Badge `aiSourceBadgeHtml()` (`aiSourceText` strippt `(Alibaba)` → `Qwen`). **Zwei unabhängige Slots:** Text-Anbieter (`nt_ai_provider`/`nt_ai_key`, Default `deepseek`, aktiv via `hasCustomAiProvider`) und Foto-KI (`nt_ai_vision_provider`/`nt_ai_vision_key`, Default `qwen`, aktiv via `hasVisionAiProvider`). Ohne jeweiligen Key → Anthropic-Proxy. `_backupAiFields` nimmt jeden Slot nur mit eigenem Key ins Backup (`aiProvider`/`aiKeyEnc`, `aiVisionProvider`/`aiVisionKeyEnc`); Keys wandern AES-GCM-verschlüsselt (Schlüssel aus Proxy-Passwort) in alle Backups, `_importAiFields` stellt beide Slots in allen 4 Restore-Pfaden wieder her. Worker: Qwen = OpenAI-kompatibler DashScope-intl-Endpoint.
+- **Foto-Analyse (v0.191/v0.214):** `pickerAnalyze` skaliert auf 1280 px, `getFotoPrompt()` immer Default. `callClaude` erkennt Bilder (`content` mit `type:'image'`) und routet über eine eigene Kette: (1) eigener Vision-Slot mit Key → dessen API (Default Qwen/`qwen3-vl-plus`), (2) Foto-KI explizit auf Anthropic → `claude-sonnet-4-6`, (3) kein Vision-Key, aber Text-Anbieter aktiv und `vision:true` → dorthin durchreichen (bewahrt v0.212-DeepSeek-Verhalten), (4) sonst Anthropic. Fallback bei Fehler/leer immer Anthropic. Quellen-Badge direkt nach der Vision-Antwort eingefroren (nicht die lookupNutrients-Quelle).
+- **KI-Anbieter (v0.193–v0.214):** Mehr → 🤖 KI: Fremd-Anbieter via Worker `POST /ai/messages`; `callClaude` = `_callAiProvider(provider,key,…)` → Fallback `_callAnthropic`; Badge `aiSourceBadgeHtml()` (`aiSourceText` strippt `(Alibaba)` → `Qwen`). **Zwei unabhängige Slots:** Text-Anbieter (`nt_ai_provider`/`nt_ai_key`, Default `deepseek`, aktiv via `hasCustomAiProvider`) und Foto-KI (`nt_ai_vision_provider`/`nt_ai_vision_key`, Default `qwen`, aktiv via `hasVisionAiProvider`). Ohne jeweiligen Key → Anthropic-Proxy. `_backupAiFields` nimmt jeden Slot nur mit eigenem Key ins Backup (`aiProvider`/`aiKeyEnc`, `aiVisionProvider`/`aiVisionKeyEnc`); Keys wandern AES-GCM-verschlüsselt (Schlüssel aus Proxy-Passwort) in alle Backups, `_importAiFields` stellt beide Slots in allen 4 Restore-Pfaden wieder her. Worker: Qwen = OpenAI-kompatibler DashScope-intl-Endpoint.
 - **OFF via Worker (v0.192):** Alle OpenFoodFacts-Calls über `GET /off?u=…`, Rezept-Import über `GET /fetch?u=…`; `fetchT` mit harten Timeouts überall.
 - **Barcode (v0.196):** `zxing-wasm` lokal (`js/zxing/`), Canvas→ImageData-Wrapper `window.ZXingWasm.readBarcodes`; zbar-wasm per esm.sh best effort; `@zxing/library` lokal als JS-Fallback.
 - **Sport-Sync (v0.158):** `js/health-sync.js` (`window.NTHealth`), Token in iOS-Shortcut/Android-HTTP-Shortcut, Worker `POST /workout` / `GET /workouts`, Einträge in `S.days[*].exercise[]` mit `_healthId`/`_source`.
@@ -77,7 +77,7 @@
 - v0.209 Ei (#166): Suche „Ei" → erster Treffer „Ei 🥚 143 kcal", dann „Ei (gekocht)", „Rührei" dahinter; Chat „2 Eier" → Zutat „Ei" (roh), nicht Rührei; „Rührei" weiterhin per Namen findbar
 - v0.210 Diktat (#156, iPhone!): 🎙️ halten, 3 Sätze mit Pausen → keine Wortdopplung; kurzer Tap unverändert; vorbefülltes Feld bleibt Präfix; absichtliche Wiederholung („sehr sehr gut") bleibt erhalten
 - v0.211 Mehr-Hub: Mehr zeigt 4 Gruppen/12 Einträge, jeder Settings-Eintrag öffnet den richtigen Tab; „Speichern ✓" aus Ziele-Tab erhält Profil-Daten; Bibliothek als eigenes Fenster: Rezept/Lebensmittel bearbeiten → speichern/löschen → zurück in der Bibliothek; Bibliothek-＋ öffnet Picker mit vorbefüllter Suche; 🔗/📥 funktionieren; Backup-Banner/-Reminder öffnen Backup-Tab; Hilfe-Texte nennen neue Pfade
-- v0.213 Foto-KI/Qwen: **Worker deployen** (`wrangler deploy` in `worker/`), `GET /health` → `codeVersion:"v0.213-qwen-vision"`; Mehr → 🤖 KI zeigt Abschnitt „📷 Foto-KI" mit „Qwen (Alibaba) (Standard)" vorausgewählt + Key-Feld + Hint; Qwen-Key (Alibaba Cloud Model Studio, intl.) eintragen → Foto senden → Badge „über Qwen · qwen-vl-max"; ohne Qwen-Key → Foto an Claude; Foto-KI explizit auf Anthropic → Claude; DeepSeek-Chat (Text) unverändert über DeepSeek; Vision-Key nur verschlüsselt im Backup
+- v0.214 Foto-KI/Qwen3-VL: **Worker deployen** (`wrangler deploy` in `worker/`), `GET /health` → `codeVersion:"v0.214-qwen-vision"`; Mehr → 🤖 KI zeigt Abschnitt „📷 Foto-KI" mit „Qwen (Alibaba) (Standard)" vorausgewählt, Hint nennt „Modell qwen3-vl-plus"; Qwen-Key (Alibaba Cloud Model Studio, intl.) eintragen → Foto senden → Badge „über Qwen · qwen3-vl-plus"; ohne Qwen-Key → Foto an Claude; Foto-KI explizit auf Anthropic → Claude; DeepSeek-Chat (Text) unverändert über DeepSeek; Vision-Key nur verschlüsselt im Backup
 - v0.201 Stabilität: Trends-Tab öffnen → keine Konsolen-Fehler, Streak-Kachel zeigt Zahl, „📷 Offline-Fotos"-Panel erscheint bei Queue-Einträgen. Konsole: `S.days['2026-01-01']={_compressed:true,kcal:1800,water:4};saveS();` → dorthin blättern → leerer Tag statt Crash. Chat „Brot mit Käse und Schinken und Gurke" → Zutaten in genau dieser Reihenfolge
 - v0.202 Diktat (Android + iPhone): 🎙️ halten, mehrere Sätze mit Pausen sprechen → fortlaufender Text **ohne** Wiederholungen; kurzer Tap wie bisher; bestehender Text bleibt als Präfix (#154)
 - v0.203 XSS: Eigenes Lebensmittel `<img src=x onerror=alert(1)>` anlegen und eintragen → überall als Text, kein Alert; Name mit `"` → Bearbeiten-Dialog zeigt vollen Namen im Feld; `Müsli & Milch` nirgends doppelt-escaped
@@ -93,11 +93,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.209 | — | „Ei" = rohes Ei mit eigenem DB-Eintrag, Rührei-Synonyme entwirrt (#166) |
 | v0.210 | — | Diktat: Finals pro Result-Index + Overlap-Guard gegen iOS-Re-Delivery (#156) |
 | v0.211 | — | Mehr-Hub: alle Settings-Bereiche als gruppierte Direkteinträge, Bibliothek als eigenes Overlay |
 | v0.212 | — | DeepSeek Standard-Anbieter (Rolling-Alias), Fotos an DeepSeek durchgereicht, Quellen-Badge-Fix |
-| v0.213 | — | Separate Foto-KI: Qwen (`qwen-vl-max`) als Standard-Vision-Anbieter mit eigenem Key/Slot, Routing-Kette in `callClaude`, eigenes Backup-Feld |
+| v0.213 | #170 | Separate Foto-KI: Qwen als Standard-Vision-Anbieter mit eigenem Key/Slot, Routing-Kette in `callClaude`, eigenes Backup-Feld |
+| v0.214 | — | Foto-KI-Modell auf Qwen3-VL (`qwen3-vl-plus`) statt Legacy-`qwen-vl-max` |
 
 ---
 

@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.208 (2026-07-05) — Branch `claude/issues-implementation-4skt3b` (Iterationen 1–8 aus App-Review v0.200, Issues #154–#162)
+**Stand:** v0.212 (2026-07-10) — Branch `claude/nutritrack-ux-settings-k3f2ey` (Issues #166 Ei-Fix, #156 Diktat-iOS, Mehr-Hub-Redesign, DeepSeek-Default)
 
 ## URLs
 
@@ -14,6 +14,7 @@
 
 - **Theme (v0.144):** Cream `#faf6f1`, Coral `#e96e3c`, Fraunces+Inter. Override-Block `/* BLOOM REDESIGN */` am Ende von `<style>`. `manifest.json` seit v0.207 ebenfalls Coral/Cream (Android-Splash).
 - **Screens:** `mainScreen` (Heute, Hero-kcal, 2×2-Mahlzeiten-Grid), `historyScreen`, `mealDetailScreen`, `statsScreen`, `moreScreen`. Bottom-Nav mit 5 Items, `switchTab(tab)` mappt via `data-tab`, `'stats'`→`'trends'`.
+- **Mehr-Hub (v0.211):** `moreScreen` = zentrale Übersicht mit 4 Gruppen (Einstellungen / Meine Inhalte / Daten & Sync / App), 12 Einträge. Jeder Settings-Bereich deep-linkt via `openSettings(tab)` (Tab-Bar im `settOv` bleibt für schnellen Wechsel); `openBackupSettings()`=`openSettings('backup')`. **Bibliothek ist eigenes Overlay `#libraryOv`** (`openLibrary()`, kein Settings-Tab mehr); alle Subflows (Rezept-/Lebensmittel-Editor, `libAdd*`) schließen `libraryOv` explizit und kehren per `openLibrary()` zurück.
 - **Ausgelagerte Daten-Module (v0.204):** `js/fooddb.js` (`window.DB`+`window.DE_EN`) und `js/changelog.js` (`window.CHANGELOG`) — klassische Scripts vor dem Hauptscript, in `CORE_ASSETS`. Neue CHANGELOG-Einträge gehören in `js/changelog.js`, nicht mehr in `index.html`. `@zxing/library` liegt lokal (`js/zxing/zxing-js.umd.min.js`, `defer`) statt synchron von unpkg.
 - **Fotos in IndexedDB (v0.208):** `js/idb-photos.js` → `window.NTPhotos` (put/get/del, DB `nt-photos`). Einträge tragen `mealPhotoId` statt Base64 (`saveMealPhoto`); Anzeige lädt asynchron nach (`_mealPhotoImgHtml`/`_hydratePhotoImgs` via `img[data-phid]`, `renderMealDetail`-`mdPhoto` direkt per `NTPhotos.get`). Boot-Migration `_migratePhotosToIdb` (Flag `nt_photos_migrated`, löscht bei IDB-Fehler nichts); nach jedem Import/Restore ruft `_migratePhotosAfterImport()` sie erneut. `deleteEntry`/`compressOldDays` löschen IDB-Fotos best effort. Offline-Foto-Queue speichert `{phid,…}` statt Base64. Ohne IndexedDB: Fallback aufs alte `mealPhoto`-Feld. **Fotos sind gerätelokal, nicht Teil der Backups.**
 - **Stabilität (v0.201):** `getDay()` behandelt komprimierte Alt-Tage (`_compressed`, aus `compressOldDays`) als read-only Leer-Tag → kein Crash beim Zurückblättern >90 Tage. `renderStreak()`-Geisteraufruf entfernt (Streak rendert `renderWeekBars`). `lookupNutrients` schreibt Ergebnisse per Index → Zutaten-Reihenfolge = Eingabe-Reihenfolge.
@@ -22,22 +23,22 @@
 - **Proxy-Gate (v0.205):** `checkProxyPwGate` respektiert `nt_gate_skipped` („Später – App ohne KI nutzen", `skipProxyPwGate()`). `verifyProxySecret()` pingt den Worker mit 1 Token: 401/403 = falsches Passwort (Gate bleibt, rote Meldung), Netzwerkfehler = neutral. Erfolgreiches Setzen (Gate oder Settings) räumt `nt_gate_skipped` weg.
 - **Picker (v0.206):** **7 Tabs** (Chat, Suche, Zuletzt, Foto, Barcode, Eigenes, Link). „Eigenes" hat Checkbox `#ownOnce` „Nur einmal eintragen" (Werte = Gesamtwerte der Portion, ehem. Quick-Tab — `pickerQuicktrack` gelöscht). **Ein** Link-Import-Codepfad: Picker-Link-Tab (`pickerLinkDetect/Import/Add`); `recipeImportOv`/`openRecipeImport`/`recipeImportDetect`/`recipeImportStart` gelöscht, Bibliothek-🔗 öffnet `openPicker(null,'link')`. `recipeImportExtractUrl` (index.html) bleibt — wird vom Link-Tab genutzt. **Live-Suche:** `pickerSearchLocalLive()` (oninput) rendert lokale Treffer sofort; Online weiterhin per Enter/Button.
 - **Picker öffnet mit Chat (v0.200):** Bottom-Nav-＋ → `openPicker(null)` (Default `'chat'`); `libAddRecipe`/`libAddFood`/`pickerSaveOwn` übergeben `'search'`.
-- **Diktat (v0.197/v0.200/v0.202):** 🎙️ im Picker-Chat, Web Speech API de-DE. Kurz-Tap = Toggle, Halten ≥350 ms = Push-to-Talk. v0.202: `onresult` liest ab `ev.resultIndex`, Finals pro Session in `finalT` akkumuliert, `onend`-Neustart übernimmt nur Finals in `_pickerRecBase` → keine Wortdopplung mehr (#154).
+- **Diktat (v0.197–v0.210):** 🎙️ im Picker-Chat, Web Speech API de-DE. Kurz-Tap = Toggle, Halten ≥350 ms = Push-to-Talk. v0.210: Finals **pro Result-Index** gespeichert (`finals[i]=tr`, Re-Delivery überschreibt statt anhängt) + `_pickerDedupOverlap` (wortweiser Suffix/Präfix-Guard ≥2 Wörter) gegen iOS-Re-Finalisierung über Session-Neustarts (#154/#156).
 - **Hilfe (v0.207):** `helpOv` = scrollbare HTML-Hilfe mit `<details>`-Themen + PDF-Download-Link; `openHelp()` = nur `openOv('helpOv')`. Kein PDF-iframe mehr (iOS zeigte nur Seite 1). Erinnerungen-Tab trägt Hinweiskasten „nur solange App geöffnet".
 - **Trends (v0.207):** Gewichts-Chart in Coral (`#e96e3c`), Labels `#1f1a14`; Gewichts-Trend bezieht sich auf die letzten 14 Log-Einträge (Chart-Fenster) statt auf den allerersten.
-- **DB-Hygiene (v0.204):** `Karotte` gelöscht (Synonym bei `Möhre`), `Quark`-Synonyme entwirrt, `Cherrytomaten` ohne `cherry`. Lehre aus #127 bleibt: bei „falsch erkanntem" Lebensmittel zuerst `findInLocalDB`/Synonyme prüfen.
+- **DB-Hygiene (v0.204/v0.209):** `Karotte` gelöscht (Synonym bei `Möhre`), `Quark`-Synonyme entwirrt; v0.209: eigener `Ei`-Eintrag (roh, 143 kcal), `Rührei` ohne nacktes `ei`-Synonym (#166). Lehre aus #127 bleibt: bei „falsch erkanntem" Lebensmittel zuerst `findInLocalDB`/Synonyme prüfen.
 - **Feedback (v0.154/v0.162):** FAB `#feedbackFab` → Worker `/feedback` → GitHub-Issue; friert offene Overlays für den Screenshot ein. Section-Marker `// SECTION: FEEDBACK`.
 - **Header (v0.149/0.155):** `mainScreen`/`statsScreen` nur `?` `📥`; Versions-Tag `#appVersionTag` neben „Hej <Name>" (öffnet `whatsNewOv`, Text aus `APP_VERSION` beim Boot).
 - **Kalorien-Ampel (v0.149):** `_kcalAmpel(goal,eaten,S)` — ±10 % grün, Richtung aus `S.goalWeight` vs `S.weight`.
-- **Settings-Tabs (v0.187):** `👤 Profil · 🎯 Ziele · 🥗 Ernährung · ⏰ Erinnerungen · 🤖 KI · 💾 Backup` (`stab-*`/`spanel-*`). Bibliothek-Panel ohne eigenen Tab (nur Mehr → 📚).
+- **Settings-Tabs (v0.187/v0.211):** `👤 Profil · 🎯 Ziele · 🥗 Ernährung · ⏰ Erinnerungen · 🤖 KI · 💾 Backup` (`stab-*`/`spanel-*`), Deep-Link via `openSettings(tab)`. Bibliothek-Panel existiert nicht mehr (eigenes `#libraryOv`).
 - **Safe-Area (v0.161/0.168):** `viewport-fit=cover`; bnav/body/fb-fab mit `env(safe-area-inset-bottom)`, Header mit `env(safe-area-inset-top)`.
 - **Mahlzeit-Detail (v0.151/0.157/0.181):** CTAs `📋 Vorlage`, `💾 Als Rezept` (`saveMealAsRecipe`), `🔁 Wiederholen` (`openRecurCreate`); zentraler ＋ → `openPicker('<meal>')`.
 - **Wiederkehrende Mahlzeiten (v0.181):** `S.recurringMeals[]`, `applyRecurringMeals(dateKey)` idempotent via `day._recurMarks`; Verwaltung Mehr → 🔁.
 - **Share/Import:** Sender → `POST /share` (KV, 1y) → `?s=<id>`; iOS non-standalone → `iosSwitchOv` + 📥 `openImportPaste()`. Payload `{t:'r'|'f'|'m',…}`.
 - **OneDrive (v0.159):** `_odGetToken()` löscht Tokens nur bei echten Auth-Fehlern (+ `odReconnectOv`); täglicher Autospeicher-Slot via `_odAutoSync`→`oneDriveSyncSlot`.
 - **Picker Chat (v0.175–0.190):** Lokale Fuzzy-Suche (nur Rezepte+Custom Foods, alle Tokens müssen treffen, `_pickerDbHit` für DB-Exakt-Treffer) → KI-Fallback (`DEFAULT_CHAT_PROMPT`, `PROMPT_VERSION='7'`, Few-Shot, keine Sackgasse: kurze Eingaben gehen als Einzel-Lebensmittel an `lookupNutrients`).
-- **Foto-Analyse (v0.191):** `pickerAnalyze` skaliert auf 1280 px, `claude-sonnet-4-6`, `getFotoPrompt()` immer Default (kein localStorage-Override).
-- **KI-Anbieter (v0.193/0.199):** Settings → 🤖 KI: Fremd-Anbieter via Worker `POST /ai/messages`; `callClaude` = `_callAiProvider` → Fallback `_callAnthropic`; Badge `aiSourceBadgeHtml()`. Key wandert AES-GCM-verschlüsselt (`aiKeyEnc`, Schlüssel aus Proxy-Passwort) in alle Backups, `_importAiFields` in allen 4 Restore-Pfaden.
+- **Foto-Analyse (v0.191/v0.212):** `pickerAnalyze` skaliert auf 1280 px, `getFotoPrompt()` immer Default. Mit aktivem Fremd-Anbieter geht das Bild an dessen API (DeepSeek: Worker `vision:true`, Durchreichen gewollt), sonst/bei Fehler `claude-sonnet-4-6`. Quellen-Badge wird direkt nach der Vision-Antwort eingefroren (zeigt nicht mehr die lookupNutrients-Quelle).
+- **KI-Anbieter (v0.193–v0.212):** Mehr → 🤖 KI: Fremd-Anbieter via Worker `POST /ai/messages`; `callClaude` = `_callAiProvider` → Fallback `_callAnthropic`; Badge `aiSourceBadgeHtml()`. **Default-Provider ist `deepseek`** (Rolling-Alias `deepseek-chat` im Worker, bewusst kein Pin) — aktiv erst mit gespeichertem Key (`hasCustomAiProvider`), sonst Anthropic-Proxy; `_backupAiFields` nimmt Provider nur mit Key ins Backup. Key wandert AES-GCM-verschlüsselt (`aiKeyEnc`, Schlüssel aus Proxy-Passwort) in alle Backups, `_importAiFields` in allen 4 Restore-Pfaden.
 - **OFF via Worker (v0.192):** Alle OpenFoodFacts-Calls über `GET /off?u=…`, Rezept-Import über `GET /fetch?u=…`; `fetchT` mit harten Timeouts überall.
 - **Barcode (v0.196):** `zxing-wasm` lokal (`js/zxing/`), Canvas→ImageData-Wrapper `window.ZXingWasm.readBarcodes`; zbar-wasm per esm.sh best effort; `@zxing/library` lokal als JS-Fallback.
 - **Sport-Sync (v0.158):** `js/health-sync.js` (`window.NTHealth`), Token in iOS-Shortcut/Android-HTTP-Shortcut, Worker `POST /workout` / `GET /workouts`, Einträge in `S.days[*].exercise[]` mit `_healthId`/`_source`.
@@ -61,9 +62,9 @@
 
 ## Code-Suchpfade
 
-`index.html`: `// SECTION: SHARE & IMPORT`, `// SECTION: FEEDBACK`, `// SECTION: HEALTH SYNC`, `openBackupSettings()`, `backupNow()`, `verifyProxySecret()`, `skipProxyPwGate()`, `_migratePhotosToIdb()`, `_hydratePhotoImgs()`, `openImportPaste()`, `openHelp()`. Modale: `shareItemOv`, `importPasteOv`, `importConfirmOv`, `iosSwitchOv`, `feedbackOv`, `healthSyncOv`, `helpOv`, `mealDetailScreen`.
+`index.html`: `// SECTION: SHARE & IMPORT`, `// SECTION: FEEDBACK`, `// SECTION: HEALTH SYNC`, `openSettings(tab)`, `openLibrary()`, `openBackupSettings()`, `backupNow()`, `verifyProxySecret()`, `skipProxyPwGate()`, `_migratePhotosToIdb()`, `_hydratePhotoImgs()`, `openImportPaste()`, `openHelp()`. Modale: `libraryOv`, `shareItemOv`, `importPasteOv`, `importConfirmOv`, `iosSwitchOv`, `feedbackOv`, `healthSyncOv`, `helpOv`, `mealDetailScreen`.
 
-`picker.js`: `pickerSearchLocalLive`, `pickerSaveOwn` (mit `ownOnce`), `_pickerVoiceStart` (Diktat inkl. resultIndex-Fix), `pickerLinkDetect/Import/Add`.
+`picker.js`: `pickerSearchLocalLive`, `pickerSaveOwn` (mit `ownOnce`), `_pickerVoiceStart`/`_pickerDedupOverlap` (Diktat inkl. Per-Index-Finals #156), `pickerLinkDetect/Import/Add`.
 
 `js/`: `fooddb.js` (DB/DE_EN), `changelog.js` (CHANGELOG — neue Einträge hier!), `idb-photos.js` (NTPhotos), `health-sync.js` (NTHealth), `zxing/` (WASM + JS-Fallback lokal).
 
@@ -73,6 +74,10 @@
 
 ## Live-Test offen
 
+- v0.209 Ei (#166): Suche „Ei" → erster Treffer „Ei 🥚 143 kcal", dann „Ei (gekocht)", „Rührei" dahinter; Chat „2 Eier" → Zutat „Ei" (roh), nicht Rührei; „Rührei" weiterhin per Namen findbar
+- v0.210 Diktat (#156, iPhone!): 🎙️ halten, 3 Sätze mit Pausen → keine Wortdopplung; kurzer Tap unverändert; vorbefülltes Feld bleibt Präfix; absichtliche Wiederholung („sehr sehr gut") bleibt erhalten
+- v0.211 Mehr-Hub: Mehr zeigt 4 Gruppen/12 Einträge, jeder Settings-Eintrag öffnet den richtigen Tab; „Speichern ✓" aus Ziele-Tab erhält Profil-Daten; Bibliothek als eigenes Fenster: Rezept/Lebensmittel bearbeiten → speichern/löschen → zurück in der Bibliothek; Bibliothek-＋ öffnet Picker mit vorbefüllter Suche; 🔗/📥 funktionieren; Backup-Banner/-Reminder öffnen Backup-Tab; Hilfe-Texte nennen neue Pfade
+- v0.212 DeepSeek: **Worker deployen** (`wrangler deploy` in `worker/`), `GET /health` → `codeVersion:"v0.212-deepseek-default"`; Mehr → 🤖 KI zeigt „DeepSeek (Standard)" vorausgewählt; DeepSeek-Key (platform.deepseek.com) eintragen → Chat-Badge „über DeepSeek · deepseek-chat"; Foto senden → Badge zeigt tatsächliche Bild-Quelle (DeepSeek, falls deren API Bilder annimmt, sonst Anthropic-Fallback); ohne Key läuft alles über Anthropic
 - v0.201 Stabilität: Trends-Tab öffnen → keine Konsolen-Fehler, Streak-Kachel zeigt Zahl, „📷 Offline-Fotos"-Panel erscheint bei Queue-Einträgen. Konsole: `S.days['2026-01-01']={_compressed:true,kcal:1800,water:4};saveS();` → dorthin blättern → leerer Tag statt Crash. Chat „Brot mit Käse und Schinken und Gurke" → Zutaten in genau dieser Reihenfolge
 - v0.202 Diktat (Android + iPhone): 🎙️ halten, mehrere Sätze mit Pausen sprechen → fortlaufender Text **ohne** Wiederholungen; kurzer Tap wie bisher; bestehender Text bleibt als Präfix (#154)
 - v0.203 XSS: Eigenes Lebensmittel `<img src=x onerror=alert(1)>` anlegen und eintragen → überall als Text, kein Alert; Name mit `"` → Bearbeiten-Dialog zeigt vollen Namen im Feld; `Müsli & Milch` nirgends doppelt-escaped
@@ -88,13 +93,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.204 | — | CHANGELOG + Lebensmittel-DB nach `js/` ausgelagert, `@zxing/library` lokal+defer, DB-Duplikate bereinigt (#158) |
-| v0.205 | — | Backup-Einstiege konsolidiert (`backupNow` + Backup-Tab), Proxy-Gate mit „Später" + Server-Prüfung (#159) |
-| v0.206 | — | Picker: Quick→Eigenes-Checkbox, ein Link-Import-Pfad, Live-Suche (#160) |
-| v0.207 | — | HTML-Hilfe statt PDF-iframe, Manifest-Farben Coral/Cream, Erinnerungen-Hinweis, Gewichts-Chart-Farben+Trendfenster (#161) |
-| v0.208 | — | Mahlzeit-Fotos nach IndexedDB (`js/idb-photos.js`), Migration, Queue ohne Base64, Fotos nicht mehr im Backup (#162) |
-
-(v0.201–v0.203: Stabilitäts-Fixes #155, Diktat-Dopplungs-Fix #156/#154, esc()-Vervollständigung #157 — alle im selben Branch.)
+| v0.208 | #164 | Mahlzeit-Fotos nach IndexedDB (`js/idb-photos.js`), Migration, Queue ohne Base64, Fotos nicht mehr im Backup (#162) |
+| v0.209 | — | „Ei" = rohes Ei mit eigenem DB-Eintrag, Rührei-Synonyme entwirrt (#166) |
+| v0.210 | — | Diktat: Finals pro Result-Index + Overlap-Guard gegen iOS-Re-Delivery (#156) |
+| v0.211 | — | Mehr-Hub: alle Settings-Bereiche als gruppierte Direkteinträge, Bibliothek als eigenes Overlay |
+| v0.212 | — | DeepSeek Standard-Anbieter (Rolling-Alias), Fotos an DeepSeek durchgereicht, Quellen-Badge-Fix |
 
 ---
 

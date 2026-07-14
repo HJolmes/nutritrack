@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.215',items:[
+    {icon:'💾',text:'Fehler „Speicher voll" behoben: Wenn der Gerätespeicher knapp wurde, wurden neue Einträge teils nicht mehr gespeichert. Deine Tagebuch-Daten haben jetzt immer Vorrang — die App gibt bei Platzmangel automatisch verzichtbare Zwischenspeicher (alte Auto-Sicherungen, Such-Caches) frei, damit gespeichert wird. Auto-Sicherungen und Caches wachsen ausserdem nicht mehr unbegrenzt.',where:'automatisch'},
+  ]},
   {v:'0.214',items:[
     {icon:'📷',text:'Bessere Foto-Erkennung: Die Foto-KI nutzt jetzt Qwen3-VL (qwen3-vl-plus) statt des Vorgängermodells — schärfere Bilderkennung, weiterhin automatisch die neueste Version. Nichts zu tun; dein Qwen-Key gilt unverändert.',where:'Mehr → 🤖 KI'},
   ]},

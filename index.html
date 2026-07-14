@@ -680,7 +680,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.214</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.215</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -1025,7 +1025,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.214</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.215</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1953,7 +1953,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.214';
+var APP_VERSION='0.215';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -2193,24 +2193,56 @@ function mealByTime(){var h=new Date().getHours();if(h>=5&&h<11)return'breakfast
 // ════════════════════════════════════════
 // SECTION: STORAGE
 // ════════════════════════════════════════
+// Verzichtbare Caches begrenzen, damit localStorage nicht über Monate/Jahre unbegrenzt wächst.
+var FOODCACHE_MAX=300, BARCODECACHE_MAX=300;
+function _pruneFoodCache(max){
+  var keys=Object.keys(foodCache);
+  if(keys.length<=max)return false;
+  // Älteste (kleinstes addedAt) zuerst entfernen.
+  keys.sort(function(a,b){return (foodCache[a]&&foodCache[a].addedAt||0)-(foodCache[b]&&foodCache[b].addedAt||0);});
+  keys.slice(0,keys.length-max).forEach(function(k){delete foodCache[k];});
+  return true;
+}
+function _pruneBarcodeCache(max){
+  var keys=Object.keys(barcodeCache);
+  if(keys.length<=max)return false;
+  // Keine Zeitstempel → älteste per Einfügereihenfolge entfernen.
+  keys.slice(0,keys.length-max).forEach(function(k){delete barcodeCache[k];});
+  return true;
+}
+function _lsSet(key,val){try{localStorage.setItem(key,val);return true;}catch(e){return false;}}
+// Bei QuotaExceededError verzichtbaren Speicher stufenweise freigeben – Nutzerdaten haben Vorrang.
+function _freeQuota(step){
+  if(step===1){
+    // Autosaves sind das mit Abstand grösste verzichtbare Objekt (bis zu AUTOSAVE_MAX volle States).
+    try{localStorage.removeItem('nt_autosaves');}catch(e){}
+  }else if(step===2){
+    _pruneFoodCache(FOODCACHE_MAX);_pruneBarcodeCache(BARCODECACHE_MAX);
+    saveX();saveBarcodeCache();
+  }
+}
 function saveS(){
-  try{
-    var data=JSON.stringify(S);
-    localStorage.setItem('nt_v6',data);
+  var data=JSON.stringify(S);
+  if(_lsSet('nt_v6',data)){
     // Warnung wenn >3MB (60% des Limits)
     var kb=Math.round(data.length/1024);
     if(kb>3000&&!window._storageWarnShown){
       window._storageWarnShown=true;
       setTimeout(function(){showToast('⚠️ Speicher fast voll ('+kb+'KB) – Backup erstellen!',5000);},500);
     }
-  }catch(e){
-    showToast('⚠️ Speicher voll! Bitte Backup erstellen und alte Daten löschen.');
+    return;
   }
+  // Speicher voll: verzichtbare Daten freigeben und erneut versuchen, damit die Nutzerdaten trotzdem gespeichert werden.
+  _freeQuota(1);
+  if(_lsSet('nt_v6',data))return;
+  _freeQuota(2);
+  if(_lsSet('nt_v6',data))return;
+  showToast('⚠️ Speicher voll! Bitte Backup erstellen und alte Daten löschen.');
 }
 function loadS(){try{var d=localStorage.getItem('nt_v6');if(d){Object.assign(S,JSON.parse(d));return true;}}catch(e){}return false;}
-function saveX(){try{localStorage.setItem('nt_x',JSON.stringify({fc:foodCache,cf:customFoods,rc:recipes}));}catch(e){}}
+function saveX(){_pruneFoodCache(FOODCACHE_MAX);try{localStorage.setItem('nt_x',JSON.stringify({fc:foodCache,cf:customFoods,rc:recipes}));}catch(e){}}
 function loadX(){try{var d=localStorage.getItem('nt_x');if(d){var x=JSON.parse(d);foodCache=x.fc||{};customFoods=x.cf||[];recipes=x.rc||[];}}catch(e){}}
-function saveBarcodeCache(){try{localStorage.setItem('nt_bc',JSON.stringify(barcodeCache));}catch(e){}}
+function saveBarcodeCache(){_pruneBarcodeCache(BARCODECACHE_MAX);try{localStorage.setItem('nt_bc',JSON.stringify(barcodeCache));}catch(e){}}
 function loadBarcodeCache(){try{var d=localStorage.getItem('nt_bc');if(d)barcodeCache=JSON.parse(d);}catch(e){}}
 function cacheFood(f){if(!f||!f.name)return;var k=f.name.toLowerCase().trim();foodCache[k]={name:f.name,emoji:f.emoji,per100:f.per100,addedAt:Date.now()};saveX();}
 function isAiConfigured(){return !!(PROJECT_AI_PROXY_URL&&getProxySecret());}
@@ -2380,7 +2412,7 @@ function submitProxyPw(){
     if(aiStatus)aiStatus.textContent=ok===true?'✓ Passwort geprüft':'Gespeichert (offline nicht prüfbar)';
   });
 }
-var AUTOSAVE_MAX=5;
+var AUTOSAVE_MAX=3;
 function _autosaveCreate(){
   var saves=[];
   try{saves=JSON.parse(localStorage.getItem('nt_autosaves')||'[]');}catch(e){}

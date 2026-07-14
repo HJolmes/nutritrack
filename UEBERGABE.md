@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.214 (2026-07-10) — Branch `claude/nutritrack-qwen-vision-qhjlsu` (Foto-KI-Modell auf Qwen3-VL `qwen3-vl-plus`)
+**Stand:** v0.215 (2026-07-14) — Branch `claude/backup-storage-full-error-tbxsad` (Speicher-voll-Fix: Nutzerdaten haben Vorrang)
 
 ## URLs
 
@@ -19,6 +19,7 @@
 - **Fotos in IndexedDB (v0.208):** `js/idb-photos.js` → `window.NTPhotos` (put/get/del, DB `nt-photos`). Einträge tragen `mealPhotoId` statt Base64 (`saveMealPhoto`); Anzeige lädt asynchron nach (`_mealPhotoImgHtml`/`_hydratePhotoImgs` via `img[data-phid]`, `renderMealDetail`-`mdPhoto` direkt per `NTPhotos.get`). Boot-Migration `_migratePhotosToIdb` (Flag `nt_photos_migrated`, löscht bei IDB-Fehler nichts); nach jedem Import/Restore ruft `_migratePhotosAfterImport()` sie erneut. `deleteEntry`/`compressOldDays` löschen IDB-Fotos best effort. Offline-Foto-Queue speichert `{phid,…}` statt Base64. Ohne IndexedDB: Fallback aufs alte `mealPhoto`-Feld. **Fotos sind gerätelokal, nicht Teil der Backups.**
 - **Stabilität (v0.201):** `getDay()` behandelt komprimierte Alt-Tage (`_compressed`, aus `compressOldDays`) als read-only Leer-Tag → kein Crash beim Zurückblättern >90 Tage. `renderStreak()`-Geisteraufruf entfernt (Streak rendert `renderWeekBars`). `lookupNutrients` schreibt Ergebnisse per Index → Zutaten-Reihenfolge = Eingabe-Reihenfolge.
 - **XSS-Härtung (v0.182/v0.203):** `esc()` (`index.html`) / `_esc()` (`picker.js`) jetzt **flächendeckend** in allen Render-Pfaden, die Namen/Freitexte aus untrusted Quellen (Share-Imports, OFF, KI, Nutzereingaben) per `innerHTML`/Attribut interpolieren — inkl. `value="…"`-Attribute (editName, OneDrive-Pfad), Kochanleitungen, Chat-User-Bubble, Barcode-Code. Bei neuen innerHTML-Stellen immer `esc()` verwenden.
+- **Speicher-Resilienz (v0.215):** `saveS()` gibt bei `QuotaExceededError` stufenweise verzichtbaren localStorage frei und versucht erneut — **Nutzerdaten (`nt_v6`) haben Vorrang** vor Autosaves/Caches (Stufe 1: `nt_autosaves` löschen; Stufe 2: `foodCache`/`barcodeCache` auf `_pruneFoodCache`/`_pruneBarcodeCache` kappen + neu schreiben; erst dann Toast). `AUTOSAVE_MAX=3` (war 5). Caches sind hart begrenzt (`FOODCACHE_MAX`/`BARCODECACHE_MAX=300`, ältester Eintrag zuerst raus), Prune läuft proaktiv in `saveX()`/`saveBarcodeCache()`. Selbstheilend: nach SW-Update speichert ein volles Gerät beim nächsten `saveS()` wieder.
 - **Backup (v0.205):** Ein Einstieg: Einstellungen → 💾 Backup. `backupNow()` (ex-`shareData`, keine Aufrufer mehr unter altem Namen) mit sichtbarer Strategie-Anzeige `#backupNowHint` (OneDrive → Share-Sheet → Datei-Download). Mehr-Hub-Eintrag, Backup-Reminder- und OneDrive-Banner öffnen alle `openBackupSettings()` (= `openSettings()`+`settSetTab('backup')`).
 - **Proxy-Gate (v0.205):** `checkProxyPwGate` respektiert `nt_gate_skipped` („Später – App ohne KI nutzen", `skipProxyPwGate()`). `verifyProxySecret()` pingt den Worker mit 1 Token: 401/403 = falsches Passwort (Gate bleibt, rote Meldung), Netzwerkfehler = neutral. Erfolgreiches Setzen (Gate oder Settings) räumt `nt_gate_skipped` weg.
 - **Picker (v0.206):** **7 Tabs** (Chat, Suche, Zuletzt, Foto, Barcode, Eigenes, Link). „Eigenes" hat Checkbox `#ownOnce` „Nur einmal eintragen" (Werte = Gesamtwerte der Portion, ehem. Quick-Tab — `pickerQuicktrack` gelöscht). **Ein** Link-Import-Codepfad: Picker-Link-Tab (`pickerLinkDetect/Import/Add`); `recipeImportOv`/`openRecipeImport`/`recipeImportDetect`/`recipeImportStart` gelöscht, Bibliothek-🔗 öffnet `openPicker(null,'link')`. `recipeImportExtractUrl` (index.html) bleibt — wird vom Link-Tab genutzt. **Live-Suche:** `pickerSearchLocalLive()` (oninput) rendert lokale Treffer sofort; Online weiterhin per Enter/Button.
@@ -74,6 +75,7 @@
 
 ## Live-Test offen
 
+- v0.215 Speicher (echtes volles Gerät der Nutzerin): App auf v0.215 aktualisieren (Reload für SW-Update) → neuen Eintrag anlegen → wird gespeichert, kein „Speicher voll"-Toast mehr; DevTools/Anwendung → localStorage: `nt_autosaves` verschwindet bei Platzmangel, `nt_v6` vorhanden; Auto-Sicherungen zeigen max. 3 Stände; Such-/Barcode-Caches wachsen nicht über 300 Einträge
 - v0.209 Ei (#166): Suche „Ei" → erster Treffer „Ei 🥚 143 kcal", dann „Ei (gekocht)", „Rührei" dahinter; Chat „2 Eier" → Zutat „Ei" (roh), nicht Rührei; „Rührei" weiterhin per Namen findbar
 - v0.210 Diktat (#156, iPhone!): 🎙️ halten, 3 Sätze mit Pausen → keine Wortdopplung; kurzer Tap unverändert; vorbefülltes Feld bleibt Präfix; absichtliche Wiederholung („sehr sehr gut") bleibt erhalten
 - v0.211 Mehr-Hub: Mehr zeigt 4 Gruppen/12 Einträge, jeder Settings-Eintrag öffnet den richtigen Tab; „Speichern ✓" aus Ziele-Tab erhält Profil-Daten; Bibliothek als eigenes Fenster: Rezept/Lebensmittel bearbeiten → speichern/löschen → zurück in der Bibliothek; Bibliothek-＋ öffnet Picker mit vorbefüllter Suche; 🔗/📥 funktionieren; Backup-Banner/-Reminder öffnen Backup-Tab; Hilfe-Texte nennen neue Pfade
@@ -93,11 +95,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.210 | — | Diktat: Finals pro Result-Index + Overlap-Guard gegen iOS-Re-Delivery (#156) |
 | v0.211 | — | Mehr-Hub: alle Settings-Bereiche als gruppierte Direkteinträge, Bibliothek als eigenes Overlay |
 | v0.212 | — | DeepSeek Standard-Anbieter (Rolling-Alias), Fotos an DeepSeek durchgereicht, Quellen-Badge-Fix |
 | v0.213 | #170 | Separate Foto-KI: Qwen als Standard-Vision-Anbieter mit eigenem Key/Slot, Routing-Kette in `callClaude`, eigenes Backup-Feld |
 | v0.214 | — | Foto-KI-Modell auf Qwen3-VL (`qwen3-vl-plus`) statt Legacy-`qwen-vl-max` |
+| v0.215 | — | Speicher-voll-Fix: `saveS()` gibt bei Quota-Fehler Autosaves/Caches frei (Nutzerdaten priorisiert), Caches gekappt, `AUTOSAVE_MAX` 5→3 |
 
 ---
 

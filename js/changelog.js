@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.218',items:[
+    {icon:'🎙️',text:'Diktat beim Gedrückthalten überarbeitet: nutzt jetzt dieselbe Erkennungslogik wie der Kurz-Tipp — dadurch keine sich aufbauenden Wortwiederholungen mehr.',where:'Mahlzeit → ＋ → Chat'},
+  ]},
   {v:'0.217',items:[
     {icon:'🎙️',text:'Diktat beim Gedrückthalten weiter verbessert: Wortdopplungen an Satzübergängen (besonders auf Android) werden jetzt zuverlässiger entfernt, absichtliche Wiederholungen bleiben möglich.',where:'Mahlzeit → ＋ → Chat'},
   ]},

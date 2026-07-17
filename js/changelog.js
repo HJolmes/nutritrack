@@ -1,6 +1,10 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.216',items:[
+    {icon:'🛡️',text:'Lebensmittel ohne Nährwerte werden nicht mehr still mit 0 kcal eingetragen — die App erkennt das jetzt automatisch und schätzt realistische Werte oder fragt nach manueller Eingabe (Barcode).',where:'Mahlzeit → ＋'},
+    {icon:'🎙️',text:'Diktat: Wortdopplung beim Gedrückthalten behoben — gesprochener Text wiederholt sich nicht mehr nach Pausen.',where:'Mahlzeit → ＋ → Chat'},
+  ]},
   {v:'0.215',items:[
     {icon:'💾',text:'Fehler „Speicher voll" behoben: Wenn der Gerätespeicher knapp wurde, wurden neue Einträge teils nicht mehr gespeichert. Deine Tagebuch-Daten haben jetzt immer Vorrang — die App gibt bei Platzmangel automatisch verzichtbare Zwischenspeicher (alte Auto-Sicherungen, Such-Caches) frei, damit gespeichert wird. Auto-Sicherungen und Caches wachsen ausserdem nicht mehr unbegrenzt.',where:'automatisch'},
   ]},

@@ -1025,7 +1025,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.215</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.216</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1953,7 +1953,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.215';
+var APP_VERSION='0.216';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -3082,8 +3082,15 @@ function fuzzy(item,q){
 }
 function findInLocalDB(name){
   var nl=name.toLowerCase().trim();
+  if(!nl)return null;
+  // Pass 1: exact name match (highest priority)
   for(var i=0;i<DB.length;i++){if(DB[i].n.toLowerCase()===nl)return DB[i];}
-  for(var i=0;i<DB.length;i++){var syns=(DB[i].s||'').toLowerCase().split(' ');for(var j=0;j<syns.length;j++){if(syns[j]===nl)return DB[i];}}
+  // Pass 2: exact synonym match — skip synonyms ≤2 chars (too ambiguous)
+  var synHits=[];
+  for(var i=0;i<DB.length;i++){var syns=(DB[i].s||'').toLowerCase().split(' ');for(var j=0;j<syns.length;j++){if(syns[j].length>2&&syns[j]===nl){synHits.push(DB[i]);break;}}}
+  if(synHits.length===1)return synHits[0];
+  if(synHits.length>1){synHits.sort(function(a,b){return Math.abs(a.n.length-nl.length)-Math.abs(b.n.length-nl.length);});return synHits[0];}
+  // Pass 3: prefix match (only for queries ≥5 chars)
   if(nl.length>=5){for(var i=0;i<DB.length;i++){if(DB[i].n.toLowerCase().startsWith(nl))return DB[i];}}
   return null;
 }
@@ -3144,7 +3151,9 @@ function lookupNutrients(rawItems,onDone){
           if(prods.length>0){
             var p=prods[0],nm=p.nutriments||{};
             var kcal=nm['energy-kcal_100g']||Math.round((nm['energy_100g']||0)/4.184)||Math.round((nm['proteins_100g']||0)*4+(nm['carbohydrates_100g']||0)*4+(nm['fat_100g']||0)*9);
-            results[idx]={name:name,emoji:emoji,amount:grams||0,per100:{kcal:kcal,protein:nm['proteins_100g']||0,carbs:nm['carbohydrates_100g']||0,fat:nm['fat_100g']||0,sugar:nm['sugars_100g']||0,fiber:nm['fiber_100g']||0,salt:nm['salt_100g']||0},missingGrams:grams===null};
+            var per100={kcal:kcal,protein:nm['proteins_100g']||0,carbs:nm['carbohydrates_100g']||0,fat:nm['fat_100g']||0,sugar:nm['sugars_100g']||0,fiber:nm['fiber_100g']||0,salt:nm['salt_100g']||0};
+            if(!_hasNutrients(per100)){kiNutrientLookup(name,emoji,grams,function(res){results[idx]=res;pending--;if(!pending)onDone(results);});return;}
+            results[idx]={name:name,emoji:emoji,amount:grams||0,per100:per100,missingGrams:grams===null};
             pending--;if(!pending)onDone(results);
           } else {kiNutrientLookup(name,emoji,grams,function(res){results[idx]=res;pending--;if(!pending)onDone(results);});}
         }).catch(function(){kiNutrientLookup(name,emoji,grams,function(res){results[idx]=res;pending--;if(!pending)onDone(results);});});
@@ -3153,12 +3162,17 @@ function lookupNutrients(rawItems,onDone){
     }
   });
 }
+function _hasNutrients(per100){
+  return(per100.kcal||0)>0||(per100.protein||0)+(per100.carbs||0)+(per100.fat||0)>0;
+}
 function kiNutrientLookup(name,emoji,grams,onDone){
   var prompt='Nährwerte pro 100g für "'+name+'". Nur JSON: {"kcal":0,"protein":0,"carbs":0,"fat":0,"sugar":0,"fiber":0,"salt":0}';
   callClaude('claude-haiku-4-5',[{type:'text',text:prompt}],100,
     function(text){
       try{var a=text.indexOf('{'),z=text.lastIndexOf('}');if(a===-1||z<a)throw new Error();var d=JSON.parse(text.slice(a,z+1));
-        onDone({name:name,emoji:emoji,amount:grams||0,per100:{kcal:parseFloat(d.kcal)||0,protein:parseFloat(d.protein)||0,carbs:parseFloat(d.carbs)||0,fat:parseFloat(d.fat)||0,sugar:parseFloat(d.sugar)||0,fiber:parseFloat(d.fiber)||0,salt:parseFloat(d.salt)||0},missingGrams:grams===null});
+        var per100={kcal:parseFloat(d.kcal)||0,protein:parseFloat(d.protein)||0,carbs:parseFloat(d.carbs)||0,fat:parseFloat(d.fat)||0,sugar:parseFloat(d.sugar)||0,fiber:parseFloat(d.fiber)||0,salt:parseFloat(d.salt)||0};
+        if(!_hasNutrients(per100)){onDone(kiEstimate(name,emoji,grams));return;}
+        onDone({name:name,emoji:emoji,amount:grams||0,per100:per100,missingGrams:grams===null});
       }catch(e){onDone(kiEstimate(name,emoji,grams));}
     },function(err){onDone(kiEstimate(name,emoji,grams));});
 }

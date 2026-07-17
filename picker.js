@@ -852,7 +852,9 @@ function pickerFetchBarcodeForConfirm(code){
       if(data.status!==1||!data.product){showToast('Barcode '+code+' nicht gefunden – bitte manuell eintragen');return;}
       var p=data.product,nm=p.nutriments||{};
       var name=p.product_name_de||p.product_name||'Unbekannt';
-      var food={name:name,emoji:emo(name),barcode:code,per100:{kcal:nm['energy-kcal_100g']||0,protein:nm['proteins_100g']||0,carbs:nm['carbohydrates_100g']||0,fat:nm['fat_100g']||0,sugar:nm['sugars_100g']||0,fiber:nm['fiber_100g']||0,salt:nm['salt_100g']||0}};
+      var per100={kcal:nm['energy-kcal_100g']||0,protein:nm['proteins_100g']||0,carbs:nm['carbohydrates_100g']||0,fat:nm['fat_100g']||0,sugar:nm['sugars_100g']||0,fiber:nm['fiber_100g']||0,salt:nm['salt_100g']||0};
+      if(!_hasNutrients(per100)){showToast('⚠️ Keine Nährwerte verfügbar für „'+name+'" – bitte manuell eintragen');pickerOpenManualBarcode();document.getElementById('bcManualName').value=name;return;}
+      var food={name:name,emoji:emo(name),barcode:code,per100:per100};
       barcodeCache[code]=food;saveBarcodeCache();cacheFood(food);
       pickerShowBcConfirm(food);
     }).catch(function(){showToast('Produkt-Abruf fehlgeschlagen – bist du online?');});
@@ -1370,8 +1372,10 @@ function _pickerDedupOverlap(base,add){
   var n=Math.min(b.length,a.length);
   for(;n>0;n--){
     if(b.slice(b.length-n).join(' ')===a.slice(0,n).join(' ')){
-      if(n>=2||n===a.length)return add.split(/\s+/).slice(n).join(' ');
-      break;
+      // n===1 and add has more words: could be intentional repetition ("sehr sehr gut")
+      // → only strip single-word overlaps when it's the entire add
+      if(n===1&&a.length>1)continue;
+      return add.split(/\s+/).slice(n).join(' ');
     }
   }
   return add;
@@ -1404,7 +1408,8 @@ function _pickerVoiceStart(hold){
       else interim+=tr;
     }
     var joined=_finalsJoined();
-    var add=_pickerDedupOverlap(_pickerRecBase,(joined+(interim?' '+interim:'')).trim());
+    var raw=(joined+(interim?' '+interim:'')).trim();
+    var add=_pickerDedupOverlap(_pickerRecBase,raw);
     inp.value=((_pickerRecBase?_pickerRecBase+' ':'')+add).trim();
     _pickerChatGrow();
   };

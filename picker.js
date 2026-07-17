@@ -1372,9 +1372,10 @@ function _pickerDedupOverlap(base,add){
   var n=Math.min(b.length,a.length);
   for(;n>0;n--){
     if(b.slice(b.length-n).join(' ')===a.slice(0,n).join(' ')){
-      // n===1 and add has more words: could be intentional repetition ("sehr sehr gut")
-      // → only strip single-word overlaps when it's the entire add
-      if(n===1&&a.length>1)continue;
+      // n===1 and add has more words can be intentional repetition ("sehr sehr gut")
+      // when base itself is a single word. With longer base phrases this is
+      // usually a session-boundary duplicate and should be stripped.
+      if(n===1&&a.length>1&&b.length===1)continue;
       return add.split(/\s+/).slice(n).join(' ');
     }
   }

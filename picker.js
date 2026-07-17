@@ -1358,48 +1358,35 @@ function pickerSendChat(){
 // Android Chrome: über Google-Dienste). Kein Server-Roundtrip über den Worker.
 // Bedienung (#150): kurz tippen = Start/Stopp (Auto-Stopp nach Sprechpause),
 // gedrückt halten (≥350 ms) = Push-to-Talk, Aufnahme läuft bis zum Loslassen.
+// Halten nutzt dieselbe Erkennungslogik wie Tippen (continuous:false) und
+// verkettet nur bei Sprechpausen weitere Kurz-Sessions, solange gehalten wird.
 var _pickerRec=null,_pickerRecActive=false,_pickerRecBase='',_pickerRecHold=false;
+var _pickerHoldStart='',_pickerHoldDone='';
 var _pickerHoldTimer=null,_pickerHoldStarted=false,PICKER_HOLD_MS=350;
 function _pickerSpeechCtor(){return window.SpeechRecognition||window.webkitSpeechRecognition||null;}
-// Entfernt aus `add` den Teil, der das Ende von `base` wortweise wiederholt.
-// iOS Safari liefert nach einem Session-Neustart (onend→start) bereits
-// übernommene Phrasen erneut als frische Ergebnisse (#156). Nur Overlaps ab
-// 2 Wörtern (oder komplettes add) werden gestrichen, damit absichtliche
-// Einzelwort-Wiederholungen („sehr sehr lecker") erhalten bleiben.
-function _pickerDedupOverlap(base,add){
-  if(!base||!add)return add;
-  var b=base.toLowerCase().split(/\s+/),a=add.toLowerCase().split(/\s+/);
-  var n=Math.min(b.length,a.length);
-  for(;n>0;n--){
-    if(b.slice(b.length-n).join(' ')===a.slice(0,n).join(' ')){
-      // n===1 and add has more words can be intentional repetition ("sehr sehr gut")
-      // when base itself is a single word. With longer base phrases this is
-      // usually a session-boundary duplicate and should be stripped.
-      if(n===1&&a.length>1&&b.length===1)continue;
-      return add.split(/\s+/).slice(n).join(' ');
-    }
-  }
-  return add;
-}
 function _pickerVoiceStart(hold){
   var Ctor=_pickerSpeechCtor();
   if(!Ctor)return;
   var inp=document.getElementById('pickerChatInp');
   _pickerRecBase=inp.value.trim();
   _pickerRecHold=!!hold;
+  if(_pickerRecHold){_pickerHoldStart=_pickerRecBase;_pickerHoldDone='';}
   var r=new Ctor();
-  r.lang='de-DE';r.interimResults=true;r.continuous=_pickerRecHold;r.maxAlternatives=1;
-  // Finale Transkripte der laufenden Erkennungs-Session getrennt akkumulieren:
-  // Android Chrome liefert bei continuous:true bereits finalisierte Ergebnisse
-  // in späteren Events erneut — deshalb nur ab ev.resultIndex lesen (#154).
-  // iOS Safari liefert zusätzlich denselben Result-Index mehrfach mit
-  // kumuliertem, erneut als final markiertem Transkript — deshalb Finals
-  // pro Index speichern (überschreiben statt anhängen) (#156).
+  r.lang='de-DE';r.interimResults=true;r.continuous=false;r.maxAlternatives=1;
   var finals=[];
   function _finalsJoined(){
     var out=[],i;
     for(i=0;i<finals.length;i++){if(finals[i]&&finals[i].trim())out.push(finals[i].trim());}
     return out.join(' ');
+  }
+  function _composeVoiceText(interim){
+    var session=(_finalsJoined()+(interim?' '+interim:'')).trim();
+    if(!_pickerRecHold){
+      if(!session&&!_pickerRecBase)return _pickerRecBase;
+      return ((_pickerRecBase?_pickerRecBase+' ':'')+session).replace(/\s{2,}/g,' ').trim();
+    }
+    var mid=[_pickerHoldDone,session].filter(Boolean).join(' ');
+    return [_pickerHoldStart,mid].filter(Boolean).join(' ').replace(/\s{2,}/g,' ').trim();
   }
   r.onresult=function(ev){
     var interim='';
@@ -1408,10 +1395,7 @@ function _pickerVoiceStart(hold){
       if(ev.results[i].isFinal)finals[i]=tr;
       else interim+=tr;
     }
-    var joined=_finalsJoined();
-    var raw=(joined+(interim?' '+interim:'')).trim();
-    var add=_pickerDedupOverlap(_pickerRecBase,raw);
-    inp.value=((_pickerRecBase?_pickerRecBase+' ':'')+add).trim();
+    inp.value=_composeVoiceText(interim);
     _pickerChatGrow();
   };
   r.onerror=function(ev){
@@ -1426,15 +1410,10 @@ function _pickerVoiceStart(hold){
     // 'no-speech'/'aborted' bewusst still — Button-Zustand ist schon zurückgesetzt.
   };
   r.onend=function(){
-    // iOS Safari beendet die Erkennung teils trotz continuous — im Hold-Modus
-    // neu starten, solange der Finger unten ist (Feldinhalt wird neue Basis).
+    // Halten = verkettete Tap-Sessions: abgeschlossene Phrase sichern, dann neu starten.
     if(_pickerRecHold&&_pickerRecActive&&_pickerRec===r){
-      // Nur echte Finals in die Basis übernehmen — nicht den kompletten
-      // Feldinhalt (inkl. Interim), sonst liefert die neue Session das
-      // zuletzt Gesagte erneut und der Text verdoppelt sich (#154).
-      // Overlap-Guard gegen erneut gelieferte Phrasen der Vor-Session (#156).
-      var fold=_pickerDedupOverlap(_pickerRecBase,_finalsJoined());
-      _pickerRecBase=((_pickerRecBase?_pickerRecBase+' ':'')+fold).trim();
+      var chunk=_finalsJoined();
+      if(chunk)_pickerHoldDone=(_pickerHoldDone?_pickerHoldDone+' ':'')+chunk;
       finals=[];
       try{r.start();return;}catch(e){}
     }
@@ -1457,6 +1436,7 @@ function pickerVoiceStop(){
 }
 function _pickerVoiceReset(){
   _pickerRecActive=false;_pickerRec=null;_pickerRecHold=false;
+  _pickerHoldStart='';_pickerHoldDone='';
   var mic=document.getElementById('pickerChatMic'),inp=document.getElementById('pickerChatInp');
   if(mic)mic.classList.remove('rec');
   if(inp)inp.placeholder='Was hast du gegessen?';

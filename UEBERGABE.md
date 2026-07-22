@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.220 (2026-07-22) — Branch `cursor/fix-bnav-177-d315` (Bottom-Nav fest am unteren Rand)
+**Stand:** v0.221 (2026-07-22) — Branch `cursor/fix-ziele-178-d315` (Manuelles Kalorienziel bleibt nach Neustart)
 
 ## URLs
 
@@ -33,6 +33,7 @@
 - **Header (v0.149/0.155):** `mainScreen`/`statsScreen` nur `?` `📥`; Versions-Tag `#appVersionTag` neben „Hej <Name>" (öffnet `whatsNewOv`, Text aus `APP_VERSION` beim Boot).
 - **Kalorien-Ampel (v0.149):** `_kcalAmpel(goal,eaten,S)` — ±10 % grün, Richtung aus `S.goalWeight` vs `S.weight`.
 - **Settings-Tabs (v0.187/v0.211):** `👤 Profil · 🎯 Ziele · 🥗 Ernährung · ⏰ Erinnerungen · 🤖 KI · 💾 Backup` (`stab-*`/`spanel-*`), Deep-Link via `openSettings(tab)`. Bibliothek-Panel existiert nicht mehr (eigenes `#libraryOv`).
+- **Kalorienziel manuell (v0.221):** `S.goalManual` — manuell eingetragenes Ziel wird von `updateGoalFromET()` nicht mehr überschrieben (#178). „🧮 Kalorienbedarf berechnen" setzt den Merker zurück; Hinweistext unter dem Feld.
 - **Safe-Area (v0.161/0.168):** `viewport-fit=cover`; bnav/body/fb-fab mit `env(safe-area-inset-bottom)`, Header mit `env(safe-area-inset-top)`.
 - **Mahlzeit-Detail (v0.151/0.157/0.181):** CTAs `📋 Vorlage`, `💾 Als Rezept` (`saveMealAsRecipe`), `🔁 Wiederholen` (`openRecurCreate`); zentraler ＋ → `openPicker('<meal>')`.
 - **Wiederkehrende Mahlzeiten (v0.181):** `S.recurringMeals[]`, `applyRecurringMeals(dateKey)` idempotent via `day._recurMarks`; Verwaltung Mehr → 🔁.
@@ -76,6 +77,7 @@
 
 ## Live-Test offen
 
+- v0.221 Kalorienziel (#178): Mehr → Ziele → Ziel manuell ändern (nicht „Berechnen") → Speichern → App komplett schließen/neu öffnen → Ziel unverändert; Hinweis „Manuell gesetzt" sichtbar; danach „Berechnen" → Speichern → Neustart darf ET-/SS-Zuschlag wieder anwenden (wenn Schwangerschaft+ET aktiv)
 - v0.220 Bottom-Nav (#177, iPhone PWA): Tastatur in einem Eingabefeld öffnen/schließen → Leiste bleibt unten; nach Scrollen und Tab-Wechsel (Heute↔Mehr) ebenfalls unten; kein „Schweben“ in Bildmitte
 - v0.215 Speicher (echtes volles Gerät der Nutzerin): App auf v0.215 aktualisieren (Reload für SW-Update) → neuen Eintrag anlegen → wird gespeichert, kein „Speicher voll"-Toast mehr; DevTools/Anwendung → localStorage: `nt_autosaves` verschwindet bei Platzmangel, `nt_v6` vorhanden; Auto-Sicherungen zeigen max. 3 Stände; Such-/Barcode-Caches wachsen nicht über 300 Einträge
 - v0.209 Ei (#166): Suche „Ei" → erster Treffer „Ei 🥚 143 kcal", dann „Ei (gekocht)", „Rührei" dahinter; Chat „2 Eier" → Zutat „Ei" (roh), nicht Rührei; „Rührei" weiterhin per Namen findbar
@@ -97,11 +99,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.211 | — | Mehr-Hub: alle Settings-Bereiche als gruppierte Direkteinträge, Bibliothek als eigenes Overlay |
-| v0.212 | — | DeepSeek Standard-Anbieter (Rolling-Alias), Fotos an DeepSeek durchgereicht, Quellen-Badge-Fix |
-| v0.213 | #170 | Separate Foto-KI: Qwen als Standard-Vision-Anbieter mit eigenem Key/Slot, Routing-Kette in `callClaude`, eigenes Backup-Feld |
-| v0.214 | — | Foto-KI-Modell auf Qwen3-VL (`qwen3-vl-plus`) statt Legacy-`qwen-vl-max` |
-| v0.215 | — | Speicher-voll-Fix: `saveS()` gibt bei Quota-Fehler Autosaves/Caches frei (Nutzerdaten priorisiert), Caches gekappt, `AUTOSAVE_MAX` 5→3 |
+| v0.216 | — | Zero-Nutrient-Guard, DB-Synonyme, Diktat-Dedup |
+| v0.217 | — | Diktat: Android-Session-Overlap-Dedup |
+| v0.218 | #176 | Diktat-Halten = Tap-Logik (kein continuous), Wortdopplung |
+| v0.220 | #180 | Bottom-Nav fest am unteren Rand (#177) |
+| v0.221 | #179 | Manuelles Kalorienziel bleibt nach Neustart (#178) |
 
 ---
 

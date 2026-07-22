@@ -173,7 +173,7 @@ body:has(#setupScreen.active) .fb-fab{display:none;}
 .gls.on{background:#e3f2fd;border-color:#90caf9;}
 
 /* ── NAV ── */
-.bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:white;border-top:1px solid var(--br);display:flex;z-index:200;}
+.bnav{position:fixed;bottom:0;left:0;right:0;margin:0 auto;width:100%;max-width:430px;background:white;border-top:1px solid var(--br);display:flex;z-index:200;}
 .ni{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 0 12px;background:none;border:none;font-size:10px;color:var(--mu);gap:2px;}
 .ni.on{color:var(--g2);}
 .ni span{font-size:20px;}
@@ -436,10 +436,12 @@ button,input,select,textarea{font-family:var(--fs-body);}
 #exerciseCard button[onclick="openExerciseOv()"]{background:var(--g1)!important;border-radius:999px!important;}
 #waterBtns button{background:var(--gl)!important;border-color:var(--br)!important;color:var(--tx)!important;border-radius:999px!important;}
 
-/* BOTTOM NAV — pill */
+/* BOTTOM NAV — pill; kein transform (iOS fixed+transform hängt sonst mitten im Viewport, #177) */
 .bnav{
+  position:fixed;
+  bottom:calc(14px + env(safe-area-inset-bottom, 0));
+  left:0;right:0;margin:0 auto;transform:none;
   background:var(--tx);border-top:none;border-radius:32px;
-  margin:0 0 calc(14px + env(safe-area-inset-bottom, 0));left:50%;transform:translateX(-50%);
   width:calc(100% - 28px);max-width:402px;height:64px;
   padding:0 6px;box-shadow:0 16px 40px -16px rgba(0,0,0,0.4);
   align-items:center;justify-content:space-around;
@@ -680,7 +682,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.215</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.220</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -1025,7 +1027,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.218</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.220</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1953,7 +1955,7 @@ var S={apiKey:'',name:'Du',goal:2000,weight:0,height:0,age:0,gender:'',activity:
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.218';
+var APP_VERSION='0.220';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -2318,15 +2320,28 @@ window.addEventListener('DOMContentLoaded',function(){
       window.NTHealth.sync();
     }
   });
-  // iOS Safari PWA: Tastatur-Dismiss scrollt den Viewport nicht automatisch zurück.
-  // Nach focusout auf Inputs kurz warten und dann auf 0 resetten.
-  if(_isIos()&&_isPwaStandalone()){
+  // iOS Safari/PWA: Bottom-Nav nach Viewport-Shift wieder anheften (#177)
+  var _vvTimer=null;
+  function _fixViewportChromeDebounced(){
+    clearTimeout(_vvTimer);
+    _vvTimer=setTimeout(function(){if(typeof _fixViewportChrome==='function')_fixViewportChrome();},80);
+  }
+  if(_isIos()){
     document.addEventListener('focusout',function(e){
       var t=e.target;
       if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT')){
-        setTimeout(function(){window.scrollTo(0,0);},100);
+        setTimeout(function(){_fixViewportChrome();},100);
+        setTimeout(function(){_fixViewportChrome();},350);
       }
     },true);
+    document.addEventListener('visibilitychange',function(){
+      if(document.visibilityState==='visible')_fixViewportChromeDebounced();
+    });
+    window.addEventListener('pageshow',_fixViewportChromeDebounced);
+    if(window.visualViewport){
+      window.visualViewport.addEventListener('resize',_fixViewportChromeDebounced);
+      window.visualViewport.addEventListener('scroll',_fixViewportChromeDebounced);
+    }
   }
 });
 function updBadge(){var b=document.getElementById('offBadge');if(b)b.classList.toggle('hidden',isOnline);}
@@ -3951,6 +3966,20 @@ function _isIos(){
 function _isPwaStandalone(){
   return (window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)
       || window.navigator.standalone===true;
+}
+// iOS: fixed Bottom-Nav nach Tastatur/Viewport-Shift wieder an den Rand (#177)
+function _fixViewportChrome(){
+  try{window.scrollTo(0,0);}catch(e){}
+  try{
+    if(document.documentElement)document.documentElement.scrollTop=0;
+    if(document.body)document.body.scrollTop=0;
+  }catch(e){}
+  document.querySelectorAll('.bnav').forEach(function(el){
+    var prev=el.style.bottom;
+    el.style.bottom='0px';
+    void el.offsetHeight;
+    el.style.bottom=prev;
+  });
 }
 
 // ─── iOS SAFARI → PWA HANDOFF ───
@@ -5917,6 +5946,7 @@ function switchTab(tab){
   if(tab==='more')renderMore();
   if(tab==='main')window._mealDetailOpen=null;
   try{window.scrollTo(0,0);}catch(e){}
+  if(typeof _fixViewportChrome==='function')_fixViewportChrome();
 }
 function formatGreetSub(dateStr){
   try{

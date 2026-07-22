@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.215 (2026-07-14) — Branch `claude/backup-storage-full-error-tbxsad` (Speicher-voll-Fix: Nutzerdaten haben Vorrang)
+**Stand:** v0.220 (2026-07-22) — Branch `cursor/fix-bnav-177-d315` (Bottom-Nav fest am unteren Rand)
 
 ## URLs
 
@@ -14,6 +14,7 @@
 
 - **Theme (v0.144):** Cream `#faf6f1`, Coral `#e96e3c`, Fraunces+Inter. Override-Block `/* BLOOM REDESIGN */` am Ende von `<style>`. `manifest.json` seit v0.207 ebenfalls Coral/Cream (Android-Splash).
 - **Screens:** `mainScreen` (Heute, Hero-kcal, 2×2-Mahlzeiten-Grid), `historyScreen`, `mealDetailScreen`, `statsScreen`, `moreScreen`. Bottom-Nav mit 5 Items, `switchTab(tab)` mappt via `data-tab`, `'stats'`→`'trends'`.
+- **Bottom-Nav (v0.220):** Pill-Nav `position:fixed` **ohne** `transform` (Zentrierung per `left/right`+`margin:auto`); `bottom` inkl. Safe-Area. iOS: `_fixViewportChrome()` nach Tastatur/visualViewport/Tab-Wechsel (#177).
 - **Mehr-Hub (v0.211):** `moreScreen` = zentrale Übersicht mit 4 Gruppen (Einstellungen / Meine Inhalte / Daten & Sync / App), 12 Einträge. Jeder Settings-Bereich deep-linkt via `openSettings(tab)` (Tab-Bar im `settOv` bleibt für schnellen Wechsel); `openBackupSettings()`=`openSettings('backup')`. **Bibliothek ist eigenes Overlay `#libraryOv`** (`openLibrary()`, kein Settings-Tab mehr); alle Subflows (Rezept-/Lebensmittel-Editor, `libAdd*`) schließen `libraryOv` explizit und kehren per `openLibrary()` zurück.
 - **Ausgelagerte Daten-Module (v0.204):** `js/fooddb.js` (`window.DB`+`window.DE_EN`) und `js/changelog.js` (`window.CHANGELOG`) — klassische Scripts vor dem Hauptscript, in `CORE_ASSETS`. Neue CHANGELOG-Einträge gehören in `js/changelog.js`, nicht mehr in `index.html`. `@zxing/library` liegt lokal (`js/zxing/zxing-js.umd.min.js`, `defer`) statt synchron von unpkg.
 - **Fotos in IndexedDB (v0.208):** `js/idb-photos.js` → `window.NTPhotos` (put/get/del, DB `nt-photos`). Einträge tragen `mealPhotoId` statt Base64 (`saveMealPhoto`); Anzeige lädt asynchron nach (`_mealPhotoImgHtml`/`_hydratePhotoImgs` via `img[data-phid]`, `renderMealDetail`-`mdPhoto` direkt per `NTPhotos.get`). Boot-Migration `_migratePhotosToIdb` (Flag `nt_photos_migrated`, löscht bei IDB-Fehler nichts); nach jedem Import/Restore ruft `_migratePhotosAfterImport()` sie erneut. `deleteEntry`/`compressOldDays` löschen IDB-Fotos best effort. Offline-Foto-Queue speichert `{phid,…}` statt Base64. Ohne IndexedDB: Fallback aufs alte `mealPhoto`-Feld. **Fotos sind gerätelokal, nicht Teil der Backups.**
@@ -75,6 +76,7 @@
 
 ## Live-Test offen
 
+- v0.220 Bottom-Nav (#177, iPhone PWA): Tastatur in einem Eingabefeld öffnen/schließen → Leiste bleibt unten; nach Scrollen und Tab-Wechsel (Heute↔Mehr) ebenfalls unten; kein „Schweben“ in Bildmitte
 - v0.215 Speicher (echtes volles Gerät der Nutzerin): App auf v0.215 aktualisieren (Reload für SW-Update) → neuen Eintrag anlegen → wird gespeichert, kein „Speicher voll"-Toast mehr; DevTools/Anwendung → localStorage: `nt_autosaves` verschwindet bei Platzmangel, `nt_v6` vorhanden; Auto-Sicherungen zeigen max. 3 Stände; Such-/Barcode-Caches wachsen nicht über 300 Einträge
 - v0.209 Ei (#166): Suche „Ei" → erster Treffer „Ei 🥚 143 kcal", dann „Ei (gekocht)", „Rührei" dahinter; Chat „2 Eier" → Zutat „Ei" (roh), nicht Rührei; „Rührei" weiterhin per Namen findbar
 - v0.210 Diktat (#156, iPhone!): 🎙️ halten, 3 Sätze mit Pausen → keine Wortdopplung; kurzer Tap unverändert; vorbefülltes Feld bleibt Präfix; absichtliche Wiederholung („sehr sehr gut") bleibt erhalten

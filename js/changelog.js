@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.221',items:[
+    {icon:'🎯',text:'Manuell eingetragenes Kalorienziel bleibt nach App-Neustart erhalten — wird nicht mehr still vom Schwangerschafts-/ET-Zuschlag überschrieben. Über „Kalorienbedarf berechnen" kannst du die Automatik wieder einschalten.',where:'Mehr → Ziele'},
+  ]},
   {v:'0.220',items:[
     {icon:'📱',text:'Die untere Navigationsleiste (Heute / Verlauf / + / Trends / Mehr) bleibt fest am unteren Bildschirmrand — sie rutscht auf dem iPhone nicht mehr in die Bildmitte.',where:'App-weit'},
   ]},

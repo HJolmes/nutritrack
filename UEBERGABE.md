@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.221 (2026-07-22) — Branch `cursor/fix-ziele-178-d315` (Manuelles Kalorienziel bleibt nach Neustart)
+**Stand:** v0.222 (2026-07-27) — Branch `claude/repo-issue-review-x689vq` (Eingabefelder bleiben bei offener Tastatur sichtbar)
 
 ## URLs
 
@@ -15,6 +15,7 @@
 - **Theme (v0.144):** Cream `#faf6f1`, Coral `#e96e3c`, Fraunces+Inter. Override-Block `/* BLOOM REDESIGN */` am Ende von `<style>`. `manifest.json` seit v0.207 ebenfalls Coral/Cream (Android-Splash).
 - **Screens:** `mainScreen` (Heute, Hero-kcal, 2×2-Mahlzeiten-Grid), `historyScreen`, `mealDetailScreen`, `statsScreen`, `moreScreen`. Bottom-Nav mit 5 Items, `switchTab(tab)` mappt via `data-tab`, `'stats'`→`'trends'`.
 - **Bottom-Nav (v0.220):** Pill-Nav `position:fixed` **ohne** `transform` (Zentrierung per `left/right`+`margin:auto`); `bottom` inkl. Safe-Area. iOS: `_fixViewportChrome()` nach Tastatur/visualViewport/Tab-Wechsel (#177).
+- **Tastatur-Handling (v0.222):** `_isTextEntry()`/`_isKeyboardOpen()`; `_fixViewportChrome()` steigt bei offener Tastatur sofort aus (sein `scrollTo(0,0)` nahm sonst den iOS-Reveal-Scroll zurück → Feld hinter der Tastatur, #181). `focusin` (nur `pointer:coarse`) setzt `body.kb-open` + holt das Feld per `scrollIntoView({block:'center'})` nach vorn; `visualViewport`-Resize/Scroll schreibt die Tastaturhöhe nach `--kbh`. CSS: `body.kb-open` blendet `.bnav`/`#feedbackFab` aus und hebt `.ov .mod` um `--kbh` an (`max-height:calc(88vh - var(--kbh))`). **Neue bottom-fixe Elemente immer in diese kb-open-Regeln aufnehmen.**
 - **Mehr-Hub (v0.211):** `moreScreen` = zentrale Übersicht mit 4 Gruppen (Einstellungen / Meine Inhalte / Daten & Sync / App), 12 Einträge. Jeder Settings-Bereich deep-linkt via `openSettings(tab)` (Tab-Bar im `settOv` bleibt für schnellen Wechsel); `openBackupSettings()`=`openSettings('backup')`. **Bibliothek ist eigenes Overlay `#libraryOv`** (`openLibrary()`, kein Settings-Tab mehr); alle Subflows (Rezept-/Lebensmittel-Editor, `libAdd*`) schließen `libraryOv` explizit und kehren per `openLibrary()` zurück.
 - **Ausgelagerte Daten-Module (v0.204):** `js/fooddb.js` (`window.DB`+`window.DE_EN`) und `js/changelog.js` (`window.CHANGELOG`) — klassische Scripts vor dem Hauptscript, in `CORE_ASSETS`. Neue CHANGELOG-Einträge gehören in `js/changelog.js`, nicht mehr in `index.html`. `@zxing/library` liegt lokal (`js/zxing/zxing-js.umd.min.js`, `defer`) statt synchron von unpkg.
 - **Fotos in IndexedDB (v0.208):** `js/idb-photos.js` → `window.NTPhotos` (put/get/del, DB `nt-photos`). Einträge tragen `mealPhotoId` statt Base64 (`saveMealPhoto`); Anzeige lädt asynchron nach (`_mealPhotoImgHtml`/`_hydratePhotoImgs` via `img[data-phid]`, `renderMealDetail`-`mdPhoto` direkt per `NTPhotos.get`). Boot-Migration `_migratePhotosToIdb` (Flag `nt_photos_migrated`, löscht bei IDB-Fehler nichts); nach jedem Import/Restore ruft `_migratePhotosAfterImport()` sie erneut. `deleteEntry`/`compressOldDays` löschen IDB-Fotos best effort. Offline-Foto-Queue speichert `{phid,…}` statt Base64. Ohne IndexedDB: Fallback aufs alte `mealPhoto`-Feld. **Fotos sind gerätelokal, nicht Teil der Backups.**
@@ -77,6 +78,7 @@
 
 ## Live-Test offen
 
+- v0.222 Tastatur (#181, iPhone-PWA): Picker-Chat öffnen → in die Eingabe tippen → Feld bleibt über der Tastatur sichtbar, Bottom-Nav und 🐛-Knopf verschwinden solange; Gramm-Feld in Mahlzeit-Detail → Eintrag bearbeiten sowie im Picker ebenso sichtbar; Tastatur schließen → Nav/🐛 wieder da und Leiste sitzt unten (#177 unverändert); Android-Gegenprobe; Desktop-Browser: Nav bleibt beim Tippen sichtbar
 - v0.221 Kalorienziel (#178): Mehr → Ziele → Ziel manuell ändern (nicht „Berechnen") → Speichern → App komplett schließen/neu öffnen → Ziel unverändert; Hinweis „Manuell gesetzt" sichtbar; danach „Berechnen" → Speichern → Neustart darf ET-/SS-Zuschlag wieder anwenden (wenn Schwangerschaft+ET aktiv)
 - v0.220 Bottom-Nav (#177, iPhone PWA): Tastatur in einem Eingabefeld öffnen/schließen → Leiste bleibt unten; nach Scrollen und Tab-Wechsel (Heute↔Mehr) ebenfalls unten; kein „Schweben“ in Bildmitte
 - v0.215 Speicher (echtes volles Gerät der Nutzerin): App auf v0.215 aktualisieren (Reload für SW-Update) → neuen Eintrag anlegen → wird gespeichert, kein „Speicher voll"-Toast mehr; DevTools/Anwendung → localStorage: `nt_autosaves` verschwindet bei Platzmangel, `nt_v6` vorhanden; Auto-Sicherungen zeigen max. 3 Stände; Such-/Barcode-Caches wachsen nicht über 300 Einträge
@@ -99,11 +101,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.216 | — | Zero-Nutrient-Guard, DB-Synonyme, Diktat-Dedup |
 | v0.217 | — | Diktat: Android-Session-Overlap-Dedup |
 | v0.218 | #176 | Diktat-Halten = Tap-Logik (kein continuous), Wortdopplung |
 | v0.220 | #180 | Bottom-Nav fest am unteren Rand (#177) |
 | v0.221 | #179 | Manuelles Kalorienziel bleibt nach Neustart (#178) |
+| v0.222 | — | Eingabefelder bleiben bei offener Tastatur sichtbar (#181) |
 
 ---
 

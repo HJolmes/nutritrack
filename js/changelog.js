@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.223',items:[
+    {icon:'📜',text:'Scrollen auf dem iPhone beruhigt: Wenn du ganz nach unten scrollst, springt die Ansicht nicht mehr von selbst an den Anfang zurück. Die Seite lässt sich außerdem nicht mehr über den Rand hinausziehen.',where:'App-weit'},
+  ]},
   {v:'0.222',items:[
     {icon:'⌨️',text:'Eingabefelder bleiben beim Tippen sichtbar: Chat-Eingabe und Gramm-Felder rutschen auf dem iPhone nicht mehr hinter die Tastatur. Die untere Navigationsleiste blendet sich aus, solange die Tastatur offen ist.',where:'App-weit'},
   ]},

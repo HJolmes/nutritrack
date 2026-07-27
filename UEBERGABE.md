@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.222 (2026-07-27) — Branch `claude/repo-issue-review-x689vq` (Eingabefelder bleiben bei offener Tastatur sichtbar)
+**Stand:** v0.223 (2026-07-27) — Branch `claude/ios-overscroll-fix-8a81kc` (iOS: kein Scroll-Rücksprung beim Überscrollen)
 
 ## URLs
 
@@ -15,6 +15,7 @@
 - **Theme (v0.144):** Cream `#faf6f1`, Coral `#e96e3c`, Fraunces+Inter. Override-Block `/* BLOOM REDESIGN */` am Ende von `<style>`. `manifest.json` seit v0.207 ebenfalls Coral/Cream (Android-Splash).
 - **Screens:** `mainScreen` (Heute, Hero-kcal, 2×2-Mahlzeiten-Grid), `historyScreen`, `mealDetailScreen`, `statsScreen`, `moreScreen`. Bottom-Nav mit 5 Items, `switchTab(tab)` mappt via `data-tab`, `'stats'`→`'trends'`.
 - **Bottom-Nav (v0.220):** Pill-Nav `position:fixed` **ohne** `transform` (Zentrierung per `left/right`+`margin:auto`); `bottom` inkl. Safe-Area. iOS: `_fixViewportChrome()` nach Tastatur/visualViewport/Tab-Wechsel (#177).
+- **Scroll/Überscroll (v0.223):** `_fixViewportChrome()` setzt die Scroll-Position **nie** auf 0 — es hängt an `visualViewport`-`scroll`/`resize`, die auch beim Überscrollen am Seitenende feuern; das alte `scrollTo(0,0)` warf die Seite dann an den Anfang (#183). Stattdessen Re-Anchor auf die *aktuelle* Position, und nur bei echtem Versatz (`visualViewport.offsetTop>1`); der `.bnav`-Reflow bleibt. Zusätzlich `_touchActive()` (touchstart/-end/-cancel, 400 ms Nachlauf, 8-s-Notbremse): während einer Geste greift der Fix nicht ein, ein übersprungener Lauf wird per `_fixPending` danach einmal nachgeholt. CSS: `html,body{overscroll-behavior-y:none}` (kein Gummiband/Pull-to-Refresh), scrollende Container (`.s-card,.mod,.mbd,.rl,.chat-inp,.rec-results,.onb-slide`) `overscroll-behavior:contain`. **Neue scrollende Container in diese Regel aufnehmen.** `scrollTo(0,0)` in `switchTab()` bleibt gewollt.
 - **Tastatur-Handling (v0.222):** `_isTextEntry()`/`_isKeyboardOpen()`; `_fixViewportChrome()` steigt bei offener Tastatur sofort aus (sein `scrollTo(0,0)` nahm sonst den iOS-Reveal-Scroll zurück → Feld hinter der Tastatur, #181). `visualViewport`-Resize/Scroll schreibt die erkannte Tastaturhöhe nach `_kbH`/`--kbh`; `body.kb-open` gilt **nur bei echtem Beleg** — Viewport geschrumpft (>120 px) **und** Textfeld fokussiert (`_syncKbState()`), nicht bei bloßer Touch-Fähigkeit (iPad am Magic Keyboard, Touch-Notebook). `_revealFocused()` holt das Feld per `scrollIntoView({block:'center'})` nach vorn — beim Aufgehen der Tastatur und via `focusin`-Timer (250/550 ms). CSS: `body.kb-open` blendet `.bnav`/`#feedbackFab` aus und hebt `.ov .mod` um `--kbh` an (`max-height:calc(88vh - var(--kbh))`). **Neue bottom-fixe Elemente immer in diese kb-open-Regeln aufnehmen.**
 - **Mehr-Hub (v0.211):** `moreScreen` = zentrale Übersicht mit 4 Gruppen (Einstellungen / Meine Inhalte / Daten & Sync / App), 12 Einträge. Jeder Settings-Bereich deep-linkt via `openSettings(tab)` (Tab-Bar im `settOv` bleibt für schnellen Wechsel); `openBackupSettings()`=`openSettings('backup')`. **Bibliothek ist eigenes Overlay `#libraryOv`** (`openLibrary()`, kein Settings-Tab mehr); alle Subflows (Rezept-/Lebensmittel-Editor, `libAdd*`) schließen `libraryOv` explizit und kehren per `openLibrary()` zurück.
 - **Ausgelagerte Daten-Module (v0.204):** `js/fooddb.js` (`window.DB`+`window.DE_EN`) und `js/changelog.js` (`window.CHANGELOG`) — klassische Scripts vor dem Hauptscript, in `CORE_ASSETS`. Neue CHANGELOG-Einträge gehören in `js/changelog.js`, nicht mehr in `index.html`. `@zxing/library` liegt lokal (`js/zxing/zxing-js.umd.min.js`, `defer`) statt synchron von unpkg.
@@ -78,6 +79,7 @@
 
 ## Live-Test offen
 
+- v0.223 Überscroll (#183, iPhone-PWA): Heute-Tab ganz nach unten scrollen → Ansicht bleibt unten, springt nicht mehr an den Anfang; am Seitenende ziehen → kein Gummiband über den Rand hinaus; in Overlays (Picker, Einstellungen, Hilfe) bis ans Listenende scrollen → Seite dahinter bewegt sich nicht; Bottom-Nav sitzt nach Scrollen, Tab-Wechsel und Tastatur-Schließen weiterhin unten (#177 unverändert); Android-Gegenprobe
 - v0.222 Tastatur (#181, iPhone-PWA): Picker-Chat öffnen → in die Eingabe tippen → Feld bleibt über der Tastatur sichtbar, Bottom-Nav und 🐛-Knopf verschwinden solange; Gramm-Feld in Mahlzeit-Detail → Eintrag bearbeiten sowie im Picker ebenso sichtbar; Tastatur schließen → Nav/🐛 wieder da und Leiste sitzt unten (#177 unverändert); Android-Gegenprobe; Desktop-Browser und iPad mit Hardware-Tastatur: Nav bleibt beim Tippen sichtbar
 - v0.221 Kalorienziel (#178): Mehr → Ziele → Ziel manuell ändern (nicht „Berechnen") → Speichern → App komplett schließen/neu öffnen → Ziel unverändert; Hinweis „Manuell gesetzt" sichtbar; danach „Berechnen" → Speichern → Neustart darf ET-/SS-Zuschlag wieder anwenden (wenn Schwangerschaft+ET aktiv)
 - v0.220 Bottom-Nav (#177, iPhone PWA): Tastatur in einem Eingabefeld öffnen/schließen → Leiste bleibt unten; nach Scrollen und Tab-Wechsel (Heute↔Mehr) ebenfalls unten; kein „Schweben“ in Bildmitte
@@ -101,11 +103,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.217 | — | Diktat: Android-Session-Overlap-Dedup |
 | v0.218 | #176 | Diktat-Halten = Tap-Logik (kein continuous), Wortdopplung |
 | v0.220 | #180 | Bottom-Nav fest am unteren Rand (#177) |
 | v0.221 | #179 | Manuelles Kalorienziel bleibt nach Neustart (#178) |
-| v0.222 | — | Eingabefelder bleiben bei offener Tastatur sichtbar (#181) |
+| v0.222 | #182 | Eingabefelder bleiben bei offener Tastatur sichtbar (#181) |
+| v0.223 | — | iOS: kein Scroll-Rücksprung beim Überscrollen (#183) |
 
 ---
 

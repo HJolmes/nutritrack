@@ -65,6 +65,10 @@
   --r:16px;--sh:0 2px 16px rgba(45,125,82,.09);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+/* iOS: kein Gummiband-Überscroll / Pull-to-Refresh auf der Seite (#183) */
+html,body{overscroll-behavior-y:none;}
+/* Scrollen in Overlays/Listen darf nicht auf die Seite dahinter durchschlagen (#183) */
+.s-card,.mod,.mbd,.rl,.chat-inp,.rec-results,.onb-slide{overscroll-behavior:contain;}
 body{font-family:'Nunito Sans',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;max-width:430px;margin:0 auto;padding-bottom:80px;overflow-x:hidden;}
 button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer;}
 .screen{display:none;flex-direction:column;min-height:100vh;}
@@ -686,7 +690,7 @@ body.kb-open #feedbackFab{display:none;}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.222</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.223</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -1031,7 +1035,7 @@ body.kb-open #feedbackFab{display:none;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.222</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.223</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1962,7 +1966,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.222';
+var APP_VERSION='0.223';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -4033,15 +4037,44 @@ function _isKeyboardOpen(){
   if(window.visualViewport&&(window.innerHeight-window.visualViewport.height)>120)return true;
   return false;
 }
+// Läuft gerade eine Touch-Geste (oder klingt sie noch aus)? (#183)
+// iOS feuert beim Überscrollen am Seitenende visualViewport-Events; ein Scroll-
+// Eingriff mitten in der Geste würde gegen den Nutzer arbeiten.
+var _touchDown=false,_touchDownMs=0,_touchIdleUntil=0,_fixPending=false;
+function _touchActive(){
+  // Notbremse: ein verlorenes touchend darf den Fix nicht dauerhaft blockieren
+  if(_touchDown&&Date.now()-_touchDownMs>8000)_touchDown=false;
+  return _touchDown||Date.now()<_touchIdleUntil;
+}
+(function(){
+  var opt={passive:true,capture:true};
+  document.addEventListener('touchstart',function(){_touchDown=true;_touchDownMs=Date.now();},opt);
+  var _end=function(e){
+    if(e.touches&&e.touches.length)return; // noch Finger auf dem Schirm
+    _touchDown=false;_touchIdleUntil=Date.now()+400;
+    // Was während der Geste übersprungen wurde, danach einmal nachholen (#177)
+    if(_fixPending)setTimeout(function(){_fixViewportChrome();},450);
+  };
+  document.addEventListener('touchend',_end,opt);
+  document.addEventListener('touchcancel',_end,opt);
+})();
 // iOS: fixed Bottom-Nav nach Tastatur/Viewport-Shift wieder an den Rand (#177)
 function _fixViewportChrome(){
-  // Bei offener Tastatur NICHT eingreifen: das scrollTo(0,0) würde den Scroll
+  // Bei offener Tastatur NICHT eingreifen: ein Scroll-Eingriff würde den Scroll
   // zurücknehmen, mit dem iOS das fokussierte Feld über die Tastatur holt (#181).
   if(_isKeyboardOpen())return;
-  try{window.scrollTo(0,0);}catch(e){}
+  // Während einer laufenden Touch-Geste nie eingreifen — sonst kämpft der Fix
+  // gegen den Scroll des Nutzers (#183).
+  if(_touchActive()){_fixPending=true;return;}
+  _fixPending=false;
+  // Die Scroll-Position NICHT auf 0 setzen: dieser Aufruf hängt an visualViewport-
+  // `scroll`/`resize`, die auch beim Überscrollen am Seitenende feuern — ein
+  // scrollTo(0,0) warf die Seite dann an den Anfang zurück (#183). Ein Scroll auf
+  // die *aktuelle* Position genügt, um iOS den Visual Viewport wieder mit dem
+  // Layout Viewport ausrichten zu lassen; nötig ist das nur bei echtem Versatz.
   try{
-    if(document.documentElement)document.documentElement.scrollTop=0;
-    if(document.body)document.body.scrollTop=0;
+    var vv=window.visualViewport;
+    if(vv&&vv.offsetTop>1)window.scrollTo(window.pageXOffset||0,window.pageYOffset||0);
   }catch(e){}
   document.querySelectorAll('.bnav').forEach(function(el){
     var prev=el.style.bottom;

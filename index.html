@@ -4040,7 +4040,7 @@ function _isKeyboardOpen(){
 // Läuft gerade eine Touch-Geste (oder klingt sie noch aus)? (#183)
 // iOS feuert beim Überscrollen am Seitenende visualViewport-Events; ein Scroll-
 // Eingriff mitten in der Geste würde gegen den Nutzer arbeiten.
-var _touchDown=false,_touchDownMs=0,_touchIdleUntil=0,_fixPending=false;
+var _touchDown=false,_touchDownMs=0,_touchIdleUntil=0,_fixRetry=null;
 function _touchActive(){
   // Notbremse: ein verlorenes touchend darf den Fix nicht dauerhaft blockieren
   if(_touchDown&&Date.now()-_touchDownMs>8000)_touchDown=false;
@@ -4052,8 +4052,6 @@ function _touchActive(){
   var _end=function(e){
     if(e.touches&&e.touches.length)return; // noch Finger auf dem Schirm
     _touchDown=false;_touchIdleUntil=Date.now()+400;
-    // Was während der Geste übersprungen wurde, danach einmal nachholen (#177)
-    if(_fixPending)setTimeout(function(){_fixViewportChrome();},450);
   };
   document.addEventListener('touchend',_end,opt);
   document.addEventListener('touchcancel',_end,opt);
@@ -4064,9 +4062,16 @@ function _fixViewportChrome(){
   // zurücknehmen, mit dem iOS das fokussierte Feld über die Tastatur holt (#181).
   if(_isKeyboardOpen())return;
   // Während einer laufenden Touch-Geste nie eingreifen — sonst kämpft der Fix
-  // gegen den Scroll des Nutzers (#183).
-  if(_touchActive()){_fixPending=true;return;}
-  _fixPending=false;
+  // gegen den Scroll des Nutzers (#183). Der Lauf wird nicht verworfen, sondern
+  // hinter das Nachlauf-Fenster gelegt: das letzte visualViewport-Event kommt
+  // typischerweise erst kurz NACH dem touchend, ein Nachholen im touchend-Handler
+  // käme also zu früh und der .bnav-Reflow für #177 fiele aus.
+  if(_touchActive()){
+    clearTimeout(_fixRetry);
+    _fixRetry=setTimeout(function(){_fixViewportChrome();},Math.max(120,_touchIdleUntil-Date.now()+60));
+    return;
+  }
+  clearTimeout(_fixRetry);_fixRetry=null;
   // Die Scroll-Position NICHT auf 0 setzen: dieser Aufruf hängt an visualViewport-
   // `scroll`/`resize`, die auch beim Überscrollen am Seitenende feuern — ein
   // scrollTo(0,0) warf die Seite dann an den Anfang zurück (#183). Ein Scroll auf

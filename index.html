@@ -446,6 +446,10 @@ button,input,select,textarea{font-family:var(--fs-body);}
   padding:0 6px;box-shadow:0 16px 40px -16px rgba(0,0,0,0.4);
   align-items:center;justify-content:space-around;
 }
+/* Tastatur offen (#181): Nav ausblenden, bottom-fixe Overlays über die Tastatur heben */
+body.kb-open .bnav{display:none;}
+body.kb-open .ov .mod{bottom:var(--kbh,0px);max-height:calc(88vh - var(--kbh,0px));}
+body.kb-open #feedbackFab{display:none;}
 .ni{color:rgba(255,255,255,0.5);font-size:10px;font-weight:600;flex:1;}
 .ni span{font-size:20px;}
 .ni.on{color:#fff;}
@@ -682,7 +686,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.221</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.222</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -1027,7 +1031,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.221</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.222</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1958,7 +1962,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.221';
+var APP_VERSION='0.222';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -2329,12 +2333,55 @@ window.addEventListener('DOMContentLoaded',function(){
     clearTimeout(_vvTimer);
     _vvTimer=setTimeout(function(){if(typeof _fixViewportChrome==='function')_fixViewportChrome();},80);
   }
+  // Tastatur-Zustand am <body> markieren → Bottom-Nav weicht der Tastatur (#181)
+  // `kb-open` nur mit echtem Beleg: der visualViewport ist tatsächlich geschrumpft
+  // UND ein Textfeld hat Fokus. Touch-Fähigkeit allein reicht nicht — Tablets am
+  // Magic Keyboard und Touch-Notebooks öffnen keine Bildschirmtastatur.
+  var _kbH=0;
+  function _setKbOpen(on){
+    if(document.body)document.body.classList.toggle('kb-open',!!on);
+  }
+  function _syncKbState(){
+    _setKbOpen(_kbH>0&&_isTextEntry(document.activeElement));
+  }
+  // Fokussiertes Feld nach vorn holen (auch in scrollenden Overlays)
+  function _revealFocused(){
+    var t=document.activeElement;
+    if(_kbH<=0||!_isTextEntry(t))return;
+    try{t.scrollIntoView({block:'center'});}catch(_e){}
+  }
+  document.addEventListener('focusin',function(e){
+    if(!_isTextEntry(e.target))return;
+    // Tastatur braucht einen Moment — danach Zustand prüfen und Feld sichtbar holen
+    setTimeout(function(){_syncKbState();_revealFocused();},250);
+    setTimeout(function(){_syncKbState();_revealFocused();},550);
+  },true);
+  document.addEventListener('focusout',function(e){
+    if(!_isTextEntry(e.target))return;
+    setTimeout(function(){if(!_isTextEntry(document.activeElement))_setKbOpen(false);},120);
+  },true);
+  if(window.visualViewport){
+    // Tastaturhöhe als --kbh: bottom-fixe Overlays weichen nach oben aus (#181)
+    var _syncKbMetrics=function(){
+      var vv=window.visualViewport;
+      var kb=Math.max(0,Math.round(window.innerHeight-vv.height-vv.offsetTop));
+      var was=_kbH>0;
+      _kbH=kb>120?kb:0;
+      document.documentElement.style.setProperty('--kbh',_kbH+'px');
+      _syncKbState();
+      // Nur beim Aufgehen nachziehen, nicht bei jedem Viewport-Scroll
+      if(_kbH>0&&!was)_revealFocused();
+    };
+    window.visualViewport.addEventListener('resize',_syncKbMetrics);
+    window.visualViewport.addEventListener('scroll',_syncKbMetrics);
+  }
   if(_isIos()){
     document.addEventListener('focusout',function(e){
       var t=e.target;
       if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT')){
         setTimeout(function(){_fixViewportChrome();},100);
         setTimeout(function(){_fixViewportChrome();},350);
+        setTimeout(function(){_fixViewportChrome();},800);
       }
     },true);
     document.addEventListener('visibilitychange',function(){
@@ -3970,8 +4017,27 @@ function _isPwaStandalone(){
   return (window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)
       || window.navigator.standalone===true;
 }
+// Textfeld? (Checkbox/Button/Datei öffnen keine Tastatur)
+var _NO_KB_TYPES={checkbox:1,radio:1,button:1,submit:1,reset:1,file:1,range:1,color:1,image:1};
+function _isTextEntry(el){
+  if(!el)return false;
+  if(el.isContentEditable)return true;
+  var tag=el.tagName;
+  if(tag==='TEXTAREA')return true;
+  if(tag==='INPUT')return !_NO_KB_TYPES[(el.type||'text').toLowerCase()];
+  return false;
+}
+// Tastatur (vermutlich) offen: Textfeld fokussiert oder visualViewport deutlich geschrumpft
+function _isKeyboardOpen(){
+  if(_isTextEntry(document.activeElement))return true;
+  if(window.visualViewport&&(window.innerHeight-window.visualViewport.height)>120)return true;
+  return false;
+}
 // iOS: fixed Bottom-Nav nach Tastatur/Viewport-Shift wieder an den Rand (#177)
 function _fixViewportChrome(){
+  // Bei offener Tastatur NICHT eingreifen: das scrollTo(0,0) würde den Scroll
+  // zurücknehmen, mit dem iOS das fokussierte Feld über die Tastatur holt (#181).
+  if(_isKeyboardOpen())return;
   try{window.scrollTo(0,0);}catch(e){}
   try{
     if(document.documentElement)document.documentElement.scrollTop=0;

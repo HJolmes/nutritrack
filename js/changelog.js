@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.234',items:[
+    {icon:'\ud83e\uddfe',text:'Sauberere Zutatennamen beim Rezept-Link-Import: Unbestimmte Mengenw\u00f6rter werden abgeschnitten \u2014 aus „etwas Kurkumapulver\u201c wird „Kurkumapulver\u201c. „ca. 200 g Mehl\u201c wird jetzt auch als 200 g erkannt statt als Name durchgereicht. Und verschachtelte Klammerzus\u00e4tze hinterlassen keine Reste mehr wie „Pflanzen\u00f6l )\u201c.',where:'\uff0b \u2192 Link'},
+  ]},
   {v:'0.233',items:[
     {icon:'\ud83d\uded2',text:'Der Einkaufszettel blieb beim \u00d6ffnen leer, obwohl Artikel drauf waren \u2014 die Liste wurde gezeichnet, bevor das Fenster \u00fcberhaupt offen war, und der Untertitel stand deshalb auf „Noch nichts drauf\u201c. Erst die n\u00e4chste \u00c4nderung machte alles sichtbar. Behoben: Der Zettel zeigt seinen Inhalt jetzt sofort beim \u00d6ffnen.',where:'Mehr \u2192 \ud83d\uded2 Einkaufszettel'},
   ]},

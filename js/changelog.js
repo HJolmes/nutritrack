@@ -1,6 +1,10 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.232',items:[
+    {icon:'\ud83d\udd17',text:'Der Rezept-Link-Import holt die Rezeptdaten jetzt auch von gro\u00dfen, tr\u00e4gen Seiten zuverl\u00e4ssig: Die Seite wird komplett gelesen statt nach dem ersten halben Megabyte abgeschnitten \u2014 vorher fiel bei langen Seiten genau der Teil mit den Zutaten hinten runter, und die KI musste raten. Au\u00dferdem gibt sich der Abruf als normaler Browser aus, weil manche Portale sonst eine Bot-Sperrseite statt des Rezepts ausliefern.',where:'\uff0b \u2192 Link'},
+    {icon:'\ud83d\udcac',text:'Klartext statt R\u00e4tselraten, wenn ein Link nicht klappt: Die App sagt jetzt, ob die Seite den Abruf blockiert, nicht antwortet oder das Proxy-Passwort fehlt. Blockiert eine Seite, wird die KI gar nicht erst darauf angesetzt \u2014 das sparte bisher nur Wartezeit f\u00fcr ein „Rezept konnte nicht erkannt werden".',where:'\uff0b \u2192 Link'},
+  ]},
   {v:'0.230',items:[
     {icon:'🔗',text:'Der Rezept-Link-Import versteht jetzt fast jede Rezept-Seite und jeden Food-Blog, nicht nur Chefkoch: Die App liest zuerst die Rezeptdaten, die die Seite selbst mitliefert (Name, Zutaten, Zubereitung, Portionsangabe) — das ist genauer als vorher und braucht keine KI. Nur wenn eine Seite keine solchen Daten hat, liest die KI den Text rund um die Zutatenliste.',where:'＋ → Link'},
     {icon:'⚖️',text:'Küchenmaße werden in Gramm umgerechnet: „2 EL Olivenöl" wird zu 30 g, „1 Dose Tomaten" zu 400 g, „1 Prise Salz" zu 1 g. Zutatenliste und Einkaufszettel rechnen durchgängig in Gramm — im Supermarkt hilft eine Grammzahl mehr als ein Esslöffel. Zutaten ohne Mengenangabe (Salz, Pfeffer) sind wie gewohnt mit ⚠️ markiert und lassen sich von Hand ergänzen.',where:'＋ → Link'},

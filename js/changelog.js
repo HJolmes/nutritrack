@@ -1,6 +1,11 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.227',items:[
+    {icon:'🛒',text:'Neuer Einkaufszettel — wie eine Einkaufs-App: Artikel eintippen oder aus über 130 Kacheln auswählen, ein Tipp hakt sie im Laden ab. Alles sortiert sich von selbst nach Gängen (Obst & Gemüse, Milch & Käse, Haushalt …), Menge und Notiz lassen sich je Artikel ergänzen.',where:'Mehr → Einkaufszettel'},
+    {icon:'🔄',text:'Den Zettel zu zweit führen: Über „🔄 Teilen" koppelst du ein zweites Gerät mit einem Code — danach sieht dein Partner sofort, was noch fehlt und was schon im Wagen liegt. Übertragen wird ausschließlich der Einkaufszettel, verschlüsselt. Der Code gilt nur für den Zettel; das Baby-Tagebuch bleibt getrennt.',where:'Einkaufszettel → 🔄 Teilen'},
+    {icon:'📋',text:'Aus einem Rezept wird mit einem Tipp ein Einkaufszettel: In der Bibliothek beim Rezept auf 🛒, Portionen wählen, „Auf den Einkaufszettel" — alle Zutaten landen mit Menge auf dem geteilten Zettel.',where:'Bibliothek → Rezept → 🛒'},
+  ]},
   {v:'0.226',items:[
     {icon:'😴',text:'Schlaf lässt sich jetzt eintragen, während das Baby noch schläft: Es genügt „Von" oder „Bis" — nicht mehr beides. Ein laufender Schlaf steht als „Schläft seit 13:00" in der Liste und bekommt einen „Wach jetzt"-Knopf, mit dem du das Ende später mit einem Tipp nachträgst. Ein Schnell-Knopf vom Typ Schlaf schaltet direkt zwischen einschlafen und aufwachen um.',where:'Baby-Tagebuch'},
   ]},

@@ -15,8 +15,23 @@ const DECODER_TIMEOUT_MS = 1500;
 // Browser-Requests; deshalb läuft jeder OFF-Aufruf serverseitig über /off.
 const OFF_USER_AGENT = "NutriTrack/1.0 (+https://hjolmes.github.io/nutritrack/; h.jolmes@jolmes.de)";
 const OFF_TIMEOUT_MS = 6000;
-const URL_FETCH_TIMEOUT_MS = 8000;
-const MAX_URL_FETCH_BYTES = 1024 * 512; // 512 KB reichen für eine Rezept-Seite
+const URL_FETCH_TIMEOUT_MS = 12000;
+// Obergrenzen für /fetch. Rezept-Portale liefern inzwischen 600 KB–2 MB HTML;
+// bei 512 KB fiel der schema.org-Block hinten runter und der Import musste
+// unnötig die KI bemühen. Deshalb: bis MAX_URL_READ_BYTES einlesen, die
+// JSON-LD-Blöcke VOR dem Kappen herausziehen und dem Client voranstellen —
+// so überlebt die eigentliche Rezeptquelle jede Kürzung.
+const MAX_URL_READ_BYTES = 1024 * 1024 * 2;   // so viel wird überhaupt gelesen
+const MAX_URL_LD_BYTES = 1024 * 256;          // Budget für die JSON-LD-Blöcke
+const MAX_URL_FETCH_BYTES = 1024 * 512;       // Budget für den Rest der Seite
+// Ohne Browser-Kennung antworten viele Rezept-Portale mit einer Bot-Wall statt
+// mit der Seite. Der Abruf gibt sich deshalb als normaler Browser aus.
+const URL_FETCH_HEADERS = {
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+  "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  "Accept-Language": "de-DE,de;q=0.9,en;q=0.8",
+  "Cache-Control": "no-cache",
+};
 
 function allowedOrigins(env) {
   const raw = env.ALLOWED_ORIGINS || DEFAULT_ALLOWED_ORIGINS.join(",");
@@ -973,14 +988,29 @@ async function handleUrlProxy(request, origin, env) {
   const timer = setTimeout(() => ctrl.abort(), URL_FETCH_TIMEOUT_MS);
   try {
     const res = await fetch(t.toString(), {
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; NutriTrack/1.0)" },
+      headers: URL_FETCH_HEADERS,
       redirect: "follow",
       signal: ctrl.signal,
     });
-    const raw = await res.text();
-    const body = raw.length > MAX_URL_FETCH_BYTES ? raw.slice(0, MAX_URL_FETCH_BYTES) : raw;
+    let raw = await res.text();
+    if (raw.length > MAX_URL_READ_BYTES) raw = raw.slice(0, MAX_URL_READ_BYTES);
+    const ld = extractLdJsonBlocks(raw);
+    // Eine Seite, die weder ordentlich geantwortet noch Rezeptdaten mitgeliefert
+    // hat, ist mit hoher Wahrscheinlichkeit eine Bot-/Consent-Wall. Der Client
+    // soll das als Klartext sehen und nicht die KI auf Navigationstext ansetzen.
+    if (!res.ok && !ld) {
+      return jsonResponse(
+        502,
+        "upstream_blocked",
+        "Upstream refused the request (HTTP " + res.status + ")",
+        origin,
+        env,
+      );
+    }
+    const rest = raw.length > MAX_URL_FETCH_BYTES ? raw.slice(0, MAX_URL_FETCH_BYTES) : raw;
+    const body = ld ? ld + "\n" + rest : rest;
     return new Response(body, {
-      status: res.status,
+      status: 200,
       headers: {
         ...corsHeaders(origin, env),
         "Content-Type": "text/plain; charset=utf-8",
@@ -992,6 +1022,24 @@ async function handleUrlProxy(request, origin, env) {
   } finally {
     clearTimeout(timer);
   }
+}
+
+// Zieht die <script type="application/ld+json">-Blöcke aus dem ungekürzten HTML.
+// Sie stehen bei vielen Portalen weit hinten im Dokument und sind die einzige
+// verlässliche Rezeptquelle — deshalb werden sie vor jeder Kürzung gerettet und
+// dem gekappten Rest vorangestellt. Der Client sucht sie mit demselben Muster,
+// die Reihenfolge im Dokument ist ihm egal.
+function extractLdJsonBlocks(html) {
+  const re = /<script[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>[\s\S]*?<\/script>/gi;
+  const out = [];
+  let used = 0;
+  let m;
+  while ((m = re.exec(html))) {
+    if (used + m[0].length > MAX_URL_LD_BYTES) continue;
+    out.push(m[0]);
+    used += m[0].length;
+  }
+  return out.length ? out.join("\n") : "";
 }
 
 // ─── KONFIGURIERBARER KI-ANBIETER ──────────────────────────────────────────
@@ -1227,7 +1275,7 @@ export default {
         babySyncConfigured: Boolean(env.SHARE_KV),
         shopSyncConfigured: Boolean(env.SHARE_KV),
         decoderSecretConfigured: Boolean(env.DECODER_SECRET),
-        codeVersion: "v0.228-shop-cors",
+        codeVersion: "v0.232-fetch-hardening",
       });
     }
 

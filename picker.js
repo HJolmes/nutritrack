@@ -1686,6 +1686,29 @@ function pickerLinkDetect(){
   }
 }
 
+// Übersetzt eine Absage des /fetch-Proxys in Klartext. Vorher endete jede
+// Absage — Bot-Wall, Timeout, gesperrter Host — im selben nichtssagenden
+// „URL konnte nicht geladen werden".
+function _linkFetchErr(status,body){
+  var code='';
+  try{var d=JSON.parse(body);code=(d&&d.error&&d.error.code)||'';}catch(e){}
+  if(code==='upstream_blocked')
+    return 'Die Seite blockiert den Abruf – dort öffnen, Zutaten kopieren und über „Eigenes" eintragen';
+  if(code==='fetch_failed'||status===504)return 'Die Seite antwortet nicht – bitte später erneut versuchen';
+  if(code==='host_not_allowed'||code==='bad_scheme')return 'Diese Adresse ist nicht erlaubt';
+  if(code==='bad_url')return 'Die Adresse konnte nicht gelesen werden';
+  return 'URL konnte nicht geladen werden (HTTP '+status+')';
+}
+
+// Stufe 3 (KI) darf nur auf echten Seiteninhalt los. Eine Bot-Wall oder ein
+// Consent-Layer ist kurz und nennt keine Zutatenüberschrift — dort würde die KI
+// nur Tokens auf Navigationstext verbrennen und mit „nicht erkannt" enden.
+function _pageHasContent(html){
+  var t=_recipeTextWindow(html);
+  if(/\bZutaten\b|\bIngredients\b|\bIngr[\u00e9e]dients\b|\bIngredienti\b/i.test(t))return true;
+  return t.length>=1200;
+}
+
 function pickerLinkImport(){
   var raw=document.getElementById('pickerLinkInput').value;
   var url=recipeImportExtractUrl(raw);
@@ -1697,16 +1720,29 @@ function pickerLinkImport(){
     showToast(msg);
     btn.disabled=false;btn.textContent='🔗 Rezept laden';btn.style.opacity='1';
   };
-  fetchT(urlProxyUrl(url),{headers:{'x-app-proxy-secret':getProxySecret()}},9000)
+  // Nur Abruf-Fehler tragen eine fertige Klartext-Meldung (_toast); alles andere
+  // fällt im catch auf die allgemeine Meldung zurück.
+  var netErr=function(msg){var e=new Error(msg);e._toast=msg;return e;};
+  // 15 s Client-Timeout – der Worker bricht selbst nach 12 s ab, und träge
+  // Portale brauchen mehr als die alten 9 s.
+  fetchT(urlProxyUrl(url),{headers:{'x-app-proxy-secret':getProxySecret()}},15000)
     .then(function(r){
-      if(r.status===401)throw new Error('auth');
-      return r.text();
+      if(r.status===401)throw netErr('Proxy-Passwort fehlt oder ist falsch (Mehr → 🤖 KI)');
+      return r.text().then(function(txt){
+        if(!r.ok)throw netErr(_linkFetchErr(r.status,txt));
+        return txt;
+      });
     })
     .then(function(html){
       // Erst die strukturierten Rezeptdaten der Seite versuchen – die kennen
       // fast alle Rezept-Portale und Blogs, unabhängig vom Layout.
       var rec=_recipeFromHtml(html);
       if(rec&&rec.ings.length>=2){_pickerLinkFill(rec,btn);return;}
+      // Bot-Wall/Consent-Layer statt Seite: gar nicht erst die KI bemühen.
+      if(!_pageHasContent(html)){
+        fail('Die Seite hat keinen Rezeptinhalt geliefert (vermutlich Bot-Schutz)');
+        return;
+      }
       // Fallback: KI liest den Textausschnitt rund um „Zutaten".
       if(!canUseAi()){
         fail('Seite liefert keine Rezeptdaten – dafür wird die KI benötigt');
@@ -1740,9 +1776,7 @@ function pickerLinkImport(){
       );
     })
     .catch(function(e){
-      fail(e&&e.message==='auth'
-        ? 'Proxy-Passwort fehlt oder ist falsch (Mehr → 🤖 KI)'
-        : 'URL konnte nicht geladen werden');
+      fail((e&&e._toast)||'URL konnte nicht geladen werden');
     });
 }
 

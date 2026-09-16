@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.226',items:[
+    {icon:'😴',text:'Schlaf lässt sich jetzt eintragen, während das Baby noch schläft: Es genügt „Von" oder „Bis" — nicht mehr beides. Ein laufender Schlaf steht als „Schläft seit 13:00" in der Liste und bekommt einen „Wach jetzt"-Knopf, mit dem du das Ende später mit einem Tipp nachträgst. Ein Schnell-Knopf vom Typ Schlaf schaltet direkt zwischen einschlafen und aufwachen um.',where:'Baby-Tagebuch'},
+  ]},
   {v:'0.225',items:[
     {icon:'🔄',text:'Baby-Tagebuch zu zweit führen: Über „🔄 Sync" koppelst du ein zweites Gerät mit einem Code — danach gleichen sich die Einträge automatisch ab. Übertragen wird ausschließlich das Baby-Tagebuch, verschlüsselt; Mahlzeiten, Kalorien und Gewicht bleiben auf deinem Gerät.',where:'Baby-Tagebuch → 🔄 Sync'},
     {icon:'⚙️',text:'Die Schnell-Knöpfe im Baby-Tagebuch sind jetzt frei einstellbar: eigene Knöpfe anlegen (z. B. „Flasche 120 ml" oder „Vitamin D"), Symbol und Beschriftung wählen, sortieren, löschen — oder alles auf die Werkseinstellung zurücksetzen.',where:'Baby-Tagebuch → ⚙️ Schnell-Knöpfe'},

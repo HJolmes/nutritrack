@@ -142,19 +142,75 @@ function ageText(){
 // ── Zusammenfassung eines Tages ──
 function summary(key){
   var arr=log(key);
-  var s={breast:0,breastMin:0,bottle:0,ml:0,diaper:0,poo:0,temp:null,sleepMin:0};
+  var s={breast:0,breastMin:0,bottle:0,ml:0,diaper:0,poo:0,temp:null,sleepMin:0,sleepOpen:null};
   arr.forEach(function(e){
     if(e.t==='breast'){s.breast++;s.breastMin+=parseInt(e.min,10)||0;}
     else if(e.t==='bottle'){s.bottle++;s.ml+=parseInt(e.ml,10)||0;}
     else if(e.t==='diaper'){s.diaper++;if(e.kind==='poo'||e.kind==='both')s.poo++;}
     else if(e.t==='temp'){if(!s.temp||e.ts>s.temp.ts)s.temp=e;}
-    else if(e.t==='sleep'&&e.from&&e.to){
-      var f=tsFor(key,e.from),t=tsFor(key,e.to);
-      if(t<f)t+=86400000;// über Mitternacht
-      s.sleepMin+=Math.round((t-f)/60000);
+    else if(e.t==='sleep'){
+      // Nur halb eingetragener Schlaf ist erlaubt: „schläft seit 13:00" ohne Ende
+      // (läuft noch) oder nur ein Ende, wenn der Beginn nicht notiert wurde.
+      if(e.from&&e.to){
+        s.sleepMin+=sleepMinutes(key,e);
+      }else if(e.from&&!e.to){
+        s.sleepOpen=e;
+        s.sleepMin+=sleepMinutes(key,e);// bis jetzt, siehe sleepMinutes
+      }
     }
   });
   return s;
+}
+// Dauer in Minuten. Ein laufender Schlaf (kein `to`) zählt bis jetzt – aber nur
+// am heutigen Tag; an vergangenen Tagen wäre „bis jetzt" sinnlos, dort zählt er 0
+// und bleibt als offener Eintrag zum Nachtragen sichtbar.
+function sleepMinutes(key,e){
+  if(!e.from)return 0;
+  var f=tsFor(key,e.from);
+  var t;
+  if(e.to){
+    t=tsFor(key,e.to);
+    if(t<f)t+=86400000;// über Mitternacht
+  }else{
+    if(key!==_today())return 0;
+    t=Date.now();
+    if(t<f)return 0;
+  }
+  return Math.max(0,Math.round((t-f)/60000));
+}
+function fmtDur(min){
+  var h=Math.floor(min/60),m=min%60;
+  return h?(h+' h '+m+' Min.'):(m+' Min.');
+}
+// Laufender Schlaf: letzter Eintrag mit Beginn, aber ohne Ende. Auch der Vortag
+// wird geprüft – ein um 23:40 begonnener Schlaf endet nach Mitternacht.
+function openSleep(key){
+  key=key||dayKey();
+  var days=[key,addDayKey(key,-1)];
+  for(var d=0;d<days.length;d++){
+    var arr=sorted(days[d]).filter(function(e){return e.t==='sleep'&&e.from&&!e.to;});
+    if(arr.length)return {e:arr[arr.length-1],day:days[d]};
+  }
+  return null;
+}
+function addDayKey(key,delta){
+  var p=(key||'').split('-');
+  if(p.length!==3)return key;
+  var d=new Date(+p[0],+p[1]-1,+p[2]);
+  d.setDate(d.getDate()+delta);
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+}
+// Laufenden Schlaf beenden – ein Tipp statt „Eintrag bearbeiten".
+function endSleep(id){
+  var hit=findAnywhere(id);
+  if(!hit||hit.e.t!=='sleep'||hit.e.to)return;
+  var n=new Date();
+  hit.e.to=pad(n.getHours())+':'+pad(n.getMinutes());
+  hit.e.rev=nextRev();
+  saveS();
+  Sync.schedule();
+  refresh();
+  showToast('Wach um '+hit.e.to+' ✓');
 }
 function summaryText(key){
   var s=summary(key);
@@ -162,7 +218,8 @@ function summaryText(key){
   if(s.breast)parts.push(s.breast+'× gestillt'+(s.breastMin?' ('+s.breastMin+' Min.)':''));
   if(s.bottle)parts.push(s.bottle+'× Flasche'+(s.ml?' ('+s.ml+' ml)':''));
   if(s.diaper)parts.push(s.diaper+(s.diaper===1?' Windel':' Windeln')+(s.poo?' · '+s.poo+'× 💩':''));
-  if(s.sleepMin)parts.push('Schlaf '+Math.floor(s.sleepMin/60)+' h '+(s.sleepMin%60)+' Min.');
+  if(s.sleepMin)parts.push('Schlaf '+fmtDur(s.sleepMin)+(s.sleepOpen?' (schläft noch)':''));
+  else if(s.sleepOpen)parts.push('schläft seit '+s.sleepOpen.from);
   if(s.temp)parts.push('🌡️ '+fmtTemp(s.temp.c)+' °C');
   return parts.join(' · ');
 }
@@ -181,7 +238,12 @@ function entryTitle(e){
     return d+(extra.length?' · '+extra.join(', '):'');
   }
   if(e.t==='temp')return fmtTemp(e.c)+' °C'+(TEMP_SITE[e.site]?' · '+TEMP_SITE[e.site]:'');
-  if(e.t==='sleep')return 'Schlaf '+(e.from||'?')+'–'+(e.to||'?');
+  if(e.t==='sleep'){
+    if(e.from&&e.to)return 'Schlaf '+e.from+'–'+e.to;
+    if(e.from)return 'Schläft seit '+e.from;
+    if(e.to)return 'Wach um '+e.to;
+    return 'Schlaf';
+  }
   if(e.t==='note')return e.text||'Notiz';
   return '';
 }
@@ -214,6 +276,17 @@ function quick(qid){
   var q=ensureQuick().find(function(x){return x.id===qid;});
   if(!q)return;
   var key=dayKey();
+  // Schlaf ist ein Umschalter: schläft gerade niemand -> Beginn eintragen,
+  // läuft ein Schlaf -> ihn beenden. Kein Dialog, kein Nachtragen.
+  if(q.t==='sleep'){
+    var open=openSleep(key);
+    if(open){endSleep(open.e.id);return;}
+    var n=new Date();
+    var hhmmNow=pad(n.getHours())+':'+pad(n.getMinutes());
+    add({t:'sleep',from:hhmmNow,to:'',ts:tsFor(key,hhmmNow)},key);
+    showToast('😴 Schläft seit jetzt ✓');
+    return;
+  }
   var e=Object.assign({t:q.t},JSON.parse(JSON.stringify(q.p||{})));
   // „Nächste Seite"-Vorschlag nur, wenn der Knopf keine Seite vorgibt
   if(q.t==='breast'&&!e.side)e.side=nextSide(key)||'l';
@@ -253,6 +326,7 @@ function quickSubtitle(q){
   else if(q.t==='bottle'){if(p.ml)det.push(p.ml+' ml');if(p.kind)det.push(BOTTLE[p.kind]||'');}
   else if(q.t==='diaper'){det.push((DIAPER[p.kind]||'').replace(/^[^ ]+ /,''));}
   else if(q.t==='temp'){det.push('Dialog öffnet sich');}
+  else if(q.t==='sleep'){det.push('Umschalter: einschlafen / aufwachen');}
   else if(q.t==='note'){if(p.text)det.push('„'+p.text+'"');}
   return t+(det.filter(Boolean).length?' · '+det.filter(Boolean).join(' · '):'');
 }
@@ -324,7 +398,9 @@ function saveQuick(){
     if(!txt){showToast('Bitte den Notiz-Text angeben');return;}
     p.text=txt;
   }else if(t==='temp'||t==='sleep'){
-    // Temperatur und Schlaf brauchen immer eine Eingabe – der Knopf öffnet den Dialog
+    // Temperatur braucht immer einen Messwert – der Knopf öffnet den Dialog.
+    // Schlaf braucht keine Vorbelegung: der Knopf schaltet zwischen
+    // "schläft jetzt ein" und "ist jetzt wach" um (siehe quick()).
     p={};
   }
   var qs=ensureQuick();
@@ -717,11 +793,17 @@ function renderDiary(){
     list.innerHTML=arr.map(function(e){
       var ic=(TYPES[e.t]&&TYPES[e.t].ic)||'•';
       var fever=(e.t==='temp'&&isFever(e.c));
+      var running=(e.t==='sleep'&&e.from&&!e.to);
+      // Laufender Schlaf: ein Tipp beendet ihn, statt den Dialog zu öffnen.
+      var right=running
+        ?'<button type="button" onclick="event.stopPropagation();NTBaby.endSleep(\''+e.id+'\')" style="background:var(--g2);border:none;border-radius:999px;color:#fff;font-size:11px;font-weight:700;padding:5px 10px;cursor:pointer;flex-shrink:0;">Wach jetzt</button>'
+        :'<div class="fe-ic">✏️</div>';
+      var sub=hhmm(e.ts)+(running?' · läuft seit '+fmtDur(sleepMinutes(dayKey(),e)):'')+(e.note?' · '+esc(e.note):'');
       return '<div class="fe" onclick="NTBaby.editEntry(\''+e.id+'\')">'
         +'<div class="fee">'+ic+'</div>'
         +'<div class="fei"><div class="fen"'+(fever?' style="color:#c62828;"':'')+'>'+esc(entryTitle(e))+(fever?' 🔴':'')+'</div>'
-        +'<div class="fem">'+hhmm(e.ts)+(e.note?' · '+esc(e.note):'')+'</div></div>'
-        +'<div class="fe-ic">✏️</div>'
+        +'<div class="fem">'+sub+'</div></div>'
+        +right
         +'</div>';
     }).join('');
   }
@@ -762,6 +844,11 @@ function setType(t){
   document.querySelectorAll('#babyTypeTabs [data-bt]').forEach(function(b){
     b.classList.toggle('act',b.getAttribute('data-bt')===t);
   });
+  // Bei Schlaf ist „Von/Bis" die Uhrzeit — ein zweites, generisches Zeitfeld
+  // daneben wäre widersprüchlich (welches gilt?) und stellte den Eintrag in der
+  // Zeitleiste an die falsche Stelle.
+  var tr=document.getElementById('babyEntryTimeRow');
+  if(tr)tr.style.display=(t==='sleep')?'none':'';
   Object.keys(TYPES).forEach(function(k){
     var el=document.getElementById('babyFields-'+k);
     if(el)el.style.display=(k===t)?'block':'none';
@@ -803,7 +890,12 @@ function saveEntry(){
   }else if(t==='sleep'){
     e.from=document.getElementById('babySleepFrom').value||'';
     e.to=document.getElementById('babySleepTo').value||'';
-    if(!e.from||!e.to){showToast('Bitte Beginn und Ende angeben');return;}
+    // Einsortiert wird nach dem Beginn; fehlt der, nach dem Ende.
+    if(e.from||e.to)e.ts=tsFor(key,e.from||e.to);
+    // Beginn ODER Ende genügt: Man trägt den Schlaf oft mitten drin ein und
+    // kennt das Ende noch nicht - erzwungene Vollständigkeit hieße, sich das
+    // erst als Notiz zu merken und später nachzupflegen.
+    if(!e.from&&!e.to){showToast('Bitte Beginn oder Ende angeben');return;}
   }else if(t==='note'){
     e.text=document.getElementById('babyNoteText').value.trim();
     if(!e.text){showToast('Bitte Notiz eingeben');return;}
@@ -815,7 +907,7 @@ function saveEntry(){
       var target=hit.e;
       Object.keys(target).forEach(function(k2){if(k2!=='id')delete target[k2];});
       Object.assign(target,e);
-      target.ts=tsFor(hit.day,time);
+      target.ts=(t==='sleep'&&(e.from||e.to))?tsFor(hit.day,e.from||e.to):tsFor(hit.day,time);
       target.rev=nextRev();
       saveS();
       Sync.schedule();
@@ -855,7 +947,7 @@ document.addEventListener('visibilitychange',function(){
 window.NTBaby={
   boot:boot,
   openDiary:openDiary,closeDiary:closeDiary,renderDiary:renderDiary,renderCard:renderCard,
-  quick:quick,openEntry:openEntry,editEntry:editEntry,setType:setType,
+  quick:quick,openEntry:openEntry,editEntry:editEntry,setType:setType,endSleep:endSleep,
   updateDiaperFields:updateDiaperFields,saveEntry:saveEntry,deleteEntry:deleteEntry,
   openQuickManage:openQuickManage,openQuickEdit:openQuickEdit,updateQuickTypeFields:updateQuickTypeFields,
   saveQuick:saveQuick,deleteQuick:deleteQuick,deleteQuickFromEdit:deleteQuickFromEdit,

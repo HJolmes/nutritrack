@@ -170,21 +170,81 @@ function noteRecent(item){
   if(r.length>40)r.length=40;
 }
 
+// ── Herkunft eines Artikels ──
+// `rc` = Rezepte, die diesen Artikel angefordert haben; `pre` = der Artikel
+// stand schon auf dem Zettel, bevor das erste Rezept ihn brauchte. Beides zählt
+// im Laden: „Zwiebeln wollte ich sowieso — und brauche sie jetzt auch für die
+// Lasagne" ist eine andere Information als „steht nur wegen der Lasagne drauf".
+function tagSource(it,recipe,existed){
+  recipe=String(recipe||'').trim();
+  if(!recipe)return;
+  if(!Array.isArray(it.rc))it.rc=[];
+  if(existed&&!it.rc.length&&!it.pre)it.pre=1;
+  var n=norm(recipe);
+  for(var i=0;i<it.rc.length;i++)if(norm(it.rc[i])===n)return;
+  it.rc.push(recipe);
+  if(it.rc.length>8)it.rc.shift();
+}
+function srcLine(it){
+  var parts=[];
+  if(it.pre)parts.push('war vorher schon da');
+  if(it.rc&&it.rc.length)parts.push('für '+it.rc.join(', '));
+  return parts.join(' · ');
+}
+
+// Menge aus zwei Quellen zusammenführen. Gleiche Einheit → addieren, sonst
+// nebeneinander stehen lassen: lieber sichtbar doppelt („1 Packung + 200 g")
+// als eine stillschweigend überschriebene Menge, mit der zu wenig im Wagen
+// landet.
+function parseQty(s){
+  var m=String(s||'').match(/^\s*(\d+(?:[.,]\d+)?)\s*([a-zA-ZäöüÄÖÜß]*)\.?\s*$/);
+  if(!m)return null;
+  // `u` vergleicht (klein), `raw` schreibt zurück – sonst würde aus „2 EL"
+  // beim Addieren „4 el".
+  return {v:parseFloat(m[1].replace(',','.')),u:(m[2]||'').toLowerCase(),raw:m[2]||''};
+}
+function mergeQty(a,b){
+  a=String(a||'').trim();b=String(b||'').trim();
+  if(!a)return b;
+  if(!b)return a;
+  if(norm(a)===norm(b))return a;
+  var rb=parseQty(b);
+  // Die vorhandene Menge kann selbst schon zusammengesetzt sein („2 Stück + 150 g").
+  // Deshalb teilweise addieren: den Teil mit gleicher Einheit erhöhen, den Rest
+  // stehen lassen.
+  var parts=a.split(' + ');
+  if(rb){
+    for(var i=0;i<parts.length;i++){
+      var ra=parseQty(parts[i]);
+      if(ra&&ra.u===rb.u){
+        parts[i]=String(Math.round((ra.v+rb.v)*100)/100).replace('.',',')+(ra.raw?' '+ra.raw:'');
+        return parts.join(' + ');
+      }
+    }
+  }
+  for(var j=0;j<parts.length;j++)if(norm(parts[j])===norm(b))return a;
+  return a+' + '+b;
+}
+
 // ════════ Schreiben ════════
-function add(name,qty,c,ic){
+// opts: {recipe:'Rezeptname', mergeQty:true} — beides nur beim Rezept-Import.
+function add(name,qty,c,ic,opts){
   name=String(name||'').trim();
   if(!name)return null;
+  opts=opts||{};
   var ex=findByName(name);
   if(ex){
     // Schon auf dem Zettel: abgehakt → wieder aktiv, sonst nur Menge ergänzen.
     if(ex.d){ex.d=0;delete ex.da;}
-    if(qty)ex.q=qty;
+    if(qty)ex.q=opts.mergeQty?mergeQty(ex.q,qty):qty;
+    if(opts.recipe)tagSource(ex,opts.recipe,true);
     ex.rev=nextRev();
     saveS();Sync.schedule();render();
     return ex;
   }
   var g=guess(name);
   var it={id:uid(),n:name,q:qty||'',c:c||g.c,ic:ic||g.ic,d:0,ts:Date.now(),rev:nextRev()};
+  if(opts.recipe)tagSource(it,opts.recipe,false);
   list().push(it);
   noteRecent(it);
   saveS();Sync.schedule();render();
@@ -584,6 +644,7 @@ function itemRow(it,done){
     ?'<div style="width:22px;height:22px;border-radius:7px;background:var(--g2);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">✓</div>'
     :'<div style="width:22px;height:22px;border-radius:7px;border:2px solid var(--br);flex-shrink:0;"></div>';
   var nameStyle=done?'font-weight:700;font-size:13px;text-decoration:line-through;color:var(--mu);':'font-weight:700;font-size:14px;';
+  var src=srcLine(it);
   return '<div style="display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--br);">'
     +'<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;cursor:pointer;" onclick="NTShop.toggle(\''+it.id+'\')">'
       +box
@@ -591,6 +652,7 @@ function itemRow(it,done){
       +'<div style="flex:1;min-width:0;">'
         +'<div style="'+nameStyle+'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(it.n)+'</div>'
         +(it.q?'<div style="font-size:11px;color:var(--mu);margin-top:1px;">'+esc(it.q)+'</div>':'')
+        +(src?'<div style="font-size:10px;color:var(--mu);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-style:italic;">'+esc(src)+'</div>':'')
       +'</div>'
     +'</div>'
     +'<button type="button" onclick="NTShop.openItem(\''+it.id+'\')" style="background:none;border:none;font-size:15px;color:var(--mu);padding:4px 2px;cursor:pointer;flex-shrink:0;">✏️</button>'
@@ -780,6 +842,13 @@ function openItem(id){
   var sel=document.getElementById('shopItemCat');
   sel.innerHTML=CATS.map(function(c){return '<option value="'+c.id+'">'+esc(c.ic+' '+c.label)+'</option>';}).join('');
   sel.value=it.c||'sonst';
+  var info=document.getElementById('shopItemSrc');
+  if(info){
+    var src=srcLine(it);
+    info.innerHTML=src
+      ?'<div style="background:var(--gl);border:1px solid var(--br);border-radius:10px;padding:8px 10px;font-size:11px;color:var(--mu);margin-top:10px;">🧾 '+esc(src)+'</div>'
+      :'';
+  }
   openOv('shopItemOv');
 }
 function saveItem(){
@@ -807,18 +876,38 @@ function deleteItem(){
 }
 
 // ════════ Rezept-Zutaten übernehmen ════════
+// Zutaten aus beliebiger Quelle (gespeichertes Rezept oder frischer Link-Import)
+// auf den Zettel legen. Vorhandene Artikel werden nicht dupliziert, sondern
+// bekommen das Rezept als Herkunft angehängt und ihre Menge aufaddiert.
+// Rückgabe: {added, merged, total} für eine ehrliche Rückmeldung.
+function addIngredients(ings,recipeName){
+  var added=0,merged=0;
+  (ings||[]).forEach(function(ing){
+    if(!ing)return;
+    var nm=String(ing.name||ing.n||'').trim();
+    if(!nm)return;
+    var q=ing.q||(ing.amount?Math.round(ing.amount)+' g':'');
+    var existed=!!findByName(nm);
+    if(!add(nm,q,'',ing.emoji||ing.ic||'',{recipe:recipeName,mergeQty:true}))return;
+    if(existed)merged++;else added++;
+  });
+  return {added:added,merged:merged,total:added+merged};
+}
+function shopToast(r){
+  if(!r.total){showToast('Nichts zu übernehmen');return;}
+  showToast(r.merged
+    ? (r.total+' Zutaten auf dem Zettel – '+r.merged+' war'+(r.merged===1?'':'en')+' schon drauf')
+    : (r.total+' Zutaten auf dem Einkaufszettel ✓'));
+}
 function addRecipe(recipeId,portions){
   var rec=null;
   try{rec=(recipes||[]).find(function(r){return r.id===recipeId;});}catch(e){}
   if(!rec){showToast('Rezept nicht gefunden');return;}
   var p=parseFloat(portions)||1;
-  var n=0;
-  (rec.ingredients||[]).forEach(function(ing){
-    var amt=Math.round((ing.amount||100)*p);
-    var g=guess(ing.name);
-    if(add(ing.name,amt?amt+' g':'','',ing.emoji||g.ic))n++;
+  var ings=(rec.ingredients||[]).map(function(ing){
+    return {name:ing.name,amount:Math.round((ing.amount||100)*p),emoji:ing.emoji||''};
   });
-  showToast(n?(n+' Zutaten auf dem Einkaufszettel ✓'):'Nichts zu übernehmen');
+  shopToast(addIngredients(ings,rec.name));
 }
 
 // ── Boot: höchste bekannte rev merken, dann einmal abgleichen ──
@@ -839,7 +928,7 @@ window.NTShop={
   add:add,addMany:addMany,toggle:toggle,remove:remove,clearDone:clearDone,toggleDone:toggleDone,
   submitInput:submitInput,inputKey:inputKey,suggest:suggest,addFromSuggest:addFromSuggest,
   openCatalog:openCatalog,catalogQuery:catalogQuery,tileTap:tileTap,addCatQuery:addCatQuery,
-  openItem:openItem,saveItem:saveItem,deleteItem:deleteItem,addRecipe:addRecipe,
+  openItem:openItem,saveItem:saveItem,deleteItem:deleteItem,addRecipe:addRecipe,addIngredients:addIngredients,
   openSync:openSync,renderSyncUI:renderSyncUI,createSyncRoom:createSyncRoom,joinSyncRoom:joinSyncRoom,
   copySyncCode:copySyncCode,shareSyncCode:shareSyncCode,syncNow:syncNow,disconnectSync:disconnectSync,
   openCount:function(){return openItems().length;},

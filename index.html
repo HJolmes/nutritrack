@@ -690,7 +690,7 @@ body.kb-open #feedbackFab{display:none;}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.228</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.231</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -1062,7 +1062,7 @@ body.kb-open #feedbackFab{display:none;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.228</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.231</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1188,6 +1188,7 @@ body.kb-open #feedbackFab{display:none;}
         </div>
         <div id="pickerChatResult" class="hidden" style="margin-bottom:10px;">
           <div style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:6px;">Erkannte Zutaten</div>
+          <div id="pickerLinkSrcHint"></div>
           <div style="margin-bottom:6px;">
             <input type="text" class="finp" id="pickerChatRecipeName" placeholder="Rezeptname (optional)">
           </div>
@@ -1231,12 +1232,13 @@ body.kb-open #feedbackFab{display:none;}
       <div class="picker-panel" id="ppanel-link">
         <textarea id="pickerLinkInput" rows="3"
           style="width:100%;box-sizing:border-box;border:1.5px solid var(--br);border-radius:12px;padding:12px;font-size:14px;font-family:inherit;resize:none;outline:none;color:var(--tx);"
-          placeholder="Rezept-URL einfügen – auch mit kopiertem Text drumherum (z.B. Chefkoch)"
+          placeholder="Rezept-Link einfügen – von fast jeder Rezept-Seite oder jedem Food-Blog, auch mit kopiertem Text drumherum"
           oninput="pickerLinkDetect()"></textarea>
         <div id="pickerLinkUrlInfo" style="margin-top:6px;min-height:30px;"></div>
         <button type="button" class="abt" id="pickerLinkImportBtn" disabled onclick="pickerLinkImport()" style="opacity:.4;">🔗 Rezept laden</button>
         <div id="pickerLinkResult" class="hidden" style="margin-top:10px;">
           <div style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:6px;">Erkannte Zutaten</div>
+          <div id="pickerLinkSrcHint"></div>
           <div style="margin-bottom:6px;"><input type="text" class="finp" id="pickerLinkRecipeName" placeholder="Rezeptname (optional)"></div>
           <div class="ing-list" id="pickerLinkIngList"></div>
           <div id="pickerLinkTotal" class="rec-total"></div>
@@ -1244,10 +1246,16 @@ body.kb-open #feedbackFab{display:none;}
             <input type="number" class="ai2" id="pickerLinkPortions" value="1" min="0.1" step="0.1" onchange="pickerUpdateLinkTotal()">
             <div class="au">Portion(en)</div>
           </div>
-          <div style="display:flex;gap:8px;margin-top:10px;">
+          <div style="font-size:11px;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;margin:12px 2px 6px;">Wohin damit?</div>
+          <div style="display:flex;gap:8px;">
             <button type="button" class="cb2" style="margin-top:0;" onclick="pickerLinkAdd(false)">✓ Eintragen</button>
             <button type="button" class="cb2" style="margin-top:0;background:linear-gradient(135deg,#2d5f8a,#3d8bc4);" onclick="pickerLinkAdd(true)">📋 Als Rezept</button>
           </div>
+          <button type="button" class="cb2" id="pickerLinkShopBtn" style="width:100%;margin-top:8px;background:linear-gradient(135deg,#2e7d52,#4caf7d);" onclick="pickerLinkToShop()">🛒 Auf den Einkaufszettel</button>
+          <div id="pickerLinkShopOpen" class="hidden">
+            <button type="button" class="seb" onclick="pickerLinkOpenShop()">🛒 Einkaufszettel öffnen</button>
+          </div>
+          <div style="font-size:11px;color:var(--mu);margin:8px 2px 0;line-height:1.4;">Der Einkaufszettel kann zusätzlich zum Eintragen befüllt werden. Artikel, die schon auf dem Zettel stehen, werden nicht doppelt angelegt — sie bekommen nur den Rezeptnamen dazu.</div>
         </div>
       </div>
 
@@ -1332,7 +1340,7 @@ body.kb-open #feedbackFab{display:none;}
     <div class="mbd" style="height:calc(92vh - 80px);overflow-y:auto;-webkit-overflow-scrolling:touch;">
       <style>#helpOv details{border:1px solid var(--br);border-radius:12px;margin-bottom:8px;background:var(--card);}#helpOv summary{padding:12px 14px;font-weight:700;font-size:14px;cursor:pointer;list-style:none;}#helpOv summary::-webkit-details-marker{display:none;}#helpOv summary::before{content:'▸ ';color:var(--mu);}#helpOv details[open] summary::before{content:'▾ ';}#helpOv .hb{padding:0 14px 12px;font-size:13px;line-height:1.6;color:var(--tx);}#helpOv .hb ul{margin:6px 0;padding-left:18px;}</style>
       <details open><summary>🏠 Heute-Tab</summary><div class="hb">Der Startbildschirm zeigt dein Tagesziel, die verbleibenden Kalorien und die drei Makro-Karten (Protein, Kohlenhydrate, Fett). Darunter liegen die vier Mahlzeiten-Karten — antippen öffnet die Detail-Ansicht. Mit den Pfeilen <strong>‹ ›</strong> blätterst du zwischen Tagen. „▶ Nährwert-Details" klappt die Ampel-Kacheln (Zucker, Ballaststoffe, Salz …) auf. Wasser trackst du über die Gläser-Reihe, Sport über „+ Aktivität" — verbrannte Kalorien werden vom Ziel abgezogen.</div></details>
-      <details><summary>➕ Mahlzeit erfassen</summary><div class="hb">Der <strong>＋</strong>-Knopf in der Mitte der unteren Leiste öffnet den Picker, standardmäßig im <strong>Chat</strong>: Einfach tippen oder per 🎙️ diktieren, was du gegessen hast („Brot mit Käse und Schinken") — die App zerlegt es in Zutaten und schätzt Nährwerte. Weitere Wege:<ul><li><strong>Suche</strong> — lokale Treffer sofort beim Tippen, Enter lädt Online-Ergebnisse</li><li><strong>Zuletzt</strong> — kürzlich verwendete Einträge</li><li><strong>Foto</strong> — Teller fotografieren, KI erkennt die Komponenten</li><li><strong>Barcode</strong> — Verpackung scannen</li><li><strong>Eigenes</strong> — Nährwerte selbst eintragen; mit Häkchen „Nur einmal eintragen" wird nichts dauerhaft gespeichert</li><li><strong>Link</strong> — Rezept-URL (z. B. Chefkoch) importieren</li></ul></div></details>
+      <details><summary>➕ Mahlzeit erfassen</summary><div class="hb">Der <strong>＋</strong>-Knopf in der Mitte der unteren Leiste öffnet den Picker, standardmäßig im <strong>Chat</strong>: Einfach tippen oder per 🎙️ diktieren, was du gegessen hast („Brot mit Käse und Schinken") — die App zerlegt es in Zutaten und schätzt Nährwerte. Weitere Wege:<ul><li><strong>Suche</strong> — lokale Treffer sofort beim Tippen, Enter lädt Online-Ergebnisse</li><li><strong>Zuletzt</strong> — kürzlich verwendete Einträge</li><li><strong>Foto</strong> — Teller fotografieren, KI erkennt die Komponenten</li><li><strong>Barcode</strong> — Verpackung scannen</li><li><strong>Eigenes</strong> — Nährwerte selbst eintragen; mit Häkchen „Nur einmal eintragen" wird nichts dauerhaft gespeichert</li><li><strong>Link</strong> — Rezept-Link von nahezu jeder Rezept-Seite oder jedem Food-Blog importieren (Chefkoch, Lecker, Kochbar, Essen &amp; Trinken, AllRecipes …). Die App liest zuerst die Rezeptdaten der Seite selbst und fragt die KI nur, wenn die Seite keine hat. Danach wählst du unter „Wohin damit?", ob das Rezept eingetragen, als Rezept gespeichert und/oder auf den Einkaufszettel gelegt wird</li></ul></div></details>
       <details><summary>🍽 Mahlzeit-Detail</summary><div class="hb">Die Karte einer Mahlzeit öffnet die Detail-Ansicht mit allen Posten. Unten findest du: <strong>📋 Vorlage</strong> (Mahlzeit als Vorlage laden/speichern), <strong>🔁 Wiederholen</strong> (an festen Wochentagen automatisch eintragen) und <strong>💾 Als Rezept</strong> (alle Einträge als Rezept in die Bibliothek übernehmen). Einzelne Einträge antippen zum Bearbeiten, Verschieben oder Löschen.</div></details>
       <details><summary>🛒 Einkaufszettel</summary><div class="hb">Unter „Mehr → Einkaufszettel" führst du eine Einkaufsliste: oben eintippen („2 Liter Milch" erkennt Menge und Kategorie von selbst) oder über „🧺 Artikel wählen" aus den Kacheln antippen. Ein Tipp auf einen Artikel hakt ihn ab, ✏️ ändert Name, Menge, Symbol und Kategorie. Über „🔄 Teilen" koppelst du ein zweites Gerät mit einem Code — beide Geräte sehen denselben Zettel in Echtzeit, verschlüsselt und getrennt vom Baby-Tagebuch. Rezepte übernimmst du in der Bibliothek über 🛒 → „Auf den Einkaufszettel".</div></details>
       <details><summary>📚 Bibliothek</summary><div class="hb">Unter „Mehr → Bibliothek" liegen deine Rezepte und eigenen Lebensmittel. Rezepte kannst du bearbeiten, duplizieren, teilen, als Einkaufsliste anzeigen und direkt in eine Mahlzeit übernehmen. Der 🔗-Knopf importiert ein Rezept per URL, 📥 löst einen geteilten Code/Link ein.</div></details>
@@ -1852,6 +1860,7 @@ body.kb-open #feedbackFab{display:none;}
           <div class="sf"><select class="sinp" id="shopItemCat"></select></div>
         </div>
       </div>
+      <div id="shopItemSrc"></div>
       <button type="button" class="svb" onclick="NTShop.saveItem()">Speichern ✓</button>
       <button type="button" class="seb" style="color:#c62828;" onclick="NTShop.deleteItem()">🗑 Vom Zettel nehmen</button>
     </div>
@@ -2436,7 +2445,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.228';
+var APP_VERSION='0.231';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung

@@ -72,6 +72,7 @@ function openPicker(meal, defaultTab){
   document.getElementById('pickerLinkImportBtn').disabled=true;
   document.getElementById('pickerLinkImportBtn').style.opacity='.4';
   document.getElementById('pickerLinkImportBtn').textContent='🔗 Rezept laden';
+  _pickerLinkResetShopBtn();
   var _ownOnce=document.getElementById('ownOnce');if(_ownOnce)_ownOnce.checked=false;
   pickerStopScan();
   // Title
@@ -1490,6 +1491,183 @@ function pickerUpdateChatTotal(){pickerUpdateTotal('Chat');}
 
 function pickerChatAdd(saveAsRecipe){_pickerAdd('💬','pickerChatRecipeName','pickerChatPortions','Chat-Eintrag',saveAsRecipe,true);}
 
+// ─── REZEPT-EXTRAKTION AUS EINER BELIEBIGEN REZEPT-SEITE ───
+// Reihenfolge, absteigend nach Verlässlichkeit:
+//   1. schema.org/Recipe als JSON-LD — das liefern praktisch alle Rezept-Seiten
+//      und Blog-Plugins (Chefkoch, Lecker, Kochbar, Essen & Trinken, WPRM,
+//      AllRecipes …). Exakt, sofort, ohne KI-Aufruf.
+//   2. Microdata (itemprop="recipeIngredient") — ältere Seiten.
+//   3. KI auf einem Textausschnitt rund um „Zutaten" — nur wenn 1+2 nichts
+//      hergeben. Der alte Weg „erste 3000 Zeichen der Seite" traf bei vielen
+//      Seiten nur Navigation und Cookie-Banner.
+function _htmlDecode(s){
+  s=String(s==null?'':s);
+  if(s.indexOf('&')<0)return s;
+  var ta=document.createElement('textarea');
+  ta.innerHTML=s;// nur .value wird gelesen, nichts wird ins Dokument gehängt
+  return ta.value;
+}
+function _stripTags(s){return _htmlDecode(String(s==null?'':s).replace(/<[^>]*>/g,' ')).replace(/\s+/g,' ').trim();}
+
+// Einheiten → Gramm/Milliliter für die Nährwert-Schätzung. Küchenmaße sind
+// Näherungen (1 EL ≈ 15 g), das reicht für eine Kalorienschätzung und ist
+// allemal besser als das alte „alles 100 g".
+var _ING_UNIT_G={
+  g:1,gramm:1,gramme:1,gr:1,kg:1000,kilo:1000,kilogramm:1000,
+  ml:1,milliliter:1,cl:10,dl:100,l:1000,liter:1000,
+  el:15,essloeffel:15,tbsp:15,tl:5,teeloeffel:5,tsp:5,
+  msp:0.5,messerspitze:0.5,prise:1,priese:1,spritzer:3,schuss:10,
+  tasse:150,cup:150,becher:200,glas:200,handvoll:30,
+  bund:40,zehe:5,scheibe:25,scheiben:25,blatt:2,blaetter:2,zweig:5,stange:80,
+  kugel:50,knolle:60,kopf:300,wuerfel:4,
+  stueck:100,stk:100,st:100,pc:100,
+  dose:400,dosen:400,packung:250,paeckchen:10,pck:250,pkg:250,pack:250,beutel:100,tuete:100
+};
+var _ING_FRAC={'½':0.5,'⅓':1/3,'⅔':2/3,'¼':0.25,'¾':0.75,'⅕':0.2,'⅖':0.4,'⅗':0.6,'⅘':0.8,'⅙':1/6,'⅚':5/6,'⅛':0.125,'⅜':0.375,'⅝':0.625,'⅞':0.875};
+function _ingNormU(s){
+  return String(s||'').toLowerCase()
+    .replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss')
+    .replace(/[^a-z]/g,'');
+}
+function _ingNum(tok){
+  tok=String(tok||'').trim();
+  if(_ING_FRAC[tok]!==undefined)return _ING_FRAC[tok];
+  var m=tok.match(/^(\d+)\s*\/\s*(\d+)$/);
+  if(m)return parseFloat(m[1])/parseFloat(m[2]);
+  var v=parseFloat(tok.replace(',','.'));
+  return isFinite(v)?v:null;
+}
+// „250 g Mehl", „2 EL Olivenöl", „1 Zwiebel", „1 ½ TL Salz", „2-3 Tomaten",
+// „Salz und Pfeffer" → {name, g, raw} – Menge immer in Gramm.
+function _parseIngLine(raw){
+  var s=_stripTags(raw).replace(/ /g,' ').trim();
+  if(!s)return null;
+  var rest=s,v=null,unit='';
+  // Menge: Dezimal, Bruch, Unicode-Bruch, Bereich („2-3" → die kleinere Zahl,
+  // damit nichts zu großzügig gerechnet wird), optional gemischt („1 ½").
+  var m=rest.match(/^(\d+(?:[.,]\d+)?|[½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]|\d+\s*\/\s*\d+)\s*/);
+  if(m){
+    v=_ingNum(m[1]);
+    rest=rest.slice(m[0].length);
+    var r=rest.match(/^[-–bis]+\s*\d+(?:[.,]\d+)?\s*/i);
+    if(r)rest=rest.slice(r[0].length);// Bereich: obere Grenze verwerfen
+    var f=rest.match(/^([½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]|\d+\s*\/\s*\d+)\s*/);
+    if(f&&v!==null){var fv=_ingNum(f[1]);if(fv!==null){v+=fv;rest=rest.slice(f[0].length);}}
+  }
+  // Einheit: nur übernehmen, wenn danach noch ein Name steht — sonst ist
+  // „1 Dose" der Artikel selbst.
+  var um=rest.match(/^([A-Za-zÄÖÜäöüß.]+)\.?\s+(.*)$/);
+  if(um&&_ING_UNIT_G[_ingNormU(um[1])]!==undefined){unit=um[1].replace(/\.$/,'');rest=um[2];}
+  // Klammerzusätze und Zubereitungs-Nachsatz raus – „Tomaten, gehackt" findet
+  // die Lebensmittel-DB sonst nicht.
+  var name=rest.replace(/\([^)]*\)/g,' ').split(',')[0].replace(/\s+/g,' ').trim();
+  name=name.replace(/^(von|der|die|das|frische[rns]?|frisch)\s+/i,'').trim();
+  if(!name)name=s;
+  var uk=_ingNormU(unit);
+  var factor=uk?_ING_UNIT_G[uk]:null;
+  var g=null;
+  if(v!==null&&factor)g=Math.round(v*factor);
+  else if(v!==null)g=Math.round(Math.min(v,20)*100);// Stückzahl ohne Einheit
+  if(g!==null&&g<=0)g=null;
+  // Küchenmaße werden bewusst NUR umgerechnet, nicht weitergereicht: im
+  // Supermarkt hilft „30 g Mehl" mehr als „2 EL Mehl". Zutatenliste und
+  // Einkaufszettel rechnen deshalb durchgängig in Gramm.
+  return {name:name,g:g,raw:s};
+}
+
+// ── 1) JSON-LD ──
+function _ldPickRecipe(node,depth){
+  if(!node||depth>6)return null;
+  var i,r;
+  if(Array.isArray(node)){
+    for(i=0;i<node.length;i++){r=_ldPickRecipe(node[i],depth+1);if(r)return r;}
+    return null;
+  }
+  if(typeof node!=='object')return null;
+  var t=node['@type'];
+  var types=Array.isArray(t)?t:[t];
+  for(i=0;i<types.length;i++)if(String(types[i]||'').toLowerCase()==='recipe')return node;
+  var nests=['@graph','mainEntity','mainEntityOfPage','itemListElement','hasPart'];
+  for(i=0;i<nests.length;i++){
+    if(node[nests[i]]){r=_ldPickRecipe(node[nests[i]],depth+1);if(r)return r;}
+  }
+  return null;
+}
+function _ldText(v,depth){
+  depth=depth||0;
+  if(v==null||depth>4)return '';
+  if(typeof v==='string')return _stripTags(v);
+  if(typeof v==='number')return String(v);
+  if(Array.isArray(v))return v.map(function(x){return _ldText(x,depth+1);}).filter(Boolean).join('\n');
+  if(typeof v==='object'){
+    if(v.itemListElement)return _ldText(v.itemListElement,depth+1);
+    return _ldText(v.text||v.name||v['@value']||'',depth+1);
+  }
+  return '';
+}
+function _recipeFromJsonLd(html){
+  var re=/<script[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+  var m,rec=null;
+  while((m=re.exec(html))&&!rec){
+    var body=m[1].replace(/^\s*<!--/,'').replace(/-->\s*$/,'')
+                 .replace(/^\s*\/\*\s*<!\[CDATA\[\s*\*\//,'').replace(/\/\*\s*\]\]>\s*\*\/\s*$/,'')
+                 .replace(/^\s*<!\[CDATA\[/,'').replace(/\]\]>\s*$/,'');
+    var data=null;
+    try{data=JSON.parse(body);}catch(e){continue;}
+    rec=_ldPickRecipe(data,0);
+  }
+  if(!rec)return null;
+  var ingRaw=rec.recipeIngredient||rec.ingredients;
+  if(typeof ingRaw==='string')ingRaw=ingRaw.split(/\r?\n/);
+  if(!Array.isArray(ingRaw)||!ingRaw.length)return null;
+  var ings=[];
+  ingRaw.forEach(function(line){
+    var p=_parseIngLine(typeof line==='string'?line:_ldText(line));
+    if(p&&p.name)ings.push(p);
+  });
+  if(!ings.length)return null;
+  return {
+    name:_stripTags(_ldText(rec.name))||'',
+    ings:ings,
+    instructions:_ldText(rec.recipeInstructions),
+    yield:_stripTags(_ldText(rec.recipeYield)),
+    src:'Rezeptdaten der Seite'
+  };
+}
+
+// ── 2) Microdata ──
+function _recipeFromMicrodata(html){
+  var out=[],m;
+  var re=/itemprop\s*=\s*["'](?:recipeIngredient|ingredients)["'][^>]*>([\s\S]{0,300}?)<\//gi;
+  while((m=re.exec(html))){
+    var p=_parseIngLine(m[1]);
+    if(p&&p.name)out.push(p);
+  }
+  if(out.length<2)return null;
+  var nm=html.match(/itemprop\s*=\s*["']name["'][^>]*>([\s\S]{0,200}?)<\//i);
+  return {name:nm?_stripTags(nm[1]):'',ings:out,instructions:'',yield:'',src:'Rezeptdaten der Seite'};
+}
+
+// ── 3) Textausschnitt für die KI ──
+function _recipeTextWindow(html){
+  var text=String(html||'')
+    .replace(/<script[\s\S]*?<\/script>/gi,' ')
+    .replace(/<style[\s\S]*?<\/style>/gi,' ')
+    .replace(/<(nav|header|footer|aside|form)[\s\S]*?<\/\1>/gi,' ')
+    .replace(/<[^>]+>/g,' ');
+  text=_htmlDecode(text).replace(/\s+/g,' ').trim();
+  var i=text.search(/\bZutaten\b|\bIngredients\b|\bIngr[ée]dients\b|\bIngredienti\b/i);
+  if(i>400)return text.slice(i-400,i+3600);
+  return text.slice(0,4000);
+}
+
+function _recipeFromHtml(html){
+  var r=null;
+  try{r=_recipeFromJsonLd(html);}catch(e){r=null;}
+  if(!r){try{r=_recipeFromMicrodata(html);}catch(e2){r=null;}}
+  return r;
+}
+
 // ─── PICKER: LINK/URL TAB ───
 function pickerLinkDetect(){
   var raw=document.getElementById('pickerLinkInput').value;
@@ -1512,60 +1690,89 @@ function pickerLinkImport(){
   var raw=document.getElementById('pickerLinkInput').value;
   var url=recipeImportExtractUrl(raw);
   if(!url)return;
-  if(!canUseAi()){showAiUnavailable();return;}
+  if(typeof isOnline!=='undefined'&&!isOnline){showToast('Internet benötigt');return;}
   var btn=document.getElementById('pickerLinkImportBtn');
-  btn.disabled=true;btn.textContent='⏳ Laden...';btn.style.opacity='.6';
+  btn.disabled=true;btn.textContent='⏳ Laden...';btn.style.opacity='1';
+  var fail=function(msg){
+    showToast(msg);
+    btn.disabled=false;btn.textContent='🔗 Rezept laden';btn.style.opacity='1';
+  };
   fetchT(urlProxyUrl(url),{headers:{'x-app-proxy-secret':getProxySecret()}},9000)
-    .then(function(r){return r.text();})
+    .then(function(r){
+      if(r.status===401)throw new Error('auth');
+      return r.text();
+    })
     .then(function(html){
-      var text=html.replace(/<script[\s\S]*?<\/script>/gi,'')
-                   .replace(/<style[\s\S]*?<\/style>/gi,'')
-                   .replace(/<[^>]+>/g,' ')
-                   .replace(/\s+/g,' ')
-                   .slice(0,3000);
+      // Erst die strukturierten Rezeptdaten der Seite versuchen – die kennen
+      // fast alle Rezept-Portale und Blogs, unabhängig vom Layout.
+      var rec=_recipeFromHtml(html);
+      if(rec&&rec.ings.length>=2){_pickerLinkFill(rec,btn);return;}
+      // Fallback: KI liest den Textausschnitt rund um „Zutaten".
+      if(!canUseAi()){
+        fail('Seite liefert keine Rezeptdaten – dafür wird die KI benötigt');
+        return;
+      }
+      btn.textContent='🤖 KI liest die Seite...';
       callClaude('claude-haiku-4-5',[{type:'text',text:
         'Extrahiere das Rezept aus diesem Text und gib NUR gültiges JSON zurück:\n'
-        +'{"name":"Rezeptname","zutaten":[{"name":"Zutat","menge":"100g"}],"anleitung":"Zubereitungsschritte (optional)"}\n'
-        +'Text: '+text}],800,
+        +'{"name":"Rezeptname","zutaten":[{"name":"Zutat","menge":"250 g"}],"portionen":"4","anleitung":"Zubereitungsschritte (optional)"}\n'
+        +'Übernimm die Mengenangabe wörtlich inklusive Einheit (z. B. "2 EL", "1 Dose", "500 g"). '
+        +'Ohne Mengenangabe lässt du "menge" leer.\n'
+        +'Text: '+_recipeTextWindow(html)}],900,
         function(resp){
+          var d=null;
           try{
             var a=resp.indexOf('{'),z=resp.lastIndexOf('}');
-            var d=JSON.parse(resp.slice(a,z+1));
-            if(!d.name||!d.zutaten||!d.zutaten.length)throw new Error();
-            var rawItems=d.zutaten.map(function(z){
-              var g=parseFloat((z.menge||'').replace(/[^\d.]/g,''))||100;
-              return{name:z.name,g:g,emoji:emo(z.name)};
-            });
-            window._pickerLinkInstructions=d.anleitung||'';
-            lookupNutrients(rawItems,function(ings){
-              pickerIngredients=ings;
-              document.getElementById('pickerLinkRecipeName').value=d.name;
-              function rebindLink(){
-                pickerRenderIngList('pickerLinkIngList',pickerIngredients,
-                  function(i,v){pickerIngredients[i].amount=parseFloat(v)||0;pickerUpdateLinkTotal();},
-                  function(i){pickerIngredients.splice(i,1);rebindLink();pickerUpdateLinkTotal();}
-                );
-              }
-              rebindLink();
-              pickerUpdateLinkTotal();
-              document.getElementById('pickerLinkResult').classList.remove('hidden');
-              btn.disabled=false;btn.textContent='🔗 Neu laden';btn.style.opacity='1';
-            });
-          }catch(e){
-            showToast('Rezept konnte nicht erkannt werden');
-            btn.disabled=false;btn.textContent='🔗 Rezept laden';btn.style.opacity='1';
-          }
+            d=JSON.parse(resp.slice(a,z+1));
+          }catch(e){d=null;}
+          if(!d||!d.zutaten||!d.zutaten.length){fail('Rezept konnte nicht erkannt werden');return;}
+          var ings=[];
+          d.zutaten.forEach(function(z){
+            var line=String((z.menge||'')+' '+(z.name||'')).trim();
+            var pz=_parseIngLine(line);
+            if(pz&&pz.name)ings.push(pz);
+          });
+          if(!ings.length){fail('Rezept konnte nicht erkannt werden');return;}
+          _pickerLinkFill({name:d.name||'',ings:ings,instructions:d.anleitung||'',
+                           yield:d.portionen?String(d.portionen):'',src:'KI-Auswertung'},btn);
         },
-        function(){
-          showToast('Import fehlgeschlagen');
-          btn.disabled=false;btn.textContent='🔗 Rezept laden';btn.style.opacity='1';
-        }
+        function(){fail('Import fehlgeschlagen');}
       );
     })
-    .catch(function(){
-      showToast('URL konnte nicht geladen werden');
-      btn.disabled=false;btn.textContent='🔗 Rezept laden';btn.style.opacity='1';
+    .catch(function(e){
+      fail(e&&e.message==='auth'
+        ? 'Proxy-Passwort fehlt oder ist falsch (Mehr → 🤖 KI)'
+        : 'URL konnte nicht geladen werden');
     });
+}
+
+// Gemeinsamer Abschluss für beide Extraktionswege: Nährwerte nachschlagen,
+// Liste rendern, Ziel-Auswahl freischalten.
+function _pickerLinkFill(rec,btn){
+  window._pickerLinkInstructions=rec.instructions||'';
+  var rawItems=rec.ings.map(function(x){
+    return {name:x.name,g:x.g,emoji:emo(x.name)};
+  });
+  lookupNutrients(rawItems,function(ings){
+    pickerIngredients=ings;
+    document.getElementById('pickerLinkRecipeName').value=rec.name||'';
+    var hint=document.getElementById('pickerLinkSrcHint');
+    if(hint){
+      var y=rec.yield?(' · Seite nennt '+rec.yield):'';
+      hint.innerHTML='<div style="font-size:11px;color:var(--mu);margin:2px 2px 6px;">Quelle: '+_esc(rec.src||'')+_esc(y)+'. Die Mengen gelten für das ganze Rezept.</div>';
+    }
+    function rebindLink(){
+      pickerRenderIngList('pickerLinkIngList',pickerIngredients,
+        function(i,v){pickerIngredients[i].amount=parseFloat(v)||0;pickerUpdateLinkTotal();},
+        function(i){pickerIngredients.splice(i,1);rebindLink();pickerUpdateLinkTotal();}
+      );
+    }
+    rebindLink();
+    pickerUpdateLinkTotal();
+    _pickerLinkResetShopBtn();
+    document.getElementById('pickerLinkResult').classList.remove('hidden');
+    if(btn){btn.disabled=false;btn.textContent='🔗 Neu laden';btn.style.opacity='1';}
+  });
 }
 
 function pickerUpdateLinkTotal(){pickerUpdateTotal('Link');}
@@ -1578,6 +1785,40 @@ function pickerLinkAdd(saveAsRecipe){
     saveX();
   }
   window._pickerLinkInstructions='';
+}
+
+// ─── PICKER: LINK → EINKAUFSZETTEL ───
+// Zweiter möglicher Zielort für ein importiertes Rezept. Bewusst ohne Schließen
+// des Pickers: wer die Zutaten einkauft, will das Rezept oft zusätzlich als
+// Rezept speichern oder gleich eintragen.
+function _pickerLinkResetShopBtn(){
+  var btn=document.getElementById('pickerLinkShopBtn');
+  if(btn){btn.disabled=false;btn.style.opacity='1';btn.textContent='🛒 Auf den Einkaufszettel';}
+  var open=document.getElementById('pickerLinkShopOpen');
+  if(open)open.classList.add('hidden');
+}
+function pickerLinkToShop(){
+  if(!window.NTShop){showToast('Einkaufszettel nicht verfügbar');return;}
+  if(!pickerIngredients.length){showToast('Keine Zutaten');return;}
+  var name=document.getElementById('pickerLinkRecipeName').value.trim()||'Import-Rezept';
+  var p=parseFloat(document.getElementById('pickerLinkPortions').value)||1;
+  var items=pickerIngredients.map(function(f){
+    // Immer Gramm – dieselbe Zahl, die auch in der Zutatenliste steht.
+    return {name:f.name,q:f.amount?Math.round(f.amount*p)+' g':'',emoji:f.emoji||''};
+  });
+  var r=NTShop.addIngredients(items,name);
+  if(!r.total){showToast('Nichts zu übernehmen');return;}
+  var btn=document.getElementById('pickerLinkShopBtn');
+  if(btn){btn.disabled=true;btn.style.opacity='.5';btn.textContent='✓ Auf dem Zettel';}
+  var open=document.getElementById('pickerLinkShopOpen');
+  if(open)open.classList.remove('hidden');
+  showToast(r.merged
+    ? (r.total+' Zutaten auf dem Zettel – '+r.merged+' war'+(r.merged===1?'':'en')+' schon drauf')
+    : (r.total+' Zutaten auf dem Einkaufszettel ✓'));
+}
+function pickerLinkOpenShop(){
+  closePicker();
+  if(window.NTShop)NTShop.open();
 }
 
 // ─── PICKER: EIGENES TAB (inkl. ehem. Quick: Checkbox „Nur einmal eintragen") ───

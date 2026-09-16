@@ -68,7 +68,7 @@
 /* iOS: kein Gummiband-Überscroll / Pull-to-Refresh auf der Seite (#183) */
 html,body{overscroll-behavior-y:none;}
 /* Scrollen in Overlays/Listen darf nicht auf die Seite dahinter durchschlagen (#183) */
-.s-card,.mod,.mbd,.rl,.chat-inp,.rec-results,.onb-slide{overscroll-behavior:contain;}
+.s-card,.mod,.mbd,.rl,.chat-inp,.rec-results,.onb-slide,.baby-tl{overscroll-behavior:contain;}
 body{font-family:'Nunito Sans',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;max-width:430px;margin:0 auto;padding-bottom:80px;overflow-x:hidden;}
 button,input,select,textarea{font-family:'Nunito Sans',sans-serif;cursor:pointer;}
 .screen{display:none;flex-direction:column;min-height:100vh;}
@@ -690,7 +690,7 @@ body.kb-open #feedbackFab{display:none;}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.223</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.224</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -810,6 +810,21 @@ body.kb-open #feedbackFab{display:none;}
         <button type="button" onclick="addWater(250)" style="flex:1;background:var(--gl);border:1.5px solid var(--g3);border-radius:8px;padding:5px;font-size:11px;font-weight:700;color:var(--g1);">🥛 250ml</button>
         <button type="button" onclick="addWater(330)" style="flex:1;background:var(--gl);border:1.5px solid var(--g3);border-radius:8px;padding:5px;font-size:11px;font-weight:700;color:var(--g1);">🥤 330ml</button>
         <button type="button" onclick="addWater(500)" style="flex:1;background:var(--gl);border:1.5px solid var(--g3);border-radius:8px;padding:5px;font-size:11px;font-weight:700;color:var(--g1);">🍶 500ml</button>
+      </div>
+    </div>
+    <div class="wc" id="babyCard" style="display:none;">
+      <div class="wh">
+        <div class="wt" id="babyCardTitle">👶 Baby</div>
+        <button type="button" onclick="NTBaby.openDiary()" style="background:var(--g2);border:none;border-radius:20px;color:white;font-size:13px;font-weight:700;padding:4px 12px;cursor:pointer;">Tagebuch →</button>
+      </div>
+      <div id="babyCardSum" style="font-size:12px;color:var(--mu);line-height:1.5;">Noch nichts eingetragen</div>
+      <div id="babyCardLast" style="font-size:12px;color:var(--g1);font-weight:600;margin-top:4px;min-height:16px;"></div>
+      <div id="babyNextSide" style="font-size:11px;color:var(--mu);margin-top:4px;min-height:14px;"></div>
+      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
+        <button type="button" onclick="NTBaby.quick('l')" style="flex:1;min-width:70px;background:var(--gl);border:1.5px solid var(--g3);border-radius:8px;padding:6px;font-size:11px;font-weight:700;color:var(--g1);">🤱 Links</button>
+        <button type="button" onclick="NTBaby.quick('r')" style="flex:1;min-width:70px;background:var(--gl);border:1.5px solid var(--g3);border-radius:8px;padding:6px;font-size:11px;font-weight:700;color:var(--g1);">🤱 Rechts</button>
+        <button type="button" onclick="NTBaby.quick('pee')" style="flex:1;min-width:70px;background:var(--gl);border:1.5px solid var(--g3);border-radius:8px;padding:6px;font-size:11px;font-weight:700;color:var(--g1);">💧 Pipi</button>
+        <button type="button" onclick="NTBaby.quick('poo')" style="flex:1;min-width:70px;background:var(--gl);border:1.5px solid var(--g3);border-radius:8px;padding:6px;font-size:11px;font-weight:700;color:var(--g1);">💩 Stuhl</button>
       </div>
     </div>
     <div class="wc" id="fastCard">
@@ -1011,6 +1026,11 @@ body.kb-open #feedbackFab{display:none;}
       <div class="lr-body"><div class="lr-name">Bibliothek</div><div class="lr-sub">Rezepte &amp; eigene Lebensmittel</div></div>
       <div class="lr-val">›</div>
     </div>
+    <div class="list-row" id="moreBabyRow" style="display:none;" onclick="NTBaby.openDiary()">
+      <div class="lr-ic">👶</div>
+      <div class="lr-body"><div class="lr-name">Baby-Tagebuch</div><div class="lr-sub">Stillen, Flasche, Windeln, Temperatur</div></div>
+      <div class="lr-val">›</div>
+    </div>
     <div class="list-row" onclick="openRecurManage()">
       <div class="lr-ic">🔁</div>
       <div class="lr-body"><div class="lr-name">Wiederkehrende Mahlzeiten</div><div class="lr-sub">Automatisch an festen Wochentagen eintragen</div></div>
@@ -1035,7 +1055,7 @@ body.kb-open #feedbackFab{display:none;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.223</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.224</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1312,6 +1332,8 @@ body.kb-open #feedbackFab{display:none;}
       <details><summary>💾 Backup</summary><div class="hb">Alle Sicherungswege liegen unter <strong>Mehr → 💾 Backup &amp; Daten</strong>: „Jetzt sichern"-Knopf, Datei-Export/-Import (JSON), OneDrive-Sync mit täglichem Autospeicher sowie lokale Autospeicher-Stände. Tipp: Vor einem Gerätewechsel einmal exportieren. Hinweis: Mahlzeit-Fotos sind gerätelokal und nicht Teil der Backup-Datei.</div></details>
       <details><summary>🏃 Sport-Sync</summary><div class="hb">Unter „Mehr → Sport-Sync" erzeugst du ein Token und verbindest eine iOS-Kurzbefehl-Automation („Wenn Training endet") oder einen Android-HTTP-Shortcut. Abgeschlossene Workouts erscheinen dann automatisch mit Apple-/Samsung-Badge und reduzieren dein Tagesziel.</div></details>
       <details><summary>🤖 KI</summary><div class="hb">Foto-Erkennung, Chat und Wochenbericht laufen über einen geschützten KI-Zugang — dafür brauchst du das Proxy-Passwort (Mehr → 🤖 KI). Optional kannst du dort einen eigenen KI-Anbieter (DeepSeek, OpenAI, Gemini, …) mit eigenem API-Key hinterlegen. Ohne Passwort funktioniert alles außer den KI-Funktionen.</div></details>
+      <details><summary>🤰 Schwangerschaft &amp; 🤱 Stillzeit</summary><div class="hb">Unter <strong>Mehr → Profil</strong> kannst du Schwangerschaft (Trimester oder errechneter Termin) oder Stillzeit angeben — beides schließt sich gegenseitig aus. Zuschläge auf den Kalorienbedarf: 2. Trimester +300, 3. Trimester +500, ausschließliches Stillen +500, Teilstillen mit Beikost +250 kcal/Tag (Richtwerte nach DGE). Der Zuschlag greift, sobald du „🧮 Kalorienbedarf berechnen" antippst. Beim Abnehmen in der Stillzeit deckelt die App das Defizit auf 500 kcal/Tag und geht nie unter 1800 kcal — darunter leiden Milchmenge und Nährstoffdichte. Zusätzlich kannst du die <strong>Lebensmittel-Ampel</strong> einschalten: Sie bewertet eingetragene Lebensmittel und meldet sich bei gelben und roten Treffern. Die Stillzeit-Ampel ist bewusst liberaler als die Schwangerschafts-Ampel — Rohmilchkäse, Sushi und Salami sind beim Stillen unbedenklich. Die Ampel ersetzt keine Beratung durch Hebamme, Ärztin oder Arzt.</div></details>
+      <details><summary>👶 Baby-Tagebuch</summary><div class="hb">Aktivieren unter <strong>Mehr → Profil → 👶 Baby-Tagebuch</strong> — unabhängig von Schwangerschaft und Stillzeit, damit auch Partner, Väter und Betreuende es führen können. Danach erscheint eine Kachel auf „Heute" und ein Eintrag unter „Mehr". Festhalten lassen sich: <ul><li><strong>Stillen</strong> — welche Brust und wie lange; die App schlägt vor, welche Seite als Nächstes dran ist</li><li><strong>Flasche</strong> — Menge in ml und Art (Muttermilch, Pre, Folgemilch)</li><li><strong>Windel</strong> — Pipi, Stuhl oder beides, bei Stuhl zusätzlich Farbe und Konsistenz</li><li><strong>Temperatur</strong> — mit Messort; ab 38,0 °C wird der Eintrag rot markiert</li><li><strong>Schlaf</strong> — von/bis</li><li><strong>Notiz</strong> — Freitext, z. B. „Vitamin D gegeben"</li></ul>Die vier Schnell-Knöpfe (Links, Rechts, 💧, 💩) tragen mit einem Tipp und der aktuellen Uhrzeit ein — jeder Eintrag lässt sich danach antippen und in Zeit und Details korrigieren. Die Einträge gehören immer zum Tag, der oben auf „Heute" ausgewählt ist, und wandern in jedes Backup mit. Das Tagebuch ist eine Gedächtnisstütze, keine medizinische Überwachung und stellt keine Diagnose.</div></details>
       <details><summary>❓ FAQ</summary><div class="hb"><strong>Warum stimmt eine Schätzung nicht?</strong> KI-Werte sind Näherungen — Menge und Zutaten lassen sich jederzeit anpassen.<br><strong>Funktioniert die App offline?</strong> Ja, Tagebuch, Suche (lokale Datenbank) und Bibliothek laufen offline; KI und Online-Suche brauchen Netz.<br><strong>Erinnerungen kommen nicht?</strong> Technisch bedingt erscheinen sie nur, solange die App geöffnet ist.<br><strong>Daten weg?</strong> Mehr → Backup &amp; Daten → Autospeicher anzeigen — dort liegen die letzten Stände.</div></details>
       <div style="text-align:center;margin:14px 0 6px;"><a href="nutritrack_anleitung.pdf" target="_blank" style="font-size:13px;color:var(--g2);font-weight:700;">📄 Anleitung als PDF öffnen</a></div>
     </div>
@@ -1337,6 +1359,152 @@ body.kb-open #feedbackFab{display:none;}
 </div>
 
 <!-- ══ SPORT ══ -->
+<!-- ══ BABY-TAGEBUCH ══ -->
+<div class="ov" id="babyOv" onclick="bgClose(event,'babyOv')">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" onclick="closeOv('babyOv')">✕</button>
+      <div class="mti">👶 Baby-Tagebuch</div>
+      <div class="msu" id="babyOvSub">Baby</div>
+    </div>
+    <div class="mbd">
+      <div style="background:var(--gl);border-radius:12px;padding:10px 12px;margin-bottom:10px;">
+        <div id="babyOvSum" style="font-size:12px;color:var(--g1);font-weight:600;line-height:1.5;">Noch nichts eingetragen</div>
+        <div id="babyOvNextSide" style="font-size:11px;color:var(--mu);margin-top:4px;display:none;"></div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+        <button type="button" onclick="NTBaby.quick('l')" style="flex:1;min-width:70px;background:var(--gl);border:1.5px solid var(--g3);border-radius:8px;padding:8px 6px;font-size:12px;font-weight:700;color:var(--g1);">🤱 Links</button>
+        <button type="button" onclick="NTBaby.quick('r')" style="flex:1;min-width:70px;background:var(--gl);border:1.5px solid var(--g3);border-radius:8px;padding:8px 6px;font-size:12px;font-weight:700;color:var(--g1);">🤱 Rechts</button>
+        <button type="button" onclick="NTBaby.quick('pee')" style="flex:1;min-width:70px;background:var(--gl);border:1.5px solid var(--g3);border-radius:8px;padding:8px 6px;font-size:12px;font-weight:700;color:var(--g1);">💧 Pipi</button>
+        <button type="button" onclick="NTBaby.quick('poo')" style="flex:1;min-width:70px;background:var(--gl);border:1.5px solid var(--g3);border-radius:8px;padding:8px 6px;font-size:12px;font-weight:700;color:var(--g1);">💩 Stuhl</button>
+      </div>
+      <button type="button" class="svb" style="margin-bottom:10px;" onclick="NTBaby.openEntry('breast')">＋ Eintrag (Zeit &amp; Details)</button>
+      <div id="babyFeverWarn" style="display:none;background:#ffebee;border:1px solid #ef9a9a;border-radius:10px;padding:10px;font-size:12px;color:#c62828;line-height:1.5;margin-bottom:10px;">
+        🌡️ Fieber gemessen (ab 38,0&nbsp;°C). Im ersten Lebensjahr – und bei Säuglingen unter 3&nbsp;Monaten immer – bitte ärztlich abklären lassen. Das Tagebuch stellt keine Diagnose.
+      </div>
+      <div class="baby-tl" id="babyTimeline" style="max-height:46vh;overflow-y:auto;"></div>
+      <div style="font-size:11px;color:var(--mu);margin-top:10px;line-height:1.5;">Die Einträge gehören zum oben gezeigten Tag – über die Pfeile auf „Heute" blätterst du zu anderen Tagen. Das Tagebuch wandert mit in jedes Backup.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ BABY-EINTRAG ══ -->
+<div class="ov" id="babyEntryOv" data-type="breast" onclick="bgClose(event,'babyEntryOv')">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" onclick="closeOv('babyEntryOv')">✕</button>
+      <div class="mti" id="babyEntryTitle">Neuer Eintrag</div>
+      <div class="msu">Uhrzeit ist frei änderbar</div>
+    </div>
+    <div class="mbd">
+      <div id="babyTypeTabs" style="display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:2px;">
+        <button type="button" class="stab act" data-bt="breast" onclick="NTBaby.setType('breast')">🤱 Stillen</button>
+        <button type="button" class="stab" data-bt="bottle" onclick="NTBaby.setType('bottle')">🍼 Flasche</button>
+        <button type="button" class="stab" data-bt="diaper" onclick="NTBaby.setType('diaper')">👶 Windel</button>
+        <button type="button" class="stab" data-bt="temp" onclick="NTBaby.setType('temp')">🌡️ Temp.</button>
+        <button type="button" class="stab" data-bt="sleep" onclick="NTBaby.setType('sleep')">😴 Schlaf</button>
+        <button type="button" class="stab" data-bt="note" onclick="NTBaby.setType('note')">📝 Notiz</button>
+      </div>
+      <div class="sf"><label class="lbl">Uhrzeit</label><input type="time" class="sinp" id="babyEntryTime"></div>
+
+      <div id="babyFields-breast">
+        <div class="srow">
+          <div class="sf"><label class="lbl">Brust</label>
+            <select class="sinp" id="babySide">
+              <option value="l">Links</option>
+              <option value="r">Rechts</option>
+              <option value="b">Beide</option>
+            </select>
+          </div>
+          <div class="sf"><label class="lbl">Dauer (Min.)</label><input type="number" class="sinp" id="babyMin" min="0" max="180" placeholder="optional"></div>
+        </div>
+      </div>
+
+      <div id="babyFields-bottle" style="display:none;">
+        <div class="srow">
+          <div class="sf"><label class="lbl">Menge (ml)</label><input type="number" class="sinp" id="babyMl" min="0" max="500" placeholder="120"></div>
+          <div class="sf"><label class="lbl">Art</label>
+            <select class="sinp" id="babyBottleKind">
+              <option value="mm">Muttermilch</option>
+              <option value="pre">Pre-Nahrung</option>
+              <option value="folge">Folgemilch</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div id="babyFields-diaper" style="display:none;">
+        <div class="sf"><label class="lbl">Inhalt</label>
+          <select class="sinp" id="babyDiaperKind" onchange="NTBaby.updateDiaperFields()">
+            <option value="pee">💧 Pipi</option>
+            <option value="poo">💩 Stuhl</option>
+            <option value="both">💧💩 Beides</option>
+          </select>
+        </div>
+        <div id="babyStoolWrap" style="display:none;">
+          <div class="srow">
+            <div class="sf"><label class="lbl">Farbe</label>
+              <select class="sinp" id="babyStoolColor">
+                <option value="">keine Angabe</option>
+                <option value="gelb">gelb</option>
+                <option value="senffarben">senffarben</option>
+                <option value="grün">grün</option>
+                <option value="braun">braun</option>
+                <option value="schwarz">schwarz</option>
+                <option value="weiß/hell">weiß/hell</option>
+                <option value="blutig">blutig</option>
+              </select>
+            </div>
+            <div class="sf"><label class="lbl">Konsistenz</label>
+              <select class="sinp" id="babyStoolCons">
+                <option value="">keine Angabe</option>
+                <option value="flüssig">flüssig</option>
+                <option value="breiig">breiig</option>
+                <option value="weich">weich</option>
+                <option value="fest">fest</option>
+                <option value="hart">hart</option>
+              </select>
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--mu);line-height:1.5;margin-bottom:8px;">Weißer, schwarzer (nach dem Kindspech) oder blutiger Stuhl gehört ärztlich abgeklärt.</div>
+        </div>
+      </div>
+
+      <div id="babyFields-temp" style="display:none;">
+        <div class="srow">
+          <div class="sf"><label class="lbl">Temperatur (°C)</label><input type="number" step="0.1" class="sinp" id="babyTempC" min="30" max="43" placeholder="37,0"></div>
+          <div class="sf"><label class="lbl">Gemessen</label>
+            <select class="sinp" id="babyTempSite">
+              <option value="rektal">rektal</option>
+              <option value="ohr">Ohr</option>
+              <option value="stirn">Stirn</option>
+              <option value="axillar">Achsel</option>
+            </select>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--mu);line-height:1.5;margin-bottom:8px;">Fieber ab 38,0&nbsp;°C. Rektal gemessen ist bei Säuglingen am genauesten.</div>
+      </div>
+
+      <div id="babyFields-sleep" style="display:none;">
+        <div class="srow">
+          <div class="sf"><label class="lbl">Von</label><input type="time" class="sinp" id="babySleepFrom"></div>
+          <div class="sf"><label class="lbl">Bis</label><input type="time" class="sinp" id="babySleepTo"></div>
+        </div>
+      </div>
+
+      <div id="babyFields-note" style="display:none;">
+        <div class="sf"><label class="lbl">Notiz</label><input type="text" class="sinp" id="babyNoteText" placeholder="z.B. Vitamin D gegeben, unruhig, Bauchweh"></div>
+      </div>
+
+      <div class="sf"><label class="lbl">Bemerkung (optional)</label><input type="text" class="sinp" id="babyEntryNote" placeholder="optional"></div>
+      <button type="button" class="svb" onclick="NTBaby.saveEntry()">Speichern ✓</button>
+      <button type="button" id="babyDeleteBtn" class="seb" style="display:none;margin-top:8px;color:#c62828;" onclick="NTBaby.deleteEntry()">🗑 Eintrag löschen</button>
+    </div>
+  </div>
+</div>
+
 <div class="ov" id="exerciseOv" onclick="bgClose(event,'exerciseOv')">
   <div class="mod">
     <div class="mhan"></div>
@@ -1779,6 +1947,56 @@ body.kb-open #feedbackFab{display:none;}
             </div>
           </div>
         </div>
+        <div class="sf" id="nursingRow" style="display:none;"><label class="lbl">🤱 Stillzeit</label>
+          <select class="sinp" id="snursing" onchange="updateNursingUI()">
+            <option value="0">Stille nicht</option>
+            <option value="excl">Ausschließlich stillen (+500 kcal)</option>
+            <option value="part">Teilstillen / mit Beikost (+250 kcal)</option>
+          </select>
+          <div id="nursInfo" style="font-size:12px;color:var(--g1);margin-top:4px;"></div>
+          <div id="nursExtras" style="display:none;">
+            <div id="nursWaterHint" style="display:none;margin-top:8px;padding:10px;background:var(--gl);border-radius:10px;font-size:12px;color:var(--g1);line-height:1.5;">
+              💧 Stillen erhöht den Flüssigkeitsbedarf um rund 700&nbsp;ml/Tag.
+              <button type="button" onclick="applyNursWaterGoal()" style="margin-left:6px;background:var(--g2);border:none;border-radius:999px;padding:4px 10px;font-size:11px;font-weight:700;color:#fff;cursor:pointer;">+3 Gläser übernehmen</button>
+            </div>
+            <div style="margin-top:8px;padding:10px;background:#fff8e1;border:1px solid #f9c74f;border-radius:10px;font-size:11px;color:#7d5a00;line-height:1.5;">
+              ℹ️ In der Stillzeit steigt auch der Bedarf an <b>Jod (260&nbsp;µg/Tag)</b>, <b>Vitamin D</b> und <b>DHA</b>. Die App erfasst keine Mikronährstoffe – bitte mit Hebamme, Ärztin oder Arzt abstimmen. Beim Abnehmen gilt: max. ca. 0,5&nbsp;kg/Woche und nicht unter 1800&nbsp;kcal/Tag.
+            </div>
+            <div id="nursWarnRow" style="margin-top:10px;padding:10px;background:var(--gl);border-radius:10px;border:1px solid var(--g3);">
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div>
+                  <div style="font-size:13px;font-weight:700;">🚦 Lebensmittel-Ampel Stillzeit</div>
+                  <div style="font-size:11px;color:var(--mu);margin-top:2px;">Eigene Bewertung – deutlich liberaler als in der Schwangerschaft</div>
+                </div>
+                <label style="position:relative;display:inline-block;width:44px;height:24px;">
+                  <input type="checkbox" id="snurswarn" style="opacity:0;width:0;height:0;" onchange="updateNursingUI()">
+                  <span id="nursWarnToggle" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#ccc;border-radius:24px;transition:.3s;"></span>
+                  <span id="nursWarnThumb" style="position:absolute;content:'';height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.3s;"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="sf" style="padding-top:12px;border-top:1px solid var(--br);">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div style="font-size:13px;font-weight:700;">👶 Baby-Tagebuch</div>
+              <div style="font-size:11px;color:var(--mu);margin-top:2px;">Stillen, Flasche, Windeln, Temperatur &amp; Schlaf festhalten</div>
+            </div>
+            <label style="position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0;">
+              <input type="checkbox" id="sbabyon" style="opacity:0;width:0;height:0;" onchange="updateBabyUI()">
+              <span id="babyOnToggle" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#ccc;border-radius:24px;transition:.3s;"></span>
+              <span id="babyOnThumb" style="position:absolute;content:'';height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.3s;"></span>
+            </label>
+          </div>
+          <div id="babyFields" style="display:none;margin-top:10px;">
+            <div class="srow">
+              <div class="sf"><label class="lbl">Name des Babys</label><input type="text" class="sinp" id="sbabyname" placeholder="optional"></div>
+              <div class="sf"><label class="lbl">Geburtsdatum</label><input type="date" class="sinp" id="sbabybirth"></div>
+            </div>
+            <div style="font-size:11px;color:var(--mu);line-height:1.5;">Unabhängig von Schwangerschaft und Stillzeit – auch Partner, Väter und Betreuende können das Tagebuch führen. Danach unter <b>Mehr → 👶 Baby-Tagebuch</b> und als Kachel auf „Heute".</div>
+          </div>
+        </div>
         <button type="button" class="svb" onclick="saveSettings()">Speichern ✓</button>
       </div>
 
@@ -1960,13 +2178,13 @@ body.kb-open #feedbackFab{display:none;}
 // ════════════════════════════════════════
 // SECTION: STATE
 // ════════════════════════════════════════
-var S={apiKey:'',name:'Du',goal:2000,goalManual:false,weight:0,height:0,age:0,gender:'',activity:'',pregnant:0,pregnantET:'',pregWarn:false,goalWeight:0,goalDate:'',goalAchievedShown:'',dietPrefs:[],dietFree:'',savedDietFree:[],dietWarn:false,macroTargets:{protein:0,carbs:0,fat:0},macroGoalMode:'percent',macroGoalG:{protein:0,carbs:0,fat:0},reminders:[],weightLog:{},portionMemory:{},waterGoal:8,waterUnit:250,mealTemplates:[],recurringMeals:[],exerciseLibrary:[],currentDate:'',days:{}};
+var S={apiKey:'',name:'Du',goal:2000,goalManual:false,weight:0,height:0,age:0,gender:'',activity:'',pregnant:0,pregnantET:'',pregWarn:false,nursing:0,nursWarn:false,babyOn:false,baby:{name:'',birth:''},babyLog:{},babyLastSide:'',goalWeight:0,goalDate:'',goalAchievedShown:'',dietPrefs:[],dietFree:'',savedDietFree:[],dietWarn:false,macroTargets:{protein:0,carbs:0,fat:0},macroGoalMode:'percent',macroGoalG:{protein:0,carbs:0,fat:0},reminders:[],weightLog:{},portionMemory:{},waterGoal:8,waterUnit:250,mealTemplates:[],recurringMeals:[],exerciseLibrary:[],currentDate:'',days:{}};
 // Tracking für Settings-Session: manuelle Eingabe vs. „Kalorienbedarf berechnen"
 var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.223';
+var APP_VERSION='0.224';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -2995,6 +3213,11 @@ function renderAll(){
           var worst=vals.find(function(r){return r.ampel==='rot';})||vals.find(function(r){return r.ampel==='gelb';})||vals.find(function(r){return r.ampel==='gruen';});
           if(worst)dot=pregAmpelDot(worst.ampel);
         }
+        if(S.nursWarn&&e.nursAmpel){
+          var nvals=Object.values(e.nursAmpel);
+          var nworst=nvals.find(function(r){return r.ampel==='rot';})||nvals.find(function(r){return r.ampel==='gelb';})||nvals.find(function(r){return r.ampel==='gruen';});
+          if(nworst)dot+=nursAmpelDot(nworst.ampel);
+        }
         if(S.dietWarn&&e.dietAmpel){
           var dvals=Object.values(e.dietAmpel);
           var dworst=dvals.find(function(r){return r.ampel==='rot';})||dvals.find(function(r){return r.ampel==='gelb';})||dvals.find(function(r){return r.ampel==='gruen';});
@@ -3034,6 +3257,13 @@ function renderAll(){
   renderWater();
   renderFasting();
   renderExercise();
+  renderBabyHub();
+  if(window.NTBaby)NTBaby.renderCard();
+}
+// Mehr-Hub-Eintrag folgt dem Schalter aus den Einstellungen
+function renderBabyHub(){
+  var row=document.getElementById('moreBabyRow');
+  if(row)row.style.display=S.babyOn?'':'none';
 }
 function renderWater(){
   var day=getDay(),w=day.water||0,goal=S.waterGoal||8;
@@ -3420,7 +3650,7 @@ function renderEditBody(e){
       var amtVal=missingG?'':(ing.amount||'');
       var bStyle=missingG?'border-color:var(--or);':'';
       var warn=missingG?'<span style="font-size:11px;color:var(--or);">⚠️</span>':'';
-      var ampelDot=(S.pregWarn&&ing.pregAmpel?pregAmpelDot(ing.pregAmpel.ampel):'')+(S.dietWarn&&ing.dietAmpel?dietAmpelDot(ing.dietAmpel.ampel):'');
+      var ampelDot=(S.pregWarn&&ing.pregAmpel?pregAmpelDot(ing.pregAmpel.ampel):'')+(S.nursWarn&&ing.nursAmpel?nursAmpelDot(ing.nursAmpel.ampel):'')+(S.dietWarn&&ing.dietAmpel?dietAmpelDot(ing.dietAmpel.ampel):'');
       var nid='edit-n-'+i;
       return'<div class="ing-wrap">'
         +'<div class="ing-item">'
@@ -4204,14 +4434,21 @@ function openSettings(tab){
   document.getElementById('sgoaldate').value=S.goalDate||'';
   var chk=document.getElementById('spregwarn');
   if(chk)chk.checked=!!S.pregWarn;
-  var pr=document.getElementById('pregnantRow');
-  if(pr)pr.style.display=(S.gender==='f')?'block':'none';
+  var nu=document.getElementById('snursing');if(nu)nu.value=S.nursing||0;
+  var nwc=document.getElementById('snurswarn');if(nwc)nwc.checked=!!S.nursWarn;
+  S.baby=S.baby||{name:'',birth:''};
+  var bon=document.getElementById('sbabyon');if(bon)bon.checked=!!S.babyOn;
+  var bnm=document.getElementById('sbabyname');if(bnm)bnm.value=S.baby.name||'';
+  var bbd=document.getElementById('sbabybirth');if(bbd)bbd.value=S.baby.birth||'';
+  _toggleFemaleRows(S.gender);
   document.getElementById('sgender').onchange=function(){
-    var pr=document.getElementById('pregnantRow');
-    if(pr)pr.style.display=(this.value==='f')?'block':'none';
+    _toggleFemaleRows(this.value);
     updatePregnantUI();
+    updateNursingUI();
   };
   updatePregnantUI();
+  updateNursingUI();
+  updateBabyUI();
   updateWeightLossInfo();
   renderReminders();
   var wg=document.getElementById('swatergoal');if(wg)wg.value=S.waterGoal||8;
@@ -4264,6 +4501,67 @@ function updatePregnantUI(){
   }
 }
 
+// Schwangerschaft und Stillzeit sind beide an „weiblich" gekoppelt (wie bisher).
+// Das Baby-Tagebuch bewusst NICHT – es steht allen offen.
+function _toggleFemaleRows(gender){
+  var isF=(gender==='f');
+  var pr=document.getElementById('pregnantRow');
+  if(pr)pr.style.display=isF?'block':'none';
+  var nr=document.getElementById('nursingRow');
+  if(nr)nr.style.display=isF?'block':'none';
+}
+
+function updateNursingUI(){
+  var sel=document.getElementById('snursing');
+  if(!sel)return;
+  var val=sel.value;
+  var isNurs=val==='excl'||val==='part';
+  var extras=document.getElementById('nursExtras');
+  if(extras)extras.style.display=isNurs?'block':'none';
+  var info=document.getElementById('nursInfo');
+  if(info)info.textContent=isNurs?('Zuschlag: +'+NURSING_ADD[val]+' kcal/Tag – wird bei „Kalorienbedarf berechnen" eingerechnet.'):'';
+  var wh=document.getElementById('nursWaterHint');
+  if(wh)wh.style.display=(isNurs&&(S.waterGoal||8)<11)?'block':'none';
+  // Schwangerschaft und Stillzeit schließen sich aus
+  var preg=document.getElementById('spregnant');
+  if(isNurs&&preg&&preg.value&&preg.value!=='0'){
+    preg.value='0';
+    updatePregnantUI();
+    showToast('Schwangerschaft zurückgesetzt – Zuschläge werden nicht addiert');
+  }
+  var chk=document.getElementById('snurswarn');
+  var tog=document.getElementById('nursWarnToggle');
+  var thumb=document.getElementById('nursWarnThumb');
+  if(chk&&tog&&thumb){
+    tog.style.background=chk.checked?'var(--g1)':'#ccc';
+    thumb.style.transform=chk.checked?'translateX(20px)':'translateX(0)';
+  }
+}
+
+function applyNursWaterGoal(){
+  var wg=document.getElementById('swatergoal');
+  var cur=parseInt(wg&&wg.value)||S.waterGoal||8;
+  var next=Math.min(20,cur+3);
+  if(wg)wg.value=next;
+  S.waterGoal=next;
+  saveS();renderAll();
+  var wh=document.getElementById('nursWaterHint');if(wh)wh.style.display='none';
+  showToast('Wasserziel: '+next+' Gläser');
+}
+
+function updateBabyUI(){
+  var chk=document.getElementById('sbabyon');
+  if(!chk)return;
+  var f=document.getElementById('babyFields');
+  if(f)f.style.display=chk.checked?'block':'none';
+  var tog=document.getElementById('babyOnToggle');
+  var thumb=document.getElementById('babyOnThumb');
+  if(tog&&thumb){
+    tog.style.background=chk.checked?'var(--g1)':'#ccc';
+    thumb.style.transform=chk.checked?'translateX(20px)':'translateX(0)';
+  }
+}
+
 function showETInfo(etVal){
   var info=document.getElementById('etInfo');if(!info||!etVal)return;
   var ssw=calcSSW(etVal);
@@ -4277,6 +4575,18 @@ function calcSSW(etVal){
   var lmp=new Date(et.getTime()-280*24*3600000);
   return Math.floor((new Date()-lmp)/(7*24*3600000));
 }
+
+// Kalorien-Zuschlag Stillzeit (DGE/D-A-CH-Referenzwerte, EFSA):
+// ausschließliches Stillen = Mehrbedarf ~635 kcal abzgl. ~130 kcal aus den
+// Fettreserven der Schwangerschaft → +500 kcal/Tag. Nach Beikost-Einführung
+// nennt die DGE keinen Fixwert (hängt von der Stillmenge ab) → +250 kcal.
+var NURSING_ADD={excl:500,part:250};
+// Untergrenze beim Abnehmen in der Stillzeit – darunter leiden Milchmenge
+// und Nährstoffdichte.
+var NURSING_MIN_KCAL=1800;
+
+function isNursing(){return S.nursing==='excl'||S.nursing==='part';}
+function getNursAddFromState(){return NURSING_ADD[S.nursing]||0;}
 
 function getPregAddFromState(){
   var mode=S.pregnant;
@@ -4346,6 +4656,14 @@ function saveSettings(){
   S.pregnant=document.getElementById('spregnant').value||0;
   S.pregnantET=document.getElementById('set').value||'';
   S.pregWarn=!!(document.getElementById('spregwarn')&&document.getElementById('spregwarn').checked);
+  S.nursing=(document.getElementById('snursing')&&document.getElementById('snursing').value)||0;
+  S.nursWarn=!!(document.getElementById('snurswarn')&&document.getElementById('snurswarn').checked);
+  // Schwangerschaft und Stillzeit schließen sich aus – Zuschläge nie addieren
+  if(isNursing())S.pregnant=0;
+  S.babyOn=!!(document.getElementById('sbabyon')&&document.getElementById('sbabyon').checked);
+  S.baby=S.baby||{name:'',birth:''};
+  var _bnm=document.getElementById('sbabyname');if(_bnm)S.baby.name=_bnm.value.trim();
+  var _bbd=document.getElementById('sbabybirth');if(_bbd)S.baby.birth=_bbd.value||'';
   S.goalWeight=parseFloat(document.getElementById('sgoalweight').value)||0;
   S.goalDate=document.getElementById('sgoaldate').value||'';
   // Kalorienziel: aus Eingabefeld (manuell überschreibbar)
@@ -4393,21 +4711,34 @@ function calcGoal(){
   } else {
     pregAdd=[0,0,300,500][parseInt(pregMode)]||0;
   }
-  var base=tdee+pregAdd;
+  // Stillzeit-Zuschlag (schließt Schwangerschaft aus, siehe updateNursingUI)
+  var nursSel=document.getElementById('snursing');
+  var nursMode=nursSel?nursSel.value:'0';
+  var nursAdd=NURSING_ADD[nursMode]||0;
+  if(nursAdd)pregAdd=0;
+  var base=tdee+pregAdd+nursAdd;
   // Abnehmziel einrechnen
   var total=base;
+  // In der Stillzeit nie unter NURSING_MIN_KCAL, sonst wie bisher 1000
+  var floor=nursAdd?NURSING_MIN_KCAL:1000;
+  var capped=false;
   if(gw&&gd&&gw<w){
     var days=Math.round((new Date(gd)-new Date())/(24*3600000));
     if(days>0){
       var deficit=Math.round((w-gw)*7700/days);
-      total=Math.max(1000,base-deficit);
+      // Defizit in der Stillzeit hart auf 500 kcal/Tag deckeln (~0,5 kg/Woche)
+      if(nursAdd&&deficit>500){deficit=500;capped=true;}
+      total=Math.max(floor,base-deficit);
+      if(total===floor&&base-deficit<floor)capped=true;
       if(deficit>500)showToast('⚠️ Defizit '+deficit+' kcal/Tag – über empfohlenes Limit');
     }
   }
   document.getElementById('sg').value=total;
   _goalFromCalc=true;_goalEditedManual=false;
   _updateGoalManualHint();
-  showToast('Berechnet: '+total+' kcal/Tag'+(pregAdd?' (+'+pregAdd+' SS)':''));
+  var addNote=nursAdd?' (+'+nursAdd+' Stillen)':(pregAdd?' (+'+pregAdd+' SS)':'');
+  showToast('Berechnet: '+total+' kcal/Tag'+addNote);
+  if(capped)showToast('🤱 In der Stillzeit auf max. 500 kcal Defizit bzw. '+NURSING_MIN_KCAL+' kcal begrenzt');
   updateWeightLossInfo();
 }
 
@@ -4447,6 +4778,23 @@ function checkPregWarn(ingredients,meal,entryIdx){
     'pregAmpel',showPregAmpelModal);
 }
 
+// Eigener Prompt statt Wiederverwendung des Schwangerschafts-Prompts: In der
+// Stillzeit sind Rohmilchkäse, Sushi, rohes Fleisch und Salami unbedenklich –
+// der SS-Prompt würde sie fälschlich rot markieren. Warnungen vor „blähenden"
+// Lebensmitteln sind ausdrücklich unerwünscht (keine Evidenz, schränken
+// Stillende unnötig ein).
+function checkNursWarn(ingredients,meal,entryIdx){
+  _checkAmpelWarn(ingredients,meal,entryIdx,S.nursWarn&&isNursing(),
+    'Bewerte diese Lebensmittel für STILLENDE (nicht Schwangere) wissenschaftlich. Antworte NUR mit gültigem JSON ohne Erklärung:\n'
+    +'[{"name":"Lebensmittelname","ampel":"gruen|gelb|rot|grau","grund":"kurze Begründung max 8 Wörter"}]\n'
+    +'gruen=unbedenklich, gelb=in Maßen ok, rot=meiden, grau=keine Empfehlung möglich.\n'
+    +'WICHTIG: In der Stillzeit gelten NICHT die Schwangerschaftsregeln. Rohmilchkäse, Sushi, rohes/kurzgebratenes Fleisch, Salami und rohe Eier sind beim Stillen gruen.\n'
+    +'Relevant sind nur: Alkohol (rot), Koffein über ca. 300 mg/Tag (gelb), quecksilberreiche Fische wie Thunfisch, Schwertfisch, Hai, Königsmakrele (gelb), Leber wegen Vitamin A (gelb), Salbei/Pfefferminze/Petersilie in Heilmengen (gelb, milchhemmend).\n'
+    +'Warne NICHT vor blähenden Lebensmitteln (Kohl, Zwiebeln, Hülsenfrüchte) – dafür gibt es keine Evidenz.\n'
+    +'Nur wissenschaftlich fundierte Empfehlungen. Lebensmittel: ',
+    'nursAmpel',showNursAmpelModal);
+}
+
 function ampelDot(ampel,color){
   if(!ampel)return '';
   var c={gruen:'#2d7d52',gelb:'#f9a825',rot:'#c62828',grau:'#bbb'}[ampel]||'';
@@ -4456,7 +4804,9 @@ function ampelDot(ampel,color){
   return '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+c+';margin-left:4px;border:1.5px solid '+border+';flex-shrink:0;" title="'+label+'"></span>';
 }
 function pregAmpelDot(ampel){return S.pregWarn?ampelDot(ampel,'rgba(0,0,0,0.1)'):''}
+function nursAmpelDot(ampel){return S.nursWarn?ampelDot(ampel,'rgba(0,0,0,0.1)'):''}
 function showPregAmpelModal(results){showAmpelModal(results,'🚦 Schwangerschafts-Hinweise','');}
+function showNursAmpelModal(results){showAmpelModal(results,'🤱 Stillzeit-Hinweise','');}
 function showDietAmpelModal(results,prefs){showAmpelModal(results,'🥗 Ernährungs-Hinweise',(prefs||[]).join(', '));}
 
 function showAmpelModal(results,title,subtitle){
@@ -6559,6 +6909,7 @@ function hsTestSync(){
 </script>
 <script src="picker.js"></script>
 <script src="js/health-sync.js"></script>
+<script src="js/baby.js"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

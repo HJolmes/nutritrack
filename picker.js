@@ -225,6 +225,7 @@ function pickerConfirmAdd(){
   rememberPortion(f.name,amt);
   checkDataQuality(f);
   checkPregWarn([f],pickerMeal,_idx);
+  checkNursWarn([f],pickerMeal,_idx);
   checkDietWarn([f],pickerMeal,_idx);
   showToast((f.emoji||'🍽')+' '+f.name+' hinzugefügt');
 }
@@ -976,6 +977,7 @@ function pickerBarcodeAdd(){
   saveS();renderAll();closePicker();
   animateAdd(pickerMeal);
   checkPregWarn([food],pickerMeal,_bidx);
+  checkNursWarn([food],pickerMeal,_bidx);
   checkDietWarn([food],pickerMeal,_bidx);
   showToast((food.emoji||'🍽')+' '+food.name+' hinzugefügt');
 }
@@ -1138,7 +1140,7 @@ function _pickerAdd(emoji,nameId,portionsId,defaultName,saveAsRecipe,hasEditMode
   }
   var _idx=getDay().meals[pickerMeal].length-1;
   saveS();renderAll();_pickerSavePhotoIfWanted();closePicker();animateAdd(pickerMeal);
-  checkPregWarn(ings,pickerMeal,_idx);checkDietWarn(ings,pickerMeal,_idx);
+  checkPregWarn(ings,pickerMeal,_idx);checkNursWarn(ings,pickerMeal,_idx);checkDietWarn(ings,pickerMeal,_idx);
   return createdRec;
 }
 function pickerPhotoAdd(saveAsRecipe){_pickerAdd('📸','pickerRecipeName','pickerPhotoPortions','Foto-Rezept',saveAsRecipe,true);}
@@ -1610,7 +1612,7 @@ function pickerRenderIngList(elId,ings,onAmtChange,onDel){
     var amtVal=missingG?'':(ing.amount||'');
     var borderStyle=missingG?'border-color:var(--or);':'';
     var warn=missingG?'<span style="font-size:11px;color:var(--or);">⚠️</span>':'';
-    var ampelDot=(S.pregWarn&&ing.pregAmpel?pregAmpelDot(ing.pregAmpel.ampel):'')+(S.dietWarn&&ing.dietAmpel?dietAmpelDot(ing.dietAmpel.ampel):'');
+    var ampelDot=(S.pregWarn&&ing.pregAmpel?pregAmpelDot(ing.pregAmpel.ampel):'')+(S.nursWarn&&ing.nursAmpel?nursAmpelDot(ing.nursAmpel.ampel):'')+(S.dietWarn&&ing.dietAmpel?dietAmpelDot(ing.dietAmpel.ampel):'');
     var nid=elId+'-n-'+i;
     return'<div class="ing-wrap">'
       +'<div class="ing-item">'

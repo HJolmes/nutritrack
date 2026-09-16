@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.223 (2026-07-27) — Branch `claude/ios-overscroll-fix-8a81kc` (iOS: kein Scroll-Rücksprung beim Überscrollen)
+**Stand:** v0.224 (2026-09-16) — Branch `claude/stillzeit-kalorien-baby-tagebuch-tg0kex` (Stillzeit-Kalorien, Stillzeit-Ampel, Baby-Tagebuch)
 
 ## URLs
 
@@ -35,6 +35,9 @@
 - **Header (v0.149/0.155):** `mainScreen`/`statsScreen` nur `?` `📥`; Versions-Tag `#appVersionTag` neben „Hej <Name>" (öffnet `whatsNewOv`, Text aus `APP_VERSION` beim Boot).
 - **Kalorien-Ampel (v0.149):** `_kcalAmpel(goal,eaten,S)` — ±10 % grün, Richtung aus `S.goalWeight` vs `S.weight`.
 - **Settings-Tabs (v0.187/v0.211):** `👤 Profil · 🎯 Ziele · 🥗 Ernährung · ⏰ Erinnerungen · 🤖 KI · 💾 Backup` (`stab-*`/`spanel-*`), Deep-Link via `openSettings(tab)`. Bibliothek-Panel existiert nicht mehr (eigenes `#libraryOv`).
+- **Stillzeit (v0.224):** `S.nursing` (`'0'|'excl'|'part'`) + `S.nursWarn`. Zuschläge in `NURSING_ADD={excl:500,part:250}` (DGE/D-A-CH; ausschließliches Stillen 635 kcal Mehrbedarf abzgl. ~130 kcal Fettreserven, Teilstillen ohne DGE-Fixwert → gesetzter Mittelwert). `isNursing()`/`getNursAddFromState()`; `calcGoal()` addiert den Zuschlag, **deckelt das Abnehm-Defizit auf 500 kcal/Tag** und nutzt den Boden `NURSING_MIN_KCAL=1800` statt 1000. Schwangerschaft und Stillzeit schließen sich aus (`updateNursingUI()` setzt `spregnant` zurück, `saveSettings()` erzwingt `S.pregnant=0`) — Zuschläge werden nie addiert. Wasserziel-Vorschlag `applyNursWaterGoal()` (+3 Gläser ≈ 700 ml), nur solange `waterGoal<11`. `updateGoalFromET()` bleibt unberührt (nur ET-Automatik). UI-Zeile `nursingRow` hängt wie `pregnantRow` an `gender==='f'` (`_toggleFemaleRows()`).
+- **Stillzeit-Ampel (v0.224):** `checkNursWarn()` mit **eigenem Prompt** — der SS-Prompt würde Rohmilchkäse/Sushi/Salami falsch rot markieren, in der Stillzeit sind sie grün. Prompt warnt ausdrücklich **nicht** vor blähenden Lebensmitteln (keine Evidenz). Feld `nursAmpel`, `nursAmpelDot()`, `showNursAmpelModal()`; Aufrufe in `picker.js` überall neben `checkPregWarn`/`checkDietWarn`.
+- **Baby-Tagebuch (v0.224):** `js/baby.js` → `window.NTBaby`, in `CORE_ASSETS`. Aktivierung über **eigenen Schalter `S.babyOn`** (Mehr → Profil) — bewusst **unabhängig von Geschlecht, Schwangerschaft und Stillzeit**, damit auch Väter/Partner führen können. Daten in **`S.babyLog[dateKey][]`** (eigener Key, *nicht* `S.days` — sonst räumt `compressOldDays` sie nach 90 Tagen mit ab); `S.baby={name,birth}`. Eintragstypen `breast|bottle|diaper|temp|sleep|note`, Zeitstempel über `tsFor(dateKey,'HH:MM')` (bezieht sich auf den **angezeigten** Tag, nicht auf „jetzt"). Schnell-Knöpfe `NTBaby.quick('l'|'r'|'pee'|'poo')` = ein Tipp ohne Dialog; `nextSide()` schlägt die nächste Brust vor. Fieber ab 38,0 °C rot + Hinweisbox (keine Diagnose, keine KI-Auswertung der Baby-Daten). Overlays `babyOv` (Timeline, Container `.baby-tl` in der `overscroll-behavior:contain`-Regel) und `babyEntryOv`. Heute-Kachel `#babyCard` + Mehr-Eintrag `#moreBabyRow`, beide über `renderAll()` → `renderBabyHub()`/`NTBaby.renderCard()`. Backup läuft automatisch mit (`backupState()` kopiert ganz `S`).
 - **Kalorienziel manuell (v0.221):** `S.goalManual` — manuell eingetragenes Ziel wird von `updateGoalFromET()` nicht mehr überschrieben (#178). „🧮 Kalorienbedarf berechnen" setzt den Merker zurück; Hinweistext unter dem Feld.
 - **Safe-Area (v0.161/0.168):** `viewport-fit=cover`; bnav/body/fb-fab mit `env(safe-area-inset-bottom)`, Header mit `env(safe-area-inset-top)`.
 - **Mahlzeit-Detail (v0.151/0.157/0.181):** CTAs `📋 Vorlage`, `💾 Als Rezept` (`saveMealAsRecipe`), `🔁 Wiederholen` (`openRecurCreate`); zentraler ＋ → `openPicker('<meal>')`.
@@ -67,17 +70,21 @@
 
 ## Code-Suchpfade
 
-`index.html`: `// SECTION: SHARE & IMPORT`, `// SECTION: FEEDBACK`, `// SECTION: HEALTH SYNC`, `openSettings(tab)`, `openLibrary()`, `openBackupSettings()`, `backupNow()`, `verifyProxySecret()`, `skipProxyPwGate()`, `_migratePhotosToIdb()`, `_hydratePhotoImgs()`, `openImportPaste()`, `openHelp()`. Modale: `libraryOv`, `shareItemOv`, `importPasteOv`, `importConfirmOv`, `iosSwitchOv`, `feedbackOv`, `healthSyncOv`, `helpOv`, `mealDetailScreen`.
+`index.html`: `NURSING_ADD`, `isNursing()`, `checkNursWarn()`, `_toggleFemaleRows()`, `updateNursingUI()`, `updateBabyUI()`, `applyNursWaterGoal()`, `renderBabyHub()`, `// SECTION: SHARE & IMPORT`, `// SECTION: FEEDBACK`, `// SECTION: HEALTH SYNC`, `openSettings(tab)`, `openLibrary()`, `openBackupSettings()`, `backupNow()`, `verifyProxySecret()`, `skipProxyPwGate()`, `_migratePhotosToIdb()`, `_hydratePhotoImgs()`, `openImportPaste()`, `openHelp()`. Modale: `babyOv`, `babyEntryOv`, `libraryOv`, `shareItemOv`, `importPasteOv`, `importConfirmOv`, `iosSwitchOv`, `feedbackOv`, `healthSyncOv`, `helpOv`, `mealDetailScreen`.
 
 `picker.js`: `pickerSearchLocalLive`, `pickerSaveOwn` (mit `ownOnce`), `_pickerVoiceStart`/`_pickerDedupOverlap` (Diktat inkl. Per-Index-Finals #156), `pickerLinkDetect/Import/Add`.
 
-`js/`: `fooddb.js` (DB/DE_EN), `changelog.js` (CHANGELOG — neue Einträge hier!), `idb-photos.js` (NTPhotos), `health-sync.js` (NTHealth), `zxing/` (WASM + JS-Fallback lokal).
+`js/`: `fooddb.js` (DB/DE_EN), `changelog.js` (CHANGELOG — neue Einträge hier!), `idb-photos.js` (NTPhotos), `health-sync.js` (NTHealth), `baby.js` (NTBaby — Baby-Tagebuch), `zxing/` (WASM + JS-Fallback lokal).
 
 `worker/src/index.js`: `// ─── SHARE-LINK SHORTENER`, `// ─── FEEDBACK ENDPOINT`, `// ─── HEALTH WORKOUT INGEST`, `handleAiProvider`.
 
 `sw.js`: `index.html` network-first, restliche `CORE_ASSETS` cache-first; `install` per `fetch({cache:'reload'})`+`put` (nicht `cache.add()`).
 
 ## Live-Test offen
+
+- v0.224 Stillzeit-Kalorien: Mehr → Profil → Geschlecht weiblich → „🤱 Stillzeit" sichtbar; „Ausschließlich stillen" → Hinweis „+500 kcal", Wasser-/Mikronährstoff-Kasten erscheint; vorher gesetzte Schwangerschaft wird beim Umschalten zurückgesetzt (Toast) und umgekehrt; Mehr → Ziele → „🧮 Kalorienbedarf berechnen" → Ziel enthält +500 bzw. +250; mit aggressivem Abnehmziel → Toast „auf max. 500 kcal Defizit bzw. 1800 kcal begrenzt", Ziel nie unter 1800; ohne Stillzeit gilt weiter der alte Boden 1000; „+3 Gläser übernehmen" erhöht das Wasserziel und die Gläser-Reihe auf „Heute"; nach App-Neustart bleibt alles gesetzt
+- v0.224 Stillzeit-Ampel: Ampel einschalten → Rohmilchkäse/Salami/Sushi eintragen → **grün**, kein Warn-Banner (Gegenprobe zur Schwangerschafts-Ampel); Rotwein → rot, Thunfisch → gelb, Banner erscheint; Kohl/Zwiebeln/Linsen → keine Warnung; Punkte erscheinen in der Mahlzeit-Liste und im Mahlzeit-Detail; Ampel ausschalten → keine KI-Anfrage mehr
+- v0.224 Baby-Tagebuch (iPhone-PWA + Android): Mehr → Profil → Schalter „👶 Baby-Tagebuch" an, Name + Geburtsdatum → Speichern → Kachel auf „Heute" und Eintrag unter „Mehr" erscheinen; Schnell-Knöpfe Links/Rechts/💧/💩 tragen mit einem Tipp ein; „Vorschlag: nächste Seite" wechselt korrekt; „＋ Eintrag" → alle 6 Typen speicherbar, Uhrzeit änderbar, Windel-Stuhlfelder erscheinen nur bei 💩/Beides; Temperatur 38,4 → roter Eintrag + Hinweisbox + Toast; Eintrag antippen → bearbeiten und löschen; auf „Heute" einen Tag zurückblättern → Einträge gehören zum richtigen Tag, neue Einträge landen dort und nicht bei heute; Tagebuch-Liste bis ans Ende scrollen → Seite dahinter bewegt sich nicht (#183 unverändert); Tastatur im Notiz-Feld → Feld bleibt sichtbar (#181 unverändert); Export-JSON enthält `babyLog`, Import stellt es wieder her; Schalter aus → Kachel und Mehr-Eintrag verschwinden, Daten bleiben erhalten; Schalter sichtbar und nutzbar auch bei Geschlecht „männlich"
 
 - v0.223 Überscroll (#183, iPhone-PWA): Heute-Tab ganz nach unten scrollen → Ansicht bleibt unten, springt nicht mehr an den Anfang; am Seitenende ziehen → kein Gummiband über den Rand hinaus; in Overlays (Picker, Einstellungen, Hilfe) bis ans Listenende scrollen → Seite dahinter bewegt sich nicht; Bottom-Nav sitzt nach Scrollen, Tab-Wechsel und Tastatur-Schließen weiterhin unten (#177 unverändert); Android-Gegenprobe
 - v0.222 Tastatur (#181, iPhone-PWA): Picker-Chat öffnen → in die Eingabe tippen → Feld bleibt über der Tastatur sichtbar, Bottom-Nav und 🐛-Knopf verschwinden solange; Gramm-Feld in Mahlzeit-Detail → Eintrag bearbeiten sowie im Picker ebenso sichtbar; Tastatur schließen → Nav/🐛 wieder da und Leiste sitzt unten (#177 unverändert); Android-Gegenprobe; Desktop-Browser und iPad mit Hardware-Tastatur: Nav bleibt beim Tippen sichtbar
@@ -103,11 +110,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.218 | #176 | Diktat-Halten = Tap-Logik (kein continuous), Wortdopplung |
 | v0.220 | #180 | Bottom-Nav fest am unteren Rand (#177) |
 | v0.221 | #179 | Manuelles Kalorienziel bleibt nach Neustart (#178) |
 | v0.222 | #182 | Eingabefelder bleiben bei offener Tastatur sichtbar (#181) |
-| v0.223 | — | iOS: kein Scroll-Rücksprung beim Überscrollen (#183) |
+| v0.223 | #184 | iOS: kein Scroll-Rücksprung beim Überscrollen (#183) |
+| v0.224 | — | Stillzeit-Kalorien + eigene Stillzeit-Ampel, Baby-Tagebuch |
 
 ---
 

@@ -1537,12 +1537,41 @@ function _ingNum(tok){
   var v=parseFloat(tok.replace(',','.'));
   return isFinite(v)?v:null;
 }
+// Unbestimmte Mengenwörter am Zeilenanfang. Sie sind nie Teil des
+// Lebensmittelnamens, landeten aber ungefiltert als „etwas Kurkumapulver" auf
+// dem Einkaufszettel. „ca. 200 g Mehl" scheiterte zusätzlich an der
+// Zahlenerkennung, weil die Zeile nicht mit einer Ziffer begann — deshalb
+// fliegen sie raus, BEVOR Menge und Einheit gelesen werden.
+// „etwas" steht vor „etwa", sonst würde die kürzere Alternative zu früh greifen.
+var _ING_VAGUE=/^(?:etwas|ein\s+wenig|ein\s+bisschen|wenig|reichlich|einige[rsn]?|ein\s+paar|eventuell|evtl\.?|ggf\.?|circa|ca\.?|etwa|knapp|jeweils|je)\s+/i;
+function _stripVague(s){
+  var out=s,prev;
+  for(var i=0;i<3;i++){prev=out;out=out.replace(_ING_VAGUE,'').trim();if(out===prev)break;}
+  return out||s;
+}
+
+// Klammerzusätze entfernen – tiefenbewusst. Das alte /\([^)]*\)/g scheiterte an
+// verschachtelten Klammern („Öl (Erdnussöl (raffiniert) oder Pflanzenöl )"):
+// es schloss auf der INNEREN Klammer und ließ „oder Pflanzenöl )" stehen, was
+// als Artikel „Pflanzenöl )" auf dem Zettel landete. Zählt jetzt die Tiefe und
+// verwirft auch verwaiste Klammern.
+function _stripBrackets(s){
+  var out='',depth=0,ch;
+  for(var i=0;i<s.length;i++){
+    ch=s.charAt(i);
+    if(ch==='('||ch==='['){depth++;continue;}
+    if(ch===')'||ch===']'){if(depth>0)depth--;continue;}
+    if(!depth)out+=ch;
+  }
+  return out;
+}
+
 // „250 g Mehl", „2 EL Olivenöl", „1 Zwiebel", „1 ½ TL Salz", „2-3 Tomaten",
 // „Salz und Pfeffer" → {name, g, raw} – Menge immer in Gramm.
 function _parseIngLine(raw){
   var s=_stripTags(raw).replace(/ /g,' ').trim();
   if(!s)return null;
-  var rest=s,v=null,unit='';
+  var rest=_stripVague(s),v=null,unit='';
   // Menge: Dezimal, Bruch, Unicode-Bruch, Bereich („2-3" → die kleinere Zahl,
   // damit nichts zu großzügig gerechnet wird), optional gemischt („1 ½").
   var m=rest.match(/^(\d+(?:[.,]\d+)?|[½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]|\d+\s*\/\s*\d+)\s*/);
@@ -1560,9 +1589,12 @@ function _parseIngLine(raw){
   if(um&&_ING_UNIT_G[_ingNormU(um[1])]!==undefined){unit=um[1].replace(/\.$/,'');rest=um[2];}
   // Klammerzusätze und Zubereitungs-Nachsatz raus – „Tomaten, gehackt" findet
   // die Lebensmittel-DB sonst nicht.
-  var name=rest.replace(/\([^)]*\)/g,' ').split(',')[0].replace(/\s+/g,' ').trim();
-  name=name.replace(/^(von|der|die|das|frische[rns]?|frisch)\s+/i,'').trim();
-  if(!name)name=s;
+  var clean=_stripBrackets(rest);
+  var name=clean.split(',')[0].replace(/\s+/g,' ').trim();
+  name=_stripVague(name).replace(/^(von|der|die|das|frische[rns]?|frisch)\s+/i,'').trim();
+  // Fallback-Kette: erst der Rest ohne Klammern, dann die Rohzeile – aber nie
+  // ein Name, der nur aus einem Klammerzusatz bestand.
+  if(!name)name=clean.replace(/\s+/g,' ').trim()||_stripBrackets(s).replace(/\s+/g,' ').trim()||s;
   var uk=_ingNormU(unit);
   var factor=uk?_ING_UNIT_G[uk]:null;
   var g=null;

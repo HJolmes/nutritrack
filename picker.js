@@ -1538,7 +1538,7 @@ function _ingNum(tok){
   return isFinite(v)?v:null;
 }
 // „250 g Mehl", „2 EL Olivenöl", „1 Zwiebel", „1 ½ TL Salz", „2-3 Tomaten",
-// „Salz und Pfeffer" → {name, g, q:{v,u,gramLike}}.
+// „Salz und Pfeffer" → {name, g, raw} – Menge immer in Gramm.
 function _parseIngLine(raw){
   var s=_stripTags(raw).replace(/ /g,' ').trim();
   if(!s)return null;
@@ -1569,16 +1569,10 @@ function _parseIngLine(raw){
   if(v!==null&&factor)g=Math.round(v*factor);
   else if(v!==null)g=Math.round(Math.min(v,20)*100);// Stückzahl ohne Einheit
   if(g!==null&&g<=0)g=null;
-  // `gramLike` entscheidet, was später auf dem Einkaufszettel steht: bei
-  // Gewichts-/Volumeneinheiten die (editierbare) Grammzahl, sonst das
-  // Küchenmaß im Klartext — „2 EL Olivenöl" kauft man besser ein als „30 g".
-  var GRAMLIKE={g:1,gramm:1,gramme:1,gr:1,kg:1,ml:1,milliliter:1,cl:1,dl:1,l:1,liter:1};
-  return {
-    name:name,
-    g:g,
-    raw:s,
-    q:v===null?null:{v:v,u:unit||'Stück',gramLike:!!GRAMLIKE[uk]}
-  };
+  // Küchenmaße werden bewusst NUR umgerechnet, nicht weitergereicht: im
+  // Supermarkt hilft „30 g Mehl" mehr als „2 EL Mehl". Zutatenliste und
+  // Einkaufszettel rechnen deshalb durchgängig in Gramm.
+  return {name:name,g:g,raw:s};
 }
 
 // ── 1) JSON-LD ──
@@ -1757,12 +1751,9 @@ function pickerLinkImport(){
 function _pickerLinkFill(rec,btn){
   window._pickerLinkInstructions=rec.instructions||'';
   var rawItems=rec.ings.map(function(x){
-    return {name:x.name,g:x.g,emoji:emo(x.name),_q:x.q};
+    return {name:x.name,g:x.g,emoji:emo(x.name)};
   });
   lookupNutrients(rawItems,function(ings){
-    // lookupNutrients baut neue Objekte (Reihenfolge = Eingabe-Reihenfolge,
-    // siehe v0.201) – das Küchenmaß für den Einkaufszettel mitnehmen.
-    ings.forEach(function(it,i){if(rawItems[i])it._q=rawItems[i]._q;});
     pickerIngredients=ings;
     document.getElementById('pickerLinkRecipeName').value=rec.name||'';
     var hint=document.getElementById('pickerLinkSrcHint');
@@ -1800,10 +1791,6 @@ function pickerLinkAdd(saveAsRecipe){
 // Zweiter möglicher Zielort für ein importiertes Rezept. Bewusst ohne Schließen
 // des Pickers: wer die Zutaten einkauft, will das Rezept oft zusätzlich als
 // Rezept speichern oder gleich eintragen.
-function _fmtQtyNum(v){
-  var r=Math.round(v*100)/100;
-  return String(r).replace('.',',');
-}
 function _pickerLinkResetShopBtn(){
   var btn=document.getElementById('pickerLinkShopBtn');
   if(btn){btn.disabled=false;btn.style.opacity='1';btn.textContent='🛒 Auf den Einkaufszettel';}
@@ -1816,12 +1803,8 @@ function pickerLinkToShop(){
   var name=document.getElementById('pickerLinkRecipeName').value.trim()||'Import-Rezept';
   var p=parseFloat(document.getElementById('pickerLinkPortions').value)||1;
   var items=pickerIngredients.map(function(f){
-    // Auf dem Zettel steht das Küchenmaß, wenn es eins gibt („2 EL Olivenöl"),
-    // sonst die Grammzahl aus der (editierbaren) Zutatenliste.
-    var q='';
-    if(f._q&&!f._q.gramLike)q=_fmtQtyNum(f._q.v*p)+' '+f._q.u;
-    else if(f.amount)q=Math.round(f.amount*p)+' g';
-    return {name:f.name,q:q,emoji:f.emoji||''};
+    // Immer Gramm – dieselbe Zahl, die auch in der Zutatenliste steht.
+    return {name:f.name,q:f.amount?Math.round(f.amount*p)+' g':'',emoji:f.emoji||''};
   });
   var r=NTShop.addIngredients(items,name);
   if(!r.total){showToast('Nichts zu übernehmen');return;}

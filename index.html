@@ -690,7 +690,7 @@ body.kb-open #feedbackFab{display:none;}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.226</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.227</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -821,6 +821,13 @@ body.kb-open #feedbackFab{display:none;}
       <div id="babyCardLast" style="font-size:12px;color:var(--g1);font-weight:600;margin-top:4px;min-height:16px;"></div>
       <div id="babyNextSide" style="font-size:11px;color:var(--mu);margin-top:4px;min-height:14px;"></div>
       <div id="babyQuickBtns" style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;"></div>
+    </div>
+    <div class="wc" id="shopCard" style="display:none;">
+      <div class="wh">
+        <div class="wt">🛒 Einkaufszettel</div>
+        <button type="button" onclick="NTShop.open()" style="background:var(--g2);border:none;border-radius:20px;color:white;font-size:13px;font-weight:700;padding:4px 12px;cursor:pointer;"><span id="shopCardVal">0 Artikel</span> →</button>
+      </div>
+      <div id="shopCardBody" style="margin-top:6px;"></div>
     </div>
     <div class="wc" id="fastCard">
       <div class="wh"><div class="wt">🌙 Fasten</div><div class="wv" id="fastStatus">Kein aktives Fasten</div></div>
@@ -1026,6 +1033,11 @@ body.kb-open #feedbackFab{display:none;}
       <div class="lr-body"><div class="lr-name">Baby-Tagebuch</div><div class="lr-sub">Stillen, Flasche, Windeln, Temperatur</div></div>
       <div class="lr-val">›</div>
     </div>
+    <div class="list-row" onclick="NTShop.open()">
+      <div class="lr-ic">🛒</div>
+      <div class="lr-body"><div class="lr-name">Einkaufszettel</div><div class="lr-sub" id="shopHubSub">Leer</div></div>
+      <div class="lr-val">›</div>
+    </div>
     <div class="list-row" onclick="openRecurManage()">
       <div class="lr-ic">🔁</div>
       <div class="lr-body"><div class="lr-name">Wiederkehrende Mahlzeiten</div><div class="lr-sub">Automatisch an festen Wochentagen eintragen</div></div>
@@ -1050,7 +1062,7 @@ body.kb-open #feedbackFab{display:none;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.226</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.227</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1322,6 +1334,7 @@ body.kb-open #feedbackFab{display:none;}
       <details open><summary>🏠 Heute-Tab</summary><div class="hb">Der Startbildschirm zeigt dein Tagesziel, die verbleibenden Kalorien und die drei Makro-Karten (Protein, Kohlenhydrate, Fett). Darunter liegen die vier Mahlzeiten-Karten — antippen öffnet die Detail-Ansicht. Mit den Pfeilen <strong>‹ ›</strong> blätterst du zwischen Tagen. „▶ Nährwert-Details" klappt die Ampel-Kacheln (Zucker, Ballaststoffe, Salz …) auf. Wasser trackst du über die Gläser-Reihe, Sport über „+ Aktivität" — verbrannte Kalorien werden vom Ziel abgezogen.</div></details>
       <details><summary>➕ Mahlzeit erfassen</summary><div class="hb">Der <strong>＋</strong>-Knopf in der Mitte der unteren Leiste öffnet den Picker, standardmäßig im <strong>Chat</strong>: Einfach tippen oder per 🎙️ diktieren, was du gegessen hast („Brot mit Käse und Schinken") — die App zerlegt es in Zutaten und schätzt Nährwerte. Weitere Wege:<ul><li><strong>Suche</strong> — lokale Treffer sofort beim Tippen, Enter lädt Online-Ergebnisse</li><li><strong>Zuletzt</strong> — kürzlich verwendete Einträge</li><li><strong>Foto</strong> — Teller fotografieren, KI erkennt die Komponenten</li><li><strong>Barcode</strong> — Verpackung scannen</li><li><strong>Eigenes</strong> — Nährwerte selbst eintragen; mit Häkchen „Nur einmal eintragen" wird nichts dauerhaft gespeichert</li><li><strong>Link</strong> — Rezept-URL (z. B. Chefkoch) importieren</li></ul></div></details>
       <details><summary>🍽 Mahlzeit-Detail</summary><div class="hb">Die Karte einer Mahlzeit öffnet die Detail-Ansicht mit allen Posten. Unten findest du: <strong>📋 Vorlage</strong> (Mahlzeit als Vorlage laden/speichern), <strong>🔁 Wiederholen</strong> (an festen Wochentagen automatisch eintragen) und <strong>💾 Als Rezept</strong> (alle Einträge als Rezept in die Bibliothek übernehmen). Einzelne Einträge antippen zum Bearbeiten, Verschieben oder Löschen.</div></details>
+      <details><summary>🛒 Einkaufszettel</summary><div class="hb">Unter „Mehr → Einkaufszettel" führst du eine Einkaufsliste: oben eintippen („2 Liter Milch" erkennt Menge und Kategorie von selbst) oder über „🧺 Artikel wählen" aus den Kacheln antippen. Ein Tipp auf einen Artikel hakt ihn ab, ✏️ ändert Name, Menge, Symbol und Kategorie. Über „🔄 Teilen" koppelst du ein zweites Gerät mit einem Code — beide Geräte sehen denselben Zettel in Echtzeit, verschlüsselt und getrennt vom Baby-Tagebuch. Rezepte übernimmst du in der Bibliothek über 🛒 → „Auf den Einkaufszettel".</div></details>
       <details><summary>📚 Bibliothek</summary><div class="hb">Unter „Mehr → Bibliothek" liegen deine Rezepte und eigenen Lebensmittel. Rezepte kannst du bearbeiten, duplizieren, teilen, als Einkaufsliste anzeigen und direkt in eine Mahlzeit übernehmen. Der 🔗-Knopf importiert ein Rezept per URL, 📥 löst einen geteilten Code/Link ein.</div></details>
       <details><summary>📤 Teilen &amp; Import</summary><div class="hb">Rezepte, Lebensmittel und Mahlzeiten lassen sich als Link teilen (📤-Symbole). Der Empfänger öffnet den Link — auf dem iPhone ggf. über „Mehr → 📥 Code / Link einlösen" in der installierten App einfügen.</div></details>
       <details><summary>💾 Backup</summary><div class="hb">Alle Sicherungswege liegen unter <strong>Mehr → 💾 Backup &amp; Daten</strong>: „Jetzt sichern"-Knopf, Datei-Export/-Import (JSON), OneDrive-Sync mit täglichem Autospeicher sowie lokale Autospeicher-Stände. Tipp: Vor einem Gerätewechsel einmal exportieren. Hinweis: Mahlzeit-Fotos sind gerätelokal und nicht Teil der Backup-Datei.</div></details>
@@ -1773,6 +1786,117 @@ body.kb-open #feedbackFab{display:none;}
       <div class="msu">Automatisch an festen Wochentagen eintragen</div>
     </div>
     <div class="mbd" id="recurMgmtList" style="display:flex;flex-direction:column;gap:8px;"></div>
+  </div>
+</div>
+
+<!-- ══ EINKAUFSZETTEL (geteilt) ══ -->
+<div class="ov" id="shopOv" onclick="bgClose(event,'shopOv')">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" onclick="NTShop.close()">✕</button>
+      <div class="mti">🛒 Einkaufszettel</div>
+      <div class="msu" id="shopOvSub">Noch nichts drauf</div>
+    </div>
+    <div class="mbd">
+      <div style="display:flex;gap:6px;margin-bottom:8px;">
+        <input type="text" class="sinp" id="shopInput" style="flex:1;" placeholder="Artikel eintippen …" autocomplete="off" autocapitalize="sentences" spellcheck="false" onkeydown="NTShop.inputKey(event)" oninput="NTShop.suggest()">
+        <button type="button" onclick="NTShop.submitInput()" style="background:linear-gradient(135deg,var(--g1),var(--g2));border:none;border-radius:11px;color:white;font-size:20px;font-weight:800;width:48px;flex-shrink:0;cursor:pointer;">＋</button>
+      </div>
+      <div id="shopSuggest" style="display:none;margin-bottom:6px;"></div>
+      <div style="display:flex;gap:6px;margin-bottom:4px;">
+        <button type="button" class="seb" style="flex:1;margin:0;" onclick="NTShop.openCatalog()">🧺 Artikel wählen</button>
+        <button type="button" class="seb" style="flex:1;margin:0;" onclick="NTShop.openSync()">🔄 Teilen <span id="shopSyncBadge" style="display:none;">✓</span></button>
+      </div>
+      <div id="shopList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ EINKAUFSZETTEL: ARTIKEL WÄHLEN ══ -->
+<div class="ov" id="shopAddOv" onclick="bgClose(event,'shopAddOv')">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" onclick="closeOv('shopAddOv')">✕</button>
+      <div class="mti">🧺 Artikel wählen</div>
+      <div class="msu">Antippen = auf den Zettel · nochmal antippen = wieder runter</div>
+    </div>
+    <div class="mbd">
+      <div class="sf"><input type="text" class="sinp" id="shopCatQ" placeholder="Suchen …" autocomplete="off" autocapitalize="sentences" spellcheck="false" oninput="NTShop.catalogQuery(this.value)"></div>
+      <div id="shopCatalog"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ EINKAUFSZETTEL: ARTIKEL BEARBEITEN ══ -->
+<div class="ov" id="shopItemOv" onclick="bgClose(event,'shopItemOv')">
+  <div class="mod" style="height:auto;max-height:88vh;">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" onclick="closeOv('shopItemOv')">✕</button>
+      <div class="mti">✏️ Artikel</div>
+    </div>
+    <div class="mbd">
+      <label class="lbl">Artikel</label>
+      <div class="sf"><input type="text" class="sinp" id="shopItemName" autocomplete="off"></div>
+      <label class="lbl">Menge / Notiz <span style="text-transform:none;font-weight:600;">(optional)</span></label>
+      <div class="sf"><input type="text" class="sinp" id="shopItemQty" placeholder="z. B. 2 Packungen, Bio" autocomplete="off"></div>
+      <div style="display:flex;gap:8px;">
+        <div style="width:78px;flex-shrink:0;">
+          <label class="lbl">Symbol</label>
+          <div class="sf"><input type="text" class="sinp" id="shopItemIcon" maxlength="4" style="text-align:center;font-size:20px;"></div>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <label class="lbl">Kategorie</label>
+          <div class="sf"><select class="sinp" id="shopItemCat"></select></div>
+        </div>
+      </div>
+      <button type="button" class="svb" onclick="NTShop.saveItem()">Speichern ✓</button>
+      <button type="button" class="seb" style="color:#c62828;" onclick="NTShop.deleteItem()">🗑 Vom Zettel nehmen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ EINKAUFSZETTEL: TEILEN ══ -->
+<div class="ov" id="shopSyncOv" onclick="bgClose(event,'shopSyncOv')">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" onclick="closeOv('shopSyncOv')">✕</button>
+      <div class="mti">🔄 Zettel teilen</div>
+      <div class="msu">Nur der Einkaufszettel, verschlüsselt</div>
+    </div>
+    <div class="mbd">
+      <div style="background:var(--gl);border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--g1);font-weight:600;line-height:1.5;" id="shopSyncStatus">Nicht verbunden</div>
+      <div style="background:#e8f5e9;border:1px solid var(--g3);border-radius:10px;padding:10px;font-size:11px;color:var(--g1);line-height:1.55;margin-bottom:12px;">
+        🔒 Übertragen werden <b>ausschließlich die Artikel dieses Zettels</b> — keine Mahlzeiten, Kalorien, Gewichts- oder Profildaten und auch nicht das Baby-Tagebuch. Die Artikel werden auf dem Gerät verschlüsselt; der Schlüssel steckt nur im Kopplungs-Code und wird nie übertragen. Der Abgleich läuft nach jeder Änderung und solange der Zettel offen ist, kann aber bis zu einer Minute brauchen.
+      </div>
+
+      <div id="shopSyncSetup">
+        <label class="lbl" style="margin-bottom:6px;">Erstes Gerät</label>
+        <button type="button" class="svb" style="margin-bottom:14px;" onclick="NTShop.createSyncRoom()">🔗 Kopplung starten</button>
+        <div style="padding-top:12px;border-top:1px solid var(--br);">
+          <label class="lbl" style="margin-bottom:6px;">Zweites Gerät</label>
+          <div class="sf"><input type="text" class="sinp" id="shopSyncJoinCode" placeholder="Kopplungs-Code einfügen" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+          <button type="button" class="seb" onclick="NTShop.joinSyncRoom()">Mit Code verbinden</button>
+        </div>
+      </div>
+
+      <div id="shopSyncLive" style="display:none;">
+        <label class="lbl" style="margin-bottom:6px;">Kopplungs-Code</label>
+        <div id="shopSyncCode" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;word-break:break-all;background:var(--gl);border:1px solid var(--br);border-radius:10px;padding:10px;line-height:1.5;user-select:all;-webkit-user-select:all;"></div>
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <button type="button" class="seb" style="flex:1;margin:0;" onclick="NTShop.copySyncCode()">📋 Kopieren</button>
+          <button type="button" class="seb" style="flex:1;margin:0;" onclick="NTShop.shareSyncCode()">📤 Teilen</button>
+        </div>
+        <div style="font-size:11px;color:#7d5a00;background:#fff8e1;border:1px solid #f9c74f;border-radius:10px;padding:10px;margin-top:10px;line-height:1.55;">
+          ⚠️ Der Code ist der Schlüssel zum Zettel. Gib ihn nur direkt an die Person weiter, die mitschreiben soll. Er gilt nur für den Einkaufszettel — das Baby-Tagebuch hat seinen eigenen Code.
+        </div>
+        <button type="button" class="svb" style="margin-top:12px;" onclick="NTShop.syncNow()">🔄 Jetzt abgleichen</button>
+        <button type="button" class="seb" style="margin-top:8px;color:#c62828;" onclick="NTShop.disconnectSync()">Verbindung trennen</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -2306,13 +2430,13 @@ body.kb-open #feedbackFab{display:none;}
 // ════════════════════════════════════════
 // SECTION: STATE
 // ════════════════════════════════════════
-var S={apiKey:'',name:'Du',goal:2000,goalManual:false,weight:0,height:0,age:0,gender:'',activity:'',pregnant:0,pregnantET:'',pregWarn:false,nursing:0,nursWarn:false,babyOn:false,baby:{name:'',birth:''},babyLog:{},babyTomb:{},babyQuick:null,babySync:null,goalWeight:0,goalDate:'',goalAchievedShown:'',dietPrefs:[],dietFree:'',savedDietFree:[],dietWarn:false,macroTargets:{protein:0,carbs:0,fat:0},macroGoalMode:'percent',macroGoalG:{protein:0,carbs:0,fat:0},reminders:[],weightLog:{},portionMemory:{},waterGoal:8,waterUnit:250,mealTemplates:[],recurringMeals:[],exerciseLibrary:[],currentDate:'',days:{}};
+var S={apiKey:'',name:'Du',goal:2000,goalManual:false,weight:0,height:0,age:0,gender:'',activity:'',pregnant:0,pregnantET:'',pregWarn:false,nursing:0,nursWarn:false,babyOn:false,baby:{name:'',birth:''},babyLog:{},babyTomb:{},babyQuick:null,babySync:null,shopList:[],shopTomb:{},shopSync:null,shopRecent:[],goalWeight:0,goalDate:'',goalAchievedShown:'',dietPrefs:[],dietFree:'',savedDietFree:[],dietWarn:false,macroTargets:{protein:0,carbs:0,fat:0},macroGoalMode:'percent',macroGoalG:{protein:0,carbs:0,fat:0},reminders:[],weightLog:{},portionMemory:{},waterGoal:8,waterUnit:250,mealTemplates:[],recurringMeals:[],exerciseLibrary:[],currentDate:'',days:{}};
 // Tracking für Settings-Session: manuelle Eingabe vs. „Kalorienbedarf berechnen"
 var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.226';
+var APP_VERSION='0.227';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -2680,6 +2804,8 @@ window.addEventListener('DOMContentLoaded',function(){
   // Baby-Tagebuch: höchste bekannte Revision merken und einmal abgleichen.
   // No-op, solange das Tagebuch aus oder keine Kopplung eingerichtet ist.
   if(window.NTBaby&&typeof NTBaby.boot==='function')setTimeout(function(){NTBaby.boot();},900);
+  // Einkaufszettel: gleiche Mechanik, eigener Raum. No-op ohne Kopplung.
+  if(window.NTShop&&typeof NTShop.boot==='function')setTimeout(function(){NTShop.boot();},1000);
   // iOS Safari/PWA: Bottom-Nav nach Viewport-Shift wieder anheften (#177)
   var _vvTimer=null;
   function _fixViewportChromeDebounced(){
@@ -3390,6 +3516,7 @@ function renderAll(){
   renderExercise();
   renderBabyHub();
   if(window.NTBaby)NTBaby.renderCard();
+  if(window.NTShop)NTShop.render();
 }
 // Mehr-Hub-Eintrag folgt dem Schalter aus den Einstellungen
 function renderBabyHub(){
@@ -5911,7 +6038,8 @@ function openShoppingList(recipeId){
     +'<input type="number" id="shoppingPortions" value="1" min="0.5" step="0.5" style="width:60px;border:2px solid var(--br);border-radius:8px;padding:6px;font-size:14px;font-weight:700;text-align:center;outline:none;" onchange="renderShoppingItems(\''+recipeId+'\')">'
     +'</div>'
     +'<div id="shoppingItems"></div>'
-    +'<button type="button" class="svb" style="margin-top:10px;" onclick="copyShoppingList()">📋 Kopieren</button>';
+    +'<button type="button" class="svb" style="margin-top:10px;" onclick="shoppingToList(\''+recipeId+'\')">🛒 Auf den Einkaufszettel</button>'
+    +'<button type="button" class="seb" onclick="copyShoppingList()">📋 Kopieren</button>';
   openOv('shoppingOv');
   renderShoppingItems(recipeId);
 }
@@ -5927,6 +6055,15 @@ function renderShoppingItems(recipeId){
       +'<div style="font-size:13px;font-weight:700;color:var(--g1);">'+amt+'g</div>'
       +'</div>';
   }).join('');
+}
+
+// Zutaten des Rezepts auf den geteilten Einkaufszettel übernehmen
+function shoppingToList(recipeId){
+  if(!window.NTShop){showToast('Einkaufszettel nicht verfügbar');return;}
+  var p=parseFloat((document.getElementById('shoppingPortions')||{}).value)||1;
+  NTShop.addRecipe(recipeId,p);
+  closeOv('shoppingOv');
+  NTShop.open();
 }
 
 function copyShoppingList(){
@@ -7041,6 +7178,7 @@ function hsTestSync(){
 <script src="picker.js"></script>
 <script src="js/health-sync.js"></script>
 <script src="js/baby.js"></script>
+<script src="js/shopping.js"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

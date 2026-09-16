@@ -682,67 +682,75 @@ async function handleWorkoutList(request, origin, env) {
   });
 }
 
-// ─── BABY DIARY SYNC (Ende-zu-Ende-verschlüsselt) ───
-// Zweck: zwei Geräte einer Familie halten NUR das Baby-Tagebuch synchron.
-// Ernährungsdaten, Gewicht und Mahlzeiten verlassen das Gerät hier nie.
+// ─── GETEILTE RÄUME: BABY-TAGEBUCH & EINKAUFSZETTEL (Ende-zu-Ende-verschlüsselt) ───
+// Zweck: zwei Geräte einer Familie halten NUR einen klar umrissenen Datentopf
+// synchron — das Baby-Tagebuch bzw. den Einkaufszettel. Ernährungsdaten,
+// Gewicht und Mahlzeiten verlassen das Gerät hier nie.
 //
 // Der Worker ist reiner Briefkasten: Er sieht ausschließlich `{id, rev, iv, ct}`.
 // `ct` ist AES-GCM-Chiffrat, dessen Schlüssel nur im Kopplungs-Code der beiden
-// Geräte steckt — Tageszuordnung, Uhrzeiten und Inhalte sind serverseitig nicht
-// lesbar. Gespeichert wird unter `bd:<room>:<entryId>`, analog zum Workout-
-// Ingest: `room` ist ein langer Zufallsstring, den die PWA erzeugt; der Worker
-// authentifiziert ihn nicht gegen eine Nutzerdatenbank. Bei 32+ Zeichen ist das
-// Erraten eines fremden Raums nicht praktikabel.
+// Geräte steckt — Tageszuordnung, Uhrzeiten, Artikelnamen und Mengen sind
+// serverseitig nicht lesbar. Gespeichert wird unter `<prefix><room>:<entryId>`,
+// analog zum Workout-Ingest: `room` ist ein langer Zufallsstring, den die PWA
+// erzeugt; der Worker authentifiziert ihn nicht gegen eine Nutzerdatenbank. Bei
+// 32+ Zeichen ist das Erraten eines fremden Raums nicht praktikabel.
+//
+// Beide Töpfe teilen sich diese Mechanik, haben aber **eigene Räume, eigene
+// Schlüssel und einen eigenen KV-Präfix** — wer den Einkaufszettel teilt, gibt
+// damit nicht das Baby-Tagebuch frei.
 //
 // Cursor: Der Worker vergibt beim Schreiben `srev` (eigene Uhr) als Metadatum.
 // `GET ?since=<srev>` liefert nur neuere Records. Bewusst NICHT die Client-Uhr —
 // bei Uhrzeit-Versatz zwischen zwei Handys gingen sonst Einträge verloren.
 // Die Client-Uhr (`rev`) entscheidet nur, welche Version bei einem Konflikt
 // gewinnt. KV ist eventually consistent: bis zu ~60 s Verzögerung sind normal.
-const BABY_TTL_SECONDS = 60 * 60 * 24 * 400; // 400 Tage
-const MAX_BABY_BODY_BYTES = 1024 * 256; // 256 KB
-const MAX_BABY_RECORDS = 200; // pro Push
-const MAX_BABY_CT_CHARS = 8000; // ein Eintrag ist winzig; großzügig gedeckelt
-const MAX_BABY_LIST_LIMIT = 200;
-const MAX_BABY_LIST_PAGES = 30; // bis zu 6000 Einträge pro Abruf
-const BABY_ROOM_RE = /^[A-Za-z0-9_-]{24,64}$/;
-const BABY_ID_RE = /^[A-Za-z0-9_.:-]{1,80}$/;
-const BABY_B64_RE = /^[A-Za-z0-9+/=]+$/;
-const BABY_KV_PREFIX = "bd:";
+const ROOM_TTL_SECONDS = 60 * 60 * 24 * 400; // 400 Tage
+const MAX_ROOM_BODY_BYTES = 1024 * 256; // 256 KB
+const MAX_ROOM_RECORDS = 200; // pro Push
+const MAX_ROOM_CT_CHARS = 8000; // ein Eintrag ist winzig; großzügig gedeckelt
+const MAX_ROOM_LIST_LIMIT = 200;
+const MAX_ROOM_LIST_PAGES = 30; // bis zu 6000 Einträge pro Abruf
+const ROOM_RE = /^[A-Za-z0-9_-]{24,64}$/;
+const ROOM_ID_RE = /^[A-Za-z0-9_.:-]{1,80}$/;
+const ROOM_B64_RE = /^[A-Za-z0-9+/=]+$/;
 
-function readBabyRoom(request) {
-  const raw = request.headers.get("x-baby-room") || "";
+// Ein Sync-Topf = Header, unter dem der Raum ankommt, + KV-Präfix.
+const SYNC_BABY = { header: "x-baby-room", prefix: "bd:", label: "Baby sync" };
+const SYNC_SHOP = { header: "x-shop-room", prefix: "sl:", label: "Shopping list sync" };
+
+function readSyncRoom(request, cfg) {
+  const raw = request.headers.get(cfg.header) || "";
   const trimmed = raw.trim();
-  if (!BABY_ROOM_RE.test(trimmed)) return null;
+  if (!ROOM_RE.test(trimmed)) return null;
   return trimmed;
 }
 
-function sanitizeBabyRecord(raw) {
+function sanitizeSyncRecord(raw) {
   if (!raw || typeof raw !== "object") return null;
-  const id = typeof raw.id === "string" && BABY_ID_RE.test(raw.id) ? raw.id : null;
+  const id = typeof raw.id === "string" && ROOM_ID_RE.test(raw.id) ? raw.id : null;
   if (!id) return null;
   const rev = clampNumber(raw.rev, 0, 4102444800000); // bis Jahr 2100
   if (rev === null) return null;
   const iv = typeof raw.iv === "string" ? raw.iv.trim() : "";
   const ct = typeof raw.ct === "string" ? raw.ct.trim() : "";
   if (!iv || !ct) return null;
-  if (iv.length > 64 || ct.length > MAX_BABY_CT_CHARS) return null;
-  if (!BABY_B64_RE.test(iv) || !BABY_B64_RE.test(ct)) return null;
+  if (iv.length > 64 || ct.length > MAX_ROOM_CT_CHARS) return null;
+  if (!ROOM_B64_RE.test(iv) || !ROOM_B64_RE.test(ct)) return null;
   return { id, rev: Math.round(rev), iv, ct };
 }
 
-async function handleBabySyncPush(request, origin, env) {
+async function handleSyncPush(request, origin, env, cfg) {
   if (origin && !allowedOrigins(env).has(origin)) {
     return jsonResponse(403, "origin_not_allowed", "Origin is not allowed", origin, env);
   }
   if (!env.SHARE_KV) {
-    return jsonResponse(503, "kv_not_configured", "Baby sync storage is not configured", origin, env);
+    return jsonResponse(503, "kv_not_configured", cfg.label + " storage is not configured", origin, env);
   }
-  const room = readBabyRoom(request);
+  const room = readSyncRoom(request, cfg);
   if (!room) {
-    return jsonResponse(401, "invalid_room", "Missing or malformed X-Baby-Room", origin, env);
+    return jsonResponse(401, "invalid_room", "Missing or malformed room header", origin, env);
   }
-  if (getContentLength(request) > MAX_BABY_BODY_BYTES) {
+  if (getContentLength(request) > MAX_ROOM_BODY_BYTES) {
     return jsonResponse(413, "request_too_large", "Sync body is too large", origin, env);
   }
   let body;
@@ -755,13 +763,13 @@ async function handleBabySyncPush(request, origin, env) {
   if (!list) {
     return jsonResponse(400, "invalid_records", "Body needs a records array", origin, env);
   }
-  if (list.length > MAX_BABY_RECORDS) {
-    return jsonResponse(413, "too_many_records", "At most " + MAX_BABY_RECORDS + " records per push", origin, env);
+  if (list.length > MAX_ROOM_RECORDS) {
+    return jsonResponse(413, "too_many_records", "At most " + MAX_ROOM_RECORDS + " records per push", origin, env);
   }
   const srev = Date.now();
   const clean = [];
   for (const raw of list) {
-    const rec = sanitizeBabyRecord(raw);
+    const rec = sanitizeSyncRecord(raw);
     if (rec) clean.push(rec);
   }
   if (!clean.length) {
@@ -775,7 +783,7 @@ async function handleBabySyncPush(request, origin, env) {
   // wieder. Deshalb: gespeicherte rev lesen und ältere Pushes verwerfen.
   const results = await Promise.all(
     clean.map(async (rec) => {
-      const key = BABY_KV_PREFIX + room + ":" + rec.id;
+      const key = cfg.prefix + room + ":" + rec.id;
       const existing = await env.SHARE_KV.getWithMetadata(key, { type: "text" });
       const prevRev =
         existing && existing.metadata && Number.isFinite(existing.metadata.rev)
@@ -783,7 +791,7 @@ async function handleBabySyncPush(request, origin, env) {
           : null;
       if (prevRev !== null && prevRev >= rec.rev) return false;
       await env.SHARE_KV.put(key, JSON.stringify({ ...rec, srev }), {
-        expirationTtl: BABY_TTL_SECONDS,
+        expirationTtl: ROOM_TTL_SECONDS,
         metadata: { srev, rev: rec.rev },
       });
       return true;
@@ -798,27 +806,27 @@ async function handleBabySyncPush(request, origin, env) {
   });
 }
 
-async function handleBabySyncPull(request, origin, env) {
+async function handleSyncPull(request, origin, env, cfg) {
   if (origin && !allowedOrigins(env).has(origin)) {
     return jsonResponse(403, "origin_not_allowed", "Origin is not allowed", origin, env);
   }
   if (!env.SHARE_KV) {
-    return jsonResponse(503, "kv_not_configured", "Baby sync storage is not configured", origin, env);
+    return jsonResponse(503, "kv_not_configured", cfg.label + " storage is not configured", origin, env);
   }
-  const room = readBabyRoom(request);
+  const room = readSyncRoom(request, cfg);
   if (!room) {
-    return jsonResponse(401, "invalid_room", "Missing or malformed X-Baby-Room", origin, env);
+    return jsonResponse(401, "invalid_room", "Missing or malformed room header", origin, env);
   }
   const url = new URL(request.url);
   const sinceRaw = Number(url.searchParams.get("since") || "0");
   const since = Number.isFinite(sinceRaw) && sinceRaw > 0 ? sinceRaw : 0;
-  const prefix = BABY_KV_PREFIX + room + ":";
+  const prefix = cfg.prefix + room + ":";
   const candidateKeys = [];
   let cursor;
   let pages = 0;
   let complete = false;
   do {
-    const listed = await env.SHARE_KV.list({ prefix, limit: MAX_BABY_LIST_LIMIT, cursor });
+    const listed = await env.SHARE_KV.list({ prefix, limit: MAX_ROOM_LIST_LIMIT, cursor });
     for (const k of listed.keys) {
       const meta = k.metadata && typeof k.metadata === "object" ? k.metadata : null;
       if (since && meta && Number.isFinite(meta.srev) && meta.srev <= since) continue;
@@ -827,7 +835,7 @@ async function handleBabySyncPull(request, origin, env) {
     complete = listed.list_complete !== false;
     cursor = listed.cursor;
     pages++;
-  } while (!complete && cursor && pages < MAX_BABY_LIST_PAGES);
+  } while (!complete && cursor && pages < MAX_ROOM_LIST_PAGES);
 
   const raws = await Promise.all(candidateKeys.map((name) => env.SHARE_KV.get(name)));
   const records = [];
@@ -1210,8 +1218,9 @@ export default {
         feedbackConfigured: Boolean(env.GITHUB_TOKEN),
         workoutsConfigured: Boolean(env.SHARE_KV),
         babySyncConfigured: Boolean(env.SHARE_KV),
+        shopSyncConfigured: Boolean(env.SHARE_KV),
         decoderSecretConfigured: Boolean(env.DECODER_SECRET),
-        codeVersion: "v0.225-baby-sync",
+        codeVersion: "v0.227-shop-sync",
       });
     }
 
@@ -1226,10 +1235,16 @@ export default {
       return handleFeedback(request, origin, env);
     }
     if (request.method === "POST" && url.pathname === "/baby/sync") {
-      return handleBabySyncPush(request, origin, env);
+      return handleSyncPush(request, origin, env, SYNC_BABY);
     }
     if (request.method === "GET" && url.pathname === "/baby/sync") {
-      return handleBabySyncPull(request, origin, env);
+      return handleSyncPull(request, origin, env, SYNC_BABY);
+    }
+    if (request.method === "POST" && url.pathname === "/shop/sync") {
+      return handleSyncPush(request, origin, env, SYNC_SHOP);
+    }
+    if (request.method === "GET" && url.pathname === "/shop/sync") {
+      return handleSyncPull(request, origin, env, SYNC_SHOP);
     }
     if (request.method === "POST" && url.pathname === "/workout") {
       return handleWorkoutCreate(request, origin, env);

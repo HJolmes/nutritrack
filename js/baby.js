@@ -1,7 +1,7 @@
-// NutriTrack – Baby-Tagebuch (v0.224)
+// NutriTrack – Baby-Tagebuch (v0.225)
 // Klassisches Script, kein Modul. Exportiert window.NTBaby und greift direkt auf
 // die globalen Helfer aus index.html zu (S, saveS, renderAll, openOv, closeOv,
-// esc, fmtDate, showToast).
+// esc, fmtDate, showToast, PROJECT_WORKER_BASE).
 //
 // Bewusst unabhängig von Schwangerschaft/Stillzeit: aktiviert wird das Tagebuch
 // über den eigenen Schalter S.babyOn (Mehr → Profil), damit es auch Väter,
@@ -25,16 +25,38 @@ var TYPES={
 var SIDES={l:'Links',r:'Rechts',b:'Beide'};
 var BOTTLE={mm:'Muttermilch',pre:'Pre-Nahrung',folge:'Folgemilch'};
 var DIAPER={pee:'💧 Pipi',poo:'💩 Stuhl',both:'💧💩 Beides'};
-var STOOL_COLOR=['gelb','senffarben','grün','braun','schwarz','weiß/hell','blutig'];
-var STOOL_CONS=['flüssig','breiig','weich','fest','hart'];
 var TEMP_SITE={rektal:'rektal',ohr:'Ohr',stirn:'Stirn',axillar:'Achsel'};
 // Fiebergrenze laut gängiger pädiatrischer Definition
 var FEVER=38.0;
 
+// Werksbelegung der Schnell-Knöpfe. Wird nur gesetzt, wenn S.babyQuick fehlt –
+// eigene Knöpfe des Nutzers werden nie überschrieben.
+var QUICK_DEFAULTS=[
+  {id:'qd1',icon:'🤱',label:'Links',   t:'breast',p:{side:'l'}},
+  {id:'qd2',icon:'🤱',label:'Rechts',  t:'breast',p:{side:'r'}},
+  {id:'qd3',icon:'💧',label:'Pipi',    t:'diaper',p:{kind:'pee'}},
+  {id:'qd4',icon:'💩',label:'Stuhl',   t:'diaper',p:{kind:'poo'}}
+];
+var QUICK_MAX=10;
+
 var _editId=null;
+var _quickEditId=null;
 
 function pad(n){return n<10?'0'+n:''+n;}
-function dayKey(){return (typeof S!=='undefined'&&S.currentDate)||'';}
+function _today(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+function dayKey(){return (typeof S!=='undefined'&&S.currentDate)||_today();}
+function uid(){return 'b'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+
+// Revisionsnummer für den Sync: streng monoton, auch wenn die Geräteuhr
+// zurückspringt (Zeitzone, manuelle Korrektur) – sonst „gewinnt" beim Merge
+// eine ältere Änderung.
+var _lastRev=0;
+function nextRev(){
+  var r=Math.max(Date.now(),_lastRev+1);
+  _lastRev=r;
+  return r;
+}
+
 function log(key){
   S.babyLog=S.babyLog||{};
   key=key||dayKey();
@@ -57,29 +79,49 @@ function nowTimeOnDay(key){
   var n=new Date();
   return (key===_today())?pad(n.getHours())+':'+pad(n.getMinutes()):'12:00';
 }
-function _today(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
-function uid(){return 'b'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function byId(id,key){return log(key).find(function(e){return e.id===id;});}
+// Ein Eintrag kann beim Bearbeiten den Tag wechseln (Uhrzeit-Korrektur über
+// Mitternacht) und per Sync an einem anderen Tag ankommen – deshalb global suchen.
+function findAnywhere(id){
+  S.babyLog=S.babyLog||{};
+  var keys=Object.keys(S.babyLog);
+  for(var i=0;i<keys.length;i++){
+    var arr=S.babyLog[keys[i]]||[];
+    for(var j=0;j<arr.length;j++)if(arr[j].id===id)return {day:keys[i],idx:j,e:arr[j]};
+  }
+  return null;
+}
 
 function add(entry,key){
   key=key||dayKey();
   entry.id=entry.id||uid();
   if(!entry.ts)entry.ts=tsFor(key,nowTimeOnDay(key));
+  entry.rev=nextRev();
   log(key).push(entry);
   saveS();
+  Sync.schedule();
   refresh();
   return entry;
 }
 function remove(id,key){
-  key=key||dayKey();
-  var arr=log(key);
-  var i=arr.findIndex(function(e){return e.id===id;});
-  if(i>-1){arr.splice(i,1);saveS();refresh();}
+  var hit=findAnywhere(id)||(key?{day:key,idx:log(key).findIndex(function(e){return e.id===id;})}:null);
+  if(!hit||hit.idx<0)return;
+  S.babyLog[hit.day].splice(hit.idx,1);
+  // Grabstein, damit die Löschung auch auf dem anderen Gerät ankommt
+  S.babyTomb=S.babyTomb||{};
+  S.babyTomb[id]={rev:nextRev(),day:hit.day};
+  saveS();
+  Sync.schedule();
+  refresh();
 }
-function byId(id,key){return log(key).find(function(e){return e.id===id;});}
 
 function refresh(){
   renderCard();
-  if(document.getElementById('babyOv')&&document.getElementById('babyOv').classList.contains('open'))renderDiary();
+  if(isOpen('babyOv'))renderDiary();
+}
+function isOpen(id){
+  var el=document.getElementById(id);
+  return !!(el&&el.classList.contains('open'));
 }
 
 // ── Alter des Babys, rein informativ ──
@@ -144,6 +186,463 @@ function entryTitle(e){
   return '';
 }
 
+// ════════════════════════════════════════
+// SCHNELL-KNÖPFE (frei konfigurierbar)
+// ════════════════════════════════════════
+function ensureQuick(){
+  if(!Array.isArray(S.babyQuick)||!S.babyQuick.length){
+    S.babyQuick=JSON.parse(JSON.stringify(QUICK_DEFAULTS));
+  }
+  return S.babyQuick;
+}
+function quickBtnHtml(q,small){
+  var pad=small?'6px':'8px 6px',fs=small?'11px':'12px';
+  return '<button type="button" onclick="NTBaby.quick(\''+esc(q.id)+'\')" '
+    +'style="flex:1;min-width:70px;background:var(--gl);border:1.5px solid var(--g3);border-radius:8px;padding:'+pad+';font-size:'+fs+';font-weight:700;color:var(--g1);">'
+    +esc(q.icon||'•')+' '+esc(q.label||'')+'</button>';
+}
+function renderQuickBtns(){
+  var qs=ensureQuick();
+  var a=document.getElementById('babyQuickBtns');
+  if(a)a.innerHTML=qs.map(function(q){return quickBtnHtml(q,true);}).join('');
+  var b=document.getElementById('babyOvQuickBtns');
+  if(b)b.innerHTML=qs.map(function(q){return quickBtnHtml(q,false);}).join('');
+}
+// Ein Tipp = fertiger Eintrag mit aktueller Uhrzeit, ohne Dialog.
+function quick(qid){
+  if(!S.babyOn)return;
+  var q=ensureQuick().find(function(x){return x.id===qid;});
+  if(!q)return;
+  var key=dayKey();
+  var e=Object.assign({t:q.t},JSON.parse(JSON.stringify(q.p||{})));
+  // „Nächste Seite"-Vorschlag nur, wenn der Knopf keine Seite vorgibt
+  if(q.t==='breast'&&!e.side)e.side=nextSide(key)||'l';
+  add(e,key);
+  showToast((q.icon||'')+' '+(q.label||'Eintrag')+' eingetragen ✓');
+}
+
+function openQuickManage(){
+  renderQuickManage();
+  openOv('babyQuickOv');
+}
+function renderQuickManage(){
+  var qs=ensureQuick();
+  var list=document.getElementById('babyQuickList');
+  if(!list)return;
+  list.innerHTML=qs.map(function(q,i){
+    return '<div class="fe" style="cursor:default;">'
+      +'<div class="fee">'+esc(q.icon||'•')+'</div>'
+      +'<div class="fei" onclick="NTBaby.openQuickEdit(\''+esc(q.id)+'\')" style="cursor:pointer;">'
+        +'<div class="fen">'+esc(q.label||'')+'</div>'
+        +'<div class="fem">'+esc(quickSubtitle(q))+'</div></div>'
+      +'<div style="display:flex;gap:2px;flex-shrink:0;">'
+        +'<button type="button" onclick="NTBaby.moveQuick(\''+esc(q.id)+'\',-1)" '+(i===0?'disabled ':'')+'style="background:none;border:none;font-size:16px;padding:4px 6px;color:'+(i===0?'#ddd':'var(--mu)')+';">↑</button>'
+        +'<button type="button" onclick="NTBaby.moveQuick(\''+esc(q.id)+'\',1)" '+(i===qs.length-1?'disabled ':'')+'style="background:none;border:none;font-size:16px;padding:4px 6px;color:'+(i===qs.length-1?'#ddd':'var(--mu)')+';">↓</button>'
+        +'<button type="button" onclick="NTBaby.openQuickEdit(\''+esc(q.id)+'\')" style="background:none;border:none;font-size:14px;padding:4px 6px;">✏️</button>'
+        +'<button type="button" onclick="NTBaby.deleteQuick(\''+esc(q.id)+'\')" style="background:none;border:none;font-size:14px;padding:4px 6px;">🗑</button>'
+      +'</div></div>';
+  }).join('');
+  var addBtn=document.getElementById('babyQuickAddBtn');
+  if(addBtn)addBtn.style.display=(qs.length>=QUICK_MAX)?'none':'block';
+}
+function quickSubtitle(q){
+  var t=(TYPES[q.t]&&TYPES[q.t].label)||q.t;
+  var p=q.p||{};
+  var det=[];
+  if(q.t==='breast'){det.push(p.side?SIDES[p.side]:'Seite wird vorgeschlagen');if(p.min)det.push(p.min+' Min.');}
+  else if(q.t==='bottle'){if(p.ml)det.push(p.ml+' ml');if(p.kind)det.push(BOTTLE[p.kind]||'');}
+  else if(q.t==='diaper'){det.push((DIAPER[p.kind]||'').replace(/^[^ ]+ /,''));}
+  else if(q.t==='temp'){det.push('Dialog öffnet sich');}
+  else if(q.t==='note'){if(p.text)det.push('„'+p.text+'"');}
+  return t+(det.filter(Boolean).length?' · '+det.filter(Boolean).join(' · '):'');
+}
+function moveQuick(id,dir){
+  var qs=ensureQuick();
+  var i=qs.findIndex(function(q){return q.id===id;});
+  var j=i+dir;
+  if(i<0||j<0||j>=qs.length)return;
+  var tmp=qs[i];qs[i]=qs[j];qs[j]=tmp;
+  saveS();renderQuickManage();renderQuickBtns();
+}
+function deleteQuick(id){
+  var qs=ensureQuick();
+  if(qs.length<=1){showToast('Mindestens ein Schnell-Knopf muss bleiben');return;}
+  if(!confirm('Diesen Schnell-Knopf löschen?'))return;
+  S.babyQuick=qs.filter(function(q){return q.id!==id;});
+  saveS();renderQuickManage();renderQuickBtns();
+}
+function resetQuick(){
+  if(!confirm('Schnell-Knöpfe auf die Werkseinstellung zurücksetzen?'))return;
+  S.babyQuick=JSON.parse(JSON.stringify(QUICK_DEFAULTS));
+  saveS();renderQuickManage();renderQuickBtns();
+  showToast('Zurückgesetzt ✓');
+}
+function openQuickEdit(id){
+  _quickEditId=id||null;
+  var q=id?ensureQuick().find(function(x){return x.id===id;}):null;
+  document.getElementById('bqIcon').value=(q&&q.icon)||'🤱';
+  document.getElementById('bqLabel').value=(q&&q.label)||'';
+  document.getElementById('bqType').value=(q&&q.t)||'breast';
+  var p=(q&&q.p)||{};
+  document.getElementById('bqSide').value=p.side||'';
+  document.getElementById('bqMin').value=p.min||'';
+  document.getElementById('bqMl').value=p.ml||'';
+  document.getElementById('bqBottleKind').value=p.kind&&BOTTLE[p.kind]?p.kind:'mm';
+  document.getElementById('bqDiaperKind').value=(q&&q.t==='diaper'&&p.kind)||'pee';
+  document.getElementById('bqNoteText').value=p.text||'';
+  document.getElementById('bqTitle').textContent=id?'Knopf bearbeiten':'Neuer Schnell-Knopf';
+  document.getElementById('bqDeleteBtn').style.display=id?'block':'none';
+  updateQuickTypeFields();
+  openOv('babyQuickEditOv');
+}
+function updateQuickTypeFields(){
+  var t=document.getElementById('bqType').value;
+  ['breast','bottle','diaper','temp','sleep','note'].forEach(function(k){
+    var el=document.getElementById('bqFields-'+k);
+    if(el)el.style.display=(k===t)?'block':'none';
+  });
+}
+function saveQuick(){
+  var t=document.getElementById('bqType').value;
+  var label=document.getElementById('bqLabel').value.trim();
+  if(!label){showToast('Bitte eine Beschriftung eingeben');return;}
+  var icon=document.getElementById('bqIcon').value.trim()||((TYPES[t]&&TYPES[t].ic)||'•');
+  var p={};
+  if(t==='breast'){
+    var side=document.getElementById('bqSide').value;
+    if(side)p.side=side;
+    var min=parseInt(document.getElementById('bqMin').value,10);
+    if(min>0)p.min=min;
+  }else if(t==='bottle'){
+    var ml=parseInt(document.getElementById('bqMl').value,10);
+    if(!(ml>0)){showToast('Bitte eine Menge in ml angeben');return;}
+    p.ml=ml;p.kind=document.getElementById('bqBottleKind').value;
+  }else if(t==='diaper'){
+    p.kind=document.getElementById('bqDiaperKind').value;
+  }else if(t==='note'){
+    var txt=document.getElementById('bqNoteText').value.trim();
+    if(!txt){showToast('Bitte den Notiz-Text angeben');return;}
+    p.text=txt;
+  }else if(t==='temp'||t==='sleep'){
+    // Temperatur und Schlaf brauchen immer eine Eingabe – der Knopf öffnet den Dialog
+    p={};
+  }
+  var qs=ensureQuick();
+  if(_quickEditId){
+    var q=qs.find(function(x){return x.id===_quickEditId;});
+    if(q){q.icon=icon;q.label=label;q.t=t;q.p=p;}
+  }else{
+    if(qs.length>=QUICK_MAX){showToast('Maximal '+QUICK_MAX+' Schnell-Knöpfe');return;}
+    qs.push({id:'q'+uid(),icon:icon,label:label,t:t,p:p});
+  }
+  _quickEditId=null;
+  saveS();
+  closeOv('babyQuickEditOv');
+  renderQuickManage();renderQuickBtns();
+  showToast('Gespeichert ✓');
+}
+function deleteQuickFromEdit(){
+  if(!_quickEditId)return;
+  var id=_quickEditId;
+  closeOv('babyQuickEditOv');
+  _quickEditId=null;
+  deleteQuick(id);
+}
+
+// ════════════════════════════════════════
+// SYNC (nur das Baby-Tagebuch, Ende-zu-Ende-verschlüsselt)
+// ════════════════════════════════════════
+// Übertragen werden ausschließlich Einträge aus S.babyLog und Löschmarken –
+// keine Mahlzeiten, keine Kalorien, kein Gewicht, kein Profil.
+//
+// Der Kopplungs-Code besteht aus zwei Teilen: `raum.schluessel`. Der Raum
+// adressiert den Briefkasten beim Worker, der Schlüssel entschlüsselt die
+// Inhalte und wird NIE gesendet. Wer nur den Raum kennt, sieht Chiffrat.
+var Sync=(function(){
+  var API=(typeof PROJECT_WORKER_BASE!=='undefined'?PROJECT_WORKER_BASE:'')+'/baby/sync';
+  var POLL_MS=45000;   // solange das Tagebuch offen ist
+  var DEBOUNCE_MS=1500;// Änderungen sammeln statt pro Tipp zu senden
+  var _timer=null,_poll=null,_busy=false,_key=null,_keyFor='';
+
+  function st(){
+    S.babySync=S.babySync||{on:false,room:'',key:'',since:0,lastAt:0,lastErr:''};
+    return S.babySync;
+  }
+  function active(){var c=st();return !!(c.on&&c.room&&c.key);}
+  // Neue Kopplung: alle Quittungen verwerfen, damit der komplette lokale
+  // Bestand einmal in den neuen Raum hochgeladen wird.
+  function resetAcks(){
+    S.babyLog=S.babyLog||{};
+    Object.keys(S.babyLog).forEach(function(d){
+      (S.babyLog[d]||[]).forEach(function(e){delete e._sy;});
+    });
+    S.babyTomb=S.babyTomb||{};
+    Object.keys(S.babyTomb).forEach(function(id){if(S.babyTomb[id])delete S.babyTomb[id].sy;});
+  }
+  function cryptoOk(){return !!(window.crypto&&crypto.subtle&&window.TextEncoder);}
+
+  function rand(n){
+    var a=crypto.getRandomValues(new Uint8Array(n)),s='';
+    var abc='abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    for(var i=0;i<n;i++)s+=abc[a[i]%abc.length];
+    return s;
+  }
+  function b64(buf){var b=new Uint8Array(buf),s='';for(var i=0;i<b.length;i++)s+=String.fromCharCode(b[i]);return btoa(s);}
+  function b64d(s){var bin=atob(s),b=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)b[i]=bin.charCodeAt(i);return b;}
+
+  // Schlüssel deterministisch aus dem Code ableiten – beide Geräte kommen mit
+  // demselben Code auf denselben AES-Schlüssel, ohne ihn je zu übertragen.
+  function getKey(){
+    var c=st();
+    var tag=c.room+'|'+c.key;
+    if(_key&&_keyFor===tag)return Promise.resolve(_key);
+    return crypto.subtle.importKey('raw',new TextEncoder().encode(c.key),'PBKDF2',false,['deriveKey'])
+      .then(function(km){
+        return crypto.subtle.deriveKey(
+          {name:'PBKDF2',salt:new TextEncoder().encode('nutritrack-baby|'+c.room),iterations:100000,hash:'SHA-256'},
+          km,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+      }).then(function(k){_key=k;_keyFor=tag;return k;});
+  }
+  function encRec(id,rev,payload){
+    var iv=crypto.getRandomValues(new Uint8Array(12));
+    return getKey().then(function(k){
+      return crypto.subtle.encrypt({name:'AES-GCM',iv:iv},k,new TextEncoder().encode(JSON.stringify(payload)));
+    }).then(function(ct){return {id:id,rev:rev,iv:b64(iv),ct:b64(ct)};});
+  }
+  function decRec(rec){
+    return getKey().then(function(k){
+      return crypto.subtle.decrypt({name:'AES-GCM',iv:b64d(rec.iv)},k,b64d(rec.ct));
+    }).then(function(buf){return JSON.parse(new TextDecoder().decode(buf));})
+      .catch(function(){return null;});// fremder/kaputter Record → überspringen
+  }
+
+  function code(){var c=st();return c.room&&c.key?(c.room+'.'+c.key):'';}
+  function createRoom(){
+    if(!cryptoOk()){showToast('Dieses Gerät unterstützt die Verschlüsselung nicht');return false;}
+    var c=st();
+    c.room=rand(32);c.key=rand(24);c.on=true;c.since=0;c.lastErr='';resetAcks();
+    _key=null;_keyFor='';
+    saveS();
+    // Bestehende Einträge einmal vollständig hochladen
+    run(true);
+    return true;
+  }
+  function joinRoom(raw){
+    if(!cryptoOk()){showToast('Dieses Gerät unterstützt die Verschlüsselung nicht');return false;}
+    var parts=String(raw||'').trim().replace(/\s+/g,'').split('.');
+    if(parts.length!==2||!/^[A-Za-z0-9_-]{24,64}$/.test(parts[0])||parts[1].length<16){
+      showToast('Code sieht nicht gültig aus');
+      return false;
+    }
+    var c=st();
+    c.room=parts[0];c.key=parts[1];c.on=true;c.since=0;c.lastErr='';resetAcks();
+    _key=null;_keyFor='';
+    saveS();
+    run(true);
+    return true;
+  }
+  function disconnect(){
+    var c=st();
+    c.on=false;c.room='';c.key='';c.since=0;c.lastErr='';
+    _key=null;_keyFor='';
+    stopPoll();
+    saveS();
+    renderSyncUI();
+    showToast('Verbindung getrennt – Einträge bleiben auf diesem Gerät');
+  }
+
+  // Was ist lokal neuer als das, was der Server bestätigt hat?
+  // Bewusst pro Eintrag (`_sy` = quittierte Revision) statt einer globalen
+  // Hochwassermarke: Bei zwei Geräten mit leicht unterschiedlichen Uhren wäre
+  // eine gemeinsame Marke schon durch einen fremden, höheren Zeitstempel
+  // überholt — eigene, ältere Änderungen würden dann nie hochgeladen.
+  function pending(){
+    var out=[];
+    S.babyLog=S.babyLog||{};
+    Object.keys(S.babyLog).forEach(function(day){
+      (S.babyLog[day]||[]).forEach(function(e){
+        if((e.rev||0)>(e._sy||0))out.push({id:e.id,rev:e.rev,day:day,e:e});
+      });
+    });
+    S.babyTomb=S.babyTomb||{};
+    Object.keys(S.babyTomb).forEach(function(id){
+      var t=S.babyTomb[id];
+      if(t&&(t.rev||0)>(t.sy||0))out.push({id:id,rev:t.rev,day:t.day,tomb:t});
+    });
+    return out.sort(function(a,b){return a.rev-b.rev;});
+  }
+  // `_sy` ist eine rein lokale Buchhaltung und gehört nicht ins Chiffrat.
+  function strip(e){
+    var c={};
+    Object.keys(e).forEach(function(k){if(k!=='_sy')c[k]=e[k];});
+    return c;
+  }
+
+  function push(){
+    var c=st();
+    var items=pending();
+    if(!items.length)return Promise.resolve(0);
+    items=items.slice(0,200);// Worker-Limit
+    return Promise.all(items.map(function(it){
+      return encRec(it.id,it.rev,{day:it.day,e:it.e?strip(it.e):null});
+    }))
+      .then(function(recs){
+        return fetch(API,{method:'POST',headers:{'Content-Type':'application/json','X-Baby-Room':c.room},body:JSON.stringify({records:recs})});
+      })
+      .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+      .then(function(){
+        // Erst nach bestätigtem Upload quittieren – bei Abbruch wird alles
+        // beim nächsten Lauf erneut gesendet.
+        items.forEach(function(it){
+          if(it.e)it.e._sy=it.rev;
+          else if(it.tomb)it.tomb.sy=it.rev;
+        });
+        saveS();
+        return items.length;
+      });
+  }
+
+  function pull(){
+    var c=st();
+    return fetch(API+'?since='+encodeURIComponent(c.since||0),{headers:{'X-Baby-Room':c.room}})
+      .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+      .then(function(j){
+        var d=(j&&j.data)||{};
+        var recs=d.records||[];
+        if(!recs.length){if(d.cursor)c.since=Math.max(c.since||0,d.cursor);return 0;}
+        return Promise.all(recs.map(decRec)).then(function(payloads){
+          var applied=0;
+          payloads.forEach(function(pl,i){
+            if(pl&&apply(recs[i].id,recs[i].rev,pl))applied++;
+          });
+          if(d.cursor)c.since=Math.max(c.since||0,d.cursor);
+          if(applied)saveS();
+          return applied;
+        });
+      });
+  }
+
+  // Merge: höhere rev gewinnt. Gilt für Einträge und Löschmarken gleichermaßen.
+  function apply(id,rev,payload){
+    S.babyLog=S.babyLog||{};S.babyTomb=S.babyTomb||{};
+    var tomb=S.babyTomb[id];
+    if(tomb&&(tomb.rev||0)>=rev)return false;// lokal später gelöscht
+    var hit=findAnywhere(id);
+    if(hit&&(hit.e.rev||0)>=rev)return false;// lokal neuer
+    if(hit)S.babyLog[hit.day].splice(hit.idx,1);
+    if(payload.e===null||payload.e===undefined){
+      // sy=rev: kam vom Server, muss nicht zurückgeschickt werden
+      S.babyTomb[id]={rev:rev,day:payload.day||'',sy:rev};
+      return true;
+    }
+    if(tomb)delete S.babyTomb[id];
+    var day=payload.day||_today();
+    var e=payload.e;
+    e.id=id;e.rev=rev;e._sy=rev;
+    if(!S.babyLog[day])S.babyLog[day]=[];
+    S.babyLog[day].push(e);
+    if(rev>_lastRev)_lastRev=rev;
+    return true;
+  }
+
+  function run(force){
+    if(!active()||!cryptoOk())return Promise.resolve();
+    if(_busy&&!force)return Promise.resolve();
+    _busy=true;
+    var c=st();
+    return push()
+      .then(pull)
+      .then(function(applied){
+        c.lastAt=Date.now();c.lastErr='';
+        saveS();
+        if(applied)refresh();
+        renderSyncUI();
+      })
+      .catch(function(err){
+        // Offline oder Worker nicht erreichbar: Quittungen bleiben stehen,
+        // beim nächsten Versuch wird alles Offene nachgeholt.
+        c.lastErr=(err&&err.message)||'Fehler';
+        saveS();
+        renderSyncUI();
+      })
+      .then(function(){_busy=false;});
+  }
+
+  function schedule(){
+    if(!active())return;
+    clearTimeout(_timer);
+    _timer=setTimeout(function(){run();},DEBOUNCE_MS);
+  }
+  function startPoll(){
+    if(!active())return;
+    stopPoll();
+    _poll=setInterval(function(){if(isOpen('babyOv'))run();else stopPoll();},POLL_MS);
+  }
+  function stopPoll(){if(_poll){clearInterval(_poll);_poll=null;}}
+
+  function statusText(){
+    var c=st();
+    if(!active())return 'Nicht verbunden – Einträge bleiben nur auf diesem Gerät.';
+    if(c.lastErr)return '⚠️ Letzter Abgleich fehlgeschlagen ('+c.lastErr+') – wird automatisch erneut versucht.';
+    if(!c.lastAt)return 'Verbunden – noch kein Abgleich gelaufen.';
+    var mins=Math.round((Date.now()-c.lastAt)/60000);
+    return '✓ Verbunden · letzter Abgleich '+(mins<1?'gerade eben':'vor '+mins+' Min.');
+  }
+
+  return {
+    st:st,active:active,code:code,createRoom:createRoom,joinRoom:joinRoom,
+    disconnect:disconnect,run:run,schedule:schedule,startPoll:startPoll,
+    stopPoll:stopPoll,statusText:statusText,cryptoOk:cryptoOk
+  };
+})();
+
+// ── Sync-Oberfläche ──
+function openSync(){
+  renderSyncUI();
+  openOv('babySyncOv');
+}
+function renderSyncUI(){
+  var on=Sync.active();
+  var stat=document.getElementById('babySyncStatus');
+  if(stat)stat.textContent=Sync.statusText();
+  var setup=document.getElementById('babySyncSetup');
+  if(setup)setup.style.display=on?'none':'block';
+  var live=document.getElementById('babySyncLive');
+  if(live)live.style.display=on?'block':'none';
+  var codeEl=document.getElementById('babySyncCode');
+  if(codeEl)codeEl.textContent=Sync.code()||'';
+  var badge=document.getElementById('babySyncBadge');
+  if(badge)badge.style.display=on?'':'none';
+}
+function copySyncCode(){
+  var c=Sync.code();
+  if(!c)return;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(c).then(function(){showToast('Code kopiert ✓');},function(){showToast('Kopieren nicht möglich – Code markieren');});
+  }else showToast('Kopieren nicht möglich – Code markieren');
+}
+function shareSyncCode(){
+  var c=Sync.code();
+  if(!c)return;
+  if(navigator.share)navigator.share({title:'NutriTrack Baby-Tagebuch',text:c}).catch(function(){});
+  else copySyncCode();
+}
+function createSyncRoom(){if(Sync.createRoom()){renderSyncUI();showToast('Verbunden – jetzt den Code am zweiten Gerät eingeben');}}
+function joinSyncRoom(){
+  var inp=document.getElementById('babySyncJoinCode');
+  if(!inp)return;
+  if(Sync.joinRoom(inp.value)){inp.value='';renderSyncUI();showToast('Verbunden – Einträge werden abgeglichen');}
+}
+function syncNow(){
+  if(!Sync.active()){showToast('Erst ein Gerät verbinden');return;}
+  showToast('Wird abgeglichen …');
+  Sync.run(true).then(function(){refresh();renderSyncUI();});
+}
+function disconnectSync(){
+  if(!confirm('Verbindung trennen? Die Einträge auf diesem Gerät bleiben erhalten, es wird nur nichts mehr abgeglichen.'))return;
+  Sync.disconnect();
+}
+
 // ════════ Heute-Kachel ════════
 function renderCard(){
   var card=document.getElementById('babyCard');
@@ -168,10 +667,12 @@ function renderCard(){
     var nx=nextSide(key);
     hint.textContent=nx?('Vorschlag: nächste Seite '+SIDES[nx]):'';
   }
+  renderQuickBtns();
 }
 // Merker „zuletzt welche Brust" – aus dem letzten Still-Eintrag der letzten Tage
 function nextSide(key){
-  var keys=Object.keys(S.babyLog||{}).sort();
+  S.babyLog=S.babyLog||{};
+  var keys=Object.keys(S.babyLog).sort();
   for(var i=keys.length-1;i>=0;i--){
     if(keys[i]>key)continue;
     var arr=sorted(keys[i]).filter(function(e){return e.t==='breast'&&(e.side==='l'||e.side==='r');});
@@ -180,24 +681,15 @@ function nextSide(key){
   return '';
 }
 
-// ════════ Schnell-Eintrag (ein Tipp, kein Dialog) ════════
-function quick(kind){
-  if(!S.babyOn)return;
-  var key=dayKey();
-  if(kind==='l'||kind==='r'||kind==='b')add({t:'breast',side:kind},key);
-  else if(kind==='pee')add({t:'diaper',kind:'pee'},key);
-  else if(kind==='poo')add({t:'diaper',kind:'poo'},key);
-  else return;
-  var lbl={l:'🤱 Links',r:'🤱 Rechts',b:'🤱 Beide',pee:'💧 Pipi',poo:'💩 Stuhl'}[kind];
-  showToast(lbl+' eingetragen ✓');
-}
-
 // ════════ Tagebuch-Overlay ════════
 function openDiary(){
   if(!S.babyOn){showToast('Baby-Tagebuch erst unter Mehr → Profil aktivieren');return;}
   renderDiary();
   openOv('babyOv');
+  Sync.run();
+  Sync.startPoll();
 }
+function closeDiary(){Sync.stopPoll();closeOv('babyOv');}
 function renderDiary(){
   var key=dayKey();
   var head=document.getElementById('babyOvSub');
@@ -214,23 +706,25 @@ function renderDiary(){
     nx.textContent=n?('Vorschlag: nächste Seite '+SIDES[n]):'';
     nx.style.display=n?'block':'none';
   }
+  renderQuickBtns();
+  renderSyncUI();
   var list=document.getElementById('babyTimeline');
   if(!list)return;
   var arr=sorted(key);
   if(!arr.length){
     list.innerHTML='<div style="font-size:13px;color:var(--mu);font-style:italic;padding:14px 2px;">Noch kein Eintrag für diesen Tag. Nutze die Schnell-Knöpfe oben oder „＋ Eintrag".</div>';
-    return;
+  }else{
+    list.innerHTML=arr.map(function(e){
+      var ic=(TYPES[e.t]&&TYPES[e.t].ic)||'•';
+      var fever=(e.t==='temp'&&isFever(e.c));
+      return '<div class="fe" onclick="NTBaby.editEntry(\''+e.id+'\')">'
+        +'<div class="fee">'+ic+'</div>'
+        +'<div class="fei"><div class="fen"'+(fever?' style="color:#c62828;"':'')+'>'+esc(entryTitle(e))+(fever?' 🔴':'')+'</div>'
+        +'<div class="fem">'+hhmm(e.ts)+(e.note?' · '+esc(e.note):'')+'</div></div>'
+        +'<div class="fe-ic">✏️</div>'
+        +'</div>';
+    }).join('');
   }
-  list.innerHTML=arr.map(function(e){
-    var ic=(TYPES[e.t]&&TYPES[e.t].ic)||'•';
-    var fever=(e.t==='temp'&&isFever(e.c));
-    return '<div class="fe" onclick="NTBaby.editEntry(\''+e.id+'\')">'
-      +'<div class="fee">'+ic+'</div>'
-      +'<div class="fei"><div class="fen"'+(fever?' style="color:#c62828;"':'')+'>'+esc(entryTitle(e))+(fever?' 🔴':'')+'</div>'
-      +'<div class="fem">'+hhmm(e.ts)+(e.note?' · '+esc(e.note):'')+'</div></div>'
-      +'<div class="fe-ic">✏️</div>'
-      +'</div>';
-  }).join('');
   var fev=arr.filter(function(e){return e.t==='temp'&&isFever(e.c);});
   var fw=document.getElementById('babyFeverWarn');
   if(fw)fw.style.display=fev.length?'block':'none';
@@ -240,17 +734,16 @@ function renderDiary(){
 function openEntry(type,id){
   _editId=id||null;
   var key=dayKey();
-  var e=id?byId(id,key):null;
+  var e=id?(findAnywhere(id)||{}).e:null;
   var t=type||(e&&e.t)||'breast';
   setType(t);
   document.getElementById('babyEntryTime').value=e?hhmm(e.ts):nowTimeOnDay(key);
   document.getElementById('babyEntryNote').value=(e&&e.note)||'';
-  // Felder vorbelegen
   var side=(e&&e.side)||nextSide(key)||'l';
   document.getElementById('babySide').value=side;
   document.getElementById('babyMin').value=(e&&e.min)||'';
   document.getElementById('babyMl').value=(e&&e.ml)||'';
-  document.getElementById('babyBottleKind').value=(e&&e.kind)||'mm';
+  document.getElementById('babyBottleKind').value=(e&&e.t==='bottle'&&e.kind)||'mm';
   document.getElementById('babyDiaperKind').value=(e&&e.t==='diaper'&&e.kind)||'pee';
   document.getElementById('babyStoolColor').value=(e&&e.color)||'';
   document.getElementById('babyStoolCons').value=(e&&e.cons)||'';
@@ -316,15 +809,19 @@ function saveEntry(){
     if(!e.text){showToast('Bitte Notiz eingeben');return;}
   }
   if(_editId){
-    var old=byId(_editId,key);
-    if(old){
-      Object.keys(old).forEach(function(k2){if(k2!=='id')delete old[k2];});
-      Object.assign(old,e);
+    var hit=findAnywhere(_editId);
+    if(hit){
+      // Eintrag bleibt an seinem Tag; nur die Felder werden ersetzt.
+      var target=hit.e;
+      Object.keys(target).forEach(function(k2){if(k2!=='id')delete target[k2];});
+      Object.assign(target,e);
+      target.ts=tsFor(hit.day,time);
+      target.rev=nextRev();
       saveS();
+      Sync.schedule();
     }
   }else{
-    log(key).push(Object.assign({id:uid()},e));
-    saveS();
+    add(Object.assign({},e),key);
   }
   _editId=null;
   closeOv('babyEntryOv');
@@ -340,18 +837,31 @@ function deleteEntry(){
   closeOv('babyEntryOv');
 }
 
+// ── Boot: höchste bekannte rev merken, dann einmal abgleichen ──
+function boot(){
+  S.babyLog=S.babyLog||{};
+  Object.keys(S.babyLog).forEach(function(d){
+    (S.babyLog[d]||[]).forEach(function(e){if((e.rev||0)>_lastRev)_lastRev=e.rev;});
+  });
+  Object.keys(S.babyTomb||{}).forEach(function(id){
+    var t=S.babyTomb[id];if(t&&(t.rev||0)>_lastRev)_lastRev=t.rev;
+  });
+  if(S.babyOn)Sync.run();
+}
+document.addEventListener('visibilitychange',function(){
+  if(!document.hidden&&S.babyOn)Sync.run();
+});
+
 window.NTBaby={
-  openDiary:openDiary,
-  renderDiary:renderDiary,
-  renderCard:renderCard,
-  quick:quick,
-  openEntry:openEntry,
-  editEntry:editEntry,
-  setType:setType,
-  updateDiaperFields:updateDiaperFields,
-  saveEntry:saveEntry,
-  deleteEntry:deleteEntry,
-  summaryText:summaryText,
-  TYPES:TYPES,STOOL_COLOR:STOOL_COLOR,STOOL_CONS:STOOL_CONS
+  boot:boot,
+  openDiary:openDiary,closeDiary:closeDiary,renderDiary:renderDiary,renderCard:renderCard,
+  quick:quick,openEntry:openEntry,editEntry:editEntry,setType:setType,
+  updateDiaperFields:updateDiaperFields,saveEntry:saveEntry,deleteEntry:deleteEntry,
+  openQuickManage:openQuickManage,openQuickEdit:openQuickEdit,updateQuickTypeFields:updateQuickTypeFields,
+  saveQuick:saveQuick,deleteQuick:deleteQuick,deleteQuickFromEdit:deleteQuickFromEdit,
+  moveQuick:moveQuick,resetQuick:resetQuick,renderQuickBtns:renderQuickBtns,
+  openSync:openSync,renderSyncUI:renderSyncUI,createSyncRoom:createSyncRoom,joinSyncRoom:joinSyncRoom,
+  copySyncCode:copySyncCode,shareSyncCode:shareSyncCode,syncNow:syncNow,disconnectSync:disconnectSync,
+  Sync:Sync,summaryText:summaryText,TYPES:TYPES
 };
 })();

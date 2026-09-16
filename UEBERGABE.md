@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.224 (2026-09-16) — Branch `claude/stillzeit-kalorien-baby-tagebuch-tg0kex` (Stillzeit-Kalorien, Stillzeit-Ampel, Baby-Tagebuch)
+**Stand:** v0.225 (2026-09-16) — Branch `claude/stillzeit-kalorien-baby-tagebuch-tg0kex` (Stillzeit-Kalorien, Stillzeit-Ampel, Baby-Tagebuch + Sync)
 
 ## URLs
 
@@ -37,7 +37,9 @@
 - **Settings-Tabs (v0.187/v0.211):** `👤 Profil · 🎯 Ziele · 🥗 Ernährung · ⏰ Erinnerungen · 🤖 KI · 💾 Backup` (`stab-*`/`spanel-*`), Deep-Link via `openSettings(tab)`. Bibliothek-Panel existiert nicht mehr (eigenes `#libraryOv`).
 - **Stillzeit (v0.224):** `S.nursing` (`'0'|'excl'|'part'`) + `S.nursWarn`. Zuschläge in `NURSING_ADD={excl:500,part:250}` (DGE/D-A-CH; ausschließliches Stillen 635 kcal Mehrbedarf abzgl. ~130 kcal Fettreserven, Teilstillen ohne DGE-Fixwert → gesetzter Mittelwert). `isNursing()`/`getNursAddFromState()`; `calcGoal()` addiert den Zuschlag, **deckelt das Abnehm-Defizit auf 500 kcal/Tag** und nutzt den Boden `NURSING_MIN_KCAL=1800` statt 1000. Schwangerschaft und Stillzeit schließen sich aus (`updateNursingUI()` setzt `spregnant` zurück, `saveSettings()` erzwingt `S.pregnant=0`) — Zuschläge werden nie addiert. Wasserziel-Vorschlag `applyNursWaterGoal()` (+3 Gläser ≈ 700 ml), nur solange `waterGoal<11`. `updateGoalFromET()` bleibt unberührt (nur ET-Automatik). UI-Zeile `nursingRow` hängt wie `pregnantRow` an `gender==='f'` (`_toggleFemaleRows()`).
 - **Stillzeit-Ampel (v0.224):** `checkNursWarn()` mit **eigenem Prompt** — der SS-Prompt würde Rohmilchkäse/Sushi/Salami falsch rot markieren, in der Stillzeit sind sie grün. Prompt warnt ausdrücklich **nicht** vor blähenden Lebensmitteln (keine Evidenz). Feld `nursAmpel`, `nursAmpelDot()`, `showNursAmpelModal()`; Aufrufe in `picker.js` überall neben `checkPregWarn`/`checkDietWarn`.
-- **Baby-Tagebuch (v0.224):** `js/baby.js` → `window.NTBaby`, in `CORE_ASSETS`. Aktivierung über **eigenen Schalter `S.babyOn`** (Mehr → Profil) — bewusst **unabhängig von Geschlecht, Schwangerschaft und Stillzeit**, damit auch Väter/Partner führen können. Daten in **`S.babyLog[dateKey][]`** (eigener Key, *nicht* `S.days` — sonst räumt `compressOldDays` sie nach 90 Tagen mit ab); `S.baby={name,birth}`. Eintragstypen `breast|bottle|diaper|temp|sleep|note`, Zeitstempel über `tsFor(dateKey,'HH:MM')` (bezieht sich auf den **angezeigten** Tag, nicht auf „jetzt"). Schnell-Knöpfe `NTBaby.quick('l'|'r'|'pee'|'poo')` = ein Tipp ohne Dialog; `nextSide()` schlägt die nächste Brust vor. Fieber ab 38,0 °C rot + Hinweisbox (keine Diagnose, keine KI-Auswertung der Baby-Daten). Overlays `babyOv` (Timeline, Container `.baby-tl` in der `overscroll-behavior:contain`-Regel) und `babyEntryOv`. Heute-Kachel `#babyCard` + Mehr-Eintrag `#moreBabyRow`, beide über `renderAll()` → `renderBabyHub()`/`NTBaby.renderCard()`. Backup läuft automatisch mit (`backupState()` kopiert ganz `S`).
+- **Baby-Tagebuch-Sync (v0.225):** Zwei Geräte einer Familie halten **nur `S.babyLog`** synchron — keine Mahlzeiten, Kalorien, Gewichts- oder Profildaten. Worker-Endpoints `POST`/`GET /baby/sync` (`bd:<room>:<entryId>`, TTL 400 Tage) im bestehenden `SHARE_KV`. **Ende-zu-Ende:** Der Client verschlüsselt `{day,e}` per AES-GCM (Schlüssel = PBKDF2 über den Code-Teil `key`, Salt aus `room`); der Worker sieht nur `{id,rev,iv,ct}`. Kopplungs-Code = `room.key` (32+24 Zeichen), wird nie gesendet. `S.babySync={on,room,key,since,lastAt,lastErr}`. **Zwei Fallstricke, die beide behoben sind und beim Anfassen nicht zurückfallen dürfen:** (1) der Worker verwirft einen Push mit **älterer `rev`** als der gespeicherte Stand — sonst überschreibt ein nachzügelndes Gerät die neuere Fassung des anderen; (2) der Pull-Cursor `srev` kommt von der **Worker-Uhr**, und quittiert wird **pro Eintrag** über `e._sy` / `tomb.sy` statt über eine globale Hochwassermarke — bei zwei Geräteuhren mit Versatz gingen sonst eigene ältere Änderungen nie hoch. Löschungen als Grabstein `S.babyTomb[id]={rev,day,sy}`. Abgleich: nach jeder Änderung (1,5 s Debounce), beim Öffnen des Tagebuchs, bei `visibilitychange` und alle 45 s solange `babyOv` offen ist. Offline → `lastErr`, Quittungen bleiben offen, nächster Lauf holt nach. Neue Kopplung räumt alle Quittungen weg (`resetAcks()`), damit der Bestand einmal komplett hochläuft. **Worker muss deployt sein** (`wrangler deploy`), sonst bleibt der Sync stumm.
+- **Schnell-Knöpfe konfigurierbar (v0.225):** `S.babyQuick=[{id,icon,label,t,p}]`, Werksbelegung `QUICK_DEFAULTS` (4 Knöpfe), max. 10. Verwaltung `babyQuickOv` (sortieren/löschen/zurücksetzen), Editor `babyQuickEditOv`. `NTBaby.quick(id)` baut den Eintrag aus `p`; ohne `p.side` greift bei Stillen weiter der `nextSide()`-Vorschlag. Temperatur und Schlaf öffnen bewusst den Dialog (ohne Messwert sinnlos). Gerendert in `#babyQuickBtns` (Heute) und `#babyOvQuickBtns` (Tagebuch).
+- **Baby-Tagebuch (v0.224):** `js/baby.js` → `window.NTBaby`, in `CORE_ASSETS`. Aktivierung über **eigenen Schalter `S.babyOn`** (Mehr → Profil) — bewusst **unabhängig von Geschlecht, Schwangerschaft und Stillzeit**, damit auch Väter/Partner führen können. Daten in **`S.babyLog[dateKey][]`** (eigener Key, *nicht* `S.days` — sonst räumt `compressOldDays` sie nach 90 Tagen mit ab); `S.baby={name,birth}`. Eintragstypen `breast|bottle|diaper|temp|sleep|note`, Zeitstempel über `tsFor(dateKey,'HH:MM')` (bezieht sich auf den **angezeigten** Tag, nicht auf „jetzt"). Schnell-Knöpfe siehe v0.225-Bullet; `nextSide()` schlägt die nächste Brust vor. Fieber ab 38,0 °C rot + Hinweisbox (keine Diagnose, keine KI-Auswertung der Baby-Daten). Overlays `babyOv` (Timeline, Container `.baby-tl` in der `overscroll-behavior:contain`-Regel) und `babyEntryOv`. Heute-Kachel `#babyCard` + Mehr-Eintrag `#moreBabyRow`, beide über `renderAll()` → `renderBabyHub()`/`NTBaby.renderCard()`. Backup läuft automatisch mit (`backupState()` kopiert ganz `S`).
 - **Kalorienziel manuell (v0.221):** `S.goalManual` — manuell eingetragenes Ziel wird von `updateGoalFromET()` nicht mehr überschrieben (#178). „🧮 Kalorienbedarf berechnen" setzt den Merker zurück; Hinweistext unter dem Feld.
 - **Safe-Area (v0.161/0.168):** `viewport-fit=cover`; bnav/body/fb-fab mit `env(safe-area-inset-bottom)`, Header mit `env(safe-area-inset-top)`.
 - **Mahlzeit-Detail (v0.151/0.157/0.181):** CTAs `📋 Vorlage`, `💾 Als Rezept` (`saveMealAsRecipe`), `🔁 Wiederholen` (`openRecurCreate`); zentraler ＋ → `openPicker('<meal>')`.
@@ -63,6 +65,7 @@
 | `GET /s/<id>` | Legacy-Redirect |
 | `POST /feedback` | erstellt GitHub-Issue, optional Screenshot-Commit |
 | `POST /workout` / `GET /workouts?since=` | Workout-Ingest/-Polling |
+| `POST /baby/sync` / `GET /baby/sync?since=` | Baby-Tagebuch-Abgleich (E2E-verschlüsselt, nur `babyLog`) |
 | `GET /off?u=` | OpenFoodFacts-Proxy |
 | `GET /fetch?u=` | Rezept-Seiten-Proxy (Secret-gated, SSRF-Guards) |
 
@@ -70,17 +73,20 @@
 
 ## Code-Suchpfade
 
-`index.html`: `NURSING_ADD`, `isNursing()`, `checkNursWarn()`, `_toggleFemaleRows()`, `updateNursingUI()`, `updateBabyUI()`, `applyNursWaterGoal()`, `renderBabyHub()`, `// SECTION: SHARE & IMPORT`, `// SECTION: FEEDBACK`, `// SECTION: HEALTH SYNC`, `openSettings(tab)`, `openLibrary()`, `openBackupSettings()`, `backupNow()`, `verifyProxySecret()`, `skipProxyPwGate()`, `_migratePhotosToIdb()`, `_hydratePhotoImgs()`, `openImportPaste()`, `openHelp()`. Modale: `babyOv`, `babyEntryOv`, `libraryOv`, `shareItemOv`, `importPasteOv`, `importConfirmOv`, `iosSwitchOv`, `feedbackOv`, `healthSyncOv`, `helpOv`, `mealDetailScreen`.
+`index.html`: `NURSING_ADD`, `isNursing()`, `checkNursWarn()`, `_toggleFemaleRows()`, `updateNursingUI()`, `updateBabyUI()`, `applyNursWaterGoal()`, `renderBabyHub()`, `// SECTION: SHARE & IMPORT`, `// SECTION: FEEDBACK`, `// SECTION: HEALTH SYNC`, `openSettings(tab)`, `openLibrary()`, `openBackupSettings()`, `backupNow()`, `verifyProxySecret()`, `skipProxyPwGate()`, `_migratePhotosToIdb()`, `_hydratePhotoImgs()`, `openImportPaste()`, `openHelp()`. Modale: `babyOv`, `babyEntryOv`, `babyQuickOv`, `babyQuickEditOv`, `babySyncOv`, `libraryOv`, `shareItemOv`, `importPasteOv`, `importConfirmOv`, `iosSwitchOv`, `feedbackOv`, `healthSyncOv`, `helpOv`, `mealDetailScreen`.
 
 `picker.js`: `pickerSearchLocalLive`, `pickerSaveOwn` (mit `ownOnce`), `_pickerVoiceStart`/`_pickerDedupOverlap` (Diktat inkl. Per-Index-Finals #156), `pickerLinkDetect/Import/Add`.
 
-`js/`: `fooddb.js` (DB/DE_EN), `changelog.js` (CHANGELOG — neue Einträge hier!), `idb-photos.js` (NTPhotos), `health-sync.js` (NTHealth), `baby.js` (NTBaby — Baby-Tagebuch), `zxing/` (WASM + JS-Fallback lokal).
+`js/`: `fooddb.js` (DB/DE_EN), `changelog.js` (CHANGELOG — neue Einträge hier!), `idb-photos.js` (NTPhotos), `health-sync.js` (NTHealth), `baby.js` (NTBaby — Tagebuch, `Sync`, Schnell-Knöpfe), `zxing/` (WASM + JS-Fallback lokal).
 
-`worker/src/index.js`: `// ─── SHARE-LINK SHORTENER`, `// ─── FEEDBACK ENDPOINT`, `// ─── HEALTH WORKOUT INGEST`, `handleAiProvider`.
+`worker/src/index.js`: `// ─── BABY DIARY SYNC`, `// ─── SHARE-LINK SHORTENER`, `// ─── FEEDBACK ENDPOINT`, `// ─── HEALTH WORKOUT INGEST`, `handleAiProvider`.
 
 `sw.js`: `index.html` network-first, restliche `CORE_ASSETS` cache-first; `install` per `fetch({cache:'reload'})`+`put` (nicht `cache.add()`).
 
 ## Live-Test offen
+
+- v0.225 Baby-Sync (**zwei echte Geräte**, Worker vorher deployen — `wrangler deploy` in `worker/`, `GET /health` → `codeVersion:"v0.225-baby-sync"` und `babySyncConfigured:true`): Gerät 1 → Tagebuch → 🔄 Sync → „Kopplung starten" → Code kopieren/teilen; Gerät 2 → 🔄 Sync → Code einfügen → „Mit Code verbinden" → vorhandene Einträge von Gerät 1 erscheinen; auf Gerät 2 einen Eintrag anlegen → auf Gerät 1 innerhalb ~1 Min. sichtbar (oder sofort über „🔄 Jetzt abgleichen"); Eintrag auf Gerät 1 löschen → verschwindet auch auf Gerät 2; denselben Eintrag auf beiden Geräten ändern → die spätere Änderung gewinnt auf beiden; Gerät 2 in Flugmodus, zwei Einträge anlegen, wieder online → Einträge kommen bei Gerät 1 an, Status zeigt kein ⚠️ mehr; „Verbindung trennen" → Einträge bleiben lokal, Status „Nicht verbunden"; Gegenprobe Datenschutz: auf Gerät 2 Mahlzeiten und Gewicht eintragen → tauchen auf Gerät 1 **nicht** auf
+- v0.225 Schnell-Knöpfe: Tagebuch → ⚙️ Schnell-Knöpfe → eigenen Knopf „🍼 Fläschchen 120" (Typ Flasche, 120 ml) anlegen → erscheint auf Heute-Kachel und im Tagebuch → antippen legt sofort einen 120-ml-Eintrag an; Knopf per ↑/↓ sortieren → Reihenfolge stimmt an beiden Stellen; Knopf bearbeiten und löschen; Notiz-Knopf „Vitamin D" anlegen → ein Tipp trägt die Notiz ein; Temperatur-Knopf anlegen → öffnet den Dialog statt blind einzutragen; „↺ Werkseinstellung" → wieder Links/Rechts/Pipi/Stuhl; letzten Knopf löschen wird abgelehnt
 
 - v0.224 Stillzeit-Kalorien: Mehr → Profil → Geschlecht weiblich → „🤱 Stillzeit" sichtbar; „Ausschließlich stillen" → Hinweis „+500 kcal", Wasser-/Mikronährstoff-Kasten erscheint; vorher gesetzte Schwangerschaft wird beim Umschalten zurückgesetzt (Toast) und umgekehrt; Mehr → Ziele → „🧮 Kalorienbedarf berechnen" → Ziel enthält +500 bzw. +250; mit aggressivem Abnehmziel → Toast „auf max. 500 kcal Defizit bzw. 1800 kcal begrenzt", Ziel nie unter 1800; ohne Stillzeit gilt weiter der alte Boden 1000; „+3 Gläser übernehmen" erhöht das Wasserziel und die Gläser-Reihe auf „Heute"; nach App-Neustart bleibt alles gesetzt
 - v0.224 Stillzeit-Ampel: Ampel einschalten → Rohmilchkäse/Salami/Sushi eintragen → **grün**, kein Warn-Banner (Gegenprobe zur Schwangerschafts-Ampel); Rotwein → rot, Thunfisch → gelb, Banner erscheint; Kohl/Zwiebeln/Linsen → keine Warnung; Punkte erscheinen in der Mahlzeit-Liste und im Mahlzeit-Detail; Ampel ausschalten → keine KI-Anfrage mehr
@@ -110,11 +116,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.220 | #180 | Bottom-Nav fest am unteren Rand (#177) |
 | v0.221 | #179 | Manuelles Kalorienziel bleibt nach Neustart (#178) |
 | v0.222 | #182 | Eingabefelder bleiben bei offener Tastatur sichtbar (#181) |
 | v0.223 | #184 | iOS: kein Scroll-Rücksprung beim Überscrollen (#183) |
 | v0.224 | — | Stillzeit-Kalorien + eigene Stillzeit-Ampel, Baby-Tagebuch |
+| v0.225 | — | Baby-Tagebuch: E2E-Sync für zwei Geräte, konfigurierbare Schnell-Knöpfe |
 
 ---
 

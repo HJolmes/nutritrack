@@ -30,7 +30,7 @@ function corsHeaders(origin, env) {
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, x-app-proxy-secret, x-user-token, x-ai-provider, x-ai-key",
+    "Access-Control-Allow-Headers": "Content-Type, x-app-proxy-secret, x-user-token, x-baby-room, x-ai-provider, x-ai-key",
     "Access-Control-Max-Age": "86400",
     Vary: "Origin",
   };
@@ -682,6 +682,178 @@ async function handleWorkoutList(request, origin, env) {
   });
 }
 
+// ─── BABY DIARY SYNC (Ende-zu-Ende-verschlüsselt) ───
+// Zweck: zwei Geräte einer Familie halten NUR das Baby-Tagebuch synchron.
+// Ernährungsdaten, Gewicht und Mahlzeiten verlassen das Gerät hier nie.
+//
+// Der Worker ist reiner Briefkasten: Er sieht ausschließlich `{id, rev, iv, ct}`.
+// `ct` ist AES-GCM-Chiffrat, dessen Schlüssel nur im Kopplungs-Code der beiden
+// Geräte steckt — Tageszuordnung, Uhrzeiten und Inhalte sind serverseitig nicht
+// lesbar. Gespeichert wird unter `bd:<room>:<entryId>`, analog zum Workout-
+// Ingest: `room` ist ein langer Zufallsstring, den die PWA erzeugt; der Worker
+// authentifiziert ihn nicht gegen eine Nutzerdatenbank. Bei 32+ Zeichen ist das
+// Erraten eines fremden Raums nicht praktikabel.
+//
+// Cursor: Der Worker vergibt beim Schreiben `srev` (eigene Uhr) als Metadatum.
+// `GET ?since=<srev>` liefert nur neuere Records. Bewusst NICHT die Client-Uhr —
+// bei Uhrzeit-Versatz zwischen zwei Handys gingen sonst Einträge verloren.
+// Die Client-Uhr (`rev`) entscheidet nur, welche Version bei einem Konflikt
+// gewinnt. KV ist eventually consistent: bis zu ~60 s Verzögerung sind normal.
+const BABY_TTL_SECONDS = 60 * 60 * 24 * 400; // 400 Tage
+const MAX_BABY_BODY_BYTES = 1024 * 256; // 256 KB
+const MAX_BABY_RECORDS = 200; // pro Push
+const MAX_BABY_CT_CHARS = 8000; // ein Eintrag ist winzig; großzügig gedeckelt
+const MAX_BABY_LIST_LIMIT = 200;
+const MAX_BABY_LIST_PAGES = 30; // bis zu 6000 Einträge pro Abruf
+const BABY_ROOM_RE = /^[A-Za-z0-9_-]{24,64}$/;
+const BABY_ID_RE = /^[A-Za-z0-9_.:-]{1,80}$/;
+const BABY_B64_RE = /^[A-Za-z0-9+/=]+$/;
+const BABY_KV_PREFIX = "bd:";
+
+function readBabyRoom(request) {
+  const raw = request.headers.get("x-baby-room") || "";
+  const trimmed = raw.trim();
+  if (!BABY_ROOM_RE.test(trimmed)) return null;
+  return trimmed;
+}
+
+function sanitizeBabyRecord(raw) {
+  if (!raw || typeof raw !== "object") return null;
+  const id = typeof raw.id === "string" && BABY_ID_RE.test(raw.id) ? raw.id : null;
+  if (!id) return null;
+  const rev = clampNumber(raw.rev, 0, 4102444800000); // bis Jahr 2100
+  if (rev === null) return null;
+  const iv = typeof raw.iv === "string" ? raw.iv.trim() : "";
+  const ct = typeof raw.ct === "string" ? raw.ct.trim() : "";
+  if (!iv || !ct) return null;
+  if (iv.length > 64 || ct.length > MAX_BABY_CT_CHARS) return null;
+  if (!BABY_B64_RE.test(iv) || !BABY_B64_RE.test(ct)) return null;
+  return { id, rev: Math.round(rev), iv, ct };
+}
+
+async function handleBabySyncPush(request, origin, env) {
+  if (origin && !allowedOrigins(env).has(origin)) {
+    return jsonResponse(403, "origin_not_allowed", "Origin is not allowed", origin, env);
+  }
+  if (!env.SHARE_KV) {
+    return jsonResponse(503, "kv_not_configured", "Baby sync storage is not configured", origin, env);
+  }
+  const room = readBabyRoom(request);
+  if (!room) {
+    return jsonResponse(401, "invalid_room", "Missing or malformed X-Baby-Room", origin, env);
+  }
+  if (getContentLength(request) > MAX_BABY_BODY_BYTES) {
+    return jsonResponse(413, "request_too_large", "Sync body is too large", origin, env);
+  }
+  let body;
+  try {
+    body = await request.json();
+  } catch (e) {
+    return jsonResponse(400, "invalid_json", "Body must be JSON", origin, env);
+  }
+  const list = Array.isArray(body && body.records) ? body.records : null;
+  if (!list) {
+    return jsonResponse(400, "invalid_records", "Body needs a records array", origin, env);
+  }
+  if (list.length > MAX_BABY_RECORDS) {
+    return jsonResponse(413, "too_many_records", "At most " + MAX_BABY_RECORDS + " records per push", origin, env);
+  }
+  const srev = Date.now();
+  const clean = [];
+  for (const raw of list) {
+    const rec = sanitizeBabyRecord(raw);
+    if (rec) clean.push(rec);
+  }
+  if (!clean.length) {
+    return jsonResponse(400, "invalid_records", "No valid record in payload", origin, env);
+  }
+  // „Neuere Änderung gewinnt" muss AUCH hier gelten, nicht nur im Client:
+  // Gerät A und Gerät B schreiben denselben KV-Key. Ohne diesen Vergleich
+  // überschreibt ein Push, der eine ältere Fassung desselben Eintrags trägt
+  // (z.B. weil A seine lokale Änderung erst nach B hochlädt), die neuere
+  // Fassung von B — und der Merge im Client sieht die neuere Version nie
+  // wieder. Deshalb: gespeicherte rev lesen und ältere Pushes verwerfen.
+  const results = await Promise.all(
+    clean.map(async (rec) => {
+      const key = BABY_KV_PREFIX + room + ":" + rec.id;
+      const existing = await env.SHARE_KV.getWithMetadata(key, { type: "text" });
+      const prevRev =
+        existing && existing.metadata && Number.isFinite(existing.metadata.rev)
+          ? existing.metadata.rev
+          : null;
+      if (prevRev !== null && prevRev >= rec.rev) return false;
+      await env.SHARE_KV.put(key, JSON.stringify({ ...rec, srev }), {
+        expirationTtl: BABY_TTL_SECONDS,
+        metadata: { srev, rev: rec.rev },
+      });
+      return true;
+    })
+  );
+  const stored = results.filter(Boolean).length;
+  return jsonResponse(200, "ok", "ok", origin, env, {
+    stored,
+    outdated: clean.length - stored,
+    skipped: list.length - clean.length,
+    serverTime: srev,
+  });
+}
+
+async function handleBabySyncPull(request, origin, env) {
+  if (origin && !allowedOrigins(env).has(origin)) {
+    return jsonResponse(403, "origin_not_allowed", "Origin is not allowed", origin, env);
+  }
+  if (!env.SHARE_KV) {
+    return jsonResponse(503, "kv_not_configured", "Baby sync storage is not configured", origin, env);
+  }
+  const room = readBabyRoom(request);
+  if (!room) {
+    return jsonResponse(401, "invalid_room", "Missing or malformed X-Baby-Room", origin, env);
+  }
+  const url = new URL(request.url);
+  const sinceRaw = Number(url.searchParams.get("since") || "0");
+  const since = Number.isFinite(sinceRaw) && sinceRaw > 0 ? sinceRaw : 0;
+  const prefix = BABY_KV_PREFIX + room + ":";
+  const candidateKeys = [];
+  let cursor;
+  let pages = 0;
+  let complete = false;
+  do {
+    const listed = await env.SHARE_KV.list({ prefix, limit: MAX_BABY_LIST_LIMIT, cursor });
+    for (const k of listed.keys) {
+      const meta = k.metadata && typeof k.metadata === "object" ? k.metadata : null;
+      if (since && meta && Number.isFinite(meta.srev) && meta.srev <= since) continue;
+      candidateKeys.push(k.name);
+    }
+    complete = listed.list_complete !== false;
+    cursor = listed.cursor;
+    pages++;
+  } while (!complete && cursor && pages < MAX_BABY_LIST_PAGES);
+
+  const raws = await Promise.all(candidateKeys.map((name) => env.SHARE_KV.get(name)));
+  const records = [];
+  let maxSrev = since;
+  for (const raw of raws) {
+    if (!raw) continue;
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (_) {
+      continue;
+    }
+    if (since && Number.isFinite(parsed.srev) && parsed.srev <= since) continue;
+    if (Number.isFinite(parsed.srev) && parsed.srev > maxSrev) maxSrev = parsed.srev;
+    records.push(parsed);
+  }
+  records.sort((a, b) => (a.srev || 0) - (b.srev || 0));
+  return jsonResponse(200, "ok", "ok", origin, env, {
+    records,
+    count: records.length,
+    cursor: maxSrev,
+    serverTime: Date.now(),
+    truncated: Boolean(!complete),
+  });
+}
+
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
@@ -1037,8 +1209,9 @@ export default {
         shareConfigured: Boolean(env.SHARE_KV),
         feedbackConfigured: Boolean(env.GITHUB_TOKEN),
         workoutsConfigured: Boolean(env.SHARE_KV),
+        babySyncConfigured: Boolean(env.SHARE_KV),
         decoderSecretConfigured: Boolean(env.DECODER_SECRET),
-        codeVersion: "v0.214-qwen-vision",
+        codeVersion: "v0.225-baby-sync",
       });
     }
 
@@ -1051,6 +1224,12 @@ export default {
     }
     if (request.method === "POST" && url.pathname === "/feedback") {
       return handleFeedback(request, origin, env);
+    }
+    if (request.method === "POST" && url.pathname === "/baby/sync") {
+      return handleBabySyncPush(request, origin, env);
+    }
+    if (request.method === "GET" && url.pathname === "/baby/sync") {
+      return handleBabySyncPull(request, origin, env);
     }
     if (request.method === "POST" && url.pathname === "/workout") {
       return handleWorkoutCreate(request, origin, env);

@@ -9,6 +9,7 @@ This Worker proxies NutriTrack AI requests to Anthropic so the real Anthropic AP
 - `POST /ai/messages` – configurable third-party AI provider proxy. Same Anthropic-style JSON body as `/v1/messages`, plus headers `x-ai-provider` (`openai`|`gemini`|`openrouter`|`mistral`|`deepseek`) and `x-ai-key` (the user's own provider key, supplied per request, never stored or logged). The Worker translates the request to the provider's format (OpenAI Chat Completions or Gemini `generateContent`) and returns the answer back in Anthropic schema (`{content:[{type:"text",text}]}`) so the client is unchanged. On provider error/limit (or image sent to a non-vision provider → `415`) the client transparently falls back to `/v1/messages` (Anthropic).
 - `POST /decode-barcode` – live barcode decoder. Body is a raw JPEG (max 200 KB). Returns `{ ok: true, data: { code, found, source, ... } }`. Used by the Barcode-Tab to decode each frame on iPhones where local WASM decoders fail.
 - `POST /share` – speichert einen Share-Code (Rezept / Mahlzeit / Lebensmittel) in KV und gibt eine 7-Zeichen-Kurz-ID zurück. Body: `{"code":"<base64>"}` (max 8 KB). Antwort: `{ok:true,data:{id,short}}`. TTL: 1 Jahr. CORS auf PWA-Origin beschränkt, kein Token erforderlich.
+- `POST /baby/sync` · `GET /baby/sync?since=<srev>` – Abgleich des Baby-Tagebuchs zwischen zwei Geräten einer Familie. Header `X-Baby-Room` trägt einen 32-stelligen Zufallsstring, den die PWA erzeugt; gespeichert wird unter `bd:<room>:<entryId>` (TTL 400 Tage). **Der Worker sieht nur `{id, rev, iv, ct}`** – `ct` ist AES-GCM-Chiffrat, dessen Schlüssel ausschließlich im Kopplungs-Code der beiden Geräte steckt und nie übertragen wird. Weder Einträge noch Tageszuordnung sind serverseitig lesbar, und Ernährungsdaten werden hier grundsätzlich nicht übertragen. Ein Push mit älterer `rev` als der gespeicherte Stand wird verworfen (`outdated`), sonst könnte ein nachzügelndes Gerät die neuere Fassung des anderen überschreiben. Der Cursor `srev` kommt von der Worker-Uhr, nicht vom Client – bei Uhrzeit-Versatz zwischen zwei Handys gingen sonst Einträge verloren. Kein Proxy-Token nötig, CORS auf die PWA-Origins beschränkt.
 - `GET  /s/<id>` – schlägt die Kurz-ID in KV nach und antwortet mit einer Mini-HTML-Seite, die per `location.replace()` zu `https://hjolmes.github.io/nutritrack/#x=<code>` weiterleitet (Fragment-Redirect via Location-Header ist nicht zuverlässig in allen Browsern).
 
   **Decode pipeline (since v0.137):**
@@ -70,6 +71,8 @@ Free Tier deckt unsere Volumina locker ab:
 - 1 GB Storage gesamt
 
 TTL pro Eintrag: 1 Jahr (`SHARE_TTL_SECONDS`). Löschung läuft automatisch.
+
+Derselbe Namespace trägt seit v0.225 auch den Baby-Tagebuch-Sync (`bd:`-Präfix, `babySyncConfigured` im Health-Check). Schreib-Budget im Blick behalten: Jede Tagebuch-Änderung ist ein Write, ein Familien-Tag mit ~20 Einträgen bleibt aber weit unter dem 1k-Limit.
 
 ## GitHub Setup
 

@@ -30,8 +30,15 @@ function corsHeaders(origin, env) {
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, x-app-proxy-secret, x-user-token, x-baby-room, x-ai-provider, x-ai-key",
-    "Access-Control-Max-Age": "86400",
+    // WICHTIG: Jeder Custom-Header, den die PWA sendet, MUSS hier stehen – sonst
+    // bricht der Browser die Anfrage schon beim Preflight ab, der Service Worker
+    // macht daraus eine 503 und im UI steht „HTTP 503" statt der echten Ursache.
+    // Beim Anlegen eines neuen Sync-Topfs also immer mit erweitern (v0.228).
+    "Access-Control-Allow-Headers": "Content-Type, x-app-proxy-secret, x-user-token, x-baby-room, x-shop-room, x-ai-provider, x-ai-key",
+    // Bewusst kurz: Ein Preflight-Ergebnis mit unvollständiger Header-Liste
+    // bliebe sonst bis zu 24 h im Browser-Cache und der Fehler überlebte das
+    // Deploy des Fixes.
+    "Access-Control-Max-Age": "600",
     Vary: "Origin",
   };
 }
@@ -1220,7 +1227,7 @@ export default {
         babySyncConfigured: Boolean(env.SHARE_KV),
         shopSyncConfigured: Boolean(env.SHARE_KV),
         decoderSecretConfigured: Boolean(env.DECODER_SECRET),
-        codeVersion: "v0.227-shop-sync",
+        codeVersion: "v0.228-shop-cors",
       });
     }
 

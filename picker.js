@@ -72,6 +72,7 @@ function openPicker(meal, defaultTab){
   document.getElementById('pickerLinkImportBtn').disabled=true;
   document.getElementById('pickerLinkImportBtn').style.opacity='.4';
   document.getElementById('pickerLinkImportBtn').textContent='🔗 Rezept laden';
+  _pickerLinkResetShopBtn();
   var _ownOnce=document.getElementById('ownOnce');if(_ownOnce)_ownOnce.checked=false;
   pickerStopScan();
   // Title
@@ -1548,6 +1549,7 @@ function pickerLinkImport(){
               }
               rebindLink();
               pickerUpdateLinkTotal();
+              _pickerLinkResetShopBtn();
               document.getElementById('pickerLinkResult').classList.remove('hidden');
               btn.disabled=false;btn.textContent='🔗 Neu laden';btn.style.opacity='1';
             });
@@ -1578,6 +1580,39 @@ function pickerLinkAdd(saveAsRecipe){
     saveX();
   }
   window._pickerLinkInstructions='';
+}
+
+// ─── PICKER: LINK → EINKAUFSZETTEL ───
+// Zweiter möglicher Zielort für ein importiertes Rezept. Bewusst ohne Schließen
+// des Pickers: wer die Zutaten einkauft, will das Rezept oft zusätzlich als
+// Rezept speichern oder gleich eintragen.
+function _pickerLinkResetShopBtn(){
+  var btn=document.getElementById('pickerLinkShopBtn');
+  if(btn){btn.disabled=false;btn.style.opacity='1';btn.textContent='🛒 Auf den Einkaufszettel';}
+  var open=document.getElementById('pickerLinkShopOpen');
+  if(open)open.classList.add('hidden');
+}
+function pickerLinkToShop(){
+  if(!window.NTShop){showToast('Einkaufszettel nicht verfügbar');return;}
+  if(!pickerIngredients.length){showToast('Keine Zutaten');return;}
+  var name=document.getElementById('pickerLinkRecipeName').value.trim()||'Import-Rezept';
+  var p=parseFloat(document.getElementById('pickerLinkPortions').value)||1;
+  var items=pickerIngredients.map(function(f){
+    return {name:f.name,amount:Math.round((f.amount||100)*p),emoji:f.emoji||''};
+  });
+  var r=NTShop.addIngredients(items,name);
+  if(!r.total){showToast('Nichts zu übernehmen');return;}
+  var btn=document.getElementById('pickerLinkShopBtn');
+  if(btn){btn.disabled=true;btn.style.opacity='.5';btn.textContent='✓ Auf dem Zettel';}
+  var open=document.getElementById('pickerLinkShopOpen');
+  if(open)open.classList.remove('hidden');
+  showToast(r.merged
+    ? (r.total+' Zutaten auf dem Zettel – '+r.merged+' war'+(r.merged===1?'':'en')+' schon drauf')
+    : (r.total+' Zutaten auf dem Einkaufszettel ✓'));
+}
+function pickerLinkOpenShop(){
+  closePicker();
+  if(window.NTShop)NTShop.open();
 }
 
 // ─── PICKER: EIGENES TAB (inkl. ehem. Quick: Checkbox „Nur einmal eintragen") ───

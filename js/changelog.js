@@ -1,6 +1,11 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.224',items:[
+    {icon:'🤱',text:'Stillzeit: Neben der Schwangerschaft kannst du jetzt auch angeben, dass du stillst — ausschließlich (+500 kcal/Tag) oder mit Beikost (+250 kcal/Tag). Der Zuschlag fließt in „Kalorienbedarf berechnen" ein. Beim Abnehmen wird das Defizit auf 500 kcal gedeckelt und das Ziel nie unter 1800 kcal gesetzt, damit die Milchmenge nicht leidet. Dazu ein Vorschlag fürs höhere Wasserziel.',where:'Mehr → Profil'},
+    {icon:'🚦',text:'Eigene Lebensmittel-Ampel für die Stillzeit: bewertet deutlich liberaler als die Schwangerschafts-Ampel — Rohmilchkäse, Sushi und Salami sind beim Stillen grün. Gewarnt wird nur, wo es belegt ist (Alkohol, viel Koffein, quecksilberreiche Fische, Leber, milchhemmende Kräuter).',where:'Mehr → Profil'},
+    {icon:'👶',text:'Neues Baby-Tagebuch: Stillen (welche Brust, wie lange), Flasche, Windeln inkl. Stuhlfarbe, Temperatur, Schlaf und Notizen — mit Schnell-Knöpfen für einen Tipp und einem Vorschlag, welche Brust als Nächstes dran ist. Aktivierbar für alle in den Einstellungen, unabhängig von Schwangerschaft und Stillzeit.',where:'Mehr → Profil → Baby-Tagebuch'},
+  ]},
   {v:'0.223',items:[
     {icon:'📜',text:'Scrollen auf dem iPhone beruhigt: Wenn du ganz nach unten scrollst, springt die Ansicht nicht mehr von selbst an den Anfang zurück. Die Seite lässt sich außerdem nicht mehr über den Rand hinausziehen.',where:'App-weit'},
   ]},

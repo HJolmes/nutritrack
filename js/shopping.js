@@ -197,9 +197,11 @@ function srcLine(it){
 // als eine stillschweigend überschriebene Menge, mit der zu wenig im Wagen
 // landet.
 function parseQty(s){
-  var m=String(s||'').match(/^\s*(\d+(?:[.,]\d+)?)\s*([a-zA-ZäöüÄÖÜ]*)\.?\s*$/);
+  var m=String(s||'').match(/^\s*(\d+(?:[.,]\d+)?)\s*([a-zA-ZäöüÄÖÜß]*)\.?\s*$/);
   if(!m)return null;
-  return {v:parseFloat(m[1].replace(',','.')),u:(m[2]||'').toLowerCase()};
+  // `u` vergleicht (klein), `raw` schreibt zurück – sonst würde aus „2 EL"
+  // beim Addieren „4 el".
+  return {v:parseFloat(m[1].replace(',','.')),u:(m[2]||'').toLowerCase(),raw:m[2]||''};
 }
 function mergeQty(a,b){
   a=String(a||'').trim();b=String(b||'').trim();
@@ -215,7 +217,7 @@ function mergeQty(a,b){
     for(var i=0;i<parts.length;i++){
       var ra=parseQty(parts[i]);
       if(ra&&ra.u===rb.u){
-        parts[i]=(Math.round((ra.v+rb.v)*100)/100)+(ra.u?' '+ra.u:'');
+        parts[i]=String(Math.round((ra.v+rb.v)*100)/100).replace('.',',')+(ra.raw?' '+ra.raw:'');
         return parts.join(' + ');
       }
     }

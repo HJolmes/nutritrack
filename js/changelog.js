@@ -1,6 +1,10 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.230',items:[
+    {icon:'🔗',text:'Der Rezept-Link-Import versteht jetzt fast jede Rezept-Seite und jeden Food-Blog, nicht nur Chefkoch: Die App liest zuerst die Rezeptdaten, die die Seite selbst mitliefert (Name, Zutaten, Zubereitung, Portionsangabe) — das ist genauer als vorher und braucht keine KI. Nur wenn eine Seite keine solchen Daten hat, liest die KI den Text rund um die Zutatenliste.',where:'＋ → Link'},
+    {icon:'🥄',text:'Küchenmaße bleiben erhalten: „2 EL Olivenöl", „1 Dose Tomaten" oder „1 Prise Salz" werden für die Kalorien in Gramm umgerechnet, stehen auf dem Einkaufszettel aber weiter als „2 EL" bzw. „1 Dose" — so kann man damit wirklich einkaufen. Zutaten ohne Mengenangabe (Salz, Pfeffer) sind wie gewohnt mit ⚠️ markiert und lassen sich von Hand ergänzen.',where:'＋ → Link'},
+  ]},
   {v:'0.229',items:[
     {icon:'🛒',text:'Rezept-Link importieren und direkt einkaufen: Nach dem Laden eines Rezepts (z. B. von Chefkoch) fragt die App unter „Wohin damit?", ob du es eintragen, als Rezept speichern und/oder auf den Einkaufszettel legen willst — mehreres davon geht auch nacheinander. Die Zutaten landen mit der auf die Portionen gerechneten Menge auf dem Zettel.',where:'＋ → Link'},
     {icon:'🧾',text:'Der Einkaufszettel legt nichts doppelt an: Steht ein Artikel schon drauf, wird er nicht ein zweites Mal eingetragen, sondern bekommt den Rezeptnamen dazu. Unter dem Artikel steht dann, für welche Rezepte er gebraucht wird und ob er vorher schon auf dem Zettel stand. Mengen in gleicher Einheit werden addiert (200 g + 300 g = 500 g), unterschiedliche stehen nebeneinander.',where:'Einkaufszettel'},

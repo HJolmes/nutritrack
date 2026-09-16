@@ -1,6 +1,10 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.225',items:[
+    {icon:'🔄',text:'Baby-Tagebuch zu zweit führen: Über „🔄 Sync" koppelst du ein zweites Gerät mit einem Code — danach gleichen sich die Einträge automatisch ab. Übertragen wird ausschließlich das Baby-Tagebuch, verschlüsselt; Mahlzeiten, Kalorien und Gewicht bleiben auf deinem Gerät.',where:'Baby-Tagebuch → 🔄 Sync'},
+    {icon:'⚙️',text:'Die Schnell-Knöpfe im Baby-Tagebuch sind jetzt frei einstellbar: eigene Knöpfe anlegen (z. B. „Flasche 120 ml" oder „Vitamin D"), Symbol und Beschriftung wählen, sortieren, löschen — oder alles auf die Werkseinstellung zurücksetzen.',where:'Baby-Tagebuch → ⚙️ Schnell-Knöpfe'},
+  ]},
   {v:'0.224',items:[
     {icon:'🤱',text:'Stillzeit: Neben der Schwangerschaft kannst du jetzt auch angeben, dass du stillst — ausschließlich (+500 kcal/Tag) oder mit Beikost (+250 kcal/Tag). Der Zuschlag fließt in „Kalorienbedarf berechnen" ein. Beim Abnehmen wird das Defizit auf 500 kcal gedeckelt und das Ziel nie unter 1800 kcal gesetzt, damit die Milchmenge nicht leidet. Dazu ein Vorschlag fürs höhere Wasserziel.',where:'Mehr → Profil'},
     {icon:'🚦',text:'Eigene Lebensmittel-Ampel für die Stillzeit: bewertet deutlich liberaler als die Schwangerschafts-Ampel — Rohmilchkäse, Sushi und Salami sind beim Stillen grün. Gewarnt wird nur, wo es belegt ist (Alkohol, viel Koffein, quecksilberreiche Fische, Leber, milchhemmende Kräuter).',where:'Mehr → Profil'},

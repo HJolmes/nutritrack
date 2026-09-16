@@ -1,6 +1,10 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.235',items:[
+    {icon:'\ud83d\ude34',text:'Schlaf über Mitternacht wird jetzt am Tageswechsel geteilt: Ein Schlaf von 22:50 bis 00:06 steht mit 22:50–24:00 beim Vortag und mit 00:00–00:06 beim Folgetag — beide Tage zeigen ihre eigene Schlafdauer. Vorher landete die ganze Nacht beim Vortag, und dort stand die verwirrende Spanne „22:50–00:06“. Läuft der Schlaf noch, taucht er nach Mitternacht auch am neuen Tag auf, samt „Wach jetzt“-Knopf.',where:'👶 Baby-Tagebuch'},
+    {icon:'\ud83c\udf05',text:'Bleibt die App über Mitternacht offen, springt sie jetzt selbst auf den neuen Tag. Bisher blieb sie am alten Datum hängen — alles, was man nachts noch eintrug, landete beim Vortag. Wer bewusst zurückgeblättert hat, bleibt an seinem Tag.',where:'Heute'},
+  ]},
   {v:'0.234',items:[
     {icon:'\ud83e\uddfe',text:'Sauberere Zutatennamen beim Rezept-Link-Import: Unbestimmte Mengenw\u00f6rter werden abgeschnitten \u2014 aus „etwas Kurkumapulver\u201c wird „Kurkumapulver\u201c. „ca. 200 g Mehl\u201c wird jetzt auch als 200 g erkannt statt als Name durchgereicht. Und verschachtelte Klammerzus\u00e4tze hinterlassen keine Reste mehr wie „Pflanzen\u00f6l )\u201c.',where:'\uff0b \u2192 Link'},
   ]},

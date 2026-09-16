@@ -1062,7 +1062,7 @@ body.kb-open #feedbackFab{display:none;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.234</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.235</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -2445,7 +2445,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.234';
+var APP_VERSION='0.235';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -2783,6 +2783,7 @@ window.addEventListener('DOMContentLoaded',function(){
   var hadLegacyApiKey=!!S.apiKey;
   clearLegacyApiKey();
   S.currentDate=today();
+  _appToday=S.currentDate;
   window.addEventListener('online',function(){isOnline=true;updBadge();showToast('Online 🌐');});
   window.addEventListener('offline',function(){isOnline=false;updBadge();showToast('Offline 📴');});
   updBadge();
@@ -2806,10 +2807,16 @@ window.addEventListener('DOMContentLoaded',function(){
     setTimeout(function(){window.NTHealth.sync();},800);
   }
   document.addEventListener('visibilitychange',function(){
-    if(document.visibilityState==='visible'&&window.NTHealth&&window.NTHealth.getToken()){
-      window.NTHealth.sync();
-    }
+    if(document.visibilityState!=='visible')return;
+    checkDayRollover();
+    if(window.NTHealth&&window.NTHealth.getToken())window.NTHealth.sync();
   });
+  // Auch ohne Tab-Wechsel: eine offene App soll um Mitternacht selbst umschalten.
+  setInterval(function(){
+    if(checkDayRollover())return;// hat bereits alles neu gezeichnet
+    // Laufender Baby-Schlaf: „läuft seit …" soll mitzählen statt einzufrieren.
+    if(window.NTBaby&&NTBaby.hasRunningSleep&&NTBaby.hasRunningSleep())NTBaby.refresh();
+  },60000);
   // Baby-Tagebuch: höchste bekannte Revision merken und einmal abgleichen.
   // No-op, solange das Tagebuch aus oder keine Kopplung eingerichtet ist.
   if(window.NTBaby&&typeof NTBaby.boot==='function')setTimeout(function(){NTBaby.boot();},900);
@@ -3333,7 +3340,26 @@ function doSetup(){
 // ════════════════════════════════════════
 // SECTION: DATA
 // ════════════════════════════════════════
-function changeDay(dir){var n=addDays(S.currentDate,dir);if(n>today()){showToast('Keine Zukunft 😄');return;}S.currentDate=n;if(applyRecurringMeals(n))saveS();renderAll();}
+function changeDay(dir){var n=addDays(S.currentDate,dir);if(n>today()){showToast('Keine Zukunft 😄');return;}S.currentDate=n;_appToday=today();if(applyRecurringMeals(n))saveS();renderAll();}
+// Datum, das die App beim letzten Blick als „heute" kannte. S.currentDate wurde
+// bisher nur beim Start gesetzt – bleibt die PWA über Mitternacht offen (nachts
+// beim Baby der Normalfall), zeigte sie weiter den Vortag und jeder neue Eintrag
+// landete dort. Deshalb den Tageswechsel aktiv nachziehen.
+var _appToday=today();
+function checkDayRollover(){
+  var t=today();
+  if(t===_appToday)return false;
+  var wasOnToday=(S.currentDate===_appToday);
+  _appToday=t;
+  // Wer bewusst zurückgeblättert hat, wird nicht weggerissen.
+  if(!wasOnToday)return false;
+  S.currentDate=t;
+  applyRecurringMeals(t);
+  saveS();
+  renderAll();
+  if(window.NTBaby&&NTBaby.refresh)NTBaby.refresh();
+  return true;
+}
 function getDay(){
   var d=S.days[S.currentDate];
   if(!d){d={meals:{breakfast:[],lunch:[],dinner:[],snack:[]},water:0,exercise:[]};S.days[S.currentDate]=d;}

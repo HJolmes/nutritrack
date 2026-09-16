@@ -148,36 +148,94 @@ function summary(key){
     else if(e.t==='bottle'){s.bottle++;s.ml+=parseInt(e.ml,10)||0;}
     else if(e.t==='diaper'){s.diaper++;if(e.kind==='poo'||e.kind==='both')s.poo++;}
     else if(e.t==='temp'){if(!s.temp||e.ts>s.temp.ts)s.temp=e;}
-    else if(e.t==='sleep'){
-      // Nur halb eingetragener Schlaf ist erlaubt: „schläft seit 13:00" ohne Ende
-      // (läuft noch) oder nur ein Ende, wenn der Beginn nicht notiert wurde.
-      if(e.from&&e.to){
-        s.sleepMin+=sleepMinutes(key,e);
-      }else if(e.from&&!e.to){
-        s.sleepOpen=e;
-        s.sleepMin+=sleepMinutes(key,e);// bis jetzt, siehe sleepMinutes
-      }
-    }
+    // Schlaf wird unten über sleepSegments() gezählt – tagesgenau, auch wenn er
+    // über Mitternacht läuft und deshalb an einem anderen Tag gespeichert ist.
+  });
+  sleepSegments(key).forEach(function(seg){
+    s.sleepMin+=seg.min;
+    if(seg.live)s.sleepOpen=seg;
   });
   return s;
 }
-// Dauer in Minuten. Ein laufender Schlaf (kein `to`) zählt bis jetzt – aber nur
-// am heutigen Tag; an vergangenen Tagen wäre „bis jetzt" sinnlos, dort zählt er 0
-// und bleibt als offener Eintrag zum Nachtragen sichtbar.
-function sleepMinutes(key,e){
-  if(!e.from)return 0;
-  var f=tsFor(key,e.from);
-  var t;
+// ── Schlaf über Mitternacht ──
+// Ein Schlaf-Eintrag bleibt immer an seinem Starttag gespeichert (ein Datensatz,
+// eine Bearbeitung, ein Sync-Objekt). Für Anzeige und Tages-Summe wird er aber
+// am Mitternachts-Schnitt geteilt: 22:50–24:00 gehört zum Starttag, 00:00–00:06
+// zum Folgetag. Sonst stehen sämtliche Nachtminuten am Vortag und der Folgetag
+// weiß nichts von dem Schlaf – auch nicht, dass gerade noch geschlafen wird.
+function dayStart(key){return tsFor(key,'00:00');}
+// Lesender Zugriff ohne Seiteneffekt – log() würde für jeden geprüften Tag ein
+// leeres Array anlegen und damit Speicher und Sync mit Leertagen zumüllen.
+function logRO(key){return (S.babyLog&&S.babyLog[key])||[];}
+// Absolute Zeitspanne eines Eintrags, unabhängig vom Tag, an dem er liegt.
+function sleepSpan(day,e){
+  if(!e||e.t!=='sleep'||!e.from)return null;
+  var f=tsFor(day,e.from),t;
   if(e.to){
-    t=tsFor(key,e.to);
-    if(t<f)t+=86400000;// über Mitternacht
+    t=tsFor(day,e.to);
+    // Ende vor Beginn = über Mitternacht. Über addDayKey statt +86400000, damit
+    // die Zeitumstellung nicht eine Stunde dazu erfindet oder verschluckt.
+    if(t<f)t=tsFor(addDayKey(day,1),e.to);
   }else{
-    if(key!==_today())return 0;
     t=Date.now();
-    if(t<f)return 0;
+    if(t<f)return null;// offener Schlaf, dessen Beginn noch in der Zukunft liegt
   }
-  return Math.max(0,Math.round((t-f)/60000));
+  return {from:f,to:t};
 }
+// Anteil eines Eintrags am Tag `key` – oder null, wenn er dort nicht hineinragt.
+function sleepSeg(key,day,e){
+  var sp=sleepSpan(day,e);
+  if(!sp)return null;
+  var a=dayStart(key),b=dayStart(addDayKey(key,1));
+  if(sp.from>=b)return null;         // beginnt erst nach diesem Tag
+  if(sp.from<a&&sp.to<=a)return null;// war schon vor diesem Tag zu Ende
+  var s=Math.max(sp.from,a),t=Math.min(sp.to,b);
+  return {
+    e:e,day:day,key:key,start:s,end:t,
+    min:Math.max(0,Math.round((t-s)/60000)),
+    totalMin:Math.max(0,Math.round((sp.to-sp.from)/60000)),
+    cont:sp.from<a,      // begann am Vortag
+    spill:sp.to>b,       // reicht in den Folgetag
+    open:!e.to,
+    live:!e.to&&key===_today()// läuft gerade – nur dann „Wach jetzt"
+  };
+}
+// Alle Schlaf-Segmente eines Tages, chronologisch. Der Vortag wird mitgeprüft,
+// weil ein um 22:50 begonnener Schlaf dort gespeichert ist.
+function sleepSegments(key){
+  key=key||dayKey();
+  var out=[];
+  [addDayKey(key,-1),key].forEach(function(d){
+    logRO(d).forEach(function(e){
+      if(e.t!=='sleep'||!e.from)return;
+      var seg=sleepSeg(key,d,e);
+      if(seg)out.push(seg);
+    });
+  });
+  out.sort(function(a,b){return a.start-b.start;});
+  return out;
+}
+// Überschrift eines Segments – immer innerhalb des angezeigten Tages lesbar.
+function segTitle(seg){
+  var s=seg.cont?'00:00':seg.e.from;
+  if(seg.spill)return 'Schlaf '+s+'–24:00';
+  if(seg.open)return seg.cont?('Schläft seit gestern '+seg.e.from):('Schläft seit '+seg.e.from);
+  return 'Schlaf '+s+'–'+seg.e.to;
+}
+// Zeilen eines Tages: normale Einträge plus Schlaf-Segmente (die auch vom Vortag
+// stammen können). Gemeinsame Quelle für Heute-Kachel und Tagebuch-Timeline.
+function dayRows(key){
+  var rows=sleepSegments(key).map(function(seg){
+    return {ts:seg.start,seg:seg,e:seg.e};
+  });
+  sorted(key).forEach(function(e){
+    if(e.t==='sleep'&&e.from)return;// steckt bereits als Segment in der Liste
+    rows.push({ts:e.ts||0,e:e,seg:null});
+  });
+  rows.sort(function(a,b){return a.ts-b.ts;});
+  return rows;
+}
+function rowTitle(r){return r.seg?segTitle(r.seg):entryTitle(r.e);}
 function fmtDur(min){
   var h=Math.floor(min/60),m=min%60;
   return h?(h+' h '+m+' Min.'):(m+' Min.');
@@ -219,7 +277,7 @@ function summaryText(key){
   if(s.bottle)parts.push(s.bottle+'× Flasche'+(s.ml?' ('+s.ml+' ml)':''));
   if(s.diaper)parts.push(s.diaper+(s.diaper===1?' Windel':' Windeln')+(s.poo?' · '+s.poo+'× 💩':''));
   if(s.sleepMin)parts.push('Schlaf '+fmtDur(s.sleepMin)+(s.sleepOpen?' (schläft noch)':''));
-  else if(s.sleepOpen)parts.push('schläft seit '+s.sleepOpen.from);
+  else if(s.sleepOpen)parts.push('schläft seit '+(s.sleepOpen.cont?'gestern ':'')+s.sleepOpen.e.from);
   if(s.temp)parts.push('🌡️ '+fmtTemp(s.temp.c)+' °C');
   return parts.join(' · ');
 }
@@ -239,7 +297,7 @@ function entryTitle(e){
   }
   if(e.t==='temp')return fmtTemp(e.c)+' °C'+(TEMP_SITE[e.site]?' · '+TEMP_SITE[e.site]:'');
   if(e.t==='sleep'){
-    if(e.from&&e.to)return 'Schlaf '+e.from+'–'+e.to;
+    if(e.from&&e.to)return 'Schlaf '+e.from+'–'+e.to+(e.to<e.from?' (+1 Tag)':'');
     if(e.from)return 'Schläft seit '+e.from;
     if(e.to)return 'Wach um '+e.to;
     return 'Schlaf';
@@ -734,9 +792,9 @@ function renderCard(){
   if(sum)sum.textContent=summaryText(key)||'Noch nichts eingetragen';
   var last=document.getElementById('babyCardLast');
   if(last){
-    var arr=sorted(key);
-    var e=arr[arr.length-1];
-    last.innerHTML=e?('<span style="color:var(--mu);">zuletzt '+hhmm(e.ts)+' · </span>'+esc(entryTitle(e))):'';
+    var rows=dayRows(key);
+    var r=rows[rows.length-1];
+    last.innerHTML=r?('<span style="color:var(--mu);">zuletzt '+hhmm(r.ts)+' · </span>'+esc(rowTitle(r))):'';
   }
   var hint=document.getElementById('babyNextSide');
   if(hint){
@@ -786,28 +844,34 @@ function renderDiary(){
   renderSyncUI();
   var list=document.getElementById('babyTimeline');
   if(!list)return;
-  var arr=sorted(key);
-  if(!arr.length){
+  var rows=dayRows(key);
+  if(!rows.length){
     list.innerHTML='<div style="font-size:13px;color:var(--mu);font-style:italic;padding:14px 2px;">Noch kein Eintrag für diesen Tag. Nutze die Schnell-Knöpfe oben oder „＋ Eintrag".</div>';
   }else{
-    list.innerHTML=arr.map(function(e){
+    list.innerHTML=rows.map(function(r){
+      var e=r.e,seg=r.seg;
       var ic=(TYPES[e.t]&&TYPES[e.t].ic)||'•';
       var fever=(e.t==='temp'&&isFever(e.c));
-      var running=(e.t==='sleep'&&e.from&&!e.to);
+      var running=!!(seg&&seg.live);
       // Laufender Schlaf: ein Tipp beendet ihn, statt den Dialog zu öffnen.
       var right=running
         ?'<button type="button" onclick="event.stopPropagation();NTBaby.endSleep(\''+e.id+'\')" style="background:var(--g2);border:none;border-radius:999px;color:#fff;font-size:11px;font-weight:700;padding:5px 10px;cursor:pointer;flex-shrink:0;">Wach jetzt</button>'
         :'<div class="fe-ic">✏️</div>';
-      var sub=hhmm(e.ts)+(running?' · läuft seit '+fmtDur(sleepMinutes(dayKey(),e)):'')+(e.note?' · '+esc(e.note):'');
+      var bits=[hhmm(r.ts)];
+      if(seg&&seg.cont)bits.push('Fortsetzung von gestern');
+      if(seg&&seg.spill)bits.push('geht weiter am Folgetag');
+      if(running)bits.push('läuft seit '+fmtDur(seg.totalMin));
+      else if(seg&&seg.min)bits.push(fmtDur(seg.min));
+      if(e.note)bits.push(esc(e.note));
       return '<div class="fe" onclick="NTBaby.editEntry(\''+e.id+'\')">'
         +'<div class="fee">'+ic+'</div>'
-        +'<div class="fei"><div class="fen"'+(fever?' style="color:#c62828;"':'')+'>'+esc(entryTitle(e))+(fever?' 🔴':'')+'</div>'
-        +'<div class="fem">'+sub+'</div></div>'
+        +'<div class="fei"><div class="fen"'+(fever?' style="color:#c62828;"':'')+'>'+esc(rowTitle(r))+(fever?' 🔴':'')+'</div>'
+        +'<div class="fem">'+bits.join(' · ')+'</div></div>'
         +right
         +'</div>';
     }).join('');
   }
-  var fev=arr.filter(function(e){return e.t==='temp'&&isFever(e.c);});
+  var fev=logRO(key).filter(function(e){return e.t==='temp'&&isFever(e.c);});
   var fw=document.getElementById('babyFeverWarn');
   if(fw)fw.style.display=fev.length?'block':'none';
 }
@@ -944,8 +1008,15 @@ document.addEventListener('visibilitychange',function(){
   if(!document.hidden&&S.babyOn)Sync.run();
 });
 
+// Läuft gerade ein Schlaf am angezeigten Tag? index.html frischt dann minutlich
+// auf, damit „läuft seit …" mitzählt und die Mitternachts-Teilung sofort greift.
+function hasRunningSleep(){
+  if(!S.babyOn)return false;
+  return sleepSegments(dayKey()).some(function(seg){return seg.live;});
+}
+
 window.NTBaby={
-  boot:boot,
+  boot:boot,refresh:refresh,hasRunningSleep:hasRunningSleep,
   openDiary:openDiary,closeDiary:closeDiary,renderDiary:renderDiary,renderCard:renderCard,
   quick:quick,openEntry:openEntry,editEntry:editEntry,setType:setType,endSleep:endSleep,
   updateDiaperFields:updateDiaperFields,saveEntry:saveEntry,deleteEntry:deleteEntry,

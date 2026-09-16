@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.228',items:[
+    {icon:'🔄',text:'Der Einkaufszettel-Abgleich lief in „HTTP 503" – der Server hatte den Zettel-Zugang nicht freigeschaltet. Behoben. Fehlermeldungen beim Abgleich sind jetzt außerdem in Klartext statt als Fehlernummer.',where:'Einkaufszettel → 🔄 Teilen'},
+  ]},
   {v:'0.227',items:[
     {icon:'🛒',text:'Neuer Einkaufszettel — wie eine Einkaufs-App: Artikel eintippen oder aus über 130 Kacheln auswählen, ein Tipp hakt sie im Laden ab. Alles sortiert sich von selbst nach Gängen (Obst & Gemüse, Milch & Käse, Haushalt …), Menge und Notiz lassen sich je Artikel ergänzen.',where:'Mehr → Einkaufszettel'},
     {icon:'🔄',text:'Den Zettel zu zweit führen: Über „🔄 Teilen" koppelst du ein zweites Gerät mit einem Code — danach sieht dein Partner sofort, was noch fehlt und was schon im Wagen liegt. Übertragen wird ausschließlich der Einkaufszettel, verschlüsselt. Der Code gilt nur für den Zettel; das Baby-Tagebuch bleibt getrennt.',where:'Einkaufszettel → 🔄 Teilen'},

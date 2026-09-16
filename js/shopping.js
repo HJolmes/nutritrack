@@ -1,4 +1,4 @@
-// NutriTrack – Einkaufszettel (v0.227)
+// NutriTrack – Einkaufszettel (v0.228)
 // Klassisches Script, kein Modul. Exportiert window.NTShop und greift direkt auf
 // die globalen Helfer aus index.html zu (S, saveS, openOv, closeOv, esc,
 // showToast, PROJECT_WORKER_BASE, recipes, customFoods).
@@ -352,6 +352,20 @@ var Sync=(function(){
     return c;
   }
 
+  // „HTTP 503" sagt niemandem etwas. Der Service Worker macht aus JEDEM
+  // Netzwerk- oder CORS-Fehler auf workers.dev eine 503 – die häufigste
+  // Ursache ist also nicht „Server kaputt", sondern offline oder ein Worker,
+  // der den Endpoint noch nicht kennt.
+  function errText(err){
+    var m=(err&&err.message)||'Fehler';
+    if(m.indexOf('503')>=0)return 'Server nicht erreichbar – offline oder der Worker ist noch nicht aktualisiert';
+    if(m.indexOf('404')>=0)return 'Der Worker kennt den Einkaufszettel noch nicht – bitte aktualisieren';
+    if(m.indexOf('401')>=0)return 'Kopplungs-Code wird nicht akzeptiert';
+    if(m.indexOf('403')>=0)return 'Zugriff abgelehnt';
+    if(m.indexOf('413')>=0)return 'Zu viele Änderungen auf einmal';
+    return m;
+  }
+
   function push(){
     var c=st();
     var items=pending();
@@ -435,7 +449,7 @@ var Sync=(function(){
       .catch(function(err){
         // Offline oder Worker nicht erreichbar: Quittungen bleiben stehen,
         // beim nächsten Versuch wird alles Offene nachgeholt.
-        c.lastErr=(err&&err.message)||'Fehler';
+        c.lastErr=errText(err);
         saveS();
         renderSyncUI();
       })
@@ -457,7 +471,7 @@ var Sync=(function(){
   function statusText(){
     var c=st();
     if(!active())return 'Nicht verbunden – der Zettel bleibt nur auf diesem Gerät.';
-    if(c.lastErr)return '⚠️ Letzter Abgleich fehlgeschlagen ('+c.lastErr+') – wird automatisch erneut versucht.';
+    if(c.lastErr)return '⚠️ Abgleich fehlgeschlagen: '+c.lastErr+'. Wird automatisch erneut versucht.';
     if(!c.lastAt)return 'Verbunden – noch kein Abgleich gelaufen.';
     var mins=Math.round((Date.now()-c.lastAt)/60000);
     return '✓ Verbunden · letzter Abgleich '+(mins<1?'gerade eben':'vor '+mins+' Min.');

@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.233',items:[
+    {icon:'\ud83d\uded2',text:'Der Einkaufszettel blieb beim \u00d6ffnen leer, obwohl Artikel drauf waren \u2014 die Liste wurde gezeichnet, bevor das Fenster \u00fcberhaupt offen war, und der Untertitel stand deshalb auf „Noch nichts drauf\u201c. Erst die n\u00e4chste \u00c4nderung machte alles sichtbar. Behoben: Der Zettel zeigt seinen Inhalt jetzt sofort beim \u00d6ffnen.',where:'Mehr \u2192 \ud83d\uded2 Einkaufszettel'},
+  ]},
   {v:'0.232',items:[
     {icon:'\ud83d\udd17',text:'Der Rezept-Link-Import holt die Rezeptdaten jetzt auch von gro\u00dfen, tr\u00e4gen Seiten zuverl\u00e4ssig: Die Seite wird komplett gelesen statt nach dem ersten halben Megabyte abgeschnitten \u2014 vorher fiel bei langen Seiten genau der Teil mit den Zutaten hinten runter, und die KI musste raten. Au\u00dferdem gibt sich der Abruf als normaler Browser aus, weil manche Portale sonst eine Bot-Sperrseite statt des Rezepts ausliefern.',where:'\uff0b \u2192 Link'},
     {icon:'\ud83d\udcac',text:'Klartext statt R\u00e4tselraten, wenn ein Link nicht klappt: Die App sagt jetzt, ob die Seite den Abruf blockiert, nicht antwortet oder das Proxy-Passwort fehlt. Blockiert eine Seite, wird die KI gar nicht erst darauf angesetzt \u2014 das sparte bisher nur Wartezeit f\u00fcr ein „Rezept konnte nicht erkannt werden".',where:'\uff0b \u2192 Link'},

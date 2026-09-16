@@ -1,4 +1,4 @@
-// NutriTrack – Einkaufszettel (v0.228)
+// NutriTrack – Einkaufszettel (v0.233)
 // Klassisches Script, kein Modul. Exportiert window.NTShop und greift direkt auf
 // die globalen Helfer aus index.html zu (S, saveS, openOv, closeOv, esc,
 // showToast, PROJECT_WORKER_BASE, recipes, customFoods).
@@ -625,8 +625,13 @@ function renderHubRow(){
 
 // ════════ Zettel-Overlay ════════
 function openList(){
-  render();
+  // Reihenfolge ist entscheidend: render() zeichnet die Liste nur, wenn shopOv
+  // schon die Klasse .open trägt (isOpen-Wächter in render()). Wurde vorher
+  // gerendert, lief renderList() ins Leere — der Zettel blieb blank und der
+  // Untertitel stand auf dem statischen „Noch nichts drauf" aus index.html,
+  // obwohl Artikel drauf waren. Erst öffnen, dann rendern.
   openOv('shopOv');
+  render();
   Sync.run();
   Sync.startPoll();
 }
@@ -771,8 +776,8 @@ function openCatalog(){
   _catQuery='';
   var q=document.getElementById('shopCatQ');
   if(q)q.value='';
-  renderCatalog();
   openOv('shopAddOv');
+  renderCatalog();
   Sync.startPoll();
 }
 function catalogQuery(v){_catQuery=v||'';renderCatalog();}

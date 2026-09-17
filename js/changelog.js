@@ -1,6 +1,10 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.237',items:[
+    {icon:'\ud83d\udcec',text:'Das Postfach sitzt jetzt auf „Heute" oben rechts — mit kleiner Flagge, die zeigt, wie viele geteilte Mahlzeiten ungelesen sind. Der Knopf erscheint, sobald ihr gekoppelt seid. Daneben liegt 📤 zum Teilen des angezeigten Tages (vorher stand der neben dem Datum).',where:'Heute'},
+    {icon:'\ud83d\udd17',text:'Ein Eingabefeld für alle Links: ＋ → 🔗 Link erkennt jetzt selbst, ob du einen Rezept-Link einer fremden Seite eingefügt hast oder eine geteilte NutriTrack-Sendung — Mahlzeit, Rezept, ganzer Tag oder Zeitraum. Der Knopf heißt entsprechend „Rezept laden" oder „Sendung öffnen". Beim Öffnen des Tabs wird ein passender Link aus der Zwischenablage gleich eingefügt; der 📥-Knopf in der Kopfzeile entfällt dafür. Über „Mehr → Code / Link einlösen" geht es weiterhin auch.',where:'＋ → 🔗 Link'},
+  ]},
   {v:'0.236',items:[
     {icon:'\ud83d\udc6b',text:'Teilen ohne Link: Koppelt ihr eure Geräte einmalig über einen Code, steht im Teilen-Dialog oben „An <Partner> senden". Die Mahlzeit landet direkt im Postfach des anderen — kein Link, kein WhatsApp, kein Umweg über die Zwischenablage. Empfangenes wird weiterhin einzeln bestätigt, eure Tagebücher bleiben getrennt.',where:'Mehr → 👫 Partner'},
     {icon:'\ud83d\udcc5',text:'Ganze Tage teilen: Auf „Heute" liegt neben der Datumszeile ein 📤 — damit geht der komplette Tag mit allen vier Mahlzeiten raus. Im Verlauf hat jeder Tag denselben Knopf. Beim Übernehmen wählt der Empfänger, welche Mahlzeiten er will, auf welchen Tag sie sollen und ob Vorhandenes ergänzt oder ersetzt wird.',where:'Heute · Verlauf'},

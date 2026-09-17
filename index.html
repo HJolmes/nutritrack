@@ -363,6 +363,9 @@ button,input,select,textarea{font-family:var(--fs-body);}
 .hdr{background:var(--bg);padding:calc(18px + env(safe-area-inset-top, 0px)) 18px 8px;border-bottom:none;}
 .logo{font-family:var(--fs-display);font-weight:500;font-size:26px;color:var(--tx);letter-spacing:-0.03em;line-height:1.1;}
 .logo em{color:var(--g1);font-style:italic;font-weight:400;}
+/* Zähler-Flagge am Kopfzeilen-Knopf (Postfach). Absolut positioniert, damit sie
+   den 38-px-Kreis nicht auseinanderdrückt. */
+.hflag{position:absolute;top:-2px;right:-2px;min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:999px;background:var(--g2);color:#fff;font-family:Inter,sans-serif;font-size:10px;font-weight:800;line-height:16px;text-align:center;border:2px solid var(--card);}
 .hbtn{background:var(--gl)!important;border:none!important;border-radius:50%!important;width:38px!important;height:38px!important;display:inline-flex;align-items:center;justify-content:center;font-size:16px!important;color:var(--tx)!important;}
 .dn{margin-top:10px;background:var(--card);border-radius:18px;padding:4px;box-shadow:var(--sh);}
 .da{background:none;border:none;color:var(--mu);font-size:22px;width:38px;height:38px;border-radius:14px;}
@@ -693,9 +696,12 @@ body.kb-open #feedbackFab{display:none;}
         <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.231</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
-      <div style="display:flex;gap:6px;">
+      <!-- gap etwas größer als sonst (6px): die Postfach-Flagge ragt über den
+           Knopfrand hinaus und braucht Luft, sonst klebt „9+" am Nachbarn. -->
+      <div style="display:flex;gap:10px;">
         <button type="button" class="hbtn" onclick="openHelp()" title="Hilfe">?</button>
-        <button type="button" class="hbtn" onclick="openImportPaste()" title="Rezept/Mahlzeit/Lebensmittel importieren">📥</button>
+        <button type="button" class="hbtn" id="hdrInboxBtn" style="display:none;position:relative;" onclick="NTPartner.openInbox()" title="Postfach">📬<span id="hdrInboxFlag" class="hflag" style="display:none;">0</span></button>
+        <button type="button" class="hbtn" onclick="shareDay()" title="Diesen Tag teilen">📤</button>
       </div>
     </div>
     <div id="odMissingBanner" style="display:none;align-items:center;gap:10px;background:#fff3e0;border-bottom:1px solid #ffe0b2;padding:10px 16px;">
@@ -704,12 +710,9 @@ body.kb-open #feedbackFab{display:none;}
       <button type="button" onclick="dismissOdBanner()" style="font-size:14px;color:#e65100;background:none;border:none;cursor:pointer;padding:4px;">✕</button>
     </div>
     <div class="dn">
-      <!-- Blindelement links: hält das Datum mittig, obwohl rechts ein Knopf mehr steht -->
-      <div class="da" aria-hidden="true" style="visibility:hidden;"></div>
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
       <button type="button" class="da" id="btnNext" onclick="changeDay(1)">›</button>
-      <button type="button" class="da" onclick="shareDay()" title="Ganzen Tag teilen" style="font-size:17px;">📤</button>
     </div>
   </div>
   <div id="installBanner" class="hidden" style="background:#e8f5e9;border:1.5px solid var(--g3);border-radius:12px;padding:11px 14px;margin:10px 12px 0;display:flex;align-items:center;gap:10px;">
@@ -1062,7 +1065,7 @@ body.kb-open #feedbackFab{display:none;}
     </div>
     <div class="list-row" onclick="if(typeof openImportPaste==='function')openImportPaste();else openSettings();">
       <div class="lr-ic">📥</div>
-      <div class="lr-body"><div class="lr-name">Code / Link einlösen</div><div class="lr-sub">Geteilte Mahlzeit oder Rezept importieren</div></div>
+      <div class="lr-body"><div class="lr-name">Code / Link einlösen</div><div class="lr-sub">Geht auch über ＋ → 🔗 Link</div></div>
       <div class="lr-val">›</div>
     </div>
     <div class="list-row" onclick="openHealthSync()">
@@ -1078,7 +1081,7 @@ body.kb-open #feedbackFab{display:none;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.236</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.237</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1248,7 +1251,7 @@ body.kb-open #feedbackFab{display:none;}
       <div class="picker-panel" id="ppanel-link">
         <textarea id="pickerLinkInput" rows="3"
           style="width:100%;box-sizing:border-box;border:1.5px solid var(--br);border-radius:12px;padding:12px;font-size:14px;font-family:inherit;resize:none;outline:none;color:var(--tx);"
-          placeholder="Rezept-Link einfügen – von fast jeder Rezept-Seite oder jedem Food-Blog, auch mit kopiertem Text drumherum"
+          placeholder="Link einfügen – Rezept-Seite, Food-Blog oder eine geteilte NutriTrack-Sendung (auch als Code)"
           oninput="pickerLinkDetect()"></textarea>
         <div id="pickerLinkUrlInfo" style="margin-top:6px;min-height:30px;"></div>
         <button type="button" class="abt" id="pickerLinkImportBtn" disabled onclick="pickerLinkImport()" style="opacity:.4;">🔗 Rezept laden</button>
@@ -1355,13 +1358,13 @@ body.kb-open #feedbackFab{display:none;}
     </div>
     <div class="mbd" style="height:calc(92vh - 80px);overflow-y:auto;-webkit-overflow-scrolling:touch;">
       <style>#helpOv details{border:1px solid var(--br);border-radius:12px;margin-bottom:8px;background:var(--card);}#helpOv summary{padding:12px 14px;font-weight:700;font-size:14px;cursor:pointer;list-style:none;}#helpOv summary::-webkit-details-marker{display:none;}#helpOv summary::before{content:'▸ ';color:var(--mu);}#helpOv details[open] summary::before{content:'▾ ';}#helpOv .hb{padding:0 14px 12px;font-size:13px;line-height:1.6;color:var(--tx);}#helpOv .hb ul{margin:6px 0;padding-left:18px;}</style>
-      <details open><summary>🏠 Heute-Tab</summary><div class="hb">Der Startbildschirm zeigt dein Tagesziel, die verbleibenden Kalorien und die drei Makro-Karten (Protein, Kohlenhydrate, Fett). Darunter liegen die vier Mahlzeiten-Karten — antippen öffnet die Detail-Ansicht. Mit den Pfeilen <strong>‹ ›</strong> blätterst du zwischen Tagen. „▶ Nährwert-Details" klappt die Ampel-Kacheln (Zucker, Ballaststoffe, Salz …) auf. Wasser trackst du über die Gläser-Reihe, Sport über „+ Aktivität" — verbrannte Kalorien werden vom Ziel abgezogen.</div></details>
-      <details><summary>➕ Mahlzeit erfassen</summary><div class="hb">Der <strong>＋</strong>-Knopf in der Mitte der unteren Leiste öffnet den Picker, standardmäßig im <strong>Chat</strong>: Einfach tippen oder per 🎙️ diktieren, was du gegessen hast („Brot mit Käse und Schinken") — die App zerlegt es in Zutaten und schätzt Nährwerte. Weitere Wege:<ul><li><strong>Suche</strong> — lokale Treffer sofort beim Tippen, Enter lädt Online-Ergebnisse</li><li><strong>Zuletzt</strong> — kürzlich verwendete Einträge</li><li><strong>Foto</strong> — Teller fotografieren, KI erkennt die Komponenten</li><li><strong>Barcode</strong> — Verpackung scannen</li><li><strong>Eigenes</strong> — Nährwerte selbst eintragen; mit Häkchen „Nur einmal eintragen" wird nichts dauerhaft gespeichert</li><li><strong>Link</strong> — Rezept-Link von nahezu jeder Rezept-Seite oder jedem Food-Blog importieren (Chefkoch, Lecker, Kochbar, Essen &amp; Trinken, AllRecipes …). Die App liest zuerst die Rezeptdaten der Seite selbst und fragt die KI nur, wenn die Seite keine hat. Danach wählst du unter „Wohin damit?", ob das Rezept eingetragen, als Rezept gespeichert und/oder auf den Einkaufszettel gelegt wird</li></ul></div></details>
+      <details open><summary>🏠 Heute-Tab</summary><div class="hb">Der Startbildschirm zeigt dein Tagesziel, die verbleibenden Kalorien und die drei Makro-Karten (Protein, Kohlenhydrate, Fett). Darunter liegen die vier Mahlzeiten-Karten — antippen öffnet die Detail-Ansicht. Mit den Pfeilen <strong>‹ ›</strong> blätterst du zwischen Tagen. Oben rechts liegen <strong>?</strong> (Hilfe), <strong>📬</strong> (Partner-Postfach, sobald ihr gekoppelt seid — mit Flagge für ungelesene Sendungen) und <strong>📤</strong> (den angezeigten Tag teilen). „▶ Nährwert-Details" klappt die Ampel-Kacheln (Zucker, Ballaststoffe, Salz …) auf. Wasser trackst du über die Gläser-Reihe, Sport über „+ Aktivität" — verbrannte Kalorien werden vom Ziel abgezogen.</div></details>
+      <details><summary>➕ Mahlzeit erfassen</summary><div class="hb">Der <strong>＋</strong>-Knopf in der Mitte der unteren Leiste öffnet den Picker, standardmäßig im <strong>Chat</strong>: Einfach tippen oder per 🎙️ diktieren, was du gegessen hast („Brot mit Käse und Schinken") — die App zerlegt es in Zutaten und schätzt Nährwerte. Weitere Wege:<ul><li><strong>Suche</strong> — lokale Treffer sofort beim Tippen, Enter lädt Online-Ergebnisse</li><li><strong>Zuletzt</strong> — kürzlich verwendete Einträge</li><li><strong>Foto</strong> — Teller fotografieren, KI erkennt die Komponenten</li><li><strong>Barcode</strong> — Verpackung scannen</li><li><strong>Eigenes</strong> — Nährwerte selbst eintragen; mit Häkchen „Nur einmal eintragen" wird nichts dauerhaft gespeichert</li><li><strong>Link</strong> — ein Feld für beides: Rezept-Link von nahezu jeder Rezept-Seite oder jedem Food-Blog (Chefkoch, Lecker, Kochbar, Essen &amp; Trinken, AllRecipes …) <em>oder</em> eine geteilte NutriTrack-Sendung (Mahlzeit, Rezept, ganzer Tag, Zeitraum) als Link oder Code. Die App erkennt selbst, was du eingefügt hast; ein passender Inhalt aus der Zwischenablage wird beim Öffnen gleich angeboten. Die App liest zuerst die Rezeptdaten der Seite selbst und fragt die KI nur, wenn die Seite keine hat. Danach wählst du unter „Wohin damit?", ob das Rezept eingetragen, als Rezept gespeichert und/oder auf den Einkaufszettel gelegt wird</li></ul></div></details>
       <details><summary>🍽 Mahlzeit-Detail</summary><div class="hb">Die Karte einer Mahlzeit öffnet die Detail-Ansicht mit allen Posten. Unten findest du: <strong>📋 Vorlage</strong> (Mahlzeit als Vorlage laden/speichern), <strong>🔁 Wiederholen</strong> (an festen Wochentagen automatisch eintragen) und <strong>💾 Als Rezept</strong> (alle Einträge als Rezept in die Bibliothek übernehmen). Einzelne Einträge antippen zum Bearbeiten, Verschieben oder Löschen.</div></details>
       <details><summary>🛒 Einkaufszettel</summary><div class="hb">Unter „Mehr → Einkaufszettel" führst du eine Einkaufsliste: oben eintippen („2 Liter Milch" erkennt Menge und Kategorie von selbst) oder über „🧺 Artikel wählen" aus den Kacheln antippen. Ein Tipp auf einen Artikel hakt ihn ab, ✏️ ändert Name, Menge, Symbol und Kategorie. Über „🔄 Teilen" koppelst du ein zweites Gerät mit einem Code — beide Geräte sehen denselben Zettel in Echtzeit, verschlüsselt und getrennt vom Baby-Tagebuch. Rezepte übernimmst du in der Bibliothek über 🛒 → „Auf den Einkaufszettel".</div></details>
-      <details><summary>📚 Bibliothek</summary><div class="hb">Unter „Mehr → Bibliothek" liegen deine Rezepte und eigenen Lebensmittel. Rezepte kannst du bearbeiten, duplizieren, teilen, als Einkaufsliste anzeigen und direkt in eine Mahlzeit übernehmen. Der 🔗-Knopf importiert ein Rezept per URL, 📥 löst einen geteilten Code/Link ein.</div></details>
-      <details><summary>📤 Teilen &amp; Import</summary><div class="hb">Rezepte, Lebensmittel, einzelne Mahlzeiten, <strong>ganze Tage</strong> und <strong>Zeiträume</strong> lassen sich teilen (📤-Symbole; der Tages-Knopf liegt auf „Heute" neben dem Datum und im Verlauf bei jedem Tag, der Zeitraum hinter 🗓 im Verlauf).<ul><li><strong>Mit Partner-Kopplung (empfohlen):</strong> Einmalig unter „Mehr → 👫 Partner" koppeln — danach steht im Teilen-Dialog oben „An … senden" und die Sendung landet direkt im Postfach des anderen. Kein Link, kein Messenger.</li><li><strong>Ohne Kopplung:</strong> weiterhin als Link. Der Empfänger öffnet ihn — auf dem iPhone ggf. über „Mehr → 📥 Code / Link einlösen" in der installierten App einfügen. Für ganze Tage und Zeiträume braucht der Link-Weg eine Internetverbindung, weil die Daten sonst nicht in eine URL passen.</li></ul></div></details>
-      <details><summary>👫 Partner</summary><div class="hb">Unter <strong>Mehr → 👫 Partner</strong> koppelst du dein Gerät mit dem deines Partners: auf einem Gerät „Kopplung starten", den Code auf dem anderen einfügen. Trag dort auch deinen Namen ein — der steht beim Empfänger an jeder Sendung.<br><br><strong>Es wird nichts automatisch übertragen.</strong> Nur was du ausdrücklich sendest, geht raus und landet im <strong>Postfach</strong> des anderen (Kachel auf „Heute", sobald etwas Neues da ist). Dort wird jede Sendung einzeln angesehen und übernommen — bei einem ganzen Tag wählst du, welche Mahlzeiten du willst, auf welchen Tag sie sollen und ob Vorhandenes ergänzt oder ersetzt wird; bei einem Zeitraum hakst du einzelne Tage ab. Eure Tagebücher bleiben also getrennt.<br><br>Die Sendungen werden auf dem Gerät verschlüsselt; der Schlüssel steckt nur im Kopplungs-Code und wird nie übertragen. Der Code gilt <strong>nur</strong> fürs Partner-Postfach — Einkaufszettel und Baby-Tagebuch haben eigene Codes und bleiben unberührt. Neue Sendungen holt die App beim Start, beim Zurückkehren in die App und solange das Postfach offen ist; das kann bis zu einer Minute dauern.</div></details>
+      <details><summary>📚 Bibliothek</summary><div class="hb">Unter „Mehr → Bibliothek" liegen deine Rezepte und eigenen Lebensmittel. Rezepte kannst du bearbeiten, duplizieren, teilen, als Einkaufsliste anzeigen und direkt in eine Mahlzeit übernehmen. Der 🔗-Knopf öffnet das Link-Feld: Dort kannst du sowohl ein Rezept per URL importieren als auch einen geteilten NutriTrack-Code/Link einlösen — die App erkennt selbst, was es ist.</div></details>
+      <details><summary>📤 Teilen &amp; Import</summary><div class="hb">Rezepte, Lebensmittel, einzelne Mahlzeiten, <strong>ganze Tage</strong> und <strong>Zeiträume</strong> lassen sich teilen (📤-Symbole; der Tages-Knopf liegt auf „Heute" oben rechts in der Kopfzeile und im Verlauf bei jedem Tag, der Zeitraum hinter 🗓 im Verlauf).<ul><li><strong>Mit Partner-Kopplung (empfohlen):</strong> Einmalig unter „Mehr → 👫 Partner" koppeln — danach steht im Teilen-Dialog oben „An … senden" und die Sendung landet direkt im Postfach des anderen. Kein Link, kein Messenger.</li><li><strong>Ohne Kopplung:</strong> weiterhin als Link. Der Empfänger öffnet ihn — auf dem iPhone ggf. in der installierten App über <strong>＋ → 🔗 Link</strong> einfügen (das Feld erkennt selbst, ob ein Rezept-Link oder eine NutriTrack-Sendung drinsteht, und bietet einen passenden Link aus der Zwischenablage gleich an). Für ganze Tage und Zeiträume braucht der Link-Weg eine Internetverbindung, weil die Daten sonst nicht in eine URL passen.</li></ul></div></details>
+      <details><summary>👫 Partner</summary><div class="hb">Unter <strong>Mehr → 👫 Partner</strong> koppelst du dein Gerät mit dem deines Partners: auf einem Gerät „Kopplung starten", den Code auf dem anderen einfügen. Trag dort auch deinen Namen ein — der steht beim Empfänger an jeder Sendung.<br><br><strong>Es wird nichts automatisch übertragen.</strong> Nur was du ausdrücklich sendest, geht raus und landet im <strong>Postfach</strong> des anderen. Das sitzt auf „Heute" oben rechts (📬) und trägt eine Flagge mit der Zahl der ungelesenen Sendungen; bei etwas Neuem erscheint zusätzlich eine Kachel im Tagesüberblick. Dort wird jede Sendung einzeln angesehen und übernommen — bei einem ganzen Tag wählst du, welche Mahlzeiten du willst, auf welchen Tag sie sollen und ob Vorhandenes ergänzt oder ersetzt wird; bei einem Zeitraum hakst du einzelne Tage ab. Eure Tagebücher bleiben also getrennt.<br><br>Die Sendungen werden auf dem Gerät verschlüsselt; der Schlüssel steckt nur im Kopplungs-Code und wird nie übertragen. Der Code gilt <strong>nur</strong> fürs Partner-Postfach — Einkaufszettel und Baby-Tagebuch haben eigene Codes und bleiben unberührt. Neue Sendungen holt die App beim Start, beim Zurückkehren in die App und solange das Postfach offen ist; das kann bis zu einer Minute dauern.</div></details>
       <details><summary>💾 Backup</summary><div class="hb">Alle Sicherungswege liegen unter <strong>Mehr → 💾 Backup &amp; Daten</strong>: „Jetzt sichern"-Knopf, Datei-Export/-Import (JSON), OneDrive-Sync mit täglichem Autospeicher sowie lokale Autospeicher-Stände. Tipp: Vor einem Gerätewechsel einmal exportieren. Hinweis: Mahlzeit-Fotos sind gerätelokal und nicht Teil der Backup-Datei.</div></details>
       <details><summary>🏃 Sport-Sync</summary><div class="hb">Unter „Mehr → Sport-Sync" erzeugst du ein Token und verbindest eine iOS-Kurzbefehl-Automation („Wenn Training endet") oder einen Android-HTTP-Shortcut. Abgeschlossene Workouts erscheinen dann automatisch mit Apple-/Samsung-Badge und reduzieren dein Tagesziel.</div></details>
       <details><summary>🤖 KI</summary><div class="hb">Foto-Erkennung, Chat und Wochenbericht laufen über einen geschützten KI-Zugang — dafür brauchst du das Proxy-Passwort (Mehr → 🤖 KI). Optional kannst du dort einen eigenen KI-Anbieter (DeepSeek, OpenAI, Gemini, …) mit eigenem API-Key hinterlegen. Ohne Passwort funktioniert alles außer den KI-Funktionen.</div></details>
@@ -2028,12 +2031,12 @@ body.kb-open #feedbackFab{display:none;}
     </div>
     <div class="mbd">
       <div style="background:#fff8e1;border:1.5px solid #f9c74f;border-radius:12px;padding:12px;margin-bottom:14px;font-size:13px;color:#7d5a00;line-height:1.5;">
-        Du benutzt gerade deinen <strong>Browser</strong>. Damit das Rezept in deiner installierten NutriTrack-App landet, brauchst du nur drei Schritte:
+        Du benutzt gerade deinen <strong>Browser</strong>. Damit die Sendung in deiner installierten NutriTrack-App landet, brauchst du nur drei Schritte:
       </div>
       <ol style="margin:0 0 14px 0;padding-left:22px;font-size:14px;line-height:1.7;color:var(--tx);">
         <li>Schließe diesen Tab</li>
         <li>Öffne <strong>NutriTrack</strong> auf deinem Home-Bildschirm</li>
-        <li>Tippe oben rechts auf <strong>📥</strong> – der Link wurde bereits kopiert und fügt sich automatisch ein</li>
+        <li>Tippe unten auf <strong>＋</strong> und dann auf <strong>🔗 Link</strong> – der Link wurde bereits kopiert und fügt sich automatisch ein</li>
       </ol>
       <button type="button" class="cb2" onclick="iosCopyShareUrl()" style="margin-bottom:8px;">📋 Link erneut kopieren</button>
       <button type="button" class="seb" onclick="iosImportInBrowser()" style="margin-bottom:0;">Trotzdem hier im Browser importieren</button>
@@ -2576,7 +2579,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.236';
+var APP_VERSION='0.237';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -4919,23 +4922,49 @@ function _lookupAndPreview(id){
     .catch(function(){showToast('Link konnte nicht geladen werden – online?');});
 }
 
+// ─── NUTRITRACK-SENDUNG ODER FREMDER LINK? ───
+// Eine Eingabe kann dreierlei sein: ein NutriTrack-Kurzlink (`?s=…`), eine
+// NutriTrack-Sendung inline (`#x=`/`#r=`) oder ein roher Code — oder eben ein
+// ganz normaler Rezept-Link einer fremden Seite. Diese Erkennung ist die
+// gemeinsame Quelle für den Import-Dialog UND den Link-Tab im Picker, damit
+// beide Wege dieselbe Sendung gleich einschätzen.
+// Bewusst streng bei rohem Base64: nur wenn es sich auch wirklich dekodieren
+// lässt, sonst würde jede Texteingabe als „Sendung" durchgehen.
+function shareInputKind(raw){
+  var t=String(raw||'').trim();
+  if(!t)return null;
+  if(_extractShareId(t))return 'id';
+  if(/[#?&][xr]=[A-Za-z0-9+/=_%-]{8,}/.test(t))return 'code';
+  if(/^[A-Za-z0-9+/=]{16,}$/.test(t.replace(/\s+/g,''))){
+    var ext=_extractShareCode(t);
+    if(ext&&_normalizePayload(_decodePayload(ext.code),ext.legacy))return 'code';
+  }
+  return null;
+}
+// Startet den Import einer erkannten Sendung. Gibt false zurück, wenn die
+// Eingabe keine NutriTrack-Sendung ist — dann ist der Aufrufer dran.
+function startShareImport(raw,delay){
+  var kind=shareInputKind(raw);
+  if(!kind)return false;
+  var wait=typeof delay==='number'?delay:150;
+  if(kind==='id'){
+    var sid=_extractShareId(raw);
+    setTimeout(function(){_lookupAndPreview(sid);},wait);
+    return true;
+  }
+  var ext=_extractShareCode(raw);
+  var d=ext?_normalizePayload(_decodePayload(ext.code),ext.legacy):null;
+  if(!d){showToast('Ungültiger Link/Code');return true;}
+  setTimeout(function(){_previewImport(d);},wait);
+  return true;
+}
+
 function importPasted(){
   var raw=document.getElementById('importPasteInput').value;
   if(!raw||!raw.trim()){showToast('Link oder Code eingeben');return;}
-  // Worker-stored short link: "https://hjolmes.github.io/nutritrack/?s=abc"
-  var sid=_extractShareId(raw);
-  if(sid){
-    closeOv('importPasteOv');
-    setTimeout(function(){_lookupAndPreview(sid);},150);
-    return;
-  }
-  // Inline #x= / #r= / raw base64 paste
-  var ext=_extractShareCode(raw);
-  if(!ext){showToast('Ungültig');return;}
-  var d=_normalizePayload(_decodePayload(ext.code),ext.legacy);
-  if(!d){showToast('Ungültiger Link/Code');return;}
+  if(!shareInputKind(raw)){showToast('Das sieht nicht nach einer NutriTrack-Sendung aus');return;}
   closeOv('importPasteOv');
-  setTimeout(function(){_previewImport(d);},150);
+  startShareImport(raw);
 }
 
 // ─── PLATFORM DETECTION ───

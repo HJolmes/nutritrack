@@ -400,14 +400,25 @@ function clearInbox(){
   showToast('Postfach geleert');
 }
 
-// ── Badges: Mehr-Hub-Zeile + Heute-Karte ──
+// ── Badges: Kopfzeilen-Flagge, Mehr-Hub-Zeile, Heute-Karte ──
 function refreshBadges(){
   var n=newCount();
+  var on=active();
+  // Kopfzeile „Heute": Der Postfach-Knopf erscheint erst mit einer Kopplung —
+  // ohne Partner wäre er eine tote Taste. Die Flagge zeigt nur ungelesene
+  // Sendungen, bei 0 verschwindet sie ganz.
+  var hb=document.getElementById('hdrInboxBtn');
+  if(hb)hb.style.display=on?'inline-flex':'none';
+  var flag=document.getElementById('hdrInboxFlag');
+  if(flag){
+    flag.style.display=n?'block':'none';
+    flag.textContent=n>9?'9+':String(n);
+  }
   var sub=document.getElementById('partnerHubSub');
   if(sub){
-    sub.textContent=!active()
+    sub.textContent=!on
       ? 'Mahlzeiten direkt an den Partner senden'
-      : (n?(n+' neue Sendung'+(n===1?'':'en')):('Gekoppelt mit '+peerName()));
+      : (n?(n+' neue Sendung'+(n===1?'':'en')+' im Postfach'):('Gekoppelt mit '+peerName()));
   }
   var card=document.getElementById('partnerCard');
   if(card){

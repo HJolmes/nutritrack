@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.235 (2026-09-16) — Branch `claude/sleep-day-change-bug-gj4aef` (Schlaf über Mitternacht wird am Tageswechsel geteilt; App springt bei offener Sitzung selbst auf den neuen Tag)
+**Stand:** v0.236 (2026-09-17) — Branch `claude/app-alexa-integration-2n82os` (Alexa-Einwurf: Essen, Wasser, Sport, Einkaufszettel und Baby-Tagebuch per Sprache; Einbahnstraße, Alexa liest nichts zurück)
 
 ## URLs
 
@@ -63,6 +63,11 @@
 - **OFF via Worker (v0.192):** Alle OpenFoodFacts-Calls über `GET /off?u=…`, Rezept-Import über `GET /fetch?u=…`; `fetchT` mit harten Timeouts überall.
 - **Barcode (v0.196):** `zxing-wasm` lokal (`js/zxing/`), Canvas→ImageData-Wrapper `window.ZXingWasm.readBarcodes`; zbar-wasm per esm.sh best effort; `@zxing/library` lokal als JS-Fallback.
 - **Sport-Sync (v0.158):** `js/health-sync.js` (`window.NTHealth`), Token in iOS-Shortcut/Android-HTTP-Shortcut, Worker `POST /workout` / `GET /workouts`, Einträge in `S.days[*].exercise[]` mit `_healthId`/`_source`.
+- **Alexa-Einwurf (v0.236):** `js/alexa-sync.js` → `window.NTAlexa`, in `CORE_ASSETS`. Ein privater Alexa-Skill (`alexa/`, Alexa-hosted Lambda — nicht von uns deployt, Anleitung in `alexa/README.md`) schickt Gesprochenes an `POST /alexa/inbox`; die PWA holt beim Boot (1,2 s Verzögerung) und bei `visibilitychange` ab, trägt lokal ein und quittiert per `POST /alexa/ack` — **der Worker löscht den Einwurf dann sofort**, nie abgeholtes verfällt nach 30 Tagen. Auth: `X-User-Token` wie beim Workout-Ingest, Token liegt als Umgebungsvariable im Skill (Ein-Personen-Setup, kein Account-Linking). **Bewusst Einbahnstraße:** Der Worker kennt keine Tagessummen, Ziele oder Historie — Alexa kann nichts vorlesen. Eine E2E-Verschlüsselung wie beim Baby-/Shop-Sync ist unmöglich, weil Alexa den Schlüssel nicht kennt; die Gegenmaßnahme ist die sofortige Löschung nach dem Abholen.
+  - Fünf Typen (`kind`): `meal` → über den bestehenden `lookupNutrients()`-Pfad (lokale DB → OFF → KI → Schätzung), `exercise` → `S.days[*].exercise[]` mit grober MET-Schätzung, `water` → `day.water`, `shop` → `NTShop.add()`, `baby` → `NTBaby.add()` (**neu exportiert**, war vorher nur intern). Baby-Einwürfe werden verworfen, wenn `S.babyOn` aus ist.
+  - **Dedup** über `_alexaId` auf jedem erzeugten Datensatz plus `day._alexaWater[id]` fürs Wasser — eine verlorene Quittung darf nichts verdoppeln. Auch ein *nicht* eingetragener Einwurf (Duplikat, Tagebuch aus, Tag verdichtet) wird quittiert, sonst bliebe er für immer im Briefkasten.
+  - **Tagesschlüssel aus `item.ts`**, nicht aus dem Abrufzeitpunkt: Wer um 23:50 spricht und morgens öffnet, will den Eintrag am Vortag. Ohne gesprochenen Mahlzeiten-Slot entscheidet die Uhrzeit (`<11` Frühstück, `<15` Mittag, `<21` Abend, sonst Snack).
+  - **Ohne gesprochene Menge wird nicht geraten:** `recallPortion()` oder 100 g, Eintrag bekommt `_alexaPending:1` und in der Liste ein 🗣️ (Sport: ⚠️). `saveEdit()` löscht das Flag, sobald die Nutzerin die Menge bestätigt. **Neue Render-Pfade für Mahlzeiten müssen die Markierung mitführen** — sie steht aktuell an zwei Stellen (Heute-Liste und Verlauf).
 
 ## Worker-Endpoints
 
@@ -76,6 +81,7 @@
 | `GET /s/<id>` | Legacy-Redirect |
 | `POST /feedback` | erstellt GitHub-Issue, optional Screenshot-Commit |
 | `POST /workout` / `GET /workouts?since=` | Workout-Ingest/-Polling |
+| `POST /alexa/inbox` / `GET /alexa/inbox?since=` / `POST /alexa/ack` | Alexa-Einwurf: einwerfen, abholen, quittieren (löscht) |
 | `POST /baby/sync` / `GET /baby/sync?since=` | Baby-Tagebuch-Abgleich (E2E-verschlüsselt, nur `babyLog`) |
 | `POST /shop/sync` / `GET /shop/sync?since=` | Einkaufszettel-Abgleich (E2E, eigener Raum, nur `shopList`) |
 | `GET /off?u=` | OpenFoodFacts-Proxy |
@@ -89,13 +95,15 @@
 
 `picker.js`: `pickerSearchLocalLive`, `pickerSaveOwn` (mit `ownOnce`), `_pickerVoiceStart`/`_pickerDedupOverlap` (Diktat inkl. Per-Index-Finals #156), `pickerLinkDetect/Import/Add`.
 
-`js/`: `fooddb.js` (DB/DE_EN), `changelog.js` (CHANGELOG — neue Einträge hier!), `idb-photos.js` (NTPhotos), `health-sync.js` (NTHealth), `baby.js` (NTBaby — Tagebuch, `Sync`, Schnell-Knöpfe), `shopping.js` (NTShop — Einkaufszettel, `CATS`/`CATALOG`, `guess`, `splitQty`, `Sync`), `zxing/` (WASM + JS-Fallback lokal).
+`js/`: `fooddb.js` (DB/DE_EN), `changelog.js` (CHANGELOG — neue Einträge hier!), `idb-photos.js` (NTPhotos), `health-sync.js` (NTHealth), `baby.js` (NTBaby — Tagebuch, `Sync`, Schnell-Knöpfe), `alexa-sync.js` (NTAlexa — Alexa-Einwurf, `parseAmount`, `applyMeals`), `shopping.js` (NTShop — Einkaufszettel, `CATS`/`CATALOG`, `guess`, `splitQty`, `Sync`), `zxing/` (WASM + JS-Fallback lokal).
 
-`worker/src/index.js`: `// ─── GETEILTE RÄUME` (`handleSyncPush`/`handleSyncPull`, `SYNC_BABY`/`SYNC_SHOP`), `// ─── SHARE-LINK SHORTENER`, `// ─── FEEDBACK ENDPOINT`, `// ─── HEALTH WORKOUT INGEST`, `handleAiProvider`.
+`worker/src/index.js`: `// ─── ALEXA-EINWURF` (`handleAlexaPush`/`handleAlexaPull`/`handleAlexaAck`), `// ─── GETEILTE RÄUME` (`handleSyncPush`/`handleSyncPull`, `SYNC_BABY`/`SYNC_SHOP`), `// ─── SHARE-LINK SHORTENER`, `// ─── FEEDBACK ENDPOINT`, `// ─── HEALTH WORKOUT INGEST`, `handleAiProvider`.
 
 `sw.js`: `index.html` network-first, restliche `CORE_ASSETS` cache-first; `install` per `fetch({cache:'reload'})`+`put` (nicht `cache.add()`).
 
 ## Live-Test offen
+
+- v0.236 Alexa-Einwurf (**Worker vorher deployen** — `wrangler deploy` in `worker/`, `GET /health` → `codeVersion:"v0.236-alexa-inbox"` und `alexaInboxConfigured:true`; **Skill vorher anlegen** nach `alexa/README.md`): Mehr → 🗣️ Alexa-Einwurf → Token erzeugen + speichern → dasselbe Token im Skill als `NUTRITRACK_TOKEN`, Endpunkt als `NUTRITRACK_ENDPOINT`. Dann am echten Echo: „Alexa, sage NutriTrack, ich habe zwei Eier und ein Brötchen gegessen“ → App schließen und neu öffnen → beide unter Frühstück, beide mit 🗣️ markiert; einen antippen, Menge bestätigen → Markierung weg. „150 Gramm Reis zum Mittagessen“ → unter Mittag, **ohne** Markierung, 195 kcal. „Zwei Gläser Wasser getrunken“ → Wasserzähler +2. „Ich war 30 Minuten joggen“ → Sport-Eintrag mit Dauer, Badge „🗣️ Alexa“, Hero-kcal sinkt. „Setz Milch auf den Einkaufszettel“ → unter „Milch & Käse“. Baby-Tagebuch **einschalten** → „120 Milliliter Flasche“ → Eintrag im Tagebuch; Tagebuch **ausschalten**, nochmal sprechen → Einwurf wird verworfen, taucht auch nach dem Einschalten nicht mehr auf. Gegenproben: (a) zweimal dieselbe App-Öffnung / „🔄 Jetzt abholen“ doppelt → nichts verdoppelt sich; (b) abends um 23:50 sprechen, morgens öffnen → Eintrag steht am **Vortag**; (c) Flugmodus beim Öffnen → kein Fehler-Toast, nach dem Wiederverbinden kommt alles an; (d) Token löschen → nichts wird mehr abgeholt; (e) Datenschutz-Gegenprobe: im Cloudflare-Dashboard unter KV nachsehen — nach dem Abholen liegt **kein** `ai:`-Key mehr; (f) Alexa fragen „Wie viele Kalorien habe ich noch?“ → der Skill kann das nicht beantworten (so gewollt).
 
 - v0.232 Rezept-Abruf (**Worker vorher deployen** — `wrangler deploy` in `worker/`, `GET /health` → `codeVersion:"v0.232-fetch-hardening"`): Chefkoch-Link (die gemeldete Seite: `chefkoch.de/rezepte/1640721271671939/Thailaendisches-Pad-Thai.html`) → ＋ → Link → „🔗 Rezept laden" → Zutaten binnen ~2 s, über der Liste „Quelle: Rezeptdaten der Seite", **ohne** dass der Knopf je auf „🤖 KI liest die Seite…" wechselt. Dazu je ein Link von **Lecker, Kochbar, Essen & Trinken, einem WordPress-Food-Blog und AllRecipes/BBC Good Food**. Mengen: „2 EL Öl" → **30 g** in Liste *und* auf dem Zettel; „1 Dose Tomaten" → 400 g; „1 ½ TL Salz" → 8 g; „Salz" ohne Menge → ⚠️ und leeres g-Feld. Portionen auf 2 → Zettel zeigt die doppelte Grammzahl. Nirgends „EL"/„Dose"/„Prise" als Menge. Gegenproben: (a) Seite mit Rezepttext aber ohne strukturierte Daten → Knopf wechselt auf „🤖 KI liest die Seite…", Ergebnis plausibel; (b) Seite, die den Abruf sperrt → Toast „Die Seite blockiert den Abruf – dort öffnen, Zutaten kopieren und über ‚Eigenes' eintragen", **ohne** KI-Wartezeit; (c) Proxy-Passwort in Mehr → 🤖 KI leeren → Toast „Proxy-Passwort fehlt oder ist falsch"; (d) ohne konfigurierte KI eine Seite ohne strukturierte Daten → „Seite liefert keine Rezeptdaten – dafür wird die KI benötigt".
 
@@ -137,10 +145,10 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.232 | — | Rezept-Abruf gehärtet: JSON-LD überlebt die Kappung, Browser-Header, Klartext-Fehler, KI nur bei echtem Seiteninhalt |
 | v0.233 | — | Einkaufszettel blieb beim Öffnen leer (render vor openOv) |
 | v0.234 | — | Link-Import: „etwas …"-Namen und Klammerreste vom Einkaufszettel verbannt |
 | v0.235 | — | Schlaf über Mitternacht am Tageswechsel geteilt; offene App springt selbst auf den neuen Tag |
+| v0.236 | — | Alexa-Einwurf: Essen, Wasser, Sport, Einkaufszettel und Baby-Tagebuch per Sprache (Einbahnstraße, Briefkasten wird nach dem Abholen geleert) |
 
 ---
 

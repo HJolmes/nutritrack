@@ -1,6 +1,11 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.236',items:[
+    {icon:'\ud83d\udde3\ufe0f',text:'Neu: Du kannst NutriTrack jetzt per Alexa füttern. „Alexa, sage NutriTrack, ich habe zwei Eier gegessen“ — und beim nächsten Öffnen der App steht es drin. Funktioniert für Essen, Wasser, Sport, Einkaufszettel und das Baby-Tagebuch. Einrichtung: Mehr → \ud83d\udde3\ufe0f Alexa-Einwurf, dort steht die Anleitung für den privaten Skill (einmalig, rund 15 Minuten, keine Zertifizierung nötig).',where:'Mehr → \ud83d\udde3\ufe0f Alexa-Einwurf'},
+    {icon:'\u26a0\ufe0f',text:'Gesprochenes ohne Mengenangabe („ein Apfel“ statt „150 Gramm Apfel“) wird nicht geraten: Die App nimmt deine zuletzt verwendete Portion und markiert den Eintrag mit \ud83d\udde3\ufe0f. Antippen, Menge bestätigen — Markierung weg.',where:'Heute'},
+    {icon:'\ud83d\udd12',text:'Alexa kann nur einwerfen, nichts vorlesen: Weder Tagessumme noch Ziel noch Verlauf verlassen dein Gerät. Der Server ist nur ein Briefkasten und wird nach dem Abholen sofort geleert.',where:'Mehr → \ud83d\udde3\ufe0f Alexa-Einwurf'},
+  ]},
   {v:'0.235',items:[
     {icon:'\ud83d\ude34',text:'Schlaf über Mitternacht wird jetzt am Tageswechsel geteilt: Ein Schlaf von 22:50 bis 00:06 steht mit 22:50–24:00 beim Vortag und mit 00:00–00:06 beim Folgetag — beide Tage zeigen ihre eigene Schlafdauer. Vorher landete die ganze Nacht beim Vortag, und dort stand die verwirrende Spanne „22:50–00:06“. Läuft der Schlaf noch, taucht er nach Mitternacht auch am neuen Tag auf, samt „Wach jetzt“-Knopf.',where:'👶 Baby-Tagebuch'},
     {icon:'\ud83c\udf05',text:'Bleibt die App über Mitternacht offen, springt sie jetzt selbst auf den neuen Tag. Bisher blieb sie am alten Datum hängen — alles, was man nachts noch eintrug, landete beim Vortag. Wer bewusst zurückgeblättert hat, bleibt an seinem Tag.',where:'Heute'},

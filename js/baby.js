@@ -1017,6 +1017,10 @@ function hasRunningSleep(){
 
 window.NTBaby={
   boot:boot,refresh:refresh,hasRunningSleep:hasRunningSleep,
+  // add() ist der programmatische Einfuege-Pfad (Alexa-Einwurf, js/alexa-sync.js).
+  // Der Aufrufer liefert einen fertigen Eintrag {t,...} plus Tagesschluessel;
+  // Sync, Speichern und Neuzeichnen passieren hier drin.
+  add:add,
   openDiary:openDiary,closeDiary:closeDiary,renderDiary:renderDiary,renderCard:renderCard,
   quick:quick,openEntry:openEntry,editEntry:editEntry,setType:setType,endSleep:endSleep,
   updateDiaperFields:updateDiaperFields,saveEntry:saveEntry,deleteEntry:deleteEntry,

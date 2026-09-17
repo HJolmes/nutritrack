@@ -128,6 +128,7 @@ Satz geschlossen, ein Dialog nach „öffne" mit `new: false` und bleibt offen.
 | Baby | „Alexa, sage mein Tagebuch, Baby Windel gewechselt" |
 | Baby mit Menge | „Alexa, sage mein Tagebuch, Baby 120 Milliliter Flasche" |
 | Baby, Seite | „Alexa, sage mein Tagebuch, Baby gestillt links" |
+| Baby, beide Seiten | „Alexa, sage mein Tagebuch, Baby gestillt beide, hauptsächlich links" |
 
 ### Warum der Aufrufname „mein tagebuch" heißt
 
@@ -199,6 +200,11 @@ Mehr Details stehen in den CloudWatch Logs (Code-Reiter → „CloudWatch Logs")
   gern zu „Skier". In der App korrigierbar.
 - **Baby-Tagebuch.** Einwürfe landen nur im Tagebuch, wenn es in NutriTrack eingeschaltet
   ist. Sonst werden sie verworfen.
+- **Stillen „beide".** Das Lambda erkennt „beide", „beidseitig" und „bds" und liest die
+  **Hauptseite** aus dem Satzteil dahinter („beide, hauptsächlich links", „beide mehr
+  rechts", „beidseitig links"). Ohne Hauptseite weiß die App nicht, welche Seite als
+  Nächstes dran ist, und macht keinen Vorschlag. Wird gar keine Seite gesprochen, trägt
+  die App die vorgeschlagene Seite ein — wie ein Schnell-Knopf ohne feste Seite.
 - **Auch geteilt nicht live.** Ein Einwurf erscheint erst, wenn **eines** der beiden
   Telefone die App öffnet. Wer spricht, hat sein Telefon meist dabei — sein Gerät holt ab
   und reicht es über den Baby-/Einkaufs-Sync ans andere weiter.

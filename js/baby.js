@@ -1072,6 +1072,8 @@ window.NTBaby={
   moveQuick:moveQuick,resetQuick:resetQuick,renderQuickBtns:renderQuickBtns,
   openSync:openSync,renderSyncUI:renderSyncUI,createSyncRoom:createSyncRoom,joinSyncRoom:joinSyncRoom,
   copySyncCode:copySyncCode,shareSyncCode:shareSyncCode,syncNow:syncNow,disconnectSync:disconnectSync,
-  Sync:Sync,summaryText:summaryText,TYPES:TYPES
+  Sync:Sync,summaryText:summaryText,TYPES:TYPES,
+  // Fuer den Alexa-Einwurf: welche Brust waere als Naechstes dran?
+  nextSide:nextSide
 };
 })();

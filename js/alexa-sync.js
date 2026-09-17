@@ -279,6 +279,9 @@
     var e={t:item.babyType};
     var p=item.babyP||{};
     for(var k in p){if(Object.prototype.hasOwnProperty.call(p,k))e[k]=p[k];}
+    // Gesprochen wurde nur „gestillt“, ohne Seite: denselben Alternations-
+    // Vorschlag nutzen wie die Schnell-Knöpfe, statt die Seite leer zu lassen.
+    if(e.t==='breast'&&!e.side&&window.NTBaby.nextSide)e.side=window.NTBaby.nextSide(key)||'';
     if(item.text&&!e.note)e.note=item.text;
     e.ts=item.ts||Date.now();
     e._alexaId=item.id;

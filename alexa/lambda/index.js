@@ -294,9 +294,23 @@ const HANDLERS = {
       spoken = amount ? amount + ' Milliliter Flasche.' : 'Flasche.';
     } else if (/still|brust/.test(kindRaw)) {
       payload = { kind: 'baby', babyType: 'breast', babyP: {} };
-      if (/links/.test(kindRaw)) payload.babyP.side = 'l';
-      else if (/rechts/.test(kindRaw)) payload.babyP.side = 'r';
-      spoken = 'Gestillt.';
+      const sideIn = (t) => (/link/.test(t) ? 'l' : /recht/.test(t) ? 'r' : '');
+      const sideWord = (s) => (s === 'l' ? 'links' : 'rechts');
+      if (/beid|bds\b/.test(kindRaw)) {
+        // "Beide" allein sagt nichts darüber, welche Seite als Nächstes dran
+        // ist — die App braucht dafür die Hauptseite (die mit der größeren
+        // Trinkmenge). Sie steht im Satz meist hinter "beide":
+        // "beide, hauptsächlich links", "beide mehr rechts", "beide links".
+        payload.babyP.side = 'b';
+        const after = kindRaw.split(/beid\w*/)[1] || '';
+        const main = sideIn(after) || sideIn(kindRaw);
+        if (main) payload.babyP.main = main;
+        spoken = main ? 'Gestillt, beide, hauptsächlich ' + sideWord(main) + '.' : 'Gestillt, beide Seiten.';
+      } else {
+        const side = sideIn(kindRaw);
+        if (side) payload.babyP.side = side;
+        spoken = side ? 'Gestillt ' + sideWord(side) + '.' : 'Gestillt.';
+      }
     } else if (/schläft|schlafen|eingeschlafen/.test(kindRaw)) {
       payload = { kind: 'baby', babyType: 'sleep', babyP: {} };
       spoken = 'Schlaf notiert.';

@@ -1,6 +1,10 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.241',items:[
+    {icon:'\ud83d\udde3\ufe0f',text:'Alexa hört jetzt auf „mein Tagebuch“ statt „nutri track“ — der alte Name wurde regelmäßig als „speck“ verstanden und die Sätze landeten als Durchsage auf allen Echos statt in der App. Neu ist auch ein Diktier-Modus: „Alexa, öffne mein Tagebuch“, dann mehrere Sachen hintereinander sagen, ohne jedes Mal den Namen zu wiederholen. „Stopp“ beendet.',where:'Mehr → \ud83d\udde3\ufe0f Alexa-Einwurf'},
+    {icon:'\u2696\ufe0f',text:'Stückangaben werden realistisch gerechnet: „zwei Brötchen“ sind jetzt 100 g statt 200 g, ein Ei 60 g, ein Apfel 150 g. Vorher bekam jedes Stück pauschal 100 g — zwei Brötchen landeten damit bei 540 statt 270 Kalorien. Nur wo die App das Stückgewicht nicht kennt, bleibt es bei 100 g mit \ud83d\udde3\ufe0f-Markierung.',where:'Heute'},
+  ]},
   {v:'0.240',items:[
     {icon:'\ud83d\udd27',text:'Die Token-Zeile war auf dem Handy zerschossen: Der Kopier-Knopf zog sich über die ganze Breite und quetschte das Eingabefeld zu einem schmalen Oval zusammen. Betraf den Alexa-Einwurf und den Sport-Sync gleichermaßen. Jetzt steht das Feld breit links, der \ud83d\udccb-Knopf schmal rechts daneben.',where:'Mehr → \ud83d\udde3\ufe0f Alexa-Einwurf / \ud83c\udfc3 Sport-Sync'},
   ]},

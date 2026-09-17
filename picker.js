@@ -105,7 +105,29 @@ function pickerSetTab(tab){
   if(tab==='search'){pickerLoadDefaultResults();}
   if(tab==='barcode'){setTimeout(function(){pickerStartScan();},150);}
   if(tab==='recent'){renderRecentList();}
+  if(tab==='link'){pickerLinkClipboard();}
   // No auto-focus on chat - user taps input to open keyboard
+}
+
+// Beim Öffnen des Link-Tabs die Zwischenablage anbieten. Das ersetzt den früheren
+// 📥-Knopf in der Kopfzeile: Wer einen Link bekommen hat, kopiert ihn und findet
+// ihn hier schon eingefügt — besonders auf iOS, wo der Weg aus Safari in die
+// installierte PWA ohnehin über die Zwischenablage läuft.
+function pickerLinkClipboard(){
+  var inp=document.getElementById('pickerLinkInput');
+  if(!inp||inp.value.trim())return;// nichts überschreiben
+  if(!navigator.clipboard||!navigator.clipboard.readText)return;
+  navigator.clipboard.readText().then(function(txt){
+    var t=String(txt||'').trim();
+    if(!t||t.length>4096)return;
+    if(inp.value.trim())return;// inzwischen getippt
+    var isShare=(typeof shareInputKind==='function')&&shareInputKind(t);
+    var isUrl=/^https?:\/\//i.test(t)||/\bhttps?:\/\//i.test(t);
+    if(!isShare&&!isUrl)return;
+    inp.value=t;
+    pickerLinkDetect();
+    if(typeof showToast==='function')showToast('Aus Zwischenablage eingefügt ✓');
+  }).catch(function(){/* verweigert oder nicht erlaubt */});
 }
 
 function pickerLoadDefaultResults(){
@@ -1703,15 +1725,25 @@ function _recipeFromHtml(html){
 // ─── PICKER: LINK/URL TAB ───
 function pickerLinkDetect(){
   var raw=document.getElementById('pickerLinkInput').value;
-  var url=recipeImportExtractUrl(raw);
   var info=document.getElementById('pickerLinkUrlInfo');
   var btn=document.getElementById('pickerLinkImportBtn');
+  // Zuerst prüfen, ob es eine NutriTrack-Sendung ist (geteilte Mahlzeit, Rezept,
+  // Tag oder Zeitraum). Die sieht wie ein normaler Link aus, gehört aber nicht
+  // durch den Rezept-Abruf, sondern in die Import-Vorschau.
+  if(typeof shareInputKind==='function'&&shareInputKind(raw)){
+    info.innerHTML='<div style="background:#f0faf4;border:1.5px solid var(--g2);border-radius:10px;padding:6px 10px;font-size:11px;color:var(--g1);font-weight:700;">'
+      +'✓ NutriTrack-Sendung erkannt – geteilte Mahlzeit, Rezept, Tag oder Zeitraum</div>';
+    btn.disabled=false;btn.style.opacity='1';btn.textContent='📥 Sendung öffnen';
+    return;
+  }
+  btn.textContent='🔗 Rezept laden';
+  var url=recipeImportExtractUrl(raw);
   if(url){
     info.innerHTML='<div style="background:#f0faf4;border:1.5px solid var(--g2);border-radius:10px;padding:6px 10px;font-size:11px;word-break:break-all;">'
       +'<span style="color:var(--g2);font-weight:800;">✓ URL erkannt: </span><span style="color:#555;">'+_esc(url)+'</span></div>';
     btn.disabled=false;btn.style.opacity='1';
   } else if(raw.trim()){
-    info.innerHTML='<div style="background:#fff8e1;border:1.5px solid #f9a825;border-radius:10px;padding:6px 10px;font-size:11px;color:#888;">Keine URL gefunden – bitte Link einfügen.</div>';
+    info.innerHTML='<div style="background:#fff8e1;border:1.5px solid #f9a825;border-radius:10px;padding:6px 10px;font-size:11px;color:#888;">Weder Rezept-Link noch NutriTrack-Sendung erkannt – bitte Link oder Code einfügen.</div>';
     btn.disabled=true;btn.style.opacity='.4';
   } else {
     info.innerHTML='';btn.disabled=true;btn.style.opacity='.4';
@@ -1743,6 +1775,13 @@ function _pageHasContent(html){
 
 function pickerLinkImport(){
   var raw=document.getElementById('pickerLinkInput').value;
+  // NutriTrack-Sendung: Picker schließen und in die Import-Vorschau abbiegen.
+  // Der Rezept-Abruf würde hier nur auf die eigene PWA-Seite losgehen.
+  if(typeof shareInputKind==='function'&&shareInputKind(raw)){
+    closePicker();
+    startShareImport(raw,200);
+    return;
+  }
   var url=recipeImportExtractUrl(raw);
   if(!url)return;
   if(typeof isOnline!=='undefined'&&!isOnline){showToast('Internet benötigt');return;}

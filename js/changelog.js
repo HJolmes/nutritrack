@@ -1,6 +1,11 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.238',items:[
+    {icon:'\ud83d\udde3\ufe0f',text:'Neu: Du kannst NutriTrack jetzt per Alexa füttern. „Alexa, sage NutriTrack, ich habe zwei Eier gegessen“ — und beim nächsten Öffnen der App steht es drin. Funktioniert für Essen, Wasser, Sport, Einkaufszettel und das Baby-Tagebuch. Einrichtung: Mehr → \ud83d\udde3\ufe0f Alexa-Einwurf, dort steht die Anleitung für den privaten Skill (einmalig, rund 15 Minuten, keine Zertifizierung nötig).',where:'Mehr → \ud83d\udde3\ufe0f Alexa-Einwurf'},
+    {icon:'\u26a0\ufe0f',text:'Gesprochenes ohne Mengenangabe („ein Apfel“ statt „150 Gramm Apfel“) wird nicht geraten: Die App nimmt deine zuletzt verwendete Portion und markiert den Eintrag mit \ud83d\udde3\ufe0f. Antippen, Menge bestätigen — Markierung weg.',where:'Heute'},
+    {icon:'\ud83d\udd12',text:'Alexa kann nur einwerfen, nichts vorlesen: Weder Tagessumme noch Ziel noch Verlauf verlassen dein Gerät. Der Server ist nur ein Briefkasten und wird nach dem Abholen sofort geleert.',where:'Mehr → \ud83d\udde3\ufe0f Alexa-Einwurf'},
+  ]},
   {v:'0.237',items:[
     {icon:'\ud83d\udcec',text:'Das Postfach sitzt jetzt auf „Heute" oben rechts — mit kleiner Flagge, die zeigt, wie viele geteilte Mahlzeiten ungelesen sind. Der Knopf erscheint, sobald ihr gekoppelt seid. Daneben liegt 📤 zum Teilen des angezeigten Tages (vorher stand der neben dem Datum).',where:'Heute'},
     {icon:'\ud83d\udd17',text:'Ein Eingabefeld für alle Links: ＋ → 🔗 Link erkennt jetzt selbst, ob du einen Rezept-Link einer fremden Seite eingefügt hast oder eine geteilte NutriTrack-Sendung — Mahlzeit, Rezept, ganzer Tag oder Zeitraum. Der Knopf heißt entsprechend „Rezept laden" oder „Sendung öffnen". Beim Öffnen des Tabs wird ein passender Link aus der Zwischenablage gleich eingefügt; der 📥-Knopf in der Kopfzeile entfällt dafür. Über „Mehr → Code / Link einlösen" geht es weiterhin auch.',where:'＋ → 🔗 Link'},

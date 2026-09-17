@@ -710,6 +710,217 @@ async function handleWorkoutList(request, origin, env) {
   });
 }
 
+// ─── ALEXA-EINWURF (Sprachbefehle an einen privaten Alexa-Skill) ───
+// Zweck: Ein Alexa-Skill (siehe `alexa/` im Repo) wirft gesprochene Notizen
+// hier ein; die PWA holt sie beim nächsten Öffnen ab und trägt sie lokal ein.
+// Bewusst EINBAHNSTRASSE: Der Worker kennt keine Tagessummen, keine Ziele und
+// keine Historie — Alexa kann nichts vorlesen, nur einwerfen. Damit bleiben
+// Ernährungsdaten dort, wo sie hingehören: auf dem Gerät.
+//
+// Auth: derselbe `X-User-Token`-Mechanismus wie der Workout-Ingest. Der Token
+// steckt als Umgebungsvariable im Skill (Ein-Personen-Setup), nicht in einer
+// Nutzerdatenbank — bei 32 Zeichen ist Raten nicht praktikabel.
+//
+// Klartext-Abwaegung: Sprache kommt zwangsläufig im Klartext an, eine
+// Ende-zu-Ende-Verschlüsselung wie beim Baby-Sync ist hier unmöglich (Alexa
+// kennt den Schlüssel nicht). Deshalb ist die Ablage bewusst kurzlebig und die
+// PWA LÖSCHT jeden Einwurf direkt nach dem Abholen (`POST /alexa/ack`). Was
+// länger liegen bleibt, weil kein Gerät abholt, verfällt nach ALEXA_TTL_SECONDS.
+const ALEXA_KV_PREFIX = "ai:";
+const ALEXA_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 Tage — danach verfällt ein nie abgeholter Einwurf
+const MAX_ALEXA_BODY_BYTES = 1024 * 8;
+const MAX_ALEXA_LIST_LIMIT = 200;
+const MAX_ALEXA_LIST_PAGES = 10;
+const MAX_ALEXA_ACK_IDS = 200;
+const ALEXA_ID_RE = /^[A-Za-z0-9_.:-]{1,80}$/;
+// Was ein Einwurf sein darf. Mehr Typen gibt es bewusst nicht — jeder weitere
+// Typ braucht auch einen Einfüge-Pfad in `js/alexa-sync.js`.
+const ALEXA_KINDS = new Set(["meal", "exercise", "shop", "baby", "water"]);
+const ALEXA_MEAL_SLOTS = new Set(["breakfast", "lunch", "dinner", "snack"]);
+const ALEXA_BABY_TYPES = new Set(["breast", "bottle", "diaper", "temp", "sleep", "note"]);
+
+function alexaText(raw, max) {
+  if (typeof raw !== "string") return "";
+  // Steuerzeichen raus: Alexa liefert reinen Text, alles andere ist Unfug.
+  return raw.replace(/[ -]/g, " ").trim().slice(0, max);
+}
+
+function sanitizeAlexaItem(raw) {
+  if (!raw || typeof raw !== "object") return null;
+  const id = typeof raw.id === "string" && ALEXA_ID_RE.test(raw.id) ? raw.id : null;
+  if (!id) return null;
+  const kind = typeof raw.kind === "string" ? raw.kind.trim().toLowerCase() : "";
+  if (!ALEXA_KINDS.has(kind)) return null;
+
+  const out = { id, kind };
+  // Client-Uhr nur als Hinweis; der Cursor läuft über die Worker-Uhr (siehe unten).
+  const ts = clampNumber(raw.ts, 0, Date.now() + 1000 * 60 * 60 * 24);
+  out.ts = ts !== null && ts > 0 ? Math.round(ts) : Date.now();
+
+  const text = alexaText(raw.text, 200);
+  if (kind === "baby") {
+    const bt = typeof raw.babyType === "string" ? raw.babyType.trim().toLowerCase() : "";
+    if (!ALEXA_BABY_TYPES.has(bt)) return null;
+    out.babyType = bt;
+    // Freie Felder des Baby-Eintrags, flach und eng begrenzt (side/kind/ml/…).
+    if (raw.babyP && typeof raw.babyP === "object" && !Array.isArray(raw.babyP)) {
+      const p = {};
+      let n = 0;
+      for (const k of Object.keys(raw.babyP)) {
+        if (n >= 10) break;
+        if (!/^[a-zA-Z][a-zA-Z0-9]{0,15}$/.test(k)) continue;
+        const v = raw.babyP[k];
+        if (typeof v === "number" && Number.isFinite(v)) p[k] = v;
+        else if (typeof v === "string") p[k] = alexaText(v, 60);
+        else continue;
+        n++;
+      }
+      out.babyP = p;
+    }
+    if (text) out.text = text;
+  } else {
+    if (!text) return null;
+    out.text = text;
+  }
+
+  if (kind === "meal") {
+    const slot = typeof raw.meal === "string" ? raw.meal.trim().toLowerCase() : "";
+    if (ALEXA_MEAL_SLOTS.has(slot)) out.meal = slot;
+  }
+  if (kind === "exercise") {
+    const dur = clampNumber(raw.durationMin, 0, 24 * 60);
+    if (dur !== null) out.durationMin = Math.round(dur);
+    const kcal = clampNumber(raw.kcal, 0, 10000);
+    if (kcal !== null) out.kcal = Math.round(kcal);
+  }
+  if (kind === "water" || kind === "shop") {
+    const qty = clampNumber(raw.qty, 0, 100);
+    if (qty !== null) out.qty = Math.round(qty);
+  }
+  return out;
+}
+
+async function handleAlexaPush(request, origin, env) {
+  if (!env.SHARE_KV) {
+    return jsonResponse(503, "kv_not_configured", "Alexa inbox storage is not configured", origin, env);
+  }
+  const token = readUserToken(request);
+  if (!token) {
+    return jsonResponse(401, "invalid_token", "Missing or malformed X-User-Token", origin, env);
+  }
+  if (getContentLength(request) > MAX_ALEXA_BODY_BYTES) {
+    return jsonResponse(413, "request_too_large", "Alexa payload is too large", origin, env);
+  }
+  let body;
+  try {
+    body = await request.json();
+  } catch (e) {
+    return jsonResponse(400, "invalid_json", "Body must be JSON", origin, env);
+  }
+  const item = sanitizeAlexaItem(body);
+  if (!item) {
+    return jsonResponse(400, "invalid_item", "Payload is invalid (need id, known kind, text)", origin, env);
+  }
+  // Der Cursor läuft über die WORKER-Uhr, nicht über `item.ts`: Alexa-Geräte und
+  // das Telefon der Nutzerin haben unterschiedliche Uhren, und ein Einwurf mit
+  // nachgehender Uhr würde sonst hinter dem Wasserzeichen verschwinden.
+  const srev = Date.now();
+  const key = ALEXA_KV_PREFIX + token + ":" + item.id;
+  await env.SHARE_KV.put(key, JSON.stringify({ ...item, srev }), {
+    expirationTtl: ALEXA_TTL_SECONDS,
+    metadata: { srev },
+  });
+  return jsonResponse(200, "ok", "ok", origin, env, { id: item.id, stored: true });
+}
+
+async function handleAlexaPull(request, origin, env) {
+  if (origin && !allowedOrigins(env).has(origin)) {
+    return jsonResponse(403, "origin_not_allowed", "Origin is not allowed", origin, env);
+  }
+  if (!env.SHARE_KV) {
+    return jsonResponse(503, "kv_not_configured", "Alexa inbox storage is not configured", origin, env);
+  }
+  const token = readUserToken(request);
+  if (!token) {
+    return jsonResponse(401, "invalid_token", "Missing or malformed X-User-Token", origin, env);
+  }
+  const url = new URL(request.url);
+  const sinceRaw = Number(url.searchParams.get("since") || "0");
+  const sinceMs = Number.isFinite(sinceRaw) && sinceRaw > 0 ? sinceRaw : 0;
+  const prefix = ALEXA_KV_PREFIX + token + ":";
+
+  const names = [];
+  let cursor;
+  let pages = 0;
+  let complete = false;
+  do {
+    const list = await env.SHARE_KV.list({ prefix, limit: MAX_ALEXA_LIST_LIMIT, cursor });
+    for (const k of list.keys) {
+      const meta = k.metadata && typeof k.metadata === "object" ? k.metadata : null;
+      if (sinceMs && meta && Number.isFinite(meta.srev) && meta.srev <= sinceMs) continue;
+      names.push(k.name);
+    }
+    complete = list.list_complete !== false;
+    cursor = list.cursor;
+    pages++;
+  } while (!complete && cursor && pages < MAX_ALEXA_LIST_PAGES);
+
+  const raws = await Promise.all(names.map((n) => env.SHARE_KV.get(n)));
+  const items = [];
+  for (const raw of raws) {
+    if (!raw) continue;
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (_) {
+      continue;
+    }
+    if (sinceMs && Number.isFinite(parsed.srev) && parsed.srev <= sinceMs) continue;
+    items.push(parsed);
+  }
+  items.sort((a, b) => (a.srev || 0) - (b.srev || 0));
+  return jsonResponse(200, "ok", "ok", origin, env, {
+    items,
+    count: items.length,
+    now: Date.now(),
+    truncated: Boolean(!complete),
+  });
+}
+
+// Quittung: Die PWA meldet zurück, was sie eingetragen hat — der Worker löscht
+// es sofort. So liegt der Klartext im Normalfall nur Minuten im KV, nicht Wochen.
+async function handleAlexaAck(request, origin, env) {
+  if (origin && !allowedOrigins(env).has(origin)) {
+    return jsonResponse(403, "origin_not_allowed", "Origin is not allowed", origin, env);
+  }
+  if (!env.SHARE_KV) {
+    return jsonResponse(503, "kv_not_configured", "Alexa inbox storage is not configured", origin, env);
+  }
+  const token = readUserToken(request);
+  if (!token) {
+    return jsonResponse(401, "invalid_token", "Missing or malformed X-User-Token", origin, env);
+  }
+  if (getContentLength(request) > MAX_ALEXA_BODY_BYTES) {
+    return jsonResponse(413, "request_too_large", "Ack payload is too large", origin, env);
+  }
+  let body;
+  try {
+    body = await request.json();
+  } catch (e) {
+    return jsonResponse(400, "invalid_json", "Body must be JSON", origin, env);
+  }
+  const ids = Array.isArray(body && body.ids) ? body.ids : null;
+  if (!ids) {
+    return jsonResponse(400, "invalid_ids", "Body must contain an ids array", origin, env);
+  }
+  const clean = [];
+  for (const id of ids.slice(0, MAX_ALEXA_ACK_IDS)) {
+    if (typeof id === "string" && ALEXA_ID_RE.test(id)) clean.push(id);
+  }
+  await Promise.all(clean.map((id) => env.SHARE_KV.delete(ALEXA_KV_PREFIX + token + ":" + id)));
+  return jsonResponse(200, "ok", "ok", origin, env, { deleted: clean.length });
+}
+
 // ─── GETEILTE RÄUME: BABY-TAGEBUCH, EINKAUFSZETTEL & PARTNER-POSTFACH (E2E) ───
 // Zweck: zwei Geräte einer Familie halten NUR einen klar umrissenen Datentopf
 // synchron — das Baby-Tagebuch bzw. den Einkaufszettel. Ernährungsdaten,
@@ -1288,8 +1499,9 @@ export default {
         babySyncConfigured: Boolean(env.SHARE_KV),
         shopSyncConfigured: Boolean(env.SHARE_KV),
         partnerSyncConfigured: Boolean(env.SHARE_KV),
+        alexaInboxConfigured: Boolean(env.SHARE_KV),
         decoderSecretConfigured: Boolean(env.DECODER_SECRET),
-        codeVersion: "v0.236-partner-inbox",
+        codeVersion: "v0.238-alexa-inbox",
       });
     }
 
@@ -1326,6 +1538,15 @@ export default {
     }
     if (request.method === "GET" && url.pathname === "/workouts") {
       return handleWorkoutList(request, origin, env);
+    }
+    if (request.method === "POST" && url.pathname === "/alexa/inbox") {
+      return handleAlexaPush(request, origin, env);
+    }
+    if (request.method === "GET" && url.pathname === "/alexa/inbox") {
+      return handleAlexaPull(request, origin, env);
+    }
+    if (request.method === "POST" && url.pathname === "/alexa/ack") {
+      return handleAlexaAck(request, origin, env);
     }
     if (request.method === "GET" && url.pathname === "/off") {
       return handleOffProxy(request, origin, env);

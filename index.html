@@ -1073,6 +1073,11 @@ body.kb-open #feedbackFab{display:none;}
       <div class="lr-body"><div class="lr-name">Sport-Sync</div><div class="lr-sub" id="healthSyncSub">Apple Health · Samsung Health</div></div>
       <div class="lr-val">›</div>
     </div>
+    <div class="list-row" onclick="openAlexaSync()">
+      <div class="lr-ic">🗣️</div>
+      <div class="lr-body"><div class="lr-name">Alexa-Einwurf</div><div class="lr-sub" id="alexaSub">Per Sprache eintragen</div></div>
+      <div class="lr-val">›</div>
+    </div>
     <div style="font-size:11px;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin:14px 4px 6px;">App</div>
     <div class="list-row" onclick="openHelp()">
       <div class="lr-ic">❓</div>
@@ -1081,7 +1086,7 @@ body.kb-open #feedbackFab{display:none;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.237</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.238</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1769,6 +1774,81 @@ body.kb-open #feedbackFab{display:none;}
         <button type="button" class="seb" style="flex:1;color:var(--re);" onclick="hsClearToken()">Token löschen</button>
       </div>
       <div id="hsStatus" style="margin-top:10px;font-size:12px;color:var(--mu);text-align:center;min-height:18px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ALEXA-EINWURF ══ -->
+<div class="ov" id="alexaOv" onclick="bgClose(event,'alexaOv')">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" onclick="closeOv('alexaOv')">✕</button>
+      <div class="mti">🗣️ Alexa-Einwurf</div>
+      <div class="msu">Per Sprache eintragen — Essen, Sport, Einkauf, Baby</div>
+    </div>
+    <div class="mbd">
+      <div style="background:var(--gl);border-radius:10px;padding:10px;font-size:12px;color:var(--mu);line-height:1.5;margin-bottom:12px;">
+        Ein privater Alexa-Skill schickt, was du sagst, an deinen Cloudflare-Endpunkt. NutriTrack holt es beim nächsten Öffnen ab und trägt es ein.<br><br>
+        <b>Einbahnstraße:</b> Alexa kann nichts vorlesen. Weder Tagessumme noch Ziel noch Verlauf verlassen dein Gerät — der Server ist nur ein Briefkasten und wird nach dem Abholen sofort geleert.
+      </div>
+
+      <label class="lbl">🔑 Dein persönliches Token</label>
+      <div style="display:flex;gap:6px;margin-bottom:6px;">
+        <input type="text" class="sinp" id="axTokenIn" placeholder="(noch nicht erzeugt)" style="flex:1;font-family:monospace;font-size:12px;" autocomplete="off" spellcheck="false">
+        <button type="button" class="seb" style="flex:0 0 auto;padding:6px 12px;" onclick="axCopyToken()">📋</button>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:14px;">
+        <button type="button" class="seb" style="flex:1;" onclick="axGenerateToken()">🎲 Neu erzeugen</button>
+        <button type="button" class="seb" style="flex:1;" onclick="axSaveToken()">Speichern ✓</button>
+      </div>
+
+      <label class="lbl">🔗 Endpunkt für den Skill</label>
+      <input type="text" class="sinp" id="axEndpoint" readonly style="width:100%;font-family:monospace;font-size:11px;margin-bottom:14px;" onclick="this.select()">
+
+      <details style="margin-bottom:10px;">
+        <summary style="font-size:13px;font-weight:700;color:var(--g1);cursor:pointer;padding:6px 0;">🛠 Skill einrichten (einmalig, ~15 Min)</summary>
+        <div style="font-size:12px;color:var(--mu);line-height:1.6;padding:6px 2px;">
+          <ol style="margin:0 0 8px 18px;padding:0;">
+            <li><a href="https://developer.amazon.com/alexa/console/ask" target="_blank" rel="noopener">Alexa Developer Console</a> öffnen — mit <b>demselben Amazon-Konto</b> wie dein Echo.</li>
+            <li>„Skill erstellen" → Name <b>NutriTrack</b> → Sprache <b>Deutsch (DE)</b> → Modell „Custom" → Hosting <b>Alexa-hosted (Node.js)</b>.</li>
+            <li>Reiter „Build" → „JSON Editor" → Inhalt von <code>alexa/interaction-model.de-DE.json</code> aus dem Repo einfügen → „Save" → „Build Model".</li>
+            <li>Reiter „Code" → <code>index.js</code> durch <code>alexa/lambda/index.js</code> ersetzen → „Deploy".</li>
+            <li>Im Code-Reiter oben <code>NUTRITRACK_TOKEN</code> und <code>NUTRITRACK_ENDPOINT</code> als Umgebungsvariablen setzen (Werte: siehe oben).</li>
+            <li>Fertig — der Skill läuft in der Development-Stage auf allen Echos deines Kontos. <b>Keine Zertifizierung nötig</b>, solange du ihn nicht veröffentlichst.</li>
+          </ol>
+          Die vollständige Anleitung steht in <code>alexa/README.md</code>.
+        </div>
+      </details>
+
+      <details style="margin-bottom:10px;">
+        <summary style="font-size:13px;font-weight:700;color:var(--g1);cursor:pointer;padding:6px 0;">🎙 Was du sagen kannst</summary>
+        <div style="font-size:12px;color:var(--mu);line-height:1.8;padding:6px 2px;">
+          <b>Essen</b><br>
+          „Alexa, sage NutriTrack, ich habe zwei Eier und ein Brötchen gegessen"<br>
+          „Alexa, sage NutriTrack, 150 Gramm Reis zum Mittagessen"<br><br>
+          <b>Wasser</b><br>
+          „Alexa, sage NutriTrack, ich habe zwei Gläser Wasser getrunken"<br><br>
+          <b>Sport</b><br>
+          „Alexa, sage NutriTrack, ich war 30 Minuten joggen"<br><br>
+          <b>Einkaufszettel</b><br>
+          „Alexa, sage NutriTrack, setz Milch auf den Einkaufszettel"<br><br>
+          <b>Baby-Tagebuch</b><br>
+          „Alexa, sage NutriTrack, Windel gewechselt"<br>
+          „Alexa, sage NutriTrack, 120 Milliliter Flasche"
+        </div>
+      </details>
+
+      <div style="background:var(--gl);border-radius:10px;padding:10px;font-size:12px;color:var(--mu);line-height:1.5;margin:10px 0;">
+        ⏱ <b>Kein Live-Update.</b> Eine Web-App läuft nicht im Hintergrund. Gesprochenes erscheint, sobald du NutriTrack das nächste Mal öffnest.<br><br>
+        ⚠️ Einträge ohne gesprochene Menge markiert die App mit 🗣️ — tippe sie an, um Menge und Kalorien zu bestätigen.
+      </div>
+
+      <div style="display:flex;gap:6px;margin-top:14px;">
+        <button type="button" class="seb" style="flex:1;" onclick="axTestSync()">🔄 Jetzt abholen</button>
+        <button type="button" class="seb" style="flex:1;color:var(--re);" onclick="axClearToken()">Token löschen</button>
+      </div>
+      <div id="axStatus" style="margin-top:10px;font-size:12px;color:var(--mu);text-align:center;min-height:18px;"></div>
     </div>
   </div>
 </div>
@@ -2579,7 +2659,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.237';
+var APP_VERSION='0.238';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -2940,10 +3020,18 @@ window.addEventListener('DOMContentLoaded',function(){
   if(window.NTHealth&&window.NTHealth.getToken()){
     setTimeout(function(){window.NTHealth.sync();},800);
   }
+  // Alexa-Einwurf: Gesprochenes liegt im Briefkasten des Workers und wird hier
+  // abgeholt. Eine PWA laeuft nicht im Hintergrund — App-Start und Rueckkehr in
+  // den Vordergrund sind die einzigen Zeitpunkte, an denen das passieren kann.
+  if(typeof _axRefreshHubSub==='function')_axRefreshHubSub();
+  if(window.NTAlexa&&window.NTAlexa.getToken()){
+    setTimeout(function(){window.NTAlexa.sync();},1200);
+  }
   document.addEventListener('visibilitychange',function(){
     if(document.visibilityState!=='visible')return;
     checkDayRollover();
     if(window.NTHealth&&window.NTHealth.getToken())window.NTHealth.sync();
+    if(window.NTAlexa&&window.NTAlexa.getToken())window.NTAlexa.sync();
   });
   // Auch ohne Tab-Wechsel: eine offene App soll um Mitternacht selbst umschalten.
   setInterval(function(){
@@ -3654,7 +3742,7 @@ function renderAll(){
         }
         return'<div class="fe'+(isR?' is-recipe':'')+'" onclick="'+(isR?'openEntryMenu':'openEditEntry')+'(\''+m+'\','+i+')">'
           +'<div class="fee">'+(e.emoji||'🍽')+'</div>'
-          +'<div class="fei"><div class="fen">'+esc(e.name)+(e._recurId?' 🔁':'')+'</div><div class="fem">'+sub+'</div></div>'
+          +'<div class="fei"><div class="fen">'+esc(e.name)+(e._recurId?' 🔁':'')+(e._alexaPending?' 🗣️':'')+'</div><div class="fem">'+sub+'</div></div>'
           +'<div class="fek">'+Math.round(e.kcal)+' kcal</div>'
           +'<div style="display:flex;align-items:center;">'+dot+'<div class="fe-ic">✏️</div></div>'
           +'</div>';
@@ -4180,6 +4268,9 @@ function saveEditEntry(){
     var per100=e.per100||{kcal:e.kcal/(e.amount/100),protein:e.protein/(e.amount/100),carbs:e.carbs/(e.amount/100),fat:e.fat/(e.amount/100)};
     var r=amt/100;e.amount=amt;Object.assign(e,scaleNutrients(per100,r));
   }
+  // Per Alexa eingeworfen und nur geschaetzt? Mit dem Bestaetigen der Menge ist
+  // der Eintrag geprueft — die 🗣️-Markierung hat sich damit erledigt.
+  if(e._alexaPending)delete e._alexaPending;
   saveS();renderAll();closeOv('editOv');showToast('Aktualisiert ✓');
 }
 
@@ -6936,13 +7027,13 @@ function renderExercise(){
     var intLabel={low:'Leicht',medium:'Mittel',high:'Intensiv'}[e.intensity]||'';
     var srcBadge='';
     if(e._source){
-      var label=/apple/i.test(e._source)?'Apple':/samsung/i.test(e._source)?'Samsung':'Sync';
+      var label=/apple/i.test(e._source)?'Apple':/samsung/i.test(e._source)?'Samsung':/alexa/i.test(e._source)?'🗣️ Alexa':'Sync';
       srcBadge=' · <span style="background:var(--gl);border-radius:6px;padding:1px 5px;font-size:10px;font-weight:700;color:var(--g1);">'+label+'</span>';
     }
     return'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--br);">'
       +'<div style="font-size:20px;">'+(e.emoji||'🏃')+'</div>'
       +'<div style="flex:1;">'
-        +'<div style="font-size:13px;font-weight:700;">'+esc(e.name)+'</div>'
+        +'<div style="font-size:13px;font-weight:700;">'+esc(e.name)+(e._alexaPending?' ⚠️':'')+'</div>'
         +'<div style="font-size:11px;color:var(--mu);">'+(e.duration?e.duration+' Min. · ':'')+intLabel+srcBadge+'</div>'
       +'</div>'
       +'<div style="font-size:13px;font-weight:800;color:var(--g1);">−'+Math.round(e.kcal)+' kcal</div>'
@@ -7224,7 +7315,7 @@ function renderMealDetail(meal){
       var sub=isR?(e.portions||1)+'× Portion · '+Math.round(e.kcal)+' kcal':e.amount+'g · '+Math.round(e.protein)+'g P · '+Math.round(e.carbs)+'g C · '+Math.round(e.fat)+'g F';
       return'<div class="fe" onclick="'+(isR?'openEntryMenu':'openEditEntry')+'(\''+meal+'\','+i+')">'
         +'<div class="fee" style="background:var(--gl);width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;">'+(e.emoji||'🍽')+'</div>'
-        +'<div class="fei"><div class="fen">'+esc(e.name)+(e._recurId?' 🔁':'')+'</div><div class="fem">'+sub+'</div></div>'
+        +'<div class="fei"><div class="fen">'+esc(e.name)+(e._recurId?' 🔁':'')+(e._alexaPending?' 🗣️':'')+'</div><div class="fem">'+sub+'</div></div>'
         +'<div class="fek">'+Math.round(e.kcal)+'</div>'
         +'</div>';
     }).join('');
@@ -7645,12 +7736,86 @@ function hsTestSync(){
   });
 }
 
+// ════════════════════════════════════════
+// SECTION: ALEXA-EINWURF (UI-Bruecke zu js/alexa-sync.js)
+// ════════════════════════════════════════
+function _axRefreshHubSub(){
+  var el=document.getElementById('alexaSub');if(!el||!window.NTAlexa)return;
+  el.textContent=window.NTAlexa.getToken()?'Aktiv · Essen, Sport, Einkauf, Baby':'Per Sprache eintragen';
+}
+function openAlexaSync(){
+  if(!window.NTAlexa){showToast('Alexa-Modul nicht geladen');return;}
+  var info=window.NTAlexa.endpointInfo();
+  document.getElementById('axTokenIn').value=info.token||'';
+  document.getElementById('axEndpoint').value=info.url;
+  document.getElementById('axStatus').textContent=info.token
+    ?'Token aktiv — Einwürfe werden beim App-Öffnen abgeholt.'
+    :'Noch kein Token — neu erzeugen und im Skill als NUTRITRACK_TOKEN eintragen.';
+  openOv('alexaOv');
+}
+function axGenerateToken(){
+  if(!window.NTAlexa)return;
+  document.getElementById('axTokenIn').value=window.NTAlexa.generateToken();
+  document.getElementById('axStatus').textContent='Neues Token erzeugt — bitte „Speichern ✓" tippen, sonst geht es verloren.';
+}
+function axSaveToken(){
+  if(!window.NTAlexa)return;
+  var v=(document.getElementById('axTokenIn').value||'').trim();
+  if(!v){
+    window.NTAlexa.clearToken();
+    showToast('Token entfernt');
+    document.getElementById('axStatus').textContent='Kein Token gesetzt — Alexa-Einwurf ist inaktiv.';
+    _axRefreshHubSub();
+    return;
+  }
+  try{
+    window.NTAlexa.setToken(v);
+    showToast('Token gespeichert ✓');
+    document.getElementById('axStatus').textContent='Token gespeichert — dasselbe Token gehört in den Skill.';
+    _axRefreshHubSub();
+  }catch(e){
+    showToast('Token-Format ungültig (24–64 Zeichen, A-Z a-z 0-9 _ -)');
+  }
+}
+function axCopyToken(){
+  var v=document.getElementById('axTokenIn').value||'';
+  if(!v){showToast('Erst Token erzeugen');return;}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(v).then(function(){showToast('Token kopiert 📋');},function(){showToast('Kopieren fehlgeschlagen');});
+  }else{
+    var el=document.getElementById('axTokenIn');el.select();try{document.execCommand('copy');showToast('Token kopiert 📋');}catch(e){showToast('Kopieren fehlgeschlagen');}
+  }
+}
+function axClearToken(){
+  if(!window.NTAlexa)return;
+  if(!confirm('Token wirklich löschen? Bereits eingetragene Einwürfe bleiben erhalten — neue kommen erst wieder, wenn du ein neues Token erzeugst und im Skill hinterlegst.'))return;
+  window.NTAlexa.clearToken();
+  document.getElementById('axTokenIn').value='';
+  document.getElementById('axStatus').textContent='Token gelöscht.';
+  _axRefreshHubSub();
+  showToast('Token gelöscht');
+}
+function axTestSync(){
+  if(!window.NTAlexa){showToast('Alexa-Modul nicht geladen');return;}
+  if(!window.NTAlexa.getToken()){showToast('Erst Token speichern');return;}
+  document.getElementById('axStatus').textContent='Hole ab…';
+  window.NTAlexa.sync({force:true}).then(function(r){
+    if(!r||!r.ok){
+      document.getElementById('axStatus').textContent='Fehler: '+((r&&r.reason)||'unbekannt');
+      return;
+    }
+    document.getElementById('axStatus').textContent=r.added?('✓ '+r.added+' Einwurf/Einwürfe eingetragen'):'✓ Nichts Neues';
+    if(r.added)showToast(r.added+' per Alexa eingetragen 🗣️');
+  });
+}
+
 </script>
 <script src="picker.js"></script>
 <script src="js/health-sync.js"></script>
 <script src="js/baby.js"></script>
 <script src="js/shopping.js"></script>
 <script src="js/partner.js"></script>
+<script src="js/alexa-sync.js"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

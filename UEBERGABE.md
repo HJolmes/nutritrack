@@ -68,6 +68,7 @@
   - Fünf Typen (`kind`): `meal` → über den bestehenden `lookupNutrients()`-Pfad (lokale DB → OFF → KI → Schätzung), `exercise` → `S.days[*].exercise[]` mit grober MET-Schätzung, `water` → `day.water`, `shop` → `NTShop.add()`, `baby` → `NTBaby.add()` (**neu exportiert**, war vorher nur intern). Baby-Einwürfe werden verworfen, wenn `S.babyOn` aus ist.
   - **Dedup** über `_alexaId` auf jedem erzeugten Datensatz plus `day._alexaWater[id]` fürs Wasser — eine verlorene Quittung darf nichts verdoppeln. Auch ein *nicht* eingetragener Einwurf (Duplikat, Tagebuch aus, Tag verdichtet) wird quittiert, sonst bliebe er für immer im Briefkasten.
   - **Tagesschlüssel aus `item.ts`**, nicht aus dem Abrufzeitpunkt: Wer um 23:50 spricht und morgens öffnet, will den Eintrag am Vortag. Ohne gesprochenen Mahlzeiten-Slot entscheidet die Uhrzeit (`<11` Frühstück, `<15` Mittag, `<21` Abend, sonst Snack).
+  - **Lambda ruft über `https` auf, nicht über `fetch`:** Die Alexa-hosted Laufzeit kann eine Node-Version unter 18 fahren; `fetch` fehlt dort und der Skill scheiterte stumm mit „Das hat gerade nicht geklappt“. `postJson()` nutzt das eingebaute `https`-Modul (8 s Timeout, unter Alexas 10-s-Grenze). `failed(err)` übersetzt HTTP-Code und Netzfehler in eine gesprochene Ursache — bei einem privaten Skill ist das mehr wert als eine hübsche Entschuldigung. Beim Anfassen: **kein `fetch` in `alexa/lambda/index.js`**.
   - **Alexa-Regel, die beim Erweitern des Sprachmodells gilt (v0.239):** In einer Beispielphrase darf ein Freitext-Slot (`AMAZON.SearchQuery`) **nie** mit einem zweiten Slot stehen — `"{food} zum {meal}"` lässt Amazon den Build mit *„cannot include both a phrase slot and another intent slot"* abbrechen. Mahlzeit, Dauer und Milliliter kommen deshalb im Freitext mit und werden im Lambda (`extractMeal`/`extractMinutes`/`extractUnit`) bzw. im Client (`parseAmount`) herausgelöst. Folge fürs Sprechen: Baby-Einträge beginnen mit dem Wort „Baby“, und die Mahlzeit gehört in den Satz („ich habe 150 Gramm Reis zum Mittagessen gegessen“). `alexa/interaction-model.de-DE.json` ist die Quelle der Wahrheit; die Beispielsätze im `alexaOv`-Overlay und in `alexa/README.md` müssen dazu passen.
   - **Ohne gesprochene Menge wird nicht geraten:** `recallPortion()` oder 100 g, Eintrag bekommt `_alexaPending:1` und in der Liste ein 🗣️ (Sport: ⚠️). `saveEdit()` löscht das Flag, sobald die Nutzerin die Menge bestätigt. **Neue Render-Pfade für Mahlzeiten müssen die Markierung mitführen** — sie steht aktuell an zwei Stellen (Heute-Liste und Verlauf).
 
@@ -153,11 +154,10 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.235 | — | Schlaf über Mitternacht am Tageswechsel geteilt; offene App springt selbst auf den neuen Tag |
 | v0.236 | — | Partner-Postfach: Mahlzeiten/Tage/Zeiträume direkt senden statt Links verschicken |
 | v0.237 | — | Postfach-Flagge + Tag-Teilen in der Heute-Kopfzeile; Link-Feld erkennt Rezept-Link vs. NutriTrack-Sendung |
 | v0.238 | #196 | Alexa-Einwurf: Essen, Wasser, Sport, Einkaufszettel und Baby-Tagebuch per Sprache (Einbahnstraße, Briefkasten wird nach dem Abholen geleert) |
-| v0.239 | — | Alexa-Sprachmodell: Zwei-Slot-Phrasen entfernt (Amazon lehnt sie ab), Mahlzeit/Dauer/Menge werden aus dem Freitext gelesen |
+| v0.239 | — | Alexa-Sprachmodell: Zwei-Slot-Phrasen entfernt (Amazon lehnt sie ab), Mahlzeit/Dauer/Menge werden aus dem Freitext gelesen; Lambda nutzt `https` statt `fetch` |
 
 ---
 

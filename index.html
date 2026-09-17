@@ -704,9 +704,12 @@ body.kb-open #feedbackFab{display:none;}
       <button type="button" onclick="dismissOdBanner()" style="font-size:14px;color:#e65100;background:none;border:none;cursor:pointer;padding:4px;">✕</button>
     </div>
     <div class="dn">
+      <!-- Blindelement links: hält das Datum mittig, obwohl rechts ein Knopf mehr steht -->
+      <div class="da" aria-hidden="true" style="visibility:hidden;"></div>
       <button type="button" class="da" onclick="changeDay(-1)">‹</button>
       <div class="dl" id="dateLabel"></div>
       <button type="button" class="da" id="btnNext" onclick="changeDay(1)">›</button>
+      <button type="button" class="da" onclick="shareDay()" title="Ganzen Tag teilen" style="font-size:17px;">📤</button>
     </div>
   </div>
   <div id="installBanner" class="hidden" style="background:#e8f5e9;border:1.5px solid var(--g3);border-radius:12px;padding:11px 14px;margin:10px 12px 0;display:flex;align-items:center;gap:10px;">
@@ -822,6 +825,13 @@ body.kb-open #feedbackFab{display:none;}
       <div id="babyNextSide" style="font-size:11px;color:var(--mu);margin-top:4px;min-height:14px;"></div>
       <div id="babyQuickBtns" style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;"></div>
     </div>
+    <div class="wc" id="partnerCard" style="display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <div style="font-weight:800;font-size:14px;color:var(--tx);">📬 Vom Partner</div>
+        <button type="button" onclick="NTPartner.openInbox()" style="background:var(--g2);border:none;border-radius:20px;color:white;font-size:13px;font-weight:700;padding:4px 12px;cursor:pointer;"><span id="partnerCardVal">0 neu</span> →</button>
+      </div>
+      <div id="partnerCardBody" style="margin-top:6px;"></div>
+    </div>
     <div class="wc" id="shopCard" style="display:none;">
       <div class="wh">
         <div class="wt">🛒 Einkaufszettel</div>
@@ -926,6 +936,7 @@ body.kb-open #feedbackFab{display:none;}
         <div class="greet-sub">Letzte 30 Tage</div>
       </div>
       <div style="display:flex;gap:6px;">
+        <button type="button" class="hbtn" onclick="openShareRange()" title="Zeitraum teilen">🗓</button>
         <button type="button" class="hbtn" onclick="openSettings()" title="Einstellungen">⚙️</button>
       </div>
     </div>
@@ -1044,6 +1055,11 @@ body.kb-open #feedbackFab{display:none;}
       <div class="lr-val">›</div>
     </div>
     <div style="font-size:11px;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin:14px 4px 6px;">Daten &amp; Sync</div>
+    <div class="list-row" onclick="NTPartner.open()">
+      <div class="lr-ic">👫</div>
+      <div class="lr-body"><div class="lr-name">Partner</div><div class="lr-sub" id="partnerHubSub">Mahlzeiten direkt an den Partner senden</div></div>
+      <div class="lr-val">›</div>
+    </div>
     <div class="list-row" onclick="if(typeof openImportPaste==='function')openImportPaste();else openSettings();">
       <div class="lr-ic">📥</div>
       <div class="lr-body"><div class="lr-name">Code / Link einlösen</div><div class="lr-sub">Geteilte Mahlzeit oder Rezept importieren</div></div>
@@ -1062,7 +1078,7 @@ body.kb-open #feedbackFab{display:none;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.235</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.236</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1344,7 +1360,8 @@ body.kb-open #feedbackFab{display:none;}
       <details><summary>🍽 Mahlzeit-Detail</summary><div class="hb">Die Karte einer Mahlzeit öffnet die Detail-Ansicht mit allen Posten. Unten findest du: <strong>📋 Vorlage</strong> (Mahlzeit als Vorlage laden/speichern), <strong>🔁 Wiederholen</strong> (an festen Wochentagen automatisch eintragen) und <strong>💾 Als Rezept</strong> (alle Einträge als Rezept in die Bibliothek übernehmen). Einzelne Einträge antippen zum Bearbeiten, Verschieben oder Löschen.</div></details>
       <details><summary>🛒 Einkaufszettel</summary><div class="hb">Unter „Mehr → Einkaufszettel" führst du eine Einkaufsliste: oben eintippen („2 Liter Milch" erkennt Menge und Kategorie von selbst) oder über „🧺 Artikel wählen" aus den Kacheln antippen. Ein Tipp auf einen Artikel hakt ihn ab, ✏️ ändert Name, Menge, Symbol und Kategorie. Über „🔄 Teilen" koppelst du ein zweites Gerät mit einem Code — beide Geräte sehen denselben Zettel in Echtzeit, verschlüsselt und getrennt vom Baby-Tagebuch. Rezepte übernimmst du in der Bibliothek über 🛒 → „Auf den Einkaufszettel".</div></details>
       <details><summary>📚 Bibliothek</summary><div class="hb">Unter „Mehr → Bibliothek" liegen deine Rezepte und eigenen Lebensmittel. Rezepte kannst du bearbeiten, duplizieren, teilen, als Einkaufsliste anzeigen und direkt in eine Mahlzeit übernehmen. Der 🔗-Knopf importiert ein Rezept per URL, 📥 löst einen geteilten Code/Link ein.</div></details>
-      <details><summary>📤 Teilen &amp; Import</summary><div class="hb">Rezepte, Lebensmittel und Mahlzeiten lassen sich als Link teilen (📤-Symbole). Der Empfänger öffnet den Link — auf dem iPhone ggf. über „Mehr → 📥 Code / Link einlösen" in der installierten App einfügen.</div></details>
+      <details><summary>📤 Teilen &amp; Import</summary><div class="hb">Rezepte, Lebensmittel, einzelne Mahlzeiten, <strong>ganze Tage</strong> und <strong>Zeiträume</strong> lassen sich teilen (📤-Symbole; der Tages-Knopf liegt auf „Heute" neben dem Datum und im Verlauf bei jedem Tag, der Zeitraum hinter 🗓 im Verlauf).<ul><li><strong>Mit Partner-Kopplung (empfohlen):</strong> Einmalig unter „Mehr → 👫 Partner" koppeln — danach steht im Teilen-Dialog oben „An … senden" und die Sendung landet direkt im Postfach des anderen. Kein Link, kein Messenger.</li><li><strong>Ohne Kopplung:</strong> weiterhin als Link. Der Empfänger öffnet ihn — auf dem iPhone ggf. über „Mehr → 📥 Code / Link einlösen" in der installierten App einfügen. Für ganze Tage und Zeiträume braucht der Link-Weg eine Internetverbindung, weil die Daten sonst nicht in eine URL passen.</li></ul></div></details>
+      <details><summary>👫 Partner</summary><div class="hb">Unter <strong>Mehr → 👫 Partner</strong> koppelst du dein Gerät mit dem deines Partners: auf einem Gerät „Kopplung starten", den Code auf dem anderen einfügen. Trag dort auch deinen Namen ein — der steht beim Empfänger an jeder Sendung.<br><br><strong>Es wird nichts automatisch übertragen.</strong> Nur was du ausdrücklich sendest, geht raus und landet im <strong>Postfach</strong> des anderen (Kachel auf „Heute", sobald etwas Neues da ist). Dort wird jede Sendung einzeln angesehen und übernommen — bei einem ganzen Tag wählst du, welche Mahlzeiten du willst, auf welchen Tag sie sollen und ob Vorhandenes ergänzt oder ersetzt wird; bei einem Zeitraum hakst du einzelne Tage ab. Eure Tagebücher bleiben also getrennt.<br><br>Die Sendungen werden auf dem Gerät verschlüsselt; der Schlüssel steckt nur im Kopplungs-Code und wird nie übertragen. Der Code gilt <strong>nur</strong> fürs Partner-Postfach — Einkaufszettel und Baby-Tagebuch haben eigene Codes und bleiben unberührt. Neue Sendungen holt die App beim Start, beim Zurückkehren in die App und solange das Postfach offen ist; das kann bis zu einer Minute dauern.</div></details>
       <details><summary>💾 Backup</summary><div class="hb">Alle Sicherungswege liegen unter <strong>Mehr → 💾 Backup &amp; Daten</strong>: „Jetzt sichern"-Knopf, Datei-Export/-Import (JSON), OneDrive-Sync mit täglichem Autospeicher sowie lokale Autospeicher-Stände. Tipp: Vor einem Gerätewechsel einmal exportieren. Hinweis: Mahlzeit-Fotos sind gerätelokal und nicht Teil der Backup-Datei.</div></details>
       <details><summary>🏃 Sport-Sync</summary><div class="hb">Unter „Mehr → Sport-Sync" erzeugst du ein Token und verbindest eine iOS-Kurzbefehl-Automation („Wenn Training endet") oder einen Android-HTTP-Shortcut. Abgeschlossene Workouts erscheinen dann automatisch mit Apple-/Samsung-Badge und reduzieren dein Tagesziel.</div></details>
       <details><summary>🤖 KI</summary><div class="hb">Foto-Erkennung, Chat und Wochenbericht laufen über einen geschützten KI-Zugang — dafür brauchst du das Proxy-Passwort (Mehr → 🤖 KI). Optional kannst du dort einen eigenen KI-Anbieter (DeepSeek, OpenAI, Gemini, …) mit eigenem API-Key hinterlegen. Ohne Passwort funktioniert alles außer den KI-Funktionen.</div></details>
@@ -1963,9 +1980,16 @@ body.kb-open #feedbackFab{display:none;}
       <input type="hidden" id="shareItemUrl">
       <input type="hidden" id="shareItemUrlLong">
       <input type="hidden" id="shareItemCode">
+      <div id="shareItemPartnerRow" style="display:none;margin-bottom:12px;">
+        <button type="button" class="cb2" id="shareItemPartnerBtn" onclick="shareItemSendToPartner()" style="margin-bottom:6px;">👫 An Partner senden</button>
+        <div style="font-size:11px;color:var(--mu);text-align:center;line-height:1.4;">Landet direkt im Postfach – kein Link nötig</div>
+        <div style="border-bottom:1px solid var(--br);margin:12px 0 10px;"></div>
+      </div>
       <div id="shareItemShortStatus" style="font-size:11px;color:var(--mu);text-align:center;margin-bottom:8px;min-height:14px;"></div>
-      <button type="button" class="cb2" onclick="shareItemDoShare()" style="margin-bottom:8px;">📤 Link teilen</button>
-      <button type="button" class="seb" onclick="shareItemDoCopy()" style="margin-bottom:12px;">📋 Link kopieren</button>
+      <div id="shareItemLinkBtns">
+        <button type="button" class="cb2" onclick="shareItemDoShare()" style="margin-bottom:8px;">📤 Link teilen</button>
+        <button type="button" class="seb" onclick="shareItemDoCopy()" style="margin-bottom:12px;">📋 Link kopieren</button>
+      </div>
       <details style="margin-bottom:4px;">
         <summary style="font-size:12px;color:var(--mu);cursor:pointer;padding:4px 0;">Erweitert: Code statt Link</summary>
         <textarea id="shareItemCodeText" readonly rows="3"
@@ -2036,6 +2060,21 @@ body.kb-open #feedbackFab{display:none;}
         <div id="importConfirmDetail" style="font-size:12px;color:var(--tx);margin-top:8px;line-height:1.5;"></div>
         <div id="importConfirmIns" style="display:none;font-size:12px;color:var(--mu);margin-top:10px;padding-top:10px;border-top:1px solid var(--br);white-space:pre-wrap;"></div>
       </div>
+      <div id="importConfirmPickWrap" style="display:none;margin-bottom:10px;">
+        <label class="lbl">Was soll übernommen werden?</label>
+        <div id="importConfirmPick" style="border:1px solid var(--br);border-radius:12px;padding:2px 10px;max-height:240px;overflow-y:auto;"></div>
+      </div>
+      <div id="importConfirmDayRow" style="display:none;margin-bottom:8px;">
+        <label class="lbl">Auf welchen Tag eintragen?</label>
+        <select id="importConfirmDayTarget" class="sinp"></select>
+      </div>
+      <div id="importConfirmModeRow" style="display:none;margin-bottom:8px;">
+        <label class="lbl">Vorhandene Einträge</label>
+        <select id="importConfirmMode" class="sinp">
+          <option value="add">Behalten und ergänzen</option>
+          <option value="replace">Durch die Sendung ersetzen</option>
+        </select>
+      </div>
       <div id="importConfirmMealRow" style="display:none;margin-bottom:8px;">
         <label class="lbl">Eintragen in Mahlzeit:</label>
         <select id="importConfirmMealTarget" class="sinp">
@@ -2046,7 +2085,99 @@ body.kb-open #feedbackFab{display:none;}
         </select>
       </div>
       <button type="button" class="svb" id="importConfirmBtn" onclick="importConfirm()" style="margin-top:0;margin-bottom:8px;">✅ Speichern</button>
-      <button type="button" class="seb" onclick="closeOv('importConfirmOv')">Abbrechen</button>
+      <button type="button" class="seb" onclick="importCancel()">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PARTNER: KOPPLUNG ══ -->
+<div class="ov" id="partnerOv" onclick="bgClose(event,'partnerOv')">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" onclick="NTPartner.close()">✕</button>
+      <div class="mti">👫 Partner</div>
+      <div class="msu">Mahlzeiten direkt senden statt Links verschicken</div>
+    </div>
+    <div class="mbd">
+      <div style="background:var(--gl);border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--g1);font-weight:600;line-height:1.5;" id="partnerStatus">Nicht gekoppelt</div>
+      <div style="background:#e8f5e9;border:1px solid var(--g3);border-radius:10px;padding:10px;font-size:11px;color:var(--g1);line-height:1.55;margin-bottom:12px;">
+        🔒 Es wird <b>nichts automatisch übertragen</b>. Nur was du ausdrücklich sendest, geht raus — und landet beim Partner im Postfach, wo er es einzeln übernimmt. Eure Tagebücher bleiben getrennt. Die Sendungen werden auf dem Gerät verschlüsselt; der Schlüssel steckt nur im Kopplungs-Code. Eigener Code: Einkaufszettel und Baby-Tagebuch bleiben davon unberührt.
+      </div>
+
+      <div id="partnerSetup">
+        <label class="lbl" style="margin-bottom:6px;">Erstes Gerät</label>
+        <button type="button" class="svb" style="margin-bottom:14px;" onclick="NTPartner.createPair()">🔗 Kopplung starten</button>
+        <div style="padding-top:12px;border-top:1px solid var(--br);">
+          <label class="lbl" style="margin-bottom:6px;">Zweites Gerät</label>
+          <div class="sf"><input type="text" class="sinp" id="partnerJoinCode" placeholder="Kopplungs-Code einfügen" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+          <button type="button" class="seb" onclick="NTPartner.joinPair()">Mit Code verbinden</button>
+        </div>
+      </div>
+
+      <div id="partnerLive" style="display:none;">
+        <div class="list-row" onclick="NTPartner.openInbox()" style="margin-bottom:12px;">
+          <div class="lr-ic">📬</div>
+          <div class="lr-body"><div class="lr-name">Postfach</div><div class="lr-sub" id="partnerInboxCount">Postfach leer</div></div>
+          <div class="lr-val">›</div>
+        </div>
+        <label class="lbl" style="margin-bottom:6px;">Mein Name (sieht der Partner bei jeder Sendung)</label>
+        <div class="sf"><input type="text" class="sinp" id="partnerMyName" placeholder="z.B. Anna" maxlength="24" autocomplete="off" onblur="NTPartner.saveMyName()"></div>
+        <button type="button" class="seb" style="margin-bottom:14px;" onclick="NTPartner.saveMyName()">Namen speichern</button>
+        <label class="lbl" style="margin-bottom:6px;">Kopplungs-Code</label>
+        <div id="partnerCode" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;word-break:break-all;background:var(--gl);border:1px solid var(--br);border-radius:10px;padding:10px;line-height:1.5;user-select:all;-webkit-user-select:all;"></div>
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <button type="button" class="seb" style="flex:1;margin:0;" onclick="NTPartner.copyCode()">📋 Kopieren</button>
+          <button type="button" class="seb" style="flex:1;margin:0;" onclick="NTPartner.shareCode()">📤 Teilen</button>
+        </div>
+        <div style="font-size:11px;color:#7d5a00;background:#fff8e1;border:1px solid #f9c74f;border-radius:10px;padding:10px;margin-top:10px;line-height:1.55;">
+          ⚠️ Der Code ist der Schlüssel zum Postfach. Gib ihn nur direkt an die Person weiter, mit der du teilen willst.
+        </div>
+        <button type="button" class="svb" style="margin-top:12px;" onclick="NTPartner.syncNow()">🔄 Jetzt nach Sendungen sehen</button>
+        <button type="button" class="seb" style="margin-top:8px;" onclick="openShareRange()">🗓 Zeitraum senden</button>
+        <button type="button" class="seb" style="margin-top:8px;color:#c62828;" onclick="NTPartner.disconnect()">Verbindung trennen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PARTNER: POSTFACH ══ -->
+<div class="ov" id="partnerInboxOv" onclick="bgClose(event,'partnerInboxOv')">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" onclick="NTPartner.closeInbox()">✕</button>
+      <div class="mti">📬 Postfach</div>
+      <div class="msu">Empfangene Mahlzeiten, Tage und Zeiträume</div>
+    </div>
+    <div class="mbd">
+      <button type="button" class="seb" style="margin-bottom:10px;" onclick="NTPartner.syncNow()">🔄 Jetzt nach Sendungen sehen</button>
+      <div id="partnerInboxList" style="display:flex;flex-direction:column;gap:6px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ZEITRAUM TEILEN ══ -->
+<div class="ov" id="shareRangeOv" onclick="bgClose(event,'shareRangeOv')">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" onclick="closeOv('shareRangeOv')">✕</button>
+      <div class="mti">🗓 Zeitraum teilen</div>
+      <div class="msu">Alle Mahlzeiten mehrerer Tage in einer Sendung</div>
+    </div>
+    <div class="mbd">
+      <div style="display:flex;gap:6px;margin-bottom:12px;">
+        <button type="button" class="seb" style="flex:1;margin:0;" onclick="shareRangePreset(7)">7 Tage</button>
+        <button type="button" class="seb" style="flex:1;margin:0;" onclick="shareRangePreset(14)">14 Tage</button>
+        <button type="button" class="seb" style="flex:1;margin:0;" onclick="shareRangePreset(30)">30 Tage</button>
+      </div>
+      <label class="lbl">Von</label>
+      <input type="date" class="sinp" id="shareRangeFrom" style="margin-bottom:10px;" onchange="renderShareRangeInfo()">
+      <label class="lbl">Bis</label>
+      <input type="date" class="sinp" id="shareRangeTo" style="margin-bottom:10px;" onchange="renderShareRangeInfo()">
+      <div id="shareRangeInfo" style="font-size:12px;color:var(--mu);background:var(--gl);border-radius:10px;padding:10px;margin-bottom:12px;line-height:1.5;"></div>
+      <button type="button" class="svb" onclick="shareRangeGo()" style="margin-top:0;">📤 Weiter</button>
     </div>
   </div>
 </div>
@@ -2445,7 +2576,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.235';
+var APP_VERSION='0.236';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -2822,6 +2953,9 @@ window.addEventListener('DOMContentLoaded',function(){
   if(window.NTBaby&&typeof NTBaby.boot==='function')setTimeout(function(){NTBaby.boot();},900);
   // Einkaufszettel: gleiche Mechanik, eigener Raum. No-op ohne Kopplung.
   if(window.NTShop&&typeof NTShop.boot==='function')setTimeout(function(){NTShop.boot();},1000);
+  // Partner-Postfach: Badge setzen und einmal nach neuen Sendungen sehen.
+  // No-op ohne Kopplung.
+  if(window.NTPartner&&typeof NTPartner.boot==='function')setTimeout(function(){NTPartner.boot();},1100);
   // iOS Safari/PWA: Bottom-Nav nach Viewport-Shift wieder anheften (#177)
   var _vvTimer=null;
   function _fixViewportChromeDebounced(){
@@ -3552,6 +3686,7 @@ function renderAll(){
   renderBabyHub();
   if(window.NTBaby)NTBaby.renderCard();
   if(window.NTShop)NTShop.render();
+  if(window.NTPartner)NTPartner.refreshBadges();
 }
 // Mehr-Hub-Eintrag folgt dem Schalter aus den Einstellungen
 function renderBabyHub(){
@@ -4219,6 +4354,8 @@ function recEditDelete(){
 //   {t:'r', n, em, ins, i:[{n, em, a, p:{k,pr,c,f}}, ...]}        // Rezept
 //   {t:'f', n, em, p:{k,pr,c,f}}                                  // Lebensmittel
 //   {t:'m', m, e:[entries]}                                       // Mahlzeit
+//   {t:'d', k:'YYYY-MM-DD', mm:{breakfast:[…],lunch:[…],…}}        // ganzer Tag
+//   {t:'p', a:'YYYY-MM-DD', b:'YYYY-MM-DD', ds:[{k, mm}, …]}       // Zeitraum
 // URL-Format: https://.../#x=<urlencoded-base64>
 // Legacy:     https://.../#r=<urlencoded-base64>  (v0.138, nur Rezept)
 
@@ -4309,13 +4446,19 @@ function _copyToClipboard(text,label){
 }
 
 // ─── ZENTRALE SHARE-FUNKTION ───
+// Was gerade im Teilen-Dialog liegt – für den Direktversand ans Partner-Gerät.
+var _shareCurrent=null;
+
 function _shareItem(payload,name,summary){
   if(!payload){showToast('Nichts zum Teilen');return;}
+  _shareCurrent={p:payload,name:name,summary:summary};
+  _shareRenderPartnerRow(payload,name,summary);
   var built=_buildShareUrl(payload);
   if(!built.url){showToast('Teilen fehlgeschlagen');return;}
-  var titleMap={r:'📤 Rezept teilen',f:'📤 Lebensmittel teilen',m:'📤 Mahlzeit teilen'};
+  var titleMap={r:'📤 Rezept teilen',f:'📤 Lebensmittel teilen',m:'📤 Mahlzeit teilen',d:'📤 Ganzen Tag teilen',p:'📤 Zeitraum teilen'};
   document.getElementById('shareItemTitle').textContent=titleMap[payload.t]||'📤 Teilen';
-  document.getElementById('shareItemName').textContent=(payload.em||(payload.t==='m'?'🍽':'📋'))+' '+name;
+  var fallbackIcon={m:'🍽',d:'📅',p:'🗓',f:'🥑'}[payload.t]||'📋';
+  document.getElementById('shareItemName').textContent=(payload.em||fallbackIcon)+' '+name;
   document.getElementById('shareItemSummary').textContent=summary;
   document.getElementById('shareItemUrlLong').value=built.url;
   document.getElementById('shareItemUrl').value=built.url;
@@ -4323,17 +4466,49 @@ function _shareItem(payload,name,summary){
   document.getElementById('shareItemCodeText').value=built.code;
   var status=document.getElementById('shareItemShortStatus');
   status.textContent='⏳ Kurzlink wird erstellt …';
+  var _lb=document.getElementById('shareItemLinkBtns');
+  if(_lb)_lb.style.display='block';
+  // Ein ganzer Tag oder Zeitraum passt nicht in einen Direktlink: ohne Kurzlink
+  // entstünde eine URL mit zehntausenden Zeichen, die kein Messenger überlebt.
+  // Dann lieber ehrlich sagen, dass es so nicht geht, statt einen kaputten Link
+  // in die Zwischenablage zu legen.
+  var tooLongForDirect=built.code.length>3500;
   _shortenUrl(built.code,built.url,function(short){
     document.getElementById('shareItemUrl').value=short;
+    var linkBtns=document.getElementById('shareItemLinkBtns');
     if(short!==built.url){
-      status.innerHTML='✓ Kurzlink: <span style="font-family:monospace;font-size:11px;word-break:break-all;">'+short+'</span>';
+      status.innerHTML='✓ Kurzlink: <span style="font-family:monospace;font-size:11px;word-break:break-all;">'+esc(short)+'</span>';
+      if(linkBtns)linkBtns.style.display='block';
+    } else if(tooLongForDirect){
+      status.textContent='⚠️ Zu groß für einen Direktlink. Online gehen und erneut versuchen – oder direkt an den Partner senden.';
+      if(linkBtns)linkBtns.style.display='none';
     } else {
       status.textContent='Kurzlink offline – langer Link wird verwendet';
+      if(linkBtns)linkBtns.style.display='block';
     }
   });
   openOv('shareItemOv');
 }
 
+// Ist ein Partner gekoppelt, steht der Direktversand oben und der Link-Weg
+// bleibt als Rückfallebene darunter – niemand muss mehr Links verschicken.
+function _shareRenderPartnerRow(payload,name,summary){
+  var row=document.getElementById('shareItemPartnerRow');
+  if(!row)return;
+  var on=!!(window.NTPartner&&NTPartner.active());
+  row.style.display=on?'block':'none';
+  if(!on)return;
+  var btn=document.getElementById('shareItemPartnerBtn');
+  if(btn)btn.textContent='👫 An '+NTPartner.peerName()+' senden';
+}
+function shareItemSendToPartner(){
+  if(!window.NTPartner||!NTPartner.active()){showToast('Erst einen Partner koppeln');return;}
+  if(!_shareCurrent){showToast('Nichts zum Senden');return;}
+  var label=_shareCurrent.name+(_shareCurrent.summary?' · '+_shareCurrent.summary:'');
+  NTPartner.send(_shareCurrent.p,label).then(function(ok){
+    if(ok)closeOv('shareItemOv');
+  });
+}
 function shareItemDoShare(){
   var url=document.getElementById('shareItemUrl').value;
   var name=document.getElementById('shareItemName').textContent||'NutriTrack';
@@ -4365,18 +4540,122 @@ function shareRecipe(id){
   var summary=ings.length+' Zutat'+(ings.length===1?'':'en')+' · '+Math.round(t.kcal)+' kcal';
   _shareItem(payload,rec.name,summary);
 }
+// Ein Tagebuch-Eintrag → Share-Format. Gemeinsame Quelle für Mahlzeit, Tag und
+// Zeitraum: Wer hier etwas ändert, ändert es für alle drei Wege gleichzeitig.
+function _encEntry(e){
+  if(e.isRecipe){
+    return{t:'r',n:e.name,em:e.emoji,p:e.portions||1,i:(e.ingredients||[]).map(function(ing){return{n:ing.name,em:ing.emoji,a:ing.amount,p:{k:Math.round(ing.per100.kcal),pr:Math.round((ing.per100.protein||0)*10)/10,c:Math.round((ing.per100.carbs||0)*10)/10,f:Math.round((ing.per100.fat||0)*10)/10}};})};
+  }
+  return{t:'f',n:e.name,em:e.emoji,a:e.amount,p:{k:Math.round(e.per100&&e.per100.kcal||e.kcal||0),pr:Math.round((e.per100&&e.per100.protein||e.protein||0)*10)/10,c:Math.round((e.per100&&e.per100.carbs||e.carbs||0)*10)/10,f:Math.round((e.per100&&e.per100.fat||e.fat||0)*10)/10}};
+}
+// Alle Mahlzeiten eines Tages im Share-Format; leere Mahlzeiten fallen raus.
+// Liest DIREKT aus S.days (nicht getDay()), damit auch andere Tage als der
+// gerade angezeigte geteilt werden können und kein leerer Tag angelegt wird.
+function _encDayMeals(key){
+  var d=(S.days||{})[key];
+  if(!d||d._compressed||!d.meals)return null;
+  var mm={},any=false;
+  ['breakfast','lunch','dinner','snack'].forEach(function(m){
+    var arr=d.meals[m]||[];
+    if(!arr.length)return;
+    mm[m]=arr.map(_encEntry);any=true;
+  });
+  return any?mm:null;
+}
+function _mmKcal(mm){
+  var k=0;
+  Object.keys(mm||{}).forEach(function(m){
+    (mm[m]||[]).forEach(function(x){
+      if(x.t==='r')k+=(x.i||[]).reduce(function(s,i){return s+(i.p.k||0)*(i.a||0)/100;},0)*(x.p||1);
+      else k+=(x.p.k||0)*(x.a||0)/100;
+    });
+  });
+  return k;
+}
+function _mmCount(mm){
+  var n=0;Object.keys(mm||{}).forEach(function(m){n+=(mm[m]||[]).length;});return n;
+}
 function shareMeal(meal){
   var entries=getDay().meals[meal]||[];
   if(!entries.length){showToast('Keine Einträge zum Teilen');return;}
-  var payload={t:'m',m:meal,e:entries.map(function(e){
-    if(e.isRecipe){
-      return{t:'r',n:e.name,em:e.emoji,p:e.portions||1,i:(e.ingredients||[]).map(function(ing){return{n:ing.name,em:ing.emoji,a:ing.amount,p:{k:Math.round(ing.per100.kcal),pr:Math.round((ing.per100.protein||0)*10)/10,c:Math.round((ing.per100.carbs||0)*10)/10,f:Math.round((ing.per100.fat||0)*10)/10}};})};
-    }
-    return{t:'f',n:e.name,em:e.emoji,a:e.amount,p:{k:Math.round(e.per100&&e.per100.kcal||e.kcal||0),pr:Math.round((e.per100&&e.per100.protein||e.protein||0)*10)/10,c:Math.round((e.per100&&e.per100.carbs||e.carbs||0)*10)/10,f:Math.round((e.per100&&e.per100.fat||e.fat||0)*10)/10}};
-  })};
+  var payload={t:'m',m:meal,e:entries.map(_encEntry)};
   var totalKcal=entries.reduce(function(a,e){return a+(e.kcal||0);},0);
   var summary=entries.length+' Eintr'+(entries.length===1?'ag':'äge')+' · '+Math.round(totalKcal)+' kcal';
   _shareItem(payload,MEAL_NAMES[meal],summary);
+}
+// Ganzer Tag: alle vier Mahlzeiten in einer Sendung.
+function shareDay(key){
+  var k=key||S.currentDate;
+  var mm=_encDayMeals(k);
+  if(!mm){showToast('An diesem Tag ist nichts eingetragen');return;}
+  var payload={t:'d',k:k,mm:mm};
+  var summary=_mmCount(mm)+' Posten · '+Math.round(_mmKcal(mm))+' kcal';
+  _shareItem(payload,fmtDate(k),summary);
+}
+// Zeitraum: ein Paket, ein Tag pro Eintrag. Leere Tage werden übersprungen.
+function shareRange(from,to){
+  if(!from||!to){showToast('Zeitraum wählen');return;}
+  if(from>to){var t=from;from=to;to=t;}
+  var ds=[],k=from,guard=0;
+  while(k<=to&&guard++<400){
+    var mm=_encDayMeals(k);
+    if(mm)ds.push({k:k,mm:mm});
+    k=addDays(k,1);
+  }
+  if(!ds.length){showToast('In diesem Zeitraum ist nichts eingetragen');return;}
+  var payload={t:'p',a:from,b:to,ds:ds};
+  var posten=0,kcal=0;
+  ds.forEach(function(d){posten+=_mmCount(d.mm);kcal+=_mmKcal(d.mm);});
+  var summary=ds.length+' Tag'+(ds.length===1?'':'e')+' · '+posten+' Posten · '+Math.round(kcal)+' kcal';
+  _shareItem(payload,_fmtRange(from,to),summary);
+}
+function _fmtRange(a,b){
+  var f=function(s){var p=s.split('-');return new Date(+p[0],+p[1]-1,+p[2]).toLocaleDateString('de-DE',{day:'numeric',month:'short'});};
+  return f(a)+' – '+f(b);
+}
+
+// ─── ZEITRAUM-DIALOG ───
+function openShareRange(){
+  closeOv('partnerOv');
+  var to=today(),from=addDays(to,-6);
+  var f=document.getElementById('shareRangeFrom'),t=document.getElementById('shareRangeTo');
+  if(f)f.value=from;
+  if(t){t.value=to;t.max=to;}
+  if(f)f.max=to;
+  renderShareRangeInfo();
+  openOv('shareRangeOv');
+}
+function shareRangePreset(days){
+  var to=today();
+  var f=document.getElementById('shareRangeFrom'),t=document.getElementById('shareRangeTo');
+  if(f)f.value=addDays(to,-(days-1));
+  if(t)t.value=to;
+  renderShareRangeInfo();
+}
+// Zeigt vor dem Senden, was im Zeitraum überhaupt drinsteht – sonst schickt man
+// blind ein Paket mit lauter leeren Tagen los.
+function renderShareRangeInfo(){
+  var el=document.getElementById('shareRangeInfo');if(!el)return;
+  var f=(document.getElementById('shareRangeFrom')||{}).value;
+  var t=(document.getElementById('shareRangeTo')||{}).value;
+  if(!f||!t){el.textContent='Bitte Von und Bis wählen.';return;}
+  if(f>t){var x=f;f=t;t=x;}
+  var days=0,posten=0,kcal=0,k=f,guard=0;
+  while(k<=t&&guard++<400){
+    var mm=_encDayMeals(k);
+    if(mm){days++;posten+=_mmCount(mm);kcal+=_mmKcal(mm);}
+    k=addDays(k,1);
+  }
+  el.textContent=days
+    ? (days+' Tag'+(days===1?'':'e')+' mit Einträgen · '+posten+' Posten · '+Math.round(kcal)+' kcal')
+    : 'In diesem Zeitraum ist nichts eingetragen.';
+}
+function shareRangeGo(){
+  var f=(document.getElementById('shareRangeFrom')||{}).value;
+  var t=(document.getElementById('shareRangeTo')||{}).value;
+  if(!f||!t){showToast('Bitte Von und Bis wählen');return;}
+  closeOv('shareRangeOv');
+  setTimeout(function(){shareRange(f,t);},150);
 }
 function shareLibFood(filteredIdx){
   var f=(window._libFoods||[])[filteredIdx];
@@ -4397,6 +4676,8 @@ function shareEntryAsFood(meal,idx){
 
 // ─── IMPORT: VORSCHAU + BESTÄTIGUNG ───
 var _pendingImport=null;
+// Woher kam die Vorschau? {from,packetId} bei Partner-Sendungen, sonst null.
+var _pendingImportMeta=null;
 
 function _materializeRecipe(d){
   var ings=(d.i||[]).map(function(x){return{name:x.n,emoji:x.em||x.e,amount:x.a||100,per100:{kcal:x.p.k||0,protein:x.p.pr||0,carbs:x.p.c||0,fat:x.p.f||0,sugar:0,fiber:0,salt:0}};});
@@ -4406,7 +4687,10 @@ function _materializeFood(d){
   return{name:d.n||'Importiertes Lebensmittel',emoji:d.em||d.e||'🍽',per100:{kcal:d.p.k||0,protein:d.p.pr||0,carbs:d.p.c||0,fat:d.p.f||0,sugar:0,fiber:0,salt:0}};
 }
 function _materializeMealEntries(d){
-  return(d.e||[]).map(function(x){
+  return _materializeEntryList(d.e||[]);
+}
+function _materializeEntryList(arr){
+  return(arr||[]).map(function(x){
     if(x.t==='r'){
       var ings=(x.i||[]).map(function(ing){return{name:ing.n,emoji:ing.em,amount:ing.a||100,per100:{kcal:ing.p.k||0,protein:ing.p.pr||0,carbs:ing.p.c||0,fat:ing.p.f||0,sugar:0,fiber:0,salt:0}};});
       var t=ingTotal(ings);
@@ -4418,8 +4702,30 @@ function _materializeMealEntries(d){
   });
 }
 
-function _previewImport(d){
+// Ein Tages-Objekt zum Hineinschreiben besorgen, ohne S.currentDate anzufassen.
+// Ein komprimierter Alt-Tag (siehe compressOldDays) wird dabei bewusst wieder
+// aufgemacht – der Nutzer hat den Import für genau diesen Tag bestätigt.
+function _ensureDayForImport(key){
+  S.days=S.days||{};
+  var d=S.days[key];
+  if(!d){d={meals:{breakfast:[],lunch:[],dinner:[],snack:[]},water:0,exercise:[]};S.days[key]=d;}
+  if(d._compressed)delete d._compressed;
+  if(!d.meals)d.meals={breakfast:[],lunch:[],dinner:[],snack:[]};
+  ['breakfast','lunch','dinner','snack'].forEach(function(m){if(!Array.isArray(d.meals[m]))d.meals[m]=[];});
+  if(!d.exercise)d.exercise=[];
+  return d;
+}
+function _pickRow(id,label,sub,checked){
+  return '<label style="display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--br);cursor:pointer;">'
+    +'<input type="checkbox" class="icpick" '+id+(checked?' checked':'')+' style="width:18px;height:18px;flex-shrink:0;accent-color:var(--g2);">'
+    +'<span style="flex:1;min-width:0;"><span style="font-weight:700;font-size:13px;color:var(--tx);">'+esc(label)+'</span>'
+    +'<span style="display:block;font-size:11px;color:var(--mu);">'+esc(sub)+'</span></span>'
+  +'</label>';
+}
+
+function _previewImport(d,meta){
   if(!d){showToast('Ungültiges Format');return;}
+  _pendingImportMeta=meta||null;
   var titleEl=document.getElementById('importConfirmTitle');
   var subEl=document.getElementById('importConfirmSubtitle');
   var nameEl=document.getElementById('importConfirmName');
@@ -4427,14 +4733,22 @@ function _previewImport(d){
   var detailEl=document.getElementById('importConfirmDetail');
   var insEl=document.getElementById('importConfirmIns');
   var mealRow=document.getElementById('importConfirmMealRow');
+  var pickWrap=document.getElementById('importConfirmPickWrap');
+  var pickList=document.getElementById('importConfirmPick');
+  var dayRow=document.getElementById('importConfirmDayRow');
+  var modeRow=document.getElementById('importConfirmModeRow');
   var btn=document.getElementById('importConfirmBtn');
   insEl.style.display='none';mealRow.style.display='none';
+  pickWrap.style.display='none';dayRow.style.display='none';modeRow.style.display='none';
+  pickList.innerHTML='';
+  var fromWho=(meta&&meta.from)?meta.from:'';
+  var viaPartner=!!(meta&&meta.packetId);
 
   if(d.t==='r'){
     var ings=d.i||[];
     var totalK=ings.reduce(function(a,g){var r=(g.a||0)/100;return a+(g.p.k||0)*r;},0);
     titleEl.textContent='📥 Rezept importieren?';
-    subEl.textContent='Du hast einen Rezept-Link geöffnet';
+    subEl.textContent=viaPartner?('Von '+fromWho+' gesendet'):'Du hast einen Rezept-Link geöffnet';
     nameEl.textContent=(d.em||'📋')+' '+d.n;
     summaryEl.textContent=ings.length+' Zutat'+(ings.length===1?'':'en')+' · '+Math.round(totalK)+' kcal';
     detailEl.innerHTML=ings.map(function(i){return esc(i.em||'🍽')+' '+esc(i.n)+' <span style="color:var(--mu);">('+esc(i.a||0)+'g)</span>';}).join(' · ');
@@ -4442,7 +4756,7 @@ function _previewImport(d){
     btn.textContent='✅ In Bibliothek speichern';
   } else if(d.t==='f'){
     titleEl.textContent='📥 Lebensmittel importieren?';
-    subEl.textContent='Du hast einen Lebensmittel-Link geöffnet';
+    subEl.textContent=viaPartner?('Von '+fromWho+' gesendet'):'Du hast einen Lebensmittel-Link geöffnet';
     nameEl.textContent=(d.em||'🍽')+' '+d.n;
     summaryEl.textContent='Werte pro 100g';
     detailEl.innerHTML='kcal: <strong>'+esc(d.p.k||0)+'</strong> · Protein: <strong>'+esc(d.p.pr||0)+'g</strong> · KH: <strong>'+esc(d.p.c||0)+'g</strong> · Fett: <strong>'+esc(d.p.f||0)+'g</strong>';
@@ -4457,13 +4771,50 @@ function _previewImport(d){
       return a+(e.p.k||0)*(e.a||0)/100;
     },0);
     titleEl.textContent='📥 Mahlzeit importieren?';
-    subEl.textContent='Du hast einen Mahlzeit-Link geöffnet';
+    subEl.textContent=viaPartner?('Von '+fromWho+' gesendet'):'Du hast einen Mahlzeit-Link geöffnet';
     nameEl.textContent='🍽 '+(MEAL_NAMES[d.m]||'Mahlzeit');
     summaryEl.textContent=entries.length+' Eintr'+(entries.length===1?'ag':'äge')+' · '+Math.round(totalKcal)+' kcal';
     detailEl.innerHTML=entries.map(function(e){return esc(e.em||'🍽')+' '+esc(e.n);}).join(' · ');
     mealRow.style.display='block';
     document.getElementById('importConfirmMealTarget').value=d.m||'breakfast';
     btn.textContent='✅ Einträge übernehmen';
+  } else if(d.t==='d'){
+    var mm=d.mm||{};
+    titleEl.textContent='📥 Ganzen Tag übernehmen?';
+    subEl.textContent=viaPartner?('Von '+fromWho+' gesendet'):'Du hast einen Tages-Link geöffnet';
+    nameEl.textContent='📅 '+fmtDate(d.k||today());
+    summaryEl.textContent=_mmCount(mm)+' Posten · '+Math.round(_mmKcal(mm))+' kcal';
+    detailEl.textContent='Wähle unten, welche Mahlzeiten übernommen werden sollen.';
+    pickWrap.style.display='block';
+    pickList.innerHTML=['breakfast','lunch','dinner','snack'].filter(function(m){return(mm[m]||[]).length;})
+      .map(function(m){
+        var one={};one[m]=mm[m];
+        return _pickRow('data-meal="'+m+'"',MEAL_NAMES[m],mm[m].length+' Posten · '+Math.round(_mmKcal(one))+' kcal',true);
+      }).join('');
+    dayRow.style.display='block';
+    var sel=document.getElementById('importConfirmDayTarget');
+    var orig=d.k||today();
+    sel.innerHTML='<option value="'+esc(orig)+'">'+esc(fmtDate(orig))+' (Originaldatum)</option>'
+      +(orig!==today()?'<option value="'+esc(today())+'">Heute</option>':'')
+      +(orig!==S.currentDate&&S.currentDate!==today()?'<option value="'+esc(S.currentDate)+'">'+esc(fmtDate(S.currentDate))+' (angezeigter Tag)</option>':'');
+    modeRow.style.display='block';
+    btn.textContent='✅ Tag übernehmen';
+  } else if(d.t==='p'){
+    var ds=(d.ds||[]).filter(function(x){return x&&x.k&&x.mm;});
+    if(!ds.length){showToast('Zeitraum enthält keine Einträge');return;}
+    var posten=0,kcal=0;
+    ds.forEach(function(x){posten+=_mmCount(x.mm);kcal+=_mmKcal(x.mm);});
+    titleEl.textContent='📥 Zeitraum übernehmen?';
+    subEl.textContent=viaPartner?('Von '+fromWho+' gesendet'):'Du hast einen Zeitraum-Link geöffnet';
+    nameEl.textContent='🗓 '+_fmtRange(d.a||ds[0].k,d.b||ds[ds.length-1].k);
+    summaryEl.textContent=ds.length+' Tag'+(ds.length===1?'':'e')+' · '+posten+' Posten · '+Math.round(kcal)+' kcal';
+    detailEl.textContent='Die Tage werden auf ihr Originaldatum eingetragen. Wähle unten ab, was du nicht brauchst.';
+    pickWrap.style.display='block';
+    pickList.innerHTML=ds.map(function(x){
+      return _pickRow('data-day="'+esc(x.k)+'"',fmtDate(x.k),_mmCount(x.mm)+' Posten · '+Math.round(_mmKcal(x.mm))+' kcal',true);
+    }).join('');
+    modeRow.style.display='block';
+    btn.textContent='✅ Zeitraum übernehmen';
   } else {
     showToast('Unbekannter Typ');return;
   }
@@ -4471,6 +4822,35 @@ function _previewImport(d){
   openOv('importConfirmOv');
 }
 
+// Mahlzeiten eines Tages ins Tagebuch schreiben. mode='replace' leert die
+// betroffene Mahlzeit vorher, 'add' hängt an. Nicht ausgewählte Mahlzeiten
+// bleiben unangetastet — auch im Ersetzen-Modus.
+function _applyDayMeals(key,mm,onlyMeals,mode){
+  var day=_ensureDayForImport(key);
+  var n=0;
+  ['breakfast','lunch','dinner','snack'].forEach(function(m){
+    if(onlyMeals&&onlyMeals.indexOf(m)<0)return;
+    var arr=(mm||{})[m]||[];
+    if(!arr.length)return;
+    if(mode==='replace')day.meals[m]=[];
+    _materializeEntryList(arr).forEach(function(e){day.meals[m].push(e);n++;});
+  });
+  return n;
+}
+function _pickedValues(attr){
+  var out=[];
+  document.querySelectorAll('#importConfirmPick .icpick').forEach(function(cb){
+    if(cb.checked&&cb.getAttribute(attr)!==null)out.push(cb.getAttribute(attr));
+  });
+  return out;
+}
+
+// Abbrechen muss die Vorschau-Daten mitnehmen – sonst hinge die nächste
+// Bestätigung noch an der vorherigen Sendung.
+function importCancel(){
+  _pendingImport=null;_pendingImportMeta=null;
+  closeOv('importConfirmOv');
+}
 function importConfirm(){
   var d=_pendingImport;if(!d)return;
   if(d.t==='r'){
@@ -4485,11 +4865,37 @@ function importConfirm(){
     entries.forEach(function(e){getDay().meals[target].push(e);});
     saveS();
     showToast('✅ '+entries.length+' Einträge in '+MEAL_NAMES[target]+' importiert');
+  } else if(d.t==='d'){
+    var meals=_pickedValues('data-meal');
+    if(!meals.length){showToast('Keine Mahlzeit ausgewählt');return;}
+    var mode=document.getElementById('importConfirmMode').value||'add';
+    var key=document.getElementById('importConfirmDayTarget').value||d.k||today();
+    var cnt=_applyDayMeals(key,d.mm,meals,mode);
+    saveS();
+    showToast('✅ '+cnt+' Posten für '+fmtDate(key)+' übernommen');
+  } else if(d.t==='p'){
+    var keys=_pickedValues('data-day');
+    if(!keys.length){showToast('Keinen Tag ausgewählt');return;}
+    var mode2=document.getElementById('importConfirmMode').value||'add';
+    var ds=(d.ds||[]),total=0,days=0;
+    keys.forEach(function(k){
+      var x=null;
+      for(var i=0;i<ds.length;i++){if(ds[i]&&ds[i].k===k){x=ds[i];break;}}
+      if(!x)return;
+      total+=_applyDayMeals(x.k,x.mm,null,mode2);days++;
+    });
+    saveS();
+    showToast('✅ '+total+' Posten aus '+days+' Tag'+(days===1?'':'en')+' übernommen');
   }
-  _pendingImport=null;
+  // Partner-Sendung als erledigt abhaken, damit das Postfach-Badge verschwindet.
+  if(_pendingImportMeta&&_pendingImportMeta.packetId&&window.NTPartner){
+    NTPartner.markDone(_pendingImportMeta.packetId);
+  }
+  _pendingImport=null;_pendingImportMeta=null;
   closeOv('importConfirmOv');
   if(typeof renderAll==='function')renderAll();
   if(typeof renderLibrary==='function')renderLibrary();
+  if(typeof renderHistory==='function')renderHistory();
 }
 
 // Extracts a Worker-stored share id from input. Returns the id string or null.
@@ -6853,6 +7259,7 @@ function renderHistory(){
       +'<div class="lr-ic">📅</div>'
       +'<div class="lr-body"><div class="lr-name">'+dayLabel+'</div><div class="lr-sub">'+count+' Posten</div></div>'
       +'<div class="lr-val">'+Math.round(kcal)+'<small style="font-family:Inter;font-size:11px;color:var(--mu);font-weight:500;"> kcal</small></div>'
+      +(count?'<button type="button" title="Diesen Tag teilen" onclick="event.stopPropagation();shareDay(\''+k+'\')" style="background:none;border:none;font-size:16px;color:var(--mu);padding:4px 2px 4px 8px;cursor:pointer;">📤</button>':'')
       +'</div>';
   }).join('');
 }
@@ -7214,6 +7621,7 @@ function hsTestSync(){
 <script src="js/health-sync.js"></script>
 <script src="js/baby.js"></script>
 <script src="js/shopping.js"></script>
+<script src="js/partner.js"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

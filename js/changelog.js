@@ -1,6 +1,11 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.236',items:[
+    {icon:'\ud83d\udc6b',text:'Teilen ohne Link: Koppelt ihr eure Geräte einmalig über einen Code, steht im Teilen-Dialog oben „An <Partner> senden". Die Mahlzeit landet direkt im Postfach des anderen — kein Link, kein WhatsApp, kein Umweg über die Zwischenablage. Empfangenes wird weiterhin einzeln bestätigt, eure Tagebücher bleiben getrennt.',where:'Mehr → 👫 Partner'},
+    {icon:'\ud83d\udcc5',text:'Ganze Tage teilen: Auf „Heute" liegt neben der Datumszeile ein 📤 — damit geht der komplette Tag mit allen vier Mahlzeiten raus. Im Verlauf hat jeder Tag denselben Knopf. Beim Übernehmen wählt der Empfänger, welche Mahlzeiten er will, auf welchen Tag sie sollen und ob Vorhandenes ergänzt oder ersetzt wird.',where:'Heute · Verlauf'},
+    {icon:'\ud83d\uddd3',text:'Zeiträume teilen: Über 🗓 im Verlauf einen Zeitraum wählen (oder 7/14/30 Tage antippen) und alles in einer Sendung schicken. Vor dem Senden steht da, wie viele Tage, Posten und Kalorien drin sind; der Empfänger hakt einzelne Tage ab, die er nicht braucht.',where:'Verlauf → 🗓'},
+  ]},
   {v:'0.235',items:[
     {icon:'\ud83d\ude34',text:'Schlaf über Mitternacht wird jetzt am Tageswechsel geteilt: Ein Schlaf von 22:50 bis 00:06 steht mit 22:50–24:00 beim Vortag und mit 00:00–00:06 beim Folgetag — beide Tage zeigen ihre eigene Schlafdauer. Vorher landete die ganze Nacht beim Vortag, und dort stand die verwirrende Spanne „22:50–00:06“. Läuft der Schlaf noch, taucht er nach Mitternacht auch am neuen Tag auf, samt „Wach jetzt“-Knopf.',where:'👶 Baby-Tagebuch'},
     {icon:'\ud83c\udf05',text:'Bleibt die App über Mitternacht offen, springt sie jetzt selbst auf den neuen Tag. Bisher blieb sie am alten Datum hängen — alles, was man nachts noch eintrug, landete beim Vortag. Wer bewusst zurückgeblättert hat, bleibt an seinem Tag.',where:'Heute'},

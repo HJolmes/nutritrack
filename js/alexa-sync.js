@@ -14,23 +14,41 @@
 //
 // Öffentliche API (window.NTAlexa):
 //   getToken() / setToken(t) / clearToken() / generateToken()
+//   getFamilyToken() / setFamilyToken(t) / clearFamilyToken()
 //   getWorkerBase() / setWorkerBase(url)
 //   sync({force})         — holt neue Einwürfe, trägt sie ein, quittiert
-//   endpointInfo()        — {url, token} für die Skill-Einrichtung
+//   endpointInfo()        — {url, token, familyToken} für die Skill-Einrichtung
 //   onMutation(cb)        — Callback „es kam etwas an"
 //
+// ZWEI BRIEFKÄSTEN (v0.244): Essen, Sport und Wasser sind persönlich und liegen
+// unter dem persönlichen Token — pro Person eines, im Skill über das
+// Alexa-Stimmprofil zugeordnet. Baby-Tagebuch und Einkaufszettel gehören beiden
+// und liegen unter dem FAMILIEN-Token, das auf BEIDEN Telefonen dasselbe ist.
+// Geteilte Einwürfe werden nicht quittiert (der Worker löscht sie nicht, sie
+// verfallen nach 48 h), damit sie beide Geräte erreichen; jedes Gerät führt
+// seinen eigenen Cursor. Damit derselbe Einwurf auf beiden Telefonen EINEN
+// Eintrag ergibt und nicht zwei, leitet sich die Eintrags-ID aus der Alexa-ID ab
+// — der Baby-/Einkaufs-Sync führt sie dann als denselben Eintrag zusammen.
+//
 // State (localStorage):
-//   nt_alexa_token    — 32-Zeichen-Token, identisch im Skill hinterlegt
-//   nt_alexa_worker   — abweichende Worker-URL (optional)
-//   nt_alexa_lastpoll — Worker-Cursor (srev) des letzten Abrufs
+//   nt_alexa_token        — 32-Zeichen-Token, identisch im Skill hinterlegt
+//   nt_alexa_family       — Familien-Token (Baby + Einkauf), auf beiden Geräten gleich
+//   nt_alexa_worker       — abweichende Worker-URL (optional)
+//   nt_alexa_lastpoll     — Worker-Cursor (srev) des persönlichen Briefkastens
+//   nt_alexa_lastpoll_fam — Worker-Cursor des Familien-Briefkastens
 
 (function(){
   var DEFAULT_WORKER='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
   var TOKEN_LEN=32;
   var TOKEN_ALPHABET='23456789abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ';
   var KEY_TOKEN='nt_alexa_token';
+  var KEY_FAM='nt_alexa_family';
   var KEY_WORKER='nt_alexa_worker';
   var KEY_LAST='nt_alexa_lastpoll';
+  var KEY_LAST_FAM='nt_alexa_lastpoll_fam';
+  // Diese Typen gehören beiden Partnern: nie quittieren, sonst sieht sie nur
+  // das Gerät, das zuerst abholt.
+  var SHARED_KINDS={baby:1,shop:1};
   var SYNC_MIN_INTERVAL_MS=15*1000;
   var _listeners=[];
   var _lastSyncAt=0;
@@ -45,6 +63,15 @@
   function clearToken(){
     localStorage.removeItem(KEY_TOKEN);
     localStorage.removeItem(KEY_LAST);
+  }
+  function getFamilyToken(){return localStorage.getItem(KEY_FAM)||'';}
+  function setFamilyToken(t){
+    if(typeof t!=='string'||!/^[A-Za-z0-9_-]{24,64}$/.test(t))throw new Error('invalid token format');
+    localStorage.setItem(KEY_FAM,t);
+  }
+  function clearFamilyToken(){
+    localStorage.removeItem(KEY_FAM);
+    localStorage.removeItem(KEY_LAST_FAM);
   }
   function generateToken(){
     var arr=new Uint8Array(TOKEN_LEN);
@@ -63,7 +90,7 @@
     if(v)localStorage.setItem(KEY_WORKER,v);else localStorage.removeItem(KEY_WORKER);
   }
   function endpointInfo(){
-    return {url:getWorkerBase().replace(/\/+$/,'')+'/alexa/inbox',token:getToken()||''};
+    return {url:getWorkerBase().replace(/\/+$/,'')+'/alexa/inbox',token:getToken()||'',familyToken:getFamilyToken()||''};
   }
   function onMutation(cb){if(typeof cb==='function')_listeners.push(cb);}
 
@@ -191,10 +218,33 @@
     for(var i=0;i<arr.length;i++){if(arr[i]&&arr[i]._alexaId===id)return true;}
     return false;
   }
+  // Tagesübergreifend: derselbe Einwurf kann per Sync an einem anderen
+  // Tagesschlüssel gelandet sein (Zeitzone, Mitternacht).
+  function babyHasId(id){
+    var logs=(window.S&&window.S.babyLog)||{};
+    for(var k in logs){
+      if(!Object.prototype.hasOwnProperty.call(logs,k))continue;
+      var arr=logs[k]||[];
+      for(var i=0;i<arr.length;i++)if(arr[i]&&arr[i].id===id)return true;
+    }
+    var tomb=(window.S&&window.S.babyTomb)||{};
+    // Gelöschter Eintrag: nicht wieder auferstehen lassen.
+    return !!tomb[id];
+  }
   function dayHasMeal(day,id){
     var slots=['breakfast','lunch','dinner','snack'];
     for(var i=0;i<slots.length;i++){if(hasAlexaId(day.meals[slots[i]],id))return true;}
     return false;
+  }
+
+  // Stabile Eintrags-ID aus der Alexa-ID: Holen beide Telefone denselben
+  // geteilten Einwurf ab, entsteht auf beiden dieselbe ID — der Baby- bzw.
+  // Einkaufs-Sync führt sie als EINEN Eintrag zusammen statt als zwei.
+  function sharedId(alexaId){
+    var raw=String(alexaId||'').replace(/[^A-Za-z0-9_.-]/g,'');
+    if(!raw)return '';
+    // Der Skill vergibt IDs schon mit „ax" am Anfang — nicht doppelt voranstellen.
+    return (raw.indexOf('ax')===0?raw:('ax'+raw)).slice(0,72);
   }
 
   // ── Einfüge-Pfade je Typ ──
@@ -207,8 +257,14 @@
     else if(p&&p.count)qty=p.count+' Stück';
     else if(item.qty)qty=item.qty+' Stück';
     if(!name)return false;
-    // NTShop.add kümmert sich um Kategorie, Symbol, Dedup und Sync.
-    return !!window.NTShop.add(name,qty);
+    var sid=sharedId(item.id);
+    // Auf dem anderen Telefon schon abgehakt und gelöscht: nicht wieder
+    // auferstehen lassen (der Grabstein kommt per Einkaufs-Sync).
+    var tomb=(window.S&&window.S.shopTomb)||{};
+    if(sid&&tomb[sid])return false;
+    // NTShop.add kümmert sich um Kategorie, Symbol, Dedup und Sync; die
+    // mitgegebene ID hält denselben Einwurf auf beiden Geräten zusammen.
+    return !!window.NTShop.add(name,qty,'','',{id:sid});
   }
 
   function applyBaby(item){
@@ -217,12 +273,16 @@
     var key=dayKeyOf(item.ts);
     var log=(window.S.babyLog&&window.S.babyLog[key])||null;
     if(hasAlexaId(log,item.id))return false;
+    var eid=sharedId(item.id);
+    // Der Eintrag kann schon per Baby-Sync vom anderen Telefon da sein.
+    if(eid&&babyHasId(eid))return false;
     var e={t:item.babyType};
     var p=item.babyP||{};
     for(var k in p){if(Object.prototype.hasOwnProperty.call(p,k))e[k]=p[k];}
     if(item.text&&!e.note)e.note=item.text;
     e.ts=item.ts||Date.now();
     e._alexaId=item.id;
+    if(eid)e.id=eid;
     window.NTBaby.add(e,key);
     return true;
   }
@@ -390,11 +450,11 @@
     }
   }
 
-  function ack(ids){
+  function ack(ids,token){
     if(!ids.length)return Promise.resolve();
     return fetch(getWorkerBase().replace(/\/+$/,'')+'/alexa/ack',{
       method:'POST',
-      headers:{'X-User-Token':getToken(),'Content-Type':'application/json'},
+      headers:{'X-User-Token':token||getToken(),'Content-Type':'application/json'},
       body:JSON.stringify({ids:ids}),
     }).then(function(){}).catch(function(e){
       // Quittung verloren: nicht schlimm. Der Cursor ist weitergerückt, und
@@ -403,20 +463,12 @@
     });
   }
 
-  function sync(opts){
-    opts=opts||{};
-    var token=getToken();
-    if(!token)return Promise.resolve({ok:false,reason:'no_token'});
-    if(_inFlight)return _inFlight;
-    var now=Date.now();
-    if(!opts.force&&now-_lastSyncAt<SYNC_MIN_INTERVAL_MS){
-      return Promise.resolve({ok:false,reason:'throttled'});
-    }
-    var since=parseInt(localStorage.getItem(KEY_LAST)||'0',10);
+  // Einen Briefkasten abholen. `box` = {token, cursorKey}.
+  function pullBox(box){
+    var since=parseInt(localStorage.getItem(box.cursorKey)||'0',10);
     if(!isFinite(since))since=0;
     var url=getWorkerBase().replace(/\/+$/,'')+'/alexa/inbox'+(since?('?since='+since):'');
-    _lastSyncAt=now;
-    _inFlight=fetch(url,{method:'GET',headers:{'X-User-Token':token},cache:'no-store'})
+    return fetch(url,{method:'GET',headers:{'X-User-Token':box.token},cache:'no-store'})
       .then(function(r){
         if(!r.ok)throw new Error('http '+r.status);
         return r.json();
@@ -438,7 +490,9 @@
           else if(item.kind==='exercise')ok=applyExercise(item);
           // Auch ein nicht eingetragener Einwurf (Tagebuch aus, Tag verdichtet,
           // Duplikat) wird quittiert — sonst bliebe er für immer im Briefkasten.
-          handled.push(item.id);
+          // Ausnahme: geteilte Typen. Die braucht das zweite Telefon noch, sie
+          // verfallen serverseitig von selbst.
+          if(!SHARED_KINDS[item.kind])handled.push(item.id);
           if(ok)added++;
         });
         return new Promise(function(resolve){
@@ -451,13 +505,13 @@
             // wurde er nicht, aber abgeholt wird er auch nie wieder.
             if(mealsOk){
               meals.forEach(function(m){handled.push(m.id);});
-              if(maxSrev>since)localStorage.setItem(KEY_LAST,String(maxSrev));
+              if(maxSrev>since)localStorage.setItem(box.cursorKey,String(maxSrev));
             }
             // Mahlzeiten offen: Cursor stehen lassen, damit der naechste Lauf
             // alles erneut sieht. Was schon eingetragen ist, faengt die
             // _alexaId-Pruefung ab; die Nicht-Mahlzeiten sind quittiert und
             // damit serverseitig weg.
-            ack(handled).then(function(){
+            ack(handled,box.token).then(function(){
               resolve({ok:true,added:added,total:arr.length,mealsPending:!mealsOk});
             });
           });
@@ -465,7 +519,44 @@
       })
       .catch(function(e){
         console.warn('[alexa] sync failed:',e&&e.message||e);
-        return {ok:false,reason:'fetch',error:String(e&&e.message||e)};
+        return {ok:false,added:0,total:0,reason:'fetch',error:String(e&&e.message||e)};
+      });
+  }
+
+  // Beide Briefkästen nacheinander (nicht parallel): applyMeals und saveS
+  // arbeiten auf demselben State, gleichzeitige Läufe würden sich überschreiben.
+  function sync(opts){
+    opts=opts||{};
+    var boxes=[];
+    var t=getToken();
+    if(t)boxes.push({token:t,cursorKey:KEY_LAST});
+    var fam=getFamilyToken();
+    // Gleiches Token für beides (Ein-Personen-Setup): nur einmal abholen.
+    if(fam&&fam!==t)boxes.push({token:fam,cursorKey:KEY_LAST_FAM});
+    if(!boxes.length)return Promise.resolve({ok:false,reason:'no_token'});
+    if(_inFlight)return _inFlight;
+    var now=Date.now();
+    if(!opts.force&&now-_lastSyncAt<SYNC_MIN_INTERVAL_MS){
+      return Promise.resolve({ok:false,reason:'throttled'});
+    }
+    _lastSyncAt=now;
+    _inFlight=boxes.reduce(function(chain,box){
+      return chain.then(function(acc){
+        return pullBox(box).then(function(r){
+          acc.added+=r.added||0;
+          acc.total+=r.total||0;
+          if(r.mealsPending)acc.mealsPending=true;
+          if(r.ok)acc.okAny=true;else acc.failed++;
+          return acc;
+        });
+      });
+    },Promise.resolve({added:0,total:0,mealsPending:false,okAny:false,failed:0}))
+      .then(function(acc){
+        if(!acc.okAny)return {ok:false,reason:'fetch'};
+        return {ok:true,added:acc.added,total:acc.total,mealsPending:acc.mealsPending,
+          // Ein Briefkasten erreichbar, der andere nicht: das ist kein Fehler,
+          // aber der Status im Dialog soll es sagen dürfen.
+          partial:acc.failed>0};
       })
       .then(function(res){_inFlight=null;return res;});
     return _inFlight;
@@ -473,6 +564,7 @@
 
   window.NTAlexa={
     getToken:getToken,setToken:setToken,clearToken:clearToken,generateToken:generateToken,
+    getFamilyToken:getFamilyToken,setFamilyToken:setFamilyToken,clearFamilyToken:clearFamilyToken,
     getWorkerBase:getWorkerBase,setWorkerBase:setWorkerBase,
     sync:sync,onMutation:onMutation,endpointInfo:endpointInfo,
   };

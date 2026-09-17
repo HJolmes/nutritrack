@@ -1,6 +1,10 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.244',items:[
+    {icon:'\ud83d\udc6a',text:'Alexa kennt jetzt zwei Briefkästen: Baby-Tagebuch und Einkaufszettel gehen in einen <b>Familien-Briefkasten</b>, den beide Handys abholen — bisher landete alles nur auf dem einen Handy, dessen Token im Skill stand, und der Rest der Familie sah es erst, wenn genau dieses Handy die App öffnete. Essen, Sport und Wasser bleiben persönlich und lassen sich über Alexa-Stimmprofile der richtigen Person zuordnen. Einrichtung: Mehr → \ud83d\udde3\ufe0f Alexa-Einwurf → „Zu zweit nutzen“.',where:'Mehr → \ud83d\udde3\ufe0f Alexa-Einwurf'},
+    {icon:'\ud83d\udd01',text:'Derselbe per Alexa angesagte Eintrag erzeugt auf beiden Handys nur noch eine Zeile statt zwei — Einwurf und Eintrag sind jetzt über dieselbe Kennung verbunden.',where:'\ud83d\udc76 Baby-Tagebuch / \ud83d\uded2 Einkaufszettel'},
+  ]},
   {v:'0.243',items:[
     {icon:'\ud83e\udd31',text:'Beim Stillen lässt sich zu „Beide“ jetzt die Hauptseite angeben — die Brust, an der mehr getrunken wurde. Daraus berechnet die App den Vorschlag, welche Seite als Nächstes dran ist; bisher fielen „Beide“-Einträge für den Vorschlag einfach unter den Tisch. Auch für Schnell-Knöpfe einstellbar.',where:'\ud83d\udc76 Baby-Tagebuch'},
   ]},

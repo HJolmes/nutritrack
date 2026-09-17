@@ -16,18 +16,16 @@
         {
           "name": "LogMealIntent",
           "slots": [
-            { "name": "food", "type": "AMAZON.SearchQuery" },
-            { "name": "meal", "type": "MEAL_SLOT" }
+            { "name": "food", "type": "AMAZON.SearchQuery" }
           ],
           "samples": [
             "ich habe {food} gegessen",
             "ich hab {food} gegessen",
             "ich esse {food}",
+            "gegessen habe ich {food}",
             "trag {food} ein",
             "notiere {food}",
-            "{food} zum {meal}",
-            "ich habe {food} zum {meal} gegessen",
-            "zum {meal} gab es {food}"
+            "schreib {food} auf"
           ]
         },
         {
@@ -40,6 +38,7 @@
             "ich habe {count} Gläser Wasser getrunken",
             "ich habe {count} Glas Wasser getrunken",
             "{count} Gläser Wasser",
+            "{count} Glas Wasser",
             "ein Glas Wasser",
             "Wasser getrunken"
           ]
@@ -47,16 +46,15 @@
         {
           "name": "LogExerciseIntent",
           "slots": [
-            { "name": "activity", "type": "AMAZON.SearchQuery" },
-            { "name": "duration", "type": "AMAZON.NUMBER" }
+            { "name": "activity", "type": "AMAZON.SearchQuery" }
           ],
           "samples": [
-            "ich war {duration} Minuten {activity}",
-            "ich habe {duration} Minuten {activity}",
             "ich war {activity}",
-            "{duration} Minuten {activity}",
-            "trag {duration} Minuten {activity} ein",
-            "Sport {activity}"
+            "ich habe {activity} gemacht",
+            "ich bin {activity}",
+            "Sport {activity}",
+            "trag Sport {activity} ein",
+            "Training {activity}"
           ]
         },
         {
@@ -68,41 +66,27 @@
             "setz {item} auf den Einkaufszettel",
             "setze {item} auf den Einkaufszettel",
             "schreib {item} auf den Einkaufszettel",
-            "{item} auf den Einkaufszettel",
             "füge {item} zum Einkaufszettel hinzu",
             "setz {item} auf die Einkaufsliste",
+            "{item} auf den Einkaufszettel",
             "wir brauchen {item}"
           ]
         },
         {
           "name": "LogBabyIntent",
           "slots": [
-            { "name": "event", "type": "AMAZON.SearchQuery" },
-            { "name": "amount", "type": "AMAZON.NUMBER" }
+            { "name": "event", "type": "AMAZON.SearchQuery" }
           ],
           "samples": [
             "Baby {event}",
             "notiere Baby {event}",
-            "{amount} Milliliter {event}",
-            "{event} gewechselt",
-            "Windel gewechselt",
-            "Windel {event}",
-            "gestillt",
-            "Baby {event} mit {amount}"
+            "fürs Baby {event}",
+            "Baby Eintrag {event}",
+            "Tagebuch {event}"
           ]
         }
       ],
-      "types": [
-        {
-          "name": "MEAL_SLOT",
-          "values": [
-            { "name": { "value": "Frühstück", "synonyms": ["morgens", "am Morgen"] } },
-            { "name": { "value": "Mittagessen", "synonyms": ["Mittag", "mittags"] } },
-            { "name": { "value": "Abendessen", "synonyms": ["Abendbrot", "abends", "am Abend"] } },
-            { "name": { "value": "Snack", "synonyms": ["Zwischenmahlzeit", "zwischendurch"] } }
-          ]
-        }
-      ]
+      "types": []
     }
   }
 }

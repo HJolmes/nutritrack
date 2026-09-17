@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.243',items:[
+    {icon:'\ud83e\udd31',text:'Beim Stillen lässt sich zu „Beide“ jetzt die Hauptseite angeben — die Brust, an der mehr getrunken wurde. Daraus berechnet die App den Vorschlag, welche Seite als Nächstes dran ist; bisher fielen „Beide“-Einträge für den Vorschlag einfach unter den Tisch. Auch für Schnell-Knöpfe einstellbar.',where:'\ud83d\udc76 Baby-Tagebuch'},
+  ]},
   {v:'0.242',items:[
     {icon:'\ud83d\uded2',text:'„Setze Bananen auf meine Einkaufsliste“ verstand Alexa nicht — in den hinterlegten Satzmustern fehlten „meine“, „unsere“ und „Liste“. Jetzt sind alle üblichen Formulierungen drin: setzen, schreiben, packen, tun, jeweils mit Liste oder Zettel und mit oder ohne „meine“.',where:'Mehr → \ud83d\udde3\ufe0f Alexa-Einwurf'},
     {icon:'\u23ed\ufe0f',text:'Beim Starten sagt Alexa nur noch „NutriTrack gestartet“ statt jedes Mal die ganze Anleitung vorzulesen. Wer nicht weiterweiß, sagt „Hilfe“.',where:'Mehr → \ud83d\udde3\ufe0f Alexa-Einwurf'},

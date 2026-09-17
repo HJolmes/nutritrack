@@ -154,7 +154,14 @@ async function push(payload) {
 
 // Eine Bestätigung, die NICHTS verrät: keine Kalorien, keine Tagessumme.
 // Der Skill kennt diese Zahlen auch gar nicht.
-function confirm(what) {
+//
+// `keepOpen` entscheidet über den Bedienmodus: Ein Einzelbefehl
+// ("Alexa, sage mein Tagebuch, ich habe X gegessen") kommt mit session.new=true
+// an und ist nach einem Satz fertig. Nach "Alexa, öffne mein Tagebuch" läuft
+// dieselbe Sitzung weiter — dann bleibt sie offen und man diktiert mehrere
+// Einträge hintereinander, ohne den Aufrufnamen zu wiederholen.
+function confirm(what, keepOpen) {
+  if (keepOpen) return say(what + ' Notiert. Was noch?', false);
   return say(what + ' Ich habe es in NutriTrack notiert.');
 }
 // Klartext statt Rätselraten. Die Meldungen nennen die Ursache, nicht das Token.
@@ -189,7 +196,7 @@ function failed(err) {
 
 // ── Intents ──
 const HANDLERS = {
-  async LogMealIntent(request) {
+  async LogMealIntent(request, keepOpen) {
     const spoken = slot(request, 'food');
     if (!spoken) return say('Was hast du gegessen?', false);
     const { meal, text } = extractMeal(spoken);
@@ -197,16 +204,16 @@ const HANDLERS = {
     const payload = { kind: 'meal', text };
     if (meal) payload.meal = meal;
     await push(payload);
-    return confirm(text + '.');
+    return confirm(text + '.', keepOpen);
   },
 
-  async LogWaterIntent(request) {
+  async LogWaterIntent(request, keepOpen) {
     const n = toNumber(slot(request, 'count')) || 1;
     await push({ kind: 'water', text: n + ' Glas Wasser', qty: n });
-    return confirm(n === 1 ? 'Ein Glas Wasser.' : n + ' Gläser Wasser.');
+    return confirm(n === 1 ? 'Ein Glas Wasser.' : n + ' Gläser Wasser.', keepOpen);
   },
 
-  async LogExerciseIntent(request) {
+  async LogExerciseIntent(request, keepOpen) {
     const spoken = slot(request, 'activity');
     if (!spoken) return say('Was hast du gemacht?', false);
     const { minutes, text } = extractMinutes(spoken);
@@ -214,17 +221,18 @@ const HANDLERS = {
     const payload = { kind: 'exercise', text: activity };
     if (minutes) payload.durationMin = Math.round(minutes);
     await push(payload);
-    return confirm(minutes ? minutes + ' Minuten ' + activity + '.' : activity + '.');
+    return confirm(minutes ? minutes + ' Minuten ' + activity + '.' : activity + '.', keepOpen);
   },
 
-  async AddShoppingIntent(request) {
+  async AddShoppingIntent(request, keepOpen) {
     const item = slot(request, 'item');
     if (!item) return say('Was soll auf den Einkaufszettel?', false);
     await push({ kind: 'shop', text: item });
-    return say(item + ' steht auf dem Einkaufszettel.');
+    return keepOpen ? say(item + ' steht auf dem Einkaufszettel. Was noch?', false)
+      : say(item + ' steht auf dem Einkaufszettel.');
   },
 
-  async LogBabyIntent(request) {
+  async LogBabyIntent(request, keepOpen) {
     const spokenRaw = slot(request, 'event');
     if (!spokenRaw) return say('Was soll ins Baby-Tagebuch?', false);
     const kindRaw = spokenRaw.toLowerCase();
@@ -262,7 +270,7 @@ const HANDLERS = {
       spoken = 'Notiz.';
     }
     await push(payload);
-    return confirm(spoken);
+    return confirm(spoken, keepOpen);
   },
 };
 
@@ -272,8 +280,8 @@ exports.handler = async function (event) {
 
   if (type === 'LaunchRequest') {
     return say(
-      'NutriTrack hört zu. Sag zum Beispiel: Ich habe zwei Eier gegessen. ' +
-      'Oder: Setz Milch auf den Einkaufszettel.',
+      'Ich höre. Sag zum Beispiel: Ich habe zwei Brötchen gegessen. ' +
+      'Du kannst mehrere Sachen hintereinander sagen. Zum Beenden sag: Stopp.',
       false
     );
   }
@@ -313,7 +321,12 @@ exports.handler = async function (event) {
   if (!handler) return say('Das habe ich nicht verstanden.');
 
   try {
-    return await handler(event.request);
+    // Offen bleiben nur, wenn die Sitzung NACHWEISLICH schon lief — also vorher
+    // mit "öffne mein Tagebuch" gestartet wurde. Fehlt die Angabe, wird
+    // geschlossen: eine grundlos offene Sitzung wartet auf eine Antwort, die
+    // niemand erwartet, und wirkt wie ein hängender Skill.
+    const keepOpen = Boolean(event.session && event.session.new === false);
+    return await handler(event.request, keepOpen);
   } catch (e) {
     if (e && e.message === 'not_configured') {
       return say(

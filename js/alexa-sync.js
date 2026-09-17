@@ -124,6 +124,52 @@
       .filter(function(s){return s.length>0;});
   }
 
+  // ── Stückgewichte ──
+  // Gesprochen wird in Stück ("zwei Brötchen"), gerechnet wird in Gramm. Ohne
+  // diese Tabelle landete jedes Stück bei 100 g — bei Brötchen glatt das
+  // Doppelte, und die Nutzerin müsste jeden Eintrag nachbessern.
+  // Gewichte sind handelsübliche Mittelwerte, bewusst grob: besser eine gute
+  // Schätzung als eine falsche Konstante.
+  var PIECE_G=[
+    [/(brötchen|broetchen|semmel|schrippe|weck)/,50],
+    [/(toast|scheibe brot|brotscheibe|knäckebrot)/,40],
+    [/(scheibe käse|käsescheibe)/,30],
+    [/(scheibe wurst|wurstscheibe|salami|aufschnitt)/,15],
+    [/(^| )ei(er)?($| )/,60],
+    [/(apfel|äpfel)/,150],
+    [/(banane)/,120],
+    [/(orange|apfelsine)/,180],
+    [/(birne)/,160],
+    [/(kiwi)/,75],
+    [/(pfirsich|nektarine)/,140],
+    [/(mandarine|clementine)/,70],
+    [/(tomate)/,100],
+    [/(gurke)/,300],
+    [/(paprika)/,150],
+    [/(kartoffel)/,100],
+    [/(möhre|moehre|karotte)/,80],
+    [/(zwiebel)/,100],
+    [/(joghurt|becher)/,150],
+    [/(croissant|hörnchen)/,60],
+    [/(brezel|breze)/,80],
+    [/(pfannkuchen|crêpe|crepe)/,60],
+    [/(riegel|müsliriegel)/,50],
+    [/(keks|plätzchen)/,12],
+    [/(tasse|glas)/,200],
+    [/(kugel eis|eiskugel)/,50],
+    [/(würstchen|wiener|bratwurst)/,100],
+    [/(schnitzel|steak|kotelett)/,150],
+    [/(scheibe pizza|pizzastück)/,125]
+  ];
+  // Liefert das Gewicht EINES Stücks oder null, wenn nichts passt.
+  function pieceGrams(name){
+    var n=String(name||'').toLowerCase();
+    for(var i=0;i<PIECE_G.length;i++){
+      if(PIECE_G[i][0].test(n))return PIECE_G[i][1];
+    }
+    return null;
+  }
+
   // ── Mahlzeiten-Slot ──
   // Der Skill darf einen Slot vorgeben („zum Frühstück"). Ohne Angabe
   // entscheidet die Uhrzeit des Sprechzeitpunkts.
@@ -302,13 +348,23 @@
         var amount=res.amount||0;
         var pending=0;
         if(!amount){
-          // Keine Grammangabe gesprochen: erst das Portionsgedächtnis fragen,
-          // sonst 100 g als neutrale Basis. In beiden Fällen markieren, damit
-          // die Nutzerin die Menge bestätigen kann statt ihr zu vertrauen.
+          // Keine Grammangabe gesprochen. Drei Stufen, absteigend nach Güte:
+          // 1. Portionsgedächtnis — die Nutzerin hat diese Menge schon bestätigt
+          // 2. Stückgewicht — "zwei Brötchen" sind 2x50 g, nicht 2x100 g
+          // 3. 100 g als letzte Notlösung
+          // Nur Stufe 3 ist geraten und bekommt deshalb die 🗣️-Markierung;
+          // bei 1 und 2 wäre sie nur lästig.
           var remembered=(typeof window.recallPortion==='function')?window.recallPortion(res.name):null;
-          amount=remembered||100;
-          if(j.count&&j.count>1)amount=amount*j.count;
-          pending=1;
+          var perPiece=pieceGrams(res.name)||pieceGrams(j.name);
+          var n=(j.count&&j.count>0)?j.count:1;
+          if(remembered){
+            amount=remembered*(j.count&&j.count>1?j.count:1);
+          }else if(perPiece){
+            amount=perPiece*n;
+          }else{
+            amount=100*(j.count&&j.count>1?j.count:1);
+            pending=1;
+          }
         }
         var per100=res.per100||{kcal:0,protein:0,carbs:0,fat:0};
         var scaled=(typeof window.scaleNutrients==='function')

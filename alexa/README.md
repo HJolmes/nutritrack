@@ -7,7 +7,7 @@ Ziele noch Verlauf.
 ## Wie es läuft
 
 ```
-"Alexa, sage NutriTrack, ich habe zwei Eier gegessen"
+"Alexa, öffne mein Tagebuch" → "Ich habe zwei Eier gegessen"
   → Skill (Alexa-hosted Lambda)
   → POST /alexa/inbox   (Cloudflare Worker, Header X-User-Token)
   → KV-Briefkasten  ai:<token>:<id>
@@ -60,31 +60,57 @@ niemand sonst sieht ihn.
 ### 6. Testen
 
 Reiter „Test" → Stufe auf **„Development"** stellen → tippen oder sprechen:
-„sage nutri track ich habe zwei Eier gegessen".
+„sage mein tagebuch ich habe zwei Eier gegessen".
 
 Der Skill läuft ab jetzt auf allen Echo-Geräten deines Kontos. **Eine Zertifizierung ist
 nicht nötig**, solange du ihn nicht veröffentlichst.
 
 ## Sprachbefehle
 
+### Diktier-Modus — der bequeme Weg
+
+```
+"Alexa, öffne mein Tagebuch"
+  → "Ich höre. Sag zum Beispiel: Ich habe zwei Brötchen gegessen …"
+"Ich habe zwei Brötchen gegessen"   → "Notiert. Was noch?"
+"Zwei Gläser Wasser"                → "Notiert. Was noch?"
+"Setz Milch auf den Einkaufszettel" → "Notiert. Was noch?"
+"Stopp"                             → "Okay."
+```
+
+Der Aufrufname fällt nur einmal — danach diktierst du frei. Technisch hängt das
+an `session.new`: Ein Einzelbefehl kommt mit `new: true` an und wird nach einem
+Satz geschlossen, ein Dialog nach „öffne" mit `new: false` und bleibt offen.
+
+### Einzelne Einträge
+
 | Was | Beispiel |
 |---|---|
-| Essen | „Alexa, sage NutriTrack, ich habe zwei Eier und ein Brötchen gegessen" |
-| Essen mit Mahlzeit | „Alexa, sage NutriTrack, ich habe 150 Gramm Reis zum Mittagessen gegessen" |
-| Essen, kurz | „Alexa, sage NutriTrack, trag einen Apfel ein" |
-| Wasser | „Alexa, sage NutriTrack, ich habe zwei Gläser Wasser getrunken" |
-| Sport | „Alexa, sage NutriTrack, ich war 30 Minuten joggen" |
-| Einkaufszettel | „Alexa, sage NutriTrack, setz Milch auf den Einkaufszettel" |
-| Einkaufszettel | „Alexa, sage NutriTrack, wir brauchen Klopapier" |
-| Baby | „Alexa, sage NutriTrack, Baby Windel gewechselt" |
-| Baby mit Menge | „Alexa, sage NutriTrack, Baby 120 Milliliter Flasche" |
-| Baby, Seite | „Alexa, sage NutriTrack, Baby gestillt links" |
+| Essen | „Alexa, sage mein Tagebuch, ich habe zwei Eier und ein Brötchen gegessen" |
+| Essen mit Mahlzeit | „Alexa, sage mein Tagebuch, ich habe 150 Gramm Reis zum Mittagessen gegessen" |
+| Essen, kurz | „Alexa, sage mein Tagebuch, trag einen Apfel ein" |
+| Wasser | „Alexa, sage mein Tagebuch, ich habe zwei Gläser Wasser getrunken" |
+| Sport | „Alexa, sage mein Tagebuch, ich war 30 Minuten joggen" |
+| Einkaufszettel | „Alexa, sage mein Tagebuch, setz Milch auf den Einkaufszettel" |
+| Einkaufszettel | „Alexa, sage mein Tagebuch, wir brauchen Klopapier" |
+| Baby | „Alexa, sage mein Tagebuch, Baby Windel gewechselt" |
+| Baby mit Menge | „Alexa, sage mein Tagebuch, Baby 120 Milliliter Flasche" |
+| Baby, Seite | „Alexa, sage mein Tagebuch, Baby gestillt links" |
 
-Der Aufruf-Name (`sage NutriTrack`) ist Pflicht. Ohne ihn („Alexa, ich habe einen Apfel
+### Warum der Aufrufname „mein tagebuch" heißt
+
+Der erste Name war „nutri track". Am echten Echo verstand Alexa daraus „speck" —
+und weil „Alexa, **sage** …" im Deutschen zugleich der Befehl für eine Durchsage
+ist, landete der Satz als Ankündigung auf allen Echos statt im Skill. Ein
+deutsches, geläufiges Wortpaar wird deutlich zuverlässiger erkannt. Wer den Namen
+ändert, ändert ihn in `interaction-model.de-DE.json` (`invocationName`) und muss
+das Modell neu bauen.
+
+Der Aufruf-Name (`sage mein Tagebuch`) ist Pflicht. Ohne ihn („Alexa, ich habe einen Apfel
 gegessen") bräuchte es Name-Free Interaction — das erfordert eine Freigabe durch Amazon.
 
-Haupt- und Nebensatz gehen beide: „sage NutriTrack, **ich habe** zwei Brötchen **gegessen**"
-ebenso wie „sage NutriTrack, **dass ich** zwei Brötchen **gegessen habe**". Passt ein Satz zu
+Haupt- und Nebensatz gehen beide: „sage mein Tagebuch, **ich habe** zwei Brötchen **gegessen**"
+ebenso wie „sage mein Tagebuch, **dass ich** zwei Brötchen **gegessen habe**". Passt ein Satz zu
 keinem Befehl, nennt der Skill ein Beispiel, statt nur „nicht verstanden" zu sagen.
 
 **Baby-Einträge beginnen immer mit dem Wort „Baby".** Das ist keine Schikane, sondern eine
@@ -120,9 +146,12 @@ Mehr Details stehen in den CloudWatch Logs (Code-Reiter → „CloudWatch Logs")
 
 ## Grenzen, die man kennen sollte
 
-- **Mengen.** Wird keine Menge gesprochen („ein Apfel" statt „150 Gramm Apfel"), rät die
-  App nicht: Sie nimmt die zuletzt verwendete Portion (oder 100 g) und markiert den
-  Eintrag mit 🗣️. Antippen, Menge bestätigen, Markierung verschwindet.
+- **Mengen.** Wird keine Grammzahl gesprochen, geht die App in drei Stufen vor:
+  zuletzt verwendete Portion → übliches Stückgewicht (Brötchen 50 g, Ei 60 g,
+  Apfel 150 g …, Tabelle `PIECE_G` in `js/alexa-sync.js`) → 100 g. Nur die letzte
+  Stufe ist geraten und bekommt die 🗣️-Markierung; antippen, Menge bestätigen,
+  Markierung verschwindet. Vorher bekam jedes Stück pauschal 100 g — „zwei
+  Brötchen" landeten damit bei 540 statt 270 Kalorien.
 - **Spracherkennung.** Freie Lebensmittelnamen sind der wackligste Teil. „Skyr" wird
   gern zu „Skier". In der App korrigierbar.
 - **Baby-Tagebuch.** Einwürfe landen nur im Tagebuch, wenn es in NutriTrack eingeschaltet
@@ -156,4 +185,4 @@ cd worker && wrangler deploy
 ```
 
 Prüfen: `GET /health` muss `alexaInboxConfigured: true` und
-`codeVersion: "v0.238-alexa-inbox"` melden.
+`codeVersion: "v0.238-alexa-inbox"` melden (der Worker ist von den Sprachänderungen nicht betroffen).

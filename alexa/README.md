@@ -97,6 +97,22 @@ und Milliliter kommen deshalb als Teil des Freitexts an und werden in
 bzw. in `js/alexa-sync.js` (`parseAmount`) herausgelöst. Wer das Sprachmodell erweitert,
 muss diese Regel einhalten — sonst schlägt „Build Model" fehl.
 
+## Wenn etwas nicht klappt
+
+Der Skill nennt die Ursache in der Sprachantwort, statt pauschal zu scheitern:
+
+| Alexa sagt | Ursache | Lösung |
+|---|---|---|
+| „Ich weiß nicht, wie ich dir dabei helfen kann" | Der Skill wurde gar nicht aufgerufen — Sprachmodell fehlt oder ist nicht gebaut | Build → JSON Editor → Modell einfügen → Save → **Build Model** |
+| „Der Skill ist noch nicht eingerichtet" | `TOKEN` oder `ENDPOINT` ist leer | Code-Reiter, die zwei Zeilen oben ausfüllen, Deploy |
+| „Das Token im Skill passt nicht zu dem in NutriTrack" | HTTP 401 — die beiden Token sind verschieden | Mehr → 🗣️ Alexa-Einwurf, Token vergleichen |
+| „Die Endpunkt-Adresse stimmt nicht" | HTTP 404 — die URL endet nicht auf `/alexa/inbox` | `ENDPOINT` korrigieren |
+| „Der NutriTrack-Server ist nicht vollständig eingerichtet" | HTTP 503 — dem Worker fehlt der KV-Namespace | `GET /health` prüfen, `alexaInboxConfigured` muss `true` sein |
+| „Ich erreiche den NutriTrack-Server gerade nicht" | Zeitüberschreitung oder Netzfehler | Worker-URL im Browser aufrufen |
+| „Der Server hat mit Fehler NNN geantwortet" | unerwarteter HTTP-Code | `GET /health` und CloudWatch Logs ansehen |
+
+Mehr Details stehen in den CloudWatch Logs (Code-Reiter → „CloudWatch Logs").
+
 ## Grenzen, die man kennen sollte
 
 - **Mengen.** Wird keine Menge gesprochen („ein Apfel" statt „150 Gramm Apfel"), rät die

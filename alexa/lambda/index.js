@@ -10,8 +10,10 @@
 //   NUTRITRACK_TOKEN     — das Token aus NutriTrack (Mehr → Alexa-Einwurf)
 //   NUTRITRACK_ENDPOINT  — z. B. https://…workers.dev/alexa/inbox
 //
-// Kein npm-Paket nötig: `fetch` ist in Node 18 eingebaut, und die Alexa-Requests
-// werden von der Alexa-hosted Laufzeit selbst verifiziert.
+// Kein npm-Paket nötig: Der Aufruf läuft über das eingebaute `https`-Modul —
+// bewusst NICHT über `fetch`, das es erst ab Node 18 gibt und in der
+// Alexa-hosted Laufzeit fehlen kann. Die Alexa-Requests verifiziert die
+// Laufzeit selbst.
 
 const TOKEN = process.env.NUTRITRACK_TOKEN || '';
 const ENDPOINT = process.env.NUTRITRACK_ENDPOINT || '';
@@ -89,6 +91,43 @@ function extractUnit(raw, re) {
   return m ? toNumber(m[1]) : null;
 }
 
+const https = require('https');
+
+// POST über das eingebaute https-Modul. Läuft auf jeder Node-Version, die die
+// Alexa-hosted Umgebung anbietet — `fetch` gibt es dort erst ab Node 18 und
+// sein Fehlen äußerte sich vorher als stummes "hat nicht geklappt".
+function postJson(urlStr, headers, bodyStr) {
+  return new Promise((resolve, reject) => {
+    let u;
+    try {
+      u = new URL(urlStr);
+    } catch (e) {
+      reject(new Error('bad_endpoint'));
+      return;
+    }
+    const req = https.request(
+      {
+        hostname: u.hostname,
+        port: u.port || 443,
+        path: u.pathname + u.search,
+        method: 'POST',
+        headers: Object.assign({}, headers, {
+          'Content-Length': Buffer.byteLength(bodyStr),
+        }),
+      },
+      (res) => {
+        let data = '';
+        res.on('data', (c) => { data += c; });
+        res.on('end', () => resolve({ status: res.statusCode, body: data }));
+      }
+    );
+    req.on('error', (e) => reject(new Error('network: ' + (e && e.message))));
+    req.setTimeout(8000, () => { req.destroy(new Error('timeout')); });
+    req.write(bodyStr);
+    req.end();
+  });
+}
+
 async function push(payload) {
   if (!TOKEN || !ENDPOINT) {
     throw new Error('not_configured');
@@ -100,12 +139,16 @@ async function push(payload) {
     ts: Date.now(),
     ...payload,
   };
-  const res = await fetch(ENDPOINT, {
-    method: 'POST',
-    headers: { 'X-User-Token': TOKEN, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error('http ' + res.status);
+  const res = await postJson(
+    ENDPOINT,
+    { 'X-User-Token': TOKEN, 'Content-Type': 'application/json' },
+    JSON.stringify(body)
+  );
+  if (res.status < 200 || res.status >= 300) {
+    // Der Status wandert mit in die Sprachantwort: Bei einem privaten Skill ist
+    // ein sprechender Fehler mehr wert als eine hübsche, nutzlose Entschuldigung.
+    throw new Error('http_' + res.status);
+  }
   return true;
 }
 
@@ -114,7 +157,33 @@ async function push(payload) {
 function confirm(what) {
   return say(what + ' Ich habe es in NutriTrack notiert.');
 }
-function failed() {
+// Klartext statt Rätselraten. Die Meldungen nennen die Ursache, nicht das Token.
+function failed(err) {
+  const msg = String((err && err.message) || '');
+  if (msg === 'http_401') {
+    return say('Das Token im Skill passt nicht zu dem in NutriTrack. Vergleich die beiden in den Einstellungen.');
+  }
+  if (msg === 'http_400') {
+    return say('Der Server hat die Eingabe abgelehnt. Sag es bitte etwas anders.');
+  }
+  if (msg === 'http_403') {
+    return say('Der Server hat den Zugriff verweigert.');
+  }
+  if (msg === 'http_404') {
+    return say('Die Endpunkt-Adresse stimmt nicht. Sie muss auf alexa Schrägstrich inbox enden.');
+  }
+  if (msg === 'http_503') {
+    return say('Der NutriTrack-Server ist nicht vollständig eingerichtet.');
+  }
+  if (msg.indexOf('http_') === 0) {
+    return say('Der Server hat mit Fehler ' + msg.slice(5) + ' geantwortet.');
+  }
+  if (msg === 'bad_endpoint') {
+    return say('Die Endpunkt-Adresse im Skill ist keine gültige Internetadresse.');
+  }
+  if (msg === 'timeout' || msg.indexOf('network') === 0) {
+    return say('Ich erreiche den NutriTrack-Server gerade nicht.');
+  }
   return say('Das hat gerade nicht geklappt. Versuch es später nochmal.');
 }
 
@@ -244,6 +313,6 @@ exports.handler = async function (event) {
       );
     }
     console.error('[nutritrack] push failed:', e);
-    return failed();
+    return failed(e);
   }
 };

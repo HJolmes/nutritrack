@@ -299,6 +299,15 @@ exports.handler = async function (event) {
   if (name === 'AMAZON.CancelIntent' || name === 'AMAZON.StopIntent') {
     return say('Okay.');
   }
+  // Alexa hat den Skill gestartet, aber den Satz keinem Befehl zuordnen koennen.
+  // Ein Beispiel hilft weiter; ein pauschales "nicht verstanden" nicht.
+  if (name === 'AMAZON.FallbackIntent') {
+    return say(
+      'Das habe ich nicht zuordnen können. Sag es zum Beispiel so: ' +
+      'Ich habe zwei Brötchen gegessen. Oder: Setz Milch auf den Einkaufszettel.',
+      false
+    );
+  }
 
   const handler = HANDLERS[name];
   if (!handler) return say('Das habe ich nicht verstanden.');

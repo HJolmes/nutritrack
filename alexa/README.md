@@ -83,6 +83,10 @@ nicht nötig**, solange du ihn nicht veröffentlichst.
 Der Aufruf-Name (`sage NutriTrack`) ist Pflicht. Ohne ihn („Alexa, ich habe einen Apfel
 gegessen") bräuchte es Name-Free Interaction — das erfordert eine Freigabe durch Amazon.
 
+Haupt- und Nebensatz gehen beide: „sage NutriTrack, **ich habe** zwei Brötchen **gegessen**"
+ebenso wie „sage NutriTrack, **dass ich** zwei Brötchen **gegessen habe**". Passt ein Satz zu
+keinem Befehl, nennt der Skill ein Beispiel, statt nur „nicht verstanden" zu sagen.
+
 **Baby-Einträge beginnen immer mit dem Wort „Baby".** Das ist keine Schikane, sondern eine
 Folge der Alexa-Regel unten: Ohne ein festes Wort vor dem Freitext kann Alexa den Satz
 keinem Intent zuordnen.
@@ -104,6 +108,7 @@ Der Skill nennt die Ursache in der Sprachantwort, statt pauschal zu scheitern:
 | Alexa sagt | Ursache | Lösung |
 |---|---|---|
 | „Ich weiß nicht, wie ich dir dabei helfen kann" | Der Skill wurde gar nicht aufgerufen — Sprachmodell fehlt oder ist nicht gebaut | Build → JSON Editor → Modell einfügen → Save → **Build Model** |
+| „Das habe ich nicht zuordnen können …" | Der Skill läuft, aber der Satzbau passt zu keinem Befehl | eine Formulierung aus der Tabelle oben nehmen |
 | „Der Skill ist noch nicht eingerichtet" | `TOKEN` oder `ENDPOINT` ist leer | Code-Reiter, die zwei Zeilen oben ausfüllen, Deploy |
 | „Das Token im Skill passt nicht zu dem in NutriTrack" | HTTP 401 — die beiden Token sind verschieden | Mehr → 🗣️ Alexa-Einwurf, Token vergleichen |
 | „Die Endpunkt-Adresse stimmt nicht" | HTTP 404 — die URL endet nicht auf `/alexa/inbox` | `ENDPOINT` korrigieren |

@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.239 (2026-09-17) — Branch `claude/app-alexa-integration-2n82os` (Alexa-Einwurf: Essen, Wasser, Sport, Einkaufszettel und Baby-Tagebuch per Sprache; Einbahnstraße, Alexa liest nichts zurück). Davor v0.237: Postfach-Flagge und Tag-Teilen in der Heute-Kopfzeile, Link-Feld erkennt Rezept-Link vs. NutriTrack-Sendung.
+**Stand:** v0.240 (2026-09-17) — Branch `claude/app-alexa-integration-2n82os` (Alexa-Einwurf: Essen, Wasser, Sport, Einkaufszettel und Baby-Tagebuch per Sprache; Einbahnstraße, Alexa liest nichts zurück). Davor v0.237: Postfach-Flagge und Tag-Teilen in der Heute-Kopfzeile, Link-Feld erkennt Rezept-Link vs. NutriTrack-Sendung.
 
 ## URLs
 
@@ -69,6 +69,7 @@
   - **Dedup** über `_alexaId` auf jedem erzeugten Datensatz plus `day._alexaWater[id]` fürs Wasser — eine verlorene Quittung darf nichts verdoppeln. Auch ein *nicht* eingetragener Einwurf (Duplikat, Tagebuch aus, Tag verdichtet) wird quittiert, sonst bliebe er für immer im Briefkasten.
   - **Tagesschlüssel aus `item.ts`**, nicht aus dem Abrufzeitpunkt: Wer um 23:50 spricht und morgens öffnet, will den Eintrag am Vortag. Ohne gesprochenen Mahlzeiten-Slot entscheidet die Uhrzeit (`<11` Frühstück, `<15` Mittag, `<21` Abend, sonst Snack).
   - **Lambda ruft über `https` auf, nicht über `fetch`:** Die Alexa-hosted Laufzeit kann eine Node-Version unter 18 fahren; `fetch` fehlt dort und der Skill scheiterte stumm mit „Das hat gerade nicht geklappt“. `postJson()` nutzt das eingebaute `https`-Modul (8 s Timeout, unter Alexas 10-s-Grenze). `failed(err)` übersetzt HTTP-Code und Netzfehler in eine gesprochene Ursache — bei einem privaten Skill ist das mehr wert als eine hübsche Entschuldigung. Beim Anfassen: **kein `fetch` in `alexa/lambda/index.js`**.
+  - **`.seb` in einer Flex-Zeile braucht `width:auto` (v0.240):** Die Klasse bringt `width:100%` **und** `margin-top:8px` mit. Neben einem Eingabefeld in `display:flex` heißt das: Der Knopf nimmt mit `flex-basis:auto` die ganze Breite, schrumpft wegen `flex:0 0 auto` nicht, das Feld fällt auf sein Minimum zusammen und der Knopf sitzt tiefer. Betraf Alexa-Einwurf und Sport-Sync. Fix an beiden: Knopf `width:auto;margin-top:0`, Feld `min-width:0` (sonst sprengt ein langes Token die Zeile). **Bei jedem neuen `.seb` neben einem `.sinp` mitdenken.**
   - **Alexa-Regel, die beim Erweitern des Sprachmodells gilt (v0.239):** In einer Beispielphrase darf ein Freitext-Slot (`AMAZON.SearchQuery`) **nie** mit einem zweiten Slot stehen — `"{food} zum {meal}"` lässt Amazon den Build mit *„cannot include both a phrase slot and another intent slot"* abbrechen. Mahlzeit, Dauer und Milliliter kommen deshalb im Freitext mit und werden im Lambda (`extractMeal`/`extractMinutes`/`extractUnit`) bzw. im Client (`parseAmount`) herausgelöst. Folge fürs Sprechen: Baby-Einträge beginnen mit dem Wort „Baby“, und die Mahlzeit gehört in den Satz („ich habe 150 Gramm Reis zum Mittagessen gegessen“). `alexa/interaction-model.de-DE.json` ist die Quelle der Wahrheit; die Beispielsätze im `alexaOv`-Overlay und in `alexa/README.md` müssen dazu passen.
   - **Ohne gesprochene Menge wird nicht geraten:** `recallPortion()` oder 100 g, Eintrag bekommt `_alexaPending:1` und in der Liste ein 🗣️ (Sport: ⚠️). `saveEdit()` löscht das Flag, sobald die Nutzerin die Menge bestätigt. **Neue Render-Pfade für Mahlzeiten müssen die Markierung mitführen** — sie steht aktuell an zwei Stellen (Heute-Liste und Verlauf).
 
@@ -154,10 +155,10 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.236 | — | Partner-Postfach: Mahlzeiten/Tage/Zeiträume direkt senden statt Links verschicken |
 | v0.237 | — | Postfach-Flagge + Tag-Teilen in der Heute-Kopfzeile; Link-Feld erkennt Rezept-Link vs. NutriTrack-Sendung |
 | v0.238 | #196 | Alexa-Einwurf: Essen, Wasser, Sport, Einkaufszettel und Baby-Tagebuch per Sprache (Einbahnstraße, Briefkasten wird nach dem Abholen geleert) |
 | v0.239 | — | Alexa-Sprachmodell: Zwei-Slot-Phrasen entfernt (Amazon lehnt sie ab), Mahlzeit/Dauer/Menge werden aus dem Freitext gelesen; Lambda nutzt `https` statt `fetch` |
+| v0.240 | — | Token-Zeile auf dem Handy zerschossen: `.seb` bringt `width:100%` mit und quetschte das Eingabefeld (Alexa + Sport-Sync) |
 
 ---
 

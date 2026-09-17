@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.240',items:[
+    {icon:'\ud83d\udd27',text:'Die Token-Zeile war auf dem Handy zerschossen: Der Kopier-Knopf zog sich über die ganze Breite und quetschte das Eingabefeld zu einem schmalen Oval zusammen. Betraf den Alexa-Einwurf und den Sport-Sync gleichermaßen. Jetzt steht das Feld breit links, der \ud83d\udccb-Knopf schmal rechts daneben.',where:'Mehr → \ud83d\udde3\ufe0f Alexa-Einwurf / \ud83c\udfc3 Sport-Sync'},
+  ]},
   {v:'0.239',items:[
     {icon:'\ud83d\udde3\ufe0f',text:'Die Alexa-Beispielsätze waren teilweise falsch: Alexa erlaubt in einem Satzmuster keine zwei Platzhalter gleichzeitig, weshalb „150 Gramm Reis zum Mittagessen“ so nicht ankam. Richtig ist jetzt „ich habe 150 Gramm Reis zum Mittagessen gegessen“, und Baby-Einträge beginnen mit dem Wort „Baby“ — also „Baby Windel gewechselt“. Die Liste unter Mehr → \ud83d\udde3\ufe0f Alexa-Einwurf zeigt die geprüften Sätze.',where:'Mehr → \ud83d\udde3\ufe0f Alexa-Einwurf'},
   ]},

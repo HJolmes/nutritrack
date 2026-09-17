@@ -1086,7 +1086,7 @@ body.kb-open #feedbackFab{display:none;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.239</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.240</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1730,8 +1730,8 @@ body.kb-open #feedbackFab{display:none;}
 
       <label class="lbl">🔑 Dein persönliches Token</label>
       <div style="display:flex;gap:6px;margin-bottom:6px;">
-        <input type="text" class="sinp" id="hsTokenIn" placeholder="(noch nicht erzeugt)" style="flex:1;font-family:monospace;font-size:12px;" autocomplete="off" spellcheck="false">
-        <button type="button" class="seb" style="flex:0 0 auto;padding:6px 12px;" onclick="hsCopyToken()">📋</button>
+        <input type="text" class="sinp" id="hsTokenIn" placeholder="(noch nicht erzeugt)" style="flex:1;min-width:0;font-family:monospace;font-size:12px;" autocomplete="off" spellcheck="false">
+        <button type="button" class="seb" style="flex:0 0 auto;width:auto;margin-top:0;padding:11px 14px;" onclick="hsCopyToken()">📋</button>
       </div>
       <div style="display:flex;gap:6px;margin-bottom:14px;">
         <button type="button" class="seb" style="flex:1;" onclick="hsGenerateToken()">🎲 Neu erzeugen</button>
@@ -1795,8 +1795,8 @@ body.kb-open #feedbackFab{display:none;}
 
       <label class="lbl">🔑 Dein persönliches Token</label>
       <div style="display:flex;gap:6px;margin-bottom:6px;">
-        <input type="text" class="sinp" id="axTokenIn" placeholder="(noch nicht erzeugt)" style="flex:1;font-family:monospace;font-size:12px;" autocomplete="off" spellcheck="false">
-        <button type="button" class="seb" style="flex:0 0 auto;padding:6px 12px;" onclick="axCopyToken()">📋</button>
+        <input type="text" class="sinp" id="axTokenIn" placeholder="(noch nicht erzeugt)" style="flex:1;min-width:0;font-family:monospace;font-size:12px;" autocomplete="off" spellcheck="false">
+        <button type="button" class="seb" style="flex:0 0 auto;width:auto;margin-top:0;padding:11px 14px;" onclick="axCopyToken()">📋</button>
       </div>
       <div style="display:flex;gap:6px;margin-bottom:14px;">
         <button type="button" class="seb" style="flex:1;" onclick="axGenerateToken()">🎲 Neu erzeugen</button>
@@ -2662,7 +2662,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.239';
+var APP_VERSION='0.240';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung

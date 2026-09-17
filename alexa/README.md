@@ -70,15 +70,32 @@ nicht nötig**, solange du ihn nicht veröffentlichst.
 | Was | Beispiel |
 |---|---|
 | Essen | „Alexa, sage NutriTrack, ich habe zwei Eier und ein Brötchen gegessen" |
-| Essen mit Mahlzeit | „Alexa, sage NutriTrack, 150 Gramm Reis zum Mittagessen" |
+| Essen mit Mahlzeit | „Alexa, sage NutriTrack, ich habe 150 Gramm Reis zum Mittagessen gegessen" |
+| Essen, kurz | „Alexa, sage NutriTrack, trag einen Apfel ein" |
 | Wasser | „Alexa, sage NutriTrack, ich habe zwei Gläser Wasser getrunken" |
 | Sport | „Alexa, sage NutriTrack, ich war 30 Minuten joggen" |
 | Einkaufszettel | „Alexa, sage NutriTrack, setz Milch auf den Einkaufszettel" |
-| Baby | „Alexa, sage NutriTrack, Windel gewechselt" |
-| Baby mit Menge | „Alexa, sage NutriTrack, 120 Milliliter Flasche" |
+| Einkaufszettel | „Alexa, sage NutriTrack, wir brauchen Klopapier" |
+| Baby | „Alexa, sage NutriTrack, Baby Windel gewechselt" |
+| Baby mit Menge | „Alexa, sage NutriTrack, Baby 120 Milliliter Flasche" |
+| Baby, Seite | „Alexa, sage NutriTrack, Baby gestillt links" |
 
 Der Aufruf-Name (`sage NutriTrack`) ist Pflicht. Ohne ihn („Alexa, ich habe einen Apfel
 gegessen") bräuchte es Name-Free Interaction — das erfordert eine Freigabe durch Amazon.
+
+**Baby-Einträge beginnen immer mit dem Wort „Baby".** Das ist keine Schikane, sondern eine
+Folge der Alexa-Regel unten: Ohne ein festes Wort vor dem Freitext kann Alexa den Satz
+keinem Intent zuordnen.
+
+### Warum Menge und Uhrzeit mit im Satz stehen
+
+Alexa verbietet, dass ein Freitext-Slot (`AMAZON.SearchQuery`) mit einem zweiten Slot in
+derselben Beispielphrase steht — „{food} zum {meal}" wird beim Build abgelehnt
+(*„cannot include both a phrase slot and another intent slot"*). Menge, Dauer, Mahlzeit
+und Milliliter kommen deshalb als Teil des Freitexts an und werden in
+[`lambda/index.js`](lambda/index.js) (`extractMeal`, `extractMinutes`, `extractUnit`)
+bzw. in `js/alexa-sync.js` (`parseAmount`) herausgelöst. Wer das Sprachmodell erweitert,
+muss diese Regel einhalten — sonst schlägt „Build Model" fehl.
 
 ## Grenzen, die man kennen sollte
 
@@ -118,4 +135,4 @@ cd worker && wrangler deploy
 ```
 
 Prüfen: `GET /health` muss `alexaInboxConfigured: true` und
-`codeVersion: "v0.236-alexa-inbox"` melden.
+`codeVersion: "v0.238-alexa-inbox"` melden.

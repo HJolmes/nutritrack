@@ -1086,7 +1086,7 @@ body.kb-open #feedbackFab{display:none;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.238</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.239</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1826,16 +1826,19 @@ body.kb-open #feedbackFab{display:none;}
         <div style="font-size:12px;color:var(--mu);line-height:1.8;padding:6px 2px;">
           <b>Essen</b><br>
           „Alexa, sage NutriTrack, ich habe zwei Eier und ein Brötchen gegessen"<br>
-          „Alexa, sage NutriTrack, 150 Gramm Reis zum Mittagessen"<br><br>
+          „Alexa, sage NutriTrack, ich habe 150 Gramm Reis zum Mittagessen gegessen"<br>
+          „Alexa, sage NutriTrack, trag einen Apfel ein"<br><br>
           <b>Wasser</b><br>
           „Alexa, sage NutriTrack, ich habe zwei Gläser Wasser getrunken"<br><br>
           <b>Sport</b><br>
           „Alexa, sage NutriTrack, ich war 30 Minuten joggen"<br><br>
           <b>Einkaufszettel</b><br>
-          „Alexa, sage NutriTrack, setz Milch auf den Einkaufszettel"<br><br>
-          <b>Baby-Tagebuch</b><br>
-          „Alexa, sage NutriTrack, Windel gewechselt"<br>
-          „Alexa, sage NutriTrack, 120 Milliliter Flasche"
+          „Alexa, sage NutriTrack, setz Milch auf den Einkaufszettel"<br>
+          „Alexa, sage NutriTrack, wir brauchen Klopapier"<br><br>
+          <b>Baby-Tagebuch</b> — immer mit „Baby" beginnen<br>
+          „Alexa, sage NutriTrack, Baby Windel gewechselt"<br>
+          „Alexa, sage NutriTrack, Baby 120 Milliliter Flasche"<br>
+          „Alexa, sage NutriTrack, Baby gestillt links"
         </div>
       </details>
 
@@ -2659,7 +2662,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.238';
+var APP_VERSION='0.239';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung

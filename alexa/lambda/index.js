@@ -46,14 +46,48 @@ function toNumber(raw) {
   return NUMWORDS[t] ?? null;
 }
 
-// Mahlzeiten-Slot: Alexa liefert das gesprochene Wort, NutriTrack erwartet den
-// internen Namen. Ohne Angabe entscheidet die App anhand der Uhrzeit.
+// Alexa erlaubt in einer Beispielphrase mit AMAZON.SearchQuery KEINEN zweiten
+// Slot ("cannot include both a phrase slot and another intent slot"). Mahlzeit,
+// Dauer und Menge stehen deshalb mit im Freitext und werden hier herausgelöst.
 const MEAL_MAP = {
   frühstück: 'breakfast', fruehstueck: 'breakfast', morgens: 'breakfast',
   mittag: 'lunch', mittagessen: 'lunch', mittags: 'lunch',
   abendessen: 'dinner', abendbrot: 'dinner', abends: 'dinner',
   snack: 'snack', zwischendurch: 'snack', zwischenmahlzeit: 'snack',
 };
+
+// "150 Gramm Reis zum Mittagessen" -> {meal:'lunch', text:'150 Gramm Reis'}
+function extractMeal(raw) {
+  const text = String(raw || '');
+  let m = text.match(/\s*\b(?:zum|zur|beim|am|als)\s+(frühstück|fruehstueck|mittagessen|mittag|abendessen|abendbrot|snack|zwischenmahlzeit)\b\s*/i);
+  if (!m) m = text.match(/\s*\b(morgens|mittags|abends|zwischendurch)\b\s*/i);
+  if (!m) return { meal: null, text: text.trim() };
+  const key = m[1].toLowerCase();
+  return {
+    meal: MEAL_MAP[key] || null,
+    // Die Zeitangabe raus, damit sie nicht als Lebensmittel gedeutet wird.
+    text: (text.slice(0, m.index) + ' ' + text.slice(m.index + m[0].length)).replace(/\s+/g, ' ').trim(),
+  };
+}
+
+// "30 Minuten joggen" oder "joggen 30 Minuten" -> {minutes:30, text:'joggen'}
+function extractMinutes(raw) {
+  const text = String(raw || '');
+  const m = text.match(/\s*\b(\d{1,4}|ein|eine|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn|elf|zwölf)\s*(?:min|minuten|minute)\b\s*/i);
+  if (!m) return { minutes: null, text: text.trim() };
+  const n = toNumber(m[1]);
+  return {
+    minutes: n,
+    text: (text.slice(0, m.index) + ' ' + text.slice(m.index + m[0].length))
+      .replace(/\s+/g, ' ').replace(/^\s*(?:lang|für|fuer)\s+/i, '').trim(),
+  };
+}
+
+// "120 Milliliter Flasche" -> 120 ; "38,5 Grad" -> 38.5
+function extractUnit(raw, re) {
+  const m = String(raw || '').match(re);
+  return m ? toNumber(m[1]) : null;
+}
 
 async function push(payload) {
   if (!TOKEN || !ENDPOINT) {
@@ -87,11 +121,12 @@ function failed() {
 // ── Intents ──
 const HANDLERS = {
   async LogMealIntent(request) {
-    const text = slot(request, 'food');
+    const spoken = slot(request, 'food');
+    if (!spoken) return say('Was hast du gegessen?', false);
+    const { meal, text } = extractMeal(spoken);
     if (!text) return say('Was hast du gegessen?', false);
-    const mealRaw = slot(request, 'meal').toLowerCase();
     const payload = { kind: 'meal', text };
-    if (MEAL_MAP[mealRaw]) payload.meal = MEAL_MAP[mealRaw];
+    if (meal) payload.meal = meal;
     await push(payload);
     return confirm(text + '.');
   },
@@ -103,13 +138,14 @@ const HANDLERS = {
   },
 
   async LogExerciseIntent(request) {
-    const activity = slot(request, 'activity');
-    if (!activity) return say('Was hast du gemacht?', false);
-    const mins = toNumber(slot(request, 'duration'));
+    const spoken = slot(request, 'activity');
+    if (!spoken) return say('Was hast du gemacht?', false);
+    const { minutes, text } = extractMinutes(spoken);
+    const activity = text || spoken;
     const payload = { kind: 'exercise', text: activity };
-    if (mins) payload.durationMin = Math.round(mins);
+    if (minutes) payload.durationMin = Math.round(minutes);
     await push(payload);
-    return confirm(mins ? mins + ' Minuten ' + activity + '.' : activity + '.');
+    return confirm(minutes ? minutes + ' Minuten ' + activity + '.' : activity + '.');
   },
 
   async AddShoppingIntent(request) {
@@ -120,8 +156,12 @@ const HANDLERS = {
   },
 
   async LogBabyIntent(request) {
-    const kindRaw = slot(request, 'event').toLowerCase();
-    const amount = toNumber(slot(request, 'amount'));
+    const spokenRaw = slot(request, 'event');
+    if (!spokenRaw) return say('Was soll ins Baby-Tagebuch?', false);
+    const kindRaw = spokenRaw.toLowerCase();
+    // Menge steht im Freitext: "120 Milliliter Flasche", "38,5 Grad Fieber".
+    const amount = extractUnit(kindRaw, /(\d+(?:[.,]\d+)?)\s*(?:ml|milliliter|grad)\b/i)
+      || extractUnit(kindRaw, /(\d+(?:[.,]\d+)?)/);
     let payload = null;
     let spoken = '';
 
@@ -149,7 +189,7 @@ const HANDLERS = {
       spoken = amount ? amount + ' Grad.' : 'Temperatur notiert.';
     } else {
       // Alles andere wandert als Notiz ins Tagebuch, statt verloren zu gehen.
-      payload = { kind: 'baby', babyType: 'note', text: slot(request, 'event') };
+      payload = { kind: 'baby', babyType: 'note', text: spokenRaw };
       spoken = 'Notiz.';
     }
     await push(payload);

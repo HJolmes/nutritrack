@@ -1,6 +1,10 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.242',items:[
+    {icon:'\ud83d\uded2',text:'„Setze Bananen auf meine Einkaufsliste“ verstand Alexa nicht — in den hinterlegten Satzmustern fehlten „meine“, „unsere“ und „Liste“. Jetzt sind alle üblichen Formulierungen drin: setzen, schreiben, packen, tun, jeweils mit Liste oder Zettel und mit oder ohne „meine“.',where:'Mehr → \ud83d\udde3\ufe0f Alexa-Einwurf'},
+    {icon:'\u23ed\ufe0f',text:'Beim Starten sagt Alexa nur noch „NutriTrack gestartet“ statt jedes Mal die ganze Anleitung vorzulesen. Wer nicht weiterweiß, sagt „Hilfe“.',where:'Mehr → \ud83d\udde3\ufe0f Alexa-Einwurf'},
+  ]},
   {v:'0.241',items:[
     {icon:'\ud83d\udde3\ufe0f',text:'Alexa hört jetzt auf „mein Tagebuch“ statt „nutri track“ — der alte Name wurde regelmäßig als „speck“ verstanden und die Sätze landeten als Durchsage auf allen Echos statt in der App. Neu ist auch ein Diktier-Modus: „Alexa, öffne mein Tagebuch“, dann mehrere Sachen hintereinander sagen, ohne jedes Mal den Namen zu wiederholen. „Stopp“ beendet.',where:'Mehr → \ud83d\udde3\ufe0f Alexa-Einwurf'},
     {icon:'\u2696\ufe0f',text:'Stückangaben werden realistisch gerechnet: „zwei Brötchen“ sind jetzt 100 g statt 200 g, ein Ei 60 g, ein Apfel 150 g. Vorher bekam jedes Stück pauschal 100 g — zwei Brötchen landeten damit bei 540 statt 270 Kalorien. Nur wo die App das Stückgewicht nicht kennt, bleibt es bei 100 g mit \ud83d\udde3\ufe0f-Markierung.',where:'Heute'},

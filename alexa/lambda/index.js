@@ -279,11 +279,9 @@ exports.handler = async function (event) {
   const type = event?.request?.type;
 
   if (type === 'LaunchRequest') {
-    return say(
-      'Ich höre. Sag zum Beispiel: Ich habe zwei Brötchen gegessen. ' +
-      'Du kannst mehrere Sachen hintereinander sagen. Zum Beenden sag: Stopp.',
-      false
-    );
+    // Bewusst knapp: Wer den Skill startet, weiß wofür. Wer nicht weiterweiß,
+    // sagt "Hilfe" — eine Begrüßung, die jedes Mal die Anleitung vorliest, nervt.
+    return say('NutriTrack gestartet.', false);
   }
 
   if (type === 'SessionEndedRequest') {

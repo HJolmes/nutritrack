@@ -8,15 +8,33 @@
         }
       },
       "intents": [
-        { "name": "AMAZON.CancelIntent", "samples": [] },
-        { "name": "AMAZON.HelpIntent", "samples": [] },
-        { "name": "AMAZON.StopIntent", "samples": [] },
-        { "name": "AMAZON.NavigateHomeIntent", "samples": [] },
-        { "name": "AMAZON.FallbackIntent", "samples": [] },
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.NavigateHomeIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.FallbackIntent",
+          "samples": []
+        },
         {
           "name": "LogMealIntent",
           "slots": [
-            { "name": "food", "type": "AMAZON.SearchQuery" }
+            {
+              "name": "food",
+              "type": "AMAZON.SearchQuery"
+            }
           ],
           "samples": [
             "ich habe {food} gegessen",
@@ -25,13 +43,22 @@
             "gegessen habe ich {food}",
             "trag {food} ein",
             "notiere {food}",
-            "schreib {food} auf"
+            "schreib {food} auf",
+            "dass ich {food} gegessen habe",
+            "dass ich {food} esse",
+            "dass ich {food} hatte",
+            "ich hatte {food}",
+            "{food} gegessen",
+            "Essen {food}"
           ]
         },
         {
           "name": "LogWaterIntent",
           "slots": [
-            { "name": "count", "type": "AMAZON.NUMBER" }
+            {
+              "name": "count",
+              "type": "AMAZON.NUMBER"
+            }
           ],
           "samples": [
             "ich habe ein Glas Wasser getrunken",
@@ -40,13 +67,20 @@
             "{count} Gläser Wasser",
             "{count} Glas Wasser",
             "ein Glas Wasser",
-            "Wasser getrunken"
+            "Wasser getrunken",
+            "dass ich {count} Gläser Wasser getrunken habe",
+            "dass ich ein Glas Wasser getrunken habe",
+            "ich trinke ein Glas Wasser",
+            "{count} Glas Wasser getrunken"
           ]
         },
         {
           "name": "LogExerciseIntent",
           "slots": [
-            { "name": "activity", "type": "AMAZON.SearchQuery" }
+            {
+              "name": "activity",
+              "type": "AMAZON.SearchQuery"
+            }
           ],
           "samples": [
             "ich war {activity}",
@@ -54,13 +88,21 @@
             "ich bin {activity}",
             "Sport {activity}",
             "trag Sport {activity} ein",
-            "Training {activity}"
+            "Training {activity}",
+            "dass ich {activity} war",
+            "dass ich {activity} gemacht habe",
+            "dass ich {activity} bin",
+            "ich habe {activity} trainiert",
+            "{activity} gemacht"
           ]
         },
         {
           "name": "AddShoppingIntent",
           "slots": [
-            { "name": "item", "type": "AMAZON.SearchQuery" }
+            {
+              "name": "item",
+              "type": "AMAZON.SearchQuery"
+            }
           ],
           "samples": [
             "setz {item} auf den Einkaufszettel",
@@ -69,20 +111,30 @@
             "füge {item} zum Einkaufszettel hinzu",
             "setz {item} auf die Einkaufsliste",
             "{item} auf den Einkaufszettel",
-            "wir brauchen {item}"
+            "wir brauchen {item}",
+            "dass wir {item} brauchen",
+            "dass ich {item} brauche",
+            "ich brauche {item}",
+            "kauf {item} ein"
           ]
         },
         {
           "name": "LogBabyIntent",
           "slots": [
-            { "name": "event", "type": "AMAZON.SearchQuery" }
+            {
+              "name": "event",
+              "type": "AMAZON.SearchQuery"
+            }
           ],
           "samples": [
             "Baby {event}",
             "notiere Baby {event}",
             "fürs Baby {event}",
             "Baby Eintrag {event}",
-            "Tagebuch {event}"
+            "Tagebuch {event}",
+            "dass Baby {event}",
+            "beim Baby {event}",
+            "Baby hat {event}"
           ]
         }
       ],

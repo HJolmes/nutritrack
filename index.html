@@ -1086,7 +1086,7 @@ body.kb-open #feedbackFab{display:none;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.241</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.242</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1825,20 +1825,29 @@ body.kb-open #feedbackFab{display:none;}
         <summary style="font-size:13px;font-weight:700;color:var(--g1);cursor:pointer;padding:6px 0;">🎙 Was du sagen kannst</summary>
         <div style="font-size:12px;color:var(--mu);line-height:1.8;padding:6px 2px;">
           <b>🗣️ Diktier-Modus — am bequemsten</b><br>
-          „Alexa, öffne mein Tagebuch"<br>
-          … dann einfach sprechen, mehrere Sachen hintereinander:<br>
+          „Alexa, starte mein Tagebuch" → „NutriTrack gestartet."<br>
+          … dann sprechen, mehrere Sachen hintereinander:<br>
           „Ich habe zwei Brötchen gegessen" → „Notiert. Was noch?"<br>
-          „Zwei Gläser Wasser" → „Notiert. Was noch?"<br>
+          „Setze Bananen auf meine Einkaufsliste" → „Notiert. Was noch?"<br>
+          „Baby schläft" → „Notiert. Was noch?"<br>
           „Stopp" beendet.<br><br>
-          <b>Einzelner Eintrag</b><br>
-          „Alexa, sage mein Tagebuch, ich habe zwei Brötchen gegessen"<br>
-          „Alexa, sage mein Tagebuch, ich war 30 Minuten joggen"<br>
-          „Alexa, sage mein Tagebuch, setz Milch auf den Einkaufszettel"<br>
-          „Alexa, sage mein Tagebuch, Baby Windel gewechselt"<br><br>
-          <b>Mahlzeit mitsagen</b><br>
-          „Ich habe 150 Gramm Reis zum Mittagessen gegessen"<br><br>
-          <b>Baby</b> — immer mit „Baby" beginnen<br>
-          „Baby 120 Milliliter Flasche", „Baby gestillt links"
+          <b>Essen</b><br>
+          „Ich habe zwei Brötchen gegessen"<br>
+          „Ich habe 150 Gramm Reis zum Mittagessen gegessen"<br>
+          „Trag einen Apfel ein"<br><br>
+          <b>Wasser</b><br>
+          „Ich habe zwei Gläser Wasser getrunken"<br><br>
+          <b>Sport</b><br>
+          „Ich war 30 Minuten joggen"<br><br>
+          <b>Einkaufsliste</b> — „Liste", „Zettel", „meine", „unsere" gehen alle<br>
+          „Setze Bananen auf meine Einkaufsliste"<br>
+          „Schreib Milch auf den Einkaufszettel"<br>
+          „Wir brauchen Klopapier"<br><br>
+          <b>Baby-Tagebuch</b> — immer mit „Baby" beginnen<br>
+          „Baby Windel gewechselt" · „Baby schläft"<br>
+          „Baby 120 Milliliter Flasche" · „Baby gestillt links"<br><br>
+          <b>Einzeln, ohne vorher zu starten</b><br>
+          „Alexa, sage mein Tagebuch, ich habe zwei Brötchen gegessen"
         </div>
       </details>
 
@@ -2662,7 +2671,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.241';
+var APP_VERSION='0.242';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung

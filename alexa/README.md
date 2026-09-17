@@ -70,8 +70,8 @@ nicht nötig**, solange du ihn nicht veröffentlichst.
 ### Diktier-Modus — der bequeme Weg
 
 ```
-"Alexa, öffne mein Tagebuch"
-  → "Ich höre. Sag zum Beispiel: Ich habe zwei Brötchen gegessen …"
+"Alexa, starte mein Tagebuch"
+  → "NutriTrack gestartet."
 "Ich habe zwei Brötchen gegessen"   → "Notiert. Was noch?"
 "Zwei Gläser Wasser"                → "Notiert. Was noch?"
 "Setz Milch auf den Einkaufszettel" → "Notiert. Was noch?"
@@ -91,8 +91,9 @@ Satz geschlossen, ein Dialog nach „öffne" mit `new: false` und bleibt offen.
 | Essen, kurz | „Alexa, sage mein Tagebuch, trag einen Apfel ein" |
 | Wasser | „Alexa, sage mein Tagebuch, ich habe zwei Gläser Wasser getrunken" |
 | Sport | „Alexa, sage mein Tagebuch, ich war 30 Minuten joggen" |
-| Einkaufszettel | „Alexa, sage mein Tagebuch, setz Milch auf den Einkaufszettel" |
-| Einkaufszettel | „Alexa, sage mein Tagebuch, wir brauchen Klopapier" |
+| Einkaufsliste | „Setze Bananen auf meine Einkaufsliste" |
+| Einkaufsliste | „Schreib Milch auf den Einkaufszettel" |
+| Einkaufsliste | „Wir brauchen Klopapier" · „Kauf Butter ein" |
 | Baby | „Alexa, sage mein Tagebuch, Baby Windel gewechselt" |
 | Baby mit Menge | „Alexa, sage mein Tagebuch, Baby 120 Milliliter Flasche" |
 | Baby, Seite | „Alexa, sage mein Tagebuch, Baby gestillt links" |
@@ -126,6 +127,17 @@ und Milliliter kommen deshalb als Teil des Freitexts an und werden in
 [`lambda/index.js`](lambda/index.js) (`extractMeal`, `extractMinutes`, `extractUnit`)
 bzw. in `js/alexa-sync.js` (`parseAmount`) herausgelöst. Wer das Sprachmodell erweitert,
 muss diese Regel einhalten — sonst schlägt „Build Model" fehl.
+
+### Formulierungen der Einkaufsliste
+
+Alle Kombinationen aus **setz / setze / schreib / schreibe / pack / packe / tu / tue**
+und **auf den Einkaufszettel / auf die Einkaufsliste / auf meine Einkaufsliste /
+auf meinen Einkaufszettel / auf unsere Einkaufsliste / auf die Liste / auf meine Liste /
+auf den Zettel / auf meinen Zettel** sind hinterlegt, dazu „wir brauchen …",
+„ich brauche …" und „kauf … ein". Der erste Anlauf hatte nur „auf den
+Einkaufszettel" und „auf die Einkaufsliste" — „Setze Bananen auf **meine**
+Einkaufsliste" fiel deshalb durch. Beim Ergänzen: lieber die Kombinatorik
+aufspannen als einzelne Sätze raten.
 
 ## Wenn etwas nicht klappt
 

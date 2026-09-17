@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.241 (2026-09-17) — Branch `claude/app-alexa-integration-2n82os` (Alexa-Einwurf: Essen, Wasser, Sport, Einkaufszettel und Baby-Tagebuch per Sprache; Einbahnstraße, Alexa liest nichts zurück). Davor v0.237: Postfach-Flagge und Tag-Teilen in der Heute-Kopfzeile, Link-Feld erkennt Rezept-Link vs. NutriTrack-Sendung.
+**Stand:** v0.242 (2026-09-17) — Branch `claude/app-alexa-integration-2n82os` (Alexa-Einwurf: Essen, Wasser, Sport, Einkaufszettel und Baby-Tagebuch per Sprache; Einbahnstraße, Alexa liest nichts zurück). Davor v0.237: Postfach-Flagge und Tag-Teilen in der Heute-Kopfzeile, Link-Feld erkennt Rezept-Link vs. NutriTrack-Sendung.
 
 ## URLs
 
@@ -71,6 +71,7 @@
   - **Lambda ruft über `https` auf, nicht über `fetch`:** Die Alexa-hosted Laufzeit kann eine Node-Version unter 18 fahren; `fetch` fehlt dort und der Skill scheiterte stumm mit „Das hat gerade nicht geklappt“. `postJson()` nutzt das eingebaute `https`-Modul (8 s Timeout, unter Alexas 10-s-Grenze). `failed(err)` übersetzt HTTP-Code und Netzfehler in eine gesprochene Ursache — bei einem privaten Skill ist das mehr wert als eine hübsche Entschuldigung. Beim Anfassen: **kein `fetch` in `alexa/lambda/index.js`**.
   - **`.seb` in einer Flex-Zeile braucht `width:auto` (v0.240):** Die Klasse bringt `width:100%` **und** `margin-top:8px` mit. Neben einem Eingabefeld in `display:flex` heißt das: Der Knopf nimmt mit `flex-basis:auto` die ganze Breite, schrumpft wegen `flex:0 0 auto` nicht, das Feld fällt auf sein Minimum zusammen und der Knopf sitzt tiefer. Betraf Alexa-Einwurf und Sport-Sync. Fix an beiden: Knopf `width:auto;margin-top:0`, Feld `min-width:0` (sonst sprengt ein langes Token die Zeile). **Bei jedem neuen `.seb` neben einem `.sinp` mitdenken.**
   - **Aufrufname „mein tagebuch“ und Diktier-Modus (v0.241):** „nutri track“ verstand das Echo als „speck“; da „Alexa, **sage** …“ zugleich der Durchsage-Befehl ist, landete der Satz als Ankündigung auf allen Echos statt im Skill. Ein deutsches Wortpaar wird zuverlässiger erkannt. Zwei Bedienwege: Einzelbefehl (`session.new === true`) schließt nach einem Satz, Dialog nach „öffne mein Tagebuch“ (`session.new === false`) bleibt offen und quittiert kurz mit „Notiert. Was noch?“. **Fehlt die Sitzungsangabe, wird geschlossen** — eine grundlos offene Sitzung wirkt wie ein hängender Skill.
+  - **Satzmuster aufspannen, nicht raten (v0.242):** „Setze Bananen auf **meine** Einkaufsliste“ fiel durch, weil Possessiv und die Variante „Liste“ in keinem Muster standen. `AddShoppingIntent` führt jetzt 94 Beispiele, erzeugt aus Verb × Ziel (setz/setze/schreib/pack/tu × Einkaufszettel/Einkaufsliste/Liste/Zettel × mit und ohne meine/unsere). Bei neuen Befehlen genauso vorgehen — Nutzer treffen die eine hinterlegte Formulierung selten. Die Begrüßung ist auf „NutriTrack gestartet.“ gekürzt: Eine Anleitung bei jedem Start nervt, wer nicht weiterweiß sagt „Hilfe“.
   - **Stückgewichte `PIECE_G` in `js/alexa-sync.js` (v0.241):** Gesprochen wird in Stück, gerechnet in Gramm. Reihenfolge: Portionsgedächtnis → Stückgewicht → 100 g; **nur die letzte Stufe setzt `_alexaPending`**. Vorher bekam jedes Stück pauschal 100 g, „zwei Brötchen“ also 540 statt 270 kcal — und jeder Eintrag musste von Hand nachgebessert werden, was den Sprachweg entwertete. Neue Lebensmittel dort ergänzen, nicht im Lambda.
   - **Alexa-Regel, die beim Erweitern des Sprachmodells gilt (v0.239):** In einer Beispielphrase darf ein Freitext-Slot (`AMAZON.SearchQuery`) **nie** mit einem zweiten Slot stehen — `"{food} zum {meal}"` lässt Amazon den Build mit *„cannot include both a phrase slot and another intent slot"* abbrechen. Mahlzeit, Dauer und Milliliter kommen deshalb im Freitext mit und werden im Lambda (`extractMeal`/`extractMinutes`/`extractUnit`) bzw. im Client (`parseAmount`) herausgelöst. Folge fürs Sprechen: Baby-Einträge beginnen mit dem Wort „Baby“, und die Mahlzeit gehört in den Satz („ich habe 150 Gramm Reis zum Mittagessen gegessen“). `alexa/interaction-model.de-DE.json` ist die Quelle der Wahrheit; die Beispielsätze im `alexaOv`-Overlay und in `alexa/README.md` müssen dazu passen. Das Modell führt Haupt- **und** Nebensatz („ich habe {food} gegessen“ *und* „dass ich {food} gegessen habe“) — am Echo sagt man den Satz oft mit „dass“, und ohne diese Variante landet er im Fallback. `AMAZON.FallbackIntent` hat einen eigenen Handler, der ein Beispiel nennt statt pauschal abzulehnen.
   - **Ohne gesprochene Menge wird nicht geraten:** `recallPortion()` oder 100 g, Eintrag bekommt `_alexaPending:1` und in der Liste ein 🗣️ (Sport: ⚠️). `saveEdit()` löscht das Flag, sobald die Nutzerin die Menge bestätigt. **Neue Render-Pfade für Mahlzeiten müssen die Markierung mitführen** — sie steht aktuell an zwei Stellen (Heute-Liste und Verlauf).
@@ -157,10 +158,10 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.238 | #196 | Alexa-Einwurf: Essen, Wasser, Sport, Einkaufszettel und Baby-Tagebuch per Sprache (Einbahnstraße, Briefkasten wird nach dem Abholen geleert) |
 | v0.239 | — | Alexa-Sprachmodell: Zwei-Slot-Phrasen entfernt (Amazon lehnt sie ab), Mahlzeit/Dauer/Menge werden aus dem Freitext gelesen; Lambda nutzt `https` statt `fetch` |
 | v0.240 | — | Token-Zeile auf dem Handy zerschossen: `.seb` bringt `width:100%` mit und quetschte das Eingabefeld (Alexa + Sport-Sync) |
 | v0.241 | — | Alexa: Aufrufname „mein tagebuch“, Diktier-Modus für mehrere Einträge, realistische Stückgewichte |
+| v0.242 | — | Alexa: Einkaufs-Formulierungen aufgespannt („auf meine Einkaufsliste“ fiel durch), Begrüßung gekürzt |
 
 ---
 

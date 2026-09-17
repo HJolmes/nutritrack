@@ -49,7 +49,7 @@ function corsHeaders(origin, env) {
     // bricht der Browser die Anfrage schon beim Preflight ab, der Service Worker
     // macht daraus eine 503 und im UI steht „HTTP 503" statt der echten Ursache.
     // Beim Anlegen eines neuen Sync-Topfs also immer mit erweitern (v0.228).
-    "Access-Control-Allow-Headers": "Content-Type, x-app-proxy-secret, x-user-token, x-baby-room, x-shop-room, x-ai-provider, x-ai-key",
+    "Access-Control-Allow-Headers": "Content-Type, x-app-proxy-secret, x-user-token, x-baby-room, x-shop-room, x-partner-room, x-ai-provider, x-ai-key",
     // Bewusst kurz: Ein Preflight-Ergebnis mit unvollständiger Header-Liste
     // bliebe sonst bis zu 24 h im Browser-Cache und der Fehler überlebte das
     // Deploy des Fixes.
@@ -288,7 +288,13 @@ async function handleDecodeBarcode(request, origin, env) {
 // ─── SHARE-LINK SHORTENER (KV-backed) ───
 const SHARE_ID_LEN = 7;
 const SHARE_TTL_SECONDS = 60 * 60 * 24 * 365; // 1 year
-const MAX_SHARE_CODE_BYTES = 1024 * 8; // 8 KB; recipes ~600 chars
+// 8 KB reichten für Rezepte (~600 Zeichen), nicht aber für einen ganzen Tag oder
+// einen Zeitraum (v0.236). KV speichert bis 25 MB — 256 KB sind großzügig und
+// decken auch einen vollen Monat ab. Ohne diese Anhebung würde der Shortener
+// eine Tages-/Zeitraum-Sendung mit 400 ablehnen und die App fiele auf einen
+// unbrauchbar langen Direktlink zurück.
+const MAX_SHARE_CODE_BYTES = 1024 * 256;
+const MAX_SHARE_CODE_CHARS = 1024 * 200;
 const SHARE_TARGET_BASE = "https://hjolmes.github.io/nutritrack/";
 // Base58-ish (no 0/O/1/I/l) – avoids visual confusion in shared URLs
 const SHARE_ALPHABET = "23456789abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ";
@@ -318,7 +324,7 @@ async function handleShareCreate(request, origin, env) {
     return jsonResponse(400, "invalid_json", "Body must be JSON", origin, env);
   }
   const code = typeof body.code === "string" ? body.code.trim() : "";
-  if (!code || code.length < 8 || code.length > 8192 || !/^[A-Za-z0-9+/=_-]+$/.test(code)) {
+  if (!code || code.length < 8 || code.length > MAX_SHARE_CODE_CHARS || !/^[A-Za-z0-9+/=_-]+$/.test(code)) {
     return jsonResponse(400, "invalid_code", "Invalid share code", origin, env);
   }
   let id = null;
@@ -915,7 +921,7 @@ async function handleAlexaAck(request, origin, env) {
   return jsonResponse(200, "ok", "ok", origin, env, { deleted: clean.length });
 }
 
-// ─── GETEILTE RÄUME: BABY-TAGEBUCH & EINKAUFSZETTEL (Ende-zu-Ende-verschlüsselt) ───
+// ─── GETEILTE RÄUME: BABY-TAGEBUCH, EINKAUFSZETTEL & PARTNER-POSTFACH (E2E) ───
 // Zweck: zwei Geräte einer Familie halten NUR einen klar umrissenen Datentopf
 // synchron — das Baby-Tagebuch bzw. den Einkaufszettel. Ernährungsdaten,
 // Gewicht und Mahlzeiten verlassen das Gerät hier nie.
@@ -938,7 +944,7 @@ async function handleAlexaAck(request, origin, env) {
 // Die Client-Uhr (`rev`) entscheidet nur, welche Version bei einem Konflikt
 // gewinnt. KV ist eventually consistent: bis zu ~60 s Verzögerung sind normal.
 const ROOM_TTL_SECONDS = 60 * 60 * 24 * 400; // 400 Tage
-const MAX_ROOM_BODY_BYTES = 1024 * 256; // 256 KB
+const MAX_ROOM_BODY_BYTES = 1024 * 512; // 512 KB (eine Zeitraum-Sendung darf groß sein)
 const MAX_ROOM_RECORDS = 200; // pro Push
 const MAX_ROOM_CT_CHARS = 8000; // ein Eintrag ist winzig; großzügig gedeckelt
 const MAX_ROOM_LIST_LIMIT = 200;
@@ -950,6 +956,12 @@ const ROOM_B64_RE = /^[A-Za-z0-9+/=]+$/;
 // Ein Sync-Topf = Header, unter dem der Raum ankommt, + KV-Präfix.
 const SYNC_BABY = { header: "x-baby-room", prefix: "bd:", label: "Baby sync" };
 const SYNC_SHOP = { header: "x-shop-room", prefix: "sl:", label: "Shopping list sync" };
+// Partner-Postfach: gleiche Briefkasten-Mechanik, aber die Records sind ganze
+// Sendungen (eine Mahlzeit, ein Tag, ein Zeitraum) statt einzelner Artikel.
+// Deshalb ein deutlich höheres `maxCt` — ein Tag mit vielen Posten sprengt die
+// 8000 Zeichen der anderen Töpfe. Eigener Raum, eigener Schlüssel, eigener
+// Präfix: Wer Mahlzeiten teilt, gibt damit weder Zettel noch Tagebuch frei.
+const SYNC_PARTNER = { header: "x-partner-room", prefix: "pm:", label: "Partner inbox", maxCt: 120000 };
 
 function readSyncRoom(request, cfg) {
   const raw = request.headers.get(cfg.header) || "";
@@ -958,7 +970,8 @@ function readSyncRoom(request, cfg) {
   return trimmed;
 }
 
-function sanitizeSyncRecord(raw) {
+function sanitizeSyncRecord(raw, cfg) {
+  const maxCt = (cfg && cfg.maxCt) || MAX_ROOM_CT_CHARS;
   if (!raw || typeof raw !== "object") return null;
   const id = typeof raw.id === "string" && ROOM_ID_RE.test(raw.id) ? raw.id : null;
   if (!id) return null;
@@ -967,7 +980,7 @@ function sanitizeSyncRecord(raw) {
   const iv = typeof raw.iv === "string" ? raw.iv.trim() : "";
   const ct = typeof raw.ct === "string" ? raw.ct.trim() : "";
   if (!iv || !ct) return null;
-  if (iv.length > 64 || ct.length > MAX_ROOM_CT_CHARS) return null;
+  if (iv.length > 64 || ct.length > maxCt) return null;
   if (!ROOM_B64_RE.test(iv) || !ROOM_B64_RE.test(ct)) return null;
   return { id, rev: Math.round(rev), iv, ct };
 }
@@ -1002,7 +1015,7 @@ async function handleSyncPush(request, origin, env, cfg) {
   const srev = Date.now();
   const clean = [];
   for (const raw of list) {
-    const rec = sanitizeSyncRecord(raw);
+    const rec = sanitizeSyncRecord(raw, cfg);
     if (rec) clean.push(rec);
   }
   if (!clean.length) {
@@ -1485,9 +1498,10 @@ export default {
         workoutsConfigured: Boolean(env.SHARE_KV),
         babySyncConfigured: Boolean(env.SHARE_KV),
         shopSyncConfigured: Boolean(env.SHARE_KV),
+        partnerSyncConfigured: Boolean(env.SHARE_KV),
         alexaInboxConfigured: Boolean(env.SHARE_KV),
         decoderSecretConfigured: Boolean(env.DECODER_SECRET),
-        codeVersion: "v0.236-alexa-inbox",
+        codeVersion: "v0.238-alexa-inbox",
       });
     }
 
@@ -1512,6 +1526,12 @@ export default {
     }
     if (request.method === "GET" && url.pathname === "/shop/sync") {
       return handleSyncPull(request, origin, env, SYNC_SHOP);
+    }
+    if (request.method === "POST" && url.pathname === "/partner/sync") {
+      return handleSyncPush(request, origin, env, SYNC_PARTNER);
+    }
+    if (request.method === "GET" && url.pathname === "/partner/sync") {
+      return handleSyncPull(request, origin, env, SYNC_PARTNER);
     }
     if (request.method === "POST" && url.pathname === "/workout") {
       return handleWorkoutCreate(request, origin, env);

@@ -4,7 +4,8 @@
 // esc, fmtDate, showToast, PROJECT_WORKER_BASE).
 //
 // Bewusst unabhängig von Schwangerschaft/Stillzeit: aktiviert wird das Tagebuch
-// über den eigenen Schalter S.babyOn (Mehr → Profil), damit es auch Väter,
+// über den eigenen Schalter S.babyOn (seit v0.253: Mehr → Funktionen, oder an
+// der Kachel über ⋯), damit es auch Väter,
 // Partner und Betreuende führen können.
 //
 // Daten liegen in S.babyLog (eigener Schlüssel, NICHT in S.days) – sonst würde
@@ -619,7 +620,7 @@ function nextSide(key){
 
 // ════════ Tagebuch-Overlay ════════
 function openDiary(){
-  if(!S.babyOn){showToast('Baby-Tagebuch erst unter Mehr → Profil aktivieren');return;}
+  if(!S.babyOn){showToast('Baby-Tagebuch erst unter Mehr → Funktionen einschalten');return;}
   renderDiary();
   openOv('babyOv');
   Sync.run();

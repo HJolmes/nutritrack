@@ -256,6 +256,9 @@ if (!mCore) {
   let deadAct = 0, acts = 0;
   for (const [file, code] of sources) {
     for (const m3 of code.matchAll(/\bdata-act="([^"]+)"/g)) {
+      // Zur Laufzeit zusammengesetzt ('+f.id+'), nicht statisch aufloesbar.
+      // Der Rauchtest prueft diese im DOM, wo sie fertig dastehen.
+      if (/[+$]|\$\{/.test(m3[1])) continue;
       acts++;
       const parts = m3[1].split('.');
       if (parts.length > 1) {
@@ -274,6 +277,7 @@ if (!mCore) {
   let badArgs = 0, argCount = 0;
   for (const [file, code] of sources) {
     for (const m4 of code.matchAll(/\bdata-args='([^']*)'/g)) {
+      if (/[+$]|\$\{/.test(m4[1])) continue; // dito
       argCount++;
       const raw = m4[1].replace(/&#39;/g, "'").replace(/&amp;/g, '&');
       try {

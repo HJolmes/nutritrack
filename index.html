@@ -457,6 +457,14 @@ button,input,select,textarea{font-family:var(--fs-body);}
 body.kb-open .bnav{display:none;}
 body.kb-open .ov .mod{bottom:var(--kbh,0px);max-height:calc(88vh - var(--kbh,0px));}
 body.kb-open #feedbackFab{display:none;}
+/* Solange ein Overlay offen ist, gehoert die Flaeche dem Overlay. Der FAB hat
+   z-index 400, die Overlays 300 — er lag also ueber jedem Dialog und verdeckte
+   dessen rechte untere Ecke (im Funktions-Katalog einen Schalter).
+   Bewusst per :has() und nicht ueber eine Klasse aus openOv/closeOv: Mehrere
+   Overlays koennen gleichzeitig offen sein (Blatt -> Katalog), eine Klasse
+   muesste also mitzaehlen, wer noch offen ist. Ein Browser ohne :has() zeigt
+   den FAB wie bisher — kein Rueckschritt. */
+body:has(.ov.open) #feedbackFab{display:none!important;}
 .ni{color:rgba(255,255,255,0.5);font-size:10px;font-weight:600;flex:1;}
 .ni span{font-size:20px;}
 .ni.on{color:#fff;}
@@ -1111,64 +1119,17 @@ body.kb-open #feedbackFab{display:none;}
       <div class="lr-body"><div class="lr-name">Backup &amp; Daten</div><div class="lr-sub">Sichern, Export/Import, OneDrive</div></div>
       <div class="lr-val">›</div>
     </div>
-    <div style="font-size:11px;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin:14px 4px 6px;">Meine Inhalte</div>
-    <div class="list-row" data-act="NTPlan.open">
-      <div class="lr-ic">📅</div>
-      <div class="lr-body"><div class="lr-name">Wochenplan</div><div class="lr-sub" id="planHubSub">Rezepte auf die Woche verteilen</div></div>
-      <div class="lr-val">›</div>
-    </div>
-    <div class="list-row" data-act="openLibrary">
-      <div class="lr-ic">📚</div>
-      <div class="lr-body"><div class="lr-name">Bibliothek</div><div class="lr-sub">Rezepte &amp; eigene Lebensmittel</div></div>
-      <div class="lr-val">›</div>
-    </div>
-    <div class="list-row" id="moreBabyRow" style="display:none;" data-act="NTBaby.openDiary">
-      <div class="lr-ic">👶</div>
-      <div class="lr-body"><div class="lr-name">Baby-Tagebuch</div><div class="lr-sub">Stillen, Flasche, Windeln, Temperatur</div></div>
-      <div class="lr-val">›</div>
-    </div>
-    <div class="list-row" data-act="NTShop.open">
-      <div class="lr-ic">🛒</div>
-      <div class="lr-body"><div class="lr-name">Einkaufszettel</div><div class="lr-sub" id="shopHubSub">Leer</div></div>
-      <div class="lr-val">›</div>
-    </div>
-    <div class="list-row" data-act="NTDash.open">
+    <div style="font-size:11px;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin:14px 4px 6px;">App &amp; Daten</div>
+    <div class="list-row" data-act="NTFeat.openCatalog">
       <div class="lr-ic">🧩</div>
-      <div class="lr-body"><div class="lr-name">Kacheln auf „Heute"</div><div class="lr-sub">Reihenfolge ändern, Kacheln ausblenden</div></div>
-      <div class="lr-val">›</div>
+      <div class="lr-body"><div class="lr-name">Funktionen</div><div class="lr-sub">Ein- und ausschalten, Reihenfolge auf „Heute"</div></div>
+      <div class="lr-arrow">›</div>
     </div>
-    <div class="list-row" data-act="NTRecur.openManage">
-      <div class="lr-ic">🔁</div>
-      <div class="lr-body"><div class="lr-name">Wiederkehrende Mahlzeiten</div><div class="lr-sub">Automatisch an festen Wochentagen eintragen</div></div>
-      <div class="lr-val">›</div>
-    </div>
-    <div style="font-size:11px;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin:14px 4px 6px;">Daten &amp; Sync</div>
     <div class="list-row" data-act="NTSync.open">
       <div class="lr-ic">🔗</div>
       <div class="lr-body"><div class="lr-name">Verbindungen</div><div class="lr-sub" id="linksHubSub">Ein Code je Person — Wochenplan, Zettel, Tagebuch</div></div>
       <div class="lr-val">›</div>
     </div>
-    <div class="list-row" data-act="NTPartner.open">
-      <div class="lr-ic">👫</div>
-      <div class="lr-body"><div class="lr-name">Partner</div><div class="lr-sub" id="partnerHubSub">Mahlzeiten direkt an den Partner senden</div></div>
-      <div class="lr-val">›</div>
-    </div>
-    <div class="list-row" onclick="if(typeof openImportPaste==='function')openImportPaste();else openSettings();">
-      <div class="lr-ic">📥</div>
-      <div class="lr-body"><div class="lr-name">Code / Link einlösen</div><div class="lr-sub">Geht auch über ＋ → 🔗 Link</div></div>
-      <div class="lr-val">›</div>
-    </div>
-    <div class="list-row" data-act="openHealthSync">
-      <div class="lr-ic">🏃</div>
-      <div class="lr-body"><div class="lr-name">Sport-Sync</div><div class="lr-sub" id="healthSyncSub">Apple Health · Samsung Health</div></div>
-      <div class="lr-val">›</div>
-    </div>
-    <div class="list-row" data-act="openAlexaSync">
-      <div class="lr-ic">🗣️</div>
-      <div class="lr-body"><div class="lr-name">Alexa-Einwurf</div><div class="lr-sub" id="alexaSub">Per Sprache eintragen</div></div>
-      <div class="lr-val">›</div>
-    </div>
-    <div style="font-size:11px;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin:14px 4px 6px;">App</div>
     <div class="list-row" data-act="openHelp">
       <div class="lr-ic">❓</div>
       <div class="lr-body"><div class="lr-name">Hilfe &amp; FAQ</div><div class="lr-sub">Funktionen erklärt</div></div>
@@ -1176,7 +1137,7 @@ body.kb-open #feedbackFab{display:none;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.252</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.253</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1452,19 +1413,47 @@ body.kb-open #feedbackFab{display:none;}
       <div class="msu">NutriTrack Benutzerhandbuch</div>
     </div>
     <div class="mbd" style="height:calc(92vh - 80px);overflow-y:auto;-webkit-overflow-scrolling:touch;">
-      <style>#helpOv details{border:1px solid var(--br);border-radius:12px;margin-bottom:8px;background:var(--card);}#helpOv summary{padding:12px 14px;font-weight:700;font-size:14px;cursor:pointer;list-style:none;}#helpOv summary::-webkit-details-marker{display:none;}#helpOv summary::before{content:'▸ ';color:var(--mu);}#helpOv details[open] summary::before{content:'▾ ';}#helpOv .hb{padding:0 14px 12px;font-size:13px;line-height:1.6;color:var(--tx);}#helpOv .hb ul{margin:6px 0;padding-left:18px;}</style>
+      <style>#helpOv details{border:1px solid var(--br);border-radius:12px;margin-bottom:8px;background:var(--card);}#helpOv summary{padding:12px 14px;font-weight:700;font-size:14px;cursor:pointer;list-style:none;}#helpOv summary::-webkit-details-marker{display:none;}#helpOv summary::before{content:'▸ ';color:var(--mu);}#helpOv details[open] summary::before{content:'▾ ';}#helpOv .hb{padding:0 14px 12px;font-size:13px;line-height:1.6;color:var(--tx);}#helpOv .hb ul{margin:6px 0;padding-left:18px;}
+/* ── Funktionen als Kacheln (v0.253) ───────────────────────────────────── */
+/* Der ⋯-Knopf wird von js/features.js in jede Kachel-Kopfzeile gehaengt.
+   Bewusst zurueckhaltend: Er sitzt neben der Ueberschrift und darf den Inhalt
+   der Kachel nicht uebertoenen — 44 px Trefferflaeche bei 16 px Zeichen. */
+.feat-dots{margin-left:auto;background:none;border:none;color:var(--mu);font-size:16px;
+  line-height:1;font-weight:700;cursor:pointer;padding:6px 10px;margin-right:-6px;
+  border-radius:8px;flex-shrink:0;min-width:44px;min-height:32px;font-family:inherit;}
+.feat-dots:active{background:var(--gl);}
+/* Im Katalog darf der Text UMBRECHEN. .lr-name/.lr-sub schneiden sonst per
+   text-overflow ab — bei „Mahlzeiten · immer an" und den Beschreibungen war
+   auf 390 px nach der Haelfte Schluss. In der kurzen Hub-Liste ist das
+   Abschneiden richtig, hier ist die Beschreibung der halbe Zweck. */
+#featCatBody .lr-name,#featCatBody .lr-sub,#featSheetBody .lr-name,#featSheetBody .lr-sub{
+  white-space:normal;overflow:visible;text-overflow:clip;}
+#featCatBody .lr-sub{line-height:1.35;}
+/* Auf/Ab im Katalog */
+.feat-ord{background:var(--gl);border:1px solid var(--br);border-radius:8px;color:var(--tx);
+  font-size:11px;line-height:1;cursor:pointer;padding:8px 5px;font-family:inherit;min-width:26px;}
+.feat-ord:disabled{opacity:.3;cursor:default;}
+/* Schalter: an = Farbe des Akzents, aus = grau. Kein input[type=checkbox],
+   weil die Zeile ohnehin ueber die Delegation laeuft. */
+.feat-sw{width:46px;height:26px;border-radius:999px;border:none;background:#c9c4bd;
+  position:relative;cursor:pointer;flex-shrink:0;padding:0;transition:background .2s;}
+.feat-sw.on{background:var(--g1);}
+.feat-sw span{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;
+  background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.25);}
+.feat-sw.on span{left:23px;}
+</style>
       <details open><summary>🏠 Heute-Tab</summary><div class="hb">Der Startbildschirm zeigt dein Tagesziel, die verbleibenden Kalorien und die drei Makro-Karten (Protein, Kohlenhydrate, Fett). Darunter liegen die vier Mahlzeiten-Karten — antippen öffnet die Detail-Ansicht. Mit den Pfeilen <strong>‹ ›</strong> blätterst du zwischen Tagen. Oben rechts liegen <strong>?</strong> (Hilfe), <strong>📬</strong> (Partner-Postfach, sobald ihr gekoppelt seid — mit Flagge für ungelesene Sendungen) und <strong>📤</strong> (den angezeigten Tag teilen). „▶ Nährwert-Details" klappt die Ampel-Kacheln (Zucker, Ballaststoffe, Salz …) auf. Wasser trackst du über die Gläser-Reihe, Sport über „+ Aktivität" — verbrannte Kalorien werden vom Ziel abgezogen.</div></details>
       <details><summary>➕ Mahlzeit erfassen</summary><div class="hb">Der <strong>＋</strong>-Knopf in der Mitte der unteren Leiste öffnet den Picker, standardmäßig im <strong>Chat</strong>: Einfach tippen oder per 🎙️ diktieren, was du gegessen hast („Brot mit Käse und Schinken") — die App zerlegt es in Zutaten und schätzt Nährwerte. Weitere Wege:<ul><li><strong>Suche</strong> — lokale Treffer sofort beim Tippen, Enter lädt Online-Ergebnisse</li><li><strong>Zuletzt</strong> — kürzlich verwendete Einträge</li><li><strong>Foto</strong> — Teller fotografieren, KI erkennt die Komponenten</li><li><strong>Barcode</strong> — Verpackung scannen</li><li><strong>Eigenes</strong> — Nährwerte selbst eintragen; mit Häkchen „Nur einmal eintragen" wird nichts dauerhaft gespeichert</li><li><strong>Link</strong> — ein Feld für beides: Rezept-Link von nahezu jeder Rezept-Seite oder jedem Food-Blog (Chefkoch, Lecker, Kochbar, Essen &amp; Trinken, AllRecipes …) <em>oder</em> eine geteilte NutriTrack-Sendung (Mahlzeit, Rezept, ganzer Tag, Zeitraum) als Link oder Code. Die App erkennt selbst, was du eingefügt hast; ein passender Inhalt aus der Zwischenablage wird beim Öffnen gleich angeboten. Die App liest zuerst die Rezeptdaten der Seite selbst und fragt die KI nur, wenn die Seite keine hat. Danach wählst du unter „Wohin damit?", ob das Rezept eingetragen, als Rezept gespeichert und/oder auf den Einkaufszettel gelegt wird</li></ul></div></details>
       <details><summary>🍽 Mahlzeit-Detail</summary><div class="hb">Die Karte einer Mahlzeit öffnet die Detail-Ansicht mit allen Posten. Unten findest du: <strong>📋 Vorlage</strong> (Mahlzeit als Vorlage laden/speichern), <strong>🔁 Wiederholen</strong> (an festen Wochentagen automatisch eintragen) und <strong>💾 Als Rezept</strong> (alle Einträge als Rezept in die Bibliothek übernehmen). Einzelne Einträge antippen zum Bearbeiten, Verschieben oder Löschen.</div></details>
-      <details><summary>🛒 Einkaufszettel</summary><div class="hb">Unter „Mehr → Einkaufszettel" führst du eine Einkaufsliste: oben eintippen („2 Liter Milch" erkennt Menge und Kategorie von selbst) oder über „🧺 Artikel wählen" aus den Kacheln antippen. Ein Tipp auf einen Artikel hakt ihn ab, ✏️ ändert Name, Menge, Symbol und Kategorie. Über „🔄 Teilen" koppelst du ein zweites Gerät mit einem Code — beide Geräte sehen denselben Zettel in Echtzeit, verschlüsselt und getrennt vom Baby-Tagebuch. Rezepte übernimmst du in der Bibliothek über 🛒 → „Auf den Einkaufszettel".</div></details>
-      <details><summary>📚 Bibliothek</summary><div class="hb">Unter „Mehr → Bibliothek" liegen deine Rezepte und eigenen Lebensmittel. Rezepte kannst du bearbeiten, duplizieren, teilen, als Einkaufsliste anzeigen und direkt in eine Mahlzeit übernehmen. Der 🔗-Knopf öffnet das Link-Feld: Dort kannst du sowohl ein Rezept per URL importieren als auch einen geteilten NutriTrack-Code/Link einlösen — die App erkennt selbst, was es ist.</div></details>
-      <details><summary>📤 Teilen &amp; Import</summary><div class="hb">Rezepte, Lebensmittel, einzelne Mahlzeiten, <strong>ganze Tage</strong> und <strong>Zeiträume</strong> lassen sich teilen (📤-Symbole; der Tages-Knopf liegt auf „Heute" oben rechts in der Kopfzeile und im Verlauf bei jedem Tag, der Zeitraum hinter 🗓 im Verlauf).<ul><li><strong>Mit Partner-Kopplung (empfohlen):</strong> Einmalig unter „Mehr → 👫 Partner" koppeln — danach steht im Teilen-Dialog oben „An … senden" und die Sendung landet direkt im Postfach des anderen. Kein Link, kein Messenger.</li><li><strong>Ohne Kopplung:</strong> weiterhin als Link. Der Empfänger öffnet ihn — auf dem iPhone ggf. in der installierten App über <strong>＋ → 🔗 Link</strong> einfügen (das Feld erkennt selbst, ob ein Rezept-Link oder eine NutriTrack-Sendung drinsteht, und bietet einen passenden Link aus der Zwischenablage gleich an). Für ganze Tage und Zeiträume braucht der Link-Weg eine Internetverbindung, weil die Daten sonst nicht in eine URL passen.</li></ul></div></details>
-      <details><summary>👫 Partner</summary><div class="hb">Unter <strong>Mehr → 👫 Partner</strong> koppelst du dein Gerät mit dem deines Partners: auf einem Gerät „Kopplung starten", den Code auf dem anderen einfügen. Trag dort auch deinen Namen ein — der steht beim Empfänger an jeder Sendung.<br><br><strong>Es wird nichts automatisch übertragen.</strong> Nur was du ausdrücklich sendest, geht raus und landet im <strong>Postfach</strong> des anderen. Das sitzt auf „Heute" oben rechts (📬) und trägt eine Flagge mit der Zahl der ungelesenen Sendungen; bei etwas Neuem erscheint zusätzlich eine Kachel im Tagesüberblick. Dort wird jede Sendung einzeln angesehen und übernommen — bei einem ganzen Tag wählst du, welche Mahlzeiten du willst, auf welchen Tag sie sollen und ob Vorhandenes ergänzt oder ersetzt wird; bei einem Zeitraum hakst du einzelne Tage ab. Eure Tagebücher bleiben also getrennt.<br><br>Die Sendungen werden auf dem Gerät verschlüsselt; der Schlüssel steckt nur im Kopplungs-Code und wird nie übertragen. Der Code gilt <strong>nur</strong> fürs Partner-Postfach — Einkaufszettel und Baby-Tagebuch haben eigene Codes und bleiben unberührt. Neue Sendungen holt die App beim Start, beim Zurückkehren in die App und solange das Postfach offen ist; das kann bis zu einer Minute dauern.</div></details>
+      <details><summary>🛒 Einkaufszettel</summary><div class="hb">Über die Kachel <strong>🛒 Einkaufszettel</strong> auf „Heute" (oder Mehr → Funktionen, wenn der Zettel leer ist) führst du eine Einkaufsliste: oben eintippen („2 Liter Milch" erkennt Menge und Kategorie von selbst) oder über „🧺 Artikel wählen" aus den Kacheln antippen. Ein Tipp auf einen Artikel hakt ihn ab, ✏️ ändert Name, Menge, Symbol und Kategorie. Über „🔄 Teilen" koppelst du ein zweites Gerät mit einem Code — beide Geräte sehen denselben Zettel in Echtzeit, verschlüsselt und getrennt vom Baby-Tagebuch. Rezepte übernimmst du in der Bibliothek über 🛒 → „Auf den Einkaufszettel".</div></details>
+      <details><summary>📚 Bibliothek</summary><div class="hb">Über die Kachel <strong>🍽 Mahlzeiten</strong> → <strong>⋯</strong> → <strong>Bibliothek</strong> liegen deine Rezepte und eigenen Lebensmittel. Rezepte kannst du bearbeiten, duplizieren, teilen, als Einkaufsliste anzeigen und direkt in eine Mahlzeit übernehmen. Der 🔗-Knopf öffnet das Link-Feld: Dort kannst du sowohl ein Rezept per URL importieren als auch einen geteilten NutriTrack-Code/Link einlösen — die App erkennt selbst, was es ist.</div></details>
+      <details><summary>📤 Teilen &amp; Import</summary><div class="hb">Rezepte, Lebensmittel, einzelne Mahlzeiten, <strong>ganze Tage</strong> und <strong>Zeiträume</strong> lassen sich teilen (📤-Symbole; der Tages-Knopf liegt auf „Heute" oben rechts in der Kopfzeile und im Verlauf bei jedem Tag, der Zeitraum hinter 🗓 im Verlauf).<ul><li><strong>Mit Partner-Kopplung (empfohlen):</strong> Einmalig über die Kachel <strong>📬 Vom Partner</strong> → <strong>⋯</strong> → <strong>Kopplung</strong> verbinden — danach steht im Teilen-Dialog oben „An … senden" und die Sendung landet direkt im Postfach des anderen. Kein Link, kein Messenger.</li><li><strong>Ohne Kopplung:</strong> weiterhin als Link. Der Empfänger öffnet ihn — auf dem iPhone ggf. in der installierten App über <strong>＋ → 🔗 Link</strong> einfügen (das Feld erkennt selbst, ob ein Rezept-Link oder eine NutriTrack-Sendung drinsteht, und bietet einen passenden Link aus der Zwischenablage gleich an). Für ganze Tage und Zeiträume braucht der Link-Weg eine Internetverbindung, weil die Daten sonst nicht in eine URL passen.</li></ul></div></details>
+      <details><summary>👫 Partner</summary><div class="hb">Über die Kachel <strong>📬 Vom Partner</strong> → <strong>⋯</strong> → <strong>Kopplung</strong> verbindest du dein Gerät mit dem deines Partners: auf einem Gerät „Kopplung starten", den Code auf dem anderen einfügen. Trag dort auch deinen Namen ein — der steht beim Empfänger an jeder Sendung.<br><br><strong>Es wird nichts automatisch übertragen.</strong> Nur was du ausdrücklich sendest, geht raus und landet im <strong>Postfach</strong> des anderen. Das sitzt auf „Heute" oben rechts (📬) und trägt eine Flagge mit der Zahl der ungelesenen Sendungen; bei etwas Neuem erscheint zusätzlich eine Kachel im Tagesüberblick. Dort wird jede Sendung einzeln angesehen und übernommen — bei einem ganzen Tag wählst du, welche Mahlzeiten du willst, auf welchen Tag sie sollen und ob Vorhandenes ergänzt oder ersetzt wird; bei einem Zeitraum hakst du einzelne Tage ab. Eure Tagebücher bleiben also getrennt.<br><br>Die Sendungen werden auf dem Gerät verschlüsselt; der Schlüssel steckt nur im Kopplungs-Code und wird nie übertragen. Der Code gilt <strong>nur</strong> fürs Partner-Postfach — Einkaufszettel und Baby-Tagebuch haben eigene Codes und bleiben unberührt. Neue Sendungen holt die App beim Start, beim Zurückkehren in die App und solange das Postfach offen ist; das kann bis zu einer Minute dauern.</div></details>
       <details><summary>💾 Backup</summary><div class="hb">Alle Sicherungswege liegen unter <strong>Mehr → 💾 Backup &amp; Daten</strong>: „Jetzt sichern"-Knopf, Datei-Export/-Import (JSON), OneDrive-Sync mit täglichem Autospeicher sowie lokale Autospeicher-Stände. Tipp: Vor einem Gerätewechsel einmal exportieren. Hinweis: Mahlzeit-Fotos sind gerätelokal und nicht Teil der Backup-Datei.</div></details>
-      <details><summary>🏃 Sport-Sync</summary><div class="hb">Unter „Mehr → Sport-Sync" erzeugst du ein Token und verbindest eine iOS-Kurzbefehl-Automation („Wenn Training endet") oder einen Android-HTTP-Shortcut. Abgeschlossene Workouts erscheinen dann automatisch mit Apple-/Samsung-Badge und reduzieren dein Tagesziel.</div></details>
+      <details><summary>🏃 Sport-Sync</summary><div class="hb">Über die Kachel <strong>🏃 Sport &amp; Aktivität</strong> → <strong>⋯</strong> → <strong>Sport-Sync</strong> erzeugst du ein Token und verbindest eine iOS-Kurzbefehl-Automation („Wenn Training endet") oder einen Android-HTTP-Shortcut. Abgeschlossene Workouts erscheinen dann automatisch mit Apple-/Samsung-Badge und reduzieren dein Tagesziel.</div></details>
       <details><summary>🤖 KI</summary><div class="hb">Foto-Erkennung, Chat und Wochenbericht laufen über einen geschützten KI-Zugang — dafür brauchst du das Proxy-Passwort (Mehr → 🤖 KI). Optional kannst du dort einen eigenen KI-Anbieter (DeepSeek, OpenAI, Gemini, …) mit eigenem API-Key hinterlegen. Ohne Passwort funktioniert alles außer den KI-Funktionen.</div></details>
       <details><summary>🤰 Schwangerschaft &amp; 🤱 Stillzeit</summary><div class="hb">Unter <strong>Mehr → Profil</strong> kannst du Schwangerschaft (Trimester oder errechneter Termin) oder Stillzeit angeben — beides schließt sich gegenseitig aus. Zuschläge auf den Kalorienbedarf: 2. Trimester +300, 3. Trimester +500, ausschließliches Stillen +500, Teilstillen mit Beikost +250 kcal/Tag (Richtwerte nach DGE). Der Zuschlag greift, sobald du „🧮 Kalorienbedarf berechnen" antippst. Beim Abnehmen in der Stillzeit deckelt die App das Defizit auf 500 kcal/Tag und geht nie unter 1800 kcal — darunter leiden Milchmenge und Nährstoffdichte. Zusätzlich kannst du die <strong>Lebensmittel-Ampel</strong> einschalten: Sie bewertet eingetragene Lebensmittel und meldet sich bei gelben und roten Treffern. Die Stillzeit-Ampel ist bewusst liberaler als die Schwangerschafts-Ampel — Rohmilchkäse, Sushi und Salami sind beim Stillen unbedenklich. Die Ampel ersetzt keine Beratung durch Hebamme, Ärztin oder Arzt.</div></details>
-      <details><summary>👶 Baby-Tagebuch</summary><div class="hb">Aktivieren unter <strong>Mehr → Profil → 👶 Baby-Tagebuch</strong> — unabhängig von Schwangerschaft und Stillzeit, damit auch Partner, Väter und Betreuende es führen können. Danach erscheint eine Kachel auf „Heute" und ein Eintrag unter „Mehr". Festhalten lassen sich: <ul><li><strong>Stillen</strong> — welche Brust und wie lange; die App schlägt vor, welche Seite als Nächstes dran ist</li><li><strong>Flasche</strong> — Menge in ml und Art (Muttermilch, Pre, Folgemilch)</li><li><strong>Windel</strong> — Pipi, Stuhl oder beides, bei Stuhl zusätzlich Farbe und Konsistenz</li><li><strong>Temperatur</strong> — mit Messort; ab 38,0 °C wird der Eintrag rot markiert</li><li><strong>Schlaf</strong> — von/bis, wobei eines von beiden genügt: Trag „schläft seit 13:00" ein, während es noch schläft, und tippe später in der Liste auf <strong>Wach jetzt</strong>. Ein Schnell-Knopf vom Typ Schlaf schaltet mit einem Tipp zwischen einschlafen und aufwachen um.</li><li><strong>Notiz</strong> — Freitext, z. B. „Vitamin D gegeben"</li></ul>Die Schnell-Knöpfe tragen mit einem Tipp und der aktuellen Uhrzeit ein — jeder Eintrag lässt sich danach antippen und in Zeit und Details korrigieren. Über <strong>⚙️ Schnell-Knöpfe</strong> stellst du sie frei ein: eigene Knöpfe anlegen (z. B. „Fläschchen 120 ml" oder „Vitamin D gegeben"), Symbol und Beschriftung wählen, sortieren, löschen oder alles zurücksetzen. Ein Knopf vom Typ Temperatur öffnet den Dialog, weil dort ein Messwert gebraucht wird; ein Schlaf-Knopf schaltet direkt zwischen einschlafen und aufwachen um.<br><br><strong>🔄 Zu zweit führen:</strong> Über „🔄 Sync" im Tagebuch koppelst du ein zweites Gerät — auf dem ersten „Kopplung starten", den Code auf dem zweiten Gerät einfügen. Danach gleichen sich die Einträge automatisch ab: nach jeder Änderung, beim Öffnen des Tagebuchs und beim Zurückkehren in die App. Ein Abgleich kann bis zu einer Minute brauchen; ohne Netz wird alles gesammelt und später nachgeholt. Ändern beide Geräte denselben Eintrag, gewinnt die spätere Änderung. <strong>Übertragen wird ausschließlich das Baby-Tagebuch</strong> — Mahlzeiten, Kalorien, Gewicht und Profil bleiben auf deinem Gerät. Die Einträge werden vor dem Senden auf dem Gerät verschlüsselt; der Schlüssel steckt nur im Kopplungs-Code. Deshalb: Den Code nur direkt an die Person weitergeben, die mitlesen soll — und wer ihn verliert, koppelt einfach neu. Die Einträge gehören immer zum Tag, der oben auf „Heute" ausgewählt ist, und wandern in jedes Backup mit. Das Tagebuch ist eine Gedächtnisstütze, keine medizinische Überwachung und stellt keine Diagnose.</div></details>
+      <details><summary>👶 Baby-Tagebuch</summary><div class="hb">Einschalten unter <strong>Mehr → 🧩 Funktionen</strong> (oder an der Kachel über <strong>⋯</strong>) — unabhängig von Schwangerschaft und Stillzeit, damit auch Partner, Väter und Betreuende es führen können. Danach erscheint eine Kachel auf „Heute"; alles Weitere hängt an ihrem <strong>⋯</strong>-Knopf. Festhalten lassen sich: <ul><li><strong>Stillen</strong> — welche Brust und wie lange; die App schlägt vor, welche Seite als Nächstes dran ist</li><li><strong>Flasche</strong> — Menge in ml und Art (Muttermilch, Pre, Folgemilch)</li><li><strong>Windel</strong> — Pipi, Stuhl oder beides, bei Stuhl zusätzlich Farbe und Konsistenz</li><li><strong>Temperatur</strong> — mit Messort; ab 38,0 °C wird der Eintrag rot markiert</li><li><strong>Schlaf</strong> — von/bis, wobei eines von beiden genügt: Trag „schläft seit 13:00" ein, während es noch schläft, und tippe später in der Liste auf <strong>Wach jetzt</strong>. Ein Schnell-Knopf vom Typ Schlaf schaltet mit einem Tipp zwischen einschlafen und aufwachen um.</li><li><strong>Notiz</strong> — Freitext, z. B. „Vitamin D gegeben"</li></ul>Die Schnell-Knöpfe tragen mit einem Tipp und der aktuellen Uhrzeit ein — jeder Eintrag lässt sich danach antippen und in Zeit und Details korrigieren. Über <strong>⚙️ Schnell-Knöpfe</strong> stellst du sie frei ein: eigene Knöpfe anlegen (z. B. „Fläschchen 120 ml" oder „Vitamin D gegeben"), Symbol und Beschriftung wählen, sortieren, löschen oder alles zurücksetzen. Ein Knopf vom Typ Temperatur öffnet den Dialog, weil dort ein Messwert gebraucht wird; ein Schlaf-Knopf schaltet direkt zwischen einschlafen und aufwachen um.<br><br><strong>🔄 Zu zweit führen:</strong> Über „🔄 Sync" im Tagebuch koppelst du ein zweites Gerät — auf dem ersten „Kopplung starten", den Code auf dem zweiten Gerät einfügen. Danach gleichen sich die Einträge automatisch ab: nach jeder Änderung, beim Öffnen des Tagebuchs und beim Zurückkehren in die App. Ein Abgleich kann bis zu einer Minute brauchen; ohne Netz wird alles gesammelt und später nachgeholt. Ändern beide Geräte denselben Eintrag, gewinnt die spätere Änderung. <strong>Übertragen wird ausschließlich das Baby-Tagebuch</strong> — Mahlzeiten, Kalorien, Gewicht und Profil bleiben auf deinem Gerät. Die Einträge werden vor dem Senden auf dem Gerät verschlüsselt; der Schlüssel steckt nur im Kopplungs-Code. Deshalb: Den Code nur direkt an die Person weitergeben, die mitlesen soll — und wer ihn verliert, koppelt einfach neu. Die Einträge gehören immer zum Tag, der oben auf „Heute" ausgewählt ist, und wandern in jedes Backup mit. Das Tagebuch ist eine Gedächtnisstütze, keine medizinische Überwachung und stellt keine Diagnose.</div></details>
       <details><summary>❓ FAQ</summary><div class="hb"><strong>Warum stimmt eine Schätzung nicht?</strong> KI-Werte sind Näherungen — Menge und Zutaten lassen sich jederzeit anpassen.<br><strong>Funktioniert die App offline?</strong> Ja, Tagebuch, Suche (lokale Datenbank) und Bibliothek laufen offline; KI und Online-Suche brauchen Netz.<br><strong>Erinnerungen kommen nicht?</strong> Technisch bedingt erscheinen sie nur, solange die App geöffnet ist.<br><strong>Daten weg?</strong> Mehr → Backup &amp; Daten → Autospeicher anzeigen — dort liegen die letzten Stände.</div></details>
       <div style="text-align:center;margin:14px 0 6px;"><a href="nutritrack_anleitung.pdf" target="_blank" style="font-size:13px;color:var(--g2);font-weight:700;">📄 Anleitung als PDF öffnen</a></div>
     </div>
@@ -2622,22 +2611,95 @@ body.kb-open #feedbackFab{display:none;}
   </div>
 </div>
 
-<!-- ══ DASHBOARD-KACHELN ══ -->
-<div class="ov" id="dashOv" data-bg-close="dashOv">
+<!-- ══ BABY-ANGABEN (gehoert an die Kachel, nicht ins Profil) ══ -->
+<div class="ov" id="babySetOv" data-bg-close="babySetOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" data-act="NTDash.close">✕</button>
-      <div class="mti">🧩 Kacheln auf „Heute"</div>
-      <div class="msu" id="dashOvSub"></div>
+      <button type="button" class="mcl" data-act="closeOv" data-args='["babySetOv"]'>✕</button>
+      <div class="mti">👶 Baby-Tagebuch</div>
+      <div class="msu">Einschalten und Angaben zum Baby</div>
     </div>
     <div class="mbd">
-      <div style="font-size:12px;color:var(--mu);line-height:1.5;margin-bottom:10px;">Am ⠿ ziehen oder ▲▼ antippen, um die Reihenfolge zu ändern. 👁 blendet eine Kachel aus — die Daten bleiben erhalten. Die Kalorien-Übersicht bleibt immer oben.</div>
-      <div id="dashList"></div>
+      <div class="sf" style="padding-top:12px;border-top:1px solid var(--br);">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div style="font-size:13px;font-weight:700;">👶 Baby-Tagebuch</div>
+              <div style="font-size:11px;color:var(--mu);margin-top:2px;">Stillen, Flasche, Windeln, Temperatur &amp; Schlaf festhalten</div>
+            </div>
+            <label style="position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0;">
+              <input type="checkbox" id="sbabyon" style="opacity:0;width:0;height:0;" onchange="updateBabyUI()">
+              <span id="babyOnToggle" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#ccc;border-radius:24px;transition:.3s;"></span>
+              <span id="babyOnThumb" style="position:absolute;content:'';height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.3s;"></span>
+            </label>
+          </div>
+          <div id="babyFields" style="display:none;margin-top:10px;">
+            <div class="srow">
+              <div class="sf"><label class="lbl">Name des Babys</label><input type="text" class="sinp" id="sbabyname" placeholder="optional"></div>
+              <div class="sf"><label class="lbl">Geburtsdatum</label><input type="date" class="sinp" id="sbabybirth"></div>
+            </div>
+            <div style="font-size:11px;color:var(--mu);line-height:1.5;">Unabhängig von Schwangerschaft und Stillzeit – auch Partner, Väter und Betreuende können das Tagebuch führen. Danach erscheint die Kachel auf „Heute" — Tagebuch, Angaben und Verbindungen hängen an ihrem ⋯-Knopf.</div>
+          </div>
+        </div>
+      <button type="button" class="seb" style="margin-top:12px;" data-act="NTFeat.saveBaby">Speichern ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ FUNKTIONS-BLATT (je Kachel, ueber den ⋯-Knopf) ══ -->
+<div class="ov" id="featSheetOv" data-bg-close="featSheetOv">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" data-act="NTFeat.closeSheet">✕</button>
+      <div class="mti" id="featSheetTitle">Funktion</div>
+      <div class="msu">Alles zu dieser Kachel an einem Ort</div>
+    </div>
+    <div class="mbd" id="featSheetBody"></div>
+  </div>
+</div>
+
+<!-- ══ FUNKTIONS-KATALOG ══ -->
+<div class="ov" id="featCatOv" data-bg-close="featCatOv">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" data-act="NTFeat.closeCatalog">✕</button>
+      <div class="mti">🧩 Funktionen</div>
+      <div class="msu">Was auf „Heute" erscheint</div>
+    </div>
+    <div class="mbd">
+      <div style="font-size:12px;color:var(--mu);line-height:1.5;margin-bottom:10px;">Der Schalter blendet eine Funktion von „Heute" aus — <b>deine Einträge bleiben erhalten</b> und sind sofort wieder da, wenn du sie einschaltest. Mit ▲▼ änderst du die Reihenfolge. Die Kalorien-Übersicht bleibt immer oben.</div>
+      <div id="featCatBody"></div>
       <button type="button" class="seb" style="margin-top:10px;" data-act="NTDash.reset">↺ Standard wiederherstellen</button>
     </div>
   </div>
 </div>
+
+<!-- ══ WASSERZIEL (gehoert an die Wasser-Kachel, nicht in die Einstellungen) ══ -->
+<div class="ov" id="waterGoalOv" data-bg-close="waterGoalOv">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" data-act="closeOv" data-args='["waterGoalOv"]'>✕</button>
+      <div class="mti">🎯 Wasserziel</div>
+      <div class="msu">Gläser pro Tag und Glasgröße</div>
+    </div>
+    <div class="mbd">
+      <label class="sl" for="wgGlasses">Gläser pro Tag</label>
+      <input class="si" id="wgGlasses" type="number" inputmode="numeric" min="1" max="30" step="1" value="8">
+      <label class="sl" for="wgUnit" style="margin-top:10px;">Glasgröße (ml)</label>
+      <input class="si" id="wgUnit" type="number" inputmode="numeric" min="50" max="2000" step="10" value="250">
+      <button type="button" class="seb" style="margin-top:12px;" data-act="NTFeat.saveWaterGoal">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- Das frühere „Kacheln auf Heute" ist seit v0.253 der Funktions-Katalog
+     (#featCatOv, NTFeat.openCatalog) — er zeigt ALLE Funktionen, auch die
+     ausgeschalteten, mit ihrer Beschreibung. Das alte Overlay war danach
+     von keiner Stelle mehr erreichbar. -->
+
 
 <!-- ══ EINSTELLUNGEN ══ -->
 <div class="ov" id="libraryOv" data-bg-close="libraryOv">
@@ -2760,26 +2822,10 @@ body.kb-open #feedbackFab{display:none;}
             </div>
           </div>
         </div>
-        <div class="sf" style="padding-top:12px;border-top:1px solid var(--br);">
-          <div style="display:flex;align-items:center;justify-content:space-between;">
-            <div>
-              <div style="font-size:13px;font-weight:700;">👶 Baby-Tagebuch</div>
-              <div style="font-size:11px;color:var(--mu);margin-top:2px;">Stillen, Flasche, Windeln, Temperatur &amp; Schlaf festhalten</div>
-            </div>
-            <label style="position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0;">
-              <input type="checkbox" id="sbabyon" style="opacity:0;width:0;height:0;" onchange="updateBabyUI()">
-              <span id="babyOnToggle" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#ccc;border-radius:24px;transition:.3s;"></span>
-              <span id="babyOnThumb" style="position:absolute;content:'';height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.3s;"></span>
-            </label>
-          </div>
-          <div id="babyFields" style="display:none;margin-top:10px;">
-            <div class="srow">
-              <div class="sf"><label class="lbl">Name des Babys</label><input type="text" class="sinp" id="sbabyname" placeholder="optional"></div>
-              <div class="sf"><label class="lbl">Geburtsdatum</label><input type="date" class="sinp" id="sbabybirth"></div>
-            </div>
-            <div style="font-size:11px;color:var(--mu);line-height:1.5;">Unabhängig von Schwangerschaft und Stillzeit – auch Partner, Väter und Betreuende können das Tagebuch führen. Danach unter <b>Mehr → 👶 Baby-Tagebuch</b> und als Kachel auf „Heute".</div>
-          </div>
-        </div>
+        <!-- Baby-Tagebuch: Schalter und Angaben liegen seit v0.253 an der Funktion
+             selbst — Kachel ⋯ → „Angaben zum Baby", oder Mehr → Funktionen.
+             Die Felder behalten ihre IDs; saveSettings() findet sie ueber
+             getElementById unabhaengig davon, wo sie im DOM stehen. -->
         <button type="button" class="svb" data-act="saveSettings">Speichern ✓</button>
       </div>
 
@@ -2810,7 +2856,7 @@ body.kb-open #feedbackFab{display:none;}
             </div>
           </div>
         </div>
-        <div class="sf"><label class="lbl">💧 Wasserziel (Gläser)</label><input type="number" class="sinp" id="swatergoal" min="1" max="20" placeholder="8"></div>
+        <!-- Das Wasserziel liegt seit v0.253 an der Wasser-Kachel (⋯ → Wasserziel). -->
         <button type="button" class="svb" data-act="saveSettings">Speichern ✓</button>
       </div>
 
@@ -2968,7 +3014,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.252';
+var APP_VERSION='0.253';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -3346,6 +3392,10 @@ window.addEventListener('DOMContentLoaded',function(){
   // Muss VOR dem ersten Abgleich laufen, sonst lädt der gesamte Bestand erneut hoch.
   if(window.NTSync&&window.NTBaby&&window.NTShop)NTSync.migrate({baby:NTBaby.Sync,shop:NTShop.Sync});
   if(window.NTDash&&typeof NTDash.boot==='function')NTDash.boot();
+  // Der ⋯-Knopf wird in jede Kachel-Kopfzeile gehaengt, statt achtmal im Markup
+  // zu stehen — so bekommt ihn auch die neunte Kachel von selbst. NACH
+  // NTDash.boot(), weil das die Kacheln erst an ihren Platz sortiert.
+  if(window.NTFeat&&typeof NTFeat.mount==='function')NTFeat.mount();
   // Wochenplan: Kachel „Heute" fuellen. Rein lokal, kein Netz.
   if(window.NTPlan&&typeof NTPlan.boot==='function')NTPlan.boot();
   // iOS Safari/PWA: Bottom-Nav nach Viewport-Shift wieder anheften (#177)
@@ -5767,10 +5817,11 @@ function saveSettings(){
   S.nursWarn=!!(document.getElementById('snurswarn')&&document.getElementById('snurswarn').checked);
   // Schwangerschaft und Stillzeit schließen sich aus – Zuschläge nie addieren
   if(isNursing())S.pregnant=0;
-  S.babyOn=!!(document.getElementById('sbabyon')&&document.getElementById('sbabyon').checked);
+  // babyOn, Name und Geburtsdatum liegen seit v0.253 im Baby-Dialog an der
+  // Kachel und werden dort gespeichert (NTFeat.saveBaby). Wuerden sie hier
+  // mitgelesen, uebernaehme ein Speichern der Einstellungen einen nie
+  // bestaetigten Zwischenstand aus jenem Dialog.
   S.baby=S.baby||{name:'',birth:''};
-  var _bnm=document.getElementById('sbabyname');if(_bnm)S.baby.name=_bnm.value.trim();
-  var _bbd=document.getElementById('sbabybirth');if(_bbd)S.baby.birth=_bbd.value||'';
   S.goalWeight=parseFloat(document.getElementById('sgoalweight').value)||0;
   S.goalDate=document.getElementById('sgoaldate').value||'';
   // Kalorienziel: aus Eingabefeld (manuell überschreibbar)
@@ -5788,7 +5839,9 @@ function saveSettings(){
   }
   // savedDietFree bleibt erhalten
   S.dietWarn=!!(document.getElementById('sdietwarn')&&document.getElementById('sdietwarn').checked);
-  S.waterGoal=parseInt(document.getElementById('swatergoal')&&document.getElementById('swatergoal').value)||8;
+  // waterGoal liegt an der Wasser-Kachel. Das Feld gibt es hier nicht mehr,
+  // und `parseInt(null)||8` hat das eingestellte Ziel bei jedem Speichern
+  // still auf 8 zurueckgesetzt — im Test von 12 auf 8.
   // macroGoalMode wurde bereits durch setMacroMode() direkt in S gesetzt
   var _mp=document.getElementById('smacrop'),_mc=document.getElementById('smacroc'),_mf=document.getElementById('smacrof');
   if(_mp&&_mc&&_mf){S.macroGoalG={protein:parseFloat(_mp.value)||0,carbs:parseFloat(_mc.value)||0,fat:parseFloat(_mf.value)||0};}
@@ -7408,6 +7461,7 @@ function axTestSync(){
 <script src="js/partner.js"></script>
 <script src="js/alexa-sync.js"></script>
 <script src="js/dashboard.js"></script>
+<script src="js/features.js"></script>
 <script src="js/mealplan.js"></script>
 <script src="js/onedrive.js"></script>
 <script src="js/recurring.js"></script>

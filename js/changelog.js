@@ -1,6 +1,12 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.253',items:[
+    {icon:'\ud83e\udde9',text:'Jede Funktion hat jetzt genau einen Ort: ihre Kachel auf „Heute“. Oben rechts an jeder Kachel steht ein ⋯-Knopf — darunter liegt alles, was zu dieser Funktion gehört. Beim Wasser also Wasserziel und Trink-Erinnerung, beim Sport das Eintragen und der Sport-Sync, beim Baby das Tagebuch, die Angaben zum Baby und das Teilen. Vorher lag dieselbe Sache an bis zu drei Stellen verteilt.',where:'Heute → ⋯ an jeder Kachel'},
+    {icon:'\ud83d\udccb',text:'Neu: „Funktionen“ unter Mehr. Dort steht jede Kachel mit Schalter und ▲▼ — ein- und ausschalten, sortieren, und mit einem Tipp auf die Zeile direkt öffnen. Damit ist auch eine abgeschaltete Funktion erreichbar, ohne sie erst wieder einblenden zu müssen. Der alte Dialog „Kacheln auf Heute“ ist darin aufgegangen.',where:'Mehr → \ud83e\udde9 Funktionen'},
+    {icon:'\ud83e\uddf9',text:'Das Mehr-Menü ist von 19 auf 10 Einträge geschrumpft. Bibliothek, Wiederkehrende Mahlzeiten, Alexa, Wochenplan, Einkaufszettel, Baby-Tagebuch, Postfach, Sport-Sync und Kacheln stehen nicht mehr dort, sondern an ihrer Kachel. Übrig bleibt, was wirklich übergreifend ist: Profil, Ziele, Ernährung, Erinnerungen, KI, Backup, Verbindungen und Hilfe.',where:'Mehr'},
+    {icon:'\ud83d\udd27',text:'Nebenbei behoben: Der runde Feedback-Knopf unten rechts lag über jedem geöffneten Dialog und verdeckte dort die untere rechte Ecke — seit v0.154. Er tritt jetzt zurück, solange ein Dialog offen ist.',where:'überall'},
+  ]},
   {v:'0.248',items:[
     {icon:'\ud83d\udd27',text:'Wochenplan teilen scheiterte mit „Server nicht erreichbar" — dem Worker fehlte die Freigabe für den neuen Kopfzeilen-Namen des Wochenplans, weshalb der Browser die Anfrage schon vor dem Absenden abbrach. Einkaufszettel und Baby-Tagebuch waren nie betroffen. Behoben; die Freigabe wächst jetzt automatisch mit, wenn ein Bereich dazukommt.',where:'\ud83d\udcc5 Wochenplan → \ud83d\udd04 Teilen'},
   ]},

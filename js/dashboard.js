@@ -17,22 +17,28 @@
 'use strict';
 
 // ── Register aller anordenbaren Kacheln ───────────────────────────────────
-// `el`   = ID des DOM-Knotens in #mainScreen .main
+// Die Liste steht seit v0.253 in js/features.js (NTFeat) und nicht mehr hier.
+// Grund: Dieses Modul ordnet und blendet aus — es kennt eine Kachel nur als
+// Zeile im Bild. Was eine Funktion AUSMACHT (ihre Aktionen, ob man sie
+// abschalten darf), ist eine andere Frage, und zwei Listen waeren zwei
+// Wahrheiten, die auseinanderlaufen, sobald jemand eine Kachel hinzufuegt.
+//
+// Gelesen wird LAZY: NTFeat wird nach diesem Modul geladen, boot() laeuft aber
+// erst bei DOMContentLoaded — dann steht es. Der Rueckfall auf [] gilt nur fuer
+// den Fall, dass features.js gar nicht ausgeliefert wurde; die Kacheln stehen
+// dann unsortiert im Markup statt zu verschwinden.
+//
+// `el`   = ID des DOM-Knotens in #mainScreen .main (in NTFeat: `card`)
 // `auto` = Kachel hat eine EIGENE Sichtbarkeitslogik (Modul setzt display).
-//          Fuer die Anzeige im Editor heisst das: „nur sichtbar, wenn …".
-// Die Hero-Kachel (Kalorien) steht bewusst NICHT hier — sie ist der Kopf des
+// Die Hero-Kachel (Kalorien) steht bewusst NICHT darin — sie ist der Kopf des
 // Tages und bleibt immer oben.
-var CARDS=[
-  {id:'meals',    el:'mealsCard',    ic:'🍽',  label:'Mahlzeiten',        sub:'Frühstück, Mittag, Abend, Snack'},
-  {id:'plan',     el:'planCard',     ic:'📅',  label:'Wochenplan',        sub:'Was heute gekocht wird'},
-  {id:'exercise', el:'exerciseCard', ic:'🏃',  label:'Sport & Aktivität', sub:'Verbrannte Kalorien'},
-  {id:'water',    el:'waterCard',    ic:'💧',  label:'Wasser',            sub:'Gläser und Schnell-Knöpfe'},
-  {id:'baby',     el:'babyCard',     ic:'👶',  label:'Baby-Tagebuch',     sub:'nur bei eingeschaltetem Tagebuch', auto:true},
-  {id:'partner',  el:'partnerCard',  ic:'📬',  label:'Vom Partner',       sub:'nur bei gekoppeltem Partner',      auto:true},
-  {id:'shop',     el:'shopCard',     ic:'🛒',  label:'Einkaufszettel',    sub:'nur wenn etwas drauf steht',       auto:true},
-  {id:'fast',     el:'fastCard',     ic:'🌙',  label:'Fasten',            sub:'Fastenfenster'}
-];
-function card(id){for(var i=0;i<CARDS.length;i++)if(CARDS[i].id===id)return CARDS[i];return null;}
+function CARDS_(){
+  var l=(window.NTFeat&&NTFeat.list&&NTFeat.list())||[];
+  return l.map(function(f){
+    return {id:f.id, el:f.card, ic:f.ic, label:f.label, sub:f.sub, auto:!!f.auto, fixed:!!f.fixed};
+  });
+}
+function card(id){var c=CARDS_();for(var i=0;i<c.length;i++)if(c[i].id===id)return c[i];return null;}
 
 // ── Reihenfolge: gespeicherte Liste, unbekannte IDs raus, neue ans Ende ────
 // So taucht eine kuenftig hinzugefuegte Kachel bei Bestandsnutzern von selbst
@@ -41,7 +47,7 @@ function order(){
   var saved=Array.isArray(S.dashOrder)?S.dashOrder:[];
   var out=[],seen={};
   saved.forEach(function(id){if(card(id)&&!seen[id]){seen[id]=true;out.push(id);}});
-  CARDS.forEach(function(c){if(!seen[c.id])out.push(c.id);});
+  CARDS_().forEach(function(c){if(!seen[c.id])out.push(c.id);});
   return out;
 }
 function hidden(){return Array.isArray(S.dashHidden)?S.dashHidden:[];}
@@ -65,47 +71,29 @@ function setHidden(id,off){
   if(!off&&i>=0)h.splice(i,1);
   S.dashHidden=h;saveS();apply();
 }
-function toggle(id){setHidden(id,!isHidden(id));render();}
+function toggle(id){setHidden(id,!isHidden(id));}
 
 function move(id,dir){
   var o=order(),i=o.indexOf(id),j=i+dir;
   if(i<0||j<0||j>=o.length)return;
   o.splice(j,0,o.splice(i,1)[0]);
-  S.dashOrder=o;saveS();apply();render();
+  S.dashOrder=o;saveS();apply();
 }
 
 function reset(){
-  S.dashOrder=CARDS.map(function(c){return c.id;});
+  S.dashOrder=CARDS_().map(function(c){return c.id;});
   S.dashHidden=[];
-  saveS();apply();render();
+  saveS();apply();
   showToast('Kacheln zurückgesetzt ✓');
 }
 
 // ── Editor ────────────────────────────────────────────────────────────────
-function open(){render();openOv('dashOv');}
-function close(){closeOv('dashOv');}
+// open()/close()/render() sind mit dem Overlay entfallen; den Katalog zeigt
+// seit v0.253 NTFeat.openCatalog() in eigener Form.
 
-function render(){
-  var el=document.getElementById('dashList');if(!el)return;
-  var o=order();
-  el.innerHTML=o.map(function(id,i){
-    var c=card(id);if(!c)return '';
-    var off=isHidden(id);
-    return '<div class="dash-row'+(off?' is-off':'')+'" data-id="'+esc(id)+'" data-idx="'+i+'">'
-      +'<div class="dash-grip" title="Verschieben">⠿</div>'
-      +'<div class="dash-ic">'+c.ic+'</div>'
-      +'<div class="dash-body"><div class="dash-name">'+esc(c.label)+'</div>'
-        +'<div class="dash-sub">'+esc(c.sub||'')+'</div></div>'
-      +'<button type="button" class="dash-mv" onclick="NTDash.move(\''+esc(id)+'\',-1)"'+(i===0?' disabled':'')+'>▲</button>'
-      +'<button type="button" class="dash-mv" onclick="NTDash.move(\''+esc(id)+'\',1)"'+(i===o.length-1?' disabled':'')+'>▼</button>'
-      +'<button type="button" class="dash-eye" onclick="NTDash.toggle(\''+esc(id)+'\')" title="'+(off?'Einblenden':'Ausblenden')+'">'+(off?'🙈':'👁')+'</button>'
-      +'</div>';
-  }).join('');
-  var n=o.length-hidden().length;
-  var sub=document.getElementById('dashOvSub');
-  if(sub)sub.textContent=n+' von '+o.length+' Kacheln sichtbar';
-  bindDrag(el);
-}
+// render() ist mit dem Overlay entfallen — es zeichnete in #dashList, das es
+// seit v0.253 nicht mehr gibt. Die Liste zeichnet NTFeat.renderCatalog().
+
 
 // ── Ziehen mit dem Finger ─────────────────────────────────────────────────
 // Bewusst Pointer-Events statt HTML5-Drag-and-Drop: Letzteres gibt es auf iOS
@@ -155,14 +143,14 @@ function endDrag(ev){
   try{d.grip.releasePointerCapture(ev.pointerId);}catch(e){}
   if(!d.moved)return;
   var ids=Array.prototype.map.call(d.list.querySelectorAll('.dash-row'),function(r){return r.getAttribute('data-id');});
-  S.dashOrder=ids;saveS();apply();render();
+  S.dashOrder=ids;saveS();apply();
 }
 
 function boot(){
-  if(!Array.isArray(S.dashOrder))S.dashOrder=CARDS.map(function(c){return c.id;});
+  if(!Array.isArray(S.dashOrder))S.dashOrder=CARDS_().map(function(c){return c.id;});
   if(!Array.isArray(S.dashHidden))S.dashHidden=[];
   apply();
 }
 
-window.NTDash={boot:boot,apply:apply,open:open,close:close,render:render,move:move,toggle:toggle,reset:reset,cards:CARDS,isHidden:isHidden};
+window.NTDash={boot:boot,apply:apply,move:move,toggle:toggle,reset:reset,cards:CARDS_,isHidden:isHidden,orderOf:order};
 })();

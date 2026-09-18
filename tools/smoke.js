@@ -40,7 +40,7 @@ const BASE = process.env.SMOKE_URL || 'http://127.0.0.1:8099/index.html';
 const EXPECTED_NAMESPACES = [
   'NTSync', 'NTBaby', 'NTShop', 'NTPartner', 'NTPlan', 'NTDash',
   'NTHealth', 'NTAlexa', 'NTPhotos', 'NTDrive',
-  'NTRecur', 'NTStats', 'NTRemind', 'NTTpl', 'NTQueue',
+  'NTRecur', 'NTStats', 'NTRemind', 'NTTpl', 'NTQueue', 'NTFeat',
 ];
 
 (async () => {

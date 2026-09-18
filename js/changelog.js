@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.243',items:[
+    {icon:'\ud83e\udde9',text:'Die Kacheln auf „Heute" lassen sich jetzt selbst anordnen und ausblenden: Mehr → \ud83e\udde9 Kacheln auf „Heute". Am \u283f ziehen oder \u25b2\u25bc antippen sortiert, \ud83d\udc41 blendet aus. Betrifft Mahlzeiten, Sport, Wasser, Baby-Tagebuch, Postfach, Einkaufszettel und Fasten — die Kalorien-Übersicht bleibt immer oben. Ausgeblendet heißt nur unsichtbar: Eingetragenes bleibt erhalten und zählt weiter mit.',where:'Heute · Mehr → \ud83e\udde9 Kacheln'},
+  ]},
   {v:'0.242',items:[
     {icon:'\ud83d\uded2',text:'„Setze Bananen auf meine Einkaufsliste“ verstand Alexa nicht — in den hinterlegten Satzmustern fehlten „meine“, „unsere“ und „Liste“. Jetzt sind alle üblichen Formulierungen drin: setzen, schreiben, packen, tun, jeweils mit Liste oder Zettel und mit oder ohne „meine“.',where:'Mehr → \ud83d\udde3\ufe0f Alexa-Einwurf'},
     {icon:'\u23ed\ufe0f',text:'Beim Starten sagt Alexa nur noch „NutriTrack gestartet“ statt jedes Mal die ganze Anleitung vorzulesen. Wer nicht weiterweiß, sagt „Hilfe“.',where:'Mehr → \ud83d\udde3\ufe0f Alexa-Einwurf'},

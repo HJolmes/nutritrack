@@ -584,6 +584,22 @@ body.kb-open #feedbackFab{display:none;}
 .trend-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .trend-card .head{display:flex;justify-content:space-between;align-items:baseline;}
 .trend-card .head h4{font-family:var(--fs-display);font-weight:500;font-size:22px;letter-spacing:-0.02em;}
+/* DASHBOARD-KACHELN (v0.243) */
+/* Ausgeblendet per Klasse mit !important: mehrere Module setzen style.display
+   auf denselben Kacheln (NTBaby/NTShop/NTPartner) — die Klasse liegt darueber
+   und laesst deren Logik unangetastet. */
+.dash-off{display:none!important;}
+.dash-row{display:flex;align-items:center;gap:10px;background:var(--card);border:1.5px solid var(--br);border-radius:14px;padding:10px 12px;margin-bottom:8px;touch-action:pan-y;}
+.dash-row.is-off{opacity:.5;background:var(--gl);}
+.dash-row.is-drag{border-color:var(--g2);box-shadow:0 6px 18px rgba(0,0,0,.14);}
+.dash-grip{font-size:20px;color:var(--mu);cursor:grab;padding:2px 4px;touch-action:none;flex-shrink:0;user-select:none;}
+.dash-ic{font-size:22px;flex-shrink:0;}
+.dash-body{flex:1;min-width:0;}
+.dash-name{font-weight:700;font-size:14px;color:var(--tx);}
+.dash-sub{font-size:11px;color:var(--mu);margin-top:1px;}
+.dash-mv{background:none;border:1.5px solid var(--br);border-radius:9px;width:30px;height:30px;font-size:11px;color:var(--g1);flex-shrink:0;cursor:pointer;}
+.dash-mv[disabled]{opacity:.25;}
+.dash-eye{background:none;border:none;font-size:19px;padding:2px 4px;flex-shrink:0;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -754,6 +770,7 @@ body.kb-open #feedbackFab{display:none;}
       <!-- legacy progress bar (hidden via CSS) -->
       <div class="pt"><div class="pf" id="pFill" style="width:0%"></div></div>
     </div>
+    <div id="mealsCard" style="display:contents;">
     <div class="sec-head"><h3>Mahlzeiten</h3><div class="sec-meta"><span id="mealsTotal">0 kcal</span> · <span id="mealsCount">0 Posten</span></div></div>
     <div class="meals-grid">
       <div class="mc" data-meal="breakfast" onclick="openMealDetail('breakfast')">
@@ -801,6 +818,7 @@ body.kb-open #feedbackFab{display:none;}
         <div id="entries-snack" style="display:none;"><div class="me">Noch nichts eingetragen</div></div>
       </div>
     </div>
+    </div>
     <div class="wc" id="exerciseCard">
       <div class="wh">
         <div class="wt">🏃 Sport & Aktivität</div>
@@ -808,7 +826,7 @@ body.kb-open #feedbackFab{display:none;}
       </div>
       <div id="exerciseList"><div style="font-size:12px;color:var(--mu);font-style:italic;">Noch keine Aktivität eingetragen</div></div>
     </div>
-    <div class="wc">
+    <div class="wc" id="waterCard">
       <div class="wh"><div class="wt">💧 Wasser</div><div class="wv" id="wVal">0 / 8 Gläser</div></div>
       <div class="gls-wrap" id="glasses"></div>
       <div style="display:flex;gap:6px;margin-top:8px;" id="waterBtns">
@@ -1052,6 +1070,11 @@ body.kb-open #feedbackFab{display:none;}
       <div class="lr-body"><div class="lr-name">Einkaufszettel</div><div class="lr-sub" id="shopHubSub">Leer</div></div>
       <div class="lr-val">›</div>
     </div>
+    <div class="list-row" onclick="NTDash.open()">
+      <div class="lr-ic">🧩</div>
+      <div class="lr-body"><div class="lr-name">Kacheln auf „Heute"</div><div class="lr-sub">Reihenfolge ändern, Kacheln ausblenden</div></div>
+      <div class="lr-val">›</div>
+    </div>
     <div class="list-row" onclick="openRecurManage()">
       <div class="lr-ic">🔁</div>
       <div class="lr-body"><div class="lr-name">Wiederkehrende Mahlzeiten</div><div class="lr-sub">Automatisch an festen Wochentagen eintragen</div></div>
@@ -1086,7 +1109,7 @@ body.kb-open #feedbackFab{display:none;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.242</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.243</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -2344,6 +2367,23 @@ body.kb-open #feedbackFab{display:none;}
   </div>
 </div>
 
+<!-- ══ DASHBOARD-KACHELN ══ -->
+<div class="ov" id="dashOv" onclick="bgClose(event,'dashOv')">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" onclick="NTDash.close()">✕</button>
+      <div class="mti">🧩 Kacheln auf „Heute"</div>
+      <div class="msu" id="dashOvSub"></div>
+    </div>
+    <div class="mbd">
+      <div style="font-size:12px;color:var(--mu);line-height:1.5;margin-bottom:10px;">Am ⠿ ziehen oder ▲▼ antippen, um die Reihenfolge zu ändern. 👁 blendet eine Kachel aus — die Daten bleiben erhalten. Die Kalorien-Übersicht bleibt immer oben.</div>
+      <div id="dashList"></div>
+      <button type="button" class="seb" style="margin-top:10px;" onclick="NTDash.reset()">↺ Standard wiederherstellen</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ EINSTELLUNGEN ══ -->
 <div class="ov" id="libraryOv" onclick="bgClose(event,'libraryOv')">
   <div class="mod">
@@ -2665,13 +2705,13 @@ body.kb-open #feedbackFab{display:none;}
 // ════════════════════════════════════════
 // SECTION: STATE
 // ════════════════════════════════════════
-var S={apiKey:'',name:'Du',goal:2000,goalManual:false,weight:0,height:0,age:0,gender:'',activity:'',pregnant:0,pregnantET:'',pregWarn:false,nursing:0,nursWarn:false,babyOn:false,baby:{name:'',birth:''},babyLog:{},babyTomb:{},babyQuick:null,babySync:null,shopList:[],shopTomb:{},shopSync:null,shopRecent:[],goalWeight:0,goalDate:'',goalAchievedShown:'',dietPrefs:[],dietFree:'',savedDietFree:[],dietWarn:false,macroTargets:{protein:0,carbs:0,fat:0},macroGoalMode:'percent',macroGoalG:{protein:0,carbs:0,fat:0},reminders:[],weightLog:{},portionMemory:{},waterGoal:8,waterUnit:250,mealTemplates:[],recurringMeals:[],exerciseLibrary:[],currentDate:'',days:{}};
+var S={apiKey:'',name:'Du',goal:2000,goalManual:false,weight:0,height:0,age:0,gender:'',activity:'',pregnant:0,pregnantET:'',pregWarn:false,nursing:0,nursWarn:false,babyOn:false,baby:{name:'',birth:''},babyLog:{},babyTomb:{},babyQuick:null,babySync:null,shopList:[],shopTomb:{},shopSync:null,shopRecent:[],goalWeight:0,goalDate:'',goalAchievedShown:'',dietPrefs:[],dietFree:'',savedDietFree:[],dietWarn:false,macroTargets:{protein:0,carbs:0,fat:0},macroGoalMode:'percent',macroGoalG:{protein:0,carbs:0,fat:0},reminders:[],weightLog:{},portionMemory:{},waterGoal:8,waterUnit:250,mealTemplates:[],recurringMeals:[],exerciseLibrary:[],dashOrder:null,dashHidden:null,currentDate:'',days:{}};
 // Tracking für Settings-Session: manuelle Eingabe vs. „Kalorienbedarf berechnen"
 var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.242';
+var APP_VERSION='0.243';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -3059,6 +3099,10 @@ window.addEventListener('DOMContentLoaded',function(){
   // Partner-Postfach: Badge setzen und einmal nach neuen Sendungen sehen.
   // No-op ohne Kopplung.
   if(window.NTPartner&&typeof NTPartner.boot==='function')setTimeout(function(){NTPartner.boot();},1100);
+  // Kachel-Reihenfolge und ausgeblendete Kacheln auf „Heute" anwenden.
+  // Synchron (nicht per setTimeout): sonst springt das Dashboard sichtbar um,
+  // nachdem es einmal in Standardreihenfolge gezeichnet wurde.
+  if(window.NTDash&&typeof NTDash.boot==='function')NTDash.boot();
   // iOS Safari/PWA: Bottom-Nav nach Viewport-Shift wieder anheften (#177)
   var _vvTimer=null;
   function _fixViewportChromeDebounced(){
@@ -7828,6 +7872,7 @@ function axTestSync(){
 <script src="js/shopping.js"></script>
 <script src="js/partner.js"></script>
 <script src="js/alexa-sync.js"></script>
+<script src="js/dashboard.js"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

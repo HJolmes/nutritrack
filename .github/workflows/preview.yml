@@ -1,0 +1,118 @@
+name: Preview-Deploy
+
+# Warum es das gibt: Der Branch soll am Geraet testbar sein, OHNE nach main zu
+# mergen — und ohne die Live-Daten anzufassen.
+#
+# WICHTIG, und der Grund fuer Cloudflare statt GitHub Pages: localStorage ist an
+# den ORIGIN gebunden, nicht an den Pfad. Ein Preview unter
+# hjolmes.github.io/<irgendwas>/ schriebe in denselben nt_v6-Schluessel wie die
+# Live-App — also in das echte Ernaehrungstagebuch. *.pages.dev ist ein eigener
+# Origin und damit ein eigener, leerer Speicher.
+#
+# Die App wird bewusst in ein Unterverzeichnis `nutritrack/` gelegt: Manifest,
+# Service-Worker-Registrierung, Icons und Notifications tragen `/nutritrack/`
+# an zwoelf Stellen fest verdrahtet. Unter `/` deployt waere die PWA kaputt.
+
+on:
+  push:
+    branches:
+      - "claude/**"
+      - "preview/**"
+  workflow_dispatch:
+
+concurrency:
+  group: preview-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Nach Cloudflare Pages
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      PROJECT: nutritrack-preview
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Ohne Cloudflare-Secrets ueberspringen
+        if: env.CLOUDFLARE_API_TOKEN == '' || env.CLOUDFLARE_ACCOUNT_ID == ''
+        run: |
+          echo "::notice::Uebersprungen — CLOUDFLARE_API_TOKEN oder CLOUDFLARE_ACCOUNT_ID fehlt."
+
+      - name: Konsistenzpruefung
+        if: env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
+        # Ein Preview mit kaputtem Inline-JS kostet nur Zeit beim Testen.
+        run: node tools/check.js
+
+      - name: Seite zusammenstellen
+        if: env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
+        run: |
+          set -eu
+          mkdir -p _site/nutritrack
+          cp -r index.html sw.js picker.js manifest.json icon.svg js _site/nutritrack/
+          # Weiterleitung, damit die nackte Domain in der App landet.
+          printf '/  /nutritrack/  302\n' > _site/_redirects
+
+          # Sichtbarer Hinweis, dass dies NICHT die Live-App ist. Wird nur in die
+          # Kopie geschrieben — das Repository bleibt unberuehrt, es gibt also
+          # keinen Versions-Bump fuer einen Banner, den nur der Test sieht.
+          python3 - <<'PY'
+          import io, os
+          p = '_site/nutritrack/index.html'
+          s = io.open(p, encoding='utf-8').read()
+          sha = os.environ.get('GITHUB_SHA', '')[:7]
+          # Branchnamen kuerzen: 'claude/nutritrack-code-review-uuhq0s' passt auf
+          # 390 px nicht in eine 22-px-Zeile und wurde beidseitig abgeschnitten.
+          ref = os.environ.get('GITHUB_REF_NAME', '').split('/')[-1]
+          if len(ref) > 22:
+              ref = ref[:20] + '…'
+          # Der Streifen sitzt OBEN und schiebt den Seiteninhalt um seine eigene
+          # Hoehe nach unten. Unten waere die falsche Stelle: Dort liegt die
+          # Bottom-Nav fest verankert, und ein Streifen darueber verdeckt genau
+          # die Bedienung, die getestet werden soll.
+          style = (
+            '<style id="ntPreviewBar">'
+            ':root{--ntpv:22px}'
+            'body{padding-top:var(--ntpv)!important}'
+            '#ntPv{position:fixed;top:0;left:0;right:0;z-index:99999;height:var(--ntpv);'
+            'display:flex;align-items:center;justify-content:center;gap:6px;'
+            'background:#8b2f1d;color:#fff;font:600 10px/1 system-ui,-apple-system,sans-serif;'
+            'letter-spacing:.02em;pointer-events:none;white-space:nowrap;overflow:hidden}'
+            '</style>'
+          )
+          bar = ('<div id="ntPv">TESTVERSION &middot; ' + ref + ' &middot; ' + sha + '</div>')
+          assert s.count('</head>') == 1 and s.count('</body>') == 1
+          s = s.replace('</head>', style + '\n</head>')
+          s = s.replace('</body>', bar + '\n</body>')
+          io.open(p, 'w', encoding='utf-8').write(s)
+          print('Banner gesetzt:', ref, sha)
+          PY
+
+      - name: Pages-Projekt anlegen (einmalig, danach No-Op)
+        if: env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
+        continue-on-error: true
+        run: npx --yes wrangler@4 pages project create "$PROJECT" --production-branch=main
+
+      - name: Deploy
+        if: env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
+        # --branch=main meldet den Stand IMMER als Produktion dieses
+        # Preview-Projekts. Das haelt die URL stabil (nutritrack-preview.pages.dev)
+        # statt sie je Commit zu wechseln — eine wechselnde URL waere in der
+        # Origin-Allowlist des Workers nicht zu fuehren und am Handy laestig.
+        run: npx --yes wrangler@4 pages deploy _site --project-name="$PROJECT" --branch=main --commit-dirty=true
+
+      - name: Adresse ausgeben
+        if: env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
+        run: |
+          echo "### Testversion bereit" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "https://$PROJECT.pages.dev/nutritrack/" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Eigener Origin: eigener localStorage, eigener Service Worker. Das echte Tagebuch auf hjolmes.github.io bleibt unberuehrt." >> "$GITHUB_STEP_SUMMARY"

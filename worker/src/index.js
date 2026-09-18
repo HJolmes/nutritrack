@@ -2,6 +2,7 @@ const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 const DEFAULT_ANTHROPIC_VERSION = "2023-06-01";
 const DEFAULT_ALLOWED_ORIGINS = [
   "https://hjolmes.github.io",
+  "https://nutritrack-preview.pages.dev",
   "http://localhost:8000",
   "http://127.0.0.1:8000",
   "http://localhost:8787",
@@ -748,7 +749,7 @@ const ALEXA_BABY_TYPES = new Set(["breast", "bottle", "diaper", "temp", "sleep",
 function alexaText(raw, max) {
   if (typeof raw !== "string") return "";
   // Steuerzeichen raus: Alexa liefert reinen Text, alles andere ist Unfug.
-  return raw.replace(/[ -]/g, " ").trim().slice(0, max);
+  return raw.replace(/[\x00-\x1f\x7f]/g, " ").trim().slice(0, max);
 }
 
 function sanitizeAlexaItem(raw) {

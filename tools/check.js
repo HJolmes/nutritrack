@@ -98,7 +98,37 @@ for (const f of jsFiles) {
   const code = read(f);
   if (syntaxCheck(f, code, false)) jsOk++;
 }
+// Der Worker gehoert dazu: Er wird ausgeliefert, und ein Syntaxfehler dort
+// nimmt KI, Sync und Share-Links mit — auf allen Geraeten gleichzeitig.
+// ES-Modul, deshalb als .mjs geprueft.
+if (fs.existsSync(path.join(ROOT, 'worker/src/index.js'))) {
+  if (syntaxCheck('worker/src/index.js', read('worker/src/index.js'), true)) jsOk++;
+}
 ok(`${jsOk} eigene JS-Datei(en) syntaktisch in Ordnung.`);
+
+// Die Herkunfts-Freigabe steht an zwei Stellen: als Fallback im Quelltext und
+// als wirksamer [vars]-Eintrag in wrangler.toml. Laufen sie auseinander,
+// funktioniert eine Umgebung und die andere nicht — und zwar erst im Browser
+// des Nutzers, als „Server nicht erreichbar".
+{
+  const toml = path.join(ROOT, 'worker/wrangler.toml');
+  const wsrc = path.join(ROOT, 'worker/src/index.js');
+  if (fs.existsSync(toml) && fs.existsSync(wsrc)) {
+    const code = read('worker/src/index.js');
+    const mDef = code.match(/const DEFAULT_ALLOWED_ORIGINS = \[([\s\S]*?)\];/);
+    const mVar = read('worker/wrangler.toml').match(/ALLOWED_ORIGINS = "([^"]+)"/);
+    if (mDef && mVar) {
+      const inCode = new Set([...mDef[1].matchAll(/"([^"]+)"/g)].map((x) => x[1]));
+      const inToml = new Set(mVar[1].split(',').map((x) => x.trim()).filter(Boolean));
+      const missing = [...inCode].filter((o) => !inToml.has(o));
+      if (missing.length) {
+        missing.forEach((o) => fail(`Herkunft '${o}' steht im Worker-Fallback, fehlt aber in wrangler.toml ALLOWED_ORIGINS.`));
+      } else {
+        ok(`Herkunfts-Freigabe konsistent (${inToml.size} Origins, davon ${inCode.size} auch im Fallback).`);
+      }
+    }
+  }
+}
 
 // 2b. Inline-<script>-Bloecke aus index.html. type="module" separat pruefen,
 // weil dort import/export erlaubt ist.

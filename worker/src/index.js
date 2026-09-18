@@ -962,6 +962,11 @@ const SYNC_SHOP = { header: "x-shop-room", prefix: "sl:", label: "Shopping list 
 // 8000 Zeichen der anderen Töpfe. Eigener Raum, eigener Schlüssel, eigener
 // Präfix: Wer Mahlzeiten teilt, gibt damit weder Zettel noch Tagebuch frei.
 const SYNC_PARTNER = { header: "x-partner-room", prefix: "pm:", label: "Partner inbox", maxCt: 120000 };
+// Wochenplan: gleiche Mechanik, ein Record = EIN TAG. Die Records tragen einen
+// Abzug der geplanten Rezepte (Name, Zutaten, Mengen), damit die Gegenseite den
+// Plan auch ohne die Rezeptsammlung des Absenders lesen kann — deshalb ein
+// hoeheres `maxCt` als bei Zettel und Tagebuch, wo ein Record winzig ist.
+const SYNC_PLAN = { header: "x-plan-room", prefix: "mp:", label: "Meal plan sync", maxCt: 60000 };
 
 function readSyncRoom(request, cfg) {
   const raw = request.headers.get(cfg.header) || "";
@@ -1500,8 +1505,9 @@ export default {
         shopSyncConfigured: Boolean(env.SHARE_KV),
         partnerSyncConfigured: Boolean(env.SHARE_KV),
         alexaInboxConfigured: Boolean(env.SHARE_KV),
+        planSyncConfigured: Boolean(env.SHARE_KV),
         decoderSecretConfigured: Boolean(env.DECODER_SECRET),
-        codeVersion: "v0.238-alexa-inbox",
+        codeVersion: "v0.247-plan-sync",
       });
     }
 
@@ -1526,6 +1532,12 @@ export default {
     }
     if (request.method === "GET" && url.pathname === "/shop/sync") {
       return handleSyncPull(request, origin, env, SYNC_SHOP);
+    }
+    if (request.method === "POST" && url.pathname === "/plan/sync") {
+      return handleSyncPush(request, origin, env, SYNC_PLAN);
+    }
+    if (request.method === "GET" && url.pathname === "/plan/sync") {
+      return handleSyncPull(request, origin, env, SYNC_PLAN);
     }
     if (request.method === "POST" && url.pathname === "/partner/sync") {
       return handleSyncPush(request, origin, env, SYNC_PARTNER);

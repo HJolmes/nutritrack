@@ -297,12 +297,81 @@ const EXPECTED_NAMESPACES = [
   }
   console.log(`  ok  ${clicked} sichtbare data-act-Elemente angeklickt, ohne neuen Fehler.`);
 
+  // 5. Liegt ein geoeffnetes Menue wirklich OBEN?
+  // Alle `.ov` teilen `z-index:300` — oben liegt das, was in der DOM-Reihenfolge
+  // zuletzt steht. `featSheetOv`/`featCatOv` stehen fast am Ende, also verdeckten
+  // sie 21 von 25 Zielen: das Menue ging auf und war nicht bedienbar, ohne dass
+  // ein einziger JS-Fehler anfiel. "Oeffnet ohne Fehler" ist keine Aussage
+  // darueber, ob man es bedienen kann.
+  const stack = await page.evaluate(async () => {
+    const out = [];
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    const closeAll = () => document.querySelectorAll('.ov.open').forEach((o) => o.classList.remove('open'));
+    const open = () => [...document.querySelectorAll('.ov.open')].map((x) => x.id);
+    if (!window.NTFeat) return out;
+    const feats = NTFeat.list();
+
+    // Katalog -> Zeile antippen -> das Blatt muss oben liegen.
+    for (const f of feats) {
+      closeAll();
+      NTFeat.openCatalog();
+      await sleep(30);
+      const row = [...document.querySelectorAll('#featCatBody .list-row')]
+        .find((x) => (x.getAttribute('data-args') || '').indexOf('"' + f.id + '"') >= 0);
+      if (!row) continue;
+      row.click();
+      await sleep(60);
+      const o = open();
+      if (o[o.length - 1] !== 'featSheetOv') out.push('Katalog → ' + f.label + ': oben liegt ' + o[o.length - 1]);
+    }
+
+    // Blatt -> jede Aktion -> das neu geoeffnete Overlay muss oben liegen.
+    for (const f of feats) {
+      const acts = f.actions || [];
+      for (let i = 0; i < acts.length; i++) {
+        closeAll();
+        NTFeat.sheet(f.id);
+        await sleep(40);
+        const vorher = open();
+        const rows = document.querySelectorAll('#featSheetBody .list-row');
+        if (!rows[i]) continue;
+        rows[i].click();
+        await sleep(200);
+        const o = open();
+        const neu = o.filter((x) => vorher.indexOf(x) < 0);
+        if (!neu.length) continue; // Aktion oeffnet kein Overlay – nichts zu pruefen
+        if (o[o.length - 1] !== neu[neu.length - 1]) {
+          out.push(f.label + ' → ' + acts[i].label + ': ' + neu.join(',') + ' liegt hinter ' + o[o.length - 1]);
+        }
+      }
+    }
+    closeAll();
+    return out;
+  });
+  if (!stack.length) console.log('  ok  Jedes aus Katalog und Funktions-Blatt geoeffnete Menue liegt oben.');
+  else stack.forEach((m) => console.log('  x   ' + m));
+
+  // 6. Jede Aktion im Register muss aufloesbar sein.
+  // Seit die Zeilen ueber `NTFeat.act` laufen, steht der Zielname nicht mehr in
+  // einem `data-act` — `tools/check.js` sieht ihn also nicht mehr. Ohne diese
+  // Pruefung faende ein Tippfehler im Register erst der Nutzer.
+  const deadFeatActs = await page.evaluate(() => {
+    if (!window.NTFeat || !window.NTActions) return [];
+    const bad = [];
+    NTFeat.list().forEach((f) => (f.actions || []).forEach((a) => {
+      if (!NTActions.resolve(a.act)) bad.push(f.label + ' → ' + a.label + ' (' + a.act + ')');
+    }));
+    return bad;
+  });
+  if (!deadFeatActs.length) console.log('  ok  Alle Aktionen im Funktions-Register sind aufloesbar.');
+  else deadFeatActs.forEach((m) => console.log('  x   Aktion zeigt ins Leere: ' + m));
+
   await browser.close();
 
-  if (errors.length || nsFail || badExports.length || deadHandlers.length || delegationFail) {
+  if (errors.length || nsFail || badExports.length || deadHandlers.length || delegationFail || stack.length || deadFeatActs.length) {
     console.error('\nFEHLER:');
     [...new Set(errors)].forEach((e) => console.error('  x   ' + e));
-    console.error(`\n${errors.length + nsFail + badExports.length + deadHandlers.length + delegationFail} Problem(e).`);
+    console.error(`\n${errors.length + nsFail + badExports.length + deadHandlers.length + delegationFail + stack.length + deadFeatActs.length} Problem(e).`);
     process.exit(1);
   }
   console.log('\nRauchtest bestanden.');

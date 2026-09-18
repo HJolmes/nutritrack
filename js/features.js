@@ -33,8 +33,14 @@
 
 // ── Die Liste. Eine Zeile je Funktion. ────────────────────────────────────
 // fixed:  laesst sich nicht abschalten (ohne Mahlzeiten ist die App leer).
-// auto:   blendet sich selbst ein, sobald Inhalt da ist — der Schalter
-//         ueberschreibt das nur in Richtung „aus".
+// note:   Die Funktion ist eingeschaltet und die Kachel trotzdem nicht da,
+//         weil ihr die Voraussetzung fehlt. Steht im Katalog unter dem Namen.
+//         **Das ist die Ausnahme, nicht die Regel** (v0.254): Einkaufszettel
+//         und Postfach haben sich bis dahin bei leerem Inhalt SELBST
+//         ausgeblendet, waehrend ihr Schalter auf „an" stand — zwei Stellen,
+//         die Verschiedenes ueber dieselbe Sache sagten. Sichtbarkeit haengt
+//         seither am Schalter; nur das Postfach behaelt eine echte
+//         Voraussetzung, weil es ohne Kopplung nichts zu zeigen haette.
 // head:   Kopfzeile, in die der ⋯-Knopf kommt. Vorgabe '.wh'.
 var FEATURES=[
   {id:'meals', ic:'🍽', label:'Mahlzeiten', card:'mealsCard', head:'.sec-head', fixed:true,
@@ -53,7 +59,7 @@ var FEATURES=[
      {ic:'🔗', label:'Verbindungen',      hint:'Plan mit jemandem teilen', act:'NTSync.open'}
    ]},
 
-  {id:'shop', ic:'🛒', label:'Einkaufszettel', card:'shopCard', auto:true,
+  {id:'shop', ic:'🛒', label:'Einkaufszettel', card:'shopCard',
    sub:'Was noch gekauft werden muss',
    actions:[
      {ic:'🛒', label:'Zettel öffnen', hint:'Artikel abhaken und ergänzen', act:'NTShop.open'},
@@ -82,7 +88,7 @@ var FEATURES=[
   // nur eine ausgeblendete Kachel. Er lag bis v0.252 im Profil unter
   // „Einstellungen → Profil" — also weder an der Kachel noch bei den anderen
   // Schaltern, sondern an einer dritten Stelle.
-  {id:'baby', ic:'👶', label:'Baby-Tagebuch', card:'babyCard', auto:true, flag:'babyOn',
+  {id:'baby', ic:'👶', label:'Baby-Tagebuch', card:'babyCard', flag:'babyOn',
    sub:'Stillen, Flasche, Windeln, Temperatur',
    actions:[
      {ic:'👶', label:'Tagebuch öffnen',   hint:'Einträge sehen und ergänzen', act:'NTBaby.openDiary'},
@@ -90,8 +96,9 @@ var FEATURES=[
      {ic:'🔗', label:'Verbindungen',     hint:'Tagebuch mit jemandem teilen', act:'NTSync.open'}
    ]},
 
-  {id:'partner', ic:'📬', label:'Vom Partner', card:'partnerCard', head:'>div', auto:true,
+  {id:'partner', ic:'📬', label:'Vom Partner', card:'partnerCard', head:'>div',
    sub:'Mahlzeiten direkt zugeschickt bekommen',
+   note:'Erscheint, sobald eine Kopplung besteht',
    actions:[
      {ic:'📬', label:'Postfach',    hint:'Empfangene Sendungen übernehmen', act:'NTPartner.openInbox'},
      {ic:'🤝', label:'Kopplung',    hint:'Partner verbinden oder lösen', act:'NTPartner.open'}
@@ -138,10 +145,15 @@ function sheet(id){
   document.getElementById('featSheetTitle').textContent=f.ic+' '+f.label;
 
   var html='';
-  (f.actions||[]).forEach(function(a){
-    html+='<div class="list-row" data-act="'+esc(a.act)+'"'
-      +(a.args?" data-args='"+esc(JSON.stringify(a.args))+"'":'')
-      +'>'
+  (f.actions||[]).forEach(function(a,i){
+    // Die Zeile ruft NICHT die Aktion selbst, sondern act() — und das schliesst
+    // das Blatt vorher. Grund: Alle `.ov` teilen `z-index:300`, oben liegt also
+    // das, was in der DOM-Reihenfolge zuletzt steht. `featSheetOv` steht fast am
+    // Ende, damit lag es ueber 13 der 17 Ziele; das geoeffnete Menue erschien
+    // dahinter und war nicht bedienbar. Die vier Ausnahmen waren kein Verdienst,
+    // sondern Zufall der Markup-Reihenfolge — deshalb geht JEDE Aktion durch
+    // dieselbe Stelle, statt vier Sonderfaelle stehen zu lassen.
+    html+='<div class="list-row" data-act="NTFeat.act" data-args=\''+JSON.stringify([f.id,i])+'\'>'
       +'<div class="lr-ic">'+a.ic+'</div>'
       +'<div class="lr-body"><div class="lr-name">'+esc(a.label)+'</div>'
       +'<div class="lr-sub">'+esc(a.hint||'')+'</div></div>'
@@ -170,9 +182,29 @@ function sheet(id){
     +'<div class="lr-arrow">›</div></div>';
 
   el.innerHTML=html;
+  // Wer aus dem Katalog kommt, laesst ihn sonst offen ueber dem Blatt liegen
+  // (featCatOv steht im Markup NACH featSheetOv). Zurueck geht es ueber die
+  // Zeile „Alle Funktionen" weiter unten im Blatt — ein sichtbarer Weg statt
+  // eines gemerkten Zustands, der nach einem Hintergrund-Tipp veraltet waere.
+  closeOv('featCatOv');
   openOv('featSheetOv');
 }
 function closeSheet(){closeOv('featSheetOv');}
+
+// ── Eine Aktion des Blattes ausfuehren ────────────────────────────────────
+// Erst schliessen, dann ausfuehren — nie umgekehrt: `openOv` setzt nur eine
+// Klasse, ein danach geschlossenes Blatt naehme dem Ziel nichts von seiner Lage,
+// aber ein VORHER geschlossenes Blatt kann das Ziel nicht mehr verdecken.
+function act(id,i){
+  var f=byId(id);
+  if(!f||!f.actions||!f.actions[i])return;
+  var a=f.actions[i];
+  closeOv('featSheetOv');
+  closeOv('featCatOv');
+  var fn=(window.NTActions&&NTActions.resolve)?NTActions.resolve(a.act):null;
+  if(!fn){console.error('NTFeat: Aktion nicht aufloesbar:',a.act);return;}
+  fn.apply(null,a.args||[]);
+}
 
 // Ein Schalter, der sofort wirkt: Das Blatt zeigt danach den neuen Zustand,
 // und die Kachel ist schon verschwunden. Ohne das steht man vor einem Blatt,
@@ -242,7 +274,9 @@ function renderCatalog(){
     html+='<div class="list-row" data-act="NTFeat.sheet" data-args=\''+JSON.stringify([f.id])+'\' style="'+(off?'opacity:.55;':'')+'">'
       +'<div class="lr-ic">'+f.ic+'</div>'
       +'<div class="lr-body"><div class="lr-name">'+esc(f.label)+(f.fixed?' <span style="font-weight:600;color:var(--mu);font-size:11px;">· immer an</span>':'')+'</div>'
-      +'<div class="lr-sub">'+esc(f.sub||'')+'</div></div>'
+      // Ein Schalter auf „an" neben einer Kachel, die nicht da ist, ist eine
+      // falsche Auskunft. Wo eine echte Voraussetzung fehlt, steht sie hier.
+      +'<div class="lr-sub">'+esc((!off&&f.note)?f.note:(f.sub||''))+'</div></div>'
       +'<div style="display:flex;align-items:center;gap:4px;">'
       +'<button type="button" class="feat-ord" data-act="NTFeat.move" data-args=\''+JSON.stringify([id,-1])+'\' data-stop '+(i===0?'disabled':'')+' aria-label="nach oben">▲</button>'
       +'<button type="button" class="feat-ord" data-act="NTFeat.move" data-args=\''+JSON.stringify([id,1])+'\' data-stop '+(i===order.length-1?'disabled':'')+' aria-label="nach unten">▼</button>'
@@ -315,6 +349,7 @@ function saveWaterGoal(){
 window.NTFeat={
   list:list, byId:byId, mount:mount, isOff:isOff,
   sheet:sheet, closeSheet:closeSheet, toggle:toggle,
+  act:act,
   openCatalog:openCatalog, closeCatalog:closeCatalog, renderCatalog:renderCatalog,
   toggleInCatalog:toggleInCatalog, move:move,
   openWaterGoal:openWaterGoal, saveWaterGoal:saveWaterGoal,

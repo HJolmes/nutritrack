@@ -510,15 +510,23 @@ function renderCard(){
   var card=document.getElementById('shopCard');
   if(!card)return;
   var op=openItems();
-  // Kachel nur zeigen, wenn sie etwas zu sagen hat – ein leerer Zettel soll den
-  // Heute-Tab nicht zustellen.
-  if(!op.length&&!list().length){card.style.display='none';return;}
+  // Seit v0.254 blendet sich die Kachel NICHT mehr selbst aus. Vorher tat sie
+  // es bei leerem Zettel — und der Schalter im Funktions-Katalog stand trotzdem
+  // auf „an". Zwei Stellen sagten Verschiedenes ueber dieselbe Sache, und die
+  // sichtbare (der Bildschirm) gewann gegen die, die der Nutzer eingestellt hat.
+  // Sichtbarkeit haengt seither allein am Schalter (`NTDash` / `.dash-off`);
+  // leer heisst leer und sieht aus wie Wochenplan, Sport und Fasten es immer
+  // schon taten.
   card.style.display='';
   var v=document.getElementById('shopCardVal');
-  if(v)v.textContent=op.length?(op.length+(op.length===1?' Artikel':' Artikel')):'alles erledigt ✓';
+  // Auf einer leeren Kachel ist „0 Artikel" keine Auskunft, sondern eine
+  // Sackgasse — der Knopf sagt, was der Tipp tut (wie „+ Eintragen" beim Sport).
+  if(v)v.textContent=op.length?(op.length+' Artikel'):(list().length?'alles erledigt ✓':'＋ Eintragen');
   var body=document.getElementById('shopCardBody');
   if(body){
-    if(!op.length){
+    if(!list().length){
+      body.innerHTML='<div style="font-size:12px;color:var(--mu);">Noch nichts drauf.</div>';
+    }else if(!op.length){
       body.innerHTML='<div style="font-size:12px;color:var(--mu);">Nichts mehr offen.</div>';
     }else{
       var shown=op.slice(0,6).map(function(it){

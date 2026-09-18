@@ -918,7 +918,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
       </div>
       <div id="partnerCardBody" style="margin-top:6px;"></div>
     </div>
-    <div class="wc" id="shopCard" style="display:none;">
+    <div class="wc" id="shopCard">
       <div class="wh">
         <div class="wt">🛒 Einkaufszettel</div>
         <button type="button" data-act="NTShop.open" style="background:var(--g2);border:none;border-radius:20px;color:white;font-size:13px;font-weight:700;padding:4px 12px;cursor:pointer;"><span id="shopCardVal">0 Artikel</span> →</button>
@@ -1137,7 +1137,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.253</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.254</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -3014,7 +3014,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.253';
+var APP_VERSION='0.254';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung

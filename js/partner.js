@@ -406,15 +406,22 @@ function refreshBadges(){
   }
   var card=document.getElementById('partnerCard');
   if(card){
-    card.style.display=n?'block':'none';
+    // Seit v0.254 haengt die Kachel an der KOPPLUNG, nicht an einer neuen
+    // Sendung. Vorher war sie eine Benachrichtigung, die sich selbst wegnahm —
+    // und der Schalter im Funktions-Katalog stand trotzdem auf „an". Ohne
+    // Kopplung bleibt sie weg: dort gaebe es nichts zu zeigen, und der Weg zur
+    // Kopplung steht im Funktions-Blatt.
+    card.style.display=on?'block':'none';
     var val=document.getElementById('partnerCardVal');
-    if(val)val.textContent=n+' neu';
+    if(val)val.textContent=n?(n+' neu'):'Postfach';
     var body=document.getElementById('partnerCardBody');
     if(body){
       var first=inbox().filter(function(x){return x.st==='new';}).slice(0,3);
-      body.innerHTML=first.map(function(it){
-        return '<div style="font-size:12px;color:var(--mu);line-height:1.6;">'+packetIcon(it.p)+' '+esc(packetTitle(it))+' · '+esc(it.from||peerName())+'</div>';
-      }).join('');
+      body.innerHTML=first.length
+        ? first.map(function(it){
+            return '<div style="font-size:12px;color:var(--mu);line-height:1.6;">'+packetIcon(it.p)+' '+esc(packetTitle(it))+' · '+esc(it.from||peerName())+'</div>';
+          }).join('')
+        : '<div style="font-size:12px;color:var(--mu);">Nichts Neues von '+esc(peerName())+'.</div>';
     }
   }
 }

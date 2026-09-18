@@ -1,6 +1,11 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.254',items:[
+    {icon:'\ud83d\udd27',text:'Ein aus dem ⋯-Blatt oder aus „Funktionen“ geöffnetes Menü ging hinter dem noch offenen Menü auf und war damit nicht bedienbar. Betroffen waren 21 von 25 Wegen — die vier, die gingen, gingen nur zufällig. Jetzt schließt sich das Blatt, bevor es etwas öffnet.',where:'Heute → ⋯ · Mehr → \ud83e\udde9 Funktionen'},
+    {icon:'\ud83d\uded2',text:'Der Einkaufszettel blendete seine Kachel selbst aus, solange nichts drauf stand — während sein Schalter auf „an“ stand. Jetzt entscheidet allein der Schalter: eingeschaltet heißt sichtbar, leer heißt leer, genau wie bei Wochenplan, Sport und Fasten. Wer ihn nicht braucht, schaltet ihn unter „Funktionen“ aus — die Artikel bleiben trotzdem erhalten.',where:'Heute · Mehr → \ud83e\udde9 Funktionen'},
+    {icon:'\ud83d\udcec',text:'Dasselbe beim Postfach, nur andersherum: Es war bisher nur zu sehen, wenn gerade etwas Neues ankam. Jetzt steht es dauerhaft da, sobald eine Kopplung besteht, und sagt auch „Nichts Neues“. Ohne Kopplung bleibt es weg — und der Katalog schreibt das jetzt unter den Namen, statt einen Schalter auf „an“ neben einer fehlenden Kachel zu zeigen.',where:'Heute · Mehr → \ud83e\udde9 Funktionen'},
+  ]},
   {v:'0.253',items:[
     {icon:'\ud83e\udde9',text:'Jede Funktion hat jetzt genau einen Ort: ihre Kachel auf „Heute“. Oben rechts an jeder Kachel steht ein ⋯-Knopf — darunter liegt alles, was zu dieser Funktion gehört. Beim Wasser also Wasserziel und Trink-Erinnerung, beim Sport das Eintragen und der Sport-Sync, beim Baby das Tagebuch, die Angaben zum Baby und das Teilen. Vorher lag dieselbe Sache an bis zu drei Stellen verteilt.',where:'Heute → ⋯ an jeder Kachel'},
     {icon:'\ud83d\udccb',text:'Neu: „Funktionen“ unter Mehr. Dort steht jede Kachel mit Schalter und ▲▼ — ein- und ausschalten, sortieren, und mit einem Tipp auf die Zeile direkt öffnen. Damit ist auch eine abgeschaltete Funktion erreichbar, ohne sie erst wieder einblenden zu müssen. Der alte Dialog „Kacheln auf Heute“ ist darin aufgegangen.',where:'Mehr → \ud83e\udde9 Funktionen'},

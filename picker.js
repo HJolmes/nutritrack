@@ -1042,7 +1042,7 @@ function pickerBarcodeManualSave(code){
 function pickerAnalyze(){
   if(!window._pickerPhotoB64)return;
   if(!isOnline){
-    if(window._pickerPhotoB64){addToOfflineQueue(window._pickerPhotoB64,pickerMeal,S.currentDate);}
+    if(window._pickerPhotoB64){NTQueue.add(window._pickerPhotoB64,pickerMeal,S.currentDate);}
     else{showToast('Foto-Analyse benötigt Internet');}
     return;
   }

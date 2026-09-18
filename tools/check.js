@@ -170,7 +170,72 @@ if (acts.size) {
   if (!unknown) ok(`Alle ${acts.size} data-act-Aktionen sind registriert.`);
 }
 
-// ── 5. Ausgabe ────────────────────────────────────────────────────────────
+// ── 5. onclick-Ziele in generiertem HTML ──────────────────────────────────
+// Der Rauchtest (tools/smoke.js) prueft nur, was zur Pruefzeit im DOM steht.
+// Der weitaus groessere Teil der Knoepfe entsteht aber erst zur Laufzeit aus
+// innerHTML-Strings — ein onclick darin, der beim Zerlegen des Monolithen auf
+// einen inzwischen modul-privaten Namen zeigt, faellt dort nie auf. Diese
+// Pruefung liest die Strings im Quelltext und loest sie gegen das auf, was
+// global existiert.
+{
+  const sources = [['index.html', indexHtml]];
+  for (const f of jsFiles) { if (!f.includes('zxing')) sources.push([f, read(f)]); }
+
+  // Global verfuegbar ist alles, was NICHT in einer IIFE gekapselt ist:
+  // das Inline-Script von index.html und picker.js (das bewusst nie gekapselt
+  // wurde — seine 93 Funktionen haengen direkt an window).
+  const globals = new Set();
+  for (const [file, code] of sources) {
+    const encapsulated = /^\s*\(function\s*\(/m.test(code.split('\n').slice(0, 40).join('\n'));
+    if (file !== 'index.html' && encapsulated) continue;
+    for (const x of code.matchAll(/^\s*(?:async\s+)?function\s+([A-Za-z0-9_$]+)/gm)) globals.add(x[1]);
+  }
+  // Dazu alles, was ein Modul an window haengt. Der Export steht einzeilig
+  // (dashboard.js) oder ueber mehrere Zeilen (baby.js) — die Klammerbilanz
+  // deckt beides ab, ein Regex mit \n}; nur die zweite Form.
+  const nsMembers = {};
+  for (const [, code] of sources) {
+    const start = code.search(/window\.NT[A-Za-z]+\s*=\s*\{/);
+    if (start < 0) continue;
+    const ns = code.slice(start).match(/window\.(NT[A-Za-z]+)/)[1];
+    let i = code.indexOf('{', start), depth = 0, end = i;
+    for (; i < code.length; i++) {
+      if (code[i] === '{') depth++;
+      else if (code[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
+    }
+    globals.add(ns);
+    nsMembers[ns] = new Set([...code.slice(start, end).matchAll(/(?:^|[,{\s])([A-Za-z0-9_$]+)\s*:/gm)].map((x) => x[1]));
+  }
+  const HOST = new Set(['this','event','document','window','console','JSON','Math','Object','Array','String',
+    'Number','Date','Promise','location','history','navigator','localStorage','sessionStorage','alert',
+    'confirm','prompt','setTimeout','clearTimeout','setInterval','parseInt','parseFloat','encodeURIComponent',
+    'decodeURIComponent','if','for','while','return','typeof','new','function','void','delete','in',
+    'instanceof','else','do','switch','try','catch','throw','await','navigator']);
+
+  let dead = 0, checked = 0;
+  for (const [file, code] of sources) {
+    // onclick="…" im Markup und onclick=\"…\" in JS-Strings
+    const attrs = [...code.matchAll(/onclick=\\?["']((?:[^"'\\]|\\.)*)["']/g)].map((x) => x[1]);
+    for (const a of attrs) {
+      for (const c of a.match(/(?:^|[;{(\s!=&|?:])([A-Za-z_$][A-Za-z0-9_$]*(?:\.[A-Za-z0-9_$]+)*)\s*\(/g) || []) {
+        const name = c.replace(/^[^A-Za-z_$]/, '').replace(/\s*\($/, '');
+        const parts = name.split('.');
+        if (HOST.has(parts[0])) continue;
+        checked++;
+        if (parts.length === 1) {
+          if (!globals.has(parts[0])) { fail(`${file}: onclick ruft '${name}()' — weder globale Funktion noch Modul-Export.`); dead++; }
+        } else if (nsMembers[parts[0]]) {
+          if (!nsMembers[parts[0]].has(parts[1])) { fail(`${file}: onclick ruft '${name}()' — ${parts[0]} exportiert '${parts[1]}' nicht.`); dead++; }
+        } else if (!globals.has(parts[0])) {
+          fail(`${file}: onclick ruft '${name}()' — '${parts[0]}' existiert nicht.`); dead++;
+        }
+      }
+    }
+  }
+  if (!dead) ok(`Alle ${checked} onclick-Ziele (auch in generiertem HTML) sind aufloesbar.`);
+}
+
+// ── 6. Ausgabe ────────────────────────────────────────────────────────────
 notes.forEach((n) => console.log('  ok  ' + n));
 warnings.forEach((w) => console.log('  !   ' + w));
 if (errors.length) {

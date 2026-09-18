@@ -948,13 +948,13 @@ body.kb-open #feedbackFab{display:none;}
     </div>
   </div>
   <div class="main">
-    <div style="display:none;"><button type="button" id="stTabStats" onclick="switchStatsTab('stats')">stats</button></div>
+    <div style="display:none;"><button type="button" id="stTabStats" onclick="NTStats.switchTab('stats')">stats</button></div>
     <div id="stPanelStats" style="display:flex;flex-direction:column;gap:14px;">
       <div class="trend-card">
         <div class="head"><h4>Kalorien</h4>
           <div style="display:flex;gap:4px;">
-            <button type="button" class="stab act" id="rangeBtn7" onclick="setStatsRange(7)">7T</button>
-            <button type="button" class="stab" id="rangeBtn30" onclick="setStatsRange(30)">30T</button>
+            <button type="button" class="stab act" id="rangeBtn7" onclick="NTStats.setRange(7)">7T</button>
+            <button type="button" class="stab" id="rangeBtn30" onclick="NTStats.setRange(30)">30T</button>
           </div>
         </div>
         <div id="weekBars" style="display:flex;align-items:flex-end;gap:4px;height:120px;margin-top:14px;"></div>
@@ -976,7 +976,7 @@ body.kb-open #feedbackFab{display:none;}
         <div class="head" style="display:flex;align-items:center;gap:10px;">
           <h4 style="flex:1;">Gewicht</h4>
           <input type="number" id="weightToday" step="0.1" placeholder="kg" style="width:80px;border:1.5px solid var(--br);border-radius:14px;padding:8px;font-size:15px;font-weight:600;text-align:center;outline:none;background:#fff;">
-          <button type="button" class="svb" style="padding:8px 14px;margin-top:0;" onclick="logWeight()">✓</button>
+          <button type="button" class="svb" style="padding:8px 14px;margin-top:0;" onclick="NTStats.logWeight()">✓</button>
         </div>
         <div style="font-size:11px;color:var(--mu);margin-top:6px;" id="weightTrend"></div>
         <canvas id="weightChart" height="120" style="width:100%;display:none;margin-top:12px;"></canvas>
@@ -984,7 +984,7 @@ body.kb-open #feedbackFab{display:none;}
       </div>
       <div class="trend-card">
         <div class="head"><h4>KI-Bericht ✨</h4>
-          <button type="button" onclick="requestWeekReport()" id="weekReportBtn" style="font-size:12px;background:var(--g1);border:none;border-radius:999px;padding:6px 12px;color:white;font-weight:600;cursor:pointer;">Erstellen</button>
+          <button type="button" onclick="NTStats.weekReport()" id="weekReportBtn" style="font-size:12px;background:var(--g1);border:none;border-radius:999px;padding:6px 12px;color:white;font-weight:600;cursor:pointer;">Erstellen</button>
         </div>
         <div id="weekReportText" style="font-size:13px;color:var(--mu);line-height:1.6;margin-top:8px;"></div>
         <div id="weekReportSource" style="margin-top:6px;"></div>
@@ -992,7 +992,7 @@ body.kb-open #feedbackFab{display:none;}
       <div class="trend-card" id="offlineQueueWrap" style="display:none;">
         <div class="head"><h4>📷 Offline-Fotos</h4></div>
         <div id="offlineQueueList" style="margin-top:8px;"></div>
-        <button type="button" class="svb" style="margin-top:8px;" onclick="processOfflineQueue()">Jetzt analysieren</button>
+        <button type="button" class="svb" style="margin-top:8px;" onclick="NTQueue.process()">Jetzt analysieren</button>
       </div>
     </div>
   </div>
@@ -1137,7 +1137,7 @@ body.kb-open #feedbackFab{display:none;}
       <div class="lr-body"><div class="lr-name">Kacheln auf „Heute"</div><div class="lr-sub">Reihenfolge ändern, Kacheln ausblenden</div></div>
       <div class="lr-val">›</div>
     </div>
-    <div class="list-row" onclick="openRecurManage()">
+    <div class="list-row" onclick="NTRecur.openManage()">
       <div class="lr-ic">🔁</div>
       <div class="lr-body"><div class="lr-name">Wiederkehrende Mahlzeiten</div><div class="lr-sub">Automatisch an festen Wochentagen eintragen</div></div>
       <div class="lr-val">›</div>
@@ -1176,7 +1176,7 @@ body.kb-open #feedbackFab{display:none;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.249</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.250</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1961,7 +1961,7 @@ body.kb-open #feedbackFab{display:none;}
       <div style="font-size:13px;color:var(--mu);margin-bottom:8px;">An welchen Tagen soll diese Mahlzeit automatisch eingetragen werden?</div>
       <div id="recurWeekdayChips" style="display:flex;gap:5px;margin-bottom:14px;"></div>
       <div style="font-size:11px;color:var(--mu);margin-bottom:14px;line-height:1.5;">Die Einträge erscheinen ab dem nächsten passenden Tag automatisch. An Tagen, wo es nicht stimmt, kannst du sie einfach löschen — sie kommen an dem Tag nicht zurück.</div>
-      <button type="button" class="svb" style="width:100%;" onclick="saveRecurringRule()">Wiederholung speichern</button>
+      <button type="button" class="svb" style="width:100%;" onclick="NTRecur.save()">Wiederholung speichern</button>
     </div>
   </div>
 </div>
@@ -2870,7 +2870,7 @@ body.kb-open #feedbackFab{display:none;}
             <input type="time" class="sinp" id="reminderTime" style="flex:0 0 110px;">
             <input type="text" class="sinp" id="reminderLabel" placeholder="z.B. Mittagessen" style="flex:1;">
           </div>
-          <button type="button" class="svb" style="margin-top:0;" onclick="addReminder()">⏰ Erinnerung hinzufügen</button>
+          <button type="button" class="svb" style="margin-top:0;" onclick="NTRemind.add()">⏰ Erinnerung hinzufügen</button>
         </div>
       </div>
 
@@ -2967,7 +2967,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.249';
+var APP_VERSION='0.250';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -3149,23 +3149,6 @@ function aiSourceBadgeHtml(){
   return '<span style="display:inline-block;font-size:10px;font-weight:600;color:var(--mu);background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 7px;margin-left:6px;vertical-align:middle;white-space:nowrap;">über '+esc(t)+'</span>';
 }
 
-// ── OneDrive PKCE Config ──
-var OD_CLIENT_ID='ae62274b-87de-4369-b1e5-9d6e45a724f4';
-var OD_REDIRECT=location.origin+'/nutritrack/';
-var OD_SCOPES='Files.ReadWrite User.Read offline_access';
-var OD_FILE_PATH='/NutriTrack/nutritrack-backup.json';
-var OD_SLOTS=5;
-function _odFolder(){return (localStorage.getItem('nt_od_path')||'/NutriTrack').replace(/\/+$/,'');}
-function _odSlotPath(idx){return _odFolder()+'/nutritrack-slot-'+(idx+1)+'.json';}
-function _odSaveFolder(path){
-  path=(path||'').trim().replace(/\/+$/,'');
-  if(!path.startsWith('/'))path='/'+path;
-  localStorage.setItem('nt_od_path',path);
-  showToast('Pfad gespeichert: '+path);
-  renderOneDriveStatus();
-}
-function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slots_meta')||'[null,null,null,null,null]');}catch(e){return [null,null,null,null,null];}}
-function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
 
 // CHANGELOG ist nach js/changelog.js ausgelagert (window.CHANGELOG).
 
@@ -3294,7 +3277,7 @@ window.addEventListener('DOMContentLoaded',function(){
   if(_odCode&&_odState){
     loadS();loadX();loadBarcodeCache();
     var hadLegacyApiKey=!!S.apiKey;
-    _odHandleCallback(_odCode,_odState);
+    NTDrive.handleCallback(_odCode,_odState);
     clearLegacyApiKey();
     if(S.setupDone||hadLegacyApiKey||S.name!=='Du')showMain();
     return;
@@ -3313,7 +3296,7 @@ window.addEventListener('DOMContentLoaded',function(){
   var _mainShown=(S.setupDone||hadLegacyApiKey||S.name!=='Du');
   if(_mainShown)showMain();
   // Wiederkehrende Mahlzeiten für heute eintragen (#122)
-  if(_mainShown)ensureRecurringForCurrentDay();
+  if(_mainShown)NTRecur.ensureToday();
   // Auto-Import wenn die App über einen geteilten Rezept-Link geöffnet wurde
   if(_mainShown)_checkSharedItemOnBoot();
   // Service Worker
@@ -3541,14 +3524,14 @@ function openAutoSaves(){closeOv('settOv');renderAutoSaves();openOv('autoSavesOv
 function renderAutoSaves(){
   var el=document.getElementById('autoSavesList');
   if(!el)return;
-  if(_odLoadTokens()){
+  if(NTDrive.tokens()){
     // OneDrive-Slots anzeigen
-    var meta=_odSlotsMetaGet();
-    var currentIdx=parseInt(localStorage.getItem('nt_od_slot_idx')||'0',10)%OD_SLOTS;
+    var meta=NTDrive.slotsMeta();
+    var currentIdx=parseInt(localStorage.getItem('nt_od_slot_idx')||'0',10)%NTDrive.SLOTS;
     var html='<div style="font-size:12px;color:var(--mu);margin-bottom:12px;">☁️ OneDrive · 5 rotierende Slots (nächster: Slot '+(currentIdx+1)+')</div>';
-    for(var i=0;i<OD_SLOTS;i++){
+    for(var i=0;i<NTDrive.SLOTS;i++){
       var m=meta[i];
-      var isCurrent=i===((currentIdx-1+OD_SLOTS)%OD_SLOTS)&&m;
+      var isCurrent=i===((currentIdx-1+NTDrive.SLOTS)%NTDrive.SLOTS)&&m;
       if(m){
         var d=new Date(m.savedAt);
         var label=d.toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'})+' · '+d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
@@ -3558,7 +3541,7 @@ function renderAutoSaves(){
           +'<div style="font-size:13px;font-weight:700;color:var(--tx);">'+label+'</div>'
           +(isCurrent?'<div style="font-size:11px;color:var(--g1);margin-top:2px;">← zuletzt gespeichert</div>':'')
           +'</div>'
-          +'<button type="button" class="seb" style="flex-shrink:0;" onclick="_odSlotLoad('+i+')">Laden</button>'
+          +'<button type="button" class="seb" style="flex-shrink:0;" onclick="NTDrive.slotLoad('+i+')">Laden</button>'
           +'</div>';
       }else{
         html+='<div style="display:flex;align-items:center;gap:10px;padding:12px;background:#f4f4f4;border-radius:12px;margin-bottom:8px;opacity:0.5;">'
@@ -3583,20 +3566,6 @@ function renderAutoSaves(){
           +'</div>';
       }).join('');
   }
-}
-function _odAutoSync(){
-  if(!_odLoadTokens())return;
-  if(!isOnline)return;
-  if(localStorage.getItem('nt_od_sync_date')===today())return;
-  oneDriveSyncSlot().catch(function(){});
-}
-function _checkOdBanner(){
-  if(_odLoadTokens())return;
-  var last=localStorage.getItem('nt_od_banner_date');
-  if(last===today())return;
-  localStorage.setItem('nt_od_banner_date',today());
-  var el=document.getElementById('odMissingBanner');
-  if(el)el.style.display='flex';
 }
 function dismissOdBanner(){
   var el=document.getElementById('odMissingBanner');
@@ -3730,13 +3699,13 @@ function showMain(){
   checkBackupReminder();
   checkWhatsNew();
   if(!localStorage.getItem('nt_install_dismissed'))checkFullscreen();
-  scheduleReminders();
+  NTRemind.schedule();
   setTimeout(compressOldDays,5000);
   setTimeout(_migratePhotosToIdb,2000);
   checkProxyPwGate();
   setTimeout(_autosaveCreate,1000);
-  setTimeout(_odAutoSync,3000);
-  setTimeout(_checkOdBanner,3500);
+  setTimeout(NTDrive.autoSync,3000);
+  setTimeout(NTDrive.checkBanner,3500);
 }
 function checkBackupReminder(){
   try{
@@ -3882,7 +3851,7 @@ function doSetup(){
 // ════════════════════════════════════════
 // SECTION: DATA
 // ════════════════════════════════════════
-function changeDay(dir){var n=addDays(S.currentDate,dir);if(n>today()){showToast('Keine Zukunft 😄');return;}S.currentDate=n;_appToday=today();if(applyRecurringMeals(n))saveS();renderAll();}
+function changeDay(dir){var n=addDays(S.currentDate,dir);if(n>today()){showToast('Keine Zukunft 😄');return;}S.currentDate=n;_appToday=today();if(NTRecur.apply(n))saveS();renderAll();}
 // Datum, das die App beim letzten Blick als „heute" kannte. S.currentDate wurde
 // bisher nur beim Start gesetzt – bleibt die PWA über Mitternacht offen (nachts
 // beim Baby der Normalfall), zeigte sie weiter den Vortag und jeder neue Eintrag
@@ -3896,7 +3865,7 @@ function checkDayRollover(){
   // Wer bewusst zurückgeblättert hat, wird nicht weggerissen.
   if(!wasOnToday)return false;
   S.currentDate=t;
-  applyRecurringMeals(t);
+  NTRecur.apply(t);
   saveS();
   renderAll();
   if(window.NTBaby&&NTBaby.refresh)NTBaby.refresh();
@@ -4003,7 +3972,7 @@ function renderAll(){
     if(wasOpen)ampelEl.style.maxHeight='300px';
   }
   // Zielüberprüfung (Abnehmziel erreicht)
-  checkGoalAchieved();
+  NTStats.checkGoal();
   var totalEntries=0,totalMealKcal=0;
   var defaultTimes={breakfast:'morgens',lunch:'mittags',dinner:'abends',snack:'zwischen'};
   MEALS.forEach(function(m){
@@ -4514,7 +4483,7 @@ function renderEditBody(e){
       +renderNutrientDetail({kcal:t.kcal,protein:t.protein,carbs:t.carbs,fat:t.fat,sugar:t.sugar||0,fiber:t.fiber||0,salt:t.salt||0},p)
       +_mealPhotoImgHtml(e)
       +'<button type="button" class="cb2" onclick="saveEditEntry()">Speichern ✓</button>'
-      +'<button type="button" class="seb" style="margin-bottom:8px;border-color:var(--mu);color:var(--mu);" onclick="saveMealAsTemplate(\''+editMeal+'\')" >📋 Als Vorlage speichern</button>'
+      +'<button type="button" class="seb" style="margin-bottom:8px;border-color:var(--mu);color:var(--mu);" onclick="NTTpl.saveFromMeal(\''+editMeal+'\')" >📋 Als Vorlage speichern</button>'
       +'<button type="button" class="seb" style="margin-bottom:8px;" onclick="openMoveEntry()">↕ Mahlzeit wechseln</button>'
       +'<div id="moveEntryPanel" style="display:none;background:var(--gl);border-radius:12px;padding:12px;margin-bottom:8px;">'
       +'<div style="font-size:12px;font-weight:700;color:var(--mu);margin-bottom:8px;text-transform:uppercase;">Verschieben nach:</div>'
@@ -5551,7 +5520,7 @@ function settSetTab(tab){
     if(btn)btn.classList.toggle('act',t===tab);
     if(panel)panel.style.display=t===tab?'block':'none';
   });
-  if(tab==='backup')renderOneDriveStatus();
+  if(tab==='backup')NTDrive.renderStatus();
 }
 
 function openBackupSettings(){openSettings('backup');}
@@ -5587,7 +5556,7 @@ function openSettings(tab){
   updateNursingUI();
   updateBabyUI();
   updateWeightLossInfo();
-  renderReminders();
+  NTRemind.render();
   var wg=document.getElementById('swatergoal');if(wg)wg.value=S.waterGoal||8;
   setMacroMode(S.macroGoalMode||'percent');
   var mg=S.macroGoalG||{};
@@ -6170,9 +6139,10 @@ function dietAmpelDot(ampel){
 
 
 // ════════════════════════════════════════
-// SECTION: NEW FEATURES
+// SECTION: TAGEBUCH-HELFER
 // ════════════════════════════════════════
-
+// Kleine Helfer rund um den Eintrag eines Tages: gestern kopieren, zuletzt
+// benutzte Lebensmittel, gemerkte Portionsgroessen, Wasser.
 // ── Mahlzeit kopieren ──
 function copyMealFromYesterday(meal){
   var yesterday=addDays(S.currentDate,-1);
@@ -6192,6 +6162,7 @@ function rememberPortion(name,amount){
   S.portionMemory[name.toLowerCase()]=amount;
   saveS();
 }
+
 function recallPortion(name){
   if(!S.portionMemory)return null;
   return S.portionMemory[(name||'').toLowerCase()]||null;
@@ -6234,324 +6205,67 @@ function renderRecentList(){
   window._recentItems=items;
 }
 
-// ── Gewicht loggen ──
-function logWeight(){
-  var val=parseFloat(document.getElementById('weightToday').value);
-  if(!val||val<20||val>300){showToast('Bitte gültiges Gewicht eingeben');return;}
-  if(!S.weightLog)S.weightLog={};
-  S.weightLog[today()]=val;
-  S.weight=val;
-  saveS();
-  document.getElementById('weightToday').value='';
-  renderStatsPanel();
-  showToast('⚖️ '+val+' kg gespeichert');
+// ── Wassertracking mit Getränkegrößen ──
+function addWater(ml){
+  var day=getDay();
+  var goal=S.waterGoal||8;
+  var unit=S.waterUnit||250;
+  var glasses=Math.round(ml/unit);if(!glasses)glasses=1;
+  day.water=Math.min(goal,(day.water||0)+glasses);
+  saveS();renderAll();
 }
 
-// ── Stats-Panel rendern ──
-function switchStatsTab(tab){
-  document.getElementById('stPanelStats').style.display='flex';
-  document.getElementById('stPanelStats').style.flexDirection='column';
-  document.getElementById('stPanelStats').style.gap='10px';
-  renderStatsPanel();
+// ════════════════════════════════════════
+// SECTION: MAKRO-ZIELE & NAEHRWERTE
+// ════════════════════════════════════════
+// getMacroTargets() ist die EINE Stelle, die aus Prozent-Modus oder
+// Gramm-Modus die tatsaechlichen Zielwerte macht — jede Anzeige fragt sie,
+// keine rechnet selbst.
+function setMacroMode(mode){
+  S.macroGoalMode=mode;
+  var gi=document.getElementById('macroGramInputs');
+  if(gi)gi.style.display=mode==='gram'?'block':'none';
+  var bp=document.getElementById('macroModePercent');
+  var bg=document.getElementById('macroModeGram');
+  if(bp){bp.style.background=mode==='percent'?'var(--g2)':'white';bp.style.color=mode==='percent'?'white':'var(--mu)';bp.style.borderColor=mode==='percent'?'var(--g2)':'var(--br)';}
+  if(bg){bg.style.background=mode==='gram'?'var(--g2)':'white';bg.style.color=mode==='gram'?'white':'var(--mu)';bg.style.borderColor=mode==='gram'?'var(--g2)':'var(--br)';}
 }
 
-function renderStatsPanel(){
-  // Gewicht heute vorausfüllen
-  var wlog=S.weightLog||{};
-  var todayW=wlog[today()];
-  if(todayW)document.getElementById('weightToday').value=todayW;
-  // Gewichtstrend
-  var dates=Object.keys(wlog).sort();
-  var trendEl=document.getElementById('weightTrend');
-  if(dates.length>=2){
-    // Trend bezieht sich auf das Chart-Fenster (letzte 14 Einträge), nicht auf den allerersten Log-Eintrag.
-    var win=dates.slice(-14);
-    var diff=wlog[win[win.length-1]]-wlog[win[0]];
-    trendEl.textContent=(diff>0?'▲ +':diff<0?'▼ ':'')+Math.abs(diff).toFixed(1)+'kg seit '+fmtDate(win[0]);
-    trendEl.style.color=diff>0?'var(--re)':'var(--g1)';
-  } else {
-    trendEl.textContent='';
+// ── Individuelle Makro-Ziele ──
+function getMacroTargets(){
+  if(S.macroGoalMode==='gram'&&S.macroGoalG&&S.macroGoalG.protein){
+    return{protein:S.macroGoalG.protein,carbs:S.macroGoalG.carbs,fat:S.macroGoalG.fat};
   }
-  // Gewichtsverlauf-Chart
-  renderWeightChart();
-  // 7-Tage-Balken (rendert auch die Streak-Kachel)
-  renderWeekBars();
-  // Offline-Queue
-  renderOfflineQueuePanel();
-  // Zielüberprüfung
-  checkGoalAchieved();
+  return dietMacroTargets(S.goal);
 }
 
-function renderWeightChart(){
-  var wlog=S.weightLog||{};
-  var dates=Object.keys(wlog).sort().slice(-14);
-  var canvas=document.getElementById('weightChart');
-  var empty=document.getElementById('weightChartEmpty');
-  if(!canvas)return;
-  if(dates.length<2){canvas.style.display='none';if(empty)empty.style.display='block';return;}
-  canvas.style.display='block';if(empty)empty.style.display='none';
-  canvas.width=canvas.offsetWidth||300;
-  var ctx=canvas.getContext('2d');
-  var vals=dates.map(function(d){return wlog[d];});
-  var min=Math.min.apply(null,vals)-1,max=Math.max.apply(null,vals)+1;
-  var w=canvas.width,h=canvas.height,pad=20;
-  ctx.clearRect(0,0,w,h);
-  // Zielgewicht Linie
-  if(S.goalWeight&&S.goalWeight>min&&S.goalWeight<max){
-    var gy=h-pad-(S.goalWeight-min)/(max-min)*(h-2*pad);
-    ctx.strokeStyle='#f9c74f';ctx.setLineDash([4,4]);ctx.lineWidth=1;
-    ctx.beginPath();ctx.moveTo(pad,gy);ctx.lineTo(w-pad,gy);ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle='#f9c74f';ctx.font='10px sans-serif';ctx.fillText('Ziel',w-pad-20,gy-3);
-  }
-  // Gewichtslinie
-  ctx.strokeStyle='#e96e3c';ctx.lineWidth=2;ctx.setLineDash([]);
-  ctx.beginPath();
-  dates.forEach(function(d,i){
-    var x=pad+(w-2*pad)*i/(dates.length-1);
-    var y=h-pad-(vals[i]-min)/(max-min)*(h-2*pad);
-    if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
-  });
-  ctx.stroke();
-  // Punkte + Werte
-  dates.forEach(function(d,i){
-    var x=pad+(w-2*pad)*i/(dates.length-1);
-    var y=h-pad-(vals[i]-min)/(max-min)*(h-2*pad);
-    ctx.fillStyle='#e96e3c';ctx.beginPath();ctx.arc(x,y,3,0,2*Math.PI);ctx.fill();
-    if(i===dates.length-1||i===0){
-      ctx.fillStyle='#1f1a14';ctx.font='10px sans-serif';
-      ctx.fillText(vals[i]+'kg',x-12,y-6);
-    }
-  });
+// ── Nährstoff-Detail-Box ──
+function renderNutrientDetail(t,portions){
+  var p=portions||1;
+  var rows=[
+    {label:'Kalorien',val:Math.round(t.kcal*p)+' kcal',highlight:true},
+    {label:'Protein',val:Math.round(t.protein*p*10)/10+'g'},
+    {label:'Kohlenhydrate',val:Math.round(t.carbs*p*10)/10+'g'},
+    {label:'davon Zucker',val:Math.round((t.sugar||0)*p*10)/10+'g',indent:true},
+    {label:'Fett',val:Math.round(t.fat*p*10)/10+'g'},
+    {label:'Ballaststoffe',val:Math.round((t.fiber||0)*p*10)/10+'g'},
+    {label:'Salz',val:Math.round((t.salt||0)*p*100)/100+'g'},
+  ];
+  return '<div style="background:var(--gl);border-radius:10px;padding:10px;margin:8px 0;">'
+    +rows.map(function(r){
+      return'<div style="display:flex;justify-content:space-between;padding:3px 0'+(r.indent?';padding-left:12px':'')+';">'
+        +'<div style="font-size:12px;color:'+(r.highlight?'var(--tx)':'var(--mu)')+';">'+(r.indent?'↳ ':'')+r.label+'</div>'
+        +'<div style="font-size:12px;font-weight:'+(r.highlight?'800':'600')+';color:'+(r.highlight?'var(--g1)':'var(--tx)')+';">'+r.val+'</div>'
+        +'</div>';
+    }).join('')
+    +'</div>';
 }
 
-var _statsRange=7;
-function setStatsRange(n){
-  _statsRange=n;
-  document.getElementById('rangeBtn7').style.background=n===7?'var(--g2)':'white';
-  document.getElementById('rangeBtn7').style.color=n===7?'white':'var(--mu)';
-  document.getElementById('rangeBtn7').style.borderColor=n===7?'var(--g2)':'var(--br)';
-  document.getElementById('rangeBtn30').style.background=n===30?'var(--g2)':'white';
-  document.getElementById('rangeBtn30').style.color=n===30?'white':'var(--mu)';
-  document.getElementById('rangeBtn30').style.borderColor=n===30?'var(--g2)':'var(--br)';
-  renderWeekBars();
-}
-
-function renderWeekBars(){
-  var n=_statsRange||7;
-  var barsEl=document.getElementById('weekBars');
-  var labelsEl=document.getElementById('weekLabels');
-  if(!barsEl)return;
-  var days=[];
-  for(var i=n-1;i>=0;i--)days.push(addDays(today(),-i));
-  var kcals=days.map(function(d){
-    var day=S.days[d];if(!day)return 0;
-    if(day._compressed)return day.kcal||0;
-    var all=day.meals.breakfast.concat(day.meals.lunch,day.meals.dinner,day.meals.snack);
-    return Math.round(calcM(all).kcal);
-  });
-  var maxK=Math.max(S.goal,Math.max.apply(null,kcals),1);
-  var isToday=today();
-  var gap=n===7?4:1;
-  barsEl.style.gap=gap+'px';
-  barsEl.innerHTML=days.map(function(d,i){
-    var h=Math.max(2,Math.round(kcals[i]/maxK*70));
-    var isT=d===isToday;
-    var over=kcals[i]>S.goal;
-    var col=isT?'var(--g1)':over?'var(--re)':'var(--g2)';
-    var showVal=n===7||isT;
-    return'<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;">'
-      +(showVal&&kcals[i]?'<div style="font-size:8px;color:var(--mu);">'+kcals[i]+'</div>':'<div style="font-size:8px;"></div>')
-      +'<div style="width:100%;height:'+h+'px;background:'+col+';border-radius:3px 3px 0 0;"></div>'
-      +'</div>';
-  }).join('');
-  if(labelsEl){
-    labelsEl.innerHTML=n===7?days.map(function(d,i){
-      var isT=d===isToday;
-      var label=['Mo','Di','Mi','Do','Fr','Sa','So'][new Date(d).getDay()===0?6:new Date(d).getDay()-1];
-      return'<div style="flex:1;text-align:center;font-size:10px;color:'+(isT?'var(--g1)':'var(--mu)')+';font-weight:'+(isT?'800':'400')+';">'+label+'</div>';
-    }).join('') : '';
-  }
-  // Streak & Avg
-  var avg=0,cnt=0;
-  kcals.forEach(function(k,i){if(k>0&&days[i]!==isToday){avg+=k;cnt++;}});
-  var streak=0,d2=today();
-  while(true){var dy=S.days[d2];if(!dy)break;var k=dy._compressed?dy.kcal:calcM(dy.meals.breakfast.concat(dy.meals.lunch,dy.meals.dinner,dy.meals.snack)).kcal;if(k<10)break;streak++;d2=addDays(d2,-1);}
-  var streakEl=document.getElementById('streakNum');
-  var avgEl=document.getElementById('avgKcal');
-  if(streakEl)streakEl.textContent=streak;
-  if(avgEl)avgEl.textContent=cnt?Math.round(avg/cnt):0;
-}
-
-// ── Offline-Foto-Queue ──
-var _offlineQueue=JSON.parse(localStorage.getItem('nt_offline_queue')||'[]');
-function saveOfflineQueue(){localStorage.setItem('nt_offline_queue',JSON.stringify(_offlineQueue));}
-
-function addToOfflineQueue(b64,meal,date){
-  // Foto nach IndexedDB, in localStorage nur die Referenz (phid) — ganze
-  // JPEGs in nt_offline_queue liefen sonst aufs 5-MB-Limit zu.
-  if(window.NTPhotos&&NTPhotos.ok()){
-    var pid='ph'+Date.now()+Math.random().toString(36).slice(2,8);
-    NTPhotos.put(pid,b64).then(function(){
-      _offlineQueue.push({phid:pid,meal:meal,date:date||today(),ts:Date.now()});
-      saveOfflineQueue();renderOfflineQueuePanel();
-    }).catch(function(){
-      _offlineQueue.push({b64:b64,meal:meal,date:date||today(),ts:Date.now()});
-      saveOfflineQueue();renderOfflineQueuePanel();
-    });
-  }else{
-    _offlineQueue.push({b64:b64,meal:meal,date:date||today(),ts:Date.now()});
-    saveOfflineQueue();renderOfflineQueuePanel();
-  }
-  showToast('📷 Foto für später gespeichert');
-}
-
-function renderOfflineQueuePanel(){
-  var wrap=document.getElementById('offlineQueueWrap');
-  var list=document.getElementById('offlineQueueList');
-  if(!wrap||!list)return;
-  if(!_offlineQueue.length){wrap.style.display='none';return;}
-  wrap.style.display='block';
-  list.innerHTML=_offlineQueue.map(function(item,i){
-    return'<div style="font-size:12px;color:var(--mu);padding:3px 0;">📷 '+fmtDate(item.date)+' – '+MEAL_NAMES[item.meal]+'</div>';
-  }).join('');
-}
-
-function processOfflineQueue(){
-  if(!isOnline){showToast('Kein Internet');return;}
-  if(!_offlineQueue.length){showToast('Keine ausstehenden Fotos');return;}
-  var item=_offlineQueue.shift();
-  saveOfflineQueue();
-  var start=function(b64){
-    renderOfflineQueuePanel();
-    if(!b64){showToast('Foto nicht mehr vorhanden');return;}
-    window._pickerPhotoB64=b64;
-    pickerMeal=item.meal;
-    S.currentDate=item.date;
-    pickerAnalyze();
-  };
-  if(item.phid&&window.NTPhotos&&NTPhotos.ok()){
-    // Blob aus IDB holen; löschen ist ok — schlägt die Analyse fehl, re-queued
-    // der Fehlerpfad das Foto ohnehin neu (addToOfflineQueue).
-    NTPhotos.get(item.phid).then(function(b64){NTPhotos.del(item.phid).catch(function(){});start(b64);}).catch(function(){start(null);});
-  }else{
-    start(item.b64);
-  }
-}
-
-// ── KI-Wochenbericht ──
-function requestWeekReport(){
-  if(!canUseAi()){showAiUnavailable();return;}
-  var btn=document.getElementById('weekReportBtn');
-  if(btn){btn.disabled=true;btn.textContent='⏳...';}
-  var lines=[];
-  var avgKcal=0,cnt=0;
-  for(var i=6;i>=0;i--){
-    var d=addDays(today(),-i);
-    var dy=S.days[d];if(!dy)continue;
-    var all=dy.meals.breakfast.concat(dy.meals.lunch,dy.meals.dinner,dy.meals.snack);
-    var t=calcM(all);if(t.kcal<10)continue;
-    lines.push(fmtDate(d)+': '+Math.round(t.kcal)+' kcal, P '+Math.round(t.protein)+'g, F '+Math.round(t.fat)+'g, C '+Math.round(t.carbs)+'g');
-    avgKcal+=t.kcal;cnt++;
-  }
-  if(!cnt){showToast('Keine Daten dieser Woche');if(btn){btn.disabled=false;btn.textContent='Erstellen';}return;}
-  var allPrefs=(S.dietPrefs||[]).concat(S.dietFree?[S.dietFree]:[]);
-  var dir='maintain';
-  if(S.goalWeight&&S.weight){
-    if(S.goalWeight<S.weight-0.5)dir='lose';
-    else if(S.goalWeight>S.weight+0.5)dir='gain';
-  }
-  var dirText=dir==='lose'?'Abnehmen (Kaloriendefizit)':dir==='gain'?'Zunehmen (Kalorienüberschuss)'  :'Gewicht halten';
-  var prompt='Erstelle einen deutschen Wochenbericht zur Ernährung.\n'
-    +'Format: 3–5 Stichpunkte (je 1 kurzer Satz, mit „–" einleiten), danach „Empfehlung für nächste Woche:" gefolgt von 1–2 konkreten Sätzen. Kein einleitender Satz.\n'
-    +'Tagesdaten:\n'+lines.join('\n')+'\n'
-    +'Kalorienziel: '+S.goal+' kcal/Tag\n'
-    +'Zielrichtung: '+dirText+'\n'
-    +(S.goalWeight&&S.weight?'Gewicht: '+S.weight+' kg → Ziel: '+S.goalWeight+' kg\n':'')
-    +(allPrefs.length?'Ernährungspräferenzen: '+allPrefs.join(', ')+'\n':'')
-    +'Durchschnitt: '+Math.round(avgKcal/cnt)+' kcal/Tag\n'
-    +'Bewerte Tage relativ zur Zielrichtung (nicht nach absolutem kcal). Besten/schlechtesten Tag benennen.';
-  callClaude('claude-haiku-4-5',[{type:'text',text:prompt}],400,
-    function(text){
-      var el=document.getElementById('weekReportText');
-      if(el)el.textContent=text.trim();
-      var srcEl=document.getElementById('weekReportSource');
-      if(srcEl)srcEl.innerHTML=aiSourceBadgeHtml();
-      if(btn){btn.disabled=false;btn.textContent='Aktualisieren';}
-    },
-    function(err){if(btn){btn.disabled=false;btn.textContent='Erstellen';}showToast('Fehler: '+err);}
-  );
-}
-
-// ── Zielüberprüfung ──
-function checkGoalAchieved(){
-  if(!S.goalWeight||!S.goalDate)return;
-  var today2=today();
-  // Zieldatum erreicht?
-  if(S.goalDate<=today2&&!S.goalAchievedShown){
-    var currentW=S.weightLog&&S.weightLog[today2]||S.weight;
-    if(currentW&&currentW<=S.goalWeight+0.5){
-      S.goalAchievedShown=today2;saveS();
-      setTimeout(function(){showToast('🎉 Zielgewicht erreicht! Neues Ziel setzen?');},1000);
-    }
-  }
-}
-
-// ── Mahlzeit-Erinnerungen ──
-function scheduleReminders(){
-  if(!('Notification' in window)||Notification.permission!=='granted')return;
-  var reminders=S.reminders||[];
-  reminders.forEach(function(r){
-    if(!r.active)return;
-    var now=new Date();
-    var target=new Date();
-    var parts=r.time.split(':');
-    target.setHours(parseInt(parts[0]),parseInt(parts[1]),0,0);
-    if(target<=now)target.setDate(target.getDate()+1);
-    var delay=target-now;
-    setTimeout(function(){
-      new Notification('🍽 NutriTrack – '+r.label,{body:r.body||'Zeit zum Eintragen!',icon:'/nutritrack/icon.svg'});
-      scheduleReminders(); // nächsten Tag planen
-    },delay);
-  });
-}
-
-// ── Erinnerungen in Einstellungen ──
-function renderReminders(){
-  var el=document.getElementById('reminderList');if(!el)return;
-  var reminders=S.reminders||[];
-  if(!reminders.length){el.innerHTML='<div style="font-size:12px;color:var(--mu);">Keine Erinnerungen</div>';return;}
-  el.innerHTML=reminders.map(function(r,i){
-    return'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--br);">'
-      +'<div style="flex:1;font-size:13px;font-weight:600;">'+esc(r.time)+' – '+esc(r.label)+'</div>'
-      +'<button type="button" onclick="deleteReminder('+i+')" style="background:none;border:none;color:var(--re);font-size:16px;cursor:pointer;">✕</button>'
-      +'</div>';
-  }).join('');
-}
-
-function addReminder(){
-  var time=document.getElementById('reminderTime').value;
-  var label=document.getElementById('reminderLabel').value.trim()||'Mahlzeit eintragen';
-  if(!time){showToast('Bitte Uhrzeit auswählen');return;}
-  if(!S.reminders)S.reminders=[];
-  S.reminders.push({time:time,label:label,active:true});
-  saveS();
-  document.getElementById('reminderTime').value='';
-  document.getElementById('reminderLabel').value='';
-  renderReminders();
-  // Berechtigung anfragen
-  if('Notification' in window&&Notification.permission==='default'){
-    Notification.requestPermission().then(function(p){if(p==='granted')scheduleReminders();});
-  } else {
-    scheduleReminders();
-  }
-  showToast('⏰ Erinnerung gespeichert');
-}
-
-function deleteReminder(i){
-  S.reminders.splice(i,1);saveS();renderReminders();
-}
-
+// ════════════════════════════════════════
+// SECTION: MAHLZEIT-FOTOS
+// ════════════════════════════════════════
+// Fotos liegen in IndexedDB (js/idb-photos.js), in S steht nur die Referenz.
+// Die zwei _migrate*-Funktionen holen Altbestaende aus localStorage nach.
 function handleEditMealPhoto(e){
   var file=e.target.files[0];if(!file)return;
   var reader=new FileReader();
@@ -6580,29 +6294,58 @@ function handleEditMealPhoto(e){
   reader.readAsDataURL(file);
 }
 
-function setMacroMode(mode){
-  S.macroGoalMode=mode;
-  var gi=document.getElementById('macroGramInputs');
-  if(gi)gi.style.display=mode==='gram'?'block':'none';
-  var bp=document.getElementById('macroModePercent');
-  var bg=document.getElementById('macroModeGram');
-  if(bp){bp.style.background=mode==='percent'?'var(--g2)':'white';bp.style.color=mode==='percent'?'white':'var(--mu)';bp.style.borderColor=mode==='percent'?'var(--g2)':'var(--br)';}
-  if(bg){bg.style.background=mode==='gram'?'var(--g2)':'white';bg.style.color=mode==='gram'?'white':'var(--mu)';bg.style.borderColor=mode==='gram'?'var(--g2)':'var(--br)';}
+// ── Mahlzeit-Foto speichern ──
+// Fotos wandern nach IndexedDB (window.NTPhotos), am Eintrag bleibt nur die
+// mealPhotoId. Ohne IndexedDB (Private-Mode-Edge-Fälle) Fallback auf das alte
+// Base64-Feld mealPhoto im localStorage-State.
+function saveMealPhoto(meal,idx,b64){
+  var day=getDay();
+  var entry=day.meals[meal]&&day.meals[meal][idx];
+  if(!entry)return;
+  if(window.NTPhotos&&NTPhotos.ok()){
+    var pid='ph'+Date.now()+Math.random().toString(36).slice(2,8);
+    var old=entry.mealPhotoId;
+    NTPhotos.put(pid,b64).then(function(){
+      entry.mealPhotoId=pid;delete entry.mealPhoto;
+      if(old)NTPhotos.del(old).catch(function(){});
+      saveS();
+      showToast('📷 Foto gespeichert');
+    }).catch(function(){entry.mealPhoto=b64;saveS();showToast('📷 Foto gespeichert');});
+  }else{
+    entry.mealPhoto=b64;saveS();showToast('📷 Foto gespeichert');
+  }
 }
 
-
-// ── Rezept duplizieren ──
-function duplicateRecipe(id){
-  var rec=recipes.find(function(r){return r.id===id;});
-  if(!rec)return;
-  var copy=JSON.parse(JSON.stringify(rec));
-  copy.id=Date.now().toString();
-  copy.name=copy.name+' (Kopie)';
-  recipes.unshift(copy);
-  saveX();renderLibrary();
-  showToast('📋 Rezept kopiert');
+// Einmalige, idempotente Migration bestehender Base64-Fotos nach IndexedDB.
+// Bei IDB-Fehler wird nichts gelöscht (lieber alt und groß als Fotoverlust).
+function _migratePhotosToIdb(){
+  if(localStorage.getItem('nt_photos_migrated'))return;
+  if(!window.NTPhotos||!NTPhotos.ok())return;
+  var puts=[];
+  Object.keys(S.days||{}).forEach(function(dk){
+    var day=S.days[dk];if(!day||!day.meals)return;
+    Object.keys(day.meals).forEach(function(m){
+      (day.meals[m]||[]).forEach(function(entry){
+        if(entry&&entry.mealPhoto){
+          var pid='ph'+Date.now()+Math.random().toString(36).slice(2,8);
+          puts.push(NTPhotos.put(pid,entry.mealPhoto).then(function(){entry.mealPhotoId=pid;delete entry.mealPhoto;}));
+        }
+      });
+    });
+  });
+  if(!puts.length){localStorage.setItem('nt_photos_migrated','1');return;}
+  Promise.all(puts).then(function(){saveS();localStorage.setItem('nt_photos_migrated','1');}).catch(function(){});
 }
 
+// Nach einem Import/Restore können wieder Base64-Fotos im State liegen (alte Backups).
+function _migratePhotosAfterImport(){localStorage.removeItem('nt_photos_migrated');setTimeout(_migratePhotosToIdb,500);}
+
+// ════════════════════════════════════════
+// SECTION: DATENPFLEGE
+// ════════════════════════════════════════
+// Plausibilitaet und Speicherplatz. compressOldDays() wirft Tagesdetails nach
+// 90 Tagen weg und behaelt die Summen — deshalb liegt alles, was dauerhaft
+// bleiben soll (Vorlagen, Zettel, Plan), NICHT in S.days.
 // ── Datenqualitäts-Warnung ──
 function checkDataQuality(food){
   if(!food||!food.per100)return;
@@ -6645,263 +6388,22 @@ function compressOldDays(){
   if(changed){saveS();console.log('[NutriTrack] Alte Tage komprimiert');}
 }
 
-// ── Nährstoff-Detail-Box ──
-function renderNutrientDetail(t,portions){
-  var p=portions||1;
-  var rows=[
-    {label:'Kalorien',val:Math.round(t.kcal*p)+' kcal',highlight:true},
-    {label:'Protein',val:Math.round(t.protein*p*10)/10+'g'},
-    {label:'Kohlenhydrate',val:Math.round(t.carbs*p*10)/10+'g'},
-    {label:'davon Zucker',val:Math.round((t.sugar||0)*p*10)/10+'g',indent:true},
-    {label:'Fett',val:Math.round(t.fat*p*10)/10+'g'},
-    {label:'Ballaststoffe',val:Math.round((t.fiber||0)*p*10)/10+'g'},
-    {label:'Salz',val:Math.round((t.salt||0)*p*100)/100+'g'},
-  ];
-  return '<div style="background:var(--gl);border-radius:10px;padding:10px;margin:8px 0;">'
-    +rows.map(function(r){
-      return'<div style="display:flex;justify-content:space-between;padding:3px 0'+(r.indent?';padding-left:12px':'')+';">'
-        +'<div style="font-size:12px;color:'+(r.highlight?'var(--tx)':'var(--mu)')+';">'+(r.indent?'↳ ':'')+r.label+'</div>'
-        +'<div style="font-size:12px;font-weight:'+(r.highlight?'800':'600')+';color:'+(r.highlight?'var(--g1)':'var(--tx)')+';">'+r.val+'</div>'
-        +'</div>';
-    }).join('')
-    +'</div>';
-}
-
-// ── Individuelle Makro-Ziele ──
-function getMacroTargets(){
-  if(S.macroGoalMode==='gram'&&S.macroGoalG&&S.macroGoalG.protein){
-    return{protein:S.macroGoalG.protein,carbs:S.macroGoalG.carbs,fat:S.macroGoalG.fat};
-  }
-  return dietMacroTargets(S.goal);
-}
-// ── Wassertracking mit Getränkegrößen ──
-function addWater(ml){
-  var day=getDay();
-  var goal=S.waterGoal||8;
-  var unit=S.waterUnit||250;
-  var glasses=Math.round(ml/unit);if(!glasses)glasses=1;
-  day.water=Math.min(goal,(day.water||0)+glasses);
-  saveS();renderAll();
-}
-
-// ── Mahlzeit-Foto speichern ──
-// Fotos wandern nach IndexedDB (window.NTPhotos), am Eintrag bleibt nur die
-// mealPhotoId. Ohne IndexedDB (Private-Mode-Edge-Fälle) Fallback auf das alte
-// Base64-Feld mealPhoto im localStorage-State.
-function saveMealPhoto(meal,idx,b64){
-  var day=getDay();
-  var entry=day.meals[meal]&&day.meals[meal][idx];
-  if(!entry)return;
-  if(window.NTPhotos&&NTPhotos.ok()){
-    var pid='ph'+Date.now()+Math.random().toString(36).slice(2,8);
-    var old=entry.mealPhotoId;
-    NTPhotos.put(pid,b64).then(function(){
-      entry.mealPhotoId=pid;delete entry.mealPhoto;
-      if(old)NTPhotos.del(old).catch(function(){});
-      saveS();
-      showToast('📷 Foto gespeichert');
-    }).catch(function(){entry.mealPhoto=b64;saveS();showToast('📷 Foto gespeichert');});
-  }else{
-    entry.mealPhoto=b64;saveS();showToast('📷 Foto gespeichert');
-  }
-}
-// Einmalige, idempotente Migration bestehender Base64-Fotos nach IndexedDB.
-// Bei IDB-Fehler wird nichts gelöscht (lieber alt und groß als Fotoverlust).
-function _migratePhotosToIdb(){
-  if(localStorage.getItem('nt_photos_migrated'))return;
-  if(!window.NTPhotos||!NTPhotos.ok())return;
-  var puts=[];
-  Object.keys(S.days||{}).forEach(function(dk){
-    var day=S.days[dk];if(!day||!day.meals)return;
-    Object.keys(day.meals).forEach(function(m){
-      (day.meals[m]||[]).forEach(function(entry){
-        if(entry&&entry.mealPhoto){
-          var pid='ph'+Date.now()+Math.random().toString(36).slice(2,8);
-          puts.push(NTPhotos.put(pid,entry.mealPhoto).then(function(){entry.mealPhotoId=pid;delete entry.mealPhoto;}));
-        }
-      });
-    });
-  });
-  if(!puts.length){localStorage.setItem('nt_photos_migrated','1');return;}
-  Promise.all(puts).then(function(){saveS();localStorage.setItem('nt_photos_migrated','1');}).catch(function(){});
-}
-// Nach einem Import/Restore können wieder Base64-Fotos im State liegen (alte Backups).
-function _migratePhotosAfterImport(){localStorage.removeItem('nt_photos_migrated');setTimeout(_migratePhotosToIdb,500);}
-
-// ── Mahlzeit-Vorlagen ──
-function saveMealAsTemplate(meal){
-  var day=getDay();
-  var entries=day.meals[meal]||[];
-  if(!entries.length){showToast('Keine Einträge');return;}
-  var name=MEAL_NAMES[meal]+' – '+fmtDate(S.currentDate);
-  var template={id:Date.now().toString(),name:name,meal:meal,entries:JSON.parse(JSON.stringify(entries)),createdAt:today()};
-  if(!S.mealTemplates)S.mealTemplates=[];
-  S.mealTemplates.unshift(template);
-  if(S.mealTemplates.length>20)S.mealTemplates=S.mealTemplates.slice(0,20);
-  saveS();showToast('📋 Als Vorlage gespeichert');
-}
-
-function applyMealTemplate(id,meal){
-  var tpl=(S.mealTemplates||[]).find(function(t){return t.id===id;});
-  if(!tpl)return;
-  var day=getDay();
-  var copies=JSON.parse(JSON.stringify(tpl.entries));
-  day.meals[meal]=day.meals[meal].concat(copies);
-  saveS();renderAll();
-  showToast('✓ Vorlage eingetragen');
-  closeOv('templateOv');
-}
-
-function openTemplateOv(meal){
-  pickerMeal=meal;
-  var templates=S.mealTemplates||[];
-  var el=document.getElementById('templateList');
-  if(!el)return;
-  if(!templates.length){el.innerHTML='<div style="text-align:center;color:var(--mu);padding:20px;font-size:13px;">Noch keine Vorlagen gespeichert</div>';openOv('templateOv');return;}
-  el.innerHTML=templates.map(function(t){
-    var total=t.entries.reduce(function(a,e){return a+(e.kcal||0);},0);
-    return'<div style="background:var(--card);border-radius:12px;padding:12px;box-shadow:var(--sh);display:flex;align-items:center;gap:10px;">'
-      +'<div style="flex:1;"><div style="font-weight:700;font-size:13px;">'+esc(t.name)+'</div>'
-      +'<div style="font-size:11px;color:var(--mu);">'+t.entries.length+' Einträge · '+Math.round(total)+' kcal</div></div>'
-      +'<button type="button" onclick="applyMealTemplate(\''+t.id+'\',\''+meal+'\')" style="background:var(--g2);border:none;border-radius:8px;color:white;font-size:13px;padding:6px 12px;font-weight:700;">Laden</button>'
-      +'<button type="button" onclick="deleteTemplate(\''+t.id+'\')" style="background:none;border:none;color:var(--re);font-size:16px;">✕</button>'
-      +'</div>';
-  }).join('');
-  openOv('templateOv');
-}
-
-function deleteTemplate(id){
-  S.mealTemplates=(S.mealTemplates||[]).filter(function(t){return t.id!==id;});
-  saveS();openTemplateOv(pickerMeal);
-}
-
-// ── Wiederkehrende Mahlzeiten (#122) ──
-// Regel-Schema: {id,name,meal,weekdays:[0..6],entries:[...],startDate,active}
-// weekdays nutzt JS getDay(): 0=So … 6=Sa. Default Mo–Fr = [1,2,3,4,5].
-var WEEKDAY_SHORT=['So','Mo','Di','Mi','Do','Fr','Sa'];
-var WEEKDAY_ORDER=[1,2,3,4,5,6,0]; // Anzeige: Mo zuerst
-var pendingRecurMeal=null;
-var pendingRecurWeekdays=null;
-
-function _recurWeekday(dateKey){var p=dateKey.split('-');return new Date(+p[0],+p[1]-1,+p[2]).getDay();}
-
-function _recurDaysLabel(wds){
-  var s=(wds||[]).slice().sort(function(a,b){return a-b;}).join(',');
-  if(s==='0,1,2,3,4,5,6')return'täglich';
-  if(s==='1,2,3,4,5')return'Mo–Fr';
-  if(s==='0,6')return'am Wochenende';
-  return WEEKDAY_ORDER.filter(function(d){return wds.indexOf(d)>=0;}).map(function(d){return WEEKDAY_SHORT[d];}).join(', ');
-}
-
-// Wendet alle aktiven Regeln auf den Tag an. Idempotent über day._recurMarks:
-// ist eine Regel-ID dort vermerkt, wird sie an diesem Tag nie erneut eingefügt —
-// auch nicht, wenn der Nutzer die Einträge gelöscht hat. Gibt true bei Änderung.
-function applyRecurringMeals(dateKey){
-  var rules=S.recurringMeals||[];if(!rules.length)return false;
-  if(dateKey>today())return false;
-  var day=S.days[dateKey];
-  if(day&&day._compressed)return false;
-  if(!day){day={meals:{breakfast:[],lunch:[],dinner:[],snack:[]},water:0,exercise:[]};S.days[dateKey]=day;}
-  if(!day.meals)day.meals={breakfast:[],lunch:[],dinner:[],snack:[]};
-  if(!day._recurMarks)day._recurMarks=[];
-  var wd=_recurWeekday(dateKey),changed=false;
-  rules.forEach(function(r){
-    if(!r.active)return;
-    if(dateKey<r.startDate)return;
-    if((r.weekdays||[]).indexOf(wd)<0)return;
-    if(day._recurMarks.indexOf(r.id)>=0)return;
-    var copies=JSON.parse(JSON.stringify(r.entries||[]));
-    copies.forEach(function(e){e._recurId=r.id;});
-    if(!day.meals[r.meal])day.meals[r.meal]=[];
-    day.meals[r.meal]=day.meals[r.meal].concat(copies);
-    day._recurMarks.push(r.id);
-    changed=true;
-  });
-  return changed;
-}
-
-// Für den aktuell angezeigten Tag anwenden und bei Änderung speichern + neu rendern.
-function ensureRecurringForCurrentDay(){
-  if(applyRecurringMeals(S.currentDate)){saveS();renderAll();}
-}
-
-// Regel aus der aktuellen Mahlzeit anlegen — öffnet Wochentag-Auswahl.
-function openRecurCreate(meal){
-  var day=getDay(),en=(day.meals[meal]||[]);
-  if(!en.length){showToast('Keine Einträge in dieser Mahlzeit');return;}
-  pendingRecurMeal=meal;
-  pendingRecurWeekdays=[1,2,3,4,5];
-  document.getElementById('recurCreateSub').textContent=MEAL_NAMES[meal]+' · '+en.length+' '+(en.length===1?'Eintrag':'Einträge');
-  _renderRecurWeekdayChips();
-  openOv('recurCreateOv');
-}
-
-function _renderRecurWeekdayChips(){
-  var el=document.getElementById('recurWeekdayChips');if(!el)return;
-  el.innerHTML=WEEKDAY_ORDER.map(function(d){
-    var on=pendingRecurWeekdays.indexOf(d)>=0;
-    return'<button type="button" onclick="toggleRecurWeekday('+d+')" style="flex:1;min-width:0;padding:9px 0;border-radius:10px;border:1px solid '+(on?'var(--g1)':'var(--br)')+';background:'+(on?'var(--g1)':'var(--card)')+';color:'+(on?'#fff':'var(--tx)')+';font-weight:700;font-size:13px;cursor:pointer;">'+WEEKDAY_SHORT[d]+'</button>';
-  }).join('');
-}
-
-function toggleRecurWeekday(d){
-  var i=pendingRecurWeekdays.indexOf(d);
-  if(i>=0)pendingRecurWeekdays.splice(i,1);else pendingRecurWeekdays.push(d);
-  _renderRecurWeekdayChips();
-}
-
-function saveRecurringRule(){
-  var meal=pendingRecurMeal;if(!meal)return;
-  var wds=(pendingRecurWeekdays||[]).slice();
-  if(!wds.length){showToast('Mindestens einen Wochentag wählen');return;}
-  var day=getDay(),en=(day.meals[meal]||[]);
-  if(!en.length){showToast('Keine Einträge');return;}
-  var entries=JSON.parse(JSON.stringify(en));
-  entries.forEach(function(e){delete e._recurId;});
-  var rule={id:Date.now().toString(),meal:meal,weekdays:wds,entries:entries,startDate:today(),active:true,
-    name:(en[0].name||MEAL_NAMES[meal])+(en.length>1?' +'+(en.length-1):'')};
-  if(!S.recurringMeals)S.recurringMeals=[];
-  S.recurringMeals.unshift(rule);
-  // Heutige Einträge gehören schon zur Regel → markieren (kein Doppel heute) + Badge.
-  if(!day._recurMarks)day._recurMarks=[];
-  if(day._recurMarks.indexOf(rule.id)<0)day._recurMarks.push(rule.id);
-  en.forEach(function(e){e._recurId=rule.id;});
-  saveS();renderAll();
-  closeOv('recurCreateOv');
-  showToast('🔁 Wird '+_recurDaysLabel(wds)+' automatisch eingetragen');
-}
-
-function openRecurManage(){renderRecurManage();openOv('recurMgmtOv');}
-function openLibrary(){renderLibrary();openOv('libraryOv');}
-
-function renderRecurManage(){
-  var el=document.getElementById('recurMgmtList');if(!el)return;
-  var rules=S.recurringMeals||[];
-  if(!rules.length){el.innerHTML='<div style="text-align:center;color:var(--mu);padding:24px 8px;font-size:13px;line-height:1.5;">Noch keine wiederkehrenden Mahlzeiten.<br>Öffne eine Mahlzeit und tippe „🔁 Wiederholen", um eine anzulegen.</div>';return;}
-  el.innerHTML=rules.map(function(r){
-    var total=(r.entries||[]).reduce(function(a,e){return a+(e.kcal||0);},0);
-    var dim=r.active?'':'opacity:0.5;';
-    return'<div style="background:var(--card);border-radius:12px;padding:12px;box-shadow:var(--sh);display:flex;align-items:center;gap:10px;'+dim+'">'
-      +'<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">🔁 '+esc(r.name)+'</div>'
-      +'<div style="font-size:11px;color:var(--mu);">'+MEAL_NAMES[r.meal]+' · '+_recurDaysLabel(r.weekdays)+' · '+Math.round(total)+' kcal</div></div>'
-      +'<button type="button" onclick="toggleRecurringRule(\''+r.id+'\')" title="'+(r.active?'Pausieren':'Aktivieren')+'" style="background:'+(r.active?'var(--g2)':'var(--gl)')+';color:'+(r.active?'#fff':'var(--mu)')+';border:none;border-radius:8px;font-size:12px;padding:6px 10px;font-weight:700;flex-shrink:0;">'+(r.active?'Aktiv':'Pause')+'</button>'
-      +'<button type="button" onclick="deleteRecurringRule(\''+r.id+'\')" style="background:none;border:none;color:var(--re);font-size:16px;flex-shrink:0;">✕</button>'
-      +'</div>';
-  }).join('');
-}
-
-function toggleRecurringRule(id){
-  var r=(S.recurringMeals||[]).find(function(x){return x.id===id;});
-  if(!r)return;
-  r.active=!r.active;
-  saveS();
-  if(r.active)ensureRecurringForCurrentDay();
-  renderRecurManage();
-}
-
-function deleteRecurringRule(id){
-  S.recurringMeals=(S.recurringMeals||[]).filter(function(r){return r.id!==id;});
-  saveS();renderRecurManage();
+// ════════════════════════════════════════
+// SECTION: REZEPTE: ZUTATENLISTE & BIBLIOTHEK
+// ════════════════════════════════════════
+// openShoppingList() zeigt die ZUTATEN eines Rezepts, hochgerechnet auf
+// Portionen — nicht zu verwechseln mit dem Einkaufszettel in js/shopping.js,
+// der geteilt und abgehakt wird. shoppingToList() ist die Bruecke dorthin.
+// ── Rezept duplizieren ──
+function duplicateRecipe(id){
+  var rec=recipes.find(function(r){return r.id===id;});
+  if(!rec)return;
+  var copy=JSON.parse(JSON.stringify(rec));
+  copy.id=Date.now().toString();
+  copy.name=copy.name+' (Kopie)';
+  recipes.unshift(copy);
+  saveX();renderLibrary();
+  showToast('📋 Rezept kopiert');
 }
 
 // ── Einkaufsliste aus Rezept ──
@@ -6954,244 +6456,7 @@ function copyShoppingList(){
   navigator.clipboard.writeText(text).then(function(){showToast('📋 Kopiert');}).catch(function(){showToast('Kopieren nicht verfügbar');});
 }
 
-// ── OneDrive Sync (OAuth2 PKCE) ──
-function _odLoadTokens(){try{return JSON.parse(localStorage.getItem('nt_od')||'null');}catch(e){return null;}}
-function _odSaveTokens(t){localStorage.setItem('nt_od',JSON.stringify(t));}
-function _odClearTokens(){localStorage.removeItem('nt_od');}
-
-function _b64url(buf){
-  return btoa(String.fromCharCode.apply(null,new Uint8Array(buf)))
-    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
-}
-function _sha256(str){
-  var buf=new TextEncoder().encode(str);
-  return crypto.subtle.digest('SHA-256',buf);
-}
-function _randomStr(len){
-  var arr=new Uint8Array(len);
-  crypto.getRandomValues(arr);
-  return _b64url(arr);
-}
-
-function oneDriveConnect(){
-  var verifier=_randomStr(48);
-  var state=_randomStr(16);
-  sessionStorage.setItem('od_verifier',verifier);
-  sessionStorage.setItem('od_state',state);
-  _sha256(verifier).then(function(hash){
-    var challenge=_b64url(hash);
-    var url='https://login.microsoftonline.com/common/oauth2/v2.0/authorize'
-      +'?client_id='+OD_CLIENT_ID
-      +'&response_type=code'
-      +'&redirect_uri='+encodeURIComponent(OD_REDIRECT)
-      +'&scope='+encodeURIComponent(OD_SCOPES)
-      +'&code_challenge='+challenge
-      +'&code_challenge_method=S256'
-      +'&state='+state;
-    window.location.href=url;
-  });
-}
-
-function _odHandleCallback(code,state){
-  var verifier=sessionStorage.getItem('od_verifier');
-  var savedState=sessionStorage.getItem('od_state');
-  sessionStorage.removeItem('od_verifier');
-  sessionStorage.removeItem('od_state');
-  if(!verifier||state!==savedState){showToast('OneDrive: Ungültiger Status');return;}
-  // Clean URL
-  history.replaceState({},'',OD_REDIRECT);
-  fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token',{
-    method:'POST',
-    headers:{'Content-Type':'application/x-www-form-urlencoded'},
-    body:'client_id='+OD_CLIENT_ID
-      +'&grant_type=authorization_code'
-      +'&code='+encodeURIComponent(code)
-      +'&redirect_uri='+encodeURIComponent(OD_REDIRECT)
-      +'&code_verifier='+encodeURIComponent(verifier)
-      +'&scope='+encodeURIComponent(OD_SCOPES)
-  }).then(function(r){return r.json();}).then(function(t){
-    if(t.error){showToast('OneDrive Fehler: '+t.error_description);return;}
-    _odSaveTokens({
-      access_token:t.access_token,
-      refresh_token:t.refresh_token,
-      expires_at:Date.now()+(t.expires_in-60)*1000
-    });
-    showToast('☁️ OneDrive verbunden ✓');
-    renderOneDriveStatus();
-  }).catch(function(){showToast('OneDrive Token-Fehler');});
-}
-
-function _odShowReconnect(){
-  localStorage.removeItem('nt_od_banner_date');
-  openOv('odReconnectOv');
-}
-function _odGetToken(){
-  var tok=_odLoadTokens();
-  if(!tok)return Promise.reject('not_connected');
-  if(Date.now()<tok.expires_at)return Promise.resolve(tok.access_token);
-  // Refresh
-  return fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token',{
-    method:'POST',
-    headers:{'Content-Type':'application/x-www-form-urlencoded'},
-    body:'client_id='+OD_CLIENT_ID
-      +'&grant_type=refresh_token'
-      +'&refresh_token='+encodeURIComponent(tok.refresh_token)
-      +'&scope='+encodeURIComponent(OD_SCOPES)
-  }).then(function(r){return r.json();}).then(function(t){
-    if(t.error){
-      if(t.error==='invalid_grant'||t.error==='interaction_required'||t.error==='unauthorized_client'){
-        _odClearTokens();renderOneDriveStatus();_odShowReconnect();
-      }
-      throw new Error(t.error);
-    }
-    var updated={access_token:t.access_token,refresh_token:t.refresh_token||tok.refresh_token,expires_at:Date.now()+(t.expires_in-60)*1000};
-    _odSaveTokens(updated);
-    return updated.access_token;
-  });
-}
-
-function oneDriveSyncUp(){
-  if(!isOnline){showToast('Kein Internet');return Promise.reject('offline');}
-  showToast('☁️ Hochladen...');
-  return _odGetToken().then(function(token){
-    var data=JSON.stringify(_backupAiFields({state:backupState(),foodCache:foodCache,customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache,syncedAt:new Date().toISOString()}));
-    var kb=Math.round(data.length/1024);
-    return fetch('https://graph.microsoft.com/v1.0/me/drive/root:'+_odFolder()+'/nutritrack-backup.json:/content',{
-      method:'PUT',
-      headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
-      body:data
-    }).then(function(r){
-      if(!r.ok)throw new Error(r.status);
-      localStorage.setItem('nt_last_sync',new Date().toISOString());
-      localStorage.setItem('nt_od_sync_date',today());
-      showToast('☁️ OneDrive gespeichert ✓ ('+kb+' KB)');
-      renderOneDriveStatus();
-    });
-  }).catch(function(e){
-    if(e==='not_connected'){showToast('OneDrive nicht verbunden');}
-    else if(e!=='offline'){showToast('OneDrive Upload fehlgeschlagen');}
-    throw e;
-  });
-}
-
-function oneDriveSyncDown(){
-  if(!isOnline){showToast('Kein Internet');return;}
-  showToast('☁️ Herunterladen...');
-  _odGetToken().then(function(token){
-    return fetch('https://graph.microsoft.com/v1.0/me/drive/root:'+_odFolder()+'/nutritrack-backup.json:/content',{
-      headers:{'Authorization':'Bearer '+token}
-    }).then(function(r){
-      if(r.status===404){showToast('Keine Sicherung in OneDrive gefunden');return null;}
-      if(!r.ok)throw new Error(r.status);
-      return r.json();
-    }).then(function(backup){
-      if(!backup)return;
-      if(backup.state){delete backup.state.apiKey;S=Object.assign(S,backup.state);S.apiKey='';S.setupDone=true;}
-      if(backup.foodCache)foodCache=backup.foodCache;
-      if(backup.customFoods)customFoods=backup.customFoods;
-      if(backup.recipes)recipes=backup.recipes;
-      if(backup.barcodeCache)barcodeCache=backup.barcodeCache;
-      _importAiFields(backup);_migratePhotosAfterImport();
-      saveS();saveX();saveBarcodeCache();
-      renderAll();
-      showToast('☁️ Daten aus OneDrive geladen ✓');
-    });
-  }).catch(function(e){
-    if(e==='not_connected'){showToast('OneDrive nicht verbunden');}
-    else{showToast('OneDrive Download fehlgeschlagen');}
-  });
-}
-
-function oneDriveDisconnect(){
-  _odClearTokens();
-  showToast('OneDrive getrennt');
-  renderOneDriveStatus();
-}
-
-function oneDriveSyncSlot(){
-  if(!isOnline){showToast('Kein Internet');return Promise.reject('offline');}
-  var meta=_odSlotsMetaGet();
-  var idx=parseInt(localStorage.getItem('nt_od_slot_idx')||'0',10)%OD_SLOTS;
-  showToast('☁️ Autospeicher '+(idx+1)+'/'+OD_SLOTS+' ...');
-  return _odGetToken().then(function(token){
-    var savedAt=new Date().toISOString();
-    var data=JSON.stringify(_backupAiFields({state:backupState(),customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache,savedAt:savedAt}));
-    var kb=Math.round(data.length/1024);
-    return fetch('https://graph.microsoft.com/v1.0/me/drive/root:'+_odSlotPath(idx)+':/content',{
-      method:'PUT',
-      headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
-      body:data
-    }).then(function(r){
-      if(!r.ok)throw new Error(r.status);
-      meta[idx]={savedAt:savedAt};
-      _odSlotsMetaSave(meta);
-      localStorage.setItem('nt_od_slot_idx',((idx+1)%OD_SLOTS)+'');
-      localStorage.setItem('nt_od_sync_date',today());
-      localStorage.setItem('nt_last_sync',savedAt);
-      showToast('☁️ Slot '+(idx+1)+' gespeichert ✓ ('+kb+' KB)');
-      renderOneDriveStatus();
-    });
-  }).catch(function(e){
-    if(e==='not_connected'){showToast('OneDrive nicht verbunden');}
-    else if(e!=='offline'){showToast('Autospeicher fehlgeschlagen');}
-    throw e;
-  });
-}
-function _odSlotLoad(idx){
-  if(!isOnline){showToast('Kein Internet');return;}
-  var meta=_odSlotsMetaGet();
-  if(!meta[idx]){showToast('Slot '+(idx+1)+' ist leer');return;}
-  var d=new Date(meta[idx].savedAt);
-  var label=d.toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit'})+' · '+d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
-  if(!confirm('Slot '+(idx+1)+' vom '+label+' laden?\nAktuelle Daten werden überschrieben.'))return;
-  showToast('☁️ Herunterladen...');
-  _odGetToken().then(function(token){
-    return fetch('https://graph.microsoft.com/v1.0/me/drive/root:'+_odSlotPath(idx)+':/content',{
-      headers:{'Authorization':'Bearer '+token}
-    }).then(function(r){
-      if(r.status===404){showToast('Slot '+(idx+1)+' nicht gefunden');return null;}
-      if(!r.ok)throw new Error(r.status);
-      return r.json();
-    }).then(function(d){
-      if(!d)return;
-      if(d.state){delete d.state.apiKey;Object.assign(S,d.state);S.apiKey='';S.setupDone=true;}
-      if(d.customFoods)customFoods=d.customFoods;
-      if(d.recipes)recipes=d.recipes;
-      if(d.barcodeCache)Object.assign(barcodeCache,d.barcodeCache);
-      _importAiFields(d);_migratePhotosAfterImport();
-      saveS();saveX();saveBarcodeCache();renderAll();closeOv('autoSavesOv');
-      showToast('Stand geladen ✓');
-    });
-  }).catch(function(){showToast('Laden fehlgeschlagen');});
-}
-
-function renderOneDriveStatus(){
-  var wrap=document.getElementById('odStatusWrap');
-  if(!wrap)return;
-  var tok=_odLoadTokens();
-  var lastSync=localStorage.getItem('nt_last_sync');
-  var lastStr=lastSync?new Date(lastSync).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'–';
-  if(tok){
-    var folder=_odFolder();
-    wrap.innerHTML='<div style="background:var(--gl);border-radius:10px;padding:10px 12px;margin-bottom:8px;">'
-      +'<div style="font-size:13px;font-weight:700;color:var(--g1);margin-bottom:2px;">✅ Verbunden</div>'
-      +'<div style="font-size:12px;color:var(--mu);">Letzter Sync: '+lastStr+'</div>'
-      +'</div>'
-      +'<div style="margin-bottom:8px;">'
-      +'<div style="font-size:12px;color:var(--mu);margin-bottom:4px;">📁 OneDrive-Ordner</div>'
-      +'<div style="display:flex;gap:6px;">'
-      +'<input id="odPathInput" type="text" value="'+esc(folder)+'" placeholder="/NutriTrack" style="flex:1;padding:8px 10px;border:2px solid var(--br);border-radius:8px;font-size:13px;outline:none;">'
-      +'<button type="button" class="seb" style="width:auto;margin-top:0;flex-shrink:0;" onclick="_odSaveFolder(document.getElementById(\'odPathInput\').value)">✓</button>'
-      +'</div>'
-      +'</div>'
-      +'<button type="button" class="seb" onclick="oneDriveSyncUp()">☁️ Jetzt sichern</button>'
-      +'<button type="button" class="seb" onclick="oneDriveSyncDown()">📥 Aus OneDrive laden</button>'
-      +'<button type="button" class="seb" style="color:#c00;border-color:#c00;margin-top:4px;" onclick="oneDriveDisconnect()">🔌 Trennen</button>';
-  } else {
-    wrap.innerHTML='<div style="font-size:12px;color:var(--mu);margin-bottom:8px;">Verbinde NutriTrack mit deinem Microsoft-Konto, um Daten automatisch zu sichern.</div>'
-      +'<button type="button" class="seb" onclick="oneDriveConnect()">🔗 Mit OneDrive verbinden</button>';
-  }
-}
+function openLibrary(){renderLibrary();openOv('libraryOv');}
 
 // ════════════════════════════════════════
 // SECTION: SPORT & AKTIVITÄT
@@ -7566,7 +6831,7 @@ function switchTab(tab){
   document.querySelectorAll('.bnav .ni').forEach(function(b){
     b.classList.toggle('on', b.getAttribute('data-tab')===tab);
   });
-  if(tab==='trends')switchStatsTab('stats');
+  if(tab==='trends')NTStats.switchTab('stats');
   if(tab==='history')renderHistory();
   if(tab==='more')renderMore();
   if(tab==='main')window._mealDetailOpen=null;
@@ -7643,11 +6908,11 @@ function renderMealDetail(meal){
     }).join('');
   }
   var cbMd=document.getElementById('cbMealDetail');if(cbMd)cbMd.setAttribute('onclick',"openPicker('"+meal+"')");
-  var ctaTpl=document.getElementById('mdTpl');if(ctaTpl)ctaTpl.setAttribute('onclick',"openTemplateOv('"+meal+"')");
+  var ctaTpl=document.getElementById('mdTpl');if(ctaTpl)ctaTpl.setAttribute('onclick',"NTTpl.open('"+meal+"')");
   var ctaCpy=document.getElementById('mdCopy');if(ctaCpy)ctaCpy.setAttribute('onclick',"copyMealFromYesterday('"+meal+"')");
   var ctaShr=document.getElementById('mdShare');if(ctaShr)ctaShr.setAttribute('onclick',"shareMeal('"+meal+"')");
   var ctaRec=document.getElementById('mdRecur');
-  if(ctaRec){ctaRec.setAttribute('onclick',"openRecurCreate('"+meal+"')");ctaRec.style.display=en.length?'':'none';}
+  if(ctaRec){ctaRec.setAttribute('onclick',"NTRecur.openCreate('"+meal+"')");ctaRec.style.display=en.length?'':'none';}
   var ctaSav=document.getElementById('mdSaveRecipe');
   if(ctaSav){ctaSav.setAttribute('onclick',"saveMealAsRecipe('"+meal+"')");ctaSav.style.display=en.length?'':'none';}
 }
@@ -7705,7 +6970,7 @@ function renderHistory(){
       +'</div>';
   }).join('');
 }
-function goToDay(k){S.currentDate=k;applyRecurringMeals(k);saveS();switchTab('main');renderAll();}
+function goToDay(k){S.currentDate=k;NTRecur.apply(k);saveS();switchTab('main');renderAll();}
 
 // ── MORE Hub ──
 function renderMore(){/* statisch, kein Render nötig */}
@@ -7728,10 +6993,10 @@ function bgClose(e,id){if(e.target.id===id)closeOv(id);}
 // Verhalten). Zeigt in #backupNowHint an, welche Strategie gerade läuft.
 function backupNow(){
   var hint=document.getElementById('backupNowHint');
-  var tok=_odLoadTokens();
+  var tok=NTDrive.tokens();
   if(tok&&isOnline){
     if(hint)hint.textContent='Sichert nach OneDrive …';
-    oneDriveSyncUp().then(function(){if(hint)hint.textContent='✓ In OneDrive gesichert';})
+    NTDrive.syncUp().then(function(){if(hint)hint.textContent='✓ In OneDrive gesichert';})
       .catch(function(){if(hint)hint.textContent='OneDrive fehlgeschlagen – Datei-Export gestartet';exportData();});
     return;
   }
@@ -8143,13 +7408,19 @@ function axTestSync(){
 <script src="js/alexa-sync.js"></script>
 <script src="js/dashboard.js"></script>
 <script src="js/mealplan.js"></script>
+<script src="js/onedrive.js"></script>
+<script src="js/recurring.js"></script>
+<script src="js/stats.js"></script>
+<script src="js/reminders.js"></script>
+<script src="js/templates.js"></script>
+<script src="js/offline-queue.js"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">
     <div style="font-size:36px;margin-bottom:12px;">☁️</div>
     <div style="font-weight:700;font-size:17px;margin-bottom:8px;">OneDrive abgemeldet</div>
     <div style="font-size:14px;color:var(--mu);margin-bottom:20px;">Deine OneDrive-Sitzung ist abgelaufen. Verbinde dich neu, um automatische Backups fortzusetzen.</div>
-    <button type="button" class="seb" style="margin-top:0;margin-bottom:8px;" onclick="closeOv('odReconnectOv');oneDriveConnect()">🔗 Neu verbinden</button>
+    <button type="button" class="seb" style="margin-top:0;margin-bottom:8px;" onclick="closeOv('odReconnectOv');NTDrive.connect()">🔗 Neu verbinden</button>
     <button type="button" onclick="closeOv('odReconnectOv')" style="background:none;border:none;color:var(--mu);font-size:14px;width:100%;padding:8px;cursor:pointer;font-family:inherit;">Später</button>
   </div>
 </div>

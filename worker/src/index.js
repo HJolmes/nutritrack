@@ -47,9 +47,15 @@ function corsHeaders(origin, env) {
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     // WICHTIG: Jeder Custom-Header, den die PWA sendet, MUSS hier stehen – sonst
     // bricht der Browser die Anfrage schon beim Preflight ab, der Service Worker
-    // macht daraus eine 503 und im UI steht „HTTP 503" statt der echten Ursache.
-    // Beim Anlegen eines neuen Sync-Topfs also immer mit erweitern (v0.228).
-    "Access-Control-Allow-Headers": "Content-Type, x-app-proxy-secret, x-user-token, x-baby-room, x-shop-room, x-partner-room, x-ai-provider, x-ai-key",
+    // macht daraus eine 503 und im UI steht „Server nicht erreichbar" statt der
+    // echten Ursache.
+    //
+    // Die Raum-Header werden deshalb seit v0.248 aus SYNC_POTS ABGELEITET und
+    // nicht mehr von Hand gepflegt: Beim Anlegen von /plan/sync ist genau diese
+    // Zeile vergessen worden, obwohl direkt darüber stand, dass sie mitwachsen
+    // muss. Eine geschriebene Warnung ist keine Prüfung — ein neuer Topf bringt
+    // seinen Header jetzt selbst mit.
+    "Access-Control-Allow-Headers": CORS_HEADERS_ALLOWED(),
     // Bewusst kurz: Ein Preflight-Ergebnis mit unvollständiger Header-Liste
     // bliebe sonst bis zu 24 h im Browser-Cache und der Fehler überlebte das
     // Deploy des Fixes.
@@ -968,6 +974,14 @@ const SYNC_PARTNER = { header: "x-partner-room", prefix: "pm:", label: "Partner 
 // hoeheres `maxCt` als bei Zettel und Tagebuch, wo ein Record winzig ist.
 const SYNC_PLAN = { header: "x-plan-room", prefix: "mp:", label: "Meal plan sync", maxCt: 60000 };
 
+// Alle Sync-Töpfe an einer Stelle. Wer einen neuen anlegt, trägt ihn hier ein —
+// und bekommt CORS damit automatisch richtig (siehe corsHeaders).
+const SYNC_POTS = [SYNC_BABY, SYNC_SHOP, SYNC_PARTNER, SYNC_PLAN];
+const CORS_BASE_HEADERS = ["Content-Type", "x-app-proxy-secret", "x-user-token", "x-ai-provider", "x-ai-key"];
+function CORS_HEADERS_ALLOWED() {
+  return CORS_BASE_HEADERS.concat(SYNC_POTS.map((c) => c.header)).join(", ");
+}
+
 function readSyncRoom(request, cfg) {
   const raw = request.headers.get(cfg.header) || "";
   const trimmed = raw.trim();
@@ -1507,7 +1521,7 @@ export default {
         alexaInboxConfigured: Boolean(env.SHARE_KV),
         planSyncConfigured: Boolean(env.SHARE_KV),
         decoderSecretConfigured: Boolean(env.DECODER_SECRET),
-        codeVersion: "v0.247-plan-sync",
+        codeVersion: "v0.248-plan-cors",
       });
     }
 

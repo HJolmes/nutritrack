@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.248',items:[
+    {icon:'\ud83d\udd27',text:'Wochenplan teilen scheiterte mit „Server nicht erreichbar" — dem Worker fehlte die Freigabe für den neuen Kopfzeilen-Namen des Wochenplans, weshalb der Browser die Anfrage schon vor dem Absenden abbrach. Einkaufszettel und Baby-Tagebuch waren nie betroffen. Behoben; die Freigabe wächst jetzt automatisch mit, wenn ein Bereich dazukommt.',where:'\ud83d\udcc5 Wochenplan → \ud83d\udd04 Teilen'},
+  ]},
   {v:'0.247',items:[
     {icon:'\ud83d\udd17',text:'Ein Code je Person statt einer je Liste: Mehr → \ud83d\udd17 Verbindungen. Du lädst jemanden ein, gibst ihm einen Code — und stellst dann für diese Person einzeln ein, ob sie Wochenplan, Einkaufszettel und Baby-Tagebuch bekommt. Mehrere Personen gleichzeitig sind möglich, jede mit eigener Auswahl: die Frau bekommt alles, die Oma nur den Einkaufszettel.',where:'Mehr → \ud83d\udd17 Verbindungen'},
     {icon:'\ud83d\udcc5',text:'Der Wochenplan lässt sich jetzt teilen. Mitgeschickt werden nicht nur die Namen, sondern auch Zutaten und Mengen — die andere Seite sieht den Plan also vollständig, auch ohne deine Rezeptsammlung, und kann ihn ins eigene Tagebuch oder auf den Einkaufszettel übernehmen. Fremde Rezepte sind am gestrichelten Rand erkennbar.',where:'\ud83d\udcc5 Wochenplan → \ud83d\udd04 Teilen'},

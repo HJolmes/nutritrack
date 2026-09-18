@@ -735,6 +735,16 @@ async function handleWorkoutList(request, origin, env) {
 // länger liegen bleibt, weil kein Gerät abholt, verfällt nach ALEXA_TTL_SECONDS.
 const ALEXA_KV_PREFIX = "ai:";
 const ALEXA_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 Tage — danach verfällt ein nie abgeholter Einwurf
+// GETEILTE EINWÜRFE (v0.244): Baby-Tagebuch und Einkaufszettel gehören beiden
+// Partnern. Sie liegen deshalb unter einem gemeinsamen Familien-Token, das BEIDE
+// Telefone tragen — und werden beim Quittieren NICHT gelöscht, sonst bekäme sie
+// nur das Gerät, das zuerst abholt. Stattdessen verfallen sie nach kurzer Zeit;
+// jedes Gerät führt seinen eigenen Cursor (`srev`) und überspringt, was es schon
+// hat. Der Preis dieser Bauart ist bewusst in Kauf genommen: der Klartext liegt
+// bis zu ALEXA_SHARED_TTL_SECONDS im KV statt nur Minuten. Persönliche Einwürfe
+// (Essen, Sport, Wasser) bleiben beim Alten — ein Gerät, sofortige Löschung.
+const ALEXA_SHARED_KINDS = new Set(["baby", "shop"]);
+const ALEXA_SHARED_TTL_SECONDS = 60 * 60 * 48; // 48 h — Fenster, in dem das zweite Gerät abholen kann
 const MAX_ALEXA_BODY_BYTES = 1024 * 8;
 const MAX_ALEXA_LIST_LIMIT = 200;
 const MAX_ALEXA_LIST_PAGES = 10;
@@ -832,10 +842,11 @@ async function handleAlexaPush(request, origin, env) {
   // das Telefon der Nutzerin haben unterschiedliche Uhren, und ein Einwurf mit
   // nachgehender Uhr würde sonst hinter dem Wasserzeichen verschwinden.
   const srev = Date.now();
+  const shared = ALEXA_SHARED_KINDS.has(item.kind);
   const key = ALEXA_KV_PREFIX + token + ":" + item.id;
-  await env.SHARE_KV.put(key, JSON.stringify({ ...item, srev }), {
-    expirationTtl: ALEXA_TTL_SECONDS,
-    metadata: { srev },
+  await env.SHARE_KV.put(key, JSON.stringify({ ...item, srev, shared: shared ? 1 : 0 }), {
+    expirationTtl: shared ? ALEXA_SHARED_TTL_SECONDS : ALEXA_TTL_SECONDS,
+    metadata: { srev, shared: shared ? 1 : 0 },
   });
   return jsonResponse(200, "ok", "ok", origin, env, { id: item.id, stored: true });
 }
@@ -924,8 +935,25 @@ async function handleAlexaAck(request, origin, env) {
   for (const id of ids.slice(0, MAX_ALEXA_ACK_IDS)) {
     if (typeof id === "string" && ALEXA_ID_RE.test(id)) clean.push(id);
   }
-  await Promise.all(clean.map((id) => env.SHARE_KV.delete(ALEXA_KV_PREFIX + token + ":" + id)));
-  return jsonResponse(200, "ok", "ok", origin, env, { deleted: clean.length });
+  // Geteilte Einwürfe überleben die Quittung: Das zweite Telefon der Familie hat
+  // sie vielleicht noch nicht gesehen. Sie verfallen von selbst (siehe oben).
+  // Die Prüfung läuft serverseitig, damit auch eine ältere App-Version, die alles
+  // quittiert, dem anderen Gerät nichts wegräumen kann.
+  let kept = 0;
+  let deleted = 0;
+  await Promise.all(
+    clean.map(async (id) => {
+      const key = ALEXA_KV_PREFIX + token + ":" + id;
+      const hit = await env.SHARE_KV.getWithMetadata(key);
+      if (hit && hit.metadata && hit.metadata.shared) {
+        kept++;
+        return;
+      }
+      await env.SHARE_KV.delete(key);
+      deleted++;
+    })
+  );
+  return jsonResponse(200, "ok", "ok", origin, env, { deleted, kept });
 }
 
 // ─── GETEILTE RÄUME: BABY-TAGEBUCH, EINKAUFSZETTEL & PARTNER-POSTFACH (E2E) ───
@@ -1522,7 +1550,7 @@ export default {
         alexaInboxConfigured: Boolean(env.SHARE_KV),
         planSyncConfigured: Boolean(env.SHARE_KV),
         decoderSecretConfigured: Boolean(env.DECODER_SECRET),
-        codeVersion: "v0.248-plan-cors",
+        codeVersion: "v0.255-alexa-family",
       });
     }
 

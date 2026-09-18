@@ -314,7 +314,10 @@ function add(name,qty,c,ic,opts){
   name=String(name||'').trim();
   if(!name)return null;
   opts=opts||{};
-  var ex=findByName(name);
+  // `opts.id` kommt vom Alexa-Einwurf: beide Telefone holen denselben Einwurf
+  // ab und sollen daraus EINEN Artikel machen. Ist er schon da — per Sync vom
+  // anderen Gerät oder aus einem früheren Lauf — wird nichts angelegt.
+  var ex=(opts.id&&byId(opts.id))||findByName(name);
   if(ex){
     // Schon auf dem Zettel: abgehakt → wieder aktiv, sonst nur Menge ergänzen.
     if(ex.d){ex.d=0;delete ex.da;}
@@ -325,7 +328,7 @@ function add(name,qty,c,ic,opts){
     return ex;
   }
   var g=guess(name);
-  var it={id:uid(),n:name,q:qty||'',c:c||g.c,ic:ic||g.ic,d:0,ts:Date.now(),rev:nextRev()};
+  var it={id:opts.id||uid(),n:name,q:qty||'',c:c||g.c,ic:ic||g.ic,d:0,ts:Date.now(),rev:nextRev()};
   if(opts.recipe)tagSource(it,opts.recipe,false);
   list().push(it);
   noteRecent(it);

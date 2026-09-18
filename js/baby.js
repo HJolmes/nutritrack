@@ -24,6 +24,21 @@ var TYPES={
   note:  {ic:'📝',label:'Notiz'}
 };
 var SIDES={l:'Links',r:'Rechts',b:'Beide'};
+// Bei „Beide" trinkt ein Baby fast nie gleich viel an beiden Seiten. Die
+// Hauptseite (e.main) hält fest, an welcher es überwiegend getrunken hat –
+// nur daraus lässt sich sagen, welche Seite beim nächsten Mal dran ist.
+function sideLabel(e){
+  var s=SIDES[e&&e.side]||'';
+  if(e&&e.side==='b'&&SIDES[e.main])s+=' (haupt. '+SIDES[e.main]+')';
+  return s;
+}
+// Die für die Alternation maßgebliche Seite eines Still-Eintrags: bei „Beide"
+// die Hauptseite, sonst die Seite selbst. Leer = Eintrag sagt nichts darüber.
+function effSide(e){
+  if(e.side==='l'||e.side==='r')return e.side;
+  if(e.side==='b'&&(e.main==='l'||e.main==='r'))return e.main;
+  return '';
+}
 var BOTTLE={mm:'Muttermilch',pre:'Pre-Nahrung',folge:'Folgemilch'};
 var DIAPER={pee:'💧 Pipi',poo:'💩 Stuhl',both:'💧💩 Beides'};
 var TEMP_SITE={rektal:'rektal',ohr:'Ohr',stirn:'Stirn',axillar:'Achsel'};
@@ -287,7 +302,7 @@ function isFever(c){return (parseFloat(c)||0)>=FEVER;}
 
 // ── Eintrags-Zeile als Text ──
 function entryTitle(e){
-  if(e.t==='breast')return 'Stillen · '+(SIDES[e.side]||'')+(e.min?' · '+e.min+' Min.':'');
+  if(e.t==='breast')return 'Stillen · '+sideLabel(e)+(e.min?' · '+e.min+' Min.':'');
   if(e.t==='bottle')return 'Flasche · '+(e.ml||0)+' ml'+(BOTTLE[e.kind]?' · '+BOTTLE[e.kind]:'');
   if(e.t==='diaper'){
     var d=DIAPER[e.kind]||'Windel';
@@ -349,6 +364,9 @@ function quick(qid){
   var e=Object.assign({t:q.t},JSON.parse(JSON.stringify(q.p||{})));
   // „Nächste Seite"-Vorschlag nur, wenn der Knopf keine Seite vorgibt
   if(q.t==='breast'&&!e.side)e.side=nextSide(key)||'l';
+  // „Beide" ohne feste Hauptseite: den Vorschlag als Hauptseite eintragen,
+  // sonst reißt die Alternation ab. Im Eintrag jederzeit korrigierbar.
+  if(q.t==='breast'&&e.side==='b'&&!e.main){var sug=nextSide(key);if(sug)e.main=sug;}
   add(e,key);
   showToast((q.icon||'')+' '+(q.label||'Eintrag')+' eingetragen ✓');
 }
@@ -381,7 +399,7 @@ function quickSubtitle(q){
   var t=(TYPES[q.t]&&TYPES[q.t].label)||q.t;
   var p=q.p||{};
   var det=[];
-  if(q.t==='breast'){det.push(p.side?SIDES[p.side]:'Seite wird vorgeschlagen');if(p.min)det.push(p.min+' Min.');}
+  if(q.t==='breast'){det.push(p.side?sideLabel(p):'Seite wird vorgeschlagen');if(p.min)det.push(p.min+' Min.');}
   else if(q.t==='bottle'){if(p.ml)det.push(p.ml+' ml');if(p.kind)det.push(BOTTLE[p.kind]||'');}
   else if(q.t==='diaper'){det.push((DIAPER[p.kind]||'').replace(/^[^ ]+ /,''));}
   else if(q.t==='temp'){det.push('Dialog öffnet sich');}
@@ -418,6 +436,7 @@ function openQuickEdit(id){
   document.getElementById('bqType').value=(q&&q.t)||'breast';
   var p=(q&&q.p)||{};
   document.getElementById('bqSide').value=p.side||'';
+  document.getElementById('bqMain').value=p.main||'';
   document.getElementById('bqMin').value=p.min||'';
   document.getElementById('bqMl').value=p.ml||'';
   document.getElementById('bqBottleKind').value=p.kind&&BOTTLE[p.kind]?p.kind:'mm';
@@ -434,6 +453,12 @@ function updateQuickTypeFields(){
     var el=document.getElementById('bqFields-'+k);
     if(el)el.style.display=(k===t)?'block':'none';
   });
+  updateQuickBreastFields();
+}
+// Hauptseite nur bei „Beide" – bei einer einzelnen Seite wäre sie sinnlos.
+function updateQuickBreastFields(){
+  var sel=document.getElementById('bqSide'),wrap=document.getElementById('bqMainWrap');
+  if(sel&&wrap)wrap.style.display=(sel.value==='b')?'block':'none';
 }
 function saveQuick(){
   var t=document.getElementById('bqType').value;
@@ -444,6 +469,8 @@ function saveQuick(){
   if(t==='breast'){
     var side=document.getElementById('bqSide').value;
     if(side)p.side=side;
+    var main=document.getElementById('bqMain').value;
+    if(side==='b'&&main)p.main=main;
     var min=parseInt(document.getElementById('bqMin').value,10);
     if(min>0)p.min=min;
   }else if(t==='bottle'){
@@ -612,8 +639,8 @@ function nextSide(key){
   var keys=Object.keys(S.babyLog).sort();
   for(var i=keys.length-1;i>=0;i--){
     if(keys[i]>key)continue;
-    var arr=sorted(keys[i]).filter(function(e){return e.t==='breast'&&(e.side==='l'||e.side==='r');});
-    if(arr.length){var s=arr[arr.length-1].side;return s==='l'?'r':'l';}
+    var arr=sorted(keys[i]).filter(function(e){return e.t==='breast'&&effSide(e);});
+    if(arr.length){var s=effSide(arr[arr.length-1]);return s==='l'?'r':'l';}
   }
   return '';
 }
@@ -690,6 +717,10 @@ function openEntry(type,id){
   document.getElementById('babyEntryNote').value=(e&&e.note)||'';
   var side=(e&&e.side)||nextSide(key)||'l';
   document.getElementById('babySide').value=side;
+  // Vorschlag nur bei neuen Einträgen: beim nachträglichen Bearbeiten käme er
+  // aus dem jüngsten Eintrag des Tages, nicht aus dem vor diesem hier.
+  document.getElementById('babyMain').value=(e&&e.main)||((!e&&side==='b')?(nextSide(key)||''):'');
+  updateBreastFields();
   document.getElementById('babyMin').value=(e&&e.min)||'';
   document.getElementById('babyMl').value=(e&&e.ml)||'';
   document.getElementById('babyBottleKind').value=(e&&e.t==='bottle'&&e.kind)||'mm';
@@ -722,6 +753,15 @@ function setType(t){
   });
   var tt=document.getElementById('babyEntryOv');
   if(tt)tt.setAttribute('data-type',t);
+  updateBreastFields();
+}
+function updateBreastFields(){
+  var sel=document.getElementById('babySide'),wrap=document.getElementById('babyMainWrap');
+  if(!sel||!wrap)return;
+  wrap.style.display=(sel.value==='b')?'block':'none';
+  // Beim Umschalten auf „Beide" gleich den Alternations-Vorschlag anbieten.
+  var main=document.getElementById('babyMain');
+  if(!_editId&&sel.value==='b'&&main&&!main.value)main.value=nextSide(dayKey())||'';
 }
 function currentType(){
   var tt=document.getElementById('babyEntryOv');
@@ -739,6 +779,9 @@ function saveEntry(){
   var e={t:t,ts:tsFor(key,time),note:document.getElementById('babyEntryNote').value.trim()};
   if(t==='breast'){
     e.side=document.getElementById('babySide').value;
+    // Hauptseite nur bei „Beide" mitschreiben; beim Bearbeiten werden alle
+    // Felder ersetzt, ein Wechsel auf Links/Rechts räumt sie also mit auf.
+    if(e.side==='b'){var mn=document.getElementById('babyMain').value;if(mn)e.main=mn;}
     e.min=parseInt(document.getElementById('babyMin').value,10)||0;
   }else if(t==='bottle'){
     e.ml=parseInt(document.getElementById('babyMl').value,10)||0;
@@ -826,11 +869,13 @@ window.NTBaby={
   add:add,
   openDiary:openDiary,closeDiary:closeDiary,renderDiary:renderDiary,renderCard:renderCard,
   quick:quick,openEntry:openEntry,editEntry:editEntry,setType:setType,endSleep:endSleep,
-  updateDiaperFields:updateDiaperFields,saveEntry:saveEntry,deleteEntry:deleteEntry,
-  openQuickManage:openQuickManage,openQuickEdit:openQuickEdit,updateQuickTypeFields:updateQuickTypeFields,
+  updateDiaperFields:updateDiaperFields,updateBreastFields:updateBreastFields,saveEntry:saveEntry,deleteEntry:deleteEntry,
+  openQuickManage:openQuickManage,openQuickEdit:openQuickEdit,updateQuickTypeFields:updateQuickTypeFields,updateQuickBreastFields:updateQuickBreastFields,
   saveQuick:saveQuick,deleteQuick:deleteQuick,deleteQuickFromEdit:deleteQuickFromEdit,
   moveQuick:moveQuick,resetQuick:resetQuick,renderQuickBtns:renderQuickBtns,
   openSync:openSync,renderSyncUI:renderSyncUI,openLinks:openLinks,syncNow:syncNow,
-  Sync:Sync,summaryText:summaryText,TYPES:TYPES
+  Sync:Sync,summaryText:summaryText,TYPES:TYPES,
+  // Fuer den Alexa-Einwurf: welche Brust waere als Naechstes dran?
+  nextSide:nextSide
 };
 })();

@@ -1,6 +1,11 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.244',items:[
+    {icon:'\ud83d\udcc5',text:'Neu: ein Wochenplan. Rezepte auf Frühstück, Mittag, Abend und Snack der sieben Tage verteilen — Mehr → \ud83d\udcc5 Wochenplan oder über die neue Kachel auf „Heute". \ud83c\udfb2 füllt alle leeren Mittag- und Abend-Slots automatisch aus deiner Rezeptsammlung, ohne ein Rezept in derselben Woche zu wiederholen. \ud83d\uded2 schiebt die Zutaten der ganzen Woche auf den Einkaufszettel, gleiche Zutaten aus mehreren Rezepten zusammengefasst. Pro Tag ein Tipp auf „→ ins Tagebuch" trägt das Geplante als normale Mahlzeiten ein.',where:'Heute · Mehr → \ud83d\udcc5 Wochenplan'},
+    {icon:'\ud83d\udcf7',text:'Rezepte aus dem Kochbuch: Seite abfotografieren, die KI liest Titel, Portionszahl, Zutatenliste und Zubereitung heraus. Haushaltsmaße werden dabei in Gramm umgerechnet (1 EL Öl ≈ 15 g, 1 Ei ≈ 60 g). Alles bleibt vor dem Speichern änderbar — Mengen, Name, Portionen, Text.',where:'Bibliothek / Wochenplan → ＋ Neues Rezept'},
+    {icon:'\ud83d\udccb',text:'Ein Knopf für alle drei Wege zu einem Rezept: selbst zusammenstellen, aus dem Kochbuch fotografieren oder per Link aus dem Internet. Bisher gab es nur den Link-Weg, und ein Rezept von Hand konnte man nur anlegen, indem man erst eine Mahlzeit einträgt. „＋ Neues Rezept" steht jetzt in der Bibliothek und im Wochenplan.',where:'Mehr → \ud83d\udcda Bibliothek'},
+  ]},
   {v:'0.243',items:[
     {icon:'\ud83e\udde9',text:'Die Kacheln auf „Heute" lassen sich jetzt selbst anordnen und ausblenden: Mehr → \ud83e\udde9 Kacheln auf „Heute". Am \u283f ziehen oder \u25b2\u25bc antippen sortiert, \ud83d\udc41 blendet aus. Betrifft Mahlzeiten, Sport, Wasser, Baby-Tagebuch, Postfach, Einkaufszettel und Fasten — die Kalorien-Übersicht bleibt immer oben. Ausgeblendet heißt nur unsichtbar: Eingetragenes bleibt erhalten und zählt weiter mit.',where:'Heute · Mehr → \ud83e\udde9 Kacheln'},
   ]},

@@ -513,6 +513,7 @@ body.kb-open #feedbackFab{display:none;}
 /* BUTTONS */
 .svb,.cb2,.abt{background:var(--tx);border-radius:14px;font-weight:600;}
 .seb{background:var(--gl);border-color:var(--br);border-radius:14px;}
+.svb[disabled],.seb[disabled],.svb:disabled,.seb:disabled{opacity:.4;}
 .del-btn{border-color:var(--re);color:var(--re);border-radius:14px;}
 .fsave{background:var(--g1);border-radius:12px;}
 
@@ -600,6 +601,29 @@ body.kb-open #feedbackFab{display:none;}
 .dash-mv{background:none;border:1.5px solid var(--br);border-radius:9px;width:30px;height:30px;font-size:11px;color:var(--g1);flex-shrink:0;cursor:pointer;}
 .dash-mv[disabled]{opacity:.25;}
 .dash-eye{background:none;border:none;font-size:19px;padding:2px 4px;flex-shrink:0;cursor:pointer;}
+/* WOCHENPLAN (v0.244) */
+.plan-day{background:var(--card);border:1.5px solid var(--br);border-radius:16px;padding:10px 12px;margin-bottom:10px;}
+.plan-day.is-today{border-color:var(--g2);box-shadow:0 0 0 2px rgba(233,110,60,.10);}
+.plan-dh{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:6px;}
+.plan-dt{font-weight:800;font-size:13px;color:var(--tx);}
+.plan-badge{background:var(--g2);color:#fff;border-radius:999px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:4px;vertical-align:middle;}
+.plan-dk{font-size:11px;color:var(--mu);flex-shrink:0;}
+.plan-slot{display:flex;align-items:flex-start;gap:8px;padding:3px 0;}
+.plan-si{font-size:15px;width:20px;flex-shrink:0;text-align:center;line-height:26px;}
+.plan-sc{flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:5px;align-items:center;}
+.plan-chip{background:var(--gl);border:1.5px solid var(--g3);border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;color:var(--g1);cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.plan-chip.is-gone{border-color:var(--br);color:var(--mu);background:#f4f4f4;}
+.plan-add{background:none;border:1.5px dashed var(--g3);border-radius:999px;width:26px;height:26px;color:var(--g2);font-size:14px;font-weight:900;line-height:1;cursor:pointer;flex-shrink:0;}
+.plan-dact{display:flex;gap:6px;margin-top:8px;}
+.plan-act{flex:1;background:var(--gl);border:1.5px solid var(--g3);border-radius:10px;padding:6px;font-size:11px;font-weight:700;color:var(--g1);cursor:pointer;}
+.plan-act[disabled]{opacity:.35;}
+.plan-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;}
+.plan-nav button{background:var(--gl);border:1.5px solid var(--g3);border-radius:10px;width:38px;height:34px;font-size:16px;font-weight:800;color:var(--g1);cursor:pointer;}
+.plan-nav .lbl{flex:1;text-align:center;font-weight:800;font-size:13px;color:var(--tx);}
+.rec-way{display:flex;align-items:center;gap:12px;width:100%;background:var(--card);border:1.5px solid var(--br);border-radius:14px;padding:12px 14px;margin-bottom:8px;text-align:left;cursor:pointer;}
+.rec-way .ic{font-size:26px;flex-shrink:0;}
+.rec-way .nm{font-weight:700;font-size:14px;color:var(--tx);}
+.rec-way .sb{font-size:11px;color:var(--mu);margin-top:2px;line-height:1.4;}
 </style>
 </head>
 <body>
@@ -818,6 +842,13 @@ body.kb-open #feedbackFab{display:none;}
         <div id="entries-snack" style="display:none;"><div class="me">Noch nichts eingetragen</div></div>
       </div>
     </div>
+    </div>
+    <div class="wc" id="planCard">
+      <div class="wh">
+        <div class="wt">📅 Wochenplan</div>
+        <button type="button" onclick="NTPlan.open()" style="background:var(--g2);border:none;border-radius:20px;color:white;font-size:13px;font-weight:700;padding:4px 12px;cursor:pointer;"><span id="planCardVal">Planen</span> →</button>
+      </div>
+      <div id="planCardBody" style="margin-top:6px;"></div>
     </div>
     <div class="wc" id="exerciseCard">
       <div class="wh">
@@ -1055,6 +1086,11 @@ body.kb-open #feedbackFab{display:none;}
       <div class="lr-val">›</div>
     </div>
     <div style="font-size:11px;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin:14px 4px 6px;">Meine Inhalte</div>
+    <div class="list-row" onclick="NTPlan.open()">
+      <div class="lr-ic">📅</div>
+      <div class="lr-body"><div class="lr-name">Wochenplan</div><div class="lr-sub" id="planHubSub">Rezepte auf die Woche verteilen</div></div>
+      <div class="lr-val">›</div>
+    </div>
     <div class="list-row" onclick="openLibrary()">
       <div class="lr-ic">📚</div>
       <div class="lr-body"><div class="lr-name">Bibliothek</div><div class="lr-sub">Rezepte &amp; eigene Lebensmittel</div></div>
@@ -1109,7 +1145,7 @@ body.kb-open #feedbackFab{display:none;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.243</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.244</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -2367,6 +2403,141 @@ body.kb-open #feedbackFab{display:none;}
   </div>
 </div>
 
+<!-- ══ WOCHENPLAN ══ -->
+<div class="ov" id="planOv" onclick="bgClose(event,'planOv')">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" onclick="NTPlan.close()">✕</button>
+      <div class="mti">📅 Wochenplan</div>
+      <div class="msu" id="planOvSub"></div>
+    </div>
+    <div class="mbd">
+      <div class="plan-nav">
+        <button type="button" onclick="NTPlan.shiftWeek(-1)">‹</button>
+        <div class="lbl" id="planWeekLabel"></div>
+        <button type="button" onclick="NTPlan.shiftWeek(1)">›</button>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;">
+        <button type="button" class="seb" style="flex:1;margin:0;" onclick="NTPlan.autoFill()">🎲 Füllen</button>
+        <button type="button" class="seb" style="flex:1;margin:0;" onclick="NTPlan.weekToShop()">🛒 Einkauf</button>
+        <button type="button" class="seb" style="flex:1;margin:0;" onclick="NTPlan.clearWeek()">🗑 Leeren</button>
+      </div>
+      <button type="button" class="seb" style="margin:0 0 10px;" onclick="NTPlan.newRecipe()">＋ Neues Rezept</button>
+      <div id="planDays"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ WOCHENPLAN: REZEPT WÄHLEN ══ -->
+<div class="ov" id="planPickOv" onclick="bgClose(event,'planPickOv')">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" onclick="closeOv('planPickOv')">✕</button>
+      <div class="mti">📋 Rezept einplanen</div>
+      <div class="msu" id="planPickSub"></div>
+    </div>
+    <div class="mbd">
+      <input type="text" id="planPickQ" class="psi" placeholder="Rezept suchen …" autocomplete="off" oninput="NTPlan.renderPick()" style="width:100%;margin-bottom:8px;">
+      <div id="planPickList" style="display:flex;flex-direction:column;gap:6px;"></div>
+      <button type="button" class="seb" style="margin-top:10px;" onclick="closeOv('planPickOv');NTPlan.newRecipe()">＋ Neues Rezept anlegen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ WOCHENPLAN: EINTRAG ══ -->
+<div class="ov" id="planItemOv" onclick="bgClose(event,'planItemOv')">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" onclick="closeOv('planItemOv')">✕</button>
+      <div class="mti" id="planItemTitle">Eintrag</div>
+      <div class="msu" id="planItemSub"></div>
+    </div>
+    <div class="mbd">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="font-size:13px;font-weight:700;">Portionen</span>
+        <input type="number" id="planItemPortions" value="1" min="0.5" step="0.5" oninput="NTPlan.planItemTotal()" style="width:76px;border:2px solid var(--br);border-radius:10px;padding:7px;font-size:15px;font-weight:700;text-align:center;outline:none;">
+        <span style="font-size:12px;color:var(--mu);" id="planItemTotal"></span>
+      </div>
+      <button type="button" class="svb" onclick="NTPlan.saveItem()">✓ Übernehmen</button>
+      <button type="button" class="seb" onclick="NTPlan.itemToShop()">🛒 Zutaten auf den Einkaufszettel</button>
+      <button type="button" class="seb" style="border-color:var(--re);color:var(--re);" onclick="NTPlan.deleteItem()">🗑 Aus dem Plan nehmen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ NEUES REZEPT: DREI WEGE ══ -->
+<div class="ov" id="recNewOv" onclick="if(event.target.id==='recNewOv')NTPlan.closeNew()">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" onclick="NTPlan.closeNew()">✕</button>
+      <div class="mti">📋 Neues Rezept</div>
+      <div class="msu">Woher kommt es?</div>
+    </div>
+    <div class="mbd">
+      <button type="button" class="rec-way" onclick="NTPlan.newBlank()">
+        <div class="ic">✏️</div>
+        <div style="flex:1;min-width:0;"><div class="nm">Selbst zusammenstellen</div><div class="sb">Zutaten aus der Datenbank suchen und Mengen eintragen</div></div>
+        <div style="color:var(--g1);font-size:18px;">›</div>
+      </button>
+      <button type="button" class="rec-way" onclick="NTPlan.newFromPhoto()">
+        <div class="ic">📷</div>
+        <div style="flex:1;min-width:0;"><div class="nm">Aus dem Kochbuch fotografieren</div><div class="sb">Seite abfotografieren — die KI liest Titel, Portionen, Zutaten und Zubereitung</div></div>
+        <div style="color:var(--g1);font-size:18px;">›</div>
+      </button>
+      <button type="button" class="rec-way" onclick="NTPlan.newFromLink()">
+        <div class="ic">🔗</div>
+        <div style="flex:1;min-width:0;"><div class="nm">Aus dem Internet</div><div class="sb">Rezept-Link einfügen — Chefkoch, Lecker, Foodblogs und andere</div></div>
+        <div style="color:var(--g1);font-size:18px;">›</div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ REZEPT AUS FOTO ══ -->
+<div class="ov" id="recPhotoOv" onclick="if(event.target.id==='recPhotoOv')NTPlan.closePhoto()">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" onclick="NTPlan.closePhoto()">✕</button>
+      <div class="mti">📷 Rezept aus dem Kochbuch</div>
+      <div class="msu">Seite fotografieren oder aus der Galerie wählen</div>
+    </div>
+    <div class="mbd">
+      <div id="recPhotoPickArea" style="display:flex;gap:8px;">
+        <label class="seb" style="flex:1;margin:0;text-align:center;cursor:pointer;">📷 Kamera
+          <input type="file" id="recPhotoCam" accept="image/*" capture="environment" style="display:none;" onchange="NTPlan.handlePhoto(event)">
+        </label>
+        <label class="seb" style="flex:1;margin:0;text-align:center;cursor:pointer;">🖼 Galerie
+          <input type="file" id="recPhotoGal" accept="image/*" style="display:none;" onchange="NTPlan.handlePhoto(event)">
+        </label>
+      </div>
+      <div id="recPhotoPrevWrap" class="hidden" style="margin-top:10px;position:relative;">
+        <img id="recPhotoPrev" alt="" style="width:100%;border-radius:14px;display:block;">
+        <button type="button" onclick="NTPlan.resetPhoto()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.55);border:none;border-radius:50%;width:30px;height:30px;color:#fff;font-size:15px;cursor:pointer;">✕</button>
+      </div>
+      <button type="button" class="svb" id="recPhotoBtn" style="margin-top:10px;" disabled onclick="NTPlan.analyze()">🤖 Rezept auslesen</button>
+      <div id="recPhotoStatus" class="hidden" style="margin-top:8px;padding:9px 11px;border:1.5px solid var(--g3);border-radius:10px;font-size:12px;line-height:1.5;"></div>
+      <div id="recPhotoResult" class="hidden" style="margin-top:12px;">
+        <input type="text" id="recPhotoName" class="psi" placeholder="Name des Rezepts" style="width:100%;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span style="font-size:13px;font-weight:700;">Rezept für</span>
+          <input type="number" id="recPhotoPortions" value="4" min="1" step="1" oninput="NTPlan.updateTotal()" style="width:64px;border:2px solid var(--br);border-radius:10px;padding:6px;font-size:15px;font-weight:700;text-align:center;outline:none;">
+          <span style="font-size:13px;font-weight:700;">Portionen</span>
+        </div>
+        <div id="recPhotoIngList"></div>
+        <div id="recPhotoTotal" style="font-size:11px;color:var(--mu);margin:6px 0 8px;line-height:1.5;"></div>
+        <textarea id="recPhotoIns" placeholder="Zubereitung (von der KI gelesen, frei änderbar)" style="width:100%;box-sizing:border-box;min-height:100px;border:1.5px solid var(--br);border-radius:12px;padding:10px;font-size:13px;font-family:inherit;line-height:1.5;outline:none;resize:vertical;"></textarea>
+        <div style="font-size:11px;color:var(--mu);line-height:1.5;margin:8px 0;">Die Mengen gelten für die oben eingetragene Portionszahl. Gespeichert wird je Portion — beim Eintragen wählst du dann, wie viele Portionen du gegessen hast.</div>
+        <button type="button" class="svb" onclick="NTPlan.savePhotoRecipe()">📋 Rezept speichern</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ DASHBOARD-KACHELN ══ -->
 <div class="ov" id="dashOv" onclick="bgClose(event,'dashOv')">
   <div class="mod">
@@ -2401,6 +2572,7 @@ body.kb-open #feedbackFab{display:none;}
         <button type="button" onclick="closeOv('libraryOv');openPicker(null,'link')" style="padding:9px 14px;border-radius:10px;border:1.5px solid var(--g2);background:white;color:var(--g2);font-weight:700;font-size:13px;" title="Rezept per URL importieren">🔗</button>
         <button type="button" onclick="openImportPaste()" style="padding:9px 14px;border-radius:10px;border:1.5px solid var(--g2);background:white;color:var(--g2);font-weight:700;font-size:13px;" title="Link oder Code einlösen">📥</button>
       </div>
+      <button type="button" class="svb" id="libNewRecBtn" style="margin-bottom:10px;" onclick="NTPlan.newRecipe()">＋ Neues Rezept</button>
       <div id="libraryList" style="display:flex;flex-direction:column;gap:8px;"></div>
     </div>
   </div>
@@ -2705,13 +2877,13 @@ body.kb-open #feedbackFab{display:none;}
 // ════════════════════════════════════════
 // SECTION: STATE
 // ════════════════════════════════════════
-var S={apiKey:'',name:'Du',goal:2000,goalManual:false,weight:0,height:0,age:0,gender:'',activity:'',pregnant:0,pregnantET:'',pregWarn:false,nursing:0,nursWarn:false,babyOn:false,baby:{name:'',birth:''},babyLog:{},babyTomb:{},babyQuick:null,babySync:null,shopList:[],shopTomb:{},shopSync:null,shopRecent:[],goalWeight:0,goalDate:'',goalAchievedShown:'',dietPrefs:[],dietFree:'',savedDietFree:[],dietWarn:false,macroTargets:{protein:0,carbs:0,fat:0},macroGoalMode:'percent',macroGoalG:{protein:0,carbs:0,fat:0},reminders:[],weightLog:{},portionMemory:{},waterGoal:8,waterUnit:250,mealTemplates:[],recurringMeals:[],exerciseLibrary:[],dashOrder:null,dashHidden:null,currentDate:'',days:{}};
+var S={apiKey:'',name:'Du',goal:2000,goalManual:false,weight:0,height:0,age:0,gender:'',activity:'',pregnant:0,pregnantET:'',pregWarn:false,nursing:0,nursWarn:false,babyOn:false,baby:{name:'',birth:''},babyLog:{},babyTomb:{},babyQuick:null,babySync:null,shopList:[],shopTomb:{},shopSync:null,shopRecent:[],goalWeight:0,goalDate:'',goalAchievedShown:'',dietPrefs:[],dietFree:'',savedDietFree:[],dietWarn:false,macroTargets:{protein:0,carbs:0,fat:0},macroGoalMode:'percent',macroGoalG:{protein:0,carbs:0,fat:0},reminders:[],weightLog:{},portionMemory:{},waterGoal:8,waterUnit:250,mealTemplates:[],recurringMeals:[],exerciseLibrary:[],dashOrder:null,dashHidden:null,mealPlan:{},planApplied:{},currentDate:'',days:{}};
 // Tracking für Settings-Session: manuelle Eingabe vs. „Kalorienbedarf berechnen"
 var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.243';
+var APP_VERSION='0.244';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -3103,6 +3275,8 @@ window.addEventListener('DOMContentLoaded',function(){
   // Synchron (nicht per setTimeout): sonst springt das Dashboard sichtbar um,
   // nachdem es einmal in Standardreihenfolge gezeichnet wurde.
   if(window.NTDash&&typeof NTDash.boot==='function')NTDash.boot();
+  // Wochenplan: Kachel „Heute" fuellen. Rein lokal, kein Netz.
+  if(window.NTPlan&&typeof NTPlan.boot==='function')NTPlan.boot();
   // iOS Safari/PWA: Bottom-Nav nach Viewport-Shift wieder anheften (#177)
   var _vvTimer=null;
   function _fixViewportChromeDebounced(){
@@ -3834,6 +4008,7 @@ function renderAll(){
   if(window.NTBaby)NTBaby.renderCard();
   if(window.NTShop)NTShop.render();
   if(window.NTPartner)NTPartner.refreshBadges();
+  if(window.NTPlan)NTPlan.refreshCard();
 }
 // Mehr-Hub-Eintrag folgt dem Schalter aus den Einstellungen
 function renderBabyHub(){
@@ -7200,6 +7375,10 @@ function libSetTab(tab){
 
 function renderLibrary(){
   var el=document.getElementById('libraryList');if(!el)return;
+  // Der Anlege-Knopf gehoert zum Rezepte-Tab; eigene Lebensmittel entstehen
+  // ueber ＋ → Eigenes und haetten hier eine zweite, falsche Tuer aufgemacht.
+  var _newBtn=document.getElementById('libNewRecBtn');
+  if(_newBtn)_newBtn.style.display=(_libTab==='recipes')?'':'none';
   var q=(document.getElementById('libSearchQ')||{}).value||'';
   var ql=q.toLowerCase().trim();
   var html='';
@@ -7447,7 +7626,9 @@ function openOv(id){document.getElementById(id).classList.add('open');}
 function closeOv(id){
   document.getElementById(id).classList.remove('open');
   if(id==='pickerOv'){pickerStopScan();}
-  if(id==='recEditOv'){/* nothing extra */}
+  // Ein per „＋ Neues Rezept → selbst zusammenstellen" angelegtes, nie
+  // befuelltes Rezept soll beim Schliessen nicht als Karteileiche bleiben.
+  if(id==='recEditOv'&&window.NTPlan&&NTPlan.discardEmptyDraft)NTPlan.discardEmptyDraft();
 }
 function bgClose(e,id){if(e.target.id===id)closeOv(id);}
 
@@ -7873,6 +8054,7 @@ function axTestSync(){
 <script src="js/partner.js"></script>
 <script src="js/alexa-sync.js"></script>
 <script src="js/dashboard.js"></script>
+<script src="js/mealplan.js"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

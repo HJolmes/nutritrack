@@ -1,6 +1,12 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.247',items:[
+    {icon:'\ud83d\udd17',text:'Ein Code je Person statt einer je Liste: Mehr → \ud83d\udd17 Verbindungen. Du lädst jemanden ein, gibst ihm einen Code — und stellst dann für diese Person einzeln ein, ob sie Wochenplan, Einkaufszettel und Baby-Tagebuch bekommt. Mehrere Personen gleichzeitig sind möglich, jede mit eigener Auswahl: die Frau bekommt alles, die Oma nur den Einkaufszettel.',where:'Mehr → \ud83d\udd17 Verbindungen'},
+    {icon:'\ud83d\udcc5',text:'Der Wochenplan lässt sich jetzt teilen. Mitgeschickt werden nicht nur die Namen, sondern auch Zutaten und Mengen — die andere Seite sieht den Plan also vollständig, auch ohne deine Rezeptsammlung, und kann ihn ins eigene Tagebuch oder auf den Einkaufszettel übernehmen. Fremde Rezepte sind am gestrichelten Rand erkennbar.',where:'\ud83d\udcc5 Wochenplan → \ud83d\udd04 Teilen'},
+    {icon:'\u267b\ufe0f',text:'Bestehende Kopplungen bleiben bestehen: Aus deinem alten Tagebuch-Code und deinem alten Zettel-Code werden beim Update automatisch zwei Personen in der neuen Liste. Nichts wird neu hochgeladen, nichts geht verloren — du kannst sie umbenennen oder später durch einen gemeinsamen Code ersetzen.',where:'Mehr → \ud83d\udd17 Verbindungen'},
+    {icon:'\u26a0\ufe0f',text:'Ehrlich dazu: Die Schalter sagen, was dein Gerät sendet und abholt — sie sind keine Sperre für die Gegenseite. Wer den Code hat, kann bei sich jeden Bereich einschalten. Was jemand gar nicht bekommen soll, teilst du nicht über denselben Code. Mahlzeiten, Kalorien, Gewicht und Profildaten werden weiterhin nie geteilt.',where:'Mehr → \ud83d\udd17 Verbindungen'},
+  ]},
   {v:'0.246',items:[
     {icon:'\ud83e\udde0',text:'Der Einkaufszettel merkt sich, wohin du einen Artikel einsortiert hast. Einmal „Bier" per ✏️ in deinen „Getränkemarkt" geschoben — beim nächsten Eintippen landet es von selbst dort, samt Symbol. Gemerkt wird nur, was du selbst einstellst, nicht was die App rät. Löschst du die Kategorie, ist auch die Erinnerung weg und die App rät wieder normal.',where:'Mehr → \ud83d\uded2 Einkaufszettel'},
   ]},

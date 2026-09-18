@@ -57,9 +57,51 @@ function planFor(date,create){
 }
 function slotItems(date,slot){var p=planFor(date,false);return(p&&p[slot])||[];}
 function rec(id){for(var i=0;i<recipes.length;i++)if(recipes[i].id===id)return recipes[i];return null;}
-// Ein Planeintrag ist nur ein Verweis {r,p}. Zeigt er auf ein geloeschtes
-// Rezept, wird er beim Zeichnen uebersprungen statt die Ansicht zu sprengen.
-function itemKcal(it){var r=rec(it.r);if(!r)return 0;return ingTotal(r.ingredients||[]).kcal*(it.p||1);}
+
+// ── Revisionen (v0.247) ───────────────────────────────────────────────────
+// Die Einheit des Abgleichs ist EIN TAG, nicht ein einzelner Eintrag: Ein Plan
+// ist eine kurze Liste je Tag, und zwei Menschen, die denselben Tag im selben
+// Moment umplanen, sind der seltene Fall. Der spaetere Schreiber gewinnt den
+// ganzen Tag — das ist erklaerbar, ein halb gemischter Tag waere es nicht.
+var _lastRev=0;
+function nextRev(){
+  var t=Date.now();
+  if(t<=_lastRev)t=_lastRev+1;
+  _lastRev=t;
+  return t;
+}
+function touch(date){
+  var p=planFor(date,true);
+  p.rev=nextRev();
+  return p;
+}
+function planTomb(){
+  if(!S.planTomb||typeof S.planTomb!=='object')S.planTomb={};
+  return S.planTomb;
+}
+
+// ── Ein Planeintrag ist ein Verweis {r,p} plus optionalem Abzug `s` ────────
+// Der Abzug entsteht beim Teilen: Die Gegenseite hat das Rezept nicht in ihrer
+// Bibliothek, und ein blosser Verweis waere drueben eine leere Zeile. Er traegt
+// genau das, was Anzeige, Einkaufszettel und Tagebuch brauchen.
+function snapOf(recipeId){
+  var r=rec(recipeId);
+  if(!r)return null;
+  return {n:r.name,em:r.emoji||'📋',i:(r.ingredients||[]).map(function(g){
+    return {n:g.name,em:g.emoji||'🍽',a:g.amount,p:g.per100};
+  })};
+}
+// Was ein Planeintrag im Bild ist: das eigene Rezept, sonst der mitgereiste
+// Abzug, sonst nichts — dann steht „Rezept gelöscht ✕" statt eines Absturzes.
+function resolve(it){
+  if(!it)return null;
+  var r=rec(it.r);
+  if(r)return {name:r.name,emoji:r.emoji||'📋',ingredients:r.ingredients||[],own:true};
+  if(it.s)return {name:it.s.n,emoji:it.s.em||'📋',own:false,
+    ingredients:(it.s.i||[]).map(function(g){return {name:g.n,emoji:g.em||'🍽',amount:g.a,per100:g.p};})};
+  return null;
+}
+function itemKcal(it){var r=resolve(it);if(!r)return 0;return ingTotal(r.ingredients).kcal*(it.p||1);}
 function dayKcal(date){
   var p=planFor(date,false);if(!p)return 0;
   var sum=0;
@@ -77,8 +119,11 @@ function open(date){
   _week=monday(date?parse(date):(S.currentDate?parse(S.currentDate):new Date()));
   render();
   openOv('planOv');
+  Sync.run();
+  Sync.startPoll(function(){return isPlanOpen();});
 }
-function close(){closeOv('planOv');}
+function close(){Sync.stopPoll();closeOv('planOv');}
+function isPlanOpen(){var e=document.getElementById('planOv');return !!(e&&e.classList.contains('open'));}
 function shiftWeek(n){_week=addDays(weekStart(),n*7);render();}
 
 function render(){
@@ -92,7 +137,9 @@ function render(){
   if(sub)sub.textContent=filled?(filled+' von 7 Tagen geplant · '+Math.round(total)+' kcal'):'Noch nichts geplant';
 
   var el=document.getElementById('planDays');if(!el)return;
-  if(!recipes.length){
+  var weekEmpty=true;
+  for(var e=0;e<7;e++)if(!isEmptyPlan(iso(addDays(mo,e)))){weekEmpty=false;break;}
+  if(!recipes.length&&weekEmpty){
     el.innerHTML='<div style="background:var(--gl);border:1.5px dashed var(--g3);border-radius:14px;padding:16px;text-align:center;">'
       +'<div style="font-size:26px;">📋</div>'
       +'<div style="font-weight:700;font-size:14px;margin-top:4px;">Noch keine Rezepte</div>'
@@ -118,9 +165,10 @@ function render(){
         +'<div class="plan-si" title="'+esc(s.label)+'">'+s.ic+'</div>'
         +'<div class="plan-sc">';
       items.forEach(function(it,idx){
-        var r=rec(it.r);
+        var r=resolve(it);
         if(!r){html+='<span class="plan-chip is-gone" onclick="NTPlan.removeItem(\''+ds+'\',\''+s.id+'\','+idx+')">Rezept gelöscht ✕</span>';return;}
-        html+='<span class="plan-chip" onclick="NTPlan.openItem(\''+ds+'\',\''+s.id+'\','+idx+')">'
+        // Fremdes Rezept (nur als Abzug da): erkennbar, aber gleichwertig nutzbar.
+        html+='<span class="plan-chip'+(r.own?'':' is-guest')+'" onclick="NTPlan.openItem(\''+ds+'\',\''+s.id+'\','+idx+')">'
           +(r.emoji||'📋')+' '+esc(r.name)+((it.p||1)!==1?' <b>'+(it.p||1)+'×</b>':'')+'</span>';
       });
       html+='<button type="button" class="plan-add" onclick="NTPlan.pick(\''+ds+'\',\''+s.id+'\')">＋</button>'
@@ -168,7 +216,8 @@ function addToSlot(recipeId){
   var p=planFor(_target.date,true);
   p[_target.slot].push({r:recipeId,p:1});
   if(S.planApplied)delete S.planApplied[_target.date];
-  saveS();closeOv('planPickOv');render();refreshCard();
+  touch(_target.date);
+  saveS();Sync.schedule();closeOv('planPickOv');render();refreshCard();
   var r=rec(recipeId);
   showToast((r?(r.emoji||'📋')+' '+r.name:'Rezept')+' eingeplant ✓');
 }
@@ -177,9 +226,9 @@ function addToSlot(recipeId){
 var _item=null;
 function openItem(date,slot,idx){
   var it=slotItems(date,slot)[idx];if(!it)return;
-  var r=rec(it.r);if(!r){removeItem(date,slot,idx);return;}
+  var r=resolve(it);if(!r){removeItem(date,slot,idx);return;}
   _item={date:date,slot:slot,idx:idx};
-  document.getElementById('planItemTitle').textContent=(r.emoji||'📋')+' '+r.name;
+  document.getElementById('planItemTitle').textContent=(r.emoji||'📋')+' '+r.name+(r.own?'':' · von einer geteilten Liste');
   var d=parse(date),s=SLOTS.filter(function(x){return x.id===slot;})[0];
   document.getElementById('planItemSub').textContent=DOW[(d.getDay()+6)%7]+' · '+shortDate(d)+' · '+(s?s.label:'');
   document.getElementById('planItemPortions').value=it.p||1;
@@ -189,22 +238,24 @@ function openItem(date,slot,idx){
 function planItemTotal(){
   if(!_item)return;
   var it=slotItems(_item.date,_item.slot)[_item.idx];if(!it)return;
-  var r=rec(it.r);if(!r)return;
+  var r=resolve(it);if(!r)return;
   var p=parseFloat((document.getElementById('planItemPortions')||{}).value)||1;
   var el=document.getElementById('planItemTotal');
-  if(el)el.textContent=totalStr(scaleNutrients(ingTotal(r.ingredients||[]),p));
+  if(el)el.textContent=totalStr(scaleNutrients(ingTotal(r.ingredients),p));
 }
 function saveItem(){
   if(!_item)return;
   var it=slotItems(_item.date,_item.slot)[_item.idx];if(!it)return;
   it.p=parseFloat(document.getElementById('planItemPortions').value)||1;
-  saveS();closeOv('planItemOv');render();refreshCard();
+  touch(_item.date);
+  saveS();Sync.schedule();closeOv('planItemOv');render();refreshCard();
 }
 function removeItem(date,slot,idx){
   var items=slotItems(date,slot);
   if(!items[idx])return;
   items.splice(idx,1);
-  saveS();render();refreshCard();
+  touch(date);
+  saveS();Sync.schedule();render();refreshCard();
 }
 function deleteItem(){
   if(!_item)return;
@@ -215,7 +266,13 @@ function deleteItem(){
 function itemToShop(){
   if(!_item||!window.NTShop)return;
   var it=slotItems(_item.date,_item.slot)[_item.idx];if(!it)return;
-  NTShop.addRecipe(it.r,it.p||1);
+  var r=resolve(it);if(!r){showToast('Rezept nicht gefunden');return;}
+  // Bewusst NICHT NTShop.addRecipe(id): ein von aussen geteiltes Rezept steht
+  // nicht in der eigenen Bibliothek, die ID liefe dort ins Leere.
+  var p=it.p||1;
+  NTShop.addIngredients(r.ingredients.map(function(g){
+    return {name:g.name,emoji:g.emoji||'',amount:Math.round((g.amount||0)*p)};
+  }),r.name);
 }
 
 // ── Automatisch fuellen ───────────────────────────────────────────────────
@@ -246,8 +303,9 @@ function autoFill(){
       added++;
     });
     if(S.planApplied)delete S.planApplied[ds];
+    if(added)touch(ds);
   }
-  saveS();render();refreshCard();
+  saveS();Sync.schedule();render();refreshCard();
   showToast(added?(added+' Mahlzeiten eingeplant ✓'):'Die Woche ist schon voll');
 }
 
@@ -256,7 +314,8 @@ function clearDay(date){
   if(!confirm('Alle geplanten Mahlzeiten dieses Tages entfernen?'))return;
   delete S.mealPlan[date];
   if(S.planApplied)delete S.planApplied[date];
-  saveS();render();refreshCard();
+  planTomb()[date]={rev:nextRev()};
+  saveS();Sync.schedule();render();refreshCard();
 }
 function clearWeek(){
   var mo=weekStart(),n=0;
@@ -265,10 +324,11 @@ function clearWeek(){
   if(!confirm('Den ganzen Wochenplan leeren? '+n+' geplante Tage gehen verloren.'))return;
   for(var k=0;k<7;k++){
     var ds=iso(addDays(mo,k));
+    if(S.mealPlan[ds])planTomb()[ds]={rev:nextRev()};
     delete S.mealPlan[ds];
     if(S.planApplied)delete S.planApplied[ds];
   }
-  saveS();render();refreshCard();
+  saveS();Sync.schedule();render();refreshCard();
   showToast('Wochenplan geleert');
 }
 
@@ -286,8 +346,8 @@ function weekToShop(){
     days++;
     SLOTS.forEach(function(s){
       slotItems(ds,s.id).forEach(function(it){
-        var r=rec(it.r);if(!r)return;
-        (r.ingredients||[]).forEach(function(ing){
+        var r=resolve(it);if(!r)return;
+        r.ingredients.forEach(function(ing){
           var key=String(ing.name||'').toLowerCase().trim();
           if(!key)return;
           if(!agg[key]){agg[key]={name:ing.name,emoji:ing.emoji||'',amount:0};order.push(key);}
@@ -323,11 +383,11 @@ function toDiary(date){
   SLOTS.forEach(function(s){
     if(!Array.isArray(day.meals[s.id]))day.meals[s.id]=[];
     slotItems(date,s.id).forEach(function(it){
-      var r=rec(it.r);if(!r)return;
-      var p=it.p||1,t=ingTotal(r.ingredients||[]);
+      var r=resolve(it);if(!r)return;
+      var p=it.p||1,t=ingTotal(r.ingredients);
       day.meals[s.id].push(Object.assign({
-        name:r.name,emoji:r.emoji||'📋',isRecipe:true,recipeId:r.id,
-        portions:p,ingredients:JSON.parse(JSON.stringify(r.ingredients||[])),
+        name:r.name,emoji:r.emoji||'📋',isRecipe:true,recipeId:r.own?it.r:null,
+        portions:p,ingredients:JSON.parse(JSON.stringify(r.ingredients)),
         addedAt:new Date().toISOString(),_fromPlan:true
       },scaleNutrients(t,p)));
       n++;
@@ -357,7 +417,7 @@ function refreshCard(){
   var rows='';
   SLOTS.forEach(function(s){
     var items=slotItems(ds,s.id);if(!items.length)return;
-    var names=items.map(function(it){var r=rec(it.r);return r?((r.emoji||'📋')+' '+esc(r.name)):'—';}).join(', ');
+    var names=items.map(function(it){var r=resolve(it);return r?((r.emoji||'📋')+' '+esc(r.name)):'—';}).join(', ');
     rows+='<div style="display:flex;gap:6px;font-size:12px;margin-top:3px;"><span style="flex-shrink:0;">'+s.ic+'</span><span style="color:var(--tx);min-width:0;">'+names+'</span></div>';
   });
   var applied=S.planApplied&&S.planApplied[ds];
@@ -606,12 +666,122 @@ function savePhotoRecipe(){
   showToast((r.emoji||'📋')+' '+r.name+' gespeichert ✓');
 }
 
+// ══════════════════════════════════════════════════════════════════════════
+// Sync: ein Record je TAG
+// ══════════════════════════════════════════════════════════════════════════
+// Beim Senden bekommt jeder Eintrag den Abzug seines Rezepts mit — die
+// Gegenseite hat die Bibliothek nicht, und ein blosser Verweis waere drueben
+// eine leere Zeile. Kennen wir das Rezept selbst nicht (weil der Tag von einem
+// Dritten kam), reicht der Abzug weiter, den wir bekommen haben.
+function dayPayload(date){
+  var p=planFor(date,false);
+  if(!p)return null;
+  var out={};
+  SLOTS.forEach(function(sl){
+    out[sl.id]=(p[sl.id]||[]).map(function(it){
+      var o={r:it.r,p:it.p||1};
+      var snap=snapOf(it.r)||it.s;
+      if(snap)o.s=snap;
+      return o;
+    });
+  });
+  return {d:out};
+}
+function records(){
+  var out=[];
+  if(!S.mealPlan||typeof S.mealPlan!=='object')S.mealPlan={};
+  Object.keys(S.mealPlan).forEach(function(date){
+    var p=S.mealPlan[date];if(!p)return;
+    out.push({id:date,rev:p.rev||0,holder:p,payload:dayPayload(date)});
+  });
+  var tb=planTomb();
+  Object.keys(tb).forEach(function(date){
+    var t=tb[date];if(!t)return;
+    out.push({id:date,rev:t.rev||0,holder:t,payload:{d:null}});
+  });
+  return out;
+}
+// Merge: hoehere rev gewinnt, fuer den ganzen Tag.
+function applyRec(id,rev,payload,room){
+  if(!S.mealPlan||typeof S.mealPlan!=='object')S.mealPlan={};
+  var tb=planTomb();
+  var tomb=tb[id];
+  if(tomb&&(tomb.rev||0)>=rev)return false;// lokal spaeter geleert
+  var cur=S.mealPlan[id];
+  if(cur&&(cur.rev||0)>=rev)return false;  // lokal neuer
+  if(payload.d===null||payload.d===undefined){
+    delete S.mealPlan[id];
+    var t={rev:rev};NTSync.ack(t,room,rev);
+    tb[id]=t;
+    if(S.planApplied)delete S.planApplied[id];
+    if(rev>_lastRev)_lastRev=rev;
+    return true;
+  }
+  if(tomb)delete tb[id];
+  var p={breakfast:[],lunch:[],dinner:[],snack:[],rev:rev};
+  SLOTS.forEach(function(sl){
+    p[sl.id]=((payload.d||{})[sl.id]||[]).map(function(o){
+      var it={r:o.r,p:o.p||1};
+      if(o.s)it.s=o.s;
+      return it;
+    });
+  });
+  NTSync.ack(p,room,rev);
+  S.mealPlan[id]=p;
+  // Ein Tag, der sich geaendert hat, steht nicht mehr so im Tagebuch, wie er
+  // dort hineingeschrieben wurde — die Haken-Markierung waere sonst gelogen.
+  if(S.planApplied)delete S.planApplied[id];
+  if(rev>_lastRev)_lastRev=rev;
+  return true;
+}
+
+var Sync=NTSync.engine({
+  topic:'plan',path:'/plan/sync',header:'X-Plan-Room',salt:'nutritrack-plan',
+  pollMs:60000,      // ein Wochenplan aendert sich selten – kein Ladenregal
+  debounceMs:1500,
+  records:records,
+  apply:applyRec,
+  onApplied:function(){render();refreshCard();},
+  onStatus:function(){renderSyncUI();}
+});
+
+function openSync(){renderSyncUI();openOv('planSyncOv');}
+function renderSyncUI(){
+  var stat=document.getElementById('planSyncStatus');
+  if(stat)stat.textContent=Sync.statusText();
+  var who=document.getElementById('planSyncWho');
+  if(who){
+    var ls=NTSync.forTopic('plan');
+    who.innerHTML=ls.length
+      ?ls.map(function(l){return '<span class="lnk-chip">👤 '+esc(l.name)+'</span>';}).join('')
+      :'<span style="font-size:12px;color:var(--mu);">Noch mit niemandem geteilt.</span>';
+  }
+  var badge=document.getElementById('planSyncBadge');
+  if(badge)badge.style.display=Sync.active()?'':'none';
+}
+function openLinks(){closeOv('planSyncOv');setTimeout(function(){NTSync.open();},200);}
+function syncNow(){
+  if(!Sync.active()){showToast('Erst jemanden verbinden');return;}
+  showToast('Wird abgeglichen …');
+  Sync.run(true).then(function(){render();refreshCard();renderSyncUI();});
+}
+
 // ── Boot ──────────────────────────────────────────────────────────────────
 function boot(){
   if(!S.mealPlan||typeof S.mealPlan!=='object')S.mealPlan={};
   if(!S.planApplied||typeof S.planApplied!=='object')S.planApplied={};
+  Object.keys(S.mealPlan).forEach(function(d){
+    var p=S.mealPlan[d];if(p&&(p.rev||0)>_lastRev)_lastRev=p.rev;
+  });
+  Object.keys(planTomb()).forEach(function(d){
+    var t=S.planTomb[d];if(t&&(t.rev||0)>_lastRev)_lastRev=t.rev;
+  });
   refreshCard();
+  Sync.run();
 }
+document.addEventListener('visibilitychange',function(){
+  if(!document.hidden)Sync.run();
+});
 
 window.NTPlan={
   boot:boot,open:open,close:close,render:render,refreshCard:refreshCard,
@@ -620,6 +790,7 @@ window.NTPlan={
   pick:pick,renderPick:renderPick,addToSlot:addToSlot,
   openItem:openItem,saveItem:saveItem,deleteItem:deleteItem,removeItem:removeItem,
   itemToShop:itemToShop,planItemTotal:planItemTotal,
+  openSync:openSync,renderSyncUI:renderSyncUI,openLinks:openLinks,syncNow:syncNow,Sync:Sync,
   newRecipe:newRecipe,newBlank:newBlank,newFromLink:newFromLink,newFromPhoto:newFromPhoto,
   discardEmptyDraft:discardEmptyDraft,backToOrigin:backToOrigin,closeNew:closeNew,closePhoto:closePhoto,
   handlePhoto:handlePhoto,analyze:analyze,resetPhoto:resetPhoto,

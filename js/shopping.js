@@ -379,298 +379,100 @@ function addMany(items){
 // Der Kopplungs-Code besteht aus zwei Teilen: `raum.schluessel`. Der Raum
 // adressiert den Briefkasten beim Worker, der Schlüssel entschlüsselt die
 // Inhalte und wird NIE gesendet. Wer nur den Raum kennt, sieht Chiffrat.
-var Sync=(function(){
-  var API=(typeof PROJECT_WORKER_BASE!=='undefined'?PROJECT_WORKER_BASE:'')+'/shop/sync';
-  var POLL_MS=30000;   // solange der Zettel offen ist – im Laden zählt Aktualität
-  var DEBOUNCE_MS=1200;
-  var _timer=null,_poll=null,_busy=false,_key=null,_keyFor='';
-
-  function st(){
-    S.shopSync=S.shopSync||{on:false,room:'',key:'',since:0,lastAt:0,lastErr:''};
-    return S.shopSync;
-  }
-  function active(){var c=st();return !!(c.on&&c.room&&c.key);}
-  // Neue Kopplung: alle Quittungen verwerfen, damit der komplette lokale
-  // Bestand einmal in den neuen Raum hochgeladen wird.
-  function resetAcks(){
-    list().forEach(function(it){delete it._sy;});
-    customCats().forEach(function(c){delete c._sy;});
-    S.shopTomb=S.shopTomb||{};
-    Object.keys(S.shopTomb).forEach(function(id){if(S.shopTomb[id])delete S.shopTomb[id].sy;});
-  }
-  function cryptoOk(){return !!(window.crypto&&crypto.subtle&&window.TextEncoder);}
-
-  function rand(n){
-    var a=crypto.getRandomValues(new Uint8Array(n)),s='';
-    var abc='abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    for(var i=0;i<n;i++)s+=abc[a[i]%abc.length];
-    return s;
-  }
-  function b64(buf){var b=new Uint8Array(buf),s='';for(var i=0;i<b.length;i++)s+=String.fromCharCode(b[i]);return btoa(s);}
-  function b64d(s){var bin=atob(s),b=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)b[i]=bin.charCodeAt(i);return b;}
-
-  // Schlüssel deterministisch aus dem Code ableiten – beide Geräte kommen mit
-  // demselben Code auf denselben AES-Schlüssel, ohne ihn je zu übertragen.
-  // Eigenes Salt-Präfix: selbst wenn jemand denselben Code auch fürs
-  // Baby-Tagebuch benutzt, sind die Schlüssel verschieden.
-  function getKey(){
-    var c=st();
-    var tag=c.room+'|'+c.key;
-    if(_key&&_keyFor===tag)return Promise.resolve(_key);
-    return crypto.subtle.importKey('raw',new TextEncoder().encode(c.key),'PBKDF2',false,['deriveKey'])
-      .then(function(km){
-        return crypto.subtle.deriveKey(
-          {name:'PBKDF2',salt:new TextEncoder().encode('nutritrack-shop|'+c.room),iterations:100000,hash:'SHA-256'},
-          km,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
-      }).then(function(k){_key=k;_keyFor=tag;return k;});
-  }
-  function encRec(id,rev,payload){
-    var iv=crypto.getRandomValues(new Uint8Array(12));
-    return getKey().then(function(k){
-      return crypto.subtle.encrypt({name:'AES-GCM',iv:iv},k,new TextEncoder().encode(JSON.stringify(payload)));
-    }).then(function(ct){return {id:id,rev:rev,iv:b64(iv),ct:b64(ct)};});
-  }
-  function decRec(rec){
-    return getKey().then(function(k){
-      return crypto.subtle.decrypt({name:'AES-GCM',iv:b64d(rec.iv)},k,b64d(rec.ct));
-    }).then(function(buf){return JSON.parse(new TextDecoder().decode(buf));})
-      .catch(function(){return null;});// fremder/kaputter Record → überspringen
-  }
-
-  function code(){var c=st();return c.room&&c.key?(c.room+'.'+c.key):'';}
-  function createRoom(){
-    if(!cryptoOk()){showToast('Dieses Gerät unterstützt die Verschlüsselung nicht');return false;}
-    var c=st();
-    c.room=rand(32);c.key=rand(24);c.on=true;c.since=0;c.lastErr='';resetAcks();
-    _key=null;_keyFor='';
-    saveS();
-    run(true);
-    return true;
-  }
-  function joinRoom(raw){
-    if(!cryptoOk()){showToast('Dieses Gerät unterstützt die Verschlüsselung nicht');return false;}
-    var parts=String(raw||'').trim().replace(/\s+/g,'').split('.');
-    if(parts.length!==2||!/^[A-Za-z0-9_-]{24,64}$/.test(parts[0])||parts[1].length<16){
-      showToast('Code sieht nicht gültig aus');
-      return false;
-    }
-    var c=st();
-    c.room=parts[0];c.key=parts[1];c.on=true;c.since=0;c.lastErr='';resetAcks();
-    _key=null;_keyFor='';
-    saveS();
-    run(true);
-    return true;
-  }
-  function disconnect(){
-    var c=st();
-    c.on=false;c.room='';c.key='';c.since=0;c.lastErr='';
-    _key=null;_keyFor='';
-    stopPoll();
-    saveS();
-    renderSyncUI();
-    showToast('Verbindung getrennt – der Zettel bleibt auf diesem Gerät');
-  }
-
-  // Was ist lokal neuer als das, was der Server bestätigt hat?
-  // Bewusst pro Artikel (`_sy` = quittierte Revision) statt einer globalen
-  // Hochwassermarke: Bei zwei Geräten mit leicht unterschiedlichen Uhren wäre
-  // eine gemeinsame Marke schon durch einen fremden, höheren Zeitstempel
-  // überholt — eigene, ältere Änderungen würden dann nie hochgeladen.
-  function pending(){
-    var out=[];
-    list().forEach(function(it){
-      if((it.rev||0)>(it._sy||0))out.push({id:it.id,rev:it.rev,it:it});
-    });
-    // Eigene Kategorien reisen im selben Kanal, erkennbar am ID-Praefix.
-    // Ohne sie saehe das zweite Geraet Artikel in einer Kategorie, die es
-    // nicht kennt — sie landeten dort stumm unter „Sonstiges".
-    customCats().forEach(function(c){
-      if((c.rev||0)>(c._sy||0))out.push({id:CAT_PREFIX+c.id,rev:c.rev,cat:c});
-    });
-    S.shopTomb=S.shopTomb||{};
-    Object.keys(S.shopTomb).forEach(function(id){
-      var t=S.shopTomb[id];
-      if(t&&(t.rev||0)>(t.sy||0))out.push({id:id,rev:t.rev,tomb:t});
-    });
-    return out.sort(function(a,b){return a.rev-b.rev;});
-  }
+// ── Sync: Artikel und eigene Kategorien ───────────────────────────────────
+// Transport, Verschlüsselung, Personen und Quittungen liegen seit v0.247 in
+// js/sync-core.js. Hier bleibt nur, was die Form DIESES Topfes kennt: welche
+// Records es gibt und wie ein empfangener Record eingemischt wird.
+function stripSy(o){
   // `_sy` ist eine rein lokale Buchhaltung und gehört nicht ins Chiffrat.
-  function strip(it){
-    var c={};
-    Object.keys(it).forEach(function(k){if(k!=='_sy')c[k]=it[k];});
-    return c;
-  }
+  var c={};
+  Object.keys(o).forEach(function(k){if(k!=='_sy')c[k]=o[k];});
+  return c;
+}
+function records(){
+  var out=[];
+  list().forEach(function(it){
+    out.push({id:it.id,rev:it.rev||0,holder:it,payload:{i:stripSy(it)}});
+  });
+  customCats().forEach(function(c){
+    out.push({id:CAT_PREFIX+c.id,rev:c.rev||0,holder:c,payload:{k:stripSy(c)}});
+  });
+  S.shopTomb=S.shopTomb||{};
+  Object.keys(S.shopTomb).forEach(function(id){
+    var t=S.shopTomb[id];if(!t)return;
+    out.push({id:id,rev:t.rev||0,holder:t,
+              payload:(id.indexOf(CAT_PREFIX)===0)?{k:null}:{i:null}});
+  });
+  return out;
+}
 
-  // „HTTP 503" sagt niemandem etwas. Der Service Worker macht aus JEDEM
-  // Netzwerk- oder CORS-Fehler auf workers.dev eine 503 – die häufigste
-  // Ursache ist also nicht „Server kaputt", sondern offline oder ein Worker,
-  // der den Endpoint noch nicht kennt.
-  function errText(err){
-    var m=(err&&err.message)||'Fehler';
-    if(m.indexOf('503')>=0)return 'Server nicht erreichbar – offline oder der Worker ist noch nicht aktualisiert';
-    if(m.indexOf('404')>=0)return 'Der Worker kennt den Einkaufszettel noch nicht – bitte aktualisieren';
-    if(m.indexOf('401')>=0)return 'Kopplungs-Code wird nicht akzeptiert';
-    if(m.indexOf('403')>=0)return 'Zugriff abgelehnt';
-    if(m.indexOf('413')>=0)return 'Zu viele Änderungen auf einmal';
-    return m;
-  }
-
-  function push(){
-    var c=st();
-    var items=pending();
-    if(!items.length)return Promise.resolve(0);
-    items=items.slice(0,200);// Worker-Limit
-    return Promise.all(items.map(function(x){
-      // Artikel: {i:…}, eigene Kategorie: {k:…}. Loeschung ist jeweils null.
-      // Ein Geraet mit alter Fassung liest einen `cat:`-Record als Loeschmarke
-      // fuer eine ID, die es als Artikel nie gab — es legt eine tote Zeile in
-      // S.shopTomb an und schickt sie wegen sy===rev nicht zurueck. Harmlos.
-      if(x.id.indexOf(CAT_PREFIX)===0)return encRec(x.id,x.rev,{k:x.cat?strip(x.cat):null});
-      return encRec(x.id,x.rev,{i:x.it?strip(x.it):null});
-    }))
-      .then(function(recs){
-        return fetch(API,{method:'POST',headers:{'Content-Type':'application/json','X-Shop-Room':c.room},body:JSON.stringify({records:recs})});
-      })
-      .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
-      .then(function(){
-        // Erst nach bestätigtem Upload quittieren – bei Abbruch wird alles
-        // beim nächsten Lauf erneut gesendet.
-        items.forEach(function(x){
-          if(x.it)x.it._sy=x.rev;
-          else if(x.cat)x.cat._sy=x.rev;
-          else if(x.tomb)x.tomb.sy=x.rev;
-        });
-        saveS();
-        return items.length;
-      });
-  }
-
-  function pull(){
-    var c=st();
-    return fetch(API+'?since='+encodeURIComponent(c.since||0),{headers:{'X-Shop-Room':c.room}})
-      .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
-      .then(function(j){
-        var d=(j&&j.data)||{};
-        var recs=d.records||[];
-        if(!recs.length){if(d.cursor)c.since=Math.max(c.since||0,d.cursor);return 0;}
-        return Promise.all(recs.map(decRec)).then(function(payloads){
-          var applied=0;
-          payloads.forEach(function(pl,i){
-            if(pl&&apply(recs[i].id,recs[i].rev,pl))applied++;
-          });
-          if(d.cursor)c.since=Math.max(c.since||0,d.cursor);
-          if(applied)saveS();
-          return applied;
-        });
-      });
-  }
-
-  // Merge: höhere rev gewinnt. Gilt für Artikel und Löschmarken gleichermaßen.
-  function apply(id,rev,payload){
-    if(String(id).indexOf(CAT_PREFIX)===0)return applyCat(id,rev,payload);
-    S.shopTomb=S.shopTomb||{};
-    var tomb=S.shopTomb[id];
-    if(tomb&&(tomb.rev||0)>=rev)return false;// lokal später gelöscht
-    var a=list();
-    var idx=-1;
-    for(var i=0;i<a.length;i++)if(a[i].id===id){idx=i;break;}
-    if(idx>=0&&(a[idx].rev||0)>=rev)return false;// lokal neuer
-    if(idx>=0)a.splice(idx,1);
-    if(payload.i===null||payload.i===undefined){
-      // sy=rev: kam vom Server, muss nicht zurückgeschickt werden
-      S.shopTomb[id]={rev:rev,sy:rev};
-      return true;
-    }
-    if(tomb)delete S.shopTomb[id];
-    var it=payload.i;
-    it.id=id;it.rev=rev;it._sy=rev;
-    a.push(it);
+// Merge: höhere rev gewinnt. Gilt für Artikel und Löschmarken gleichermaßen.
+function applyRec(id,rev,payload,room){
+  if(String(id).indexOf(CAT_PREFIX)===0)return applyCat(id,rev,payload,room);
+  S.shopTomb=S.shopTomb||{};
+  var tomb=S.shopTomb[id];
+  if(tomb&&(tomb.rev||0)>=rev)return false;// lokal später gelöscht
+  var a=list();
+  var idx=-1;
+  for(var i=0;i<a.length;i++)if(a[i].id===id){idx=i;break;}
+  if(idx>=0&&(a[idx].rev||0)>=rev)return false;// lokal neuer
+  if(idx>=0)a.splice(idx,1);
+  if(payload.i===null||payload.i===undefined){
+    var t={rev:rev};NTSync.ack(t,room,rev);// quittiert gegenüber DIESER Person
+    S.shopTomb[id]=t;
     if(rev>_lastRev)_lastRev=rev;
     return true;
   }
+  if(tomb)delete S.shopTomb[id];
+  var it=payload.i;
+  it.id=id;it.rev=rev;
+  NTSync.ack(it,room,rev);
+  a.push(it);
+  if(rev>_lastRev)_lastRev=rev;
+  return true;
+}
 
-  // Gleiche Regel wie bei Artikeln: hoehere rev gewinnt, Loeschmarke schlaegt
-  // aelteren Inhalt. Verschwindet eine Kategorie, wandern die Artikel, die noch
-  // auf sie zeigen, nach „Sonstiges" — sonst haengen sie an einer ID, die es
-  // auf diesem Geraet nicht mehr gibt, und waeren nur noch ueber den
-  // Artikel-Editor zu erreichen.
-  function applyCat(recId,rev,payload){
-    var id=recId.slice(CAT_PREFIX.length);
-    S.shopTomb=S.shopTomb||{};
-    var tomb=S.shopTomb[recId];
-    if(tomb&&(tomb.rev||0)>=rev)return false;
-    var own=customCats();
-    var idx=-1;
-    for(var i=0;i<own.length;i++)if(own[i].id===id){idx=i;break;}
-    if(idx>=0&&(own[idx].rev||0)>=rev)return false;
-    if(idx>=0)own.splice(idx,1);
-    if(payload.k===null||payload.k===undefined){
-      S.shopTomb[recId]={rev:rev,sy:rev};
-      forgetCat(id);
-      list().forEach(function(it){
-        if((it.c||'sonst')===id){it.c='sonst';it.rev=nextRev();}
-      });
-      if(rev>_lastRev)_lastRev=rev;
-      return true;
-    }
-    if(tomb)delete S.shopTomb[recId];
-    var c=payload.k;
-    c.id=id;c.rev=rev;c._sy=rev;
-    own.push(c);
+// Gleiche Regel für eigene Kategorien. Verschwindet eine, wandern die Artikel,
+// die noch auf sie zeigen, nach „Sonstiges" — sonst hängen sie an einer ID, die
+// es auf diesem Gerät nicht mehr gibt.
+function applyCat(recId,rev,payload,room){
+  var id=recId.slice(CAT_PREFIX.length);
+  S.shopTomb=S.shopTomb||{};
+  var tomb=S.shopTomb[recId];
+  if(tomb&&(tomb.rev||0)>=rev)return false;
+  var own=customCats();
+  var idx=-1;
+  for(var i=0;i<own.length;i++)if(own[i].id===id){idx=i;break;}
+  if(idx>=0&&(own[idx].rev||0)>=rev)return false;
+  if(idx>=0)own.splice(idx,1);
+  if(payload.k===null||payload.k===undefined){
+    var t={rev:rev};NTSync.ack(t,room,rev);
+    S.shopTomb[recId]=t;
+    forgetCat(id);
+    list().forEach(function(it){
+      if((it.c||'sonst')===id){it.c='sonst';it.rev=nextRev();}
+    });
     if(rev>_lastRev)_lastRev=rev;
     return true;
   }
+  if(tomb)delete S.shopTomb[recId];
+  var c=payload.k;
+  c.id=id;c.rev=rev;
+  NTSync.ack(c,room,rev);
+  own.push(c);
+  if(rev>_lastRev)_lastRev=rev;
+  return true;
+}
 
-  function run(force){
-    if(!active()||!cryptoOk())return Promise.resolve();
-    if(_busy&&!force)return Promise.resolve();
-    _busy=true;
-    var c=st();
-    return push()
-      .then(pull)
-      .then(function(applied){
-        c.lastAt=Date.now();c.lastErr='';
-        saveS();
-        if(applied){render();if(isOpen('shopCatsOv'))renderCats();}
-        renderSyncUI();
-      })
-      .catch(function(err){
-        // Offline oder Worker nicht erreichbar: Quittungen bleiben stehen,
-        // beim nächsten Versuch wird alles Offene nachgeholt.
-        c.lastErr=errText(err);
-        saveS();
-        renderSyncUI();
-      })
-      .then(function(){_busy=false;});
-  }
-
-  function schedule(){
-    if(!active())return;
-    clearTimeout(_timer);
-    _timer=setTimeout(function(){run();},DEBOUNCE_MS);
-  }
-  function startPoll(){
-    if(!active())return;
-    stopPoll();
-    _poll=setInterval(function(){if(isOpen('shopOv')||isOpen('shopAddOv'))run();else stopPoll();},POLL_MS);
-  }
-  function stopPoll(){if(_poll){clearInterval(_poll);_poll=null;}}
-
-  function statusText(){
-    var c=st();
-    if(!active())return 'Nicht verbunden – der Zettel bleibt nur auf diesem Gerät.';
-    if(c.lastErr)return '⚠️ Abgleich fehlgeschlagen: '+c.lastErr+'. Wird automatisch erneut versucht.';
-    if(!c.lastAt)return 'Verbunden – noch kein Abgleich gelaufen.';
-    var mins=Math.round((Date.now()-c.lastAt)/60000);
-    return '✓ Verbunden · letzter Abgleich '+(mins<1?'gerade eben':'vor '+mins+' Min.');
-  }
-
-  return {
-    st:st,active:active,code:code,createRoom:createRoom,joinRoom:joinRoom,
-    disconnect:disconnect,run:run,schedule:schedule,startPoll:startPoll,
-    stopPoll:stopPoll,statusText:statusText,cryptoOk:cryptoOk
-  };
-})();
+var Sync=NTSync.engine({
+  topic:'shop',path:'/shop/sync',header:'X-Shop-Room',salt:'nutritrack-shop',
+  pollMs:30000,      // solange der Zettel offen ist – im Laden zählt Aktualität
+  debounceMs:1200,   // Änderungen sammeln statt pro Tipp zu senden
+  records:records,
+  apply:applyRec,
+  onApplied:function(){render();if(isOpen('shopCatsOv'))renderCats();},
+  onStatus:function(){renderSyncUI();}
+});
 
 function isOpen(id){
   var el=document.getElementById(id);
@@ -678,47 +480,29 @@ function isOpen(id){
 }
 
 // ── Sync-Oberfläche ──
+// Seit v0.247 gibt es KEINEN eigenen Zettel-Code mehr: Codes gehören zu einer
+// Person, nicht zu einem Topf. Der Dialog sagt nur noch, mit wem der Zettel
+// geteilt wird, und führt zur Verbindungsliste.
 function openSync(){renderSyncUI();openOv('shopSyncOv');}
 function renderSyncUI(){
   var on=Sync.active();
   var stat=document.getElementById('shopSyncStatus');
   if(stat)stat.textContent=Sync.statusText();
-  var setup=document.getElementById('shopSyncSetup');
-  if(setup)setup.style.display=on?'none':'block';
-  var live=document.getElementById('shopSyncLive');
-  if(live)live.style.display=on?'block':'none';
-  var codeEl=document.getElementById('shopSyncCode');
-  if(codeEl)codeEl.textContent=Sync.code()||'';
   var badge=document.getElementById('shopSyncBadge');
   if(badge)badge.style.display=on?'':'none';
+  var who=document.getElementById('shopSyncWho');
+  if(who){
+    var ls=NTSync.forTopic('shop');
+    who.innerHTML=ls.length
+      ?ls.map(function(l){return '<span class="lnk-chip">👤 '+esc(l.name)+'</span>';}).join('')
+      :'<span style="font-size:12px;color:var(--mu);">Noch mit niemandem geteilt.</span>';
+  }
 }
-function copySyncCode(){
-  var c=Sync.code();
-  if(!c)return;
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(c).then(function(){showToast('Code kopiert ✓');},function(){showToast('Kopieren nicht möglich – Code markieren');});
-  }else showToast('Kopieren nicht möglich – Code markieren');
-}
-function shareSyncCode(){
-  var c=Sync.code();
-  if(!c)return;
-  if(navigator.share)navigator.share({title:'NutriTrack Einkaufszettel',text:c}).catch(function(){});
-  else copySyncCode();
-}
-function createSyncRoom(){if(Sync.createRoom()){renderSyncUI();showToast('Verbunden – jetzt den Code am zweiten Gerät eingeben');}}
-function joinSyncRoom(){
-  var inp=document.getElementById('shopSyncJoinCode');
-  if(!inp)return;
-  if(Sync.joinRoom(inp.value)){inp.value='';renderSyncUI();showToast('Verbunden – der Zettel wird abgeglichen');}
-}
+function openLinks(){closeOv('shopSyncOv');setTimeout(function(){NTSync.open();},200);}
 function syncNow(){
-  if(!Sync.active()){showToast('Erst ein Gerät verbinden');return;}
+  if(!Sync.active()){showToast('Erst jemanden verbinden');return;}
   showToast('Wird abgeglichen …');
   Sync.run(true).then(function(){render();renderSyncUI();});
-}
-function disconnectSync(){
-  if(!confirm('Verbindung trennen? Der Zettel auf diesem Gerät bleibt erhalten, es wird nur nichts mehr abgeglichen.'))return;
-  Sync.disconnect();
 }
 
 // ════════ Heute-Kachel ════════
@@ -761,7 +545,7 @@ function openList(){
   openOv('shopOv');
   render();
   Sync.run();
-  Sync.startPoll();
+  Sync.startPoll(function(){return isOpen('shopOv')||isOpen('shopAddOv')||isOpen('shopCatsOv');});
 }
 function closeList(){Sync.stopPoll();closeOv('shopOv');}
 
@@ -906,7 +690,7 @@ function openCatalog(){
   if(q)q.value='';
   openOv('shopAddOv');
   renderCatalog();
-  Sync.startPoll();
+  Sync.startPoll(function(){return isOpen('shopOv')||isOpen('shopAddOv')||isOpen('shopCatsOv');});
 }
 function catalogQuery(v){_catQuery=v||'';renderCatalog();}
 function renderCatalog(){
@@ -1168,8 +952,7 @@ window.NTShop={
   submitInput:submitInput,inputKey:inputKey,suggest:suggest,addFromSuggest:addFromSuggest,
   openCatalog:openCatalog,catalogQuery:catalogQuery,tileTap:tileTap,addCatQuery:addCatQuery,
   openItem:openItem,saveItem:saveItem,deleteItem:deleteItem,addRecipe:addRecipe,addIngredients:addIngredients,
-  openSync:openSync,renderSyncUI:renderSyncUI,createSyncRoom:createSyncRoom,joinSyncRoom:joinSyncRoom,
-  copySyncCode:copySyncCode,shareSyncCode:shareSyncCode,syncNow:syncNow,disconnectSync:disconnectSync,
+  openSync:openSync,renderSyncUI:renderSyncUI,openLinks:openLinks,syncNow:syncNow,
   openCount:function(){return openItems().length;},
   openCats:openCats,renderCats:renderCats,catAdd:catAdd,catSave:catSave,catMove:catMove,catDelete:catDelete,
   guess:guess,rememberCat:rememberCat,

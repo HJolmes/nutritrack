@@ -492,289 +492,91 @@ function deleteQuickFromEdit(){
 // Der Kopplungs-Code besteht aus zwei Teilen: `raum.schluessel`. Der Raum
 // adressiert den Briefkasten beim Worker, der Schlüssel entschlüsselt die
 // Inhalte und wird NIE gesendet. Wer nur den Raum kennt, sieht Chiffrat.
-var Sync=(function(){
-  var API=(typeof PROJECT_WORKER_BASE!=='undefined'?PROJECT_WORKER_BASE:'')+'/baby/sync';
-  var POLL_MS=45000;   // solange das Tagebuch offen ist
-  var DEBOUNCE_MS=1500;// Änderungen sammeln statt pro Tipp zu senden
-  var _timer=null,_poll=null,_busy=false,_key=null,_keyFor='';
-
-  function st(){
-    S.babySync=S.babySync||{on:false,room:'',key:'',since:0,lastAt:0,lastErr:''};
-    return S.babySync;
-  }
-  function active(){var c=st();return !!(c.on&&c.room&&c.key);}
-  // Neue Kopplung: alle Quittungen verwerfen, damit der komplette lokale
-  // Bestand einmal in den neuen Raum hochgeladen wird.
-  function resetAcks(){
-    S.babyLog=S.babyLog||{};
-    Object.keys(S.babyLog).forEach(function(d){
-      (S.babyLog[d]||[]).forEach(function(e){delete e._sy;});
+// ── Sync: Tagebuch-Einträge ───────────────────────────────────────────────
+// Transport, Verschlüsselung, Personen und Quittungen liegen seit v0.247 in
+// js/sync-core.js. Hier bleibt nur die Form DIESES Topfes: Einträge liegen nach
+// Tag gruppiert, deshalb reist der Tag als eigenes Feld mit — ohne ihn wüsste
+// die Gegenseite nicht, wohin ein Eintrag gehört.
+function stripSy(e){
+  var c={};
+  Object.keys(e).forEach(function(k){if(k!=='_sy')c[k]=e[k];});
+  return c;
+}
+function records(){
+  var out=[];
+  S.babyLog=S.babyLog||{};
+  Object.keys(S.babyLog).forEach(function(day){
+    (S.babyLog[day]||[]).forEach(function(e){
+      out.push({id:e.id,rev:e.rev||0,holder:e,payload:{day:day,e:stripSy(e)}});
     });
-    S.babyTomb=S.babyTomb||{};
-    Object.keys(S.babyTomb).forEach(function(id){if(S.babyTomb[id])delete S.babyTomb[id].sy;});
-  }
-  function cryptoOk(){return !!(window.crypto&&crypto.subtle&&window.TextEncoder);}
+  });
+  S.babyTomb=S.babyTomb||{};
+  Object.keys(S.babyTomb).forEach(function(id){
+    var t=S.babyTomb[id];if(!t)return;
+    out.push({id:id,rev:t.rev||0,holder:t,payload:{day:t.day||'',e:null}});
+  });
+  return out;
+}
 
-  function rand(n){
-    var a=crypto.getRandomValues(new Uint8Array(n)),s='';
-    var abc='abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    for(var i=0;i<n;i++)s+=abc[a[i]%abc.length];
-    return s;
-  }
-  function b64(buf){var b=new Uint8Array(buf),s='';for(var i=0;i<b.length;i++)s+=String.fromCharCode(b[i]);return btoa(s);}
-  function b64d(s){var bin=atob(s),b=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)b[i]=bin.charCodeAt(i);return b;}
-
-  // Schlüssel deterministisch aus dem Code ableiten – beide Geräte kommen mit
-  // demselben Code auf denselben AES-Schlüssel, ohne ihn je zu übertragen.
-  function getKey(){
-    var c=st();
-    var tag=c.room+'|'+c.key;
-    if(_key&&_keyFor===tag)return Promise.resolve(_key);
-    return crypto.subtle.importKey('raw',new TextEncoder().encode(c.key),'PBKDF2',false,['deriveKey'])
-      .then(function(km){
-        return crypto.subtle.deriveKey(
-          {name:'PBKDF2',salt:new TextEncoder().encode('nutritrack-baby|'+c.room),iterations:100000,hash:'SHA-256'},
-          km,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
-      }).then(function(k){_key=k;_keyFor=tag;return k;});
-  }
-  function encRec(id,rev,payload){
-    var iv=crypto.getRandomValues(new Uint8Array(12));
-    return getKey().then(function(k){
-      return crypto.subtle.encrypt({name:'AES-GCM',iv:iv},k,new TextEncoder().encode(JSON.stringify(payload)));
-    }).then(function(ct){return {id:id,rev:rev,iv:b64(iv),ct:b64(ct)};});
-  }
-  function decRec(rec){
-    return getKey().then(function(k){
-      return crypto.subtle.decrypt({name:'AES-GCM',iv:b64d(rec.iv)},k,b64d(rec.ct));
-    }).then(function(buf){return JSON.parse(new TextDecoder().decode(buf));})
-      .catch(function(){return null;});// fremder/kaputter Record → überspringen
-  }
-
-  function code(){var c=st();return c.room&&c.key?(c.room+'.'+c.key):'';}
-  function createRoom(){
-    if(!cryptoOk()){showToast('Dieses Gerät unterstützt die Verschlüsselung nicht');return false;}
-    var c=st();
-    c.room=rand(32);c.key=rand(24);c.on=true;c.since=0;c.lastErr='';resetAcks();
-    _key=null;_keyFor='';
-    saveS();
-    // Bestehende Einträge einmal vollständig hochladen
-    run(true);
-    return true;
-  }
-  function joinRoom(raw){
-    if(!cryptoOk()){showToast('Dieses Gerät unterstützt die Verschlüsselung nicht');return false;}
-    var parts=String(raw||'').trim().replace(/\s+/g,'').split('.');
-    if(parts.length!==2||!/^[A-Za-z0-9_-]{24,64}$/.test(parts[0])||parts[1].length<16){
-      showToast('Code sieht nicht gültig aus');
-      return false;
-    }
-    var c=st();
-    c.room=parts[0];c.key=parts[1];c.on=true;c.since=0;c.lastErr='';resetAcks();
-    _key=null;_keyFor='';
-    saveS();
-    run(true);
-    return true;
-  }
-  function disconnect(){
-    var c=st();
-    c.on=false;c.room='';c.key='';c.since=0;c.lastErr='';
-    _key=null;_keyFor='';
-    stopPoll();
-    saveS();
-    renderSyncUI();
-    showToast('Verbindung getrennt – Einträge bleiben auf diesem Gerät');
-  }
-
-  // Was ist lokal neuer als das, was der Server bestätigt hat?
-  // Bewusst pro Eintrag (`_sy` = quittierte Revision) statt einer globalen
-  // Hochwassermarke: Bei zwei Geräten mit leicht unterschiedlichen Uhren wäre
-  // eine gemeinsame Marke schon durch einen fremden, höheren Zeitstempel
-  // überholt — eigene, ältere Änderungen würden dann nie hochgeladen.
-  function pending(){
-    var out=[];
-    S.babyLog=S.babyLog||{};
-    Object.keys(S.babyLog).forEach(function(day){
-      (S.babyLog[day]||[]).forEach(function(e){
-        if((e.rev||0)>(e._sy||0))out.push({id:e.id,rev:e.rev,day:day,e:e});
-      });
-    });
-    S.babyTomb=S.babyTomb||{};
-    Object.keys(S.babyTomb).forEach(function(id){
-      var t=S.babyTomb[id];
-      if(t&&(t.rev||0)>(t.sy||0))out.push({id:id,rev:t.rev,day:t.day,tomb:t});
-    });
-    return out.sort(function(a,b){return a.rev-b.rev;});
-  }
-  // `_sy` ist eine rein lokale Buchhaltung und gehört nicht ins Chiffrat.
-  function strip(e){
-    var c={};
-    Object.keys(e).forEach(function(k){if(k!=='_sy')c[k]=e[k];});
-    return c;
-  }
-
-  function push(){
-    var c=st();
-    var items=pending();
-    if(!items.length)return Promise.resolve(0);
-    items=items.slice(0,200);// Worker-Limit
-    return Promise.all(items.map(function(it){
-      return encRec(it.id,it.rev,{day:it.day,e:it.e?strip(it.e):null});
-    }))
-      .then(function(recs){
-        return fetch(API,{method:'POST',headers:{'Content-Type':'application/json','X-Baby-Room':c.room},body:JSON.stringify({records:recs})});
-      })
-      .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
-      .then(function(){
-        // Erst nach bestätigtem Upload quittieren – bei Abbruch wird alles
-        // beim nächsten Lauf erneut gesendet.
-        items.forEach(function(it){
-          if(it.e)it.e._sy=it.rev;
-          else if(it.tomb)it.tomb.sy=it.rev;
-        });
-        saveS();
-        return items.length;
-      });
-  }
-
-  function pull(){
-    var c=st();
-    return fetch(API+'?since='+encodeURIComponent(c.since||0),{headers:{'X-Baby-Room':c.room}})
-      .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
-      .then(function(j){
-        var d=(j&&j.data)||{};
-        var recs=d.records||[];
-        if(!recs.length){if(d.cursor)c.since=Math.max(c.since||0,d.cursor);return 0;}
-        return Promise.all(recs.map(decRec)).then(function(payloads){
-          var applied=0;
-          payloads.forEach(function(pl,i){
-            if(pl&&apply(recs[i].id,recs[i].rev,pl))applied++;
-          });
-          if(d.cursor)c.since=Math.max(c.since||0,d.cursor);
-          if(applied)saveS();
-          return applied;
-        });
-      });
-  }
-
-  // Merge: höhere rev gewinnt. Gilt für Einträge und Löschmarken gleichermaßen.
-  function apply(id,rev,payload){
-    S.babyLog=S.babyLog||{};S.babyTomb=S.babyTomb||{};
-    var tomb=S.babyTomb[id];
-    if(tomb&&(tomb.rev||0)>=rev)return false;// lokal später gelöscht
-    var hit=findAnywhere(id);
-    if(hit&&(hit.e.rev||0)>=rev)return false;// lokal neuer
-    if(hit)S.babyLog[hit.day].splice(hit.idx,1);
-    if(payload.e===null||payload.e===undefined){
-      // sy=rev: kam vom Server, muss nicht zurückgeschickt werden
-      S.babyTomb[id]={rev:rev,day:payload.day||'',sy:rev};
-      return true;
-    }
-    if(tomb)delete S.babyTomb[id];
-    var day=payload.day||_today();
-    var e=payload.e;
-    e.id=id;e.rev=rev;e._sy=rev;
-    if(!S.babyLog[day])S.babyLog[day]=[];
-    S.babyLog[day].push(e);
+// Merge: höhere rev gewinnt. Gilt für Einträge und Löschmarken gleichermaßen.
+function applyRec(id,rev,payload,room){
+  S.babyLog=S.babyLog||{};S.babyTomb=S.babyTomb||{};
+  var tomb=S.babyTomb[id];
+  if(tomb&&(tomb.rev||0)>=rev)return false;// lokal später gelöscht
+  var hit=findAnywhere(id);
+  if(hit&&(hit.e.rev||0)>=rev)return false;// lokal neuer
+  if(hit)S.babyLog[hit.day].splice(hit.idx,1);
+  if(payload.e===null||payload.e===undefined){
+    var t={rev:rev,day:payload.day||''};
+    NTSync.ack(t,room,rev);// quittiert gegenüber DIESER Person
+    S.babyTomb[id]=t;
     if(rev>_lastRev)_lastRev=rev;
     return true;
   }
+  if(tomb)delete S.babyTomb[id];
+  var day=payload.day||_today();
+  var e=payload.e;
+  e.id=id;e.rev=rev;
+  NTSync.ack(e,room,rev);
+  if(!S.babyLog[day])S.babyLog[day]=[];
+  S.babyLog[day].push(e);
+  if(rev>_lastRev)_lastRev=rev;
+  return true;
+}
 
-  function run(force){
-    if(!active()||!cryptoOk())return Promise.resolve();
-    if(_busy&&!force)return Promise.resolve();
-    _busy=true;
-    var c=st();
-    return push()
-      .then(pull)
-      .then(function(applied){
-        c.lastAt=Date.now();c.lastErr='';
-        saveS();
-        if(applied)refresh();
-        renderSyncUI();
-      })
-      .catch(function(err){
-        // Offline oder Worker nicht erreichbar: Quittungen bleiben stehen,
-        // beim nächsten Versuch wird alles Offene nachgeholt.
-        c.lastErr=(err&&err.message)||'Fehler';
-        saveS();
-        renderSyncUI();
-      })
-      .then(function(){_busy=false;});
-  }
-
-  function schedule(){
-    if(!active())return;
-    clearTimeout(_timer);
-    _timer=setTimeout(function(){run();},DEBOUNCE_MS);
-  }
-  function startPoll(){
-    if(!active())return;
-    stopPoll();
-    _poll=setInterval(function(){if(isOpen('babyOv'))run();else stopPoll();},POLL_MS);
-  }
-  function stopPoll(){if(_poll){clearInterval(_poll);_poll=null;}}
-
-  function statusText(){
-    var c=st();
-    if(!active())return 'Nicht verbunden – Einträge bleiben nur auf diesem Gerät.';
-    if(c.lastErr)return '⚠️ Letzter Abgleich fehlgeschlagen ('+c.lastErr+') – wird automatisch erneut versucht.';
-    if(!c.lastAt)return 'Verbunden – noch kein Abgleich gelaufen.';
-    var mins=Math.round((Date.now()-c.lastAt)/60000);
-    return '✓ Verbunden · letzter Abgleich '+(mins<1?'gerade eben':'vor '+mins+' Min.');
-  }
-
-  return {
-    st:st,active:active,code:code,createRoom:createRoom,joinRoom:joinRoom,
-    disconnect:disconnect,run:run,schedule:schedule,startPoll:startPoll,
-    stopPoll:stopPoll,statusText:statusText,cryptoOk:cryptoOk
-  };
-})();
+var Sync=NTSync.engine({
+  topic:'baby',path:'/baby/sync',header:'X-Baby-Room',salt:'nutritrack-baby',
+  pollMs:45000,      // solange das Tagebuch offen ist
+  debounceMs:1500,   // Änderungen sammeln statt pro Tipp zu senden
+  records:records,
+  apply:applyRec,
+  onApplied:function(){refresh();},
+  onStatus:function(){renderSyncUI();}
+});
 
 // ── Sync-Oberfläche ──
-function openSync(){
-  renderSyncUI();
-  openOv('babySyncOv');
-}
+// Seit v0.247 gibt es KEINEN eigenen Tagebuch-Code mehr: Codes gehören zu einer
+// Person, nicht zu einem Topf. Der Dialog sagt nur noch, mit wem geteilt wird.
+function openSync(){renderSyncUI();openOv('babySyncOv');}
 function renderSyncUI(){
   var on=Sync.active();
   var stat=document.getElementById('babySyncStatus');
   if(stat)stat.textContent=Sync.statusText();
-  var setup=document.getElementById('babySyncSetup');
-  if(setup)setup.style.display=on?'none':'block';
-  var live=document.getElementById('babySyncLive');
-  if(live)live.style.display=on?'block':'none';
-  var codeEl=document.getElementById('babySyncCode');
-  if(codeEl)codeEl.textContent=Sync.code()||'';
   var badge=document.getElementById('babySyncBadge');
   if(badge)badge.style.display=on?'':'none';
+  var who=document.getElementById('babySyncWho');
+  if(who){
+    var ls=NTSync.forTopic('baby');
+    who.innerHTML=ls.length
+      ?ls.map(function(l){return '<span class="lnk-chip">👤 '+esc(l.name)+'</span>';}).join('')
+      :'<span style="font-size:12px;color:var(--mu);">Noch mit niemandem geteilt.</span>';
+  }
 }
-function copySyncCode(){
-  var c=Sync.code();
-  if(!c)return;
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(c).then(function(){showToast('Code kopiert ✓');},function(){showToast('Kopieren nicht möglich – Code markieren');});
-  }else showToast('Kopieren nicht möglich – Code markieren');
-}
-function shareSyncCode(){
-  var c=Sync.code();
-  if(!c)return;
-  if(navigator.share)navigator.share({title:'NutriTrack Baby-Tagebuch',text:c}).catch(function(){});
-  else copySyncCode();
-}
-function createSyncRoom(){if(Sync.createRoom()){renderSyncUI();showToast('Verbunden – jetzt den Code am zweiten Gerät eingeben');}}
-function joinSyncRoom(){
-  var inp=document.getElementById('babySyncJoinCode');
-  if(!inp)return;
-  if(Sync.joinRoom(inp.value)){inp.value='';renderSyncUI();showToast('Verbunden – Einträge werden abgeglichen');}
-}
+function openLinks(){closeOv('babySyncOv');setTimeout(function(){NTSync.open();},200);}
 function syncNow(){
-  if(!Sync.active()){showToast('Erst ein Gerät verbinden');return;}
+  if(!Sync.active()){showToast('Erst jemanden verbinden');return;}
   showToast('Wird abgeglichen …');
   Sync.run(true).then(function(){refresh();renderSyncUI();});
-}
-function disconnectSync(){
-  if(!confirm('Verbindung trennen? Die Einträge auf diesem Gerät bleiben erhalten, es wird nur nichts mehr abgeglichen.'))return;
-  Sync.disconnect();
 }
 
 // ════════ Heute-Kachel ════════
@@ -821,7 +623,7 @@ function openDiary(){
   renderDiary();
   openOv('babyOv');
   Sync.run();
-  Sync.startPoll();
+  Sync.startPoll(function(){return isOpen('babyOv');});
 }
 function closeDiary(){Sync.stopPoll();closeOv('babyOv');}
 function renderDiary(){
@@ -1027,8 +829,7 @@ window.NTBaby={
   openQuickManage:openQuickManage,openQuickEdit:openQuickEdit,updateQuickTypeFields:updateQuickTypeFields,
   saveQuick:saveQuick,deleteQuick:deleteQuick,deleteQuickFromEdit:deleteQuickFromEdit,
   moveQuick:moveQuick,resetQuick:resetQuick,renderQuickBtns:renderQuickBtns,
-  openSync:openSync,renderSyncUI:renderSyncUI,createSyncRoom:createSyncRoom,joinSyncRoom:joinSyncRoom,
-  copySyncCode:copySyncCode,shareSyncCode:shareSyncCode,syncNow:syncNow,disconnectSync:disconnectSync,
+  openSync:openSync,renderSyncUI:renderSyncUI,openLinks:openLinks,syncNow:syncNow,
   Sync:Sync,summaryText:summaryText,TYPES:TYPES
 };
 })();

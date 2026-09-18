@@ -165,28 +165,78 @@ function findByName(name){
 function openItems(){return list().filter(function(i){return !i.d;});}
 function doneItems(){return list().filter(function(i){return !!i.d;});}
 
-// Kategorie und Symbol aus dem Katalog raten – erst exakt, dann als Wortteil.
+// ── Kategorie-Gedächtnis (v0.246): rein lokal, nicht Teil des Syncs ──
+// Gemerkt wird NUR, was ein Mensch im Artikel-Editor selbst eingestellt hat.
+// Würde hier auch jede geratene Zuordnung landen, bestätigte sich `guess()`
+// nur noch selbst — eine einmal falsche Vermutung wäre für immer festgeschrieben.
+var CATMEM_MAX=300;
+function catMem(){
+  if(!S.shopCatMem||typeof S.shopCatMem!=='object')S.shopCatMem={};
+  return S.shopCatMem;
+}
+function rememberCat(name,c,ic){
+  var n=norm(name);
+  if(!n||!c)return;
+  var m=catMem();
+  m[n]={c:c,ic:ic||'',ts:Date.now()};
+  // Deckel gegen unbegrenztes Wachsen im localStorage: die ältesten fliegen raus.
+  var keys=Object.keys(m);
+  if(keys.length>CATMEM_MAX){
+    keys.sort(function(a,b){return (m[a].ts||0)-(m[b].ts||0);})
+        .slice(0,keys.length-CATMEM_MAX)
+        .forEach(function(k){delete m[k];});
+  }
+}
+// Eine gelöschte Kategorie darf nicht weiter vorgeschlagen werden — der
+// Eintrag fällt raus, und `guess()` greift wieder auf den Katalog zurück.
+function forgetCat(catId){
+  var m=catMem();
+  Object.keys(m).forEach(function(k){if(m[k]&&m[k].c===catId)delete m[k];});
+}
+
+// Kategorie und Symbol raten. Drei Stufen — exakt, ganzes Wort, Wortteil —,
+// und auf JEDER Stufe zählt zuerst das Gedächtnis und dann der Katalog.
+// Bewusst stufenweise verschränkt: Ein exakter Katalogtreffer soll nicht von
+// einer schwachen Wortteil-Erinnerung geschlagen werden.
 // „2 Liter Milch" soll bei „Milch" landen, „Milchreis" aber nicht.
 function guess(name){
   var n=norm(name);
   if(!n)return {c:'sonst',ic:'🛒'};
-  var i,e;
-  for(i=0;i<CATALOG.length;i++){
-    e=CATALOG[i];
-    if(norm(e[0])===n)return {c:e[2],ic:e[1]};
-  }
   var words=n.split(' ');
-  for(i=0;i<CATALOG.length;i++){
-    e=CATALOG[i];
-    var cn=norm(e[0]);
-    if(words.indexOf(cn)>=0)return {c:e[2],ic:e[1]};
+  var m=catMem();
+  // Eine Erinnerung zählt nur, solange es die Kategorie noch gibt.
+  function fromMem(key){
+    var e=m[key];
+    if(!e||!e.c)return null;
+    if(cat(e.c).id!==e.c)return null;
+    return {c:e.c,ic:e.ic||guessIcon(key)};
   }
-  for(i=0;i<CATALOG.length;i++){
-    e=CATALOG[i];
-    var c2=norm(e[0]);
-    if(c2.length>=5&&n.indexOf(c2)>=0)return {c:e[2],ic:e[1]};
+  function fromCat(test){
+    for(var i=0;i<CATALOG.length;i++){
+      var e=CATALOG[i];
+      if(test(norm(e[0])))return {c:e[2],ic:e[1]};
+    }
+    return null;
   }
+  var hit=fromMem(n)||fromCat(function(cn){return cn===n;});
+  if(hit)return hit;
+
+  var k,mk=Object.keys(m);
+  for(k=0;k<mk.length;k++)if(words.indexOf(mk[k])>=0){var w=fromMem(mk[k]);if(w)return w;}
+  hit=fromCat(function(cn){return words.indexOf(cn)>=0;});
+  if(hit)return hit;
+
+  for(k=0;k<mk.length;k++)if(mk[k].length>=5&&n.indexOf(mk[k])>=0){var t=fromMem(mk[k]);if(t)return t;}
+  hit=fromCat(function(cn){return cn.length>=5&&n.indexOf(cn)>=0;});
+  if(hit)return hit;
+
   return {c:'sonst',ic:'🛒'};
+}
+// Nur das Symbol aus dem Katalog — für den Fall, dass das Gedächtnis eine
+// Kategorie kennt, aber kein eigenes Symbol gespeichert hat.
+function guessIcon(n){
+  for(var i=0;i<CATALOG.length;i++)if(norm(CATALOG[i][0])===n)return CATALOG[i][1];
+  return '🛒';
 }
 
 // ── Zuletzt benutzt: rein lokal, nicht Teil des Syncs ──
@@ -556,6 +606,7 @@ var Sync=(function(){
     if(idx>=0)own.splice(idx,1);
     if(payload.k===null||payload.k===undefined){
       S.shopTomb[recId]={rev:rev,sy:rev};
+      forgetCat(id);
       list().forEach(function(it){
         if((it.c||'sonst')===id){it.c='sonst';it.rev=nextRev();}
       });
@@ -1009,6 +1060,7 @@ function catDelete(id){
   // zweite Geraet sie weiter unter einer Kategorie, die es gerade loescht.
   hit.forEach(function(it){it.c='sonst';it.rev=nextRev();});
   S.shopCats=customCats().filter(function(x){return x.id!==id;});
+  forgetCat(id);
   S.shopTomb=S.shopTomb||{};
   S.shopTomb[CAT_PREFIX+id]={rev:nextRev()};
   saveS();Sync.schedule();renderCats();render();
@@ -1045,6 +1097,8 @@ function saveItem(){
   it.c=document.getElementById('shopItemCat').value||'sonst';
   it.ic=document.getElementById('shopItemIcon').value.trim()||'🛒';
   it.rev=nextRev();
+  // Die einzige Stelle, an der ein Mensch eine Kategorie bewusst setzt.
+  rememberCat(it.n,it.c,it.ic);
   noteRecent(it);
   saveS();Sync.schedule();render();
   _editId=null;
@@ -1118,6 +1172,7 @@ window.NTShop={
   copySyncCode:copySyncCode,shareSyncCode:shareSyncCode,syncNow:syncNow,disconnectSync:disconnectSync,
   openCount:function(){return openItems().length;},
   openCats:openCats,renderCats:renderCats,catAdd:catAdd,catSave:catSave,catMove:catMove,catDelete:catDelete,
+  guess:guess,rememberCat:rememberCat,
   Sync:Sync,CATS:BUILTIN,allCats:allCats,
 };
 })();

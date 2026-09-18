@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.246',items:[
+    {icon:'\ud83e\udde0',text:'Der Einkaufszettel merkt sich, wohin du einen Artikel einsortiert hast. Einmal „Bier" per ✏️ in deinen „Getränkemarkt" geschoben — beim nächsten Eintippen landet es von selbst dort, samt Symbol. Gemerkt wird nur, was du selbst einstellst, nicht was die App rät. Löschst du die Kategorie, ist auch die Erinnerung weg und die App rät wieder normal.',where:'Mehr → \ud83d\uded2 Einkaufszettel'},
+  ]},
   {v:'0.245',items:[
     {icon:'\ud83c\udff7\ufe0f',text:'Der Einkaufszettel nimmt jetzt eigene Kategorien: \ud83d\uded2 Einkaufszettel → \ud83c\udff7\ufe0f Kategorien. Name und Symbol frei wählbar, mit \u25b2\u25bc in die Reihenfolge deines Ladens gebracht, jederzeit wieder löschbar. Eigene Kategorien stehen im Zettel hinter den eingebauten, „Sonstiges" bleibt am Ende. Beim Löschen wandern die Artikel nach „Sonstiges" — weg ist keiner. Zuordnen geht über ✏️ am Artikel; dort liegt auch der Weg zur Verwaltung.',where:'Mehr → \ud83d\uded2 Einkaufszettel'},
     {icon:'\ud83d\udd04',text:'Eigene Kategorien werden mitgeteilt: Wer den Zettel mit einem zweiten Gerät koppelt, sieht dort dieselben Kategorien — sonst wären die Artikel drüben stumm unter „Sonstiges" gelandet. Verschlüsselt wie der Zettel selbst.',where:'\ud83d\uded2 Einkaufszettel → \ud83d\udd04 Teilen'},

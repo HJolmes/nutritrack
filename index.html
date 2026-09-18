@@ -1153,7 +1153,7 @@ body.kb-open #feedbackFab{display:none;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.245</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.246</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -2908,13 +2908,13 @@ body.kb-open #feedbackFab{display:none;}
 // ════════════════════════════════════════
 // SECTION: STATE
 // ════════════════════════════════════════
-var S={apiKey:'',name:'Du',goal:2000,goalManual:false,weight:0,height:0,age:0,gender:'',activity:'',pregnant:0,pregnantET:'',pregWarn:false,nursing:0,nursWarn:false,babyOn:false,baby:{name:'',birth:''},babyLog:{},babyTomb:{},babyQuick:null,babySync:null,shopList:[],shopTomb:{},shopSync:null,shopRecent:[],goalWeight:0,goalDate:'',goalAchievedShown:'',dietPrefs:[],dietFree:'',savedDietFree:[],dietWarn:false,macroTargets:{protein:0,carbs:0,fat:0},macroGoalMode:'percent',macroGoalG:{protein:0,carbs:0,fat:0},reminders:[],weightLog:{},portionMemory:{},waterGoal:8,waterUnit:250,mealTemplates:[],recurringMeals:[],exerciseLibrary:[],dashOrder:null,dashHidden:null,mealPlan:{},planApplied:{},currentDate:'',days:{}};
+var S={apiKey:'',name:'Du',goal:2000,goalManual:false,weight:0,height:0,age:0,gender:'',activity:'',pregnant:0,pregnantET:'',pregWarn:false,nursing:0,nursWarn:false,babyOn:false,baby:{name:'',birth:''},babyLog:{},babyTomb:{},babyQuick:null,babySync:null,shopList:[],shopTomb:{},shopSync:null,shopRecent:[],shopCats:[],shopCatMem:{},goalWeight:0,goalDate:'',goalAchievedShown:'',dietPrefs:[],dietFree:'',savedDietFree:[],dietWarn:false,macroTargets:{protein:0,carbs:0,fat:0},macroGoalMode:'percent',macroGoalG:{protein:0,carbs:0,fat:0},reminders:[],weightLog:{},portionMemory:{},waterGoal:8,waterUnit:250,mealTemplates:[],recurringMeals:[],exerciseLibrary:[],dashOrder:null,dashHidden:null,mealPlan:{},planApplied:{},currentDate:'',days:{}};
 // Tracking für Settings-Session: manuelle Eingabe vs. „Kalorienbedarf berechnen"
 var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.245';
+var APP_VERSION='0.246';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung

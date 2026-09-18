@@ -176,6 +176,25 @@ function keyFor(link,salt){
 }
 function dropKeys(){_keys={};}
 
+// Ein Record ist ueberall dasselbe: {id, rev, iv, ct} mit AES-GCM ueber dem aus
+// `link` + `salt` abgeleiteten Schluessel. Der Worker sieht nie mehr als das.
+// Steht bewusst auf Modulebene statt in engine(): js/partner.js fuehrt keinen
+// eigenen Topf mit, braucht aber exakt dieselbe Verschluesselung — bis v0.248
+// hatte es dafuer eine wortgleiche zweite Kopie, die bei jeder Aenderung am
+// Krypto-Teil haette mitgepflegt werden muessen.
+function encRecWith(link,salt,id,rev,payload){
+  var iv=crypto.getRandomValues(new Uint8Array(12));
+  return keyFor(link,salt).then(function(k){
+    return crypto.subtle.encrypt({name:'AES-GCM',iv:iv},k,new TextEncoder().encode(JSON.stringify(payload)));
+  }).then(function(ct){return {id:id,rev:rev,iv:b64(iv),ct:b64(ct)};});
+}
+function decRecWith(link,salt,rec){
+  return keyFor(link,salt).then(function(k){
+    return crypto.subtle.decrypt({name:'AES-GCM',iv:b64d(rec.iv)},k,b64d(rec.ct));
+  }).then(function(buf){return JSON.parse(new TextDecoder().decode(buf));})
+    .catch(function(){return null;});// fremder/kaputter Record → überspringen
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 // Eine Engine je Topf. Identisch bis auf Endpunkt, Header, Salt und die vier
 // Rückrufe, die die Datenform des Topfes kennen.
@@ -192,18 +211,8 @@ function engine(cfg){
     (cfg.records()||[]).forEach(function(r){if(r.holder)delete r.holder._sy;});
   }
 
-  function encRec(link,id,rev,payload){
-    var iv=crypto.getRandomValues(new Uint8Array(12));
-    return keyFor(link,cfg.salt).then(function(k){
-      return crypto.subtle.encrypt({name:'AES-GCM',iv:iv},k,new TextEncoder().encode(JSON.stringify(payload)));
-    }).then(function(ct){return {id:id,rev:rev,iv:b64(iv),ct:b64(ct)};});
-  }
-  function decRec(link,rec){
-    return keyFor(link,cfg.salt).then(function(k){
-      return crypto.subtle.decrypt({name:'AES-GCM',iv:b64d(rec.iv)},k,b64d(rec.ct));
-    }).then(function(buf){return JSON.parse(new TextDecoder().decode(buf));})
-      .catch(function(){return null;});// fremder/kaputter Record → überspringen
-  }
+  function encRec(link,id,rev,payload){return encRecWith(link,cfg.salt,id,rev,payload);}
+  function decRec(link,rec){return decRecWith(link,cfg.salt,rec);}
 
   function pendingFor(link){
     return (cfg.records()||[])
@@ -509,6 +518,10 @@ window.NTSync={
   open:open,close:close,render:render,renderIfOpen:renderIfOpen,isOpen:isOpen,
   openAdd:openAdd,submitAdd:submitAdd,shareCode:shareCode,toggle:toggle,
   pause:pause,remove:removeUi,rename:rename,
-  runAll:runAll,runTopic:runTopic,migrate:migrate,dropKeys:dropKeys
+  runAll:runAll,runTopic:runTopic,migrate:migrate,dropKeys:dropKeys,
+  // Krypto-Primitive fuer Module mit eigenem Postfach (js/partner.js). Wer sie
+  // nutzt, uebergibt {room,key} und sein eigenes Salt-Praefix — der abgeleitete
+  // Schluessel ist derselbe wie zuvor, bestehende Kopplungen bleiben gueltig.
+  crypto:{ok:cryptoOk,rand:rand,b64:b64,b64d:b64d,keyFor:keyFor,encRec:encRecWith,decRec:decRecWith}
 };
 })();

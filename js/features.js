@@ -22,12 +22,11 @@
 // zwei Wahrheiten, die auseinanderlaufen, sobald jemand eine Kachel hinzufuegt.
 // dashboard.js liest deshalb `NTFeat.list()`.
 //
-// ── Der Knopf wird eingehaengt, nicht ins Markup geschrieben ──────────────
-// Acht Kacheln von Hand zu aendern hiesse, dass die neunte ihn vergisst.
-// `mount()` haengt ihn in die Kopfzeile jeder Kachel; `head` nennt den
-// Selektor, weil zwei Kacheln aus ihrer Geschichte heraus anders gebaut sind:
-// mealsCard ist `display:contents` mit `.sec-head`, partnerCard hat eine eigene
-// Flex-Zeile.
+// ── Wo die Funktion lebt ──────────────────────────────────────────────────
+// Auf „Heute" liegt die Kachel: Inhalt und der eine Knopf, der das Naheliegende
+// tut. Alles Weitere — Nebenaktionen, Schalter, Reihenfolge — steht unter
+// Mehr → 🧩 Funktionen; eine Zeile dort oeffnet das Blatt dieser Funktion.
+
 (function(){
 'use strict';
 
@@ -41,9 +40,8 @@
 //         die Verschiedenes ueber dieselbe Sache sagten. Sichtbarkeit haengt
 //         seither am Schalter; nur das Postfach behaelt eine echte
 //         Voraussetzung, weil es ohne Kopplung nichts zu zeigen haette.
-// head:   Kopfzeile, in die der ⋯-Knopf kommt. Vorgabe '.wh'.
 var FEATURES=[
-  {id:'meals', ic:'🍽', label:'Mahlzeiten', card:'mealsCard', head:'.sec-head', fixed:true,
+  {id:'meals', ic:'🍽', label:'Mahlzeiten', card:'mealsCard', fixed:true,
    sub:'Frühstück, Mittag, Abend, Snack',
    actions:[
      {ic:'📚', label:'Bibliothek',                hint:'Rezepte & eigene Lebensmittel', act:'openLibrary'},
@@ -96,7 +94,7 @@ var FEATURES=[
      {ic:'🔗', label:'Verbindungen',     hint:'Tagebuch mit jemandem teilen', act:'NTSync.open'}
    ]},
 
-  {id:'partner', ic:'📬', label:'Vom Partner', card:'partnerCard', head:'>div',
+  {id:'partner', ic:'📬', label:'Vom Partner', card:'partnerCard',
    sub:'Mahlzeiten direkt zugeschickt bekommen',
    note:'Erscheint, sobald eine Kopplung besteht',
    actions:[
@@ -108,33 +106,17 @@ var FEATURES=[
 function list(){return FEATURES;}
 function byId(id){for(var i=0;i<FEATURES.length;i++)if(FEATURES[i].id===id)return FEATURES[i];return null;}
 
-// ── Der ⋯-Knopf ───────────────────────────────────────────────────────────
-// Eingehaengt statt ins Markup geschrieben: So bekommt ihn jede kuenftige
-// Kachel von selbst, und keine Kachel traegt ihn doppelt (die Wache unten).
-function mount(){
-  FEATURES.forEach(function(f){
-    var el=document.getElementById(f.card);
-    if(!el)return;
-    // '>div' meint „das erste Kind". Das ist KEIN gueltiger CSS-Selektor —
-    // querySelector wirft darauf eine Ausnahme, und zwar bevor ein Rueckfall
-    // danach greifen koennte. Deshalb vorher abfangen, nicht hinterher.
-    var head=(f.head==='>div')?el.firstElementChild:el.querySelector(f.head||'.wh');
-    if(!head||head.querySelector('.feat-dots'))return;
-    var b=document.createElement('button');
-    b.type='button';
-    b.className='feat-dots';
-    b.setAttribute('data-act','NTFeat.sheet');
-    b.setAttribute('data-args',JSON.stringify([f.id]));
-    b.setAttribute('aria-label',f.label+' – Aktionen');
-    b.textContent='⋯';
-    head.appendChild(b);
-    // Die Kopfzeilen sind historisch verschieden gebaut; ohne das hier saesse
-    // der Knopf bei .sec-head am Text statt am rechten Rand.
-    if(getComputedStyle(head).display.indexOf('flex')<0)head.style.display='flex';
-    head.style.alignItems='center';
-    if(!head.style.justifyContent)head.style.justifyContent='space-between';
-  });
-}
+// ── Kein Knopf an der Kachel mehr (v0.256) ────────────────────────────────
+// Bis v0.255 hing in jeder Kachel-Kopfzeile ein ⋯. Gemessen trug er bei
+// **zwei** der acht Kacheln nichts Eigenes (Fasten, Vom Partner), und **6 von
+// 17** Zeilen im Blatt wiederholten nur den Knopf daneben — „Zettel oeffnen"
+// neben „＋ Eintragen →". Acht Knoepfe fuer elf eigene Aktionen sind kein
+// guter Tausch gegen eine ruhige Uebersicht.
+//
+// Das Blatt selbst bleibt und ist der eine Ort je Funktion; erreichbar ist es
+// ueber Mehr → 🧩 Funktionen → Zeile. `mount()` gibt es nicht mehr, und mit ihm
+// ist das Feld `head` entfallen — es beantwortete nur die Frage, WOHIN der
+// Knopf gehaengt wird, und die stellt niemand mehr.
 
 // ── Das Blatt einer Funktion ──────────────────────────────────────────────
 function sheet(id){
@@ -347,7 +329,7 @@ function saveWaterGoal(){
 }
 
 window.NTFeat={
-  list:list, byId:byId, mount:mount, isOff:isOff,
+  list:list, byId:byId, isOff:isOff,
   sheet:sheet, closeSheet:closeSheet, toggle:toggle,
   act:act,
   openCatalog:openCatalog, closeCatalog:closeCatalog, renderCatalog:renderCatalog,

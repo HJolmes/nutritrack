@@ -440,7 +440,7 @@ button,input,select,textarea{font-family:var(--fs-body);}
 .wv{font-size:12px;color:var(--mu);font-weight:500;}
 .gls{width:36px;height:36px;border-radius:12px;border:1.5px solid var(--br);background:var(--gl);}
 .gls.on{background:linear-gradient(135deg,#85c1e9,#5dade2);border-color:#5dade2;color:#fff;}
-#exerciseCard button[onclick="openExerciseOv()"]{background:var(--g1)!important;border-radius:999px!important;}
+#exerciseCard button[data-act="openExerciseOv"]{background:var(--g1)!important;border-radius:999px!important;}
 #waterBtns button{background:var(--gl)!important;border-color:var(--br)!important;color:var(--tx)!important;border-radius:999px!important;}
 
 /* BOTTOM NAV — pill; kein transform (iOS fixed+transform hängt sonst mitten im Viewport, #177) */
@@ -664,11 +664,11 @@ body.kb-open #feedbackFab{display:none;}
       style="width:100%;box-sizing:border-box;padding:14px 16px;border:2px solid #e0ece6;border-radius:12px;font-size:16px;outline:none;margin-bottom:8px;"
       onkeydown="if(event.key==='Enter')submitProxyPw()">
     <div id="proxyPwError" style="display:none;color:#ef5350;font-size:12px;font-weight:600;margin-bottom:10px;"></div>
-    <button type="button" onclick="submitProxyPw()"
+    <button type="button" data-act="submitProxyPw"
       style="width:100%;padding:14px;background:#2d7d52;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;margin-top:4px;">
       Weiter →
     </button>
-    <button type="button" onclick="skipProxyPwGate()"
+    <button type="button" data-act="skipProxyPwGate"
       style="width:100%;padding:10px;background:none;color:#7a9487;border:none;font-size:13px;font-weight:600;cursor:pointer;margin-top:8px;text-decoration:underline;">
       Später – App ohne KI nutzen
     </button>
@@ -678,7 +678,7 @@ body.kb-open #feedbackFab{display:none;}
 <!-- AUTOSAVE OVERLAY -->
 <div id="autoSavesOv" class="ov">
   <div class="ovc">
-    <div class="ovh"><span class="ovt">🕹️ Autospeicher</span><button class="ovcl" onclick="closeOv('autoSavesOv')">✕</button></div>
+    <div class="ovh"><span class="ovt">🕹️ Autospeicher</span><button class="ovcl" data-act="closeOv" data-args='["autoSavesOv"]'>✕</button></div>
     <div id="autoSavesList"></div>
   </div>
 </div>
@@ -701,8 +701,8 @@ body.kb-open #feedbackFab{display:none;}
           <div class="onb-dot" id="dot2"></div>
           <div class="onb-dot" id="dot3"></div>
         </div>
-        <button class="onb-btn" onclick="onbNext()">Los geht's →</button>
-        <button class="onb-skip" onclick="onbSkip()">Überspringen</button>
+        <button class="onb-btn" data-act="onbNext">Los geht's →</button>
+        <button class="onb-skip" data-act="onbSkip">Überspringen</button>
       </div>
       <!-- Slide 2: KI-Features -->
       <div class="onb-slide">
@@ -715,8 +715,8 @@ body.kb-open #feedbackFab{display:none;}
           <div class="onb-dot" id="dot2b"></div>
           <div class="onb-dot" id="dot3b"></div>
         </div>
-        <button class="onb-btn" onclick="onbNext()">Weiter →</button>
-        <button class="onb-skip" onclick="onbSkip()">Überspringen</button>
+        <button class="onb-btn" data-act="onbNext">Weiter →</button>
+        <button class="onb-skip" data-act="onbSkip">Überspringen</button>
       </div>
       <!-- Slide 3: Gesundheit -->
       <div class="onb-slide">
@@ -729,8 +729,8 @@ body.kb-open #feedbackFab{display:none;}
           <div class="onb-dot act" id="dot2c"></div>
           <div class="onb-dot" id="dot3c"></div>
         </div>
-        <button class="onb-btn" onclick="onbNext()">Weiter →</button>
-        <button class="onb-skip" onclick="onbSkip()">Überspringen</button>
+        <button class="onb-btn" data-act="onbNext">Weiter →</button>
+        <button class="onb-skip" data-act="onbSkip">Überspringen</button>
       </div>
       <!-- Slide 4: Setup -->
       <div class="onb-slide" style="justify-content:flex-start;padding-top:40px;overflow-y:auto;">
@@ -759,44 +759,44 @@ body.kb-open #feedbackFab{display:none;}
   <div class="hdr">
     <div class="hr">
       <div>
-        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" onclick="showWhatsNew()" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.231</button></div>
+        <div class="logo">Hej <em id="greetName">Du</em> <button type="button" id="appVersionTag" data-act="showWhatsNew" title="Was ist neu" style="margin-left:4px;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:0.02em;cursor:pointer;vertical-align:middle;">v0.231</button></div>
         <div class="greet-sub" id="greetSub">Heute</div>
       </div>
       <!-- gap etwas größer als sonst (6px): die Postfach-Flagge ragt über den
            Knopfrand hinaus und braucht Luft, sonst klebt „9+" am Nachbarn. -->
       <div style="display:flex;gap:10px;">
-        <button type="button" class="hbtn" onclick="openHelp()" title="Hilfe">?</button>
-        <button type="button" class="hbtn" id="hdrInboxBtn" style="display:none;position:relative;" onclick="NTPartner.openInbox()" title="Postfach">📬<span id="hdrInboxFlag" class="hflag" style="display:none;">0</span></button>
-        <button type="button" class="hbtn" onclick="shareDay()" title="Diesen Tag teilen">📤</button>
+        <button type="button" class="hbtn" data-act="openHelp" title="Hilfe">?</button>
+        <button type="button" class="hbtn" id="hdrInboxBtn" style="display:none;position:relative;" data-act="NTPartner.openInbox" title="Postfach">📬<span id="hdrInboxFlag" class="hflag" style="display:none;">0</span></button>
+        <button type="button" class="hbtn" data-act="shareDay" title="Diesen Tag teilen">📤</button>
       </div>
     </div>
     <div id="odMissingBanner" style="display:none;align-items:center;gap:10px;background:#fff3e0;border-bottom:1px solid #ffe0b2;padding:10px 16px;">
       <div style="flex:1;font-size:12px;color:#e65100;font-weight:600;">☁️ OneDrive nicht verbunden – Sichere deine Daten einmal täglich lokal.</div>
-      <button type="button" onclick="openBackupSettings()" style="font-size:12px;font-weight:700;color:#e65100;background:none;border:1px solid #e65100;padding:4px 8px;border-radius:8px;cursor:pointer;">💾 Sichern</button>
-      <button type="button" onclick="dismissOdBanner()" style="font-size:14px;color:#e65100;background:none;border:none;cursor:pointer;padding:4px;">✕</button>
+      <button type="button" data-act="openBackupSettings" style="font-size:12px;font-weight:700;color:#e65100;background:none;border:1px solid #e65100;padding:4px 8px;border-radius:8px;cursor:pointer;">💾 Sichern</button>
+      <button type="button" data-act="dismissOdBanner" style="font-size:14px;color:#e65100;background:none;border:none;cursor:pointer;padding:4px;">✕</button>
     </div>
     <div class="dn">
-      <button type="button" class="da" onclick="changeDay(-1)">‹</button>
+      <button type="button" class="da" data-act="changeDay" data-args='[-1]'>‹</button>
       <div class="dl" id="dateLabel"></div>
-      <button type="button" class="da" id="btnNext" onclick="changeDay(1)">›</button>
+      <button type="button" class="da" id="btnNext" data-act="changeDay" data-args='[1]'>›</button>
     </div>
   </div>
   <div id="installBanner" class="hidden" style="background:#e8f5e9;border:1.5px solid var(--g3);border-radius:12px;padding:11px 14px;margin:10px 12px 0;display:flex;align-items:center;gap:10px;">
     <div style="font-size:20px;">📱</div>
     <div id="installBannerText" style="flex:1;font-size:12px;color:var(--g1);font-weight:600;line-height:1.4;">Für Vollbild: Menü → <strong>„Zum Startbildschirm hinzufügen"</strong></div>
-    <button type="button" onclick="dismissInstall()" style="background:none;border:none;font-size:18px;color:#aaa;flex-shrink:0;">✕</button>
+    <button type="button" data-act="dismissInstall" style="background:none;border:none;font-size:18px;color:#aaa;flex-shrink:0;">✕</button>
   </div>
   <div id="updateBanner" class="hidden" style="background:#e8f5e9;border:1.5px solid var(--g2);border-radius:12px;padding:11px 14px;margin:10px 12px 0;display:flex;align-items:center;gap:10px;">
     <div style="font-size:20px;">🆕</div>
     <div style="flex:1;font-size:13px;color:var(--g1);font-weight:600;">Update verfügbar!</div>
-    <button type="button" onclick="reloadForUpdate()" style="background:var(--g2);border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;color:white;flex-shrink:0;">Jetzt laden</button>
+    <button type="button" data-act="reloadForUpdate" style="background:var(--g2);border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;color:white;flex-shrink:0;">Jetzt laden</button>
   </div>
   <div id="offBadge" class="off-badge hidden"><span>📴</span><div>Offline – lokale Datenbank aktiv</div></div>
   <div id="backupReminder" class="hidden" style="background:#fff8e1;border:1.5px solid #f9c74f;border-radius:12px;padding:11px 14px;margin:10px 12px 0;display:flex;align-items:center;gap:10px;">
     <div style="font-size:20px;">💾</div>
     <div style="flex:1;font-size:13px;color:#7d5a00;font-weight:600;">Tipp: Daten heute sichern?</div>
     <button type="button" onclick="openBackupSettings();dismissBackupReminder();" style="background:#f9c74f;border:none;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;color:#7d5a00;flex-shrink:0;">Sichern →</button>
-    <button type="button" onclick="dismissBackupReminder()" style="background:none;border:none;font-size:18px;color:#aaa;flex-shrink:0;">✕</button>
+    <button type="button" data-act="dismissBackupReminder" style="background:none;border:none;font-size:18px;color:#aaa;flex-shrink:0;">✕</button>
   </div>
   <div class="main">
     <div class="sum">
@@ -814,7 +814,7 @@ body.kb-open #feedbackFab{display:none;}
         <div class="mac"><span class="mac-pct" id="pctF">0%</span><div class="mn">Fett</div><div class="mv"><span id="tF">0g</span><span class="mv-goal" id="gF"></span></div><div class="mb"><div class="mf" id="fF" style="width:0%"></div><div class="mmk" id="mkF"></div></div></div>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:10px;border-top:1px solid var(--br);">
-        <button type="button" onclick="toggleNutrientAmpel()" style="background:none;border:none;color:var(--mu);font-size:12px;font-weight:600;cursor:pointer;padding:0;" id="nutriAmpelToggleBtn">▶ Nährwert-Details</button>
+        <button type="button" data-act="toggleNutrientAmpel" style="background:none;border:none;color:var(--mu);font-size:12px;font-weight:600;cursor:pointer;padding:0;" id="nutriAmpelToggleBtn">▶ Nährwert-Details</button>
       </div>
       <div id="nutriAmpelWrap" style="overflow:hidden;max-height:0;transition:max-height .35s ease;"></div>
       <!-- legacy progress bar (hidden via CSS) -->
@@ -823,7 +823,7 @@ body.kb-open #feedbackFab{display:none;}
     <div id="mealsCard" style="display:contents;">
     <div class="sec-head"><h3>Mahlzeiten</h3><div class="sec-meta"><span id="mealsTotal">0 kcal</span> · <span id="mealsCount">0 Posten</span></div></div>
     <div class="meals-grid">
-      <div class="mc" data-meal="breakfast" onclick="openMealDetail('breakfast')">
+      <div class="mc" data-meal="breakfast" data-act="openMealDetail" data-args='["breakfast"]'>
         <div class="meal-card-body">
           <div class="mi">🌅</div>
           <div class="meal-card-name">Frühstück</div>
@@ -834,7 +834,7 @@ body.kb-open #feedbackFab{display:none;}
         <span id="sub-breakfast" style="display:none;"></span>
         <div id="entries-breakfast" style="display:none;"><div class="me">Noch nichts eingetragen</div></div>
       </div>
-      <div class="mc" data-meal="lunch" onclick="openMealDetail('lunch')">
+      <div class="mc" data-meal="lunch" data-act="openMealDetail" data-args='["lunch"]'>
         <div class="meal-card-body">
           <div class="mi">☀️</div>
           <div class="meal-card-name">Mittagessen</div>
@@ -845,7 +845,7 @@ body.kb-open #feedbackFab{display:none;}
         <span id="sub-lunch" style="display:none;"></span>
         <div id="entries-lunch" style="display:none;"><div class="me">Noch nichts eingetragen</div></div>
       </div>
-      <div class="mc" data-meal="dinner" onclick="openMealDetail('dinner')">
+      <div class="mc" data-meal="dinner" data-act="openMealDetail" data-args='["dinner"]'>
         <div class="meal-card-body">
           <div class="mi">🌙</div>
           <div class="meal-card-name">Abendessen</div>
@@ -856,7 +856,7 @@ body.kb-open #feedbackFab{display:none;}
         <span id="sub-dinner" style="display:none;"></span>
         <div id="entries-dinner" style="display:none;"><div class="me">Noch nichts eingetragen</div></div>
       </div>
-      <div class="mc" data-meal="snack" onclick="openMealDetail('snack')">
+      <div class="mc" data-meal="snack" data-act="openMealDetail" data-args='["snack"]'>
         <div class="meal-card-body">
           <div class="mi">🍎</div>
           <div class="meal-card-name">Snacks</div>
@@ -872,14 +872,14 @@ body.kb-open #feedbackFab{display:none;}
     <div class="wc" id="planCard">
       <div class="wh">
         <div class="wt">📅 Wochenplan</div>
-        <button type="button" onclick="NTPlan.open()" style="background:var(--g2);border:none;border-radius:20px;color:white;font-size:13px;font-weight:700;padding:4px 12px;cursor:pointer;"><span id="planCardVal">Planen</span> →</button>
+        <button type="button" data-act="NTPlan.open" style="background:var(--g2);border:none;border-radius:20px;color:white;font-size:13px;font-weight:700;padding:4px 12px;cursor:pointer;"><span id="planCardVal">Planen</span> →</button>
       </div>
       <div id="planCardBody" style="margin-top:6px;"></div>
     </div>
     <div class="wc" id="exerciseCard">
       <div class="wh">
         <div class="wt">🏃 Sport & Aktivität</div>
-        <button type="button" onclick="openExerciseOv()" style="background:var(--g2);border:none;border-radius:20px;color:white;font-size:13px;font-weight:700;padding:4px 12px;cursor:pointer;">+ Eintragen</button>
+        <button type="button" data-act="openExerciseOv" style="background:var(--g2);border:none;border-radius:20px;color:white;font-size:13px;font-weight:700;padding:4px 12px;cursor:pointer;">+ Eintragen</button>
       </div>
       <div id="exerciseList"><div style="font-size:12px;color:var(--mu);font-style:italic;">Noch keine Aktivität eingetragen</div></div>
     </div>
@@ -887,16 +887,16 @@ body.kb-open #feedbackFab{display:none;}
       <div class="wh"><div class="wt">💧 Wasser</div><div class="wv" id="wVal">0 / 8 Gläser</div></div>
       <div class="gls-wrap" id="glasses"></div>
       <div style="display:flex;gap:6px;margin-top:8px;" id="waterBtns">
-        <button type="button" onclick="addWater(150)" style="flex:1;background:var(--gl);border:1.5px solid var(--g3);border-radius:8px;padding:5px;font-size:11px;font-weight:700;color:var(--g1);">☕ 150ml</button>
-        <button type="button" onclick="addWater(250)" style="flex:1;background:var(--gl);border:1.5px solid var(--g3);border-radius:8px;padding:5px;font-size:11px;font-weight:700;color:var(--g1);">🥛 250ml</button>
-        <button type="button" onclick="addWater(330)" style="flex:1;background:var(--gl);border:1.5px solid var(--g3);border-radius:8px;padding:5px;font-size:11px;font-weight:700;color:var(--g1);">🥤 330ml</button>
-        <button type="button" onclick="addWater(500)" style="flex:1;background:var(--gl);border:1.5px solid var(--g3);border-radius:8px;padding:5px;font-size:11px;font-weight:700;color:var(--g1);">🍶 500ml</button>
+        <button type="button" data-act="addWater" data-args='[150]' style="flex:1;background:var(--gl);border:1.5px solid var(--g3);border-radius:8px;padding:5px;font-size:11px;font-weight:700;color:var(--g1);">☕ 150ml</button>
+        <button type="button" data-act="addWater" data-args='[250]' style="flex:1;background:var(--gl);border:1.5px solid var(--g3);border-radius:8px;padding:5px;font-size:11px;font-weight:700;color:var(--g1);">🥛 250ml</button>
+        <button type="button" data-act="addWater" data-args='[330]' style="flex:1;background:var(--gl);border:1.5px solid var(--g3);border-radius:8px;padding:5px;font-size:11px;font-weight:700;color:var(--g1);">🥤 330ml</button>
+        <button type="button" data-act="addWater" data-args='[500]' style="flex:1;background:var(--gl);border:1.5px solid var(--g3);border-radius:8px;padding:5px;font-size:11px;font-weight:700;color:var(--g1);">🍶 500ml</button>
       </div>
     </div>
     <div class="wc" id="babyCard" style="display:none;">
       <div class="wh">
         <div class="wt" id="babyCardTitle">👶 Baby</div>
-        <button type="button" onclick="NTBaby.openDiary()" style="background:var(--g2);border:none;border-radius:20px;color:white;font-size:13px;font-weight:700;padding:4px 12px;cursor:pointer;">Tagebuch →</button>
+        <button type="button" data-act="NTBaby.openDiary" style="background:var(--g2);border:none;border-radius:20px;color:white;font-size:13px;font-weight:700;padding:4px 12px;cursor:pointer;">Tagebuch →</button>
       </div>
       <div id="babyCardSum" style="font-size:12px;color:var(--mu);line-height:1.5;">Noch nichts eingetragen</div>
       <div id="babyCardLast" style="font-size:12px;color:var(--g1);font-weight:600;margin-top:4px;min-height:16px;"></div>
@@ -906,30 +906,30 @@ body.kb-open #feedbackFab{display:none;}
     <div class="wc" id="partnerCard" style="display:none;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
         <div style="font-weight:800;font-size:14px;color:var(--tx);">📬 Vom Partner</div>
-        <button type="button" onclick="NTPartner.openInbox()" style="background:var(--g2);border:none;border-radius:20px;color:white;font-size:13px;font-weight:700;padding:4px 12px;cursor:pointer;"><span id="partnerCardVal">0 neu</span> →</button>
+        <button type="button" data-act="NTPartner.openInbox" style="background:var(--g2);border:none;border-radius:20px;color:white;font-size:13px;font-weight:700;padding:4px 12px;cursor:pointer;"><span id="partnerCardVal">0 neu</span> →</button>
       </div>
       <div id="partnerCardBody" style="margin-top:6px;"></div>
     </div>
     <div class="wc" id="shopCard" style="display:none;">
       <div class="wh">
         <div class="wt">🛒 Einkaufszettel</div>
-        <button type="button" onclick="NTShop.open()" style="background:var(--g2);border:none;border-radius:20px;color:white;font-size:13px;font-weight:700;padding:4px 12px;cursor:pointer;"><span id="shopCardVal">0 Artikel</span> →</button>
+        <button type="button" data-act="NTShop.open" style="background:var(--g2);border:none;border-radius:20px;color:white;font-size:13px;font-weight:700;padding:4px 12px;cursor:pointer;"><span id="shopCardVal">0 Artikel</span> →</button>
       </div>
       <div id="shopCardBody" style="margin-top:6px;"></div>
     </div>
     <div class="wc" id="fastCard">
       <div class="wh"><div class="wt">🌙 Fasten</div><div class="wv" id="fastStatus">Kein aktives Fasten</div></div>
       <div id="fastBody">
-        <button type="button" class="svb" style="width:100%;margin-top:2px;" onclick="openFastOv()">⏱ Fasten starten</button>
+        <button type="button" class="svb" style="width:100%;margin-top:2px;" data-act="openFastOv">⏱ Fasten starten</button>
       </div>
     </div>
   </div>
   <div class="bnav">
-    <button type="button" class="ni on" data-tab="main" onclick="switchTab('main')"><span>🏠</span>Heute</button>
-    <button type="button" class="ni" data-tab="history" onclick="switchTab('history')"><span>📅</span>Verlauf</button>
-    <div class="cw"><button type="button" class="cb" onclick="openPicker(null)">＋</button></div>
-    <button type="button" class="ni" data-tab="trends" onclick="switchTab('trends')"><span>📈</span>Trends</button>
-    <button type="button" class="ni" data-tab="more" onclick="switchTab('more')"><span>☰</span>Mehr</button>
+    <button type="button" class="ni on" data-tab="main" data-act="switchTab" data-args='["main"]'><span>🏠</span>Heute</button>
+    <button type="button" class="ni" data-tab="history" data-act="switchTab" data-args='["history"]'><span>📅</span>Verlauf</button>
+    <div class="cw"><button type="button" class="cb" data-act="openPicker" data-args='[null]'>＋</button></div>
+    <button type="button" class="ni" data-tab="trends" data-act="switchTab" data-args='["trends"]'><span>📈</span>Trends</button>
+    <button type="button" class="ni" data-tab="more" data-act="switchTab" data-args='["more"]'><span>☰</span>Mehr</button>
   </div>
 </div>
 
@@ -942,19 +942,19 @@ body.kb-open #feedbackFab{display:none;}
         <div class="greet-sub">Wochen- und Gewichtsverlauf</div>
       </div>
       <div style="display:flex;gap:6px;">
-        <button type="button" class="hbtn" onclick="openHelp()" title="Hilfe">?</button>
-        <button type="button" class="hbtn" onclick="openImportPaste()" title="Importieren">📥</button>
+        <button type="button" class="hbtn" data-act="openHelp" title="Hilfe">?</button>
+        <button type="button" class="hbtn" data-act="openImportPaste" title="Importieren">📥</button>
       </div>
     </div>
   </div>
   <div class="main">
-    <div style="display:none;"><button type="button" id="stTabStats" onclick="NTStats.switchTab('stats')">stats</button></div>
+    <div style="display:none;"><button type="button" id="stTabStats" data-act="NTStats.switchTab" data-args='["stats"]'>stats</button></div>
     <div id="stPanelStats" style="display:flex;flex-direction:column;gap:14px;">
       <div class="trend-card">
         <div class="head"><h4>Kalorien</h4>
           <div style="display:flex;gap:4px;">
-            <button type="button" class="stab act" id="rangeBtn7" onclick="NTStats.setRange(7)">7T</button>
-            <button type="button" class="stab" id="rangeBtn30" onclick="NTStats.setRange(30)">30T</button>
+            <button type="button" class="stab act" id="rangeBtn7" data-act="NTStats.setRange" data-args='[7]'>7T</button>
+            <button type="button" class="stab" id="rangeBtn30" data-act="NTStats.setRange" data-args='[30]'>30T</button>
           </div>
         </div>
         <div id="weekBars" style="display:flex;align-items:flex-end;gap:4px;height:120px;margin-top:14px;"></div>
@@ -976,7 +976,7 @@ body.kb-open #feedbackFab{display:none;}
         <div class="head" style="display:flex;align-items:center;gap:10px;">
           <h4 style="flex:1;">Gewicht</h4>
           <input type="number" id="weightToday" step="0.1" placeholder="kg" style="width:80px;border:1.5px solid var(--br);border-radius:14px;padding:8px;font-size:15px;font-weight:600;text-align:center;outline:none;background:#fff;">
-          <button type="button" class="svb" style="padding:8px 14px;margin-top:0;" onclick="NTStats.logWeight()">✓</button>
+          <button type="button" class="svb" style="padding:8px 14px;margin-top:0;" data-act="NTStats.logWeight">✓</button>
         </div>
         <div style="font-size:11px;color:var(--mu);margin-top:6px;" id="weightTrend"></div>
         <canvas id="weightChart" height="120" style="width:100%;display:none;margin-top:12px;"></canvas>
@@ -984,7 +984,7 @@ body.kb-open #feedbackFab{display:none;}
       </div>
       <div class="trend-card">
         <div class="head"><h4>KI-Bericht ✨</h4>
-          <button type="button" onclick="NTStats.weekReport()" id="weekReportBtn" style="font-size:12px;background:var(--g1);border:none;border-radius:999px;padding:6px 12px;color:white;font-weight:600;cursor:pointer;">Erstellen</button>
+          <button type="button" data-act="NTStats.weekReport" id="weekReportBtn" style="font-size:12px;background:var(--g1);border:none;border-radius:999px;padding:6px 12px;color:white;font-weight:600;cursor:pointer;">Erstellen</button>
         </div>
         <div id="weekReportText" style="font-size:13px;color:var(--mu);line-height:1.6;margin-top:8px;"></div>
         <div id="weekReportSource" style="margin-top:6px;"></div>
@@ -992,16 +992,16 @@ body.kb-open #feedbackFab{display:none;}
       <div class="trend-card" id="offlineQueueWrap" style="display:none;">
         <div class="head"><h4>📷 Offline-Fotos</h4></div>
         <div id="offlineQueueList" style="margin-top:8px;"></div>
-        <button type="button" class="svb" style="margin-top:8px;" onclick="NTQueue.process()">Jetzt analysieren</button>
+        <button type="button" class="svb" style="margin-top:8px;" data-act="NTQueue.process">Jetzt analysieren</button>
       </div>
     </div>
   </div>
   <div class="bnav">
-    <button type="button" class="ni" data-tab="main" onclick="switchTab('main')"><span>🏠</span>Heute</button>
-    <button type="button" class="ni" data-tab="history" onclick="switchTab('history')"><span>📅</span>Verlauf</button>
-    <div class="cw"><button type="button" class="cb" onclick="openPicker(null)">＋</button></div>
-    <button type="button" class="ni on" data-tab="trends" onclick="switchTab('trends')"><span>📈</span>Trends</button>
-    <button type="button" class="ni" data-tab="more" onclick="switchTab('more')"><span>☰</span>Mehr</button>
+    <button type="button" class="ni" data-tab="main" data-act="switchTab" data-args='["main"]'><span>🏠</span>Heute</button>
+    <button type="button" class="ni" data-tab="history" data-act="switchTab" data-args='["history"]'><span>📅</span>Verlauf</button>
+    <div class="cw"><button type="button" class="cb" data-act="openPicker" data-args='[null]'>＋</button></div>
+    <button type="button" class="ni on" data-tab="trends" data-act="switchTab" data-args='["trends"]'><span>📈</span>Trends</button>
+    <button type="button" class="ni" data-tab="more" data-act="switchTab" data-args='["more"]'><span>☰</span>Mehr</button>
   </div>
 </div>
 
@@ -1014,8 +1014,8 @@ body.kb-open #feedbackFab{display:none;}
         <div class="greet-sub">Letzte 30 Tage</div>
       </div>
       <div style="display:flex;gap:6px;">
-        <button type="button" class="hbtn" onclick="openShareRange()" title="Zeitraum teilen">🗓</button>
-        <button type="button" class="hbtn" onclick="openSettings()" title="Einstellungen">⚙️</button>
+        <button type="button" class="hbtn" data-act="openShareRange" title="Zeitraum teilen">🗓</button>
+        <button type="button" class="hbtn" data-act="openSettings" title="Einstellungen">⚙️</button>
       </div>
     </div>
   </div>
@@ -1023,18 +1023,18 @@ body.kb-open #feedbackFab{display:none;}
     <div id="historyList" style="display:flex;flex-direction:column;gap:8px;"></div>
   </div>
   <div class="bnav">
-    <button type="button" class="ni" data-tab="main" onclick="switchTab('main')"><span>🏠</span>Heute</button>
-    <button type="button" class="ni on" data-tab="history" onclick="switchTab('history')"><span>📅</span>Verlauf</button>
-    <div class="cw"><button type="button" class="cb" onclick="openPicker(null)">＋</button></div>
-    <button type="button" class="ni" data-tab="trends" onclick="switchTab('trends')"><span>📈</span>Trends</button>
-    <button type="button" class="ni" data-tab="more" onclick="switchTab('more')"><span>☰</span>Mehr</button>
+    <button type="button" class="ni" data-tab="main" data-act="switchTab" data-args='["main"]'><span>🏠</span>Heute</button>
+    <button type="button" class="ni on" data-tab="history" data-act="switchTab" data-args='["history"]'><span>📅</span>Verlauf</button>
+    <div class="cw"><button type="button" class="cb" data-act="openPicker" data-args='[null]'>＋</button></div>
+    <button type="button" class="ni" data-tab="trends" data-act="switchTab" data-args='["trends"]'><span>📈</span>Trends</button>
+    <button type="button" class="ni" data-tab="more" data-act="switchTab" data-args='["more"]'><span>☰</span>Mehr</button>
   </div>
 </div>
 
 <!-- MEAL DETAIL -->
 <div id="mealDetailScreen" class="screen">
   <div class="md-head">
-    <button type="button" class="md-back" onclick="closeMealDetail()">‹</button>
+    <button type="button" class="md-back" data-act="closeMealDetail">‹</button>
     <div class="md-actions">
       <button type="button" id="mdCopy" title="Von gestern">⎘</button>
       <button type="button" id="mdShare" title="Teilen">📤</button>
@@ -1061,11 +1061,11 @@ body.kb-open #feedbackFab{display:none;}
     </div>
   </div>
   <div class="bnav">
-    <button type="button" class="ni on" data-tab="main" onclick="switchTab('main')"><span>🏠</span>Heute</button>
-    <button type="button" class="ni" data-tab="history" onclick="switchTab('history')"><span>📅</span>Verlauf</button>
-    <div class="cw"><button type="button" class="cb" id="cbMealDetail" onclick="openPicker(null)">＋</button></div>
-    <button type="button" class="ni" data-tab="trends" onclick="switchTab('trends')"><span>📈</span>Trends</button>
-    <button type="button" class="ni" data-tab="more" onclick="switchTab('more')"><span>☰</span>Mehr</button>
+    <button type="button" class="ni on" data-tab="main" data-act="switchTab" data-args='["main"]'><span>🏠</span>Heute</button>
+    <button type="button" class="ni" data-tab="history" data-act="switchTab" data-args='["history"]'><span>📅</span>Verlauf</button>
+    <div class="cw"><button type="button" class="cb" id="cbMealDetail" data-act="openPicker" data-args='[null]'>＋</button></div>
+    <button type="button" class="ni" data-tab="trends" data-act="switchTab" data-args='["trends"]'><span>📈</span>Trends</button>
+    <button type="button" class="ni" data-tab="more" data-act="switchTab" data-args='["more"]'><span>☰</span>Mehr</button>
   </div>
 </div>
 
@@ -1081,74 +1081,74 @@ body.kb-open #feedbackFab{display:none;}
   </div>
   <div class="main">
     <div style="font-size:11px;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin:2px 4px 6px;">Einstellungen</div>
-    <div class="list-row" onclick="openSettings('profil')">
+    <div class="list-row" data-act="openSettings" data-args='["profil"]'>
       <div class="lr-ic">👤</div>
       <div class="lr-body"><div class="lr-name">Profil</div><div class="lr-sub">Name, Körperdaten, Aktivität</div></div>
       <div class="lr-val">›</div>
     </div>
-    <div class="list-row" onclick="openSettings('ziele')">
+    <div class="list-row" data-act="openSettings" data-args='["ziele"]'>
       <div class="lr-ic">🎯</div>
       <div class="lr-body"><div class="lr-name">Ziele</div><div class="lr-sub">Kalorien, Makros, Gewicht, Wasser</div></div>
       <div class="lr-val">›</div>
     </div>
-    <div class="list-row" onclick="openSettings('ernaehrung')">
+    <div class="list-row" data-act="openSettings" data-args='["ernaehrung"]'>
       <div class="lr-ic">🥗</div>
       <div class="lr-body"><div class="lr-name">Ernährung</div><div class="lr-sub">Präferenzen &amp; Lebensmittel-Ampel</div></div>
       <div class="lr-val">›</div>
     </div>
-    <div class="list-row" onclick="openSettings('erinnerungen')">
+    <div class="list-row" data-act="openSettings" data-args='["erinnerungen"]'>
       <div class="lr-ic">⏰</div>
       <div class="lr-body"><div class="lr-name">Erinnerungen</div><div class="lr-sub">Mahlzeiten &amp; Wasser</div></div>
       <div class="lr-val">›</div>
     </div>
-    <div class="list-row" onclick="openSettings('ki')">
+    <div class="list-row" data-act="openSettings" data-args='["ki"]'>
       <div class="lr-ic">🤖</div>
       <div class="lr-body"><div class="lr-name">KI</div><div class="lr-sub">Proxy-Passwort &amp; KI-Anbieter</div></div>
       <div class="lr-val">›</div>
     </div>
-    <div class="list-row" onclick="openSettings('backup')">
+    <div class="list-row" data-act="openSettings" data-args='["backup"]'>
       <div class="lr-ic">💾</div>
       <div class="lr-body"><div class="lr-name">Backup &amp; Daten</div><div class="lr-sub">Sichern, Export/Import, OneDrive</div></div>
       <div class="lr-val">›</div>
     </div>
     <div style="font-size:11px;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin:14px 4px 6px;">Meine Inhalte</div>
-    <div class="list-row" onclick="NTPlan.open()">
+    <div class="list-row" data-act="NTPlan.open">
       <div class="lr-ic">📅</div>
       <div class="lr-body"><div class="lr-name">Wochenplan</div><div class="lr-sub" id="planHubSub">Rezepte auf die Woche verteilen</div></div>
       <div class="lr-val">›</div>
     </div>
-    <div class="list-row" onclick="openLibrary()">
+    <div class="list-row" data-act="openLibrary">
       <div class="lr-ic">📚</div>
       <div class="lr-body"><div class="lr-name">Bibliothek</div><div class="lr-sub">Rezepte &amp; eigene Lebensmittel</div></div>
       <div class="lr-val">›</div>
     </div>
-    <div class="list-row" id="moreBabyRow" style="display:none;" onclick="NTBaby.openDiary()">
+    <div class="list-row" id="moreBabyRow" style="display:none;" data-act="NTBaby.openDiary">
       <div class="lr-ic">👶</div>
       <div class="lr-body"><div class="lr-name">Baby-Tagebuch</div><div class="lr-sub">Stillen, Flasche, Windeln, Temperatur</div></div>
       <div class="lr-val">›</div>
     </div>
-    <div class="list-row" onclick="NTShop.open()">
+    <div class="list-row" data-act="NTShop.open">
       <div class="lr-ic">🛒</div>
       <div class="lr-body"><div class="lr-name">Einkaufszettel</div><div class="lr-sub" id="shopHubSub">Leer</div></div>
       <div class="lr-val">›</div>
     </div>
-    <div class="list-row" onclick="NTDash.open()">
+    <div class="list-row" data-act="NTDash.open">
       <div class="lr-ic">🧩</div>
       <div class="lr-body"><div class="lr-name">Kacheln auf „Heute"</div><div class="lr-sub">Reihenfolge ändern, Kacheln ausblenden</div></div>
       <div class="lr-val">›</div>
     </div>
-    <div class="list-row" onclick="NTRecur.openManage()">
+    <div class="list-row" data-act="NTRecur.openManage">
       <div class="lr-ic">🔁</div>
       <div class="lr-body"><div class="lr-name">Wiederkehrende Mahlzeiten</div><div class="lr-sub">Automatisch an festen Wochentagen eintragen</div></div>
       <div class="lr-val">›</div>
     </div>
     <div style="font-size:11px;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin:14px 4px 6px;">Daten &amp; Sync</div>
-    <div class="list-row" onclick="NTSync.open()">
+    <div class="list-row" data-act="NTSync.open">
       <div class="lr-ic">🔗</div>
       <div class="lr-body"><div class="lr-name">Verbindungen</div><div class="lr-sub" id="linksHubSub">Ein Code je Person — Wochenplan, Zettel, Tagebuch</div></div>
       <div class="lr-val">›</div>
     </div>
-    <div class="list-row" onclick="NTPartner.open()">
+    <div class="list-row" data-act="NTPartner.open">
       <div class="lr-ic">👫</div>
       <div class="lr-body"><div class="lr-name">Partner</div><div class="lr-sub" id="partnerHubSub">Mahlzeiten direkt an den Partner senden</div></div>
       <div class="lr-val">›</div>
@@ -1158,56 +1158,56 @@ body.kb-open #feedbackFab{display:none;}
       <div class="lr-body"><div class="lr-name">Code / Link einlösen</div><div class="lr-sub">Geht auch über ＋ → 🔗 Link</div></div>
       <div class="lr-val">›</div>
     </div>
-    <div class="list-row" onclick="openHealthSync()">
+    <div class="list-row" data-act="openHealthSync">
       <div class="lr-ic">🏃</div>
       <div class="lr-body"><div class="lr-name">Sport-Sync</div><div class="lr-sub" id="healthSyncSub">Apple Health · Samsung Health</div></div>
       <div class="lr-val">›</div>
     </div>
-    <div class="list-row" onclick="openAlexaSync()">
+    <div class="list-row" data-act="openAlexaSync">
       <div class="lr-ic">🗣️</div>
       <div class="lr-body"><div class="lr-name">Alexa-Einwurf</div><div class="lr-sub" id="alexaSub">Per Sprache eintragen</div></div>
       <div class="lr-val">›</div>
     </div>
     <div style="font-size:11px;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin:14px 4px 6px;">App</div>
-    <div class="list-row" onclick="openHelp()">
+    <div class="list-row" data-act="openHelp">
       <div class="lr-ic">❓</div>
       <div class="lr-body"><div class="lr-name">Hilfe &amp; FAQ</div><div class="lr-sub">Funktionen erklärt</div></div>
       <div class="lr-val">›</div>
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.250</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.251</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
   <div class="bnav">
-    <button type="button" class="ni" data-tab="main" onclick="switchTab('main')"><span>🏠</span>Heute</button>
-    <button type="button" class="ni" data-tab="history" onclick="switchTab('history')"><span>📅</span>Verlauf</button>
-    <div class="cw"><button type="button" class="cb" onclick="openPicker(null)">＋</button></div>
-    <button type="button" class="ni" data-tab="trends" onclick="switchTab('trends')"><span>📈</span>Trends</button>
-    <button type="button" class="ni on" data-tab="more" onclick="switchTab('more')"><span>☰</span>Mehr</button>
+    <button type="button" class="ni" data-tab="main" data-act="switchTab" data-args='["main"]'><span>🏠</span>Heute</button>
+    <button type="button" class="ni" data-tab="history" data-act="switchTab" data-args='["history"]'><span>📅</span>Verlauf</button>
+    <div class="cw"><button type="button" class="cb" data-act="openPicker" data-args='[null]'>＋</button></div>
+    <button type="button" class="ni" data-tab="trends" data-act="switchTab" data-args='["trends"]'><span>📈</span>Trends</button>
+    <button type="button" class="ni on" data-tab="more" data-act="switchTab" data-args='["more"]'><span>☰</span>Mehr</button>
   </div>
 </div>
 
 <!-- ══ UNIVERSELLER INGREDIENT PICKER ══ -->
-<div class="ov" id="pickerOv" onclick="bgClose(event,'pickerOv')">
+<div class="ov" id="pickerOv" data-bg-close="pickerOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="closePicker()">✕</button>
+      <button type="button" class="mcl" data-act="closePicker">✕</button>
       <div class="mti" id="pickerTitle">Zutat hinzufügen</div>
       <div class="msu" id="pickerSub">Lokal + Online kombiniert</div>
     </div>
     <div class="mbd">
       <!-- Tabs -->
       <div class="picker-tabs">
-        <button type="button" class="picker-tab" id="ptab-chat" onclick="pickerSetTab('chat')"><span>💬</span>Chat</button>
-        <button type="button" class="picker-tab act" id="ptab-search" onclick="pickerSetTab('search')"><span>🔍</span>Suche</button>
-        <button type="button" class="picker-tab" id="ptab-recent" onclick="pickerSetTab('recent')"><span>⭐</span>Zuletzt</button>
-        <button type="button" class="picker-tab" id="ptab-foto" onclick="pickerSetTab('foto')"><span>📷</span>Foto</button>
-        <button type="button" class="picker-tab" id="ptab-barcode" onclick="pickerSetTab('barcode')"><span>📊</span>Barcode</button>
-        <button type="button" class="picker-tab" id="ptab-own" onclick="pickerSetTab('own')"><span>✚</span>Eigenes</button>
-        <button type="button" class="picker-tab" id="ptab-link" onclick="pickerSetTab('link')"><span>🔗</span>Link</button>
+        <button type="button" class="picker-tab" id="ptab-chat" data-act="pickerSetTab" data-args='["chat"]'><span>💬</span>Chat</button>
+        <button type="button" class="picker-tab act" id="ptab-search" data-act="pickerSetTab" data-args='["search"]'><span>🔍</span>Suche</button>
+        <button type="button" class="picker-tab" id="ptab-recent" data-act="pickerSetTab" data-args='["recent"]'><span>⭐</span>Zuletzt</button>
+        <button type="button" class="picker-tab" id="ptab-foto" data-act="pickerSetTab" data-args='["foto"]'><span>📷</span>Foto</button>
+        <button type="button" class="picker-tab" id="ptab-barcode" data-act="pickerSetTab" data-args='["barcode"]'><span>📊</span>Barcode</button>
+        <button type="button" class="picker-tab" id="ptab-own" data-act="pickerSetTab" data-args='["own"]'><span>✚</span>Eigenes</button>
+        <button type="button" class="picker-tab" id="ptab-link" data-act="pickerSetTab" data-args='["link"]'><span>🔗</span>Link</button>
       </div>
 
       <!-- Tab: Zuletzt / Favoriten -->
@@ -1218,13 +1218,13 @@ body.kb-open #feedbackFab{display:none;}
       <div class="picker-panel act" id="ppanel-search">
         <div class="psb">
           <input type="text" class="psi" id="pickerSearchQ" placeholder="z.B. Banane, Skyr..." oninput="pickerSearchLocalLive()" onkeydown="if(event.key==='Enter')pickerSearch()">
-          <button type="button" class="psg" id="pickerSearchBtn" onclick="pickerSearch()">Suchen</button>
+          <button type="button" class="psg" id="pickerSearchBtn" data-act="pickerSearch">Suchen</button>
         </div>
         <div class="src-hint" id="pickerSearchHint">Lokale Treffer sofort · Online bei Suche</div>
         <div class="rl" id="pickerResults"></div>
         <div id="pickerAddSec" class="hidden">
           <div class="ar"><input type="number" class="ai2" id="pickerAmt" value="100" min="1" step="0.1"><div class="au" id="pickerAmtUnit">Gramm</div></div>
-          <button type="button" class="cb2" onclick="pickerConfirmAdd()">Hinzufügen ✓</button>
+          <button type="button" class="cb2" data-act="pickerConfirmAdd">Hinzufügen ✓</button>
         </div>
       </div>
 
@@ -1239,19 +1239,19 @@ body.kb-open #feedbackFab{display:none;}
         <input type="file" id="pickerCam" accept="image/*" capture="environment" style="position:fixed;top:-100vh;left:-100vw;width:1px;height:1px;opacity:0;" onchange="pickerHandlePhoto(event)">
         <input type="file" id="pickerGal" accept="image/*" style="position:fixed;top:-100vh;left:-100vw;width:1px;height:1px;opacity:0;" onchange="pickerHandlePhoto(event)">
         <div id="pickerPrevWrap" class="pprev-wrap hidden">
-          <img id="pickerPrev"><button type="button" class="pchange" onclick="pickerResetPhoto()">Ändern</button>
+          <img id="pickerPrev"><button type="button" class="pchange" data-act="pickerResetPhoto">Ändern</button>
         </div>
-        <div id="pickerPhotoSaveHint" class="hidden" onclick="openSettings('ernaehrung');" style="font-size:11px;color:var(--mu);margin:6px 4px 0;cursor:pointer;line-height:1.4;"></div>
+        <div id="pickerPhotoSaveHint" class="hidden" data-act="openSettings" data-args='["ernaehrung"]' style="font-size:11px;color:var(--mu);margin:6px 4px 0;cursor:pointer;line-height:1.4;"></div>
         <div id="pickerBcConfirm" class="bc-confirm hidden">
           <div class="bc-confirm-name" id="pickerBcName"></div>
           <div class="bc-confirm-vals" id="pickerBcVals"></div>
           <div class="bc-btns">
-            <button type="button" class="cb2" style="margin-top:0;flex:1;" onclick="pickerBcYes()">✓ Ja, korrekt</button>
-            <button type="button" class="seb" style="margin-top:0;flex:1;" onclick="pickerBcNo()">✕ KI nutzen</button>
+            <button type="button" class="cb2" style="margin-top:0;flex:1;" data-act="pickerBcYes">✓ Ja, korrekt</button>
+            <button type="button" class="seb" style="margin-top:0;flex:1;" data-act="pickerBcNo">✕ KI nutzen</button>
           </div>
         </div>
         <div id="pickerPhotoStatus" class="hidden" style="background:var(--gl);border:1.5px solid var(--g3);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--g1);margin-bottom:10px;"></div>
-        <button type="button" class="abt" id="pickerAnalyzeBtn" disabled onclick="pickerAnalyze()">📷 KI-Analyse starten</button>
+        <button type="button" class="abt" id="pickerAnalyzeBtn" disabled data-act="pickerAnalyze">📷 KI-Analyse starten</button>
         <div id="pickerPhotoResult" class="hidden" style="margin-top:10px;">
           <div style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:6px;">Erkannte Zutaten<span id="pickerPhotoSource"></span></div>
           <div style="margin-bottom:6px;">
@@ -1268,13 +1268,13 @@ body.kb-open #feedbackFab{display:none;}
             <div style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:8px;">Weitere Zutat hinzufügen</div>
             <div style="display:flex;gap:6px;margin-bottom:6px;">
               <input type="text" class="psi" id="pickerPhotoAddQ" placeholder="Suchen oder beschreiben..." onkeydown="if(event.key==='Enter')pickerPhotoAddSearch()">
-              <button type="button" class="psg" onclick="pickerPhotoAddSearch()">Suchen</button>
+              <button type="button" class="psg" data-act="pickerPhotoAddSearch">Suchen</button>
             </div>
             <div id="pickerPhotoAddResults" class="rl" style="max-height:160px;overflow-y:auto;margin-bottom:8px;"></div>
           </div>
           <div style="display:flex;gap:8px;margin-top:6px;">
-            <button type="button" class="cb2" style="margin-top:0;" onclick="pickerPhotoAdd(false)">✓ Eintragen</button>
-            <button type="button" class="cb2" style="margin-top:0;background:linear-gradient(135deg,#2d5f8a,#3d8bc4);" onclick="pickerPhotoAdd(true)">📋 Als Rezept</button>
+            <button type="button" class="cb2" style="margin-top:0;" data-act="pickerPhotoAdd" data-args='[false]'>✓ Eintragen</button>
+            <button type="button" class="cb2" style="margin-top:0;background:linear-gradient(135deg,#2d5f8a,#3d8bc4);" data-act="pickerPhotoAdd" data-args='[true]'>📋 Als Rezept</button>
           </div>
         </div>
       </div>
@@ -1287,12 +1287,12 @@ body.kb-open #feedbackFab{display:none;}
           <div class="barcode-hint">Barcode in den Rahmen halten</div>
         </div>
         <input type="file" id="pickerBcPhoto" accept="image/*" capture="environment" style="position:fixed;top:-100vh;left:-100vw;width:1px;height:1px;opacity:0;" onchange="pickerScanFromPhoto(event)">
-        <button type="button" id="torchBtn" onclick="pickerToggleTorch()" style="display:none;width:100%;background:rgba(0,0,0,.08);border:1.5px solid var(--br);border-radius:10px;padding:10px;font-size:15px;margin-bottom:8px;font-weight:600;">🔦 Taschenlampe ein/aus</button>
+        <button type="button" id="torchBtn" data-act="pickerToggleTorch" style="display:none;width:100%;background:rgba(0,0,0,.08);border:1.5px solid var(--br);border-radius:10px;padding:10px;font-size:15px;margin-bottom:8px;font-weight:600;">🔦 Taschenlampe ein/aus</button>
         <div id="pickerBarcodeResult"></div>
-        <button type="button" id="pickerBcStartBtn" class="abt" onclick="pickerStartScan()">▶ Scanner starten</button>
-        <button type="button" id="pickerBcStopBtn" class="abt" style="display:none;background:linear-gradient(135deg,#555,#777);" onclick="pickerStopScan()">■ Scanner stoppen</button>
+        <button type="button" id="pickerBcStartBtn" class="abt" data-act="pickerStartScan">▶ Scanner starten</button>
+        <button type="button" id="pickerBcStopBtn" class="abt" style="display:none;background:linear-gradient(135deg,#555,#777);" data-act="pickerStopScan">■ Scanner stoppen</button>
         <label id="pickerBcPhotoBtn" for="pickerBcPhoto" style="margin-top:8px;display:block;width:100%;box-sizing:border-box;background:rgba(0,0,0,.06);border:1.5px solid var(--br);border-radius:10px;padding:10px;font-size:14px;font-weight:700;color:var(--g1);text-align:center;cursor:pointer;">📸 Foto aufnehmen (alle Decoder + KI)</label>
-        <button type="button" id="pickerBcManualBtn" onclick="pickerOpenManualBarcode()" style="margin-top:8px;width:100%;background:rgba(0,0,0,.04);border:1.5px solid var(--br);border-radius:10px;padding:10px;font-size:14px;font-weight:600;color:var(--mu);">📝 Code manuell eingeben</button>
+        <button type="button" id="pickerBcManualBtn" data-act="pickerOpenManualBarcode" style="margin-top:8px;width:100%;background:rgba(0,0,0,.04);border:1.5px solid var(--br);border-radius:10px;padding:10px;font-size:14px;font-weight:600;color:var(--mu);">📝 Code manuell eingeben</button>
       </div>
 
       <!-- Tab: Chat -->
@@ -1313,14 +1313,14 @@ body.kb-open #feedbackFab{display:none;}
             <div class="au">Portion(en)</div>
           </div>
           <div style="display:flex;gap:8px;margin-top:10px;">
-            <button type="button" class="cb2" style="margin-top:0;" onclick="pickerChatAdd(false)">✓ Eintragen</button>
-            <button type="button" class="cb2" style="margin-top:0;background:linear-gradient(135deg,#2d5f8a,#3d8bc4);" onclick="pickerChatAdd(true)">📋 Als Rezept</button>
+            <button type="button" class="cb2" style="margin-top:0;" data-act="pickerChatAdd" data-args='[false]'>✓ Eintragen</button>
+            <button type="button" class="cb2" style="margin-top:0;background:linear-gradient(135deg,#2d5f8a,#3d8bc4);" data-act="pickerChatAdd" data-args='[true]'>📋 Als Rezept</button>
           </div>
         </div>
         <div class="chat-row">
           <textarea class="chat-inp" id="pickerChatInp" rows="1" placeholder="Was hast du gegessen?" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();pickerSendChat();}"></textarea>
           <button type="button" class="chat-mic" id="pickerChatMic" title="Tippen oder halten zum Diktieren">🎙️</button>
-          <button type="button" class="chat-send" id="pickerChatSend" onclick="pickerSendChat()">➤</button>
+          <button type="button" class="chat-send" id="pickerChatSend" data-act="pickerSendChat">➤</button>
         </div>
       </div>
 
@@ -1338,7 +1338,7 @@ body.kb-open #feedbackFab{display:none;}
             <span>Nur einmal eintragen (nicht in „Eigene Lebensmittel" speichern)</span>
           </label>
           <div style="font-size:11px;color:var(--mu);margin:2px 2px 6px 26px;line-height:1.4;">Angehakt: Werte gelten als Gesamtwerte der Portion. Sonst: pro 100 g.</div>
-          <button type="button" class="fsave" onclick="pickerSaveOwn()">✓ Übernehmen</button>
+          <button type="button" class="fsave" data-act="pickerSaveOwn">✓ Übernehmen</button>
         </div>
       </div>
 
@@ -1349,7 +1349,7 @@ body.kb-open #feedbackFab{display:none;}
           placeholder="Link einfügen – Rezept-Seite, Food-Blog oder eine geteilte NutriTrack-Sendung (auch als Code)"
           oninput="pickerLinkDetect()"></textarea>
         <div id="pickerLinkUrlInfo" style="margin-top:6px;min-height:30px;"></div>
-        <button type="button" class="abt" id="pickerLinkImportBtn" disabled onclick="pickerLinkImport()" style="opacity:.4;">🔗 Rezept laden</button>
+        <button type="button" class="abt" id="pickerLinkImportBtn" disabled data-act="pickerLinkImport" style="opacity:.4;">🔗 Rezept laden</button>
         <div id="pickerLinkResult" class="hidden" style="margin-top:10px;">
           <div style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:6px;">Erkannte Zutaten</div>
           <div id="pickerLinkSrcHint"></div>
@@ -1362,12 +1362,12 @@ body.kb-open #feedbackFab{display:none;}
           </div>
           <div style="font-size:11px;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;margin:12px 2px 6px;">Wohin damit?</div>
           <div style="display:flex;gap:8px;">
-            <button type="button" class="cb2" style="margin-top:0;" onclick="pickerLinkAdd(false)">✓ Eintragen</button>
-            <button type="button" class="cb2" style="margin-top:0;background:linear-gradient(135deg,#2d5f8a,#3d8bc4);" onclick="pickerLinkAdd(true)">📋 Als Rezept</button>
+            <button type="button" class="cb2" style="margin-top:0;" data-act="pickerLinkAdd" data-args='[false]'>✓ Eintragen</button>
+            <button type="button" class="cb2" style="margin-top:0;background:linear-gradient(135deg,#2d5f8a,#3d8bc4);" data-act="pickerLinkAdd" data-args='[true]'>📋 Als Rezept</button>
           </div>
-          <button type="button" class="cb2" id="pickerLinkShopBtn" style="width:100%;margin-top:8px;background:linear-gradient(135deg,#2e7d52,#4caf7d);" onclick="pickerLinkToShop()">🛒 Auf den Einkaufszettel</button>
+          <button type="button" class="cb2" id="pickerLinkShopBtn" style="width:100%;margin-top:8px;background:linear-gradient(135deg,#2e7d52,#4caf7d);" data-act="pickerLinkToShop">🛒 Auf den Einkaufszettel</button>
           <div id="pickerLinkShopOpen" class="hidden">
-            <button type="button" class="seb" onclick="pickerLinkOpenShop()">🛒 Einkaufszettel öffnen</button>
+            <button type="button" class="seb" data-act="pickerLinkOpenShop">🛒 Einkaufszettel öffnen</button>
           </div>
           <div style="font-size:11px;color:var(--mu);margin:8px 2px 0;line-height:1.4;">Der Einkaufszettel kann zusätzlich zum Eintragen befüllt werden. Artikel, die schon auf dem Zettel stehen, werden nicht doppelt angelegt — sie bekommen nur den Rezeptnamen dazu.</div>
         </div>
@@ -1378,19 +1378,19 @@ body.kb-open #feedbackFab{display:none;}
 </div>
 
 <!-- ══ EINTRAG BEARBEITEN ══ -->
-<div class="ov" id="editOv" onclick="bgClose(event,'editOv')">
+<div class="ov" id="editOv" data-bg-close="editOv">
   <div class="mod">
     <div class="mhan"></div>
-    <div class="mhd"><button type="button" class="mcl" onclick="closeOv('editOv')">✕</button><div class="mti" id="editTitle">Bearbeiten</div></div>
+    <div class="mhd"><button type="button" class="mcl" data-act="closeOv" data-args='["editOv"]'>✕</button><div class="mti" id="editTitle">Bearbeiten</div></div>
     <div class="mbd" id="editBody"></div>
   </div>
 </div>
 
 <!-- ══ REZEPT BEARBEITEN (Einstellungen) ══ -->
-<div class="ov" id="recEditOv" onclick="bgClose(event,'recEditOv')">
+<div class="ov" id="recEditOv" data-bg-close="recEditOv">
   <div class="mod">
     <div class="mhan"></div>
-    <div class="mhd"><button type="button" class="mcl" onclick="closeOv('recEditOv')">✕</button><div class="mti" id="recEditTitle">Rezept bearbeiten</div></div>
+    <div class="mhd"><button type="button" class="mcl" data-act="closeOv" data-args='["recEditOv"]'>✕</button><div class="mti" id="recEditTitle">Rezept bearbeiten</div></div>
     <div class="mbd">
       <label class="lbl">Rezeptname</label>
       <input type="text" class="finp" id="recEditName" placeholder="Rezeptname" style="margin-bottom:8px;">
@@ -1402,7 +1402,7 @@ body.kb-open #feedbackFab{display:none;}
       <div style="font-size:12px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:8px;">Zutat hinzufügen</div>
       <div class="rec-search-row">
         <input type="text" class="rec-search-inp" id="recEditSearchQ" placeholder="Zutat suchen..." onkeydown="if(event.key==='Enter')recEditSearch()">
-        <button type="button" class="rec-search-btn" onclick="recEditSearch()">Suchen</button>
+        <button type="button" class="rec-search-btn" data-act="recEditSearch">Suchen</button>
       </div>
       <div class="rec-results" id="recEditResults"></div>
       <div id="recEditInstructionsWrap" style="margin-top:8px;">
@@ -1410,18 +1410,18 @@ body.kb-open #feedbackFab{display:none;}
         <textarea id="recEditInstructions" rows="4" placeholder="Zubereitungsschritte hier eingeben..."
           style="width:100%;border:1.5px solid var(--br);border-radius:12px;padding:10px;font-size:13px;font-family:inherit;resize:vertical;outline:none;margin-bottom:8px;min-height:80px;"></textarea>
       </div>
-      <button type="button" class="cb2" onclick="recEditSave()">💾 Rezept speichern</button>
+      <button type="button" class="cb2" data-act="recEditSave">💾 Rezept speichern</button>
       <button type="button" class="seb" style="margin-bottom:8px;" onclick="shareRecipe(recEditId)">📤 Rezept teilen</button>
-      <button type="button" class="del-btn" onclick="recEditDelete()">🗑️ Rezept löschen</button>
+      <button type="button" class="del-btn" data-act="recEditDelete">🗑️ Rezept löschen</button>
     </div>
   </div>
 </div>
 
 <!-- ══ EIGENES LEBENSMITTEL BEARBEITEN ══ -->
-<div class="ov" id="ownFoodEditOv" onclick="bgClose(event,'ownFoodEditOv')">
+<div class="ov" id="ownFoodEditOv" data-bg-close="ownFoodEditOv">
   <div class="mod">
     <div class="mhan"></div>
-    <div class="mhd"><button type="button" class="mcl" onclick="closeOv('ownFoodEditOv')">✕</button><div class="mti">Lebensmittel bearbeiten</div></div>
+    <div class="mhd"><button type="button" class="mcl" data-act="closeOv" data-args='["ownFoodEditOv"]'>✕</button><div class="mti">Lebensmittel bearbeiten</div></div>
     <div class="mbd">
       <label class="lbl">Name</label>
       <input type="text" class="sinp" id="ownEditName" placeholder="Name" style="margin-bottom:10px;">
@@ -1436,18 +1436,18 @@ body.kb-open #feedbackFab{display:none;}
         <div class="sf"><label class="lbl">Kohlenhydrate g</label><input type="number" class="sinp" id="ownEditCarbs"></div>
         <div class="sf"><label class="lbl">Fett g</label><input type="number" class="sinp" id="ownEditFat"></div>
       </div>
-      <button type="button" class="svb" onclick="saveOwnFoodEdit()">💾 Speichern</button>
-      <button type="button" class="del-btn" onclick="deleteOwnFoodEdit()">🗑️ Löschen</button>
+      <button type="button" class="svb" data-act="saveOwnFoodEdit">💾 Speichern</button>
+      <button type="button" class="del-btn" data-act="deleteOwnFoodEdit">🗑️ Löschen</button>
     </div>
   </div>
 </div>
 
 <!-- ══ HILFE ══ -->
-<div class="ov" id="helpOv" onclick="bgClose(event,'helpOv')">
+<div class="ov" id="helpOv" data-bg-close="helpOv">
   <div class="mod" style="height:92vh;">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="closeOv('helpOv')">✕</button>
+      <button type="button" class="mcl" data-act="closeOv" data-args='["helpOv"]'>✕</button>
       <div class="mti">❓ Hilfe & Anleitung</div>
       <div class="msu">NutriTrack Benutzerhandbuch</div>
     </div>
@@ -1472,11 +1472,11 @@ body.kb-open #feedbackFab{display:none;}
 </div>
 
 <!-- ══ PROMPT EINSTELLUNGEN ══ -->
-<div class="ov" id="promptOv" onclick="bgClose(event,'promptOv')">
+<div class="ov" id="promptOv" data-bg-close="promptOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="closeOv('promptOv')">✕</button>
+      <button type="button" class="mcl" data-act="closeOv" data-args='["promptOv"]'>✕</button>
       <div class="mti">⚙️ KI-Prompts</div>
       <div class="msu">Zeigt die aktiven KI-Prompts (nur zur Ansicht)</div>
     </div>
@@ -1491,11 +1491,11 @@ body.kb-open #feedbackFab{display:none;}
 
 <!-- ══ SPORT ══ -->
 <!-- ══ BABY-TAGEBUCH ══ -->
-<div class="ov" id="babyOv" onclick="bgClose(event,'babyOv')">
+<div class="ov" id="babyOv" data-bg-close="babyOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="NTBaby.closeDiary()">✕</button>
+      <button type="button" class="mcl" data-act="NTBaby.closeDiary">✕</button>
       <div class="mti">👶 Baby-Tagebuch</div>
       <div class="msu" id="babyOvSub">Baby</div>
     </div>
@@ -1505,10 +1505,10 @@ body.kb-open #feedbackFab{display:none;}
         <div id="babyOvNextSide" style="font-size:11px;color:var(--mu);margin-top:4px;display:none;"></div>
       </div>
       <div id="babyOvQuickBtns" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>
-      <button type="button" class="svb" style="margin-bottom:8px;" onclick="NTBaby.openEntry('breast')">＋ Eintrag (Zeit &amp; Details)</button>
+      <button type="button" class="svb" style="margin-bottom:8px;" data-act="NTBaby.openEntry" data-args='["breast"]'>＋ Eintrag (Zeit &amp; Details)</button>
       <div style="display:flex;gap:6px;margin-bottom:10px;">
-        <button type="button" class="seb" style="flex:1;margin:0;" onclick="NTBaby.openQuickManage()">⚙️ Schnell-Knöpfe</button>
-        <button type="button" class="seb" style="flex:1;margin:0;" onclick="NTBaby.openSync()">🔄 Sync <span id="babySyncBadge" style="display:none;">✓</span></button>
+        <button type="button" class="seb" style="flex:1;margin:0;" data-act="NTBaby.openQuickManage">⚙️ Schnell-Knöpfe</button>
+        <button type="button" class="seb" style="flex:1;margin:0;" data-act="NTBaby.openSync">🔄 Sync <span id="babySyncBadge" style="display:none;">✓</span></button>
       </div>
       <div id="babyFeverWarn" style="display:none;background:#ffebee;border:1px solid #ef9a9a;border-radius:10px;padding:10px;font-size:12px;color:#c62828;line-height:1.5;margin-bottom:10px;">
         🌡️ Fieber gemessen (ab 38,0&nbsp;°C). Im ersten Lebensjahr – und bei Säuglingen unter 3&nbsp;Monaten immer – bitte ärztlich abklären lassen. Das Tagebuch stellt keine Diagnose.
@@ -1520,29 +1520,29 @@ body.kb-open #feedbackFab{display:none;}
 </div>
 
 <!-- ══ BABY: SCHNELL-KNÖPFE VERWALTEN ══ -->
-<div class="ov" id="babyQuickOv" onclick="bgClose(event,'babyQuickOv')">
+<div class="ov" id="babyQuickOv" data-bg-close="babyQuickOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="closeOv('babyQuickOv')">✕</button>
+      <button type="button" class="mcl" data-act="closeOv" data-args='["babyQuickOv"]'>✕</button>
       <div class="mti">⚙️ Schnell-Knöpfe</div>
       <div class="msu">Ein Tipp = fertiger Eintrag mit aktueller Uhrzeit</div>
     </div>
     <div class="mbd">
       <div class="baby-tl" id="babyQuickList" style="max-height:48vh;overflow-y:auto;"></div>
-      <button type="button" class="svb" id="babyQuickAddBtn" style="margin-top:10px;" onclick="NTBaby.openQuickEdit('')">＋ Neuer Knopf</button>
-      <button type="button" class="seb" style="margin-top:8px;" onclick="NTBaby.resetQuick()">↺ Auf Werkseinstellung zurücksetzen</button>
+      <button type="button" class="svb" id="babyQuickAddBtn" style="margin-top:10px;" data-act="NTBaby.openQuickEdit" data-args='[""]'>＋ Neuer Knopf</button>
+      <button type="button" class="seb" style="margin-top:8px;" data-act="NTBaby.resetQuick">↺ Auf Werkseinstellung zurücksetzen</button>
       <div style="font-size:11px;color:var(--mu);margin-top:10px;line-height:1.5;">Knöpfe erscheinen auf der „Heute"-Kachel und im Tagebuch, in dieser Reihenfolge. Knöpfe für Temperatur und Schlaf öffnen den Dialog, weil dort immer ein Wert gebraucht wird.</div>
     </div>
   </div>
 </div>
 
 <!-- ══ BABY: SCHNELL-KNOPF BEARBEITEN ══ -->
-<div class="ov" id="babyQuickEditOv" onclick="bgClose(event,'babyQuickEditOv')">
+<div class="ov" id="babyQuickEditOv" data-bg-close="babyQuickEditOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="closeOv('babyQuickEditOv')">✕</button>
+      <button type="button" class="mcl" data-act="closeOv" data-args='["babyQuickEditOv"]'>✕</button>
       <div class="mti" id="bqTitle">Neuer Schnell-Knopf</div>
       <div class="msu">Beschriftung, Symbol und Vorbelegung</div>
     </div>
@@ -1604,18 +1604,18 @@ body.kb-open #feedbackFab{display:none;}
       <div id="bqFields-note" style="display:none;">
         <div class="sf"><label class="lbl">Notiz-Text</label><input type="text" class="sinp" id="bqNoteText" maxlength="80" placeholder="z.B. Vitamin D gegeben"></div>
       </div>
-      <button type="button" class="svb" onclick="NTBaby.saveQuick()">Speichern ✓</button>
-      <button type="button" id="bqDeleteBtn" class="seb" style="display:none;margin-top:8px;color:#c62828;" onclick="NTBaby.deleteQuickFromEdit()">🗑 Knopf löschen</button>
+      <button type="button" class="svb" data-act="NTBaby.saveQuick">Speichern ✓</button>
+      <button type="button" id="bqDeleteBtn" class="seb" style="display:none;margin-top:8px;color:#c62828;" data-act="NTBaby.deleteQuickFromEdit">🗑 Knopf löschen</button>
     </div>
   </div>
 </div>
 
 <!-- ══ BABY: SYNC MIT ZWEITEM GERÄT ══ -->
-<div class="ov" id="babySyncOv" onclick="bgClose(event,'babySyncOv')">
+<div class="ov" id="babySyncOv" data-bg-close="babySyncOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="closeOv('babySyncOv')">✕</button>
+      <button type="button" class="mcl" data-act="closeOv" data-args='["babySyncOv"]'>✕</button>
       <div class="mti">🔄 Tagebuch teilen</div>
       <div class="msu">Mit wem das Tagebuch geteilt wird</div>
     </div>
@@ -1625,30 +1625,30 @@ body.kb-open #feedbackFab{display:none;}
       <div style="background:#e8f5e9;border:1px solid var(--g3);border-radius:10px;padding:10px;font-size:11px;color:var(--g1);line-height:1.55;margin-bottom:12px;">
         🔒 Übertragen werden <b>ausschließlich die Einträge dieses Tagebuchs</b> — keine Mahlzeiten, Kalorien, Gewichts- oder Profildaten. Verschlüsselt auf dem Gerät; der Schlüssel steckt nur im Code und wird nie übertragen.
       </div>
-      <button type="button" class="svb" onclick="NTBaby.openLinks()">🔗 Verbindungen verwalten</button>
-      <button type="button" class="seb" onclick="NTBaby.syncNow()">🔄 Jetzt abgleichen</button>
+      <button type="button" class="svb" data-act="NTBaby.openLinks">🔗 Verbindungen verwalten</button>
+      <button type="button" class="seb" data-act="NTBaby.syncNow">🔄 Jetzt abgleichen</button>
       <div style="font-size:11px;color:var(--mu);line-height:1.5;margin-top:10px;">Seit v0.247 gibt es einen Code je <b>Person</b> statt je Bereich. Unter „Verbindungen" stellst du für jede Person einzeln ein, was sie bekommt.</div>
     </div>
   </div>
 </div>
 
 <!-- ══ BABY-EINTRAG ══ -->
-<div class="ov" id="babyEntryOv" data-type="breast" onclick="bgClose(event,'babyEntryOv')">
+<div class="ov" id="babyEntryOv" data-type="breast" data-bg-close="babyEntryOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="closeOv('babyEntryOv')">✕</button>
+      <button type="button" class="mcl" data-act="closeOv" data-args='["babyEntryOv"]'>✕</button>
       <div class="mti" id="babyEntryTitle">Neuer Eintrag</div>
       <div class="msu">Uhrzeit ist frei änderbar</div>
     </div>
     <div class="mbd">
       <div id="babyTypeTabs" style="display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:2px;">
-        <button type="button" class="stab act" data-bt="breast" onclick="NTBaby.setType('breast')">🤱 Stillen</button>
-        <button type="button" class="stab" data-bt="bottle" onclick="NTBaby.setType('bottle')">🍼 Flasche</button>
-        <button type="button" class="stab" data-bt="diaper" onclick="NTBaby.setType('diaper')">👶 Windel</button>
-        <button type="button" class="stab" data-bt="temp" onclick="NTBaby.setType('temp')">🌡️ Temp.</button>
-        <button type="button" class="stab" data-bt="sleep" onclick="NTBaby.setType('sleep')">😴 Schlaf</button>
-        <button type="button" class="stab" data-bt="note" onclick="NTBaby.setType('note')">📝 Notiz</button>
+        <button type="button" class="stab act" data-bt="breast" data-act="NTBaby.setType" data-args='["breast"]'>🤱 Stillen</button>
+        <button type="button" class="stab" data-bt="bottle" data-act="NTBaby.setType" data-args='["bottle"]'>🍼 Flasche</button>
+        <button type="button" class="stab" data-bt="diaper" data-act="NTBaby.setType" data-args='["diaper"]'>👶 Windel</button>
+        <button type="button" class="stab" data-bt="temp" data-act="NTBaby.setType" data-args='["temp"]'>🌡️ Temp.</button>
+        <button type="button" class="stab" data-bt="sleep" data-act="NTBaby.setType" data-args='["sleep"]'>😴 Schlaf</button>
+        <button type="button" class="stab" data-bt="note" data-act="NTBaby.setType" data-args='["note"]'>📝 Notiz</button>
       </div>
       <div class="sf" id="babyEntryTimeRow"><label class="lbl">Uhrzeit</label><input type="time" class="sinp" id="babyEntryTime"></div>
 
@@ -1743,17 +1743,17 @@ body.kb-open #feedbackFab{display:none;}
       </div>
 
       <div class="sf"><label class="lbl">Bemerkung (optional)</label><input type="text" class="sinp" id="babyEntryNote" placeholder="optional"></div>
-      <button type="button" class="svb" onclick="NTBaby.saveEntry()">Speichern ✓</button>
-      <button type="button" id="babyDeleteBtn" class="seb" style="display:none;margin-top:8px;color:#c62828;" onclick="NTBaby.deleteEntry()">🗑 Eintrag löschen</button>
+      <button type="button" class="svb" data-act="NTBaby.saveEntry">Speichern ✓</button>
+      <button type="button" id="babyDeleteBtn" class="seb" style="display:none;margin-top:8px;color:#c62828;" data-act="NTBaby.deleteEntry">🗑 Eintrag löschen</button>
     </div>
   </div>
 </div>
 
-<div class="ov" id="exerciseOv" onclick="bgClose(event,'exerciseOv')">
+<div class="ov" id="exerciseOv" data-bg-close="exerciseOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="closeOv('exerciseOv')">✕</button>
+      <button type="button" class="mcl" data-act="closeOv" data-args='["exerciseOv"]'>✕</button>
       <div class="mti">🏃 Sport eintragen</div>
       <div class="msu">Wird von Tageskalorien abgezogen</div>
     </div>
@@ -1778,18 +1778,18 @@ body.kb-open #feedbackFab{display:none;}
         <div style="font-size:22px;font-weight:900;color:var(--g1);" id="exKcal">0</div>
         <div style="font-size:12px;color:var(--mu);">kcal verbrannt (Schätzung)</div>
       </div>
-      <button type="button" id="exEstimateBtn" class="seb" style="margin-bottom:8px;" onclick="estimateExercise()">🤖 KI-Schätzung</button>
-      <button type="button" class="svb" onclick="saveExercise()">Speichern ✓</button>
+      <button type="button" id="exEstimateBtn" class="seb" style="margin-bottom:8px;" data-act="estimateExercise">🤖 KI-Schätzung</button>
+      <button type="button" class="svb" data-act="saveExercise">Speichern ✓</button>
     </div>
   </div>
 </div>
 
 <!-- ══ SPORT-SYNC (Apple Health / Samsung Health) ══ -->
-<div class="ov" id="healthSyncOv" onclick="bgClose(event,'healthSyncOv')">
+<div class="ov" id="healthSyncOv" data-bg-close="healthSyncOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="closeOv('healthSyncOv')">✕</button>
+      <button type="button" class="mcl" data-act="closeOv" data-args='["healthSyncOv"]'>✕</button>
       <div class="mti">🏃 Sport-Sync</div>
       <div class="msu">Apple Health · Samsung Health · Health Connect</div>
     </div>
@@ -1801,11 +1801,11 @@ body.kb-open #feedbackFab{display:none;}
       <label class="lbl">🔑 Dein persönliches Token</label>
       <div style="display:flex;gap:6px;margin-bottom:6px;">
         <input type="text" class="sinp" id="hsTokenIn" placeholder="(noch nicht erzeugt)" style="flex:1;min-width:0;font-family:monospace;font-size:12px;" autocomplete="off" spellcheck="false">
-        <button type="button" class="seb" style="flex:0 0 auto;width:auto;margin-top:0;padding:11px 14px;" onclick="hsCopyToken()">📋</button>
+        <button type="button" class="seb" style="flex:0 0 auto;width:auto;margin-top:0;padding:11px 14px;" data-act="hsCopyToken">📋</button>
       </div>
       <div style="display:flex;gap:6px;margin-bottom:14px;">
-        <button type="button" class="seb" style="flex:1;" onclick="hsGenerateToken()">🎲 Neu erzeugen</button>
-        <button type="button" class="seb" style="flex:1;" onclick="hsSaveToken()">Speichern ✓</button>
+        <button type="button" class="seb" style="flex:1;" data-act="hsGenerateToken">🎲 Neu erzeugen</button>
+        <button type="button" class="seb" style="flex:1;" data-act="hsSaveToken">Speichern ✓</button>
       </div>
 
       <details style="margin-bottom:10px;">
@@ -1840,8 +1840,8 @@ body.kb-open #feedbackFab{display:none;}
       <textarea id="hsBodyTpl" readonly style="width:100%;border:2px solid var(--br);border-radius:10px;padding:10px;font-size:11px;font-family:monospace;line-height:1.5;outline:none;min-height:130px;resize:vertical;background:var(--bg2);color:var(--mu);" onclick="this.select()"></textarea>
 
       <div style="display:flex;gap:6px;margin-top:14px;">
-        <button type="button" class="seb" style="flex:1;" onclick="hsTestSync()">🔄 Jetzt synchronisieren</button>
-        <button type="button" class="seb" style="flex:1;color:var(--re);" onclick="hsClearToken()">Token löschen</button>
+        <button type="button" class="seb" style="flex:1;" data-act="hsTestSync">🔄 Jetzt synchronisieren</button>
+        <button type="button" class="seb" style="flex:1;color:var(--re);" data-act="hsClearToken">Token löschen</button>
       </div>
       <div id="hsStatus" style="margin-top:10px;font-size:12px;color:var(--mu);text-align:center;min-height:18px;"></div>
     </div>
@@ -1849,11 +1849,11 @@ body.kb-open #feedbackFab{display:none;}
 </div>
 
 <!-- ══ ALEXA-EINWURF ══ -->
-<div class="ov" id="alexaOv" onclick="bgClose(event,'alexaOv')">
+<div class="ov" id="alexaOv" data-bg-close="alexaOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="closeOv('alexaOv')">✕</button>
+      <button type="button" class="mcl" data-act="closeOv" data-args='["alexaOv"]'>✕</button>
       <div class="mti">🗣️ Alexa-Einwurf</div>
       <div class="msu">Per Sprache eintragen — Essen, Sport, Einkauf, Baby</div>
     </div>
@@ -1866,11 +1866,11 @@ body.kb-open #feedbackFab{display:none;}
       <label class="lbl">🔑 Dein persönliches Token</label>
       <div style="display:flex;gap:6px;margin-bottom:6px;">
         <input type="text" class="sinp" id="axTokenIn" placeholder="(noch nicht erzeugt)" style="flex:1;min-width:0;font-family:monospace;font-size:12px;" autocomplete="off" spellcheck="false">
-        <button type="button" class="seb" style="flex:0 0 auto;width:auto;margin-top:0;padding:11px 14px;" onclick="axCopyToken()">📋</button>
+        <button type="button" class="seb" style="flex:0 0 auto;width:auto;margin-top:0;padding:11px 14px;" data-act="axCopyToken">📋</button>
       </div>
       <div style="display:flex;gap:6px;margin-bottom:14px;">
-        <button type="button" class="seb" style="flex:1;" onclick="axGenerateToken()">🎲 Neu erzeugen</button>
-        <button type="button" class="seb" style="flex:1;" onclick="axSaveToken()">Speichern ✓</button>
+        <button type="button" class="seb" style="flex:1;" data-act="axGenerateToken">🎲 Neu erzeugen</button>
+        <button type="button" class="seb" style="flex:1;" data-act="axSaveToken">Speichern ✓</button>
       </div>
 
       <label class="lbl">🔗 Endpunkt für den Skill</label>
@@ -1927,8 +1927,8 @@ body.kb-open #feedbackFab{display:none;}
       </div>
 
       <div style="display:flex;gap:6px;margin-top:14px;">
-        <button type="button" class="seb" style="flex:1;" onclick="axTestSync()">🔄 Jetzt abholen</button>
-        <button type="button" class="seb" style="flex:1;color:var(--re);" onclick="axClearToken()">Token löschen</button>
+        <button type="button" class="seb" style="flex:1;" data-act="axTestSync">🔄 Jetzt abholen</button>
+        <button type="button" class="seb" style="flex:1;color:var(--re);" data-act="axClearToken">Token löschen</button>
       </div>
       <div id="axStatus" style="margin-top:10px;font-size:12px;color:var(--mu);text-align:center;min-height:18px;"></div>
     </div>
@@ -1936,11 +1936,11 @@ body.kb-open #feedbackFab{display:none;}
 </div>
 
 <!-- ══ MAHLZEIT-VORLAGEN ══ -->
-<div class="ov" id="templateOv" onclick="bgClose(event,'templateOv')">
+<div class="ov" id="templateOv" data-bg-close="templateOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="closeOv('templateOv')">✕</button>
+      <button type="button" class="mcl" data-act="closeOv" data-args='["templateOv"]'>✕</button>
       <div class="mti">📋 Vorlagen</div>
       <div class="msu">Gespeicherte Mahlzeiten laden</div>
     </div>
@@ -1949,11 +1949,11 @@ body.kb-open #feedbackFab{display:none;}
 </div>
 
 <!-- ══ WIEDERKEHRENDE MAHLZEIT ANLEGEN ══ -->
-<div class="ov" id="recurCreateOv" onclick="bgClose(event,'recurCreateOv')">
+<div class="ov" id="recurCreateOv" data-bg-close="recurCreateOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="closeOv('recurCreateOv')">✕</button>
+      <button type="button" class="mcl" data-act="closeOv" data-args='["recurCreateOv"]'>✕</button>
       <div class="mti">🔁 Automatisch wiederholen</div>
       <div class="msu" id="recurCreateSub"></div>
     </div>
@@ -1961,17 +1961,17 @@ body.kb-open #feedbackFab{display:none;}
       <div style="font-size:13px;color:var(--mu);margin-bottom:8px;">An welchen Tagen soll diese Mahlzeit automatisch eingetragen werden?</div>
       <div id="recurWeekdayChips" style="display:flex;gap:5px;margin-bottom:14px;"></div>
       <div style="font-size:11px;color:var(--mu);margin-bottom:14px;line-height:1.5;">Die Einträge erscheinen ab dem nächsten passenden Tag automatisch. An Tagen, wo es nicht stimmt, kannst du sie einfach löschen — sie kommen an dem Tag nicht zurück.</div>
-      <button type="button" class="svb" style="width:100%;" onclick="NTRecur.save()">Wiederholung speichern</button>
+      <button type="button" class="svb" style="width:100%;" data-act="NTRecur.save">Wiederholung speichern</button>
     </div>
   </div>
 </div>
 
 <!-- ══ WIEDERKEHRENDE MAHLZEITEN VERWALTEN ══ -->
-<div class="ov" id="recurMgmtOv" onclick="bgClose(event,'recurMgmtOv')">
+<div class="ov" id="recurMgmtOv" data-bg-close="recurMgmtOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="closeOv('recurMgmtOv')">✕</button>
+      <button type="button" class="mcl" data-act="closeOv" data-args='["recurMgmtOv"]'>✕</button>
       <div class="mti">🔁 Wiederkehrende Mahlzeiten</div>
       <div class="msu">Automatisch an festen Wochentagen eintragen</div>
     </div>
@@ -1980,24 +1980,24 @@ body.kb-open #feedbackFab{display:none;}
 </div>
 
 <!-- ══ EINKAUFSZETTEL (geteilt) ══ -->
-<div class="ov" id="shopOv" onclick="bgClose(event,'shopOv')">
+<div class="ov" id="shopOv" data-bg-close="shopOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="NTShop.close()">✕</button>
+      <button type="button" class="mcl" data-act="NTShop.close">✕</button>
       <div class="mti">🛒 Einkaufszettel</div>
       <div class="msu" id="shopOvSub">Noch nichts drauf</div>
     </div>
     <div class="mbd">
       <div style="display:flex;gap:6px;margin-bottom:8px;">
         <input type="text" class="sinp" id="shopInput" style="flex:1;" placeholder="Artikel eintippen …" autocomplete="off" autocapitalize="sentences" spellcheck="false" onkeydown="NTShop.inputKey(event)" oninput="NTShop.suggest()">
-        <button type="button" onclick="NTShop.submitInput()" style="background:linear-gradient(135deg,var(--g1),var(--g2));border:none;border-radius:11px;color:white;font-size:20px;font-weight:800;width:48px;flex-shrink:0;cursor:pointer;">＋</button>
+        <button type="button" data-act="NTShop.submitInput" style="background:linear-gradient(135deg,var(--g1),var(--g2));border:none;border-radius:11px;color:white;font-size:20px;font-weight:800;width:48px;flex-shrink:0;cursor:pointer;">＋</button>
       </div>
       <div id="shopSuggest" style="display:none;margin-bottom:6px;"></div>
       <div style="display:flex;gap:6px;margin-bottom:4px;">
-        <button type="button" class="seb" style="flex:1;margin:0;font-size:12.5px;padding:11px 4px;" onclick="NTShop.openCatalog()">🧺 Artikel</button>
-        <button type="button" class="seb" style="flex:1;margin:0;font-size:12.5px;padding:11px 4px;" onclick="NTShop.openCats()">🏷 Kategorien</button>
-        <button type="button" class="seb" style="flex:1;margin:0;font-size:12.5px;padding:11px 4px;" onclick="NTShop.openSync()">🔄 Teilen <span id="shopSyncBadge" style="display:none;">✓</span></button>
+        <button type="button" class="seb" style="flex:1;margin:0;font-size:12.5px;padding:11px 4px;" data-act="NTShop.openCatalog">🧺 Artikel</button>
+        <button type="button" class="seb" style="flex:1;margin:0;font-size:12.5px;padding:11px 4px;" data-act="NTShop.openCats">🏷 Kategorien</button>
+        <button type="button" class="seb" style="flex:1;margin:0;font-size:12.5px;padding:11px 4px;" data-act="NTShop.openSync">🔄 Teilen <span id="shopSyncBadge" style="display:none;">✓</span></button>
       </div>
       <div id="shopList"></div>
     </div>
@@ -2005,11 +2005,11 @@ body.kb-open #feedbackFab{display:none;}
 </div>
 
 <!-- ══ EINKAUFSZETTEL: ARTIKEL WÄHLEN ══ -->
-<div class="ov" id="shopAddOv" onclick="bgClose(event,'shopAddOv')">
+<div class="ov" id="shopAddOv" data-bg-close="shopAddOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="closeOv('shopAddOv')">✕</button>
+      <button type="button" class="mcl" data-act="closeOv" data-args='["shopAddOv"]'>✕</button>
       <div class="mti">🧺 Artikel wählen</div>
       <div class="msu">Antippen = auf den Zettel · nochmal antippen = wieder runter</div>
     </div>
@@ -2021,11 +2021,11 @@ body.kb-open #feedbackFab{display:none;}
 </div>
 
 <!-- ══ EINKAUFSZETTEL: ARTIKEL BEARBEITEN ══ -->
-<div class="ov" id="shopItemOv" onclick="bgClose(event,'shopItemOv')">
+<div class="ov" id="shopItemOv" data-bg-close="shopItemOv">
   <div class="mod" style="height:auto;max-height:88vh;">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="closeOv('shopItemOv')">✕</button>
+      <button type="button" class="mcl" data-act="closeOv" data-args='["shopItemOv"]'>✕</button>
       <div class="mti">✏️ Artikel</div>
     </div>
     <div class="mbd">
@@ -2041,22 +2041,22 @@ body.kb-open #feedbackFab{display:none;}
         <div style="flex:1;min-width:0;">
           <label class="lbl">Kategorie</label>
           <div class="sf"><select class="sinp" id="shopItemCat"></select></div>
-          <button type="button" onclick="NTShop.openCats()" style="background:none;border:none;padding:4px 0 0;font-size:11px;font-weight:700;color:var(--g1);cursor:pointer;">🏷 Kategorien verwalten</button>
+          <button type="button" data-act="NTShop.openCats" style="background:none;border:none;padding:4px 0 0;font-size:11px;font-weight:700;color:var(--g1);cursor:pointer;">🏷 Kategorien verwalten</button>
         </div>
       </div>
       <div id="shopItemSrc"></div>
-      <button type="button" class="svb" onclick="NTShop.saveItem()">Speichern ✓</button>
-      <button type="button" class="seb" style="color:#c62828;" onclick="NTShop.deleteItem()">🗑 Vom Zettel nehmen</button>
+      <button type="button" class="svb" data-act="NTShop.saveItem">Speichern ✓</button>
+      <button type="button" class="seb" style="color:#c62828;" data-act="NTShop.deleteItem">🗑 Vom Zettel nehmen</button>
     </div>
   </div>
 </div>
 
 <!-- ══ EINKAUFSZETTEL: TEILEN ══ -->
-<div class="ov" id="shopSyncOv" onclick="bgClose(event,'shopSyncOv')">
+<div class="ov" id="shopSyncOv" data-bg-close="shopSyncOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="closeOv('shopSyncOv')">✕</button>
+      <button type="button" class="mcl" data-act="closeOv" data-args='["shopSyncOv"]'>✕</button>
       <div class="mti">🔄 Zettel teilen</div>
       <div class="msu">Mit wem der Zettel geteilt wird</div>
     </div>
@@ -2066,19 +2066,19 @@ body.kb-open #feedbackFab{display:none;}
       <div style="background:#e8f5e9;border:1px solid var(--g3);border-radius:10px;padding:10px;font-size:11px;color:var(--g1);line-height:1.55;margin-bottom:12px;">
         🔒 Übertragen werden <b>ausschließlich die Artikel dieses Zettels und deine eigenen Kategorien</b> — keine Mahlzeiten, Kalorien, Gewichts- oder Profildaten. Verschlüsselt auf dem Gerät; der Schlüssel steckt nur im Code und wird nie übertragen. Der Abgleich läuft nach jeder Änderung und solange der Zettel offen ist, kann aber bis zu einer Minute brauchen.
       </div>
-      <button type="button" class="svb" onclick="NTShop.openLinks()">🔗 Verbindungen verwalten</button>
-      <button type="button" class="seb" onclick="NTShop.syncNow()">🔄 Jetzt abgleichen</button>
+      <button type="button" class="svb" data-act="NTShop.openLinks">🔗 Verbindungen verwalten</button>
+      <button type="button" class="seb" data-act="NTShop.syncNow">🔄 Jetzt abgleichen</button>
       <div style="font-size:11px;color:var(--mu);line-height:1.5;margin-top:10px;">Seit v0.247 gibt es einen Code je <b>Person</b> statt je Liste. Unter „Verbindungen" stellst du für jede Person einzeln ein, ob sie Wochenplan, Einkaufszettel und Baby-Tagebuch bekommt.</div>
     </div>
   </div>
 </div>
 
 <!-- ══ EINKAUFSLISTE ══ -->
-<div class="ov" id="shoppingOv" onclick="bgClose(event,'shoppingOv')">
+<div class="ov" id="shoppingOv" data-bg-close="shoppingOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="closeOv('shoppingOv')">✕</button>
+      <button type="button" class="mcl" data-act="closeOv" data-args='["shoppingOv"]'>✕</button>
       <div class="mti" id="shoppingListTitle">🛒 Einkaufsliste</div>
     </div>
     <div class="mbd" id="shoppingListContent"></div>
@@ -2099,11 +2099,11 @@ body.kb-open #feedbackFab{display:none;}
 
 <!-- ══ REZEPT URL-IMPORT ══ -->
 <!-- ══ EINTRAG KURZMENÜ ══ -->
-<div class="ov" id="entryMenuOv" onclick="bgClose(event,'entryMenuOv')">
+<div class="ov" id="entryMenuOv" data-bg-close="entryMenuOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="closeOv('entryMenuOv')">✕</button>
+      <button type="button" class="mcl" data-act="closeOv" data-args='["entryMenuOv"]'>✕</button>
       <div class="mti" id="entryMenuTitle">Eintrag</div>
     </div>
     <div class="mbd" id="entryMenuBody"></div>
@@ -2111,11 +2111,11 @@ body.kb-open #feedbackFab{display:none;}
 </div>
 
 <!-- ══ TEILEN (universal: Rezept / Mahlzeit / Lebensmittel) ══ -->
-<div class="ov" id="shareItemOv" onclick="bgClose(event,'shareItemOv')">
+<div class="ov" id="shareItemOv" data-bg-close="shareItemOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="closeOv('shareItemOv')">✕</button>
+      <button type="button" class="mcl" data-act="closeOv" data-args='["shareItemOv"]'>✕</button>
       <div class="mti" id="shareItemTitle">📤 Teilen</div>
       <div class="msu" id="shareItemSubtitle">Per Link teilen oder kopieren</div>
     </div>
@@ -2128,48 +2128,48 @@ body.kb-open #feedbackFab{display:none;}
       <input type="hidden" id="shareItemUrlLong">
       <input type="hidden" id="shareItemCode">
       <div id="shareItemPartnerRow" style="display:none;margin-bottom:12px;">
-        <button type="button" class="cb2" id="shareItemPartnerBtn" onclick="shareItemSendToPartner()" style="margin-bottom:6px;">👫 An Partner senden</button>
+        <button type="button" class="cb2" id="shareItemPartnerBtn" data-act="shareItemSendToPartner" style="margin-bottom:6px;">👫 An Partner senden</button>
         <div style="font-size:11px;color:var(--mu);text-align:center;line-height:1.4;">Landet direkt im Postfach – kein Link nötig</div>
         <div style="border-bottom:1px solid var(--br);margin:12px 0 10px;"></div>
       </div>
       <div id="shareItemShortStatus" style="font-size:11px;color:var(--mu);text-align:center;margin-bottom:8px;min-height:14px;"></div>
       <div id="shareItemLinkBtns">
-        <button type="button" class="cb2" onclick="shareItemDoShare()" style="margin-bottom:8px;">📤 Link teilen</button>
-        <button type="button" class="seb" onclick="shareItemDoCopy()" style="margin-bottom:12px;">📋 Link kopieren</button>
+        <button type="button" class="cb2" data-act="shareItemDoShare" style="margin-bottom:8px;">📤 Link teilen</button>
+        <button type="button" class="seb" data-act="shareItemDoCopy" style="margin-bottom:12px;">📋 Link kopieren</button>
       </div>
       <details style="margin-bottom:4px;">
         <summary style="font-size:12px;color:var(--mu);cursor:pointer;padding:4px 0;">Erweitert: Code statt Link</summary>
         <textarea id="shareItemCodeText" readonly rows="3"
           style="width:100%;box-sizing:border-box;border:1.5px solid var(--g2);border-radius:12px;padding:12px;font-size:12px;font-family:monospace;resize:none;outline:none;background:var(--gl);color:var(--tx);margin:8px 0;word-break:break-all;"></textarea>
-        <button type="button" class="seb" onclick="shareItemDoCopyCode()" style="width:100%;">📋 Code kopieren</button>
+        <button type="button" class="seb" data-act="shareItemDoCopyCode" style="width:100%;">📋 Code kopieren</button>
       </details>
     </div>
   </div>
 </div>
 
 <!-- ══ IMPORT EINFÜGEN (manuell paste Link/Code) ══ -->
-<div class="ov" id="importPasteOv" onclick="bgClose(event,'importPasteOv')">
+<div class="ov" id="importPasteOv" data-bg-close="importPasteOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="closeOv('importPasteOv')">✕</button>
+      <button type="button" class="mcl" data-act="closeOv" data-args='["importPasteOv"]'>✕</button>
       <div class="mti">📥 Importieren</div>
       <div class="msu">Link oder Code einfügen – erkennt Rezept, Mahlzeit oder Lebensmittel automatisch</div>
     </div>
     <div class="mbd">
       <textarea id="importPasteInput" rows="4" placeholder="Link oder Code hier einfügen..."
         style="width:100%;box-sizing:border-box;border:1.5px solid var(--br);border-radius:12px;padding:12px;font-size:12px;font-family:monospace;resize:none;outline:none;margin-bottom:8px;word-break:break-all;"></textarea>
-      <button type="button" class="svb" onclick="importPasted()" style="margin-top:0;">✅ Vorschau anzeigen</button>
+      <button type="button" class="svb" data-act="importPasted" style="margin-top:0;">✅ Vorschau anzeigen</button>
     </div>
   </div>
 </div>
 
 <!-- ══ iOS-SAFARI: WEITER IN APP IMPORTIEREN (Storage isoliert) ══ -->
-<div class="ov" id="iosSwitchOv" onclick="bgClose(event,'iosSwitchOv')">
+<div class="ov" id="iosSwitchOv" data-bg-close="iosSwitchOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="closeOv('iosSwitchOv')">✕</button>
+      <button type="button" class="mcl" data-act="closeOv" data-args='["iosSwitchOv"]'>✕</button>
       <div class="mti">📲 In NutriTrack-App öffnen</div>
       <div class="msu">Browser-Daten sind getrennt von der installierten App</div>
     </div>
@@ -2182,8 +2182,8 @@ body.kb-open #feedbackFab{display:none;}
         <li>Öffne <strong>NutriTrack</strong> auf deinem Home-Bildschirm</li>
         <li>Tippe unten auf <strong>＋</strong> und dann auf <strong>🔗 Link</strong> – der Link wurde bereits kopiert und fügt sich automatisch ein</li>
       </ol>
-      <button type="button" class="cb2" onclick="iosCopyShareUrl()" style="margin-bottom:8px;">📋 Link erneut kopieren</button>
-      <button type="button" class="seb" onclick="iosImportInBrowser()" style="margin-bottom:0;">Trotzdem hier im Browser importieren</button>
+      <button type="button" class="cb2" data-act="iosCopyShareUrl" style="margin-bottom:8px;">📋 Link erneut kopieren</button>
+      <button type="button" class="seb" data-act="iosImportInBrowser" style="margin-bottom:0;">Trotzdem hier im Browser importieren</button>
       <div style="font-size:11px;color:var(--mu);margin-top:10px;text-align:center;line-height:1.4;">
         Hinweis: Wenn du NutriTrack noch nicht installiert hast, tippe auf „Zum Home-Bildschirm hinzufügen" in den Browser-Optionen.
       </div>
@@ -2192,11 +2192,11 @@ body.kb-open #feedbackFab{display:none;}
 </div>
 
 <!-- ══ IMPORT BESTÄTIGEN (Vorschau + Speichern) ══ -->
-<div class="ov" id="importConfirmOv" onclick="bgClose(event,'importConfirmOv')">
+<div class="ov" id="importConfirmOv" data-bg-close="importConfirmOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="closeOv('importConfirmOv')">✕</button>
+      <button type="button" class="mcl" data-act="closeOv" data-args='["importConfirmOv"]'>✕</button>
       <div class="mti" id="importConfirmTitle">📥 Importieren?</div>
       <div class="msu" id="importConfirmSubtitle"></div>
     </div>
@@ -2231,18 +2231,18 @@ body.kb-open #feedbackFab{display:none;}
           <option value="snack">Snacks</option>
         </select>
       </div>
-      <button type="button" class="svb" id="importConfirmBtn" onclick="importConfirm()" style="margin-top:0;margin-bottom:8px;">✅ Speichern</button>
-      <button type="button" class="seb" onclick="importCancel()">Abbrechen</button>
+      <button type="button" class="svb" id="importConfirmBtn" data-act="importConfirm" style="margin-top:0;margin-bottom:8px;">✅ Speichern</button>
+      <button type="button" class="seb" data-act="importCancel">Abbrechen</button>
     </div>
   </div>
 </div>
 
 <!-- ══ PARTNER: KOPPLUNG ══ -->
-<div class="ov" id="partnerOv" onclick="bgClose(event,'partnerOv')">
+<div class="ov" id="partnerOv" data-bg-close="partnerOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="NTPartner.close()">✕</button>
+      <button type="button" class="mcl" data-act="NTPartner.close">✕</button>
       <div class="mti">👫 Partner</div>
       <div class="msu">Mahlzeiten direkt senden statt Links verschicken</div>
     </div>
@@ -2254,105 +2254,105 @@ body.kb-open #feedbackFab{display:none;}
 
       <div id="partnerSetup">
         <label class="lbl" style="margin-bottom:6px;">Erstes Gerät</label>
-        <button type="button" class="svb" style="margin-bottom:14px;" onclick="NTPartner.createPair()">🔗 Kopplung starten</button>
+        <button type="button" class="svb" style="margin-bottom:14px;" data-act="NTPartner.createPair">🔗 Kopplung starten</button>
         <div style="padding-top:12px;border-top:1px solid var(--br);">
           <label class="lbl" style="margin-bottom:6px;">Zweites Gerät</label>
           <div class="sf"><input type="text" class="sinp" id="partnerJoinCode" placeholder="Kopplungs-Code einfügen" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
-          <button type="button" class="seb" onclick="NTPartner.joinPair()">Mit Code verbinden</button>
+          <button type="button" class="seb" data-act="NTPartner.joinPair">Mit Code verbinden</button>
         </div>
       </div>
 
       <div id="partnerLive" style="display:none;">
-        <div class="list-row" onclick="NTPartner.openInbox()" style="margin-bottom:12px;">
+        <div class="list-row" data-act="NTPartner.openInbox" style="margin-bottom:12px;">
           <div class="lr-ic">📬</div>
           <div class="lr-body"><div class="lr-name">Postfach</div><div class="lr-sub" id="partnerInboxCount">Postfach leer</div></div>
           <div class="lr-val">›</div>
         </div>
         <label class="lbl" style="margin-bottom:6px;">Mein Name (sieht der Partner bei jeder Sendung)</label>
         <div class="sf"><input type="text" class="sinp" id="partnerMyName" placeholder="z.B. Anna" maxlength="24" autocomplete="off" onblur="NTPartner.saveMyName()"></div>
-        <button type="button" class="seb" style="margin-bottom:14px;" onclick="NTPartner.saveMyName()">Namen speichern</button>
+        <button type="button" class="seb" style="margin-bottom:14px;" data-act="NTPartner.saveMyName">Namen speichern</button>
         <label class="lbl" style="margin-bottom:6px;">Kopplungs-Code</label>
         <div id="partnerCode" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;word-break:break-all;background:var(--gl);border:1px solid var(--br);border-radius:10px;padding:10px;line-height:1.5;user-select:all;-webkit-user-select:all;"></div>
         <div style="display:flex;gap:6px;margin-top:8px;">
-          <button type="button" class="seb" style="flex:1;margin:0;" onclick="NTPartner.copyCode()">📋 Kopieren</button>
-          <button type="button" class="seb" style="flex:1;margin:0;" onclick="NTPartner.shareCode()">📤 Teilen</button>
+          <button type="button" class="seb" style="flex:1;margin:0;" data-act="NTPartner.copyCode">📋 Kopieren</button>
+          <button type="button" class="seb" style="flex:1;margin:0;" data-act="NTPartner.shareCode">📤 Teilen</button>
         </div>
         <div style="font-size:11px;color:#7d5a00;background:#fff8e1;border:1px solid #f9c74f;border-radius:10px;padding:10px;margin-top:10px;line-height:1.55;">
           ⚠️ Der Code ist der Schlüssel zum Postfach. Gib ihn nur direkt an die Person weiter, mit der du teilen willst.
         </div>
-        <button type="button" class="svb" style="margin-top:12px;" onclick="NTPartner.syncNow()">🔄 Jetzt nach Sendungen sehen</button>
-        <button type="button" class="seb" style="margin-top:8px;" onclick="openShareRange()">🗓 Zeitraum senden</button>
-        <button type="button" class="seb" style="margin-top:8px;color:#c62828;" onclick="NTPartner.disconnect()">Verbindung trennen</button>
+        <button type="button" class="svb" style="margin-top:12px;" data-act="NTPartner.syncNow">🔄 Jetzt nach Sendungen sehen</button>
+        <button type="button" class="seb" style="margin-top:8px;" data-act="openShareRange">🗓 Zeitraum senden</button>
+        <button type="button" class="seb" style="margin-top:8px;color:#c62828;" data-act="NTPartner.disconnect">Verbindung trennen</button>
       </div>
     </div>
   </div>
 </div>
 
 <!-- ══ PARTNER: POSTFACH ══ -->
-<div class="ov" id="partnerInboxOv" onclick="bgClose(event,'partnerInboxOv')">
+<div class="ov" id="partnerInboxOv" data-bg-close="partnerInboxOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="NTPartner.closeInbox()">✕</button>
+      <button type="button" class="mcl" data-act="NTPartner.closeInbox">✕</button>
       <div class="mti">📬 Postfach</div>
       <div class="msu">Empfangene Mahlzeiten, Tage und Zeiträume</div>
     </div>
     <div class="mbd">
-      <button type="button" class="seb" style="margin-bottom:10px;" onclick="NTPartner.syncNow()">🔄 Jetzt nach Sendungen sehen</button>
+      <button type="button" class="seb" style="margin-bottom:10px;" data-act="NTPartner.syncNow">🔄 Jetzt nach Sendungen sehen</button>
       <div id="partnerInboxList" style="display:flex;flex-direction:column;gap:6px;"></div>
     </div>
   </div>
 </div>
 
 <!-- ══ ZEITRAUM TEILEN ══ -->
-<div class="ov" id="shareRangeOv" onclick="bgClose(event,'shareRangeOv')">
+<div class="ov" id="shareRangeOv" data-bg-close="shareRangeOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="closeOv('shareRangeOv')">✕</button>
+      <button type="button" class="mcl" data-act="closeOv" data-args='["shareRangeOv"]'>✕</button>
       <div class="mti">🗓 Zeitraum teilen</div>
       <div class="msu">Alle Mahlzeiten mehrerer Tage in einer Sendung</div>
     </div>
     <div class="mbd">
       <div style="display:flex;gap:6px;margin-bottom:12px;">
-        <button type="button" class="seb" style="flex:1;margin:0;" onclick="shareRangePreset(7)">7 Tage</button>
-        <button type="button" class="seb" style="flex:1;margin:0;" onclick="shareRangePreset(14)">14 Tage</button>
-        <button type="button" class="seb" style="flex:1;margin:0;" onclick="shareRangePreset(30)">30 Tage</button>
+        <button type="button" class="seb" style="flex:1;margin:0;" data-act="shareRangePreset" data-args='[7]'>7 Tage</button>
+        <button type="button" class="seb" style="flex:1;margin:0;" data-act="shareRangePreset" data-args='[14]'>14 Tage</button>
+        <button type="button" class="seb" style="flex:1;margin:0;" data-act="shareRangePreset" data-args='[30]'>30 Tage</button>
       </div>
       <label class="lbl">Von</label>
       <input type="date" class="sinp" id="shareRangeFrom" style="margin-bottom:10px;" onchange="renderShareRangeInfo()">
       <label class="lbl">Bis</label>
       <input type="date" class="sinp" id="shareRangeTo" style="margin-bottom:10px;" onchange="renderShareRangeInfo()">
       <div id="shareRangeInfo" style="font-size:12px;color:var(--mu);background:var(--gl);border-radius:10px;padding:10px;margin-bottom:12px;line-height:1.5;"></div>
-      <button type="button" class="svb" onclick="shareRangeGo()" style="margin-top:0;">📤 Weiter</button>
+      <button type="button" class="svb" data-act="shareRangeGo" style="margin-top:0;">📤 Weiter</button>
     </div>
   </div>
 </div>
 
 <!-- ══ FEEDBACK (Bug / Änderungswunsch) ══ -->
-<div class="ov" id="feedbackOv" onclick="bgClose(event,'feedbackOv')">
+<div class="ov" id="feedbackOv" data-bg-close="feedbackOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="closeOv('feedbackOv')">✕</button>
+      <button type="button" class="mcl" data-act="closeOv" data-args='["feedbackOv"]'>✕</button>
       <div class="mti">🐛 Feedback senden</div>
       <div class="msu">Bug oder Änderungswunsch direkt an die Entwicklung</div>
     </div>
     <div class="mbd">
       <div style="display:flex;gap:8px;margin-bottom:12px;">
-        <button type="button" id="feedbackTypeBug" class="seb" onclick="_setFeedbackType('bug')" style="flex:1;">🐛 Bug</button>
-        <button type="button" id="feedbackTypeIdea" class="seb" onclick="_setFeedbackType('enhancement')" style="flex:1;">💡 Wunsch</button>
+        <button type="button" id="feedbackTypeBug" class="seb" data-act="_setFeedbackType" data-args='["bug"]' style="flex:1;">🐛 Bug</button>
+        <button type="button" id="feedbackTypeIdea" class="seb" data-act="_setFeedbackType" data-args='["enhancement"]' style="flex:1;">💡 Wunsch</button>
       </div>
       <textarea id="feedbackText" rows="5" placeholder="Was ist passiert / was wünschst du dir? Je konkreter, desto besser."
         style="width:100%;box-sizing:border-box;border:1.5px solid var(--br);border-radius:12px;padding:12px;font-size:14px;resize:vertical;outline:none;margin-bottom:10px;"></textarea>
-      <button type="button" class="svb" id="feedbackSendBtn" onclick="submitFeedback()" style="margin-top:0;margin-bottom:12px;">📤 Senden</button>
+      <button type="button" class="svb" id="feedbackSendBtn" data-act="submitFeedback" style="margin-top:0;margin-bottom:12px;">📤 Senden</button>
       <details id="feedbackShotDetails" style="margin-bottom:10px;border:1px solid var(--br);border-radius:10px;padding:8px 12px;">
         <summary style="font-size:13px;cursor:pointer;font-weight:600;">📸 Screenshot anhängen <span id="feedbackShotBadge" style="display:none;font-size:11px;font-weight:500;color:var(--g1);">· angehängt</span></summary>
         <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
-          <button type="button" class="seb" onclick="attachFeedbackScreenshot()" id="feedbackShotBtn" style="margin-top:0;flex:1 1 140px;">📸 Screenshot</button>
+          <button type="button" class="seb" data-act="attachFeedbackScreenshot" id="feedbackShotBtn" style="margin-top:0;flex:1 1 140px;">📸 Screenshot</button>
           <button type="button" class="seb" onclick="document.getElementById('feedbackPhotoInput').click()" id="feedbackPhotoBtn" style="margin-top:0;flex:1 1 140px;">📁 Eigenes Foto…</button>
           <input type="file" id="feedbackPhotoInput" accept="image/*" style="display:none;" onchange="attachFeedbackPhoto(event)">
-          <button type="button" class="seb" onclick="_clearFeedbackScreenshot()" id="feedbackShotClear" style="display:none;margin-top:0;flex:1 1 100%;">✕ Entfernen</button>
+          <button type="button" class="seb" data-act="_clearFeedbackScreenshot" id="feedbackShotClear" style="display:none;margin-top:0;flex:1 1 100%;">✕ Entfernen</button>
         </div>
         <div id="feedbackShotPreview" style="display:none;margin-top:10px;">
           <img id="feedbackShotImg" alt="Screenshot-Vorschau" style="max-width:100%;border-radius:10px;border:1px solid var(--br);">
@@ -2363,7 +2363,7 @@ body.kb-open #feedbackFab{display:none;}
         <summary style="font-size:12px;color:var(--mu);cursor:pointer;padding:4px 0;">Was wird mitgeschickt?</summary>
         <div id="feedbackCtxPreview" style="font-size:11px;color:var(--mu);background:var(--gl);border-radius:8px;padding:8px;margin-top:6px;font-family:monospace;white-space:pre-wrap;word-break:break-all;"></div>
       </details>
-      <button type="button" class="seb" onclick="closeOv('feedbackOv')">Abbrechen</button>
+      <button type="button" class="seb" data-act="closeOv" data-args='["feedbackOv"]'>Abbrechen</button>
       <div style="font-size:11px;color:var(--mu);margin-top:10px;text-align:center;line-height:1.4;">
         Landet als GitHub-Issue auf <strong>hjolmes/nutritrack</strong>.
       </div>
@@ -2372,36 +2372,36 @@ body.kb-open #feedbackFab{display:none;}
 </div>
 
 <!-- ══ FASTEN ══ -->
-<div class="ov" id="fastOv" onclick="bgClose(event,'fastOv')">
+<div class="ov" id="fastOv" data-bg-close="fastOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="closeOv('fastOv')">✕</button>
+      <button type="button" class="mcl" data-act="closeOv" data-args='["fastOv"]'>✕</button>
       <div class="mti">🌙 Fasten starten</div>
       <div class="msu">Wähle dein Fastenfenster</div>
     </div>
     <div class="mbd">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
-        <button type="button" class="svb" onclick="startFast(16)">16:8</button>
-        <button type="button" class="svb" onclick="startFast(18)">18:6</button>
-        <button type="button" class="svb" onclick="startFast(20)">20:4</button>
-        <button type="button" class="svb" onclick="startFast(24)">24 Stunden</button>
+        <button type="button" class="svb" data-act="startFast" data-args='[16]'>16:8</button>
+        <button type="button" class="svb" data-act="startFast" data-args='[18]'>18:6</button>
+        <button type="button" class="svb" data-act="startFast" data-args='[20]'>20:4</button>
+        <button type="button" class="svb" data-act="startFast" data-args='[24]'>24 Stunden</button>
       </div>
       <label class="lbl">⏱ Eigene Dauer (Stunden)</label>
       <div style="display:flex;gap:8px;">
         <input type="number" id="fastCustomH" min="1" max="72" placeholder="z.B. 14" style="flex:1;border:2px solid var(--br);border-radius:10px;padding:10px;font-size:16px;outline:none;">
-        <button type="button" class="svb" style="flex:0 0 auto;" onclick="startFastCustom()">Start</button>
+        <button type="button" class="svb" style="flex:0 0 auto;" data-act="startFastCustom">Start</button>
       </div>
     </div>
   </div>
 </div>
 
 <!-- ══ EINKAUFSZETTEL: EIGENE KATEGORIEN ══ -->
-<div class="ov" id="shopCatsOv" onclick="bgClose(event,'shopCatsOv')">
+<div class="ov" id="shopCatsOv" data-bg-close="shopCatsOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="closeOv('shopCatsOv')">✕</button>
+      <button type="button" class="mcl" data-act="closeOv" data-args='["shopCatsOv"]'>✕</button>
       <div class="mti">🏷 Kategorien</div>
       <div class="msu">Eigene Gänge für deinen Laden</div>
     </div>
@@ -2411,18 +2411,18 @@ body.kb-open #feedbackFab{display:none;}
       <div style="display:flex;gap:6px;">
         <input type="text" id="shopCatNewIc" class="shopcat-ic" maxlength="4" placeholder="🏷" aria-label="Symbol">
         <input type="text" id="shopCatNewNm" class="shopcat-nm" maxlength="40" placeholder="z.B. Getränkemarkt" autocomplete="off" onkeydown="if(event.key==='Enter')NTShop.catAdd()">
-        <button type="button" onclick="NTShop.catAdd()" style="background:linear-gradient(135deg,var(--g1),var(--g2));border:none;border-radius:11px;color:white;font-size:20px;font-weight:800;width:44px;flex-shrink:0;cursor:pointer;">＋</button>
+        <button type="button" data-act="NTShop.catAdd" style="background:linear-gradient(135deg,var(--g1),var(--g2));border:none;border-radius:11px;color:white;font-size:20px;font-weight:800;width:44px;flex-shrink:0;cursor:pointer;">＋</button>
       </div>
     </div>
   </div>
 </div>
 
 <!-- ══ VERBINDUNGEN ══ -->
-<div class="ov" id="linksOv" onclick="bgClose(event,'linksOv')">
+<div class="ov" id="linksOv" data-bg-close="linksOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="NTSync.close()">✕</button>
+      <button type="button" class="mcl" data-act="NTSync.close">✕</button>
       <div class="mti">🔗 Verbindungen</div>
       <div class="msu" id="linksOvSub"></div>
     </div>
@@ -2430,8 +2430,8 @@ body.kb-open #feedbackFab{display:none;}
       <div style="font-size:12px;color:var(--mu);line-height:1.5;margin-bottom:10px;">Ein Code je Person. An der Person hängt, was ihr teilt — jeder Bereich einzeln an- und abschaltbar.</div>
       <div id="linksList"></div>
       <div style="display:flex;gap:6px;margin-top:12px;">
-        <button type="button" class="svb" style="flex:1;margin:0;" onclick="NTSync.openAdd('create')">➕ Einladen</button>
-        <button type="button" class="seb" style="flex:1;margin:0;" onclick="NTSync.openAdd('join')">🔑 Code eingeben</button>
+        <button type="button" class="svb" style="flex:1;margin:0;" data-act="NTSync.openAdd" data-args='["create"]'>➕ Einladen</button>
+        <button type="button" class="seb" style="flex:1;margin:0;" data-act="NTSync.openAdd" data-args='["join"]'>🔑 Code eingeben</button>
       </div>
       <div style="background:#fff8e1;border:1px solid #f9c74f;border-radius:10px;padding:10px;font-size:11px;color:#7d5a00;line-height:1.55;margin-top:12px;">
         ⚠️ Die Schalter sagen, was <b>dieses Gerät</b> sendet und abholt — sie sind keine Sperre für die Gegenseite. Wer den Code hat, kann bei sich jeden Bereich einschalten. Was jemand gar nicht bekommen soll, teilst du nicht über denselben Code.
@@ -2444,11 +2444,11 @@ body.kb-open #feedbackFab{display:none;}
 </div>
 
 <!-- ══ VERBINDUNG HINZUFÜGEN ══ -->
-<div class="ov" id="linkAddOv" onclick="bgClose(event,'linkAddOv')">
+<div class="ov" id="linkAddOv" data-bg-close="linkAddOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="closeOv('linkAddOv')">✕</button>
+      <button type="button" class="mcl" data-act="closeOv" data-args='["linkAddOv"]'>✕</button>
       <div class="mti" id="linkAddTitle">Person</div>
       <div class="msu" id="linkAddHint"></div>
     </div>
@@ -2459,18 +2459,18 @@ body.kb-open #feedbackFab{display:none;}
         <label class="lbl">Code</label>
         <div class="sf"><input type="text" class="sinp" id="linkAddCode" placeholder="Code einfügen" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
       </div>
-      <button type="button" class="svb" onclick="NTSync.submitAdd()">✓ Weiter</button>
+      <button type="button" class="svb" data-act="NTSync.submitAdd">✓ Weiter</button>
       <div id="linkAddOut"></div>
     </div>
   </div>
 </div>
 
 <!-- ══ WOCHENPLAN TEILEN ══ -->
-<div class="ov" id="planSyncOv" onclick="bgClose(event,'planSyncOv')">
+<div class="ov" id="planSyncOv" data-bg-close="planSyncOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="closeOv('planSyncOv')">✕</button>
+      <button type="button" class="mcl" data-act="closeOv" data-args='["planSyncOv"]'>✕</button>
       <div class="mti">🔄 Wochenplan teilen</div>
       <div class="msu">Mit wem der Plan geteilt wird</div>
     </div>
@@ -2480,45 +2480,45 @@ body.kb-open #feedbackFab{display:none;}
       <div style="background:#e8f5e9;border:1px solid var(--g3);border-radius:10px;padding:10px;font-size:11px;color:var(--g1);line-height:1.55;margin-bottom:12px;">
         🔒 Übertragen wird <b>der Plan selbst</b> — welche Rezepte an welchem Tag stehen, mit Namen, Zutaten und Mengen, damit die andere Seite ihn auch ohne deine Rezeptsammlung nutzen kann. Keine Mahlzeiten, Kalorien, Gewichts- oder Profildaten. Verschlüsselt auf dem Gerät.
       </div>
-      <button type="button" class="svb" onclick="NTPlan.openLinks()">🔗 Verbindungen verwalten</button>
-      <button type="button" class="seb" onclick="NTPlan.syncNow()">🔄 Jetzt abgleichen</button>
+      <button type="button" class="svb" data-act="NTPlan.openLinks">🔗 Verbindungen verwalten</button>
+      <button type="button" class="seb" data-act="NTPlan.syncNow">🔄 Jetzt abgleichen</button>
     </div>
   </div>
 </div>
 
 <!-- ══ WOCHENPLAN ══ -->
-<div class="ov" id="planOv" onclick="bgClose(event,'planOv')">
+<div class="ov" id="planOv" data-bg-close="planOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="NTPlan.close()">✕</button>
+      <button type="button" class="mcl" data-act="NTPlan.close">✕</button>
       <div class="mti">📅 Wochenplan</div>
       <div class="msu" id="planOvSub"></div>
     </div>
     <div class="mbd">
       <div class="plan-nav">
-        <button type="button" onclick="NTPlan.shiftWeek(-1)">‹</button>
+        <button type="button" data-act="NTPlan.shiftWeek" data-args='[-1]'>‹</button>
         <div class="lbl" id="planWeekLabel"></div>
-        <button type="button" onclick="NTPlan.shiftWeek(1)">›</button>
+        <button type="button" data-act="NTPlan.shiftWeek" data-args='[1]'>›</button>
       </div>
       <div style="display:flex;gap:6px;margin-bottom:10px;">
-        <button type="button" class="seb" style="flex:1;margin:0;font-size:12.5px;padding:11px 4px;" onclick="NTPlan.autoFill()">🎲 Füllen</button>
-        <button type="button" class="seb" style="flex:1;margin:0;font-size:12.5px;padding:11px 4px;" onclick="NTPlan.weekToShop()">🛒 Einkauf</button>
-        <button type="button" class="seb" style="flex:1;margin:0;font-size:12.5px;padding:11px 4px;" onclick="NTPlan.openSync()">🔄 Teilen <span id="planSyncBadge" style="display:none;">✓</span></button>
-        <button type="button" class="seb" style="flex:1;margin:0;font-size:12.5px;padding:11px 4px;" onclick="NTPlan.clearWeek()">🗑 Leeren</button>
+        <button type="button" class="seb" style="flex:1;margin:0;font-size:12.5px;padding:11px 4px;" data-act="NTPlan.autoFill">🎲 Füllen</button>
+        <button type="button" class="seb" style="flex:1;margin:0;font-size:12.5px;padding:11px 4px;" data-act="NTPlan.weekToShop">🛒 Einkauf</button>
+        <button type="button" class="seb" style="flex:1;margin:0;font-size:12.5px;padding:11px 4px;" data-act="NTPlan.openSync">🔄 Teilen <span id="planSyncBadge" style="display:none;">✓</span></button>
+        <button type="button" class="seb" style="flex:1;margin:0;font-size:12.5px;padding:11px 4px;" data-act="NTPlan.clearWeek">🗑 Leeren</button>
       </div>
-      <button type="button" class="seb" style="margin:0 0 10px;" onclick="NTPlan.newRecipe()">＋ Neues Rezept</button>
+      <button type="button" class="seb" style="margin:0 0 10px;" data-act="NTPlan.newRecipe">＋ Neues Rezept</button>
       <div id="planDays"></div>
     </div>
   </div>
 </div>
 
 <!-- ══ WOCHENPLAN: REZEPT WÄHLEN ══ -->
-<div class="ov" id="planPickOv" onclick="bgClose(event,'planPickOv')">
+<div class="ov" id="planPickOv" data-bg-close="planPickOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="closeOv('planPickOv')">✕</button>
+      <button type="button" class="mcl" data-act="closeOv" data-args='["planPickOv"]'>✕</button>
       <div class="mti">📋 Rezept einplanen</div>
       <div class="msu" id="planPickSub"></div>
     </div>
@@ -2531,11 +2531,11 @@ body.kb-open #feedbackFab{display:none;}
 </div>
 
 <!-- ══ WOCHENPLAN: EINTRAG ══ -->
-<div class="ov" id="planItemOv" onclick="bgClose(event,'planItemOv')">
+<div class="ov" id="planItemOv" data-bg-close="planItemOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="closeOv('planItemOv')">✕</button>
+      <button type="button" class="mcl" data-act="closeOv" data-args='["planItemOv"]'>✕</button>
       <div class="mti" id="planItemTitle">Eintrag</div>
       <div class="msu" id="planItemSub"></div>
     </div>
@@ -2545,9 +2545,9 @@ body.kb-open #feedbackFab{display:none;}
         <input type="number" id="planItemPortions" value="1" min="0.5" step="0.5" oninput="NTPlan.planItemTotal()" style="width:76px;border:2px solid var(--br);border-radius:10px;padding:7px;font-size:15px;font-weight:700;text-align:center;outline:none;">
         <span style="font-size:12px;color:var(--mu);" id="planItemTotal"></span>
       </div>
-      <button type="button" class="svb" onclick="NTPlan.saveItem()">✓ Übernehmen</button>
-      <button type="button" class="seb" onclick="NTPlan.itemToShop()">🛒 Zutaten auf den Einkaufszettel</button>
-      <button type="button" class="seb" style="border-color:var(--re);color:var(--re);" onclick="NTPlan.deleteItem()">🗑 Aus dem Plan nehmen</button>
+      <button type="button" class="svb" data-act="NTPlan.saveItem">✓ Übernehmen</button>
+      <button type="button" class="seb" data-act="NTPlan.itemToShop">🛒 Zutaten auf den Einkaufszettel</button>
+      <button type="button" class="seb" style="border-color:var(--re);color:var(--re);" data-act="NTPlan.deleteItem">🗑 Aus dem Plan nehmen</button>
     </div>
   </div>
 </div>
@@ -2557,22 +2557,22 @@ body.kb-open #feedbackFab{display:none;}
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="NTPlan.closeNew()">✕</button>
+      <button type="button" class="mcl" data-act="NTPlan.closeNew">✕</button>
       <div class="mti">📋 Neues Rezept</div>
       <div class="msu">Woher kommt es?</div>
     </div>
     <div class="mbd">
-      <button type="button" class="rec-way" onclick="NTPlan.newBlank()">
+      <button type="button" class="rec-way" data-act="NTPlan.newBlank">
         <div class="ic">✏️</div>
         <div style="flex:1;min-width:0;"><div class="nm">Selbst zusammenstellen</div><div class="sb">Zutaten aus der Datenbank suchen und Mengen eintragen</div></div>
         <div style="color:var(--g1);font-size:18px;">›</div>
       </button>
-      <button type="button" class="rec-way" onclick="NTPlan.newFromPhoto()">
+      <button type="button" class="rec-way" data-act="NTPlan.newFromPhoto">
         <div class="ic">📷</div>
         <div style="flex:1;min-width:0;"><div class="nm">Aus dem Kochbuch fotografieren</div><div class="sb">Seite abfotografieren — die KI liest Titel, Portionen, Zutaten und Zubereitung</div></div>
         <div style="color:var(--g1);font-size:18px;">›</div>
       </button>
-      <button type="button" class="rec-way" onclick="NTPlan.newFromLink()">
+      <button type="button" class="rec-way" data-act="NTPlan.newFromLink">
         <div class="ic">🔗</div>
         <div style="flex:1;min-width:0;"><div class="nm">Aus dem Internet</div><div class="sb">Rezept-Link einfügen — Chefkoch, Lecker, Foodblogs und andere</div></div>
         <div style="color:var(--g1);font-size:18px;">›</div>
@@ -2586,7 +2586,7 @@ body.kb-open #feedbackFab{display:none;}
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="NTPlan.closePhoto()">✕</button>
+      <button type="button" class="mcl" data-act="NTPlan.closePhoto">✕</button>
       <div class="mti">📷 Rezept aus dem Kochbuch</div>
       <div class="msu">Seite fotografieren oder aus der Galerie wählen</div>
     </div>
@@ -2601,9 +2601,9 @@ body.kb-open #feedbackFab{display:none;}
       </div>
       <div id="recPhotoPrevWrap" class="hidden" style="margin-top:10px;position:relative;">
         <img id="recPhotoPrev" alt="" style="width:100%;border-radius:14px;display:block;">
-        <button type="button" onclick="NTPlan.resetPhoto()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.55);border:none;border-radius:50%;width:30px;height:30px;color:#fff;font-size:15px;cursor:pointer;">✕</button>
+        <button type="button" data-act="NTPlan.resetPhoto" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.55);border:none;border-radius:50%;width:30px;height:30px;color:#fff;font-size:15px;cursor:pointer;">✕</button>
       </div>
-      <button type="button" class="svb" id="recPhotoBtn" style="margin-top:10px;" disabled onclick="NTPlan.analyze()">🤖 Rezept auslesen</button>
+      <button type="button" class="svb" id="recPhotoBtn" style="margin-top:10px;" disabled data-act="NTPlan.analyze">🤖 Rezept auslesen</button>
       <div id="recPhotoStatus" class="hidden" style="margin-top:8px;padding:9px 11px;border:1.5px solid var(--g3);border-radius:10px;font-size:12px;line-height:1.5;"></div>
       <div id="recPhotoResult" class="hidden" style="margin-top:12px;">
         <input type="text" id="recPhotoName" class="psi" placeholder="Name des Rezepts" style="width:100%;margin-bottom:8px;">
@@ -2616,63 +2616,63 @@ body.kb-open #feedbackFab{display:none;}
         <div id="recPhotoTotal" style="font-size:11px;color:var(--mu);margin:6px 0 8px;line-height:1.5;"></div>
         <textarea id="recPhotoIns" placeholder="Zubereitung (von der KI gelesen, frei änderbar)" style="width:100%;box-sizing:border-box;min-height:100px;border:1.5px solid var(--br);border-radius:12px;padding:10px;font-size:13px;font-family:inherit;line-height:1.5;outline:none;resize:vertical;"></textarea>
         <div style="font-size:11px;color:var(--mu);line-height:1.5;margin:8px 0;">Die Mengen gelten für die oben eingetragene Portionszahl. Gespeichert wird je Portion — beim Eintragen wählst du dann, wie viele Portionen du gegessen hast.</div>
-        <button type="button" class="svb" onclick="NTPlan.savePhotoRecipe()">📋 Rezept speichern</button>
+        <button type="button" class="svb" data-act="NTPlan.savePhotoRecipe">📋 Rezept speichern</button>
       </div>
     </div>
   </div>
 </div>
 
 <!-- ══ DASHBOARD-KACHELN ══ -->
-<div class="ov" id="dashOv" onclick="bgClose(event,'dashOv')">
+<div class="ov" id="dashOv" data-bg-close="dashOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="NTDash.close()">✕</button>
+      <button type="button" class="mcl" data-act="NTDash.close">✕</button>
       <div class="mti">🧩 Kacheln auf „Heute"</div>
       <div class="msu" id="dashOvSub"></div>
     </div>
     <div class="mbd">
       <div style="font-size:12px;color:var(--mu);line-height:1.5;margin-bottom:10px;">Am ⠿ ziehen oder ▲▼ antippen, um die Reihenfolge zu ändern. 👁 blendet eine Kachel aus — die Daten bleiben erhalten. Die Kalorien-Übersicht bleibt immer oben.</div>
       <div id="dashList"></div>
-      <button type="button" class="seb" style="margin-top:10px;" onclick="NTDash.reset()">↺ Standard wiederherstellen</button>
+      <button type="button" class="seb" style="margin-top:10px;" data-act="NTDash.reset">↺ Standard wiederherstellen</button>
     </div>
   </div>
 </div>
 
 <!-- ══ EINSTELLUNGEN ══ -->
-<div class="ov" id="libraryOv" onclick="bgClose(event,'libraryOv')">
+<div class="ov" id="libraryOv" data-bg-close="libraryOv">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" onclick="closeOv('libraryOv')">✕</button>
+      <button type="button" class="mcl" data-act="closeOv" data-args='["libraryOv"]'>✕</button>
       <div class="mti">📚 Bibliothek</div>
       <div class="msu">Rezepte &amp; eigene Lebensmittel</div>
     </div>
     <div class="mbd">
       <input type="text" id="libSearchQ" class="psi" placeholder="Suchen..." onkeyup="renderLibrary()" style="width:100%;margin-bottom:8px;">
       <div style="display:flex;gap:8px;margin-bottom:10px;">
-        <button type="button" id="libTabRec" onclick="libSetTab('recipes')" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--g2);background:var(--g2);color:white;font-weight:700;font-size:13px;">📋 Rezepte</button>
-        <button type="button" id="libTabFoods" onclick="libSetTab('foods')" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--br);background:white;color:var(--mu);font-weight:700;font-size:13px;">🥗 Lebensmittel</button>
+        <button type="button" id="libTabRec" data-act="libSetTab" data-args='["recipes"]' style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--g2);background:var(--g2);color:white;font-weight:700;font-size:13px;">📋 Rezepte</button>
+        <button type="button" id="libTabFoods" data-act="libSetTab" data-args='["foods"]' style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--br);background:white;color:var(--mu);font-weight:700;font-size:13px;">🥗 Lebensmittel</button>
         <button type="button" onclick="closeOv('libraryOv');openPicker(null,'link')" style="padding:9px 14px;border-radius:10px;border:1.5px solid var(--g2);background:white;color:var(--g2);font-weight:700;font-size:13px;" title="Rezept per URL importieren">🔗</button>
-        <button type="button" onclick="openImportPaste()" style="padding:9px 14px;border-radius:10px;border:1.5px solid var(--g2);background:white;color:var(--g2);font-weight:700;font-size:13px;" title="Link oder Code einlösen">📥</button>
+        <button type="button" data-act="openImportPaste" style="padding:9px 14px;border-radius:10px;border:1.5px solid var(--g2);background:white;color:var(--g2);font-weight:700;font-size:13px;" title="Link oder Code einlösen">📥</button>
       </div>
-      <button type="button" class="svb" id="libNewRecBtn" style="margin-bottom:10px;" onclick="NTPlan.newRecipe()">＋ Neues Rezept</button>
+      <button type="button" class="svb" id="libNewRecBtn" style="margin-bottom:10px;" data-act="NTPlan.newRecipe">＋ Neues Rezept</button>
       <div id="libraryList" style="display:flex;flex-direction:column;gap:8px;"></div>
     </div>
   </div>
 </div>
-<div class="ov" id="settOv" onclick="bgClose(event,'settOv')">
+<div class="ov" id="settOv" data-bg-close="settOv">
   <div class="mod">
     <div class="mhan"></div>
-    <div class="mhd"><button type="button" class="mcl" onclick="closeOv('settOv')">✕</button><div class="mti">⚙️ Einstellungen</div></div>
+    <div class="mhd"><button type="button" class="mcl" data-act="closeOv" data-args='["settOv"]'>✕</button><div class="mti">⚙️ Einstellungen</div></div>
     <!-- Settings Tab Bar -->
     <div style="display:flex;overflow-x:auto;gap:4px;padding:0 16px 8px;border-bottom:1px solid var(--br);flex-shrink:0;scrollbar-width:none;">
-      <button type="button" class="stab" id="stab-profil" onclick="settSetTab('profil')">👤 Profil</button>
-      <button type="button" class="stab" id="stab-ziele" onclick="settSetTab('ziele')">🎯 Ziele</button>
-      <button type="button" class="stab" id="stab-ernaehrung" onclick="settSetTab('ernaehrung')">🥗 Ernährung</button>
-      <button type="button" class="stab" id="stab-erinnerungen" onclick="settSetTab('erinnerungen')">⏰ Erinnerungen</button>
-      <button type="button" class="stab" id="stab-ki" onclick="settSetTab('ki')">🤖 KI</button>
-      <button type="button" class="stab" id="stab-backup" onclick="settSetTab('backup')">💾 Backup</button>
+      <button type="button" class="stab" id="stab-profil" data-act="settSetTab" data-args='["profil"]'>👤 Profil</button>
+      <button type="button" class="stab" id="stab-ziele" data-act="settSetTab" data-args='["ziele"]'>🎯 Ziele</button>
+      <button type="button" class="stab" id="stab-ernaehrung" data-act="settSetTab" data-args='["ernaehrung"]'>🥗 Ernährung</button>
+      <button type="button" class="stab" id="stab-erinnerungen" data-act="settSetTab" data-args='["erinnerungen"]'>⏰ Erinnerungen</button>
+      <button type="button" class="stab" id="stab-ki" data-act="settSetTab" data-args='["ki"]'>🤖 KI</button>
+      <button type="button" class="stab" id="stab-backup" data-act="settSetTab" data-args='["backup"]'>💾 Backup</button>
     </div>
     <div class="mbd" style="padding-top:12px;">
 
@@ -2740,7 +2740,7 @@ body.kb-open #feedbackFab{display:none;}
           <div id="nursExtras" style="display:none;">
             <div id="nursWaterHint" style="display:none;margin-top:8px;padding:10px;background:var(--gl);border-radius:10px;font-size:12px;color:var(--g1);line-height:1.5;">
               💧 Stillen erhöht den Flüssigkeitsbedarf um rund 700&nbsp;ml/Tag.
-              <button type="button" onclick="applyNursWaterGoal()" style="margin-left:6px;background:var(--g2);border:none;border-radius:999px;padding:4px 10px;font-size:11px;font-weight:700;color:#fff;cursor:pointer;">+3 Gläser übernehmen</button>
+              <button type="button" data-act="applyNursWaterGoal" style="margin-left:6px;background:var(--g2);border:none;border-radius:999px;padding:4px 10px;font-size:11px;font-weight:700;color:#fff;cursor:pointer;">+3 Gläser übernehmen</button>
             </div>
             <div style="margin-top:8px;padding:10px;background:#fff8e1;border:1px solid #f9c74f;border-radius:10px;font-size:11px;color:#7d5a00;line-height:1.5;">
               ℹ️ In der Stillzeit steigt auch der Bedarf an <b>Jod (260&nbsp;µg/Tag)</b>, <b>Vitamin D</b> und <b>DHA</b>. Die App erfasst keine Mikronährstoffe – bitte mit Hebamme, Ärztin oder Arzt abstimmen. Beim Abnehmen gilt: max. ca. 0,5&nbsp;kg/Woche und nicht unter 1800&nbsp;kcal/Tag.
@@ -2780,7 +2780,7 @@ body.kb-open #feedbackFab{display:none;}
             <div style="font-size:11px;color:var(--mu);line-height:1.5;">Unabhängig von Schwangerschaft und Stillzeit – auch Partner, Väter und Betreuende können das Tagebuch führen. Danach unter <b>Mehr → 👶 Baby-Tagebuch</b> und als Kachel auf „Heute".</div>
           </div>
         </div>
-        <button type="button" class="svb" onclick="saveSettings()">Speichern ✓</button>
+        <button type="button" class="svb" data-act="saveSettings">Speichern ✓</button>
       </div>
 
       <!-- TAB: ZIELE -->
@@ -2792,15 +2792,15 @@ body.kb-open #feedbackFab{display:none;}
         </div>
         <div id="weightLossInfo" style="font-size:12px;color:var(--mu);min-height:16px;margin-bottom:8px;"></div>
         <div style="padding-top:12px;border-top:1px solid var(--br);margin-bottom:12px;">
-          <button type="button" class="seb" onclick="calcGoal()" style="margin-bottom:8px;">🧮 Kalorienbedarf berechnen</button>
+          <button type="button" class="seb" data-act="calcGoal" style="margin-bottom:8px;">🧮 Kalorienbedarf berechnen</button>
           <div class="sf"><label class="lbl">Kalorienziel (kcal/Tag)</label><input type="number" class="sinp" id="sg" oninput="_goalEditedManual=true;_goalFromCalc=false;_updateGoalManualHint();"></div>
           <div id="goalManualHint" style="font-size:11px;color:var(--mu);margin-top:4px;min-height:14px;"></div>
         </div>
         <div style="padding-top:12px;border-top:1px solid var(--br);margin-bottom:12px;">
           <label class="lbl" style="margin-bottom:6px;">🏋️ Makro-Ziele</label>
           <div style="display:flex;gap:6px;margin-bottom:8px;">
-            <button type="button" id="macroModePercent" onclick="setMacroMode('percent')" style="flex:1;padding:6px;border-radius:8px;border:1.5px solid var(--g2);background:var(--g2);color:white;font-size:12px;font-weight:700;">% vom Ziel</button>
-            <button type="button" id="macroModeGram" onclick="setMacroMode('gram')" style="flex:1;padding:6px;border-radius:8px;border:1.5px solid var(--br);background:white;color:var(--mu);font-size:12px;font-weight:700;">Eigene Gramm</button>
+            <button type="button" id="macroModePercent" data-act="setMacroMode" data-args='["percent"]' style="flex:1;padding:6px;border-radius:8px;border:1.5px solid var(--g2);background:var(--g2);color:white;font-size:12px;font-weight:700;">% vom Ziel</button>
+            <button type="button" id="macroModeGram" data-act="setMacroMode" data-args='["gram"]' style="flex:1;padding:6px;border-radius:8px;border:1.5px solid var(--br);background:white;color:var(--mu);font-size:12px;font-weight:700;">Eigene Gramm</button>
           </div>
           <div id="macroGramInputs" style="display:none;">
             <div class="srow">
@@ -2811,25 +2811,25 @@ body.kb-open #feedbackFab{display:none;}
           </div>
         </div>
         <div class="sf"><label class="lbl">💧 Wasserziel (Gläser)</label><input type="number" class="sinp" id="swatergoal" min="1" max="20" placeholder="8"></div>
-        <button type="button" class="svb" onclick="saveSettings()">Speichern ✓</button>
+        <button type="button" class="svb" data-act="saveSettings">Speichern ✓</button>
       </div>
 
       <!-- TAB: ERNÄHRUNG -->
       <div id="spanel-ernaehrung" style="display:none;">
         <label class="lbl" style="margin-bottom:6px;">🥗 Ernährungspräferenzen</label>
         <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;" id="dietPresetBtns">
-          <button type="button" class="diet-btn" onclick="toggleDietPreset('Vegetarisch')">🥦 Vegetarisch</button>
-          <button type="button" class="diet-btn" onclick="toggleDietPreset('Vegan')">🌱 Vegan</button>
-          <button type="button" class="diet-btn" onclick="toggleDietPreset('Glutenfrei')">🌾 Glutenfrei</button>
-          <button type="button" class="diet-btn" onclick="toggleDietPreset('Laktosefrei')">🥛 Laktosefrei</button>
-          <button type="button" class="diet-btn" onclick="toggleDietPreset('Low Carb')">📉 Low Carb</button>
-          <button type="button" class="diet-btn" onclick="toggleDietPreset('Keto')">🥑 Keto</button>
-          <button type="button" class="diet-btn" onclick="toggleDietPreset('High Protein')">💪 High Protein</button>
+          <button type="button" class="diet-btn" data-act="toggleDietPreset" data-args='["Vegetarisch"]'>🥦 Vegetarisch</button>
+          <button type="button" class="diet-btn" data-act="toggleDietPreset" data-args='["Vegan"]'>🌱 Vegan</button>
+          <button type="button" class="diet-btn" data-act="toggleDietPreset" data-args='["Glutenfrei"]'>🌾 Glutenfrei</button>
+          <button type="button" class="diet-btn" data-act="toggleDietPreset" data-args='["Laktosefrei"]'>🥛 Laktosefrei</button>
+          <button type="button" class="diet-btn" data-act="toggleDietPreset" data-args='["Low Carb"]'>📉 Low Carb</button>
+          <button type="button" class="diet-btn" data-act="toggleDietPreset" data-args='["Keto"]'>🥑 Keto</button>
+          <button type="button" class="diet-btn" data-act="toggleDietPreset" data-args='["High Protein"]'>💪 High Protein</button>
         </div>
         <div id="savedDietFreeList" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;"></div>
         <div style="display:flex;gap:6px;margin-bottom:8px;">
           <input type="text" class="sinp" id="sdietfree" placeholder="Eigene Präferenz (z.B. Histaminintoleranz)..." style="flex:1;margin-bottom:0;">
-          <button type="button" class="svb" style="flex:0 0 auto;width:auto;padding:8px 12px;margin-top:0;white-space:nowrap;" onclick="addDietFree()">+ Hinzufügen</button>
+          <button type="button" class="svb" style="flex:0 0 auto;width:auto;padding:8px 12px;margin-top:0;white-space:nowrap;" data-act="addDietFree">+ Hinzufügen</button>
         </div>
         <div id="dietMacroInfo" style="font-size:12px;color:var(--g1);margin-bottom:8px;min-height:14px;"></div>
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--gl);border-radius:10px;border:1px solid var(--g3);">
@@ -2857,7 +2857,7 @@ body.kb-open #feedbackFab{display:none;}
             </label>
           </div>
         </div>
-        <button type="button" class="svb" style="margin-top:12px;" onclick="saveSettings()">Speichern ✓</button>
+        <button type="button" class="svb" style="margin-top:12px;" data-act="saveSettings">Speichern ✓</button>
       </div>
 
       <!-- TAB: ERINNERUNGEN -->
@@ -2870,7 +2870,7 @@ body.kb-open #feedbackFab{display:none;}
             <input type="time" class="sinp" id="reminderTime" style="flex:0 0 110px;">
             <input type="text" class="sinp" id="reminderLabel" placeholder="z.B. Mittagessen" style="flex:1;">
           </div>
-          <button type="button" class="svb" style="margin-top:0;" onclick="NTRemind.add()">⏰ Erinnerung hinzufügen</button>
+          <button type="button" class="svb" style="margin-top:0;" data-act="NTRemind.add">⏰ Erinnerung hinzufügen</button>
         </div>
       </div>
 
@@ -2882,7 +2882,7 @@ body.kb-open #feedbackFab{display:none;}
           <input type="password" id="settProxyPwInput" placeholder="Neues Passwort eingeben" autocomplete="new-password"
             style="width:100%;box-sizing:border-box;padding:10px 12px;border:2px solid var(--br);border-radius:10px;font-size:14px;outline:none;margin-bottom:8px;"
             onkeydown="if(event.key==='Enter')saveProxyPwFromSettings()">
-          <button type="button" class="seb" onclick="saveProxyPwFromSettings()">Passwort speichern ✓</button>
+          <button type="button" class="seb" data-act="saveProxyPwFromSettings">Passwort speichern ✓</button>
         </div>
         <div style="padding-top:12px;border-top:1px solid var(--br);margin-top:12px;">
           <label class="lbl" style="margin-bottom:8px;">🤖 KI-Anbieter (Chat &amp; Text)</label>
@@ -2895,7 +2895,7 @@ body.kb-open #feedbackFab{display:none;}
               onkeydown="if(event.key==='Enter')saveAiProviderSettings()">
           </div>
           <div id="aiProviderHint" style="font-size:11px;color:var(--mu);line-height:1.5;margin-bottom:8px;"></div>
-          <button type="button" class="seb" onclick="saveAiProviderSettings()">Anbieter speichern ✓</button>
+          <button type="button" class="seb" data-act="saveAiProviderSettings">Anbieter speichern ✓</button>
         </div>
         <div style="padding-top:12px;border-top:1px solid var(--br);margin-top:12px;">
           <label class="lbl" style="margin-bottom:8px;">📷 Foto-KI</label>
@@ -2908,30 +2908,30 @@ body.kb-open #feedbackFab{display:none;}
               onkeydown="if(event.key==='Enter')saveAiVisionSettings()">
           </div>
           <div id="aiVisionHint" style="font-size:11px;color:var(--mu);line-height:1.5;margin-bottom:8px;"></div>
-          <button type="button" class="seb" onclick="saveAiVisionSettings()">Foto-KI speichern ✓</button>
+          <button type="button" class="seb" data-act="saveAiVisionSettings">Foto-KI speichern ✓</button>
         </div>
         <div style="padding-top:12px;border-top:1px solid var(--br);margin-top:12px;">
           <label class="lbl" style="margin-bottom:8px;">🛠 KI-Prompts</label>
           <div style="font-size:12px;color:var(--mu);margin-bottom:8px;">Sieh dir die Anweisungen an, die NutriTrack an die KI schickt.</div>
-          <button type="button" class="seb" onclick="openPromptSettings()">⚙️ KI-Prompts anzeigen</button>
+          <button type="button" class="seb" data-act="openPromptSettings">⚙️ KI-Prompts anzeigen</button>
         </div>
       </div>
 
       <!-- TAB: BACKUP -->
       <div id="spanel-backup" style="display:none;">
         <div style="padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--br);">
-          <button type="button" class="cb2" onclick="backupNow()">💾 Jetzt sichern</button>
+          <button type="button" class="cb2" data-act="backupNow">💾 Jetzt sichern</button>
           <div id="backupNowHint" style="font-size:12px;color:var(--mu);margin-top:6px;"></div>
         </div>
         <div style="padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--br);">
           <label class="lbl" style="margin-bottom:8px;">🕹️ Autospeicher</label>
           <div style="font-size:12px;color:var(--mu);margin-bottom:8px;">Wird bei jedem App-Start automatisch gespeichert. Bis zu 5 Stände.</div>
-          <button type="button" class="seb" onclick="openAutoSaves()">📂 Autospeicher anzeigen</button>
+          <button type="button" class="seb" data-act="openAutoSaves">📂 Autospeicher anzeigen</button>
         </div>
         <div style="padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--br);">
           <label class="lbl" style="margin-bottom:8px;">💾 Datensicherung (Datei)</label>
           <div style="font-size:12px;color:var(--mu);margin-bottom:8px;">Alle Daten als JSON-Datei exportieren oder wieder einlesen.</div>
-          <button type="button" class="seb" onclick="exportData()">📤 Exportieren</button>
+          <button type="button" class="seb" data-act="exportData">📤 Exportieren</button>
           <button type="button" class="seb" onclick="document.getElementById('impInp').click()">📥 Importieren</button>
           <input type="file" id="impInp" accept=".json" style="display:none" onchange="importData(event)">
         </div>
@@ -2948,6 +2948,7 @@ body.kb-open #feedbackFab{display:none;}
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
+<script src="js/actions.js"></script>
 <script src="js/fooddb.js"></script>
 <script src="js/idb-photos.js"></script>
 <script src="js/changelog.js"></script>
@@ -2967,7 +2968,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.250';
+var APP_VERSION='0.251';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung

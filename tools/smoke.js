@@ -13,7 +13,27 @@
 //
 //   node tools/smoke.js          (braucht ein lokales http-server auf :8099)
 'use strict';
-const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+// Playwright liegt je nach Maschine lokal, global oder gar nicht vor. Kein
+// Eintrag in package.json, weil dieses Projekt bewusst keine hat — der Test ist
+// ein Werkzeug, keine Abhaengigkeit der App.
+function loadPlaywright() {
+  const tries = ['playwright', '/opt/node22/lib/node_modules/playwright',
+                 process.env.PLAYWRIGHT_PATH].filter(Boolean);
+  for (const t of tries) { try { return require(t); } catch (e) { /* naechster */ } }
+  console.error('Playwright nicht gefunden. Installieren mit:  npm i -D playwright && npx playwright install chromium');
+  process.exit(2);
+}
+const { chromium } = loadPlaywright();
+
+// Chromium ebenso: vorinstalliert unter /opt/pw-browsers oder von Playwright
+// selbst verwaltet (dann kein executablePath noetig).
+function chromePath() {
+  const fs2 = require('fs');
+  for (const p of ['/opt/pw-browsers/chromium-1194/chrome-linux/chrome', process.env.CHROMIUM_PATH]) {
+    if (p && fs2.existsSync(p)) return p;
+  }
+  return undefined;
+}
 
 const BASE = process.env.SMOKE_URL || 'http://127.0.0.1:8099/index.html';
 
@@ -24,7 +44,7 @@ const EXPECTED_NAMESPACES = [
 ];
 
 (async () => {
-  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+  const browser = await chromium.launch({ executablePath: chromePath() });
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   const page = await ctx.newPage();
 
@@ -100,6 +120,158 @@ const EXPECTED_NAMESPACES = [
   if (deadHandlers.length) { deadHandlers.forEach((d) => console.log(`  x   toter onclick-Handler: ${d}`)); }
   else console.log('  ok  Jeder onclick-Handler im Markup ist aufloesbar.');
 
+  // 3b. data-act geht denselben Weg wie onclick — die Delegation loest erst zur
+  //     Klickzeit auf, ein Tippfehler faellt sonst erst dort auf, wo jemand
+  //     drueckt.
+  const deadActs = await page.evaluate(() => {
+    const dead = [];
+    document.querySelectorAll('[data-act]').forEach((el) => {
+      const name = el.getAttribute('data-act');
+      if (typeof window.NTActions.resolve(name) !== 'function') {
+        dead.push(name + '  <- ' + (el.textContent || '').trim().slice(0, 24));
+      }
+    });
+    return [...new Set(dead)];
+  });
+  if (deadActs.length) deadActs.forEach((d) => console.log(`  x   data-act ohne Funktion: ${d}`));
+  else console.log('  ok  Jedes data-act im DOM ist aufloesbar.');
+
+  // 3c. Feuert die Delegation ueberhaupt, und genau EINMAL? Das ist der Beleg,
+  //     den die statische Pruefung nicht liefern kann. Ein Element mit onclick
+  //     UND data-act wuerde hier als 2 gezaehlt.
+  const fired = await page.evaluate(() => {
+    const el = document.querySelector('[data-act]');
+    if (!el) return { err: 'kein data-act im DOM' };
+    const name = el.getAttribute('data-act');
+    let n = 0;
+    const orig = window.NTActions.resolve(name);
+    // Aufruf abfangen, ohne die echte Funktion laufen zu lassen.
+    const reg = {}; reg[name] = function () { n++; };
+    window.NTActions.register(reg);
+    el.click();
+    return { name: name, calls: n };
+  });
+  if (fired.err || fired.calls !== 1) {
+    console.log(`  x   Delegation feuerte ${fired.calls}x fuer '${fired.name}' (erwartet: 1x) ${fired.err || ''}`);
+  } else {
+    console.log(`  ok  Delegation feuert genau 1x (geprueft an '${fired.name}').`);
+  }
+
+  // 3d. Argumente kommen typrichtig an. Eine stille Wandlung "7" -> 7 oder
+  //     umgekehrt bricht jeden ===-Vergleich auf einer ID.
+  const argsOk = await page.evaluate(() => {
+    // Bewusst ein Element mit NICHT-String-Argument: Bei ["text"] sehen
+    // "typrichtig" und "still nach String gewandelt" gleich aus, und der Test
+    // meldete gruen, obwohl die Wandlung eingebaut war.
+    const all = [...document.querySelectorAll('[data-act][data-args]')];
+    const el = all.find((x) => {
+      try {
+        const v = JSON.parse(x.getAttribute('data-args').replace(/&#39;/g, "'").replace(/&amp;/g, '&'));
+        return v.some((a) => typeof a !== 'string');
+      } catch (e) { return false; }
+    }) || all[0];
+    if (!el) return { err: 'kein data-args im DOM' };
+    const name = el.getAttribute('data-act');
+    const expected = JSON.parse(el.getAttribute('data-args').replace(/&#39;/g, "'").replace(/&amp;/g, '&'));
+    let got = null;
+    const reg = {}; reg[name] = function () { got = Array.prototype.slice.call(arguments); };
+    window.NTActions.register(reg);
+    el.click();
+    return { name: name, expected: expected, got: got, same: JSON.stringify(expected) === JSON.stringify(got) };
+  });
+  if (argsOk.err || !argsOk.same) console.log(`  x   data-args kamen falsch an bei '${argsOk.name}': ${JSON.stringify(argsOk.got)} statt ${JSON.stringify(argsOk.expected)} ${argsOk.err || ''}`);
+  else console.log(`  ok  data-args kommen typrichtig an (geprueft an '${argsOk.name}': ${JSON.stringify(argsOk.expected)}).`);
+
+  // 3f. Die drei uebrigen Zusagen der Delegation. Alle drei werden an eigens
+  //      gebauten Proben gemessen statt an dem, was das Markup gerade hergibt:
+  //      `data-stop` kommt im Markup ueberhaupt nicht vor, und ein Fehler darin
+  //      waere sonst unbemerkt geblieben (die Gegenprobe hat genau das gezeigt).
+  const mech = await page.evaluate(() => {
+    const out = {};
+    const box = document.createElement('div');
+    document.body.appendChild(box);
+
+    // (a) closest(): ein Klick auf das Icon IM Knopf muss den Knopf treffen.
+    //     Ohne closest() verliert jeder Knopf mit Inhalt seine Wirkung.
+    box.innerHTML = '<button data-act="__pA"><span id="__inner">x</span></button>';
+    let a = 0; window.__pA = function () { a++; };
+    document.getElementById('__inner').click();
+    out.closest = a;
+
+    // (b) data-bg-close: schliesst NUR beim Klick auf den Grund selbst, nicht
+    //     auf den Inhalt darin. Das war die Bedingung in bgClose().
+    let closedWith = [];
+    const realClose = window.closeOv;
+    window.closeOv = function (id) { closedWith.push(id); };
+    box.innerHTML = '<div id="__bg" data-bg-close="__ovTest"><div id="__child">inhalt</div></div>';
+    document.getElementById('__child').click();
+    out.bgChild = closedWith.length;        // erwartet 0
+    document.getElementById('__bg').click();
+    out.bgSelf = closedWith.length;         // erwartet 1
+    out.bgId = closedWith[0];
+    window.closeOv = realClose;
+
+    // (c) data-stop gegen einen FREMDEN Listener am Elternelement. Zwei
+    //     verschachtelte data-act taugen dafuer nicht: Die Delegation laeuft
+    //     einmal je Klick und nimmt ueber closest() ohnehin nur den innersten —
+    //     mit und ohne stopPropagation sieht das Ergebnis gleich aus, und der
+    //     erste Anlauf dieses Tests blieb deshalb gruen, obwohl die Zeile
+    //     ausgebaut war.
+    let outer = 0, inner = 0;
+    box.innerHTML = '<div id="__outer"><button data-act="__pInner" data-stop>x</button></div>';
+    document.getElementById('__outer').addEventListener('click', function () { outer++; });
+    window.__pInner = function () { inner++; };
+    box.querySelector('[data-act="__pInner"]').click();
+    out.stopInner = inner; out.stopOuter = outer;
+
+    // (d) Ein abgeschalteter Knopf im Aktionsbereich loest nichts aus.
+    let dis = 0;
+    box.innerHTML = '<div data-act="__pDis"><button id="__db" disabled><span id="__ds">x</span></button></div>';
+    window.__pDis = function () { dis++; };
+    document.getElementById('__ds').click();
+    out.disabled = dis;
+    delete window.__pDis;
+
+    box.remove();
+    delete window.__pA; delete window.__pOuter; delete window.__pInner;
+    return out;
+  });
+  let mechFail = 0;
+  const say = (okCond, good, bad) => { if (okCond) console.log('  ok  ' + good); else { console.log('  x   ' + bad); mechFail++; } };
+  say(mech.closest === 1, 'Klick auf ein Kind-Element trifft den Knopf darueber (closest).',
+      `Klick auf ein Kind loeste ${mech.closest}x aus statt 1x — Knoepfe mit Icon waeren wirkungslos.`);
+  say(mech.bgChild === 0 && mech.bgSelf === 1 && mech.bgId === '__ovTest',
+      'data-bg-close schliesst nur beim Klick auf den Grund, nicht auf den Inhalt.',
+      `data-bg-close falsch: Kind=${mech.bgChild} (erwartet 0), selbst=${mech.bgSelf} (erwartet 1), id=${mech.bgId}`);
+  say(mech.stopInner === 1 && mech.stopOuter === 0,
+      'data-stop haelt das Ereignis von einem fremden Listener am Elternelement fern.',
+      `data-stop wirkt nicht: Aktion=${mech.stopInner} (erwartet 1), Elternlistener=${mech.stopOuter} (erwartet 0)`);
+  say(mech.disabled === 0,
+      'Ein abgeschalteter Knopf im Aktionsbereich loest die Aktion nicht aus.',
+      `Abgeschalteter Knopf loeste die Aktion ${mech.disabled}x aus (erwartet 0).`);
+
+  // 3e. Der echte Doppelfeuer-Fall: ein Element, das beides traegt. Er entsteht
+  //      bei jeder halben Migration und kostet bei einem Loeschen-Knopf Daten.
+  //      (Ein zweimal registrierter Listener ist KEIN solcher Fall — der Browser
+  //      dedupliziert identische (type, fn, capture); der erste Anlauf dieses
+  //      Tests hat das geprueft und nichts gemessen.)
+  const dbl = await page.evaluate(() => {
+    const probe = document.createElement('button');
+    probe.setAttribute('data-act', '__smokeProbe');
+    probe.setAttribute('onclick', '__smokeProbe()');
+    document.body.appendChild(probe);
+    let n = 0;
+    window.__smokeProbe = function () { n++; };
+    probe.click();
+    probe.remove();
+    delete window.__smokeProbe;
+    return n;
+  });
+  if (dbl === 2) console.log('  ok  Doppelbelegung (onclick + data-act) wuerde zweimal feuern — genau das schliesst tools/check.js aus.');
+  else console.log(`  x   Doppelfeuer-Probe ergab ${dbl} statt 2 — der Test misst nicht, was er soll.`);
+
+  const delegationFail = (deadActs.length ? 1 : 0) + ((fired.err || fired.calls !== 1) ? 1 : 0) + ((argsOk.err || !argsOk.same) ? 1 : 0) + (dbl === 2 ? 0 : 1) + mechFail;
+
   // 4. Durch die Oberflaeche klicken. Onboarding ueberspringen, falls es kommt.
   await page.evaluate(() => {
     try {
@@ -109,21 +281,28 @@ const EXPECTED_NAMESPACES = [
   await page.reload({ waitUntil: 'load' });
   await page.waitForTimeout(1200);
 
-  const clicked = [];
-  for (const sel of ['#btnPause', '[onclick*="openSettings"]', '[onclick*="switchTab"]', '[onclick*="openOv"]']) {
-    const el = await page.$(sel);
-    if (el) {
-      try { await el.click({ timeout: 1500, force: true }); clicked.push(sel); await page.waitForTimeout(250); } catch (e) {}
-    }
+  // Sichtbare data-act-Knoepfe wirklich druecken. Jeder Fehler daraus landet
+  // ueber den console/pageerror-Listener in `errors`.
+  let clicked = 0;
+  const handles = await page.$$('[data-act]');
+  for (const h of handles.slice(0, 40)) {
+    try {
+      if (!(await h.isVisible())) continue;
+      await h.click({ timeout: 800 });
+      clicked++;
+      await page.waitForTimeout(80);
+      // Offene Overlays wieder schliessen, sonst verdecken sie den Rest.
+      await page.keyboard.press('Escape').catch(() => {});
+    } catch (e) { /* verdeckt oder ausserhalb – kein Testfehler */ }
   }
-  console.log(`  ok  ${clicked.length} Oberflaechen-Element(e) angeklickt, ohne neuen Fehler.`);
+  console.log(`  ok  ${clicked} sichtbare data-act-Elemente angeklickt, ohne neuen Fehler.`);
 
   await browser.close();
 
-  if (errors.length || nsFail || badExports.length || deadHandlers.length) {
+  if (errors.length || nsFail || badExports.length || deadHandlers.length || delegationFail) {
     console.error('\nFEHLER:');
     [...new Set(errors)].forEach((e) => console.error('  x   ' + e));
-    console.error(`\n${errors.length + nsFail + badExports.length + deadHandlers.length} Problem(e).`);
+    console.error(`\n${errors.length + nsFail + badExports.length + deadHandlers.length + delegationFail} Problem(e).`);
     process.exit(1);
   }
   console.log('\nRauchtest bestanden.');

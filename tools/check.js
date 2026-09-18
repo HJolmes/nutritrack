@@ -151,25 +151,6 @@ if (!mCore) {
   }
 }
 
-// ── 4. Aktions-Registry (Event-Delegation) ────────────────────────────────
-// Jedes data-act="name" im Markup braucht eine registrierte Aktion, sonst ist
-// der Knopf im Bild und tut nichts. Gegenprobe zur Delegation aus v0.251.
-const acts = new Set([...indexHtml.matchAll(/\bdata-act="([^"]+)"/g)].map((x) => x[1].split(':')[0]));
-if (acts.size) {
-  // Registriert wird entweder global (window.<fn>) oder per NTActions.register.
-  const registered = new Set([
-    ...[...indexHtml.matchAll(/^\s*(?:async\s+)?function\s+([A-Za-z0-9_$]+)/gm)].map((x) => x[1]),
-    ...[...indexHtml.matchAll(/NTActions\.register\(\s*'([^']+)'/g)].map((x) => x[1]),
-    ...[...indexHtml.matchAll(/NTActions\.register\(\s*\{([\s\S]*?)\}\s*\)/g)]
-        .flatMap((x) => [...x[1].matchAll(/([A-Za-z0-9_$]+)\s*:/g)].map((y) => y[1])),
-  ]);
-  let unknown = 0;
-  for (const a of acts) {
-    if (!registered.has(a)) { fail(`data-act="${a}" hat keine registrierte Aktion — der Knopf tut nichts.`); unknown++; }
-  }
-  if (!unknown) ok(`Alle ${acts.size} data-act-Aktionen sind registriert.`);
-}
-
 // ── 5. onclick-Ziele in generiertem HTML ──────────────────────────────────
 // Der Rauchtest (tools/smoke.js) prueft nur, was zur Pruefzeit im DOM steht.
 // Der weitaus groessere Teil der Knoepfe entsteht aber erst zur Laufzeit aus
@@ -178,8 +159,14 @@ if (acts.size) {
 // Pruefung liest die Strings im Quelltext und loest sie gegen das auf, was
 // global existiert.
 {
+  // Kommentare zuerst ausblenden: Ein Doku-Kommentar, der die Schreibweise
+  // erklaert ("<button data-act=… statt onclick=foo()"), ist kein Aufruf. Diese
+  // Pruefung ist genau daran zuerst rot geworden.
+  const stripComments = (code) => code
+    .replace(/^\s*\/\/.*$/gm, '')
+    .replace(/\/\*[\s\S]*?\*\//g, '');
   const sources = [['index.html', indexHtml]];
-  for (const f of jsFiles) { if (!f.includes('zxing')) sources.push([f, read(f)]); }
+  for (const f of jsFiles) { if (!f.includes('zxing')) sources.push([f, stripComments(read(f))]); }
 
   // Global verfuegbar ist alles, was NICHT in einer IIFE gekapselt ist:
   // das Inline-Script von index.html und picker.js (das bewusst nie gekapselt
@@ -233,6 +220,50 @@ if (acts.size) {
     }
   }
   if (!dead) ok(`Alle ${checked} onclick-Ziele (auch in generiertem HTML) sind aufloesbar.`);
+
+  // data-act geht denselben Weg: Die Delegation loest zur Klickzeit auf, ein
+  // Tippfehler faellt sonst erst dort auf, wo jemand den Knopf drueckt.
+  let deadAct = 0, acts = 0;
+  for (const [file, code] of sources) {
+    for (const m3 of code.matchAll(/\bdata-act="([^"]+)"/g)) {
+      acts++;
+      const parts = m3[1].split('.');
+      if (parts.length > 1) {
+        if (nsMembers[parts[0]]) {
+          if (!nsMembers[parts[0]].has(parts[1])) { fail(`${file}: data-act="${m3[1]}" — ${parts[0]} exportiert '${parts[1]}' nicht.`); deadAct++; }
+        } else if (!globals.has(parts[0])) { fail(`${file}: data-act="${m3[1]}" — '${parts[0]}' existiert nicht.`); deadAct++; }
+      } else if (!globals.has(parts[0])) {
+        fail(`${file}: data-act="${m3[1]}" — weder globale Funktion noch registrierte Aktion.`); deadAct++;
+      }
+    }
+  }
+  if (!deadAct) ok(`Alle ${acts} data-act-Ziele sind aufloesbar.`);
+
+  // data-args muss gueltiges JSON sein — die Delegation wirft es sonst zur
+  // Klickzeit weg und die Funktion bekommt gar keine Argumente.
+  let badArgs = 0, argCount = 0;
+  for (const [file, code] of sources) {
+    for (const m4 of code.matchAll(/\bdata-args='([^']*)'/g)) {
+      argCount++;
+      const raw = m4[1].replace(/&#39;/g, "'").replace(/&amp;/g, '&');
+      try {
+        const v = JSON.parse(raw);
+        if (!Array.isArray(v)) { fail(`${file}: data-args='${m4[1]}' ist kein Array.`); badArgs++; }
+      } catch (e) { fail(`${file}: data-args='${m4[1]}' ist kein gueltiges JSON.`); badArgs++; }
+    }
+  }
+  if (!badArgs) ok(`Alle ${argCount} data-args sind gueltiges JSON.`);
+
+  // Ein Element mit beidem wuerde seine Aktion ZWEIMAL ausloesen: einmal ueber
+  // das Attribut, einmal ueber die Delegation. Bei einem Loeschen-Knopf ist das
+  // kein Schoenheitsfehler.
+  let both = 0;
+  for (const [file, code] of sources) {
+    for (const tag of code.match(/<[^>]*\bdata-act="[^"]*"[^>]*>/g) || []) {
+      if (/\bonclick=/.test(tag)) { fail(`${file}: Element traegt data-act UND onclick — die Aktion feuert zweimal: ${tag.slice(0, 90)}`); both++; }
+    }
+  }
+  if (!both) ok('Kein Element traegt data-act und onclick zugleich.');
 }
 
 // ── 6. Ausgabe ────────────────────────────────────────────────────────────

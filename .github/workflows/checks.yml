@@ -63,3 +63,36 @@ jobs:
             echo "::error::Ausgelieferte Dateien geaendert, aber APP_VERSION nicht erhoeht ($OLD -> $NEW). Bitte APP_VERSION in index.html, VERSION in sw.js und den sichtbaren 'Beta vX.XXX'-Text hochzaehlen."
             exit 1
           fi
+
+  smoke:
+    name: Rauchtest im Browser
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Playwright + Chromium
+        # Kein Eintrag in package.json — dieses Projekt hat bewusst keine.
+        # Der Browser ist ein Werkzeug des Tests, keine Abhaengigkeit der App.
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+
+      - name: App lokal ausliefern
+        run: npx --yes http-server -p 8099 -s . &
+
+      - name: Warten bis die Seite antwortet
+        run: |
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8099/index.html > /dev/null && exit 0
+            sleep 1
+          done
+          echo "::error::Lokaler Server kam nicht hoch."; exit 1
+
+      - name: Rauchtest
+        run: node tools/smoke.js

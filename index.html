@@ -624,6 +624,14 @@ body.kb-open #feedbackFab{display:none;}
 .rec-way .ic{font-size:26px;flex-shrink:0;}
 .rec-way .nm{font-weight:700;font-size:14px;color:var(--tx);}
 .rec-way .sb{font-size:11px;color:var(--mu);margin-top:2px;line-height:1.4;}
+/* EIGENE EINKAUFS-KATEGORIEN (v0.245) */
+.shopcat-row{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
+.shopcat-ic{width:48px;flex-shrink:0;text-align:center;border:1.5px solid var(--br);border-radius:10px;padding:8px 2px;font-size:17px;outline:none;background:#fff;}
+.shopcat-nm{flex:1;min-width:0;border:1.5px solid var(--br);border-radius:10px;padding:8px 10px;font-size:14px;font-weight:600;outline:none;background:#fff;color:var(--tx);}
+.shopcat-mv{background:none;border:1.5px solid var(--br);border-radius:9px;width:30px;height:32px;font-size:10px;color:var(--g1);flex-shrink:0;cursor:pointer;}
+.shopcat-mv[disabled]{opacity:.25;}
+.shopcat-del{background:none;border:none;font-size:16px;padding:2px 4px;flex-shrink:0;cursor:pointer;}
+.shopcat-note{font-size:11px;color:var(--mu);margin:-2px 2px 8px 56px;}
 </style>
 </head>
 <body>
@@ -1145,7 +1153,7 @@ body.kb-open #feedbackFab{display:none;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.244</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.245</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1984,8 +1992,9 @@ body.kb-open #feedbackFab{display:none;}
       </div>
       <div id="shopSuggest" style="display:none;margin-bottom:6px;"></div>
       <div style="display:flex;gap:6px;margin-bottom:4px;">
-        <button type="button" class="seb" style="flex:1;margin:0;" onclick="NTShop.openCatalog()">🧺 Artikel wählen</button>
-        <button type="button" class="seb" style="flex:1;margin:0;" onclick="NTShop.openSync()">🔄 Teilen <span id="shopSyncBadge" style="display:none;">✓</span></button>
+        <button type="button" class="seb" style="flex:1;margin:0;font-size:12.5px;padding:11px 4px;" onclick="NTShop.openCatalog()">🧺 Artikel</button>
+        <button type="button" class="seb" style="flex:1;margin:0;font-size:12.5px;padding:11px 4px;" onclick="NTShop.openCats()">🏷 Kategorien</button>
+        <button type="button" class="seb" style="flex:1;margin:0;font-size:12.5px;padding:11px 4px;" onclick="NTShop.openSync()">🔄 Teilen <span id="shopSyncBadge" style="display:none;">✓</span></button>
       </div>
       <div id="shopList"></div>
     </div>
@@ -2029,6 +2038,7 @@ body.kb-open #feedbackFab{display:none;}
         <div style="flex:1;min-width:0;">
           <label class="lbl">Kategorie</label>
           <div class="sf"><select class="sinp" id="shopItemCat"></select></div>
+          <button type="button" onclick="NTShop.openCats()" style="background:none;border:none;padding:4px 0 0;font-size:11px;font-weight:700;color:var(--g1);cursor:pointer;">🏷 Kategorien verwalten</button>
         </div>
       </div>
       <div id="shopItemSrc"></div>
@@ -2398,6 +2408,27 @@ body.kb-open #feedbackFab{display:none;}
       <div style="display:flex;gap:8px;">
         <input type="number" id="fastCustomH" min="1" max="72" placeholder="z.B. 14" style="flex:1;border:2px solid var(--br);border-radius:10px;padding:10px;font-size:16px;outline:none;">
         <button type="button" class="svb" style="flex:0 0 auto;" onclick="startFastCustom()">Start</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ EINKAUFSZETTEL: EIGENE KATEGORIEN ══ -->
+<div class="ov" id="shopCatsOv" onclick="bgClose(event,'shopCatsOv')">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" onclick="closeOv('shopCatsOv')">✕</button>
+      <div class="mti">🏷 Kategorien</div>
+      <div class="msu">Eigene Gänge für deinen Laden</div>
+    </div>
+    <div class="mbd">
+      <div id="shopCatsList"></div>
+      <div style="font-size:11px;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin:16px 2px 6px;">Neue Kategorie</div>
+      <div style="display:flex;gap:6px;">
+        <input type="text" id="shopCatNewIc" class="shopcat-ic" maxlength="4" placeholder="🏷" aria-label="Symbol">
+        <input type="text" id="shopCatNewNm" class="shopcat-nm" maxlength="40" placeholder="z.B. Getränkemarkt" autocomplete="off" onkeydown="if(event.key==='Enter')NTShop.catAdd()">
+        <button type="button" onclick="NTShop.catAdd()" style="background:linear-gradient(135deg,var(--g1),var(--g2));border:none;border-radius:11px;color:white;font-size:20px;font-weight:800;width:44px;flex-shrink:0;cursor:pointer;">＋</button>
       </div>
     </div>
   </div>
@@ -2883,7 +2914,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.244';
+var APP_VERSION='0.245';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung

@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.244 (2026-09-18) — Branch `claude/nutritrack-recipes-dashboard-xrcsys` (v0.243 Dashboard-Kacheln sortier- und ausblendbar; v0.244 Wochenplan + „＋ Neues Rezept" mit drei Quellen: selbst, Kochbuch-Foto, Link). Davor v0.242: Alexa-Einwurf per Sprache.
+**Stand:** v0.245 (2026-09-18) — Branch `claude/nutritrack-recipes-dashboard-xrcsys` (v0.243 Dashboard-Kacheln sortier-/ausblendbar; v0.244 Wochenplan + „＋ Neues Rezept" mit drei Quellen; v0.245 eigene Einkaufs-Kategorien). Davor v0.242: Alexa-Einwurf per Sprache.
 
 ## URLs
 
@@ -15,6 +15,7 @@
 - **Theme (v0.144):** Cream `#faf6f1`, Coral `#e96e3c`, Fraunces+Inter. Override-Block `/* BLOOM REDESIGN */` am Ende von `<style>`. `manifest.json` seit v0.207 ebenfalls Coral/Cream (Android-Splash).
 - **Screens:** `mainScreen` (Heute, Hero-kcal, 2×2-Mahlzeiten-Grid), `historyScreen`, `mealDetailScreen`, `statsScreen`, `moreScreen`. Bottom-Nav mit 5 Items, `switchTab(tab)` mappt via `data-tab`, `'stats'`→`'trends'`.
 - **Dashboard-Kacheln (v0.243, `js/dashboard.js` → `NTDash`):** Reihenfolge und Sichtbarkeit der Kacheln auf `mainScreen` liegen in `S.dashOrder`/`S.dashHidden`. `apply()` sortiert per `appendChild` in `#mainScreen .main` (Flex-Column) und schaltet die Klasse `.dash-off{display:none!important}`. **Nicht über `style.display` ausblenden** — NTBaby/NTShop/NTPartner schreiben dort selbst. Die Mahlzeiten-Sektion ist als `#mealsCard` mit `display:contents` gewickelt, die Hero-Kachel (`.sum`) ist nicht sortierbar. Editor: `dashOv`, Ziehen per Pointer-Events am Griff (HTML5-DnD fehlt auf iOS), dazu ▲▼. Unbekannte IDs fliegen raus, neue Register-Einträge kommen ans Ende.
+- **Eigene Einkaufs-Kategorien (v0.245, `js/shopping.js`):** `BUILTIN` (11 feste) + `S.shopCats` (`{id:'u…',ic,label,pos,rev,_sy}`). `allCats()` liefert die Reihenfolge *feste → eigene (nach `pos`) → „Sonstiges"*; `cat()`/`catOrder()` gehen darüber, unbekannte IDs fallen auf „Sonstiges". Die eingebauten bleiben unveränderlich — an ihnen hängen `CATALOG` und `guess()`. **Kategorien syncen im selben verschlüsselten Kanal wie die Artikel**, Record-ID mit Präfix `cat:`, Nutzlast `{k:…}` statt `{i:…}`, Grabsteine in `S.shopTomb`. Löschen hängt betroffene Artikel auf `sonst` um (jeweils mit neuer `rev`) — lokal in `catDelete()`, beim Empfang in `applyCat()`. Ein Gerät mit alter Fassung legt für einen `cat:`-Record eine tote, nie zurückgeschickte Zeile in `S.shopTomb` an; harmlos. UI: `shopCatsOv` (＋ Anlegen, Inline-Umbenennen, ▲▼, 🗑), erreichbar über 🏷 Kategorien im Zettel und über den Artikel-Editor.
 - **Wochenplan (v0.244, `js/mealplan.js` → `NTPlan`):** `S.mealPlan['YYYY-MM-DD'] = {breakfast:[{r:recipeId,p:portionen}], lunch, dinner, snack}` — datumsgenau, nicht nach Wochentag. `S.planApplied[date]` merkt, was schon im Tagebuch steht. Overlays `planOv` (Woche, Mo–So), `planPickOv`, `planItemOv`. `autoFill()` füllt nur leere Mittag-/Abend-Slots, ohne Wiederholung innerhalb der Woche. `weekToShop()` aggregiert Zutaten **vor** `NTShop.addIngredients` (sonst fünf Zeilen „Zwiebeln"). `toDiary(date)` schreibt normale Rezept-Einträge in `S.days` und lehnt `_compressed`-Tage ab. Kachel `planCard`.
 - **Rezeptquellen (v0.244):** `recNewOv` bündelt drei Wege — `newBlank()` (leeres Rezept + `openRecipeEditor`; ein nie befüllter Entwurf wird beim Schließen von `recEditOv` über `NTPlan.discardEmptyDraft()` verworfen), `newFromPhoto()` (`recPhotoOv`, eigener Kochbuch-Prompt → JSON → `lookupNutrients`) und `newFromLink()` (führt in den vorhandenen Picker-Link-Tab). **Rezepte werden je Portion gespeichert** — ein Kochbuch-Rezept für N Portionen wird durch N geteilt, `rec.baseServings` merkt die Originalzahl. Alle `.ov` teilen `z-index:300`; `libraryOv` steht im DOM **nach** den Rezept-Overlays und wird daher beim Öffnen geschlossen und über `backToOrigin()` wieder geöffnet.
 - **Bottom-Nav (v0.220):** Pill-Nav `position:fixed` **ohne** `transform` (Zentrierung per `left/right`+`margin:auto`); `bottom` inkl. Safe-Area. iOS: `_fixViewportChrome()` nach Tastatur/visualViewport/Tab-Wechsel (#177).
@@ -114,6 +115,8 @@
 
 ## Live-Test offen
 
+- v0.245 Eigene Einkaufs-Kategorien (**zwei echte Geräte**, gekoppelter Zettel): 🛒 Einkaufszettel → 🏷 Kategorien → „Getränkemarkt 🍺" anlegen → steht im Zettel **hinter** den eingebauten und **vor** „Sonstiges"; Name/Symbol in der Zeile ändern → gespeichert; ▲▼ sortiert; denselben Namen nochmal anlegen → abgewiesen. Artikel ✏️ → Kategorie auf „Getränkemarkt" → eigene Überschrift erscheint. **Gerät 2**: dieselbe Kategorie und dieselbe Zuordnung kommen an (nicht unter „Sonstiges"). Umbenennen auf Gerät 2 → Gerät 1 zieht nach. 🗑 auf Gerät 1 → Rückfrage nennt die Artikelzahl, Artikel landen auf **beiden** Geräten unter „Sonstiges", keiner verschwindet. Gegenprobe: Backup → Import auf einem dritten Gerät bringt die Kategorien mit.
+
 - v0.243 Dashboard-Kacheln (iPhone-PWA + Android): Mehr → 🧩 Kacheln auf „Heute" → eine Kachel am ⠿ **mit dem Finger** nach oben ziehen → Reihenfolge stimmt auf „Heute" und übersteht App-Neustart; ▲▼ tun dasselbe; 👁 auf „Fasten" → Kachel weg, Kalorien-Hero bleibt oben; „Mahlzeiten" ausblenden → **sowohl** Überschrift als auch das 2×2-Gitter verschwinden (`display:contents`-Wrapper); Baby-Tagebuch einschalten → Kachel erscheint an ihrer sortierten Stelle; Einkaufszettel leeren → Kachel verschwindet von selbst (Modul-Logik) und kommt bei neuem Artikel zurück, obwohl sie nicht auf „ausgeblendet" steht; „↺ Standard wiederherstellen"; Backup ziehen → Reihenfolge nach Import wieder da. Gegenprobe: Wischen **auf der Zeile** (nicht am Griff) muss die Liste scrollen, ein kurzer Tipp auf den Griff darf nichts verschieben.
 
 - v0.244 Wochenplan: Mehr → 📅 Wochenplan → 🎲 Füllen → Mittag und Abend aller 7 Tage voll, **kein Rezept doppelt** (mit ≥14 Rezepten); schon Geplantes bleibt unangetastet; ‹ › blättert Wochen, KW-Zeile stimmt; Chip antippen → Portionen auf 2 → kcal des Tages verdoppelt sich; 🛒 Einkauf → gleiche Zutat aus mehreren Rezepten steht **einmal** mit addierter Menge auf dem Zettel; „→ ins Tagebuch" → Einträge unter der richtigen Mahlzeit, als Rezept antippbar, Hero-kcal passt; zweimal antippen → Rückfrage; Kachel auf „Heute" zeigt den heutigen Plan; ein eingeplantes Rezept in der Bibliothek löschen → Plan zeigt „Rezept gelöscht ✕" statt zu crashen.
@@ -169,11 +172,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.240 | — | Token-Zeile auf dem Handy zerschossen: `.seb` bringt `width:100%` mit und quetschte das Eingabefeld (Alexa + Sport-Sync) |
 | v0.241 | — | Alexa: Aufrufname „mein tagebuch“, Diktier-Modus für mehrere Einträge, realistische Stückgewichte |
 | v0.242 | — | Alexa: Einkaufs-Formulierungen aufgespannt („auf meine Einkaufsliste“ fiel durch), Begrüßung gekürzt |
 | v0.243 | — | Kacheln auf „Heute" sortierbar und ausblendbar (`NTDash`); Mahlzeiten-Sektion als `#mealsCard` gewickelt |
 | v0.244 | — | Wochenplan (`NTPlan`) mit Auto-Füllen, Wochen-Einkaufszettel und Übernahme ins Tagebuch; „＋ Neues Rezept" mit drei Quellen, neu davon das Kochbuch-Foto |
+| v0.245 | — | Einkaufszettel: eigene Kategorien anlegen, umbenennen, sortieren, löschen — inkl. Sync über denselben verschlüsselten Kanal |
 
 ---
 

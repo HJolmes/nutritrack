@@ -14,7 +14,7 @@
 'use strict';
 
 // ── Kategorien = Gänge im Laden. Reihenfolge bestimmt die Sortierung. ──
-var CATS=[
+var BUILTIN=[
   {id:'obst',     ic:'🥦', label:'Obst & Gemüse'},
   {id:'brot',     ic:'🥖', label:'Brot & Backwaren'},
   {id:'milch',    ic:'🧀', label:'Milch & Käse'},
@@ -27,13 +27,45 @@ var CATS=[
   {id:'baby',     ic:'🍼', label:'Baby'},
   {id:'sonst',    ic:'🛒', label:'Sonstiges'}
 ];
+var SONST={id:'sonst',ic:'🛒',label:'Sonstiges'};
+
+// ── Eigene Kategorien (v0.245) ────────────────────────────────────────────
+// Liegen in S.shopCats und laufen ueber denselben verschluesselten Kanal wie
+// die Artikel (Record-ID mit Praefix `cat:`), damit ein zweites Geraet nicht
+// Artikel in einer Kategorie sieht, die es nicht kennt.
+//   {id:'u…', ic:'🍺', label:'Getränkemarkt', pos:<n>, rev:<n>, _sy:<n>}
+// Die ID bekommt das Praefix `u`, damit sie nie mit einer eingebauten kollidiert
+// — auch dann nicht, wenn spaeter eine eingebaute dazukommt.
+var CAT_PREFIX='cat:';
+function customCats(){
+  if(!Array.isArray(S.shopCats))S.shopCats=[];
+  return S.shopCats;
+}
+function sortedCustom(){
+  return customCats().slice().sort(function(a,b){return (a.pos||0)-(b.pos||0);});
+}
+// Reihenfolge = Gaenge im Laden. Die eingebauten zuerst, dann die eigenen,
+// „Sonstiges" bleibt der Auffangkorb ganz am Ende — dorthin faellt auch alles,
+// dessen Kategorie geloescht wurde oder (bei zwei Geraeten) noch nicht
+// angekommen ist.
+function allCats(){
+  var fixed=BUILTIN.filter(function(c){return c.id!=='sonst';});
+  return fixed.concat(sortedCustom(),[SONST]);
+}
 function cat(id){
-  for(var i=0;i<CATS.length;i++)if(CATS[i].id===id)return CATS[i];
-  return CATS[CATS.length-1];
+  var a=allCats();
+  for(var i=0;i<a.length;i++)if(a[i].id===id)return a[i];
+  return SONST;
 }
 function catOrder(id){
-  for(var i=0;i<CATS.length;i++)if(CATS[i].id===id)return i;
-  return CATS.length;
+  var a=allCats();
+  for(var i=0;i<a.length;i++)if(a[i].id===id)return i;
+  return a.length;
+}
+function catById(id){
+  var a=customCats();
+  for(var i=0;i<a.length;i++)if(a[i].id===id)return a[i];
+  return null;
 }
 
 // ── Artikel-Katalog für die Kachel-Auswahl (ein Tipp = auf dem Zettel) ──
@@ -312,6 +344,7 @@ var Sync=(function(){
   // Bestand einmal in den neuen Raum hochgeladen wird.
   function resetAcks(){
     list().forEach(function(it){delete it._sy;});
+    customCats().forEach(function(c){delete c._sy;});
     S.shopTomb=S.shopTomb||{};
     Object.keys(S.shopTomb).forEach(function(id){if(S.shopTomb[id])delete S.shopTomb[id].sy;});
   }
@@ -398,6 +431,12 @@ var Sync=(function(){
     list().forEach(function(it){
       if((it.rev||0)>(it._sy||0))out.push({id:it.id,rev:it.rev,it:it});
     });
+    // Eigene Kategorien reisen im selben Kanal, erkennbar am ID-Praefix.
+    // Ohne sie saehe das zweite Geraet Artikel in einer Kategorie, die es
+    // nicht kennt — sie landeten dort stumm unter „Sonstiges".
+    customCats().forEach(function(c){
+      if((c.rev||0)>(c._sy||0))out.push({id:CAT_PREFIX+c.id,rev:c.rev,cat:c});
+    });
     S.shopTomb=S.shopTomb||{};
     Object.keys(S.shopTomb).forEach(function(id){
       var t=S.shopTomb[id];
@@ -432,6 +471,11 @@ var Sync=(function(){
     if(!items.length)return Promise.resolve(0);
     items=items.slice(0,200);// Worker-Limit
     return Promise.all(items.map(function(x){
+      // Artikel: {i:…}, eigene Kategorie: {k:…}. Loeschung ist jeweils null.
+      // Ein Geraet mit alter Fassung liest einen `cat:`-Record als Loeschmarke
+      // fuer eine ID, die es als Artikel nie gab — es legt eine tote Zeile in
+      // S.shopTomb an und schickt sie wegen sy===rev nicht zurueck. Harmlos.
+      if(x.id.indexOf(CAT_PREFIX)===0)return encRec(x.id,x.rev,{k:x.cat?strip(x.cat):null});
       return encRec(x.id,x.rev,{i:x.it?strip(x.it):null});
     }))
       .then(function(recs){
@@ -443,6 +487,7 @@ var Sync=(function(){
         // beim nächsten Lauf erneut gesendet.
         items.forEach(function(x){
           if(x.it)x.it._sy=x.rev;
+          else if(x.cat)x.cat._sy=x.rev;
           else if(x.tomb)x.tomb.sy=x.rev;
         });
         saveS();
@@ -472,6 +517,7 @@ var Sync=(function(){
 
   // Merge: höhere rev gewinnt. Gilt für Artikel und Löschmarken gleichermaßen.
   function apply(id,rev,payload){
+    if(String(id).indexOf(CAT_PREFIX)===0)return applyCat(id,rev,payload);
     S.shopTomb=S.shopTomb||{};
     var tomb=S.shopTomb[id];
     if(tomb&&(tomb.rev||0)>=rev)return false;// lokal später gelöscht
@@ -493,6 +539,37 @@ var Sync=(function(){
     return true;
   }
 
+  // Gleiche Regel wie bei Artikeln: hoehere rev gewinnt, Loeschmarke schlaegt
+  // aelteren Inhalt. Verschwindet eine Kategorie, wandern die Artikel, die noch
+  // auf sie zeigen, nach „Sonstiges" — sonst haengen sie an einer ID, die es
+  // auf diesem Geraet nicht mehr gibt, und waeren nur noch ueber den
+  // Artikel-Editor zu erreichen.
+  function applyCat(recId,rev,payload){
+    var id=recId.slice(CAT_PREFIX.length);
+    S.shopTomb=S.shopTomb||{};
+    var tomb=S.shopTomb[recId];
+    if(tomb&&(tomb.rev||0)>=rev)return false;
+    var own=customCats();
+    var idx=-1;
+    for(var i=0;i<own.length;i++)if(own[i].id===id){idx=i;break;}
+    if(idx>=0&&(own[idx].rev||0)>=rev)return false;
+    if(idx>=0)own.splice(idx,1);
+    if(payload.k===null||payload.k===undefined){
+      S.shopTomb[recId]={rev:rev,sy:rev};
+      list().forEach(function(it){
+        if((it.c||'sonst')===id){it.c='sonst';it.rev=nextRev();}
+      });
+      if(rev>_lastRev)_lastRev=rev;
+      return true;
+    }
+    if(tomb)delete S.shopTomb[recId];
+    var c=payload.k;
+    c.id=id;c.rev=rev;c._sy=rev;
+    own.push(c);
+    if(rev>_lastRev)_lastRev=rev;
+    return true;
+  }
+
   function run(force){
     if(!active()||!cryptoOk())return Promise.resolve();
     if(_busy&&!force)return Promise.resolve();
@@ -503,7 +580,7 @@ var Sync=(function(){
       .then(function(applied){
         c.lastAt=Date.now();c.lastErr='';
         saveS();
-        if(applied)render();
+        if(applied){render();if(isOpen('shopCatsOv'))renderCats();}
         renderSyncUI();
       })
       .catch(function(err){
@@ -805,7 +882,7 @@ function renderCatalog(){
     html+='<div style="font-size:11px;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin:4px 2px 6px;">🕘 Zuletzt</div>';
     html+='<div style="'+grid+'">'+tiles(rec.map(function(r){return {n:r.n,ic:r.ic,c:r.c};}))+'</div>';
   }
-  CATS.forEach(function(c){
+  allCats().forEach(function(c){
     var items=CATALOG.filter(function(e){return e[2]===c.id&&(!n||norm(e[0]).indexOf(n)>=0);})
       .map(function(e){return {n:e[0],ic:e[1],c:e[2]};});
     if(!items.length)return;
@@ -836,6 +913,108 @@ function addCatQuery(){
   showToast('Auf dem Zettel ✓');
 }
 
+// ════════ Eigene Kategorien verwalten ════════
+// Anlegen, umbenennen, sortieren, loeschen. Die eingebauten Kategorien stehen
+// zur Orientierung mit in der Liste, sind aber nicht aenderbar: An ihnen haengt
+// der Artikel-Katalog (`CATALOG`) und die automatische Zuordnung aus `guess()`.
+function openCats(){
+  renderCats();
+  openOv('shopCatsOv');
+}
+function renderCats(){
+  var el=document.getElementById('shopCatsList');
+  if(!el)return;
+  var own=sortedCustom();
+  var counts={};
+  list().forEach(function(it){var c=it.c||'sonst';counts[c]=(counts[c]||0)+1;});
+  var html='';
+  html+='<div style="font-size:11px;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin:2px 2px 6px;">Eigene Kategorien</div>';
+  if(!own.length){
+    html+='<div style="font-size:12px;color:var(--mu);font-style:italic;padding:8px 2px 12px;line-height:1.5;">Noch keine eigene Kategorie. Lege unten eine an — zum Beispiel „Getränkemarkt", „Drogerie" oder „Wochenmarkt".</div>';
+  }else{
+    own.forEach(function(c,i){
+      var n=counts[c.id]||0;
+      html+='<div class="shopcat-row" data-cid="'+esc(c.id)+'">'
+        +'<input type="text" class="shopcat-ic" value="'+esc(c.ic||'🏷')+'" maxlength="4" aria-label="Symbol" onchange="NTShop.catSave(\''+esc(c.id)+'\')">'
+        +'<input type="text" class="shopcat-nm" value="'+esc(c.label||'')+'" maxlength="40" aria-label="Name" onchange="NTShop.catSave(\''+esc(c.id)+'\')">'
+        +'<button type="button" class="shopcat-mv" onclick="NTShop.catMove(\''+esc(c.id)+'\',-1)"'+(i===0?' disabled':'')+'>▲</button>'
+        +'<button type="button" class="shopcat-mv" onclick="NTShop.catMove(\''+esc(c.id)+'\',1)"'+(i===own.length-1?' disabled':'')+'>▼</button>'
+        +'<button type="button" class="shopcat-del" onclick="NTShop.catDelete(\''+esc(c.id)+'\')" title="Löschen">🗑</button>'
+        +'</div>'
+        +(n?'<div class="shopcat-note">'+n+' Artikel in dieser Kategorie</div>':'');
+    });
+  }
+  html+='<div style="font-size:11px;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin:16px 2px 6px;">Fest eingebaut</div>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:5px;">'
+    +BUILTIN.map(function(c){
+      return '<span style="background:var(--gl);border:1.5px solid var(--br);border-radius:999px;padding:3px 10px;font-size:12px;color:var(--mu);">'+esc(c.ic+' '+c.label)+'</span>';
+    }).join('')
+    +'</div>'
+    +'<div style="font-size:11px;color:var(--mu);line-height:1.5;margin-top:8px;">Die eingebauten Kategorien lassen sich nicht ändern — an ihnen hängt die automatische Zuordnung neuer Artikel. Eigene Kategorien stehen im Zettel dahinter, „Sonstiges" bleibt am Ende.</div>';
+  el.innerHTML=html;
+}
+function catAdd(){
+  var nm=document.getElementById('shopCatNewNm');
+  var ic=document.getElementById('shopCatNewIc');
+  var label=((nm&&nm.value)||'').trim();
+  if(!label){showToast('Bitte einen Namen eingeben');return;}
+  var own=customCats();
+  // Doppelte Namen abweisen — zwei gleich heissende Gaenge im Laden sind keine
+  // Ordnung, sondern zwei Listen fuer dieselbe Sache.
+  var dup=own.some(function(c){return norm(c.label)===norm(label);})
+    ||BUILTIN.some(function(c){return norm(c.label)===norm(label);});
+  if(dup){showToast('„'+label+'" gibt es schon');return;}
+  var pos=own.reduce(function(m,c){return Math.max(m,c.pos||0);},0)+1;
+  own.push({id:'u'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
+            ic:((ic&&ic.value)||'').trim()||'🏷',label:label,pos:pos,rev:nextRev()});
+  if(nm)nm.value='';
+  if(ic)ic.value='';
+  saveS();Sync.schedule();renderCats();render();
+  showToast('Kategorie angelegt ✓');
+}
+function catSave(id){
+  var c=catById(id);
+  if(!c)return;
+  var wrap=document.querySelector('.shopcat-row[data-cid="'+id+'"]');
+  if(!wrap)return;
+  var ic=wrap.querySelector('.shopcat-ic'),nm=wrap.querySelector('.shopcat-nm');
+  var label=((nm&&nm.value)||'').trim();
+  if(!label){showToast('Name darf nicht leer sein');renderCats();return;}
+  c.label=label;
+  c.ic=((ic&&ic.value)||'').trim()||'🏷';
+  c.rev=nextRev();
+  saveS();Sync.schedule();render();
+  showToast('Gespeichert ✓');
+}
+function catMove(id,dir){
+  var own=sortedCustom();
+  var i=-1,k;
+  for(k=0;k<own.length;k++)if(own[k].id===id)i=k;
+  var j=i+dir;
+  if(i<0||j<0||j>=own.length)return;
+  own.splice(j,0,own.splice(i,1)[0]);
+  // pos neu vergeben statt zu tauschen: so bleibt die Reihe auch dann
+  // lueckenlos, wenn zwei Geraete gleichzeitig sortiert haben.
+  own.forEach(function(c,idx){c.pos=idx+1;c.rev=nextRev();});
+  saveS();Sync.schedule();renderCats();render();
+}
+function catDelete(id){
+  var c=catById(id);
+  if(!c)return;
+  var hit=list().filter(function(it){return (it.c||'sonst')===id;});
+  var msg='Kategorie „'+c.label+'" löschen?';
+  if(hit.length)msg+='\n\n'+hit.length+' Artikel wandern nach „Sonstiges" — gelöscht wird nichts davon.';
+  if(!confirm(msg))return;
+  // Artikel zuerst umhaengen und jeden mit neuer rev versehen, sonst zeigt das
+  // zweite Geraet sie weiter unter einer Kategorie, die es gerade loescht.
+  hit.forEach(function(it){it.c='sonst';it.rev=nextRev();});
+  S.shopCats=customCats().filter(function(x){return x.id!==id;});
+  S.shopTomb=S.shopTomb||{};
+  S.shopTomb[CAT_PREFIX+id]={rev:nextRev()};
+  saveS();Sync.schedule();renderCats();render();
+  showToast(hit.length?('Gelöscht · '+hit.length+' Artikel nach „Sonstiges"'):'Gelöscht');
+}
+
 // ════════ Artikel bearbeiten ════════
 function openItem(id){
   var it=byId(id);
@@ -845,8 +1024,8 @@ function openItem(id){
   document.getElementById('shopItemQty').value=it.q||'';
   document.getElementById('shopItemIcon').value=it.ic||'🛒';
   var sel=document.getElementById('shopItemCat');
-  sel.innerHTML=CATS.map(function(c){return '<option value="'+c.id+'">'+esc(c.ic+' '+c.label)+'</option>';}).join('');
-  sel.value=it.c||'sonst';
+  sel.innerHTML=allCats().map(function(c){return '<option value="'+c.id+'">'+esc(c.ic+' '+c.label)+'</option>';}).join('');
+  sel.value=cat(it.c||'sonst').id;
   var info=document.getElementById('shopItemSrc');
   if(info){
     var src=srcLine(it);
@@ -918,6 +1097,7 @@ function addRecipe(recipeId,portions){
 // ── Boot: höchste bekannte rev merken, dann einmal abgleichen ──
 function boot(){
   list().forEach(function(it){if((it.rev||0)>_lastRev)_lastRev=it.rev;});
+  customCats().forEach(function(c){if((c.rev||0)>_lastRev)_lastRev=c.rev;});
   Object.keys(S.shopTomb||{}).forEach(function(id){
     var t=S.shopTomb[id];if(t&&(t.rev||0)>_lastRev)_lastRev=t.rev;
   });
@@ -937,6 +1117,7 @@ window.NTShop={
   openSync:openSync,renderSyncUI:renderSyncUI,createSyncRoom:createSyncRoom,joinSyncRoom:joinSyncRoom,
   copySyncCode:copySyncCode,shareSyncCode:shareSyncCode,syncNow:syncNow,disconnectSync:disconnectSync,
   openCount:function(){return openItems().length;},
-  Sync:Sync,CATS:CATS
+  openCats:openCats,renderCats:renderCats,catAdd:catAdd,catSave:catSave,catMove:catMove,catDelete:catDelete,
+  Sync:Sync,CATS:BUILTIN,allCats:allCats,
 };
 })();

@@ -1,6 +1,10 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.245',items:[
+    {icon:'\ud83c\udff7\ufe0f',text:'Der Einkaufszettel nimmt jetzt eigene Kategorien: \ud83d\uded2 Einkaufszettel → \ud83c\udff7\ufe0f Kategorien. Name und Symbol frei wählbar, mit \u25b2\u25bc in die Reihenfolge deines Ladens gebracht, jederzeit wieder löschbar. Eigene Kategorien stehen im Zettel hinter den eingebauten, „Sonstiges" bleibt am Ende. Beim Löschen wandern die Artikel nach „Sonstiges" — weg ist keiner. Zuordnen geht über ✏️ am Artikel; dort liegt auch der Weg zur Verwaltung.',where:'Mehr → \ud83d\uded2 Einkaufszettel'},
+    {icon:'\ud83d\udd04',text:'Eigene Kategorien werden mitgeteilt: Wer den Zettel mit einem zweiten Gerät koppelt, sieht dort dieselben Kategorien — sonst wären die Artikel drüben stumm unter „Sonstiges" gelandet. Verschlüsselt wie der Zettel selbst.',where:'\ud83d\uded2 Einkaufszettel → \ud83d\udd04 Teilen'},
+  ]},
   {v:'0.244',items:[
     {icon:'\ud83d\udcc5',text:'Neu: ein Wochenplan. Rezepte auf Frühstück, Mittag, Abend und Snack der sieben Tage verteilen — Mehr → \ud83d\udcc5 Wochenplan oder über die neue Kachel auf „Heute". \ud83c\udfb2 füllt alle leeren Mittag- und Abend-Slots automatisch aus deiner Rezeptsammlung, ohne ein Rezept in derselben Woche zu wiederholen. \ud83d\uded2 schiebt die Zutaten der ganzen Woche auf den Einkaufszettel, gleiche Zutaten aus mehreren Rezepten zusammengefasst. Pro Tag ein Tipp auf „→ ins Tagebuch" trägt das Geplante als normale Mahlzeiten ein.',where:'Heute · Mehr → \ud83d\udcc5 Wochenplan'},
     {icon:'\ud83d\udcf7',text:'Rezepte aus dem Kochbuch: Seite abfotografieren, die KI liest Titel, Portionszahl, Zutatenliste und Zubereitung heraus. Haushaltsmaße werden dabei in Gramm umgerechnet (1 EL Öl ≈ 15 g, 1 Ei ≈ 60 g). Alles bleibt vor dem Speichern änderbar — Mengen, Name, Portionen, Text.',where:'Bibliothek / Wochenplan → ＋ Neues Rezept'},

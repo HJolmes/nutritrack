@@ -866,8 +866,29 @@ function pickerScanFromPhoto(event){
   img.src=url;
 }
 
+// OpenFoodFacts fuehrt kcal je nach Eintrag als kcal, als kJ (energy_100g)
+// oder gar nicht. Wer nur 'energy-kcal_100g' liest, zeigt fuer ein Produkt mit
+// vollstaendigen Makros trotzdem 0 kcal an (#167).
+function _pickerOffPer100(nm){
+  nm=nm||{};
+  var pr=nm['proteins_100g']||0,ca=nm['carbohydrates_100g']||0,fa=nm['fat_100g']||0;
+  var kcal=nm['energy-kcal_100g']||0;
+  if(!kcal&&nm['energy_100g'])kcal=Math.round(nm['energy_100g']/4.184);
+  if(!kcal)kcal=Math.round(pr*4+ca*4+fa*9);
+  return{kcal:kcal,protein:pr,carbs:ca,fat:fa,sugar:nm['sugars_100g']||0,fiber:nm['fiber_100g']||0,salt:nm['salt_100g']||0};
+}
+// Ein Cache-Eintrag aus einer aelteren Version kann leer sein – dann zaehlt er
+// nicht als Treffer, sondern wird verworfen.
+function _pickerCachedBarcode(code){
+  var c=barcodeCache[code];
+  if(!c)return null;
+  if(c.per100&&_hasNutrients(c.per100))return c;
+  delete barcodeCache[code];saveBarcodeCache();
+  return null;
+}
+
 function pickerFetchBarcodeForConfirm(code){
-  var cached=barcodeCache[code];
+  var cached=_pickerCachedBarcode(code);
   if(cached){pickerShowBcConfirm(cached);return;}
   if(!isOnline)return;
   fetchT(offProxyUrl('https://world.openfoodfacts.org/api/v0/product/'+code+'.json'),{},6000)
@@ -876,7 +897,7 @@ function pickerFetchBarcodeForConfirm(code){
       if(data.status!==1||!data.product){showToast('Barcode '+code+' nicht gefunden – bitte manuell eintragen');return;}
       var p=data.product,nm=p.nutriments||{};
       var name=p.product_name_de||p.product_name||'Unbekannt';
-      var per100={kcal:nm['energy-kcal_100g']||0,protein:nm['proteins_100g']||0,carbs:nm['carbohydrates_100g']||0,fat:nm['fat_100g']||0,sugar:nm['sugars_100g']||0,fiber:nm['fiber_100g']||0,salt:nm['salt_100g']||0};
+      var per100=_pickerOffPer100(nm);
       if(!_hasNutrients(per100)){showToast('⚠️ Keine Nährwerte verfügbar für „'+name+'" – bitte manuell eintragen');pickerOpenManualBarcode();document.getElementById('bcManualName').value=name;return;}
       var food={name:name,emoji:emo(name),barcode:code,per100:per100};
       barcodeCache[code]=food;saveBarcodeCache();cacheFood(food);
@@ -935,7 +956,7 @@ function pickerLookupBarcode(code){
   var startBtn=document.getElementById('pickerBcStartBtn');
   if(startBtn)startBtn.style.display='none';
   if(el)el.innerHTML='<div style="font-size:13px;color:var(--g1);padding:8px;text-align:center;">🔍 Suche Barcode '+_esc(code)+'...</div>';
-  var cached=barcodeCache[code];
+  var cached=_pickerCachedBarcode(code);
   if(cached){pickerShowBarcodeResult(cached,true);return;}
   if(!isOnline){
     pickerShowBarcodeNotFound(code,'📴 Offline – nicht im Cache. Werte manuell eintragen:');
@@ -950,7 +971,11 @@ function pickerLookupBarcode(code){
       }
       var p=data.product,nm=p.nutriments||{};
       var name=p.product_name_de||p.product_name||'Unbekannt';
-      var food={name:name,emoji:emo(name),barcode:code,per100:{kcal:nm['energy-kcal_100g']||0,protein:nm['proteins_100g']||0,carbs:nm['carbohydrates_100g']||0,fat:nm['fat_100g']||0,sugar:nm['sugars_100g']||0,fiber:nm['fiber_100g']||0,salt:nm['salt_100g']||0}};
+      var per100=_pickerOffPer100(nm);
+      // Das Produkt steht in der Datenbank, seine Naehrwerte fehlen dort aber.
+      // Ohne diesen Guard bot die Karte "0 kcal · P0 · K0 · F0" zum Buchen an (#167).
+      if(!_hasNutrients(per100)){pickerBarcodeNoNutrients(code,name);return;}
+      var food={name:name,emoji:emo(name),barcode:code,per100:per100};
       barcodeCache[code]=food;saveBarcodeCache();cacheFood(food);
       pickerShowBarcodeResult(food,false);
     }).catch(function(){
@@ -959,15 +984,39 @@ function pickerLookupBarcode(code){
     });
 }
 
+// Produkt steht in der Datenbank, Naehrwerte fehlen dort: schaetzen lassen –
+// wie im Chat- und Foto-Pfad – oder selbst eintragen. Nie 0 kcal anbieten.
+function pickerBarcodeNoNutrients(code,name){
+  var el=document.getElementById('pickerBarcodeResult');
+  if(typeof canUseAi==='function'&&canUseAi()&&typeof kiNutrientLookup==='function'){
+    if(el)el.innerHTML='<div style="font-size:13px;color:var(--g1);padding:8px;text-align:center;">🤖 „'+_esc(name)+'" hat keine Nährwerte hinterlegt – KI schätzt sie...</div>';
+    kiNutrientLookup(name,emo(name),100,function(res){
+      var per100=(res&&res.per100)||{};
+      if(!_hasNutrients(per100)){pickerBarcodeAskManual(code,name);return;}
+      // Eine Schaetzung ist kein Produktdatum – sie wird nicht gecacht.
+      pickerShowBarcodeResult({name:name,emoji:emo(name),barcode:code,per100:per100,estimated:true},false);
+    });
+    return;
+  }
+  pickerBarcodeAskManual(code,name);
+}
+function pickerBarcodeAskManual(code,name){
+  pickerShowBarcodeNotFound(code,(name?'„'+_esc(name)+'" steht in der Datenbank, hat dort aber keine Nährwerte. ':'')+'Trag die Werte selbst ein:');
+  var i=document.getElementById('bcManualName');if(i&&name)i.value=name;
+}
+
 function pickerShowBarcodeResult(food,fromCache){
   var el=document.getElementById('pickerBarcodeResult');
   if(!el){return;}
+  // Letzte Sicherung: ohne Naehrwerte gibt es keinen Hinzufuegen-Knopf (#167).
+  if(!food||!food.per100||!_hasNutrients(food.per100)){pickerBarcodeAskManual((food&&food.barcode)||'',(food&&food.name)||'');return;}
   el.innerHTML='<div style="background:var(--gl);border:1.5px solid var(--g3);border-radius:12px;padding:12px;">'
     +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'
     +'<div style="font-size:28px;">'+(food.emoji||'🍽')+'</div>'
     +'<div style="flex:1;"><div style="font-weight:700;font-size:14px;">'+_esc(food.name)+'</div>'
     +'<div style="font-size:11px;color:var(--mu);margin-top:2px;">P '+food.per100.protein+'g · K '+food.per100.carbs+'g · F '+food.per100.fat+'g pro 100g</div>'
     +(fromCache?'<div style="font-size:10px;color:var(--g2);margin-top:2px;">📴 Aus Cache</div>':'')
+    +(food.estimated?'<div style="font-size:10px;color:var(--wa,#b26a00);margin-top:2px;">🤖 Von der KI geschätzt – Datenbank hatte keine Werte</div>':'')
     +'</div>'
     +'<div style="font-weight:800;font-size:15px;color:var(--g1);">'+Math.round(food.per100.kcal)+' kcal</div>'
     +'</div>'
@@ -1033,6 +1082,7 @@ function pickerBarcodeManualSave(code){
     fat:parseFloat(document.getElementById('bcManualFat').value)||0,
     sugar:0,fiber:0,salt:0
   }};
+  if(!_hasNutrients(food.per100)){showToast('Mindestens Kalorien oder einen Makro-Wert eintragen');return;}
   barcodeCache[code]=food;saveBarcodeCache();
   customFoods.unshift(food);saveX();
   pickerShowBarcodeResult(food,false);

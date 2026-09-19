@@ -211,7 +211,7 @@ function oneDriveSyncDown(){
       if(backup.customFoods)customFoods=backup.customFoods;
       if(backup.recipes)recipes=backup.recipes;
       if(backup.barcodeCache)barcodeCache=backup.barcodeCache;
-      _importAiFields(backup);_migratePhotosAfterImport();
+      _importAiFields(backup);_migratePhotosAfterImport();_dropEmptyNutrientEntries();
       saveS();saveX();saveBarcodeCache();
       renderAll();
       showToast('☁️ Daten aus OneDrive geladen ✓');

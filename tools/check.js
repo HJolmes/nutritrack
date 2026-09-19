@@ -298,6 +298,37 @@ if (!mCore) {
     }
   }
   if (!both) ok('Kein Element traegt data-act und onclick zugleich.');
+
+  // Dieselbe Doppelbelegung, nur zur LAUFZEIT gesetzt: ein
+  // `el.setAttribute('onclick', …)` auf ein Element, dessen Markup schon ein
+  // `data-act` traegt. Die Pruefung darueber liest nur Tags und sah das nie —
+  // und genau so ist es passiert: renderMealDetail() haengte dem ＋ im
+  // Mahlzeit-Detail ein `onclick="openPicker('breakfast')"` an, der Knopf trug
+  // aber `data-act="openPicker" data-args='[null]'`. Beides feuerte, das
+  // data-args zuletzt, und die Zutat landete in der Mahlzeit nach der Uhrzeit
+  // statt in der geoeffneten. Ein Doppelfeuer, das keine Zeile Markup verraet.
+  const actIds = new Set();
+  for (const [, code] of sources) {
+    for (const tag of code.match(/<[^>]*\bdata-act="[^"]*"[^>]*>/g) || []) {
+      const m = tag.match(/\bid="([^"]+)"/);
+      if (m) actIds.add(m[1]);
+    }
+  }
+  let late = 0, lateChecked = 0;
+  for (const [file, code] of sources) {
+    // Variable -> id, aus `var x = document.getElementById('y')`.
+    const byVar = {};
+    for (const m of code.matchAll(/\b([A-Za-z_$][\w$]*)\s*=\s*document\.getElementById\(['"]([^'"]+)['"]\)/g)) byVar[m[1]] = m[2];
+    for (const m of code.matchAll(/(?:\b([A-Za-z_$][\w$]*)|getElementById\(['"]([^'"]+)['"]\))\s*\.setAttribute\(\s*['"]onclick['"]/g)) {
+      lateChecked++;
+      const id = m[2] || byVar[m[1]];
+      if (id && actIds.has(id)) {
+        fail(`${file}: setAttribute('onclick', …) auf #${id} — das Element traegt data-act, die Aktion feuert zweimal.`);
+        late++;
+      }
+    }
+  }
+  if (!late) ok(`Keines der ${lateChecked} zur Laufzeit gesetzten onclick trifft ein data-act-Element.`);
 }
 
 // ── 6. Ausgabe ────────────────────────────────────────────────────────────

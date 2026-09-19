@@ -1071,7 +1071,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
   <div class="bnav">
     <button type="button" class="ni on" data-tab="main" data-act="switchTab" data-args='["main"]'><span>🏠</span>Heute</button>
     <button type="button" class="ni" data-tab="history" data-act="switchTab" data-args='["history"]'><span>📅</span>Verlauf</button>
-    <div class="cw"><button type="button" class="cb" id="cbMealDetail" data-act="openPicker" data-args='[null]'>＋</button></div>
+    <div class="cw"><button type="button" class="cb" id="cbMealDetail" data-act="openPickerForOpenMeal">＋</button></div>
     <button type="button" class="ni" data-tab="trends" data-act="switchTab" data-args='["trends"]'><span>📈</span>Trends</button>
     <button type="button" class="ni" data-tab="more" data-act="switchTab" data-args='["more"]'><span>☰</span>Mehr</button>
   </div>
@@ -1137,7 +1137,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.257</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.258</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -3053,7 +3053,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.257';
+var APP_VERSION='0.258';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -6960,6 +6960,16 @@ function openMealDetail(meal){
   switchTab('mealDetail');
 }
 function closeMealDetail(){window._mealDetailOpen=null;switchTab('main');}
+// Das ＋ in der unteren Leiste bucht, solange eine Mahlzeit geoeffnet ist, in
+// genau diese Mahlzeit. Die Quelle ist `window._mealDetailOpen` und nicht ein
+// zur Renderzeit nachgezogenes Attribut: Bis v0.257 setzte renderMealDetail()
+// dem Knopf ein `onclick="openPicker('breakfast')"` — er trug aber schon ein
+// `data-act="openPicker" data-args='[null]'`. Beides feuerte, das data-args
+// zuletzt, und `openPicker(null)` waehlte die Mahlzeit wieder nach der Uhrzeit.
+// Gemessen: geoeffnet war das Fruehstueck, gebucht wurde in „Snack".
+function openPickerForOpenMeal(defaultTab){
+  openPicker(window._mealDetailOpen||null,defaultTab);
+}
 function renderMealDetail(meal){
   var info=MEAL_LABELS[meal];if(!info)return;
   var day=getDay(),en=day.meals[meal]||[],s=calcM(en);
@@ -7006,7 +7016,6 @@ function renderMealDetail(meal){
         +'</div>';
     }).join('');
   }
-  var cbMd=document.getElementById('cbMealDetail');if(cbMd)cbMd.setAttribute('onclick',"openPicker('"+meal+"')");
   var ctaTpl=document.getElementById('mdTpl');if(ctaTpl)ctaTpl.setAttribute('onclick',"NTTpl.open('"+meal+"')");
   var ctaCpy=document.getElementById('mdCopy');if(ctaCpy)ctaCpy.setAttribute('onclick',"copyMealFromYesterday('"+meal+"')");
   var ctaShr=document.getElementById('mdShare');if(ctaShr)ctaShr.setAttribute('onclick',"shareMeal('"+meal+"')");

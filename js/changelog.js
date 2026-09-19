@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.258',items:[
+    {icon:'\ud83c\udf7d',text:'Das ＋ in der Mitte der unteren Leiste bucht jetzt in die Mahlzeit, die gerade offen ist. Bisher landete alles — Lebensmittel, Rezept, Foto, Barcode, Chat, eigener Eintrag — in der Mahlzeit nach der Uhrzeit: Wer abends das Frühstück geöffnet hatte und ＋ drückte, trug in „Snack“ ein. Der Knopf trug zwei Handler gleichzeitig; der zweite überschrieb die geöffnete Mahlzeit. Die Kopfzeile des Dialogs nennt jetzt auch die richtige Mahlzeit.',where:'🍽 Mahlzeit → ＋'},
+  ]},
   {v:'0.257',items:[
     {icon:'\ud83d\udcca',text:'Ein gescannter Barcode, zu dem die Produktdatenbank keine Nährwerte führt, bot bisher trotzdem eine Karte mit „0 kcal · P 0g · K 0g · F 0g“ zum Hinzufügen an — der Eintrag landete dann mit null Kalorien im Tagebuch. Jetzt schätzt die KI die Werte und kennzeichnet sie als Schätzung; ohne KI öffnet sich das Feld zum Selbsteintragen mit bereits ausgefülltem Produktnamen. Dasselbe galt für Produkte, deren Energie nur in Kilojoule hinterlegt ist — die werden jetzt umgerechnet statt als 0 kcal gezeigt.',where:'\ud83d\udcca Barcode'},
     {icon:'\ud83e\uddf9',text:'Solche Null-Treffer wurden bisher auch gespeichert und tauchten später in der Suche wieder auf. Sie werden nicht mehr abgelegt, und bereits gespeicherte werden beim nächsten App-Start entfernt.',where:'\ud83d\udd0d Suche'},

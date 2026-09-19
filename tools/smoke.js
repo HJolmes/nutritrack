@@ -293,7 +293,43 @@ const EXPECTED_NAMESPACES = [
   if (dbl === 2) console.log('  ok  Doppelbelegung (onclick + data-act) wuerde zweimal feuern — genau das schliesst tools/check.js aus.');
   else console.log(`  x   Doppelfeuer-Probe ergab ${dbl} statt 2 — der Test misst nicht, was er soll.`);
 
-  const delegationFail = (deadActs.length ? 1 : 0) + ((fired.err || fired.calls !== 1) ? 1 : 0) + ((argsOk.err || !argsOk.same) ? 1 : 0) + (dbl === 2 ? 0 : 1) + mechFail;
+  // 3g. Das ＋ in der unteren Leiste bucht, solange eine Mahlzeit geoeffnet ist,
+  //      in GENAU diese Mahlzeit. Bis v0.257 tat es das nicht: der Knopf trug
+  //      `data-act` und bekam zur Renderzeit zusaetzlich ein `onclick` — beides
+  //      feuerte, das data-args mit `null` zuletzt, und `openPicker(null)` nahm
+  //      wieder die Mahlzeit nach der Uhrzeit. Geoeffnet war das Fruehstueck,
+  //      gebucht wurde in „Snack". Kein Fehler in der Konsole, kein Zeichen im
+  //      Markup — nur ein Eintrag an der falschen Stelle. Gemessen wird der
+  //      Klick auf den echten Knopf, nicht der Aufruf von openPicker().
+  const mealPlus = await page.evaluate(async () => {
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    if (typeof window.openMealDetail !== 'function') return { err: 'openMealDetail fehlt' };
+    const real = window.openPicker;
+    const out = [];
+    for (const meal of ['breakfast', 'lunch', 'dinner', 'snack']) {
+      const calls = [];
+      window.openPicker = function (m) { calls.push(m === undefined ? '(leer)' : m); };
+      window.openMealDetail(meal);
+      await sleep(30);
+      const cb = document.getElementById('cbMealDetail');
+      if (!cb) { window.openPicker = real; return { err: 'cbMealDetail fehlt' }; }
+      cb.click();
+      await sleep(30);
+      out.push({ meal: meal, calls: calls });
+    }
+    window.openPicker = real;
+    if (typeof window.closeMealDetail === 'function') window.closeMealDetail();
+    return { rows: out };
+  });
+  let mealPlusFail = 0;
+  if (mealPlus.err) { console.log('  x   ＋ im Mahlzeit-Detail nicht pruefbar: ' + mealPlus.err); mealPlusFail++; }
+  else {
+    const bad = mealPlus.rows.filter((r) => r.calls.length !== 1 || r.calls[0] !== r.meal);
+    if (bad.length) { bad.forEach((r) => console.log(`  x   ＋ bei geoeffnetem '${r.meal}' buchte in ${JSON.stringify(r.calls)} (erwartet genau ["${r.meal}"]).`)); mealPlusFail += bad.length; }
+    else console.log('  ok  Das ＋ bucht in die geoeffnete Mahlzeit — genau einmal, in alle vier geprueft.');
+  }
+
+  const delegationFail = (deadActs.length ? 1 : 0) + ((fired.err || fired.calls !== 1) ? 1 : 0) + ((argsOk.err || !argsOk.same) ? 1 : 0) + (dbl === 2 ? 0 : 1) + mechFail + mealPlusFail;
 
   // 4. Durch die Oberflaeche klicken. Onboarding ueberspringen, falls es kommt.
   await page.evaluate(() => {

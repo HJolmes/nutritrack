@@ -125,10 +125,12 @@ Satz geschlossen, ein Dialog nach „öffne" mit `new: false` und bleibt offen.
 | Einkaufsliste | „Setze Bananen auf meine Einkaufsliste" |
 | Einkaufsliste | „Schreib Milch auf den Einkaufszettel" |
 | Einkaufsliste | „Wir brauchen Klopapier" · „Kauf Butter ein" |
-| Baby | „Alexa, sage mein Tagebuch, Baby Windel gewechselt" |
-| Baby mit Menge | „Alexa, sage mein Tagebuch, Baby 120 Milliliter Flasche" |
-| Baby, Seite | „Alexa, sage mein Tagebuch, Baby gestillt links" |
-| Baby, beide Seiten | „Alexa, sage mein Tagebuch, Baby gestillt beide, hauptsächlich links" |
+| Baby, Windel | „Wickeln" · „Wickeln Stuhl und Pipi" · „Windel gewechselt" |
+| Baby, Stillen | „Stillen rechts" · „Gestillt beide, hauptsächlich links" |
+| Baby, Flasche | „Flasche 120 Milliliter" |
+| Baby, Schlaf | „Schläft" |
+| Baby, Fieber | „Fieber 38,5 Grad" |
+| Baby, mit „Baby" davor | „Alexa, sage mein Tagebuch, Baby Windel gewechselt" |
 
 ### Warum der Aufrufname „mein tagebuch" heißt
 
@@ -146,9 +148,22 @@ Haupt- und Nebensatz gehen beide: „sage mein Tagebuch, **ich habe** zwei Bröt
 ebenso wie „sage mein Tagebuch, **dass ich** zwei Brötchen **gegessen habe**". Passt ein Satz zu
 keinem Befehl, nennt der Skill ein Beispiel, statt nur „nicht verstanden" zu sagen.
 
-**Baby-Einträge beginnen immer mit dem Wort „Baby".** Das ist keine Schikane, sondern eine
-Folge der Alexa-Regel unten: Ohne ein festes Wort vor dem Freitext kann Alexa den Satz
-keinem Intent zuordnen.
+**Baby-Einträge brauchen das Wort „Baby" nicht mehr davor.** Anfangs war es Pflicht, weil
+Alexa vor einem Freitext-Slot ein festes Trägerwort verlangt (Regel unten) — und „Baby" war
+das einzige. Jetzt übernimmt das Tätigkeitswort selbst diese Rolle: **wickeln · gewickelt ·
+windel · stillen · gestillt · brust · angelegt · flasche · fläschchen · gefüttert · schläft ·
+eingeschlafen · fieber · temperatur** tragen je einen eigenen Intent (`BabyDiaperIntent`,
+`BabyBreastIntent`, `BabyBottleIntent`, `BabySleepIntent`, `BabyTempIntent`).
+
+Der Unterschied liegt darin, **wo** die Art des Eintrags steht. Bei „Baby gestillt rechts"
+kommt der ganze Satz im Slot an und das Lambda rät die Art aus dem Text. Bei „Stillen rechts"
+steckt im Slot nur noch „rechts" — die Art muss deshalb am Intent hängen, sonst wäre der
+Eintrag eine Notiz. Beide Wege enden in derselben Funktion (`babyEntry`), damit Windel,
+Flasche und Stillen nur an einer Stelle gedeutet werden.
+
+Neu erkannt wird auch **„Beides"**: „Wickeln Stuhl und Pipi" trägt `kind:'both'` ein, nicht
+nur Stuhl. Und „wickeln" fiel vorher durch — das Muster kannte nur „windel" und „gewickelt",
+die den Stamm „wickel" nicht teilen; „Baby wickeln" landete deshalb als Notiz im Tagebuch.
 
 ### Warum Menge und Uhrzeit mit im Satz stehen
 
@@ -179,6 +194,7 @@ Der Skill nennt die Ursache in der Sprachantwort, statt pauschal zu scheitern:
 |---|---|---|
 | „Ich weiß nicht, wie ich dir dabei helfen kann" | Der Skill wurde gar nicht aufgerufen — Sprachmodell fehlt oder ist nicht gebaut | Build → JSON Editor → Modell einfügen → Save → **Build Model** |
 | „Das habe ich nicht zuordnen können …" | Der Skill läuft, aber der Satzbau passt zu keinem Befehl | eine Formulierung aus der Tabelle oben nehmen |
+| „Notiz." statt Windel oder Stillen | Das Sprachmodell ist älter als der Code (oder umgekehrt) | beides neu einspielen: Build → JSON Editor → **Build Model**, danach Code → Deploy |
 | „Der Skill ist noch nicht eingerichtet" | `TOKEN` oder `ENDPOINT` ist leer | Code-Reiter, die zwei Zeilen oben ausfüllen, Deploy |
 | „Das Token im Skill passt nicht zu dem in NutriTrack" | HTTP 401 — die beiden Token sind verschieden | Mehr → 🗣️ Alexa-Einwurf, Token vergleichen |
 | „Die Endpunkt-Adresse stimmt nicht" | HTTP 404 — die URL endet nicht auf `/alexa/inbox` | `ENDPOINT` korrigieren |

@@ -219,6 +219,112 @@
             "beim Baby {event}",
             "Baby hat {event}"
           ]
+        },
+        {
+          "name": "BabyDiaperIntent",
+          "slots": [
+            {
+              "name": "detail",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "wickeln",
+            "wickeln {detail}",
+            "gewickelt",
+            "gewickelt {detail}",
+            "windel",
+            "windel {detail}",
+            "windel gewechselt",
+            "windel gewechselt {detail}",
+            "frische windel",
+            "neue windel",
+            "ich habe gewickelt",
+            "wir haben gewickelt",
+            "ich habe {detail} gewickelt",
+            "gewickelt mit {detail}"
+          ]
+        },
+        {
+          "name": "BabyBreastIntent",
+          "slots": [
+            {
+              "name": "detail",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "stillen",
+            "stillen {detail}",
+            "gestillt",
+            "gestillt {detail}",
+            "brust",
+            "brust {detail}",
+            "angelegt",
+            "angelegt {detail}",
+            "ich habe gestillt",
+            "ich habe {detail} gestillt",
+            "gestillt an {detail}",
+            "stillen an {detail}"
+          ]
+        },
+        {
+          "name": "BabyBottleIntent",
+          "slots": [
+            {
+              "name": "detail",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "flasche",
+            "flasche {detail}",
+            "fläschchen",
+            "fläschchen {detail}",
+            "flasche gegeben",
+            "flasche gegeben {detail}",
+            "flasche mit {detail}",
+            "gefüttert",
+            "gefüttert {detail}"
+          ]
+        },
+        {
+          "name": "BabySleepIntent",
+          "slots": [
+            {
+              "name": "detail",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "schläft",
+            "schläft {detail}",
+            "eingeschlafen",
+            "eingeschlafen {detail}",
+            "schläft jetzt",
+            "schlafen gelegt",
+            "schläfchen",
+            "hingelegt"
+          ]
+        },
+        {
+          "name": "BabyTempIntent",
+          "slots": [
+            {
+              "name": "detail",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "fieber",
+            "fieber {detail}",
+            "temperatur",
+            "temperatur {detail}",
+            "fieber gemessen",
+            "fieber gemessen {detail}",
+            "temperatur gemessen {detail}",
+            "gemessen {detail}"
+          ]
         }
       ],
       "types": []

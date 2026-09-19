@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.263 (2026-09-25) — Branch `claude/baby-tagebuch-erweiterungen-hzfawm`. **v0.263 erweitert das Baby-Tagebuch** (Chat-Wunsch, 10 Punkte): letzte Mahlzeit auf der Kachel, Stillen mit Stoppuhr, Medizin & tägliche Gaben, Wachstum mit WHO-Perzentilen, Verlauf 7/14 Tage, Arzt-Bericht, Abpumpen, Beikost, U-Termine und eigene Termine. Details unter Architektur → „Baby-Tagebuch-Erweiterungen“.
+**Stand:** v0.264 (2026-09-25) — Branch `claude/orphaned-branches-overview-yecy5b`. **v0.264 holt den nie gemergten Zweig `claude/alexa-voice-recognition-1bvw4c` nach**: Baby-Eintraege per Alexa ohne das Wort „Baby“ — fuenf eigene Intents (`BabyDiaperIntent`, `BabyBreastIntent`, `BabyBottleIntent`, `BabySleepIntent`, `BabyTempIntent`) tragen die Art am Intent, weil bei „Stillen rechts“ im Slot nur „rechts“ ankommt; beide Wege enden in `babyEntry()`. Dazu: „wickeln“ wurde eine Notiz, Stuhl+Pipi ergibt jetzt `kind:'both'`. **Sprachmodell UND Lambda muessen neu in die Alexa-Konsole.** v0.263 erweiterte das Baby-Tagebuch (Stoppuhr, Medizin, Wachstum, Verlauf, U-Heft).
 
 ## URLs
 
@@ -147,6 +147,8 @@
 
 ## Live-Test offen
 
+- **v0.264 Baby per Alexa ohne „Baby“** (**vorher in der Alexa-Konsole: Build → JSON Editor → `alexa/interaction-model.de-DE.json` → Save → Build Model, dann Code → `alexa/lambda/index.js` → Deploy**): „Alexa, starte mein Tagebuch“ → **„Wickeln Stuhl und Pipi“** → Alexa sagt „Windel gewechselt, Stuhl und Pipi“, im Tagebuch steht **💧💩 Beides**. Im selben Dialog: **„Stillen rechts“** → Stillen rechts; **„Flasche 120 Milliliter“** → 120 ml; **„Schlaeft“** → Schlafbeginn; **„Fieber 38,5 Grad“** → 38,5 °C rot. Gegenproben: **„Baby Windel gewechselt“** geht weiter (💧 Pipi), **„Vitamin D gegeben“** bleibt Notiz, **„Wickeln“** allein → 💧 Pipi. Zweites Handy mit demselben Familien-Token: Eintrag kommt dort **einmal** an.
+
 - **v0.263 Baby-Erweiterungen** (iPhone + Android, ideal mit zweitem gekoppelten Geraet): (1) Kachel zeigt „🍼 Letzte Mahlzeit vor …“, zaehlt minuetlich weiter. (2) Tagebuch → „⏱ Stillen“ → Kachel/Tagebuch zeigen laufende Stoppuhr, „⇄ Seite“ wechselt, „■ Stopp“ traegt Minuten ein; auf dem Zweitgeraet erscheint die laufende Stoppuhr. (3) 💊 Medizin → „Vitamin D“ taeglich anlegen → Kachel „heute noch offen“ → „Gegeben ✓“ → Hinweis weg; Fiebermittel mit Abstand 6 h → nach Gabe „frühestens HH:MM“; Liste erscheint auf dem Zweitgeraet. (4) Angaben zum Baby → Geschlecht → 📈 Wachstum → zwei Messungen (eine mit Geburtsdatum) → Kurve und Perzentile plausibel gegen U-Heft. (5) 📊 Verlauf 7/14 Tage, Beikost mit Reaktion erscheint rot, Bericht → Teilen oeffnet das Teilen-Blatt. (6) ＋ Eintrag → Abpumpen, Beikost speichern. (7) ⭐ U-Heft → U-Zeitraeume gegen das Gelbe Heft pruefen, U abhaken, Termin in 3 Tagen → erscheint auf der Kachel.
 
 - **v0.262 Update ohne Neustart**: App (v0.261) offen lassen bzw. aus dem Hintergrund holen, bis v0.262 geladen ist → Baby-Tagebuch → Reiter „⭐ Meilensteine“ laesst sich sofort antippen, ohne die App vorher ganz zu schliessen.
@@ -231,11 +233,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.259 | — | Eingebaute Lebensmittel-Basis von 154 auf 430 Eintraege (#207): `js/fooddb-usda.js` wird aus `tools/fooddb-usda.map.json` + USDA SR28 erzeugt, 276 neue Eintraege mit Schwerpunkt auf Zubereitungen; Zucker/Ballaststoffe/Salz kommen jetzt aus der DB statt als 0 |
 | v0.260 | — | Rezeptbibliothek direkt unter „Mehr“; empfangene Mahlzeiten mit 📬 an der gemeinten Mahlzeit und von dort uebernehmbar; Wochenplan nimmt Freitext-Notizen und laesst das Rezept nachtragen; ein aus dem Plan angelegtes Rezept geht nur noch in die Bibliothek, nicht ins Tagebuch; Dublettenpruefung beim Anlegen/Umbenennen/Import; „Fuellen“ plant den ganzen Tag auf das Kalorienziel und zieht Vorschlaege auch aus ganzen Tagebuch-Mahlzeiten |
 | v0.261 | — | Baby-Tagebuch bekommt Reiter „⭐ Meilensteine“ (`js/baby-milestones.js`, Gelbes U-Heft U3–U9 woertlich), Haken mit Datum in `S.babyMiles` (im Baby-Sync), Einstieg auch im Funktions-Blatt Baby. |
 | v0.262 | — | Update-Wettlauf behoben: lokale Scripts mit `?v=<Version>`, `sw.js` holt fremde Versionen aus dem Netz — neue `index.html` bekommt nie mehr alte Module (Meilenstein-Reiter war nach Update tot). |
 | v0.263 | — | Baby-Tagebuch: letzte Mahlzeit, Stoppuhr, Medizin & Gaben (`js/baby-meds.js`), Wachstum mit WHO-Perzentilen (`js/baby-growth.js`), Verlauf + Arzt-Bericht (`js/baby-week.js`), Abpumpen, Beikost, U-Termine + Termine; vier Reiter. |
+| v0.264 | — | Nie gemergten Zweig `claude/alexa-voice-recognition-1bvw4c` nachgeholt: Baby-Eintraege per Alexa ohne „Baby“ (fuenf Intents, `babyEntry()`), „wickeln“ → Windel statt Notiz, Stuhl+Pipi → `both`. Sprachmodell + Lambda neu einspielen. Dazu alte, bereits gemergte Remote-Branches geloescht. |
 
 ---
 

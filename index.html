@@ -1137,7 +1137,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.256</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.257</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -3053,7 +3053,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.256';
+var APP_VERSION='0.257';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -3326,8 +3326,18 @@ function loadS(){try{var d=localStorage.getItem('nt_v6');if(d){Object.assign(S,J
 function saveX(){_pruneFoodCache(FOODCACHE_MAX);try{localStorage.setItem('nt_x',JSON.stringify({fc:foodCache,cf:customFoods,rc:recipes}));}catch(e){}}
 function loadX(){try{var d=localStorage.getItem('nt_x');if(d){var x=JSON.parse(d);foodCache=x.fc||{};customFoods=x.cf||[];recipes=x.rc||[];}}catch(e){}}
 function saveBarcodeCache(){_pruneBarcodeCache(BARCODECACHE_MAX);try{localStorage.setItem('nt_bc',JSON.stringify(barcodeCache));}catch(e){}}
-function loadBarcodeCache(){try{var d=localStorage.getItem('nt_bc');if(d)barcodeCache=JSON.parse(d);}catch(e){}}
-function cacheFood(f){if(!f||!f.name)return;var k=f.name.toLowerCase().trim();foodCache[k]={name:f.name,emoji:f.emoji,per100:f.per100,addedAt:Date.now()};saveX();}
+function loadBarcodeCache(){try{var d=localStorage.getItem('nt_bc');if(d)barcodeCache=JSON.parse(d);}catch(e){}_dropEmptyNutrientEntries();}
+// Ein Treffer ohne jeden Naehrwert ist keine Information, sondern eine Luecke
+// in der Quelle (#167). Er wird nicht gespeichert – sonst taucht er spaeter als
+// 0-kcal-Vorschlag in der lokalen Suche wieder auf.
+function cacheFood(f){if(!f||!f.name)return;if(!f.per100||!_hasNutrients(f.per100))return;var k=f.name.toLowerCase().trim();foodCache[k]={name:f.name,emoji:f.emoji,per100:f.per100,addedAt:Date.now()};saveX();}
+// Bestand aus aelteren Versionen: dort landeten Nulltreffer noch im Cache.
+function _dropEmptyNutrientEntries(){
+  var n=0;
+  Object.keys(foodCache).forEach(function(k){var f=foodCache[k];if(!f||!f.per100||!_hasNutrients(f.per100)){delete foodCache[k];n++;}});
+  Object.keys(barcodeCache).forEach(function(k){var f=barcodeCache[k];if(!f||!f.per100||!_hasNutrients(f.per100)){delete barcodeCache[k];n++;}});
+  if(n){try{localStorage.setItem('nt_bc',JSON.stringify(barcodeCache));}catch(e){}saveX();}
+}
 function isAiConfigured(){return !!(PROJECT_AI_PROXY_URL&&getProxySecret());}
 function canUseAi(){return isOnline&&isAiConfigured();}
 function showAiUnavailable(){showToast(isOnline?'KI Proxy nicht konfiguriert':'Internet benötigt');}
@@ -6787,7 +6797,7 @@ function importData(e){
       if(d.customFoods)customFoods=d.customFoods;
       if(d.recipes)recipes=d.recipes;
       if(d.barcodeCache)Object.assign(barcodeCache,d.barcodeCache);
-      _importAiFields(d);_migratePhotosAfterImport();
+      _importAiFields(d);_migratePhotosAfterImport();_dropEmptyNutrientEntries();
       saveS();saveX();saveBarcodeCache();renderAll();closeOv('settOv');showToast('Importiert ✓');
     }catch(e){showToast('Fehler beim Import');}
   };

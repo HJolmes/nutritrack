@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.256 (2026-09-19) — Branch `claude/nutritrack-code-review-uuhq0s`. **v0.253 ordnet die Oberflaeche neu**: jede Funktion hat genau einen Ort — ihre Kachel auf „Heute“ —, der Mehr-Hub faellt von 19 auf 10 Eintraege; v0.254 raeumt zwei Folgefehler daraus weg (Stapelreihenfolge der Menues, Kacheln die sich selbst ausblendeten). **v0.255 holt drei Commits aus dem Zweig `claude/clever-noether-rlenc5` nach** — Hauptseite beim Stillen, Alexa-Familien-Briefkasten, Alexa versteht „beide“. **v0.256 nimmt den ⋯-Knopf an der Kachel wieder weg** — das Blatt bleibt, sein Weg ist Mehr → 🧩 Funktionen. Davor drei Wartungs-Iterationen ohne Verhaltensaenderung (v0.249 CI-Guard + Krypto-Konsolidierung, v0.250 `SECTION: NEW FEATURES` in sechs Module aufgeloest, v0.251 Event-Delegation statt inline `onclick`) und v0.252 Testabzug ohne Merge.
+**Stand:** v0.257 (2026-09-19) — Branch `claude/alter-fehler-ki2b6w`. **v0.257 schliesst den Rueckfall zu #167**: ein gescannter Barcode ohne hinterlegte Naehrwerte bot weiter eine Karte „0 kcal · P0 · K0 · F0“ zum Buchen an — der Guard von damals stand nur im Foto-Bestaetigungspfad, nicht im Scan-/Eintipp-Pfad. Dazu: kcal wird aus kJ bzw. aus den Makros gerechnet, und Nulltreffer landen nicht mehr im Cache. **v0.253 ordnet die Oberflaeche neu**: jede Funktion hat genau einen Ort — ihre Kachel auf „Heute“ —, der Mehr-Hub faellt von 19 auf 10 Eintraege; v0.254 raeumt zwei Folgefehler daraus weg (Stapelreihenfolge der Menues, Kacheln die sich selbst ausblendeten). **v0.255 holt drei Commits aus dem Zweig `claude/clever-noether-rlenc5` nach** — Hauptseite beim Stillen, Alexa-Familien-Briefkasten, Alexa versteht „beide“. **v0.256 nimmt den ⋯-Knopf an der Kachel wieder weg** — das Blatt bleibt, sein Weg ist Mehr → 🧩 Funktionen. Davor drei Wartungs-Iterationen ohne Verhaltensaenderung (v0.249 CI-Guard + Krypto-Konsolidierung, v0.250 `SECTION: NEW FEATURES` in sechs Module aufgeloest, v0.251 Event-Delegation statt inline `onclick`) und v0.252 Testabzug ohne Merge.
 
 ## URLs
 
@@ -131,6 +131,8 @@
 
 ## Live-Test offen
 
+- **v0.257 Barcode ohne Naehrwerte**: Einen Artikel scannen, den OpenFoodFacts ohne Naehrwerte fuehrt (z.B. den Vanille-Pudding aus dem Screenshot, sonst 📝 Code manuell eingeben). Erwartet: **keine** 0-kcal-Karte mehr — bei verfuegbarer KI eine Karte mit geschaetzten Werten und dem Hinweis „🤖 Von der KI geschaetzt“, ohne KI das Eingabefeld mit bereits ausgefuelltem Produktnamen. Gegenproben: ein normaler Artikel (z.B. 4011200296898) laeuft unveraendert durch; ein Artikel, dessen Energie nur in kJ hinterlegt ist, zeigt jetzt kcal statt 0; im Eingabefeld alle vier Werte auf 0 lassen → „Speichern & hinzufuegen“ verweigert. Und: den frueher gescannten Nulltreffer in der Suche suchen — er ist beim App-Start aus dem Cache geflogen.
+
 - **v0.256 ohne ⋯** (Testabzug): Auf „Heute“ traegt **keine** Kachel mehr ein ⋯; die Kopfzeilen sitzen wie vor v0.253 (bei „Mahlzeiten“ steht „0 kcal · 0 Posten“ wieder rechtsbuendig statt am Titel geklebt). Mehr → 🧩 Funktionen → **jede** der acht Zeilen antippen → Blatt vorn und bedienbar, darin „Alle Funktionen“ zurueck in den Katalog. Die elf Aktionen, die es nur dort gibt, einmal durchgehen: Bibliothek, Wiederkehrende, Alexa, Code/Link, Wasserziel, Erinnerung, Angaben zum Baby, Sport-Sync und dreimal Verbindungen.
 
 - **v0.255 Uebernahme aus `claude/clever-noether-rlenc5`** (**Worker UND Lambda vorher deployen** — `GET /health` → `codeVersion:"v0.255-alexa-family"`): Baby → ⋯ → Tagebuch → Stillen mit **„Beide“** → Feld „Hauptseite“ erscheint, „Links“ waehlen → naechster Vorschlag ist **Rechts**; bei „Links“/„Rechts“ bleibt das Feld weg. **Zwei Handys:** auf beiden dasselbe Familien-Token eintragen (Mahlzeiten → ⋯ → Alexa-Einwurf), im Skill als `NUTRITRACK_FAMILY_TOKEN` → „Alexa, sage mein Tagebuch, Windel voll“ → der Eintrag kommt auf **beiden** an, sobald eines die App oeffnet, und ergibt dort **eine** Zeile, nicht zwei. Gegenprobe: „Apfel gegessen“ landet nur beim persoenlichen Token. Und: „Baby gestillt beide, hauptsaechlich links“ → Alexa bestaetigt die Seite, der Eintrag traegt sie.
@@ -205,11 +207,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.252 | — | Testabzug ohne Merge (Cloudflare Pages, eigener Origin → eigene Daten); Worker-Freigabe für den Preview-Origin; NUL-Byte in `worker/src/index.js` escaped (Git hielt die Datei für binär) |
 | v0.253 | — | Eine Kachel, eine Funktion, ein Ort: Funktions-Register `js/features.js` (`NTFeat`), ⋯-Blatt je Kachel, Katalog „🧩 Funktionen“; Mehr-Hub 19 → 10 Eintraege; Wasserziel/Baby raus aus den Einstellungen; Feedback-FAB verdeckte seit v0.154 jede Dialog-Ecke |
 | v0.254 | — | Aus dem ⋯-Blatt geoeffnete Menues lagen dahinter (21 von 25 Wegen); Einkaufszettel und Postfach blendeten sich selbst aus, waehrend ihr Schalter auf „an“ stand |
 | v0.255 | — | Drei Commits aus `claude/clever-noether-rlenc5` nachgeholt und auf den neuen Stand gehoben: Hauptseite beim Stillen, Alexa-Familien-Briefkasten (Worker- und Lambda-Deploy noetig), Alexa versteht „beide“ |
 | v0.256 | — | Der ⋯-Knopf an jeder Kachel ist weg: bei zwei von acht Kacheln trug er nichts Eigenes, 6 von 17 Zeilen wiederholten nur den Knopf daneben. Das Blatt bleibt, sein Weg ist Mehr → 🧩 Funktionen |
+| v0.257 | — | Rueckfall zu #167: Barcode-Treffer ohne Naehrwerte wurden mit 0 kcal zum Buchen angeboten (Guard fehlte im Scan-/Eintipp-Pfad) — jetzt KI-Schaetzung mit Kennzeichnung oder Handeingabe; kcal aus kJ/Makros gerechnet; Nulltreffer werden nicht mehr gecacht und beim Start aus Cache und Barcode-Cache entfernt |
 
 ---
 

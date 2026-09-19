@@ -1,6 +1,10 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.257',items:[
+    {icon:'\ud83d\udcca',text:'Ein gescannter Barcode, zu dem die Produktdatenbank keine Nährwerte führt, bot bisher trotzdem eine Karte mit „0 kcal · P 0g · K 0g · F 0g“ zum Hinzufügen an — der Eintrag landete dann mit null Kalorien im Tagebuch. Jetzt schätzt die KI die Werte und kennzeichnet sie als Schätzung; ohne KI öffnet sich das Feld zum Selbsteintragen mit bereits ausgefülltem Produktnamen. Dasselbe galt für Produkte, deren Energie nur in Kilojoule hinterlegt ist — die werden jetzt umgerechnet statt als 0 kcal gezeigt.',where:'\ud83d\udcca Barcode'},
+    {icon:'\ud83e\uddf9',text:'Solche Null-Treffer wurden bisher auch gespeichert und tauchten später in der Suche wieder auf. Sie werden nicht mehr abgelegt, und bereits gespeicherte werden beim nächsten App-Start entfernt.',where:'\ud83d\udd0d Suche'},
+  ]},
   {v:'0.256',items:[
     {icon:'\ud83e\uddf9',text:'Die drei Punkte an jeder Kachel sind weg. Gezählt trugen sie bei zwei der acht Kacheln gar nichts Eigenes, und 6 von 17 Zeilen dahinter wiederholten nur den orangen Knopf daneben — „Zettel öffnen“ neben „＋ Eintragen →“. „Heute“ zeigt jetzt nur noch Inhalt und den einen Knopf, der das Naheliegende tut.',where:'Heute'},
     {icon:'\ud83e\udde9',text:'Alles Weitere steht unverändert an einem Ort: Mehr → \ud83e\udde9 Funktionen. Eine Zeile antippen öffnet das Blatt dieser Funktion — Bibliothek, Alexa, Wasserziel, Sport-Sync, Verbindungen, Angaben zum Baby, dazu der Schalter und ▲▼ für die Reihenfolge. Ein Tipp mehr als vorher, dafür eine ruhige Übersicht; täglich braucht man nichts davon.',where:'Mehr → \ud83e\udde9 Funktionen'},

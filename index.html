@@ -1137,7 +1137,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.258</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.259</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1940,10 +1940,11 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
           „Setze Bananen auf meine Einkaufsliste"<br>
           „Schreib Milch auf den Einkaufszettel"<br>
           „Wir brauchen Klopapier"<br><br>
-          <b>Baby-Tagebuch</b> — immer mit „Baby" beginnen<br>
-          „Baby Windel gewechselt" · „Baby schläft"<br>
-          „Baby 120 Milliliter Flasche" · „Baby gestillt links"<br>
-          „Baby gestillt beide, hauptsächlich links" — bei beiden Seiten die Hauptseite mitsagen, dann stimmt der Vorschlag fürs nächste Mal<br><br>
+          <b>Baby-Tagebuch</b> — „Baby" davor ist nicht mehr nötig<br>
+          „Wickeln Stuhl und Pipi" · „Windel gewechselt"<br>
+          „Stillen rechts" · „Stillen beide, hauptsächlich links" — bei beiden Seiten die Hauptseite mitsagen, dann stimmt der Vorschlag fürs nächste Mal<br>
+          „Flasche 120 Milliliter" · „Schläft" · „Fieber 38,5 Grad"<br>
+          Mit „Baby" davor geht weiter alles wie bisher: „Baby Windel gewechselt".<br><br>
           <b>Einzeln, ohne vorher zu starten</b><br>
           „Alexa, sage mein Tagebuch, ich habe zwei Brötchen gegessen"
         </div>
@@ -3053,7 +3054,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.258';
+var APP_VERSION='0.259';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung

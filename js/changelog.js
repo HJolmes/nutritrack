@@ -1,6 +1,11 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.259',items:[
+    {icon:'\ud83d\udc76',text:'Baby-Einträge per Alexa brauchen das Wort „Baby“ nicht mehr davor: „Wickeln Stuhl und Pipi“, „Stillen rechts“, „Flasche 120 Milliliter“, „Schläft“, „Fieber 38,5 Grad“ werden direkt der richtigen Art zugeordnet. Mit „Baby“ davor geht weiter alles wie bisher.',where:'\ud83c\udf99 Alexa-Einwurf'},
+    {icon:'\ud83d\udd27',text:'„Wickeln“ landete bisher als Notiz im Tagebuch statt als Windel — der Skill kannte nur „Windel“ und „gewickelt“. Neu ist auch „Beides“: Wer Stuhl und Pipi zusammen sagt, bekommt einen Eintrag mit beidem statt nur Stuhl.',where:'\ud83d\udc76 Baby-Tagebuch'},
+    {icon:'\u26a0\ufe0f',text:'Dafür müssen Sprachmodell und Skill-Code einmal neu in die Alexa-Konsole eingespielt werden (Build → JSON Editor → Build Model, danach Code → Deploy). Ohne das bleibt es beim alten Verhalten.',where:'\ud83c\udf99 Alexa-Einwurf'},
+  ]},
   {v:'0.258',items:[
     {icon:'\ud83c\udf7d',text:'Das ＋ in der Mitte der unteren Leiste bucht jetzt in die Mahlzeit, die gerade offen ist. Bisher landete alles — Lebensmittel, Rezept, Foto, Barcode, Chat, eigener Eintrag — in der Mahlzeit nach der Uhrzeit: Wer abends das Frühstück geöffnet hatte und ＋ drückte, trug in „Snack“ ein. Der Knopf trug zwei Handler gleichzeitig; der zweite überschrieb die geöffnete Mahlzeit. Die Kopfzeile des Dialogs nennt jetzt auch die richtige Mahlzeit.',where:'🍽 Mahlzeit → ＋'},
   ]},

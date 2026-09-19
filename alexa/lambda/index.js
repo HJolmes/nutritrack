@@ -234,6 +234,99 @@ function failed(err) {
   return say('Das hat gerade nicht geklappt. Versuch es später nochmal.');
 }
 
+// ── Baby-Einträge ──
+//
+// Zwei Wege führen hierher: "Baby gestillt rechts" (LogBabyIntent, die Art
+// steckt im Freitext und wird hier geraten) und "stillen rechts"
+// (BabyBreastIntent, die Art steht durch den Intent fest). Beide landen in
+// babyEntry(), damit Windel, Flasche und Stillen nur an einer Stelle gedeutet
+// werden.
+function babyTypeOf(raw) {
+  const t = String(raw || '').toLowerCase();
+  // "wickeln" und "gewickelt" haben nur den Stamm "wickel" gemeinsam — das
+  // frühere /windel|gewickelt/ ließ "Baby wickeln" als Notiz durchfallen.
+  if (/wickel|windel/.test(t)) return 'diaper';
+  if (/flasche|fläschchen|flaeschchen|milch/.test(t)) return 'bottle';
+  if (/still|brust/.test(t)) return 'breast';
+  if (/schläft|schlaeft|schlafen|eingeschlafen|schläfchen|schlaf\b/.test(t)) return 'sleep';
+  if (/fieber|temperatur/.test(t)) return 'temp';
+  return 'note';
+}
+
+function sideIn(t) {
+  return /link/.test(t) ? 'l' : /recht/.test(t) ? 'r' : '';
+}
+function sideWord(s) {
+  return s === 'l' ? 'links' : 'rechts';
+}
+
+// type steht fest, detail ist alles, was sonst noch gesagt wurde
+// ("stuhl und pipi", "rechts", "120 Milliliter", "38,5 Grad").
+function babyEntry(type, detailRaw, noteRaw) {
+  const d = String(detailRaw || '').toLowerCase();
+  const amount = extractUnit(d, /(\d+(?:[.,]\d+)?)\s*(?:ml|milliliter|grad)\b/i)
+    || extractUnit(d, /(\d+(?:[.,]\d+)?)/);
+
+  if (type === 'diaper') {
+    // "Stuhl und Pipi" ist in der App ein eigener Wert ("Beides") und nicht
+    // zweimal dasselbe Ereignis.
+    const poo = /stuhl|groß|gross|kacke|kaka|\baa\b|voll/.test(d);
+    const pee = /pipi|pisse|urin|nass|klein/.test(d);
+    const kind = (poo && pee) || /beide/.test(d) ? 'both' : poo ? 'poo' : 'pee';
+    const word = kind === 'both' ? 'Stuhl und Pipi' : kind === 'poo' ? 'Stuhl' : 'Pipi';
+    return { payload: { kind: 'baby', babyType: 'diaper', babyP: { kind } },
+      spoken: 'Windel gewechselt, ' + word + '.' };
+  }
+
+  if (type === 'bottle') {
+    const p = {};
+    if (amount) p.ml = Math.round(amount);
+    return { payload: { kind: 'baby', babyType: 'bottle', babyP: p },
+      spoken: amount ? amount + ' Milliliter Flasche.' : 'Flasche.' };
+  }
+
+  if (type === 'breast') {
+    const p = {};
+    if (/beid|bds\b/.test(d)) {
+      // "Beide" allein sagt nichts darüber, welche Seite als Nächstes dran
+      // ist — die App braucht dafür die Hauptseite (die mit der größeren
+      // Trinkmenge). Sie steht im Satz meist hinter "beide":
+      // "beide, hauptsächlich links", "beide mehr rechts", "beide links".
+      p.side = 'b';
+      const main = sideIn(d.split(/beid\w*/)[1] || '') || sideIn(d);
+      if (main) p.main = main;
+      return { payload: { kind: 'baby', babyType: 'breast', babyP: p },
+        spoken: main ? 'Gestillt, beide, hauptsächlich ' + sideWord(main) + '.' : 'Gestillt, beide Seiten.' };
+    }
+    const side = sideIn(d);
+    if (side) p.side = side;
+    return { payload: { kind: 'baby', babyType: 'breast', babyP: p },
+      spoken: side ? 'Gestillt ' + sideWord(side) + '.' : 'Gestillt.' };
+  }
+
+  if (type === 'sleep') {
+    return { payload: { kind: 'baby', babyType: 'sleep', babyP: {} },
+      spoken: 'Schlaf notiert.' };
+  }
+
+  if (type === 'temp') {
+    const p = {};
+    if (amount) p.temp = amount;
+    return { payload: { kind: 'baby', babyType: 'temp', babyP: p },
+      spoken: amount ? amount + ' Grad.' : 'Temperatur notiert.' };
+  }
+
+  // Alles andere wandert als Notiz ins Tagebuch, statt verloren zu gehen.
+  return { payload: { kind: 'baby', babyType: 'note', text: String(noteRaw || detailRaw || '') },
+    spoken: 'Notiz.' };
+}
+
+async function pushBaby(type, detail, noteRaw, keepOpen, ctx) {
+  const e = babyEntry(type, detail, noteRaw);
+  await push(e.payload, ctx);
+  return confirm(e.spoken, keepOpen);
+}
+
 // ── Intents ──
 const HANDLERS = {
   async LogMealIntent(request, keepOpen, ctx) {
@@ -275,56 +368,32 @@ const HANDLERS = {
   async LogBabyIntent(request, keepOpen, ctx) {
     const spokenRaw = slot(request, 'event');
     if (!spokenRaw) return say('Was soll ins Baby-Tagebuch?', false);
-    const kindRaw = spokenRaw.toLowerCase();
-    // Menge steht im Freitext: "120 Milliliter Flasche", "38,5 Grad Fieber".
-    const amount = extractUnit(kindRaw, /(\d+(?:[.,]\d+)?)\s*(?:ml|milliliter|grad)\b/i)
-      || extractUnit(kindRaw, /(\d+(?:[.,]\d+)?)/);
-    let payload = null;
-    let spoken = '';
+    // "Baby gestillt rechts": Die Art steckt im Freitext und wird geraten.
+    return pushBaby(babyTypeOf(spokenRaw), spokenRaw, spokenRaw, keepOpen, ctx);
+  },
 
-    if (/windel|gewickelt/.test(kindRaw)) {
-      payload = { kind: 'baby', babyType: 'diaper', babyP: { kind: 'pee' } };
-      spoken = 'Windel gewechselt.';
-      if (/stuhl|gro|kacke|aa/.test(kindRaw)) {
-        payload.babyP.kind = 'poo';
-      }
-    } else if (/flasche|fläschchen|milch/.test(kindRaw)) {
-      payload = { kind: 'baby', babyType: 'bottle', babyP: {} };
-      if (amount) payload.babyP.ml = Math.round(amount);
-      spoken = amount ? amount + ' Milliliter Flasche.' : 'Flasche.';
-    } else if (/still|brust/.test(kindRaw)) {
-      payload = { kind: 'baby', babyType: 'breast', babyP: {} };
-      const sideIn = (t) => (/link/.test(t) ? 'l' : /recht/.test(t) ? 'r' : '');
-      const sideWord = (s) => (s === 'l' ? 'links' : 'rechts');
-      if (/beid|bds\b/.test(kindRaw)) {
-        // "Beide" allein sagt nichts darüber, welche Seite als Nächstes dran
-        // ist — die App braucht dafür die Hauptseite (die mit der größeren
-        // Trinkmenge). Sie steht im Satz meist hinter "beide":
-        // "beide, hauptsächlich links", "beide mehr rechts", "beide links".
-        payload.babyP.side = 'b';
-        const after = kindRaw.split(/beid\w*/)[1] || '';
-        const main = sideIn(after) || sideIn(kindRaw);
-        if (main) payload.babyP.main = main;
-        spoken = main ? 'Gestillt, beide, hauptsächlich ' + sideWord(main) + '.' : 'Gestillt, beide Seiten.';
-      } else {
-        const side = sideIn(kindRaw);
-        if (side) payload.babyP.side = side;
-        spoken = side ? 'Gestillt ' + sideWord(side) + '.' : 'Gestillt.';
-      }
-    } else if (/schläft|schlafen|eingeschlafen/.test(kindRaw)) {
-      payload = { kind: 'baby', babyType: 'sleep', babyP: {} };
-      spoken = 'Schlaf notiert.';
-    } else if (/fieber|temperatur/.test(kindRaw)) {
-      payload = { kind: 'baby', babyType: 'temp', babyP: {} };
-      if (amount) payload.babyP.temp = amount;
-      spoken = amount ? amount + ' Grad.' : 'Temperatur notiert.';
-    } else {
-      // Alles andere wandert als Notiz ins Tagebuch, statt verloren zu gehen.
-      payload = { kind: 'baby', babyType: 'note', text: spokenRaw };
-      spoken = 'Notiz.';
-    }
-    await push(payload, ctx);
-    return confirm(spoken, keepOpen);
+  // Die fünf Befehle ohne das Wort "Baby". Die Art steht hier durch den Intent
+  // fest — "stillen rechts" landet damit als Stillen rechts und nicht als Notiz,
+  // weil im Slot nur noch "rechts" ankommt und das allein nichts verraten würde.
+  async BabyDiaperIntent(request, keepOpen, ctx) {
+    const d = slot(request, 'detail');
+    return pushBaby('diaper', d, d, keepOpen, ctx);
+  },
+  async BabyBreastIntent(request, keepOpen, ctx) {
+    const d = slot(request, 'detail');
+    return pushBaby('breast', d, d, keepOpen, ctx);
+  },
+  async BabyBottleIntent(request, keepOpen, ctx) {
+    const d = slot(request, 'detail');
+    return pushBaby('bottle', d, d, keepOpen, ctx);
+  },
+  async BabySleepIntent(request, keepOpen, ctx) {
+    const d = slot(request, 'detail');
+    return pushBaby('sleep', d, d, keepOpen, ctx);
+  },
+  async BabyTempIntent(request, keepOpen, ctx) {
+    const d = slot(request, 'detail');
+    return pushBaby('temp', d, d, keepOpen, ctx);
   },
 };
 

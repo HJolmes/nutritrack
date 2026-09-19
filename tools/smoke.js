@@ -48,6 +48,24 @@ const EXPECTED_NAMESPACES = [
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   const page = await ctx.newPage();
 
+  // Nur der eigene Server. Alles Fremde wird abgeschnitten — und zwar nicht,
+  // um Fehler loszuwerden, sondern weil ein Rauchtest sonst vom Netz abhaengt:
+  // In der CI laedt `import("https://esm.sh/@undecaf/zbar-wasm")` (steht seit
+  // v0.184 im Markup, optionaler Zweit-Decoder), das fremde minifizierte Modul
+  // wirft dabei "n is not a function" — auf einer Maschine ohne Zugriff auf
+  // esm.sh passiert das nie. Derselbe Code waere je nach Netz gruen oder rot.
+  // Die App ist offline-first: ohne jedes CDN muss sie starten, und genau das
+  // prueft der Lauf seither. Fuer UNSEREN Code ist das die strengere Bedingung,
+  // nicht die laxere.
+  const EIGEN=/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/)/;
+  let fremd=0;
+  await page.route('**/*', (route) => {
+    const u = route.request().url();
+    if (EIGEN.test(u) || u.startsWith('data:') || u.startsWith('blob:')) return route.continue();
+    fremd++;
+    return route.abort();
+  });
+
   const errors = [];
   const ignore = [/favicon/i, /manifest/i, /Failed to load resource/i, /ServiceWorker/i,
                   /net::ERR/i, /workers\.dev/i, /openfoodfacts/i, /404/];
@@ -56,7 +74,12 @@ const EXPECTED_NAMESPACES = [
     errors.push(`[${where}] ${text}`);
   };
   page.on('console', (m) => { if (m.type() === 'error') record('console', m.text()); });
-  page.on('pageerror', (e) => record('pageerror', e.message));
+  // Die Quelle mitnehmen: „n is not a function" allein sagt nicht, WESSEN Code
+  // geworfen hat — mit der ersten Stack-Zeile ist es in einem Blick klar.
+  page.on('pageerror', (e) => {
+    const quelle = (String(e.stack || '').split('\n')[1] || '').trim();
+    record('pageerror', e.message + (quelle ? '  (' + quelle + ')' : ''));
+  });
 
   await page.goto(BASE, { waitUntil: 'load' });
   await page.waitForTimeout(1200);
@@ -348,6 +371,7 @@ const EXPECTED_NAMESPACES = [
     closeAll();
     return out;
   });
+  console.log(`  ok  Ohne jedes CDN gestartet (${fremd} fremde Anfragen abgeschnitten).`);
   if (!stack.length) console.log('  ok  Jedes aus Katalog und Funktions-Blatt geoeffnete Menue liegt oben.');
   else stack.forEach((m) => console.log('  x   ' + m));
 

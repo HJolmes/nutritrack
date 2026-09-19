@@ -7,8 +7,19 @@
 //
 // Zwei Umgebungsvariablen sind Pflicht (Alexa Developer Console → Code →
 // "Environment variables", oder direkt hier eintragen):
-//   NUTRITRACK_TOKEN     — das Token aus NutriTrack (Mehr → Alexa-Einwurf)
+//   NUTRITRACK_TOKEN     — persönliches Token aus NutriTrack (Mehr → Alexa-Einwurf)
 //   NUTRITRACK_ENDPOINT  — z. B. https://…workers.dev/alexa/inbox
+//
+// Optional, für zwei Personen mit einem Echo:
+//   NUTRITRACK_FAMILY_TOKEN — Familien-Token: Baby-Tagebuch und Einkaufszettel
+//       gehen dorthin und erreichen damit BEIDE Telefone. Fehlt die Variable,
+//       läuft alles wie bisher über NUTRITRACK_TOKEN.
+//   NUTRITRACK_PERSONS — Zuordnung Alexa-Stimmprofil → persönliches Token,
+//       Format: "amzn1.ask.person.AAA=token1;amzn1.ask.person.BBB=token2"
+//       (Semikolon, Komma oder Zeilenumbruch trennen). Damit landen Essen,
+//       Sport und Wasser bei der Person, die gesprochen hat. Eine unbekannte
+//       oder nicht erkannte Stimme fällt auf NUTRITRACK_TOKEN zurück.
+//       Die personId steht im Log jeder Anfrage (Alexa Console → Code → Logs).
 //
 // Kein npm-Paket nötig: Der Aufruf läuft über das eingebaute `https`-Modul —
 // bewusst NICHT über `fetch`, das es erst ab Node 18 gibt und in der
@@ -17,6 +28,34 @@
 
 const TOKEN = process.env.NUTRITRACK_TOKEN || '';
 const ENDPOINT = process.env.NUTRITRACK_ENDPOINT || '';
+const FAMILY_TOKEN = process.env.NUTRITRACK_FAMILY_TOKEN || '';
+
+// Geteilte Töpfe: Baby-Tagebuch und Einkaufszettel gehören beiden Partnern und
+// gehen deshalb in den Familien-Briefkasten, den beide Telefone abholen.
+// Alles andere (Essen, Sport, Wasser) ist persönlich.
+const SHARED_KINDS = new Set(['baby', 'shop']);
+
+// "personId=token;personId2=token2" → Map. Einmal beim Kaltstart geparst.
+const PERSON_TOKENS = (() => {
+  const map = new Map();
+  for (const part of String(process.env.NUTRITRACK_PERSONS || '').split(/[;,\n]+/)) {
+    const i = part.indexOf('=');
+    if (i <= 0) continue;
+    const person = part.slice(0, i).trim();
+    const token = part.slice(i + 1).trim();
+    if (person && token) map.set(person, token);
+  }
+  return map;
+})();
+
+// Wer spricht? Alexa liefert die personId nur, wenn die Person ein Stimmprofil
+// eingerichtet hat ("Alexa, lerne meine Stimme kennen"). Ohne Profil bleibt das
+// Feld leer — dann gilt der Standard-Token.
+function tokenFor(kind, personId) {
+  if (SHARED_KINDS.has(kind)) return FAMILY_TOKEN || TOKEN;
+  if (personId && PERSON_TOKENS.has(personId)) return PERSON_TOKENS.get(personId);
+  return TOKEN;
+}
 
 // ── Alexa-Grundgerüst ──
 function say(text, endSession = true) {
@@ -128,10 +167,11 @@ function postJson(urlStr, headers, bodyStr) {
   });
 }
 
-async function push(payload) {
+async function push(payload, ctx) {
   if (!TOKEN || !ENDPOINT) {
     throw new Error('not_configured');
   }
+  const token = tokenFor(payload && payload.kind, ctx && ctx.personId);
   const body = {
     // Eindeutige ID pro Einwurf: NutriTrack erkennt daran Doppel-Einträge,
     // falls eine Quittung verloren geht.
@@ -141,7 +181,7 @@ async function push(payload) {
   };
   const res = await postJson(
     ENDPOINT,
-    { 'X-User-Token': TOKEN, 'Content-Type': 'application/json' },
+    { 'X-User-Token': token, 'Content-Type': 'application/json' },
     JSON.stringify(body)
   );
   if (res.status < 200 || res.status >= 300) {
@@ -196,43 +236,43 @@ function failed(err) {
 
 // ── Intents ──
 const HANDLERS = {
-  async LogMealIntent(request, keepOpen) {
+  async LogMealIntent(request, keepOpen, ctx) {
     const spoken = slot(request, 'food');
     if (!spoken) return say('Was hast du gegessen?', false);
     const { meal, text } = extractMeal(spoken);
     if (!text) return say('Was hast du gegessen?', false);
     const payload = { kind: 'meal', text };
     if (meal) payload.meal = meal;
-    await push(payload);
+    await push(payload, ctx);
     return confirm(text + '.', keepOpen);
   },
 
-  async LogWaterIntent(request, keepOpen) {
+  async LogWaterIntent(request, keepOpen, ctx) {
     const n = toNumber(slot(request, 'count')) || 1;
-    await push({ kind: 'water', text: n + ' Glas Wasser', qty: n });
+    await push({ kind: 'water', text: n + ' Glas Wasser', qty: n }, ctx);
     return confirm(n === 1 ? 'Ein Glas Wasser.' : n + ' Gläser Wasser.', keepOpen);
   },
 
-  async LogExerciseIntent(request, keepOpen) {
+  async LogExerciseIntent(request, keepOpen, ctx) {
     const spoken = slot(request, 'activity');
     if (!spoken) return say('Was hast du gemacht?', false);
     const { minutes, text } = extractMinutes(spoken);
     const activity = text || spoken;
     const payload = { kind: 'exercise', text: activity };
     if (minutes) payload.durationMin = Math.round(minutes);
-    await push(payload);
+    await push(payload, ctx);
     return confirm(minutes ? minutes + ' Minuten ' + activity + '.' : activity + '.', keepOpen);
   },
 
-  async AddShoppingIntent(request, keepOpen) {
+  async AddShoppingIntent(request, keepOpen, ctx) {
     const item = slot(request, 'item');
     if (!item) return say('Was soll auf den Einkaufszettel?', false);
-    await push({ kind: 'shop', text: item });
+    await push({ kind: 'shop', text: item }, ctx);
     return keepOpen ? say(item + ' steht auf dem Einkaufszettel. Was noch?', false)
       : say(item + ' steht auf dem Einkaufszettel.');
   },
 
-  async LogBabyIntent(request, keepOpen) {
+  async LogBabyIntent(request, keepOpen, ctx) {
     const spokenRaw = slot(request, 'event');
     if (!spokenRaw) return say('Was soll ins Baby-Tagebuch?', false);
     const kindRaw = spokenRaw.toLowerCase();
@@ -254,9 +294,23 @@ const HANDLERS = {
       spoken = amount ? amount + ' Milliliter Flasche.' : 'Flasche.';
     } else if (/still|brust/.test(kindRaw)) {
       payload = { kind: 'baby', babyType: 'breast', babyP: {} };
-      if (/links/.test(kindRaw)) payload.babyP.side = 'l';
-      else if (/rechts/.test(kindRaw)) payload.babyP.side = 'r';
-      spoken = 'Gestillt.';
+      const sideIn = (t) => (/link/.test(t) ? 'l' : /recht/.test(t) ? 'r' : '');
+      const sideWord = (s) => (s === 'l' ? 'links' : 'rechts');
+      if (/beid|bds\b/.test(kindRaw)) {
+        // "Beide" allein sagt nichts darüber, welche Seite als Nächstes dran
+        // ist — die App braucht dafür die Hauptseite (die mit der größeren
+        // Trinkmenge). Sie steht im Satz meist hinter "beide":
+        // "beide, hauptsächlich links", "beide mehr rechts", "beide links".
+        payload.babyP.side = 'b';
+        const after = kindRaw.split(/beid\w*/)[1] || '';
+        const main = sideIn(after) || sideIn(kindRaw);
+        if (main) payload.babyP.main = main;
+        spoken = main ? 'Gestillt, beide, hauptsächlich ' + sideWord(main) + '.' : 'Gestillt, beide Seiten.';
+      } else {
+        const side = sideIn(kindRaw);
+        if (side) payload.babyP.side = side;
+        spoken = side ? 'Gestillt ' + sideWord(side) + '.' : 'Gestillt.';
+      }
     } else if (/schläft|schlafen|eingeschlafen/.test(kindRaw)) {
       payload = { kind: 'baby', babyType: 'sleep', babyP: {} };
       spoken = 'Schlaf notiert.';
@@ -269,7 +323,7 @@ const HANDLERS = {
       payload = { kind: 'baby', babyType: 'note', text: spokenRaw };
       spoken = 'Notiz.';
     }
-    await push(payload);
+    await push(payload, ctx);
     return confirm(spoken, keepOpen);
   },
 };
@@ -324,7 +378,13 @@ exports.handler = async function (event) {
     // geschlossen: eine grundlos offene Sitzung wartet auf eine Antwort, die
     // niemand erwartet, und wirkt wie ein hängender Skill.
     const keepOpen = Boolean(event.session && event.session.new === false);
-    return await handler(event.request, keepOpen);
+    // Die personId ist die einzige Möglichkeit, zwei Personen an einem Echo zu
+    // unterscheiden. Sie wird geloggt, damit man sie für NUTRITRACK_PERSONS
+    // ablesen kann (Alexa Console → Code → Logs); sie ist eine anonyme
+    // Amazon-Kennung, kein Name.
+    const personId = event.context?.System?.person?.personId || '';
+    console.log('[nutritrack] personId:', personId || '(kein Stimmprofil erkannt)');
+    return await handler(event.request, keepOpen, { personId });
   } catch (e) {
     if (e && e.message === 'not_configured') {
       return say(

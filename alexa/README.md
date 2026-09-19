@@ -15,6 +15,15 @@ Ziele noch Verlauf.
   → Worker löscht den Einwurf
 ```
 
+**Zwei Briefkästen (ab v0.244).** Essen, Sport und Wasser sind persönlich und gehen an das
+Token der Person, die gesprochen hat (Alexa-Stimmprofil). Baby-Tagebuch und Einkaufszettel
+gehören beiden Partnern und gehen an ein **Familien-Token**, das auf beiden Telefonen
+eingetragen ist — beide Geräte holen dieselben Einwürfe ab. Damit derselbe Einwurf nicht
+zweimal auf dem Zettel bzw. im Tagebuch landet, leitet sich die Eintrags-ID aus der
+Alexa-ID ab; Baby- und Einkaufs-Sync führen sie als denselben Eintrag zusammen.
+Geteilte Einwürfe werden deshalb **nicht** beim Abholen gelöscht, sondern verfallen nach
+48 Stunden.
+
 Der Einwurf erscheint **nicht sofort**. Eine PWA läuft nicht im Hintergrund; sie holt beim
 App-Start und bei jeder Rückkehr in den Vordergrund ab.
 
@@ -48,10 +57,12 @@ Code → `index.js` durch [`lambda/index.js`](lambda/index.js) ersetzen → „D
 
 Im Code-Reiter die beiden Umgebungsvariablen setzen:
 
-| Variable | Wert |
-|---|---|
-| `NUTRITRACK_TOKEN` | das Token aus Schritt 1 |
-| `NUTRITRACK_ENDPOINT` | `https://<dein-worker>.workers.dev/alexa/inbox` |
+| Variable | Pflicht | Wert |
+|---|---|---|
+| `NUTRITRACK_TOKEN` | ja | dein persönliches Token aus Schritt 1 |
+| `NUTRITRACK_ENDPOINT` | ja | `https://<dein-worker>.workers.dev/alexa/inbox` |
+| `NUTRITRACK_FAMILY_TOKEN` | nur zu zweit | das Familien-Token aus Schritt 1 (Baby + Einkauf) |
+| `NUTRITRACK_PERSONS` | nur zu zweit | `amzn1.ask.person.AAA=token1;amzn1.ask.person.BBB=token2` |
 
 Findet die Alexa-Konsole keine Stelle für Umgebungsvariablen, trag die Werte direkt
 oben in `index.js` ein (`const TOKEN = '…'`). Der Code liegt in deinem privaten Skill —
@@ -64,6 +75,26 @@ Reiter „Test" → Stufe auf **„Development"** stellen → tippen oder sprech
 
 Der Skill läuft ab jetzt auf allen Echo-Geräten deines Kontos. **Eine Zertifizierung ist
 nicht nötig**, solange du ihn nicht veröffentlichst.
+
+### 7. Zu zweit nutzen (optional)
+
+**Geteilt:** Baby-Tagebuch und Einkaufszettel. In NutriTrack unter Mehr → 🗣️ Alexa-Einwurf
+ein **Familien-Token** erzeugen, auf **beiden** Telefonen dasselbe eintragen und im Skill
+als `NUTRITRACK_FAMILY_TOKEN` hinterlegen. Ab dann sieht jeder jeden Einwurf, sobald er
+seine App öffnet — unabhängig davon, wer gesprochen hat.
+
+**Getrennt:** Kalorien, Wasser, Sport. Jede Person erzeugt in ihrer App ein eigenes
+persönliches Token. Damit der Skill weiß, wer spricht, braucht jede Person ein
+**Stimmprofil** („Alexa, lerne meine Stimme kennen"). So findest du die Kennungen:
+
+1. Beide sprechen je einen Satz, z. B. „Alexa, sage mein Tagebuch, ich habe einen Apfel gegessen".
+2. Alexa Developer Console → Reiter **Code** → **Logs** (CloudWatch).
+3. Je Anfrage steht dort `[nutritrack] personId: amzn1.ask.person.…` — beide Kennungen kopieren.
+4. Umgebungsvariable setzen:
+   `NUTRITRACK_PERSONS=amzn1.ask.person.AAA=TokenPersonA;amzn1.ask.person.BBB=TokenPersonB`
+
+Ohne `NUTRITRACK_PERSONS` landen Essen, Sport und Wasser immer beim Token aus
+`NUTRITRACK_TOKEN`; eine nicht erkannte Stimme fällt ebenfalls dorthin zurück.
 
 ## Sprachbefehle
 
@@ -97,6 +128,7 @@ Satz geschlossen, ein Dialog nach „öffne" mit `new: false` und bleibt offen.
 | Baby | „Alexa, sage mein Tagebuch, Baby Windel gewechselt" |
 | Baby mit Menge | „Alexa, sage mein Tagebuch, Baby 120 Milliliter Flasche" |
 | Baby, Seite | „Alexa, sage mein Tagebuch, Baby gestillt links" |
+| Baby, beide Seiten | „Alexa, sage mein Tagebuch, Baby gestillt beide, hauptsächlich links" |
 
 ### Warum der Aufrufname „mein tagebuch" heißt
 
@@ -168,6 +200,14 @@ Mehr Details stehen in den CloudWatch Logs (Code-Reiter → „CloudWatch Logs")
   gern zu „Skier". In der App korrigierbar.
 - **Baby-Tagebuch.** Einwürfe landen nur im Tagebuch, wenn es in NutriTrack eingeschaltet
   ist. Sonst werden sie verworfen.
+- **Stillen „beide".** Das Lambda erkennt „beide", „beidseitig" und „bds" und liest die
+  **Hauptseite** aus dem Satzteil dahinter („beide, hauptsächlich links", „beide mehr
+  rechts", „beidseitig links"). Ohne Hauptseite weiß die App nicht, welche Seite als
+  Nächstes dran ist, und macht keinen Vorschlag. Wird gar keine Seite gesprochen, trägt
+  die App die vorgeschlagene Seite ein — wie ein Schnell-Knopf ohne feste Seite.
+- **Auch geteilt nicht live.** Ein Einwurf erscheint erst, wenn **eines** der beiden
+  Telefone die App öffnet. Wer spricht, hat sein Telefon meist dabei — sein Gerät holt ab
+  und reicht es über den Baby-/Einkaufs-Sync ans andere weiter.
 - **Kein Vorlesen.** Bewusst. Dafür müsste die App ihren Tagesstand im Klartext auf den
   Server spiegeln — das widerspricht dem local-first-Prinzip von NutriTrack.
 
@@ -177,9 +217,11 @@ Gesprochenes kommt zwangsläufig im Klartext beim Worker an; eine
 Ende-zu-Ende-Verschlüsselung wie beim Baby-Sync ist unmöglich, weil Alexa den Schlüssel
 nicht kennt. Deshalb:
 
-- Die PWA **löscht** jeden Einwurf nach dem Eintragen (`POST /alexa/ack`) — im Normalfall
-  liegt er Minuten im KV, nicht Wochen.
-- Was nie abgeholt wird, verfällt nach 30 Tagen automatisch.
+- Die PWA **löscht** jeden persönlichen Einwurf nach dem Eintragen (`POST /alexa/ack`) —
+  im Normalfall liegt er Minuten im KV, nicht Wochen.
+- **Geteilte Einwürfe** (Baby, Einkauf) müssen zwei Geräte erreichen und werden deshalb
+  nicht quittiert, sondern verfallen nach **48 Stunden**. Länger liegt auch hier nichts.
+- Was nie abgeholt wird, verfällt spätestens nach 30 Tagen automatisch.
 - Der Briefkasten enthält nur, was du diktiert hast — keine Historie, keine Summen,
   kein Gewicht, kein Profil.
 
@@ -197,4 +239,4 @@ cd worker && wrangler deploy
 ```
 
 Prüfen: `GET /health` muss `alexaInboxConfigured: true` und
-`codeVersion: "v0.238-alexa-inbox"` melden (der Worker ist von den Sprachänderungen nicht betroffen).
+`codeVersion: "v0.244-alexa-family"` melden. **Ohne dieses Deploy bleibt der Familien-Briefkasten wirkungslos** — ein älterer Worker löscht geteilte Einwürfe beim ersten Abholen, das zweite Telefon geht dann leer aus.

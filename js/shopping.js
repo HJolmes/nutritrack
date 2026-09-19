@@ -314,7 +314,10 @@ function add(name,qty,c,ic,opts){
   name=String(name||'').trim();
   if(!name)return null;
   opts=opts||{};
-  var ex=findByName(name);
+  // `opts.id` kommt vom Alexa-Einwurf: beide Telefone holen denselben Einwurf
+  // ab und sollen daraus EINEN Artikel machen. Ist er schon da — per Sync vom
+  // anderen Gerät oder aus einem früheren Lauf — wird nichts angelegt.
+  var ex=(opts.id&&byId(opts.id))||findByName(name);
   if(ex){
     // Schon auf dem Zettel: abgehakt → wieder aktiv, sonst nur Menge ergänzen.
     if(ex.d){ex.d=0;delete ex.da;}
@@ -325,7 +328,7 @@ function add(name,qty,c,ic,opts){
     return ex;
   }
   var g=guess(name);
-  var it={id:uid(),n:name,q:qty||'',c:c||g.c,ic:ic||g.ic,d:0,ts:Date.now(),rev:nextRev()};
+  var it={id:opts.id||uid(),n:name,q:qty||'',c:c||g.c,ic:ic||g.ic,d:0,ts:Date.now(),rev:nextRev()};
   if(opts.recipe)tagSource(it,opts.recipe,false);
   list().push(it);
   noteRecent(it);
@@ -510,15 +513,23 @@ function renderCard(){
   var card=document.getElementById('shopCard');
   if(!card)return;
   var op=openItems();
-  // Kachel nur zeigen, wenn sie etwas zu sagen hat – ein leerer Zettel soll den
-  // Heute-Tab nicht zustellen.
-  if(!op.length&&!list().length){card.style.display='none';return;}
+  // Seit v0.254 blendet sich die Kachel NICHT mehr selbst aus. Vorher tat sie
+  // es bei leerem Zettel — und der Schalter im Funktions-Katalog stand trotzdem
+  // auf „an". Zwei Stellen sagten Verschiedenes ueber dieselbe Sache, und die
+  // sichtbare (der Bildschirm) gewann gegen die, die der Nutzer eingestellt hat.
+  // Sichtbarkeit haengt seither allein am Schalter (`NTDash` / `.dash-off`);
+  // leer heisst leer und sieht aus wie Wochenplan, Sport und Fasten es immer
+  // schon taten.
   card.style.display='';
   var v=document.getElementById('shopCardVal');
-  if(v)v.textContent=op.length?(op.length+(op.length===1?' Artikel':' Artikel')):'alles erledigt ✓';
+  // Auf einer leeren Kachel ist „0 Artikel" keine Auskunft, sondern eine
+  // Sackgasse — der Knopf sagt, was der Tipp tut (wie „+ Eintragen" beim Sport).
+  if(v)v.textContent=op.length?(op.length+' Artikel'):(list().length?'alles erledigt ✓':'＋ Eintragen');
   var body=document.getElementById('shopCardBody');
   if(body){
-    if(!op.length){
+    if(!list().length){
+      body.innerHTML='<div style="font-size:12px;color:var(--mu);">Noch nichts drauf.</div>';
+    }else if(!op.length){
       body.innerHTML='<div style="font-size:12px;color:var(--mu);">Nichts mehr offen.</div>';
     }else{
       var shown=op.slice(0,6).map(function(it){

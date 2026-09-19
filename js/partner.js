@@ -31,7 +31,7 @@ var MAX_INBOX_BYTES=600000; // S liegt im localStorage (~5 MB gesamt) – ein pa
 // 120 000 Zeichen, die der Worker pro Record annimmt. Lieber hier sauber
 // abbrechen als draußen in ein HTTP 413 laufen.
 var MAX_OUT_BYTES=84000;
-var _poll=null,_busy=false,_key=null,_keyFor='';
+var _poll=null,_busy=false;
 
 // ── Zustand ──
 function st(){
@@ -54,42 +54,29 @@ function trimInbox(){
   var size=function(){try{return JSON.stringify(a).length;}catch(e){return 0;}};
   while(a.length>1&&size()>MAX_INBOX_BYTES)a.pop();
 }
-function cryptoOk(){return !!(window.crypto&&crypto.subtle&&window.TextEncoder);}
 function newCount(){return inbox().filter(function(x){return x.st==='new';}).length;}
 function peerName(){var c=st();return c.peer||'Partner';}
 
-// ── Krypto (identisch zu Zettel/Tagebuch, aber eigenes Salt-Präfix) ──
-function rand(n){
-  var a=crypto.getRandomValues(new Uint8Array(n)),s='';
-  var abc='abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  for(var i=0;i<n;i++)s+=abc[a[i]%abc.length];
-  return s;
-}
-function b64(buf){var b=new Uint8Array(buf),s='';for(var i=0;i<b.length;i++)s+=String.fromCharCode(b[i]);return btoa(s);}
-function b64d(s){var bin=atob(s),b=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)b[i]=bin.charCodeAt(i);return b;}
-function getKey(){
-  var c=st();
-  var tag=c.room+'|'+c.key;
-  if(_key&&_keyFor===tag)return Promise.resolve(_key);
-  return crypto.subtle.importKey('raw',new TextEncoder().encode(c.key),'PBKDF2',false,['deriveKey'])
-    .then(function(km){
-      return crypto.subtle.deriveKey(
-        {name:'PBKDF2',salt:new TextEncoder().encode('nutritrack-partner|'+c.room),iterations:100000,hash:'SHA-256'},
-        km,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
-    }).then(function(k){_key=k;_keyFor=tag;return k;});
-}
-function encRec(id,rev,payload){
-  var iv=crypto.getRandomValues(new Uint8Array(12));
-  return getKey().then(function(k){
-    return crypto.subtle.encrypt({name:'AES-GCM',iv:iv},k,new TextEncoder().encode(JSON.stringify(payload)));
-  }).then(function(ct){return {id:id,rev:rev,iv:b64(iv),ct:b64(ct)};});
-}
-function decRec(rec){
-  return getKey().then(function(k){
-    return crypto.subtle.decrypt({name:'AES-GCM',iv:b64d(rec.iv)},k,b64d(rec.ct));
-  }).then(function(buf){return JSON.parse(new TextDecoder().decode(buf));})
-    .catch(function(){return null;});// fremder/kaputter Record → überspringen
-}
+// ── Krypto ────────────────────────────────────────────────────────────────
+// Seit v0.249 aus js/sync-core.js (window.NTSync.crypto) statt als eigene Kopie.
+// Bis v0.248 stand hier eine wortgleiche zweite Implementierung von PBKDF2,
+// AES-GCM, b64 und rand — vier Stellen, die bei jeder Aenderung am Krypto-Teil
+// haetten mitwandern muessen, und genau das ist zweimal fast passiert.
+//
+// SALT ist der einzige Unterschied zu den anderen Toepfen und der Grund, warum
+// das Postfach eigenstaendig bleibt: Aus demselben Kopplungs-Code leitet jeder
+// Topf einen ANDEREN AES-Schluessel ab. Wer Mahlzeiten teilt, gibt damit weder
+// Einkaufszettel noch Baby-Tagebuch frei. Die Zeichenkette ist unveraendert —
+// bestehende Kopplungen leiten denselben Schluessel ab wie vorher.
+var SALT='nutritrack-partner';
+function nts(){return window.NTSync&&window.NTSync.crypto;}
+function cryptoOk(){var c=nts();return !!(c&&c.ok());}
+function rand(n){return nts().rand(n);}
+// Das Postfach fuehrt keine Verbindungsliste, sondern genau EINEN Partner.
+// NTSync erwartet {room,key} — st() liefert beides.
+function link(){var c=st();return {room:c.room,key:c.key};}
+function encRec(id,rev,payload){return nts().encRec(link(),SALT,id,rev,payload);}
+function decRec(rec){return nts().decRec(link(),SALT,rec);}
 
 // ── Kopplung ──
 function code(){var c=st();return c.room&&c.key?(c.room+'.'+c.key):'';}
@@ -98,7 +85,6 @@ function createRoom(){
   var c=st();
   c.room=rand(32);c.key=rand(24);c.on=true;c.since=0;c.lastErr='';
   if(!c.dev)c.dev=rand(10);
-  _key=null;_keyFor='';
   saveS();
   announce();
   run(true);
@@ -114,7 +100,6 @@ function joinRoom(raw){
   var c=st();
   c.room=parts[0];c.key=parts[1];c.on=true;c.since=0;c.lastErr='';
   if(!c.dev)c.dev=rand(10);
-  _key=null;_keyFor='';
   saveS();
   announce();
   run(true);
@@ -123,7 +108,6 @@ function joinRoom(raw){
 function disconnect(){
   var c=st();
   c.on=false;c.room='';c.key='';c.since=0;c.lastErr='';c.peer='';
-  _key=null;_keyFor='';
   stopPoll();
   saveS();
   renderUI();
@@ -422,15 +406,22 @@ function refreshBadges(){
   }
   var card=document.getElementById('partnerCard');
   if(card){
-    card.style.display=n?'block':'none';
+    // Seit v0.254 haengt die Kachel an der KOPPLUNG, nicht an einer neuen
+    // Sendung. Vorher war sie eine Benachrichtigung, die sich selbst wegnahm —
+    // und der Schalter im Funktions-Katalog stand trotzdem auf „an". Ohne
+    // Kopplung bleibt sie weg: dort gaebe es nichts zu zeigen, und der Weg zur
+    // Kopplung steht im Funktions-Blatt.
+    card.style.display=on?'block':'none';
     var val=document.getElementById('partnerCardVal');
-    if(val)val.textContent=n+' neu';
+    if(val)val.textContent=n?(n+' neu'):'Postfach';
     var body=document.getElementById('partnerCardBody');
     if(body){
       var first=inbox().filter(function(x){return x.st==='new';}).slice(0,3);
-      body.innerHTML=first.map(function(it){
-        return '<div style="font-size:12px;color:var(--mu);line-height:1.6;">'+packetIcon(it.p)+' '+esc(packetTitle(it))+' · '+esc(it.from||peerName())+'</div>';
-      }).join('');
+      body.innerHTML=first.length
+        ? first.map(function(it){
+            return '<div style="font-size:12px;color:var(--mu);line-height:1.6;">'+packetIcon(it.p)+' '+esc(packetTitle(it))+' · '+esc(it.from||peerName())+'</div>';
+          }).join('')
+        : '<div style="font-size:12px;color:var(--mu);">Nichts Neues von '+esc(peerName())+'.</div>';
     }
   }
 }

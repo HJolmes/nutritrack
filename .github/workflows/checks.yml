@@ -1,0 +1,98 @@
+name: Checks
+
+# Warum es das gibt: Die App wird ohne Build-Tool ausgeliefert. Ohne diesen Lauf
+# gibt es keine Stelle, die einen Syntaxfehler im Inline-JS, einen vergessenen
+# Versions-Bump oder ein nicht gecachtes Modul bemerkt — alle drei Fehler sind
+# still und erreichen ohne Guard die Nutzer.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  consistency:
+    name: Konsistenz & Syntax
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Konsistenzpruefung
+        run: node tools/check.js
+
+      - name: Versions-Bump bei deployten Dateien
+        # Greift nur im PR: Wurde eine ausgelieferte Datei geaendert, muss
+        # APP_VERSION gegenueber dem Zielbranch gestiegen sein. Sonst liefert der
+        # Service Worker den alten Cache weiter aus und die Aenderung kommt bei
+        # niemandem an.
+        if: github.event_name == 'pull_request'
+        run: |
+          BASE="origin/${{ github.base_ref }}"
+          git fetch --no-tags --depth=1 origin "${{ github.base_ref }}" || true
+
+          CHANGED=$(git diff --name-only "$BASE"...HEAD -- index.html sw.js manifest.json picker.js js worker || true)
+          if [ -z "$CHANGED" ]; then
+            echo "::notice::Keine ausgelieferte Datei geaendert — Bump nicht noetig."
+            exit 0
+          fi
+          echo "Geaenderte ausgelieferte Dateien:"; echo "$CHANGED" | sed 's/^/  /'
+
+          NEW=$(grep -o "APP_VERSION='[0-9.]*'" index.html | head -1 | grep -o "[0-9.]*")
+          OLD=$(git show "$BASE:index.html" 2>/dev/null | grep -o "APP_VERSION='[0-9.]*'" | head -1 | grep -o "[0-9.]*")
+
+          if [ -z "$OLD" ]; then
+            echo "::notice::Keine Vergleichsversion im Zielbranch — uebersprungen."
+            exit 0
+          fi
+
+          echo "Version: $OLD (Ziel) -> $NEW (PR)"
+          # Numerischer Vergleich: 0.250 > 0.248, aber "0.250" > "0.248" ist als
+          # Zeichenkette nicht zuverlaessig, sobald die Stellenzahl wechselt.
+          if awk -v a="$NEW" -v b="$OLD" 'BEGIN{exit !(a+0 > b+0)}'; then
+            echo "::notice::Versions-Bump vorhanden ($OLD -> $NEW)."
+          else
+            echo "::error::Ausgelieferte Dateien geaendert, aber APP_VERSION nicht erhoeht ($OLD -> $NEW). Bitte APP_VERSION in index.html, VERSION in sw.js und den sichtbaren 'Beta vX.XXX'-Text hochzaehlen."
+            exit 1
+          fi
+
+  smoke:
+    name: Rauchtest im Browser
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Playwright + Chromium
+        # Kein Eintrag in package.json — dieses Projekt hat bewusst keine.
+        # Der Browser ist ein Werkzeug des Tests, keine Abhaengigkeit der App.
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+
+      - name: App lokal ausliefern
+        run: npx --yes http-server -p 8099 -s . &
+
+      - name: Warten bis die Seite antwortet
+        run: |
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8099/index.html > /dev/null && exit 0
+            sleep 1
+          done
+          echo "::error::Lokaler Server kam nicht hoch."; exit 1
+
+      - name: Rauchtest
+        run: node tools/smoke.js

@@ -1,6 +1,10 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.259',items:[
+    {icon:'\ud83e\udd55',text:'Die eingebaute Lebensmittel-Liste ist von 154 auf 430 Einträge gewachsen. Neu dabei sind vor allem die Zubereitungen, nach denen man täglich sucht — gekochte Möhren, gebratene Hähnchenbrust, Salzkartoffeln, Ofenkartoffel, Kartoffelpüree, Spiegelei, gekochte Nudeln — dazu viel Gemüse, Käse, Fisch, Wurst, Hülsenfrüchte, Nüsse, Getränke und Fertiges. Das heißt: mehr Treffer sofort und ohne Netz, und die KI wird seltener gefragt.',where:'Suche · Chat · ＋ Eintragen'},
+    {icon:'\ud83e\uddc2',text:'Für die neuen Einträge stehen jetzt auch Zucker, Ballaststoffe und Salz in der App — bisher zeigten eingebaute Lebensmittel dort überall 0 an.',where:'Nährwerte eines Eintrags'},
+  ]},
   {v:'0.258',items:[
     {icon:'\ud83c\udf7d',text:'Das ＋ in der Mitte der unteren Leiste bucht jetzt in die Mahlzeit, die gerade offen ist. Bisher landete alles — Lebensmittel, Rezept, Foto, Barcode, Chat, eigener Eintrag — in der Mahlzeit nach der Uhrzeit: Wer abends das Frühstück geöffnet hatte und ＋ drückte, trug in „Snack“ ein. Der Knopf trug zwei Handler gleichzeitig; der zweite überschrieb die geöffnete Mahlzeit. Die Kopfzeile des Dialogs nennt jetzt auch die richtige Mahlzeit.',where:'🍽 Mahlzeit → ＋'},
   ]},

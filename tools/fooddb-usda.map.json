@@ -1,0 +1,2669 @@
+[
+ {
+  "n": "Apfel (mit Schale)",
+  "e": "🍎",
+  "s": "apfel apple",
+  "q": "^Apples, raw, with skin$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Apfel (geschält)",
+  "e": "🍎",
+  "s": "apfel geschaelt",
+  "q": "^Apples, raw, without skin$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Apfelmus",
+  "e": "🍎",
+  "s": "apfelmus applesauce",
+  "q": "^Applesauce, canned, unsweetened, without added ascorbic acid",
+  "cat": "Obst"
+ },
+ {
+  "n": "Birne",
+  "e": "🍐",
+  "s": "birne pear",
+  "q": "^Pears, raw$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Banane",
+  "e": "🍌",
+  "s": "banane banana",
+  "q": "^Bananas, raw$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Orange",
+  "e": "🍊",
+  "s": "orange apfelsine",
+  "q": "^Oranges, raw, all commercial varieties$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Mandarine",
+  "e": "🍊",
+  "s": "clementine tangerine",
+  "q": "^Clementines, raw$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Grapefruit",
+  "e": "🍊",
+  "s": "pampelmuse",
+  "q": "^Grapefruit, raw, pink and red and white, all areas$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Zitrone",
+  "e": "🍋",
+  "s": "lemon",
+  "q": "^Lemons, raw, without peel$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Limette",
+  "e": "🍋",
+  "s": "lime",
+  "q": "^Limes, raw$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Erdbeeren",
+  "e": "🍓",
+  "s": "erdbeere strawberry",
+  "q": "^Strawberries, raw$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Himbeeren",
+  "e": "🫐",
+  "s": "himbeere raspberry",
+  "q": "^Raspberries, raw$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Blaubeeren",
+  "e": "🫐",
+  "s": "heidelbeere blueberry",
+  "q": "^Blueberries, raw$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Brombeeren",
+  "e": "🫐",
+  "s": "brombeere blackberry",
+  "q": "^Blackberries, raw$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Johannisbeeren rot",
+  "e": "🫐",
+  "s": "ribisel currant",
+  "q": "^Currants, red and white, raw$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Johannisbeeren schwarz",
+  "e": "🫐",
+  "s": "cassis",
+  "q": "^Currants, european black, raw$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Stachelbeeren",
+  "e": "🫐",
+  "s": "gooseberries",
+  "q": "^Gooseberries, raw$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Preiselbeeren",
+  "e": "🫐",
+  "s": "cranberry",
+  "q": "^Cranberries, raw$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Kirschen (süß)",
+  "e": "🍒",
+  "s": "kirsche cherry suesskirsche",
+  "q": "^Cherries, sweet, raw$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Sauerkirschen",
+  "e": "🍒",
+  "s": "sauerkirsche",
+  "q": "^Cherries, sour, red, raw$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Weintrauben",
+  "e": "🍇",
+  "s": "trauben grape",
+  "q": "^Grapes, red or green \\(European type",
+  "cat": "Obst"
+ },
+ {
+  "n": "Pflaume",
+  "e": "🍇",
+  "s": "zwetschge plum",
+  "q": "^Plums, raw$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Aprikose",
+  "e": "🍑",
+  "s": "marille apricot",
+  "q": "^Apricots, raw$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Pfirsich",
+  "e": "🍑",
+  "s": "peach",
+  "q": "^Peaches, yellow, raw$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Nektarine",
+  "e": "🍑",
+  "s": "nectarine",
+  "q": "^Nectarines, raw$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Ananas",
+  "e": "🍍",
+  "s": "pineapple",
+  "q": "^Pineapple, raw, all varieties$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Mango",
+  "e": "🥭",
+  "s": "mango",
+  "q": "^Mangos, raw$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Papaya",
+  "e": "🥭",
+  "s": "papaya",
+  "q": "^Papayas, raw$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Kiwi",
+  "e": "🥝",
+  "s": "kiwi",
+  "q": "^Kiwifruit, green, raw$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Wassermelone",
+  "e": "🍉",
+  "s": "melone watermelon",
+  "q": "^Watermelon, raw$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Honigmelone",
+  "e": "🍈",
+  "s": "melone honeydew",
+  "q": "^Melons, honeydew, raw$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Cantaloupe-Melone",
+  "e": "🍈",
+  "s": "zuckermelone cantaloupe",
+  "q": "^Melons, cantaloupe, raw$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Granatapfel",
+  "e": "🍎",
+  "s": "pomegranate",
+  "q": "^Pomegranates, raw$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Feige",
+  "e": "🍇",
+  "s": "fig feigen",
+  "q": "^Figs, raw$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Dattel",
+  "e": "🍇",
+  "s": "datteln medjool",
+  "q": "^Dates, medjool$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Rosinen",
+  "e": "🍇",
+  "s": "raisins sultaninen",
+  "q": "^Raisins, seedless$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Trockenpflaumen",
+  "e": "🍇",
+  "s": "backpflaumen prunes",
+  "q": "^Plums, dried \\(prunes\\), uncooked$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Aprikosen getrocknet",
+  "e": "🍑",
+  "s": "trockenaprikosen",
+  "q": "^Apricots, dried, sulfured, uncooked$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Avocado",
+  "e": "🥑",
+  "s": "avocado",
+  "q": "^Avocados, raw, all commercial varieties$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Oliven grün",
+  "e": "🫒",
+  "s": "oliven olives",
+  "q": "^Olives, pickled, canned or bottled, green$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Oliven schwarz",
+  "e": "🫒",
+  "s": "oliven olives",
+  "q": "^Olives, ripe, canned \\(small-extra large\\)$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Rhabarber",
+  "e": "🌿",
+  "s": "rhubarb",
+  "q": "^Rhubarb, raw$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Apfelsaft",
+  "e": "🧃",
+  "s": "apfelsaft apple juice",
+  "q": "^Apple juice, canned or bottled, unsweetened, without added ascorbic acid",
+  "cat": "Obst"
+ },
+ {
+  "n": "Orangensaft",
+  "e": "🧃",
+  "s": "orangensaft",
+  "q": "^Orange juice, raw$",
+  "cat": "Obst"
+ },
+ {
+  "n": "Traubensaft",
+  "e": "🧃",
+  "s": "traubensaft",
+  "q": "^Grape juice, canned or bottled, unsweetened, without added ascorbic acid",
+  "cat": "Obst"
+ },
+ {
+  "n": "Tomate",
+  "e": "🍅",
+  "s": "tomaten tomato",
+  "q": "^Tomatoes, red, ripe, raw, year round average$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Cherrytomaten",
+  "e": "🍅",
+  "s": "kirschtomaten cocktailtomaten",
+  "q": "^Tomatoes, red, ripe, raw, year round average$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Tomatenmark",
+  "e": "🍅",
+  "s": "tomatenpaste",
+  "q": "^Tomato products, canned, paste, without salt added$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Passierte Tomaten",
+  "e": "🍅",
+  "s": "tomatenpassata passata",
+  "q": "^Tomato products, canned, puree, without salt added$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Gurke",
+  "e": "🥒",
+  "s": "salatgurke cucumber",
+  "q": "^Cucumber, with peel, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Salatgurke geschält",
+  "e": "🥒",
+  "s": "gurke geschaelt",
+  "q": "^Cucumber, peeled, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Essiggurke",
+  "e": "🥒",
+  "s": "gewuerzgurke pickle",
+  "q": "^Pickles, cucumber, dill or kosher dill$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Möhre",
+  "e": "🥕",
+  "s": "karotte carrot",
+  "q": "^Carrots, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Möhre (gekocht)",
+  "e": "🥕",
+  "s": "karotte gekocht",
+  "q": "^Carrots, cooked, boiled, drained, without salt$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Brokkoli",
+  "e": "🥦",
+  "s": "broccoli",
+  "q": "^Broccoli, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Brokkoli (gekocht)",
+  "e": "🥦",
+  "s": "broccoli gekocht",
+  "q": "^Broccoli, cooked, boiled, drained, without salt$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Blumenkohl",
+  "e": "🥦",
+  "s": "cauliflower karfiol",
+  "q": "^Cauliflower, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Blumenkohl (gekocht)",
+  "e": "🥦",
+  "s": "karfiol gekocht",
+  "q": "^Cauliflower, cooked, boiled, drained, without salt$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Rosenkohl",
+  "e": "🥬",
+  "s": "brussels sprouts",
+  "q": "^Brussels sprouts, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Weißkohl",
+  "e": "🥬",
+  "s": "kohl kraut cabbage",
+  "q": "^Cabbage, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Rotkohl",
+  "e": "🥬",
+  "s": "blaukraut rotkraut",
+  "q": "^Cabbage, red, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Sauerkraut",
+  "e": "🥬",
+  "s": "sauerkraut",
+  "q": "^Sauerkraut, canned, solids and liquids$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Grünkohl",
+  "e": "🥬",
+  "s": "kale gruenkohl",
+  "q": "^Kale, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Spinat",
+  "e": "🥬",
+  "s": "spinach",
+  "q": "^Spinach, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Spinat (gekocht)",
+  "e": "🥬",
+  "s": "spinat gekocht",
+  "q": "^Spinach, cooked, boiled, drained, without salt$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Rucola",
+  "e": "🥬",
+  "s": "rauke arugula",
+  "q": "^Arugula, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Feldsalat",
+  "e": "🥬",
+  "s": "rapunzel mache",
+  "q": "^Cornsalad, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Eisbergsalat",
+  "e": "🥬",
+  "s": "salat lettuce",
+  "q": "^Lettuce, iceberg \\(includes crisphead types\\), raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Kopfsalat",
+  "e": "🥬",
+  "s": "salat butterhead",
+  "q": "^Lettuce, butterhead \\(includes boston and bibb types\\), raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Romanasalat",
+  "e": "🥬",
+  "s": "romana salat",
+  "q": "^Lettuce, cos or romaine, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Chicorée",
+  "e": "🥬",
+  "s": "chicoree endivie",
+  "q": "^Chicory greens, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Radicchio",
+  "e": "🥬",
+  "s": "radicchio",
+  "q": "^Radicchio, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Paprika rot",
+  "e": "🫑",
+  "s": "pepper rot",
+  "q": "^Peppers, sweet, red, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Paprika grün",
+  "e": "🫑",
+  "s": "pepper gruen",
+  "q": "^Peppers, sweet, green, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Paprika gelb",
+  "e": "🫑",
+  "s": "pepper gelb",
+  "q": "^Peppers, sweet, yellow, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Chili",
+  "e": "🌶️",
+  "s": "peperoni chili",
+  "q": "^Peppers, hot chili, red, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Zucchini",
+  "e": "🥒",
+  "s": "courgette",
+  "q": "^Squash, summer, zucchini, includes skin, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Aubergine",
+  "e": "🍆",
+  "s": "eggplant melanzani",
+  "q": "^Eggplant, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Kürbis",
+  "e": "🎃",
+  "s": "pumpkin hokkaido",
+  "q": "^Pumpkin, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Butternusskürbis",
+  "e": "🎃",
+  "s": "butternut kuerbis",
+  "q": "^Squash, winter, butternut, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Zwiebel",
+  "e": "🧅",
+  "s": "onion",
+  "q": "^Onions, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Frühlingszwiebel",
+  "e": "🧅",
+  "s": "lauchzwiebel schalotte",
+  "q": "^Onions, spring or scallions \\(includes tops and bulb\\), raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Schalotte",
+  "e": "🧅",
+  "s": "shallot",
+  "q": "^Shallots, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Knoblauch",
+  "e": "🧄",
+  "s": "garlic",
+  "q": "^Garlic, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Lauch",
+  "e": "🧅",
+  "s": "porree leek",
+  "q": "^Leeks, \\(bulb and lower leaf-portion\\), raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Champignons",
+  "e": "🍄",
+  "s": "pilze mushroom",
+  "q": "^Mushrooms, white, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Champignons (gebraten)",
+  "e": "🍄",
+  "s": "pilze gebraten",
+  "q": "^Mushrooms, white, stir-fried$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Kräuterseitlinge",
+  "e": "🍄",
+  "s": "austernpilz oyster",
+  "q": "^Mushrooms, oyster, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Pfifferlinge",
+  "e": "🍄",
+  "s": "chanterelle",
+  "q": "^Mushrooms, Chanterelle, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Shiitake",
+  "e": "🍄",
+  "s": "shiitake",
+  "q": "^Mushrooms, shiitake, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Spargel",
+  "e": "🌿",
+  "s": "asparagus",
+  "q": "^Asparagus, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Spargel (gekocht)",
+  "e": "🌿",
+  "s": "spargel gekocht",
+  "q": "^Asparagus, cooked, boiled, drained$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Grüne Bohnen",
+  "e": "🫘",
+  "s": "brechbohnen fisolen",
+  "q": "^Beans, snap, green, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Erbsen",
+  "e": "🫛",
+  "s": "peas erbsen",
+  "q": "^Peas, green, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Zuckerschoten",
+  "e": "🫛",
+  "s": "zuckererbsen snow peas",
+  "q": "^Peas, edible-podded, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Mais",
+  "e": "🌽",
+  "s": "corn maiskoerner",
+  "q": "^Corn, sweet, yellow, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Sellerie (Stange)",
+  "e": "🌿",
+  "s": "staudensellerie celery",
+  "q": "^Celery, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Knollensellerie",
+  "e": "🌿",
+  "s": "sellerie celeriac",
+  "q": "^Celeriac, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Fenchel",
+  "e": "🌿",
+  "s": "fennel",
+  "q": "^Fennel, bulb, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Rote Bete",
+  "e": "🫒",
+  "s": "rote beete beetroot",
+  "q": "^Beets, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Radieschen",
+  "e": "🌶️",
+  "s": "radish",
+  "q": "^Radishes, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Rettich",
+  "e": "🌶️",
+  "s": "daikon",
+  "q": "^Radishes, oriental, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Kohlrabi",
+  "e": "🥬",
+  "s": "kohlrabi",
+  "q": "^Kohlrabi, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Pastinake",
+  "e": "🥕",
+  "s": "parsnip",
+  "q": "^Parsnips, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Steckrübe",
+  "e": "🥕",
+  "s": "kohlruebe rutabaga",
+  "q": "^Rutabagas, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Ingwer",
+  "e": "🫚",
+  "s": "ginger",
+  "q": "^Ginger root, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Artischocke",
+  "e": "🌿",
+  "s": "artischocken artichoke",
+  "q": "^Artichokes, \\(globe or french\\), raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Sojasprossen",
+  "e": "🌱",
+  "s": "sprossen mungbohnen",
+  "q": "^Mung beans, mature seeds, sprouted, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Süßkartoffel",
+  "e": "🍠",
+  "s": "sweet potato bataten",
+  "q": "^Sweet potato, raw, unprepared$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Süßkartoffel (gebacken)",
+  "e": "🍠",
+  "s": "sweet potato gebacken",
+  "q": "^Sweet potato, cooked, baked in skin, flesh, without salt$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Kartoffel (roh)",
+  "e": "🥔",
+  "s": "kartoffeln potato",
+  "q": "^Potatoes, flesh and skin, raw$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Kartoffeln (gekocht)",
+  "e": "🥔",
+  "s": "salzkartoffeln pellkartoffeln",
+  "q": "^Potatoes, boiled, cooked without skin, flesh, without salt$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Ofenkartoffel",
+  "e": "🥔",
+  "s": "backkartoffel baked potato",
+  "q": "^Potatoes, baked, flesh and skin, without salt$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Kartoffelpüree",
+  "e": "🥔",
+  "s": "pueree kartoffelbrei",
+  "q": "^Potatoes, mashed, home-prepared, whole milk and margarine added$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Pommes frites",
+  "e": "🍟",
+  "s": "fritten pommes fries",
+  "q": "^Potatoes, french fried, all types, salt not added in processing, frozen, oven-heated$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Kartoffelchips",
+  "e": "🥔",
+  "s": "chips",
+  "q": "^Snacks, potato chips, plain, salted$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Kartoffelsalat",
+  "e": "🥔",
+  "s": "kartoffelsalat",
+  "q": "^Potato salad, home-prepared$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Reis weiß (roh)",
+  "e": "🍚",
+  "s": "reis rice",
+  "q": "^Rice, white, long-grain, regular, raw, enriched$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Reis weiß (gekocht)",
+  "e": "🍚",
+  "s": "reis gekocht",
+  "q": "^Rice, white, long-grain, regular, enriched, cooked$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Vollkornreis (gekocht)",
+  "e": "🍚",
+  "s": "naturreis braun",
+  "q": "^Rice, brown, long-grain, cooked$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Nudeln (roh)",
+  "e": "🍝",
+  "s": "pasta spaghetti trocken",
+  "q": "^Pasta, dry, enriched$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Nudeln (gekocht)",
+  "e": "🍝",
+  "s": "pasta spaghetti gekocht",
+  "q": "^Pasta, cooked, enriched, without added salt$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Vollkornnudeln (gekocht)",
+  "e": "🍝",
+  "s": "vollkornpasta",
+  "q": "^Pasta, whole-wheat, cooked$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Eiernudeln (gekocht)",
+  "e": "🍝",
+  "s": "bandnudeln eiernudeln",
+  "q": "^Noodles, egg, enriched, cooked$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Couscous (gekocht)",
+  "e": "🍚",
+  "s": "couscous",
+  "q": "^Couscous, cooked$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Bulgur (gekocht)",
+  "e": "🍚",
+  "s": "bulgur",
+  "q": "^Bulgur, cooked$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Quinoa (gekocht)",
+  "e": "🍚",
+  "s": "quinoa",
+  "q": "^Quinoa, cooked$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Haferflocken (roh)",
+  "e": "🥣",
+  "s": "oats hafer",
+  "q": "^Cereals, oats, regular and quick, not fortified, dry$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Haferbrei",
+  "e": "🥣",
+  "s": "porridge haferbrei",
+  "q": "^Cereals, oats, regular and quick, unenriched, cooked with water",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Weizenmehl Type 405",
+  "e": "🌾",
+  "s": "mehl flour",
+  "q": "^Wheat flour, white, all-purpose, enriched, bleached$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Vollkornmehl",
+  "e": "🌾",
+  "s": "vollkornmehl",
+  "q": "^Wheat flour, whole-grain$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Grieß",
+  "e": "🌾",
+  "s": "semolina griess",
+  "q": "^Semolina, enriched$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Paniermehl",
+  "e": "🌾",
+  "s": "semmelbroesel breadcrumbs",
+  "q": "^Bread crumbs, dry, grated, plain$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Maisstärke",
+  "e": "🌾",
+  "s": "speisestaerke",
+  "q": "^Cornstarch$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Maisgrieß (roh)",
+  "e": "🌽",
+  "s": "maisgriess polenta",
+  "q": "^Cornmeal, degermed, enriched, yellow$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Weißbrot",
+  "e": "🍞",
+  "s": "toastbrot weissbrot",
+  "q": "^Bread, white, commercially prepared \\(includes soft bread crumbs\\)$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Vollkornbrot",
+  "e": "🍞",
+  "s": "vollkorn brot",
+  "q": "^Bread, whole-wheat, commercially prepared$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Roggenbrot",
+  "e": "🍞",
+  "s": "roggen brot",
+  "q": "^Bread, rye$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Pumpernickel",
+  "e": "🍞",
+  "s": "pumpernickel",
+  "q": "^Bread, pumpernickel$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Mehrkornbrot",
+  "e": "🍞",
+  "s": "koernerbrot mehrkorn",
+  "q": "^Bread, multi-grain \\(includes whole-grain\\)$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Baguette",
+  "e": "🥖",
+  "s": "baguette franzoesisch",
+  "q": "^Bread, french or vienna \\(includes sourdough\\)$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Pita",
+  "e": "🫓",
+  "s": "fladenbrot pita",
+  "q": "^Bread, pita, white, enriched$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Naan",
+  "e": "🫓",
+  "s": "naan fladenbrot",
+  "q": "^Bread, naan, plain, commercially prepared, refrigerated$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Brötchen",
+  "e": "🥖",
+  "s": "semmel broetchen roll",
+  "q": "^Rolls, hamburger or hotdog, plain$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Kaiserbrötchen",
+  "e": "🥖",
+  "s": "kaisersemmel hard roll",
+  "q": "^Rolls, hard \\(includes kaiser\\)$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Croissant",
+  "e": "🥐",
+  "s": "croissant",
+  "q": "^Croissants, butter$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Toastbrot",
+  "e": "🍞",
+  "s": "toast",
+  "q": "^Bread, white, commercially prepared, toasted$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Knäckebrot",
+  "e": "🍘",
+  "s": "knaeckebrot crispbread",
+  "q": "^Crackers, rye, wafers, plain$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Tortilla (Weizen)",
+  "e": "🫓",
+  "s": "wrap tortilla",
+  "q": "^Tortillas, ready-to-bake or -fry, flour, refrigerated$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Pfannkuchen",
+  "e": "🥞",
+  "s": "pancake eierkuchen",
+  "q": "^Pancakes, plain, prepared from recipe$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Waffeln",
+  "e": "🧇",
+  "s": "waffel waffle",
+  "q": "^Waffles, plain, prepared from recipe$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Cornflakes",
+  "e": "🥣",
+  "s": "cornflakes",
+  "q": "^Cereals ready-to-eat, KELLOGG, KELLOGG'S Corn Flakes$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Müsli",
+  "e": "🥣",
+  "s": "muesli granola",
+  "q": "^Cereals ready-to-eat, granola, homemade$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Popcorn",
+  "e": "🍿",
+  "s": "popcorn",
+  "q": "^Snacks, popcorn, air-popped$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Pommes frites (frittiert)",
+  "e": "🍟",
+  "s": "fritten pommes frittiert",
+  "q": "^Fast foods, potato, french fried in vegetable oil$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Vollmilch 3,5%",
+  "e": "🥛",
+  "s": "milch milk vollmilch",
+  "q": "^Milk, whole, 3.25% milkfat, without added vitamin A and vitamin D$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Milch 1,5%",
+  "e": "🥛",
+  "s": "milch fettarm",
+  "q": "^Milk, reduced fat, fluid, 2% milkfat, without added vitamin A and vitamin D$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Magermilch",
+  "e": "🥛",
+  "s": "milch entrahmt skim",
+  "q": "^Milk, nonfat, fluid, without added vitamin A and vitamin D \\(fat free or skim\\)$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Buttermilch",
+  "e": "🥛",
+  "s": "buttermilk",
+  "q": "^Milk, buttermilk, fluid, cultured, lowfat$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Kondensmilch",
+  "e": "🥛",
+  "s": "kaffeesahne evaporated",
+  "q": "^Milk, canned, evaporated, without added vitamin A and vitamin D$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Sahne (Schlagsahne)",
+  "e": "🥛",
+  "s": "sahne rahm cream",
+  "q": "^Cream, fluid, heavy whipping$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Kaffeesahne",
+  "e": "🥛",
+  "s": "kaffeesahne light cream",
+  "q": "^Cream, fluid, light \\(coffee cream or table cream\\)$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Saure Sahne",
+  "e": "🥛",
+  "s": "schmand sour cream",
+  "q": "^Cream, sour, cultured$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Naturjoghurt 3,5%",
+  "e": "🥛",
+  "s": "joghurt yogurt",
+  "q": "^Yogurt, plain, whole milk",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Naturjoghurt 1,5%",
+  "e": "🥛",
+  "s": "joghurt fettarm",
+  "q": "^Yogurt, plain, low fat",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Magerjoghurt",
+  "e": "🥛",
+  "s": "joghurt mager",
+  "q": "^Yogurt, plain, skim milk",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Fruchtjoghurt",
+  "e": "🥛",
+  "s": "joghurt frucht",
+  "q": "^Yogurt, fruit, low fat, 10 grams protein per 8 ounce$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Griechischer Joghurt",
+  "e": "🥛",
+  "s": "joghurt griechisch greek",
+  "q": "^Yogurt, Greek, plain, whole milk$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Skyr",
+  "e": "🥛",
+  "s": "skyr",
+  "q": "^Yogurt, Greek, plain, nonfat$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Hüttenkäse",
+  "e": "🥄",
+  "s": "cottage cheese koernig",
+  "q": "^Cheese, cottage, lowfat, 2% milkfat$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Frischkäse",
+  "e": "🧀",
+  "s": "frischkaese cream cheese",
+  "q": "^Cheese, cream$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Gouda",
+  "e": "🧀",
+  "s": "gouda",
+  "q": "^Cheese, gouda$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Emmentaler",
+  "e": "🧀",
+  "s": "emmentaler swiss",
+  "q": "^Cheese, swiss$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Edamer",
+  "e": "🧀",
+  "s": "edamer edam",
+  "q": "^Cheese, edam$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Camembert",
+  "e": "🧀",
+  "s": "camembert",
+  "q": "^Cheese, camembert$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Brie",
+  "e": "🧀",
+  "s": "brie",
+  "q": "^Cheese, brie$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Mozzarella",
+  "e": "🧀",
+  "s": "mozzarella",
+  "q": "^Cheese, mozzarella, whole milk$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Parmesan",
+  "e": "🧀",
+  "s": "parmesan",
+  "q": "^Cheese, parmesan, hard$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Feta",
+  "e": "🧀",
+  "s": "feta schafskaese",
+  "q": "^Cheese, feta$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Cheddar",
+  "e": "🧀",
+  "s": "cheddar",
+  "q": "^Cheese, cheddar$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Gorgonzola",
+  "e": "🧀",
+  "s": "blauschimmel blue",
+  "q": "^Cheese, blue$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Ricotta",
+  "e": "🧀",
+  "s": "ricotta",
+  "q": "^Cheese, ricotta, whole milk$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Schmelzkäse",
+  "e": "🧀",
+  "s": "scheibletten processed",
+  "q": "^Cheese, pasteurized process, American, fortified with vitamin D$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Butter",
+  "e": "🧈",
+  "s": "butter",
+  "q": "^Butter, salted$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Margarine",
+  "e": "🧈",
+  "s": "margarine",
+  "q": "^Margarine, regular, 80% fat, composite, stick, with salt$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Ei (roh)",
+  "e": "🥚",
+  "s": "eier egg huehnerei",
+  "q": "^Egg, whole, raw, fresh$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Ei (gekocht)",
+  "e": "🥚",
+  "s": "eier gekocht hartgekocht",
+  "q": "^Egg, whole, cooked, hard-boiled$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Rührei",
+  "e": "🍳",
+  "s": "ruehrei scrambled",
+  "q": "^Egg, whole, cooked, scrambled$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Spiegelei",
+  "e": "🍳",
+  "s": "spiegelei fried egg",
+  "q": "^Egg, whole, cooked, fried$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Eiweiß (roh)",
+  "e": "🥚",
+  "s": "eiklar egg white",
+  "q": "^Egg, white, raw, fresh$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Eigelb (roh)",
+  "e": "🥚",
+  "s": "eidotter yolk",
+  "q": "^Egg, yolk, raw, fresh$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Sojamilch",
+  "e": "🥛",
+  "s": "sojadrink soy milk",
+  "q": "^SILK Plain, soymilk$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Mandelmilch",
+  "e": "🥛",
+  "s": "mandeldrink almond",
+  "q": "^Beverages, almond milk, unsweetened, shelf stable$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Tofu",
+  "e": "🧊",
+  "s": "tofu",
+  "q": "^Tofu, firm, prepared with calcium sulfate and magnesium chloride",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Vanilleeis",
+  "e": "🍨",
+  "s": "eis eiscreme vanille",
+  "q": "^Ice creams, vanilla$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Schokoladeneis",
+  "e": "🍨",
+  "s": "eis schokolade",
+  "q": "^Ice creams, chocolate$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Pudding (Vanille)",
+  "e": "🍮",
+  "s": "pudding vanille",
+  "q": "^Puddings, vanilla, ready-to-eat$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Milchreis",
+  "e": "🍚",
+  "s": "milchreis rice pudding",
+  "q": "^Puddings, rice, ready-to-eat$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Hähnchenbrust (roh)",
+  "e": "🍗",
+  "s": "huehnerbrust chicken breast",
+  "q": "^Chicken, broilers or fryers, breast, skinless, boneless, meat only, with added solution, raw",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Hähnchenbrust (gebraten)",
+  "e": "🍗",
+  "s": "huehnerbrust gebraten",
+  "q": "^Chicken, broilers or fryers, breast, meat only, cooked, roasted$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Hähnchenschenkel (gegart)",
+  "e": "🍗",
+  "s": "keule drumstick",
+  "q": "^Chicken, broilers or fryers, drumstick, meat only, cooked, stewed$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Hähnchenflügel",
+  "e": "🍗",
+  "s": "chicken wings",
+  "q": "^Chicken, broilers or fryers, wing, meat and skin, cooked, roasted$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Putenbrust (gebraten)",
+  "e": "🦃",
+  "s": "pute turkey",
+  "q": "^Turkey, retail parts, breast, meat only, cooked, roasted$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Hähnchen-Nuggets",
+  "e": "🍗",
+  "s": "nuggets chicken",
+  "q": "^Fast foods, chicken, breaded and fried, boneless pieces, plain$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Rinderhackfleisch (roh)",
+  "e": "🥩",
+  "s": "hackfleisch rinderhack",
+  "q": "^Beef, ground, 85% lean meat / 15% fat, raw$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Rinderhack (gebraten)",
+  "e": "🥩",
+  "s": "hackfleisch gebraten",
+  "q": "^Beef, ground, 85% lean meat / 15% fat, patty, cooked, pan-broiled$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Rinderfilet (gebraten)",
+  "e": "🥩",
+  "s": "filet tenderloin",
+  "q": "^Beef, tenderloin, steak, separable lean only, trimmed to 1/8\" fat, all grades, cooked, broiled$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Rumpsteak (gebraten)",
+  "e": "🥩",
+  "s": "steak sirloin",
+  "q": "^Beef, top sirloin, steak, separable lean only, trimmed to 0. fat, all grades, cooked, broiled$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Rinderbraten",
+  "e": "🥩",
+  "s": "braten roast beef",
+  "q": "^Beef, chuck, arm pot roast, separable lean only, trimmed to 0\" fat, choice, cooked, braised$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Schweineschnitzel (gebraten)",
+  "e": "🐖",
+  "s": "schnitzel schwein",
+  "q": "^Pork, fresh, loin, sirloin \\(chops\\), bone-in, separable lean only, cooked, broiled$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Schweinefilet (gebraten)",
+  "e": "🐖",
+  "s": "schweinefilet tenderloin",
+  "q": "^Pork, fresh, loin, tenderloin, separable lean only, cooked, roasted$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Schweinebraten",
+  "e": "🐖",
+  "s": "krustenbraten",
+  "q": "^Pork, fresh, loin, center rib \\(roasts\\), boneless, separable lean only, cooked, roasted$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Schweinehack (roh)",
+  "e": "🐖",
+  "s": "schweinehack mett",
+  "q": "^Pork, fresh, ground, raw$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Lammkotelett (gebraten)",
+  "e": "🐑",
+  "s": "lamm lamb",
+  "q": "^Lamb, domestic, loin, separable lean only, trimmed to 1/4. fat, choice, cooked, broiled$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Kalbsschnitzel",
+  "e": "🐄",
+  "s": "kalb veal",
+  "q": "^Veal, leg \\(top round\\), separable lean only, cooked, braised$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Ente (gebraten)",
+  "e": "🦆",
+  "s": "ente duck",
+  "q": "^Duck, domesticated, meat only, cooked, roasted$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Frühstücksspeck (gebraten)",
+  "e": "🥓",
+  "s": "bacon fruehstuecksspeck",
+  "q": "^Pork, cured, bacon, cooked, baked$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Schinken (gekocht)",
+  "e": "🍖",
+  "s": "kochschinken ham",
+  "q": "^Ham, sliced, packaged \\(96% fat free, water added\\)$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Rohschinken",
+  "e": "🍖",
+  "s": "serrano prosciutto parma",
+  "q": "^Pork, cured, ham, boneless, extra lean \\(approximately 5% fat\\), roasted$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Salami",
+  "e": "🍖",
+  "s": "salami",
+  "q": "^Salami, dry or hard, pork$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Bratwurst",
+  "e": "🌭",
+  "s": "bratwurst rostbratwurst",
+  "q": "^Bratwurst, pork, cooked$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Wiener Würstchen",
+  "e": "🌭",
+  "s": "wiener frankfurter hotdog",
+  "q": "^Frankfurter, pork$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Leberwurst",
+  "e": "🍖",
+  "s": "leberwurst liverwurst",
+  "q": "^Braunschweiger \\(a liver sausage\\), pork$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Mortadella",
+  "e": "🍖",
+  "s": "mortadella bologna",
+  "q": "^Bologna, beef and pork$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Leberkäse",
+  "e": "🍖",
+  "s": "fleischkaese leberkaese",
+  "q": "^Luncheon meat, pork, ham, and chicken, minced, canned, reduced sodium, added ascorbic acid",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Putenaufschnitt",
+  "e": "🦃",
+  "s": "putenbrust aufschnitt",
+  "q": "^Turkey breast, low salt, prepackaged or deli, luncheon meat$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Chorizo",
+  "e": "🌭",
+  "s": "chorizo",
+  "q": "^Chorizo, pork and beef$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Lachs (roh)",
+  "e": "🐟",
+  "s": "salmon lachs",
+  "q": "^Fish, salmon, Atlantic, farmed, raw$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Lachs (gegart)",
+  "e": "🐟",
+  "s": "lachs gebraten",
+  "q": "^Fish, salmon, Atlantic, farmed, cooked, dry heat$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Räucherlachs",
+  "e": "🐟",
+  "s": "graved lachs smoked",
+  "q": "^Fish, salmon, chinook, smoked$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Thunfisch (Dose, Wasser)",
+  "e": "🐟",
+  "s": "thunfisch tuna",
+  "q": "^Fish, tuna, light, canned in water, drained solids$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Thunfisch (Dose, Öl)",
+  "e": "🐟",
+  "s": "thunfisch oel",
+  "q": "^Fish, tuna, light, canned in oil, drained solids$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Forelle (gegart)",
+  "e": "🐟",
+  "s": "forelle trout",
+  "q": "^Fish, trout, rainbow, farmed, cooked, dry heat$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Kabeljau (gegart)",
+  "e": "🐟",
+  "s": "dorsch cod",
+  "q": "^Fish, cod, Atlantic, cooked, dry heat$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Seelachs (roh)",
+  "e": "🐟",
+  "s": "pollack koehler",
+  "q": "^Fish, pollock, Alaska, raw",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Hering",
+  "e": "🐟",
+  "s": "herring matjes",
+  "q": "^Fish, herring, Atlantic, cooked, dry heat$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Makrele",
+  "e": "🐟",
+  "s": "mackerel",
+  "q": "^Fish, mackerel, Atlantic, cooked, dry heat$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Sardinen (Dose)",
+  "e": "🐟",
+  "s": "sardinen sardines",
+  "q": "^Fish, sardine, Atlantic, canned in oil, drained solids with bone$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Garnelen (gegart)",
+  "e": "🦐",
+  "s": "shrimp scampi krabben",
+  "q": "^Crustaceans, shrimp, mixed species, cooked, moist heat",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Miesmuscheln",
+  "e": "🦪",
+  "s": "muscheln mussels",
+  "q": "^Mollusks, mussel, blue, cooked, moist heat$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Tintenfisch",
+  "e": "🦑",
+  "s": "calamari squid",
+  "q": "^Mollusks, squid, mixed species, raw$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Fischstäbchen",
+  "e": "🐟",
+  "s": "fischstaebchen fish sticks",
+  "q": "^Fish, fish sticks, frozen, prepared$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Surimi",
+  "e": "🦀",
+  "s": "surimi krebsfleisch",
+  "q": "^Fish, surimi$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Linsen (gekocht)",
+  "e": "🫘",
+  "s": "linsen lentils",
+  "q": "^Lentils, mature seeds, cooked, boiled, without salt$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Kichererbsen (gekocht)",
+  "e": "🫘",
+  "s": "kichererbsen chickpeas",
+  "q": "^Chickpeas \\(garbanzo beans, bengal gram\\), mature seeds, cooked, boiled, without salt$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Kidneybohnen (gekocht)",
+  "e": "🫘",
+  "s": "kidneybohnen kidney",
+  "q": "^Beans, kidney, red, mature seeds, cooked, boiled, without salt$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Weiße Bohnen (gekocht)",
+  "e": "🫘",
+  "s": "weisse bohnen white beans",
+  "q": "^Beans, white, mature seeds, cooked, boiled, without salt$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Schwarze Bohnen (gekocht)",
+  "e": "🫘",
+  "s": "black beans",
+  "q": "^Beans, black, mature seeds, cooked, boiled, without salt$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Sojabohnen (gekocht)",
+  "e": "🫘",
+  "s": "soja soybeans",
+  "q": "^Soybeans, mature seeds, cooked, boiled, with salt$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Edamame",
+  "e": "🫛",
+  "s": "edamame",
+  "q": "^Soybeans, green, cooked, boiled, drained, without salt$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Erbsen getrocknet (gekocht)",
+  "e": "🫛",
+  "s": "schaelerbsen split peas",
+  "q": "^Peas, split, mature seeds, cooked, boiled, without salt$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Hummus",
+  "e": "🥣",
+  "s": "hummus",
+  "q": "^Hummus, commercial$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Mandeln",
+  "e": "🥜",
+  "s": "mandeln almonds",
+  "q": "^Nuts, almonds$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Walnüsse",
+  "e": "🥜",
+  "s": "walnuesse walnuts",
+  "q": "^Nuts, walnuts, english$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Haselnüsse",
+  "e": "🥜",
+  "s": "haselnuesse hazelnuts",
+  "q": "^Nuts, hazelnuts or filberts$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Cashewkerne",
+  "e": "🥜",
+  "s": "cashew",
+  "q": "^Nuts, cashew nuts, raw$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Pistazien",
+  "e": "🥜",
+  "s": "pistazien pistachio",
+  "q": "^Nuts, pistachio nuts, raw$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Paranüsse",
+  "e": "🥜",
+  "s": "paranuesse brazil",
+  "q": "^Nuts, brazilnuts, dried, unblanched$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Pekannüsse",
+  "e": "🥜",
+  "s": "pekan pecans",
+  "q": "^Nuts, pecans$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Macadamia",
+  "e": "🥜",
+  "s": "macadamia",
+  "q": "^Nuts, macadamia nuts, raw$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Erdnüsse",
+  "e": "🥜",
+  "s": "erdnuesse peanuts",
+  "q": "^Peanuts, all types, raw$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Erdnussbutter",
+  "e": "🥜",
+  "s": "erdnussmus peanut butter",
+  "q": "^Peanut butter, smooth style, without salt$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Sonnenblumenkerne",
+  "e": "🌻",
+  "s": "sonnenblumenkerne sunflower",
+  "q": "^Seeds, sunflower seed kernels, dried$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Kürbiskerne",
+  "e": "🎃",
+  "s": "kuerbiskerne pumpkin seeds",
+  "q": "^Seeds, pumpkin and squash seed kernels, dried$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Leinsamen",
+  "e": "🌱",
+  "s": "leinsamen flaxseed",
+  "q": "^Seeds, flaxseed$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Chiasamen",
+  "e": "🌱",
+  "s": "chia",
+  "q": "^Seeds, chia seeds, dried$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Sesam",
+  "e": "🌱",
+  "s": "sesam sesame",
+  "q": "^Seeds, sesame seeds, whole, dried$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Olivenöl",
+  "e": "🫒",
+  "s": "olivenoel olive oil",
+  "q": "^Oil, olive, salad or cooking$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Rapsöl",
+  "e": "🛢️",
+  "s": "rapsoel canola",
+  "q": "^Oil, canola$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Sonnenblumenöl",
+  "e": "🛢️",
+  "s": "sonnenblumenoel",
+  "q": "^Oil, sunflower, linoleic, \\(approx. 65%\\)$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Kokosöl",
+  "e": "🥥",
+  "s": "kokosoel coconut oil",
+  "q": "^Oil, coconut$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Schweineschmalz",
+  "e": "🛢️",
+  "s": "schmalz lard",
+  "q": "^Lard$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Zucker",
+  "e": "🍬",
+  "s": "haushaltszucker sugar",
+  "q": "^Sugars, granulated$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Brauner Zucker",
+  "e": "🍬",
+  "s": "rohrzucker brown sugar",
+  "q": "^Sugars, brown$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Honig",
+  "e": "🍯",
+  "s": "honig honey",
+  "q": "^Honey$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Ahornsirup",
+  "e": "🍯",
+  "s": "maple syrup",
+  "q": "^Syrups, maple$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Marmelade",
+  "e": "🍓",
+  "s": "konfituere jam marmelade",
+  "q": "^Jams and preserves$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Nutella",
+  "e": "🍫",
+  "s": "nougatcreme nussnugat",
+  "q": "^Chocolate-flavored hazelnut spread$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Vollmilchschokolade",
+  "e": "🍫",
+  "s": "schokolade chocolate",
+  "q": "^Candies, milk chocolate$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Zartbitterschokolade",
+  "e": "🍫",
+  "s": "schokolade dunkel dark",
+  "q": "^Candies, SPECIAL DARK Chocolate Bar$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Weiße Schokolade",
+  "e": "🍫",
+  "s": "weisse schokolade white",
+  "q": "^Candies, white chocolate$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Gummibärchen",
+  "e": "🍬",
+  "s": "fruchtgummi gummi",
+  "q": "^Candies, gumdrops, starch jelly pieces$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Butterkekse",
+  "e": "🍪",
+  "s": "kekse butter cookies",
+  "q": "^Cookies, butter, commercially prepared, enriched$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Schokokekse",
+  "e": "🍪",
+  "s": "cookies schokolade",
+  "q": "^Cookies, chocolate chip, commercially prepared, regular, lower fat$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Salzstangen",
+  "e": "🥨",
+  "s": "brezeln pretzels",
+  "q": "^Snacks, pretzels, hard, plain, salted$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Tortillachips",
+  "e": "🌽",
+  "s": "nachos tortilla chips",
+  "q": "^Snacks, tortilla chips, plain, white corn, salted$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Käsekuchen",
+  "e": "🍰",
+  "s": "kaesekuchen cheesecake",
+  "q": "^Cheesecake commercially prepared$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Apfelkuchen",
+  "e": "🥧",
+  "s": "apfelkuchen apple pie",
+  "q": "^Pie, apple, commercially prepared, enriched flour$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Schokoladenkuchen",
+  "e": "🍰",
+  "s": "schokokuchen chocolate cake",
+  "q": "^Cake, chocolate, prepared from recipe without frosting$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Donut",
+  "e": "🍩",
+  "s": "donut berliner",
+  "q": "^Doughnuts, yeast-leavened, glazed, enriched",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Muffin",
+  "e": "🧁",
+  "s": "muffin",
+  "q": "^Muffins, blueberry, commercially prepared",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Wasser",
+  "e": "💧",
+  "s": "mineralwasser water",
+  "q": "^Beverages, water, tap, drinking$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Kaffee (schwarz)",
+  "e": "☕",
+  "s": "kaffee coffee",
+  "q": "^Beverages, coffee, brewed, prepared with tap water$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Espresso",
+  "e": "☕",
+  "s": "espresso",
+  "q": "^Beverages, coffee, brewed, espresso, restaurant-prepared$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Schwarzer Tee",
+  "e": "🍵",
+  "s": "tee tea",
+  "q": "^Beverages, tea, black, brewed, prepared with tap water$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Grüner Tee",
+  "e": "🍵",
+  "s": "gruentee green tea",
+  "q": "^Beverages, tea, green, brewed, regular$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Kräutertee",
+  "e": "🍵",
+  "s": "kraeutertee herbal",
+  "q": "^Beverages, tea, herb, other than chamomile, brewed$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Cola",
+  "e": "🥤",
+  "s": "cola softdrink",
+  "q": "^Beverages, carbonated, cola, regular$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Cola light",
+  "e": "🥤",
+  "s": "cola zero light",
+  "q": "^Beverages, carbonated, low calorie, cola or pepper-type, with aspartame, contains caffeine$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Limonade",
+  "e": "🥤",
+  "s": "limo lemonade brause",
+  "q": "^Beverages, carbonated, lemon-lime soda, no caffeine$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Energy Drink",
+  "e": "🥤",
+  "s": "energydrink redbull",
+  "q": "^Beverages, Energy drink, RED BULL$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Bier",
+  "e": "🍺",
+  "s": "pils beer",
+  "q": "^Alcoholic beverage, beer, regular, all$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Weißwein",
+  "e": "🍷",
+  "s": "weisswein white wine",
+  "q": "^Alcoholic beverage, wine, table, white$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Rotwein",
+  "e": "🍷",
+  "s": "rotwein red wine",
+  "q": "^Alcoholic beverage, wine, table, red$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Wodka/Korn (40%)",
+  "e": "🥃",
+  "s": "schnaps vodka gin",
+  "q": "^Alcoholic beverage, distilled, all \\(gin, rum, vodka, whiskey\\) 80 proof$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Ketchup",
+  "e": "🍅",
+  "s": "ketchup",
+  "q": "^Catsup$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Mayonnaise",
+  "e": "🥄",
+  "s": "mayo mayonnaise",
+  "q": "^Salad dressing, mayonnaise, regular$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Senf",
+  "e": "🥄",
+  "s": "mustard senf",
+  "q": "^Mustard, prepared, yellow$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Sojasauce",
+  "e": "🥄",
+  "s": "soja sauce soy",
+  "q": "^Soy sauce made from soy and wheat \\(shoyu\\)$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Essig",
+  "e": "🥄",
+  "s": "balsamico vinegar",
+  "q": "^Vinegar, balsamic$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Tomatensauce",
+  "e": "🍅",
+  "s": "pastasauce marinara",
+  "q": "^Sauce, pasta, spaghetti/marinara, ready-to-serve$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Pesto",
+  "e": "🌿",
+  "s": "pesto basilikum",
+  "q": "^Sauce, pesto, ready-to-serve, refrigerated$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Salatdressing (Vinaigrette)",
+  "e": "🥗",
+  "s": "dressing italian",
+  "q": "^Salad dressing, italian dressing, commercial, regular$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Barbecue-Sauce",
+  "e": "🥄",
+  "s": "bbq grillsauce",
+  "q": "^Sauce, barbecue$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Currypulver",
+  "e": "🌶️",
+  "s": "curry gewuerz",
+  "q": "^Spices, curry powder$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Paprikapulver",
+  "e": "🌶️",
+  "s": "paprikapulver",
+  "q": "^Spices, paprika$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Pfeffer",
+  "e": "🌶️",
+  "s": "pfeffer pepper",
+  "q": "^Spices, pepper, black$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Salz",
+  "e": "🧂",
+  "s": "salz salt",
+  "q": "^Salt, table$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Zimt",
+  "e": "🌿",
+  "s": "zimt cinnamon",
+  "q": "^Spices, cinnamon, ground$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Gemüsebrühe",
+  "e": "🍲",
+  "s": "bruehe bouillon",
+  "q": "^Soup, vegetable broth, ready to serve$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Hühnerbrühe",
+  "e": "🍲",
+  "s": "huehnerbruehe chicken broth",
+  "q": "^Soup, chicken broth, ready-to-serve$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Tomatensuppe",
+  "e": "🍲",
+  "s": "tomatensuppe",
+  "q": "^Soup, tomato, canned, prepared with equal volume water",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Linsensuppe",
+  "e": "🍲",
+  "s": "linsensuppe",
+  "q": "^Soup, lentil with ham, canned, ready-to-serve$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Pizza Margherita",
+  "e": "🍕",
+  "s": "pizza kaese",
+  "q": "^Pizza, cheese topping, regular crust, frozen, cooked$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Pizza Salami",
+  "e": "🍕",
+  "s": "pizza pepperoni",
+  "q": "^Pizza, pepperoni topping, regular crust, frozen, cooked$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Hamburger",
+  "e": "🍔",
+  "s": "burger hamburger",
+  "q": "^Fast foods, hamburger, large, single patty, with condiments$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Cheeseburger",
+  "e": "🍔",
+  "s": "cheeseburger",
+  "q": "^McDONALD'S, Cheeseburger$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Lammhackfleisch (gebraten)",
+  "e": "🌯",
+  "s": "lammhack gyros doener",
+  "q": "^Lamb, ground, cooked, broiled$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Burrito",
+  "e": "🌯",
+  "s": "burrito wrap",
+  "q": "^Fast foods, burrito, with beans and cheese$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Lasagne",
+  "e": "🍝",
+  "s": "lasagne",
+  "q": "^Lasagna, cheese, frozen, prepared$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Chili con Carne",
+  "e": "🍲",
+  "s": "chili con carne",
+  "q": "^Chili con carne with beans, canned entree$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Falafel",
+  "e": "🧆",
+  "s": "falafel",
+  "q": "^Falafel, home-prepared$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Frühlingsrolle",
+  "e": "🥟",
+  "s": "fruehlingsrolle spring roll",
+  "q": "^Egg rolls, vegetable, frozen, prepared$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Proteinriegel",
+  "e": "🍫",
+  "s": "proteinriegel protein bar",
+  "q": "^Formulated Bar, SOUTH BEACH protein bar$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Müsliriegel",
+  "e": "🍫",
+  "s": "muesliriegel granola bar",
+  "q": "^Snacks, granola bars, hard, plain$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Dinkel (Korn)",
+  "e": "🌾",
+  "s": "dinkel spelt",
+  "q": "^Spelt, uncooked$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Hirse (gekocht)",
+  "e": "🌾",
+  "s": "hirse millet",
+  "q": "^Millet, cooked$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Buchweizen (gekocht)",
+  "e": "🌾",
+  "s": "buchweizen buckwheat",
+  "q": "^Buckwheat groats, roasted, cooked$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Amaranth (gekocht)",
+  "e": "🌾",
+  "s": "amaranth",
+  "q": "^Amaranth grain, cooked$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Gerste (gekocht)",
+  "e": "🌾",
+  "s": "graupen barley",
+  "q": "^Barley, pearled, cooked$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Weizenkleie",
+  "e": "🌾",
+  "s": "kleie bran",
+  "q": "^Wheat bran, crude$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Weizenkeime",
+  "e": "🌾",
+  "s": "weizenkeim germ",
+  "q": "^Wheat germ, crude$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Reiswaffeln",
+  "e": "🍘",
+  "s": "reiswaffel rice cake",
+  "q": "^Snacks, rice cakes, brown rice, plain, unsalted$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Hefe",
+  "e": "🍞",
+  "s": "backhefe yeast",
+  "q": "^Leavening agents, yeast, baker's, active dry$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Backpulver",
+  "e": "🥄",
+  "s": "backpulver baking powder",
+  "q": "^Leavening agents, baking powder, double-acting, sodium aluminum sulfate$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Kakaopulver",
+  "e": "🍫",
+  "s": "kakao cocoa",
+  "q": "^Cocoa, dry powder, unsweetened$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Kokosmilch",
+  "e": "🥥",
+  "s": "kokosmilch coconut milk",
+  "q": "^Nuts, coconut milk, canned \\(liquid expressed from grated meat and water\\)$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Kokosraspeln",
+  "e": "🥥",
+  "s": "kokosflocken shredded coconut",
+  "q": "^Nuts, coconut meat, dried \\(desiccated\\), not sweetened$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Mandelmus",
+  "e": "🥜",
+  "s": "mandelmus almond butter",
+  "q": "^Nuts, almond butter, plain, without salt added$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Tahini",
+  "e": "🥄",
+  "s": "sesammus tahin",
+  "q": "^Seeds, sesame butter, tahini, from roasted and toasted kernels",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Tempeh",
+  "e": "🧊",
+  "s": "tempeh",
+  "q": "^Tempeh$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Tofu (fest)",
+  "e": "🧊",
+  "s": "tofu fest",
+  "q": "^Tofu, extra firm, prepared with nigari$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Hüttenkäse (4%)",
+  "e": "🥄",
+  "s": "cottage cheese",
+  "q": "^Cheese, cottage, creamed, large or small curd$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Ziegenkäse",
+  "e": "🧀",
+  "s": "ziegenkaese goat",
+  "q": "^Cheese, goat, semisoft type$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Bergkäse",
+  "e": "🧀",
+  "s": "bergkaese gruyere",
+  "q": "^Cheese, gruyere$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Provolone",
+  "e": "🧀",
+  "s": "provolone",
+  "q": "^Cheese, provolone$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Limburger",
+  "e": "🧀",
+  "s": "limburger",
+  "q": "^Cheese, limburger$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Kondensmilch gezuckert",
+  "e": "🥛",
+  "s": "milchmaedchen condensed",
+  "q": "^Milk, canned, condensed, sweetened$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Tomatensaft",
+  "e": "🧃",
+  "s": "tomatensaft",
+  "q": "^Tomato juice, canned, without salt added$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Karottensaft",
+  "e": "🧃",
+  "s": "moehrensaft carrot juice",
+  "q": "^Carrot juice, canned$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Grapefruitsaft",
+  "e": "🧃",
+  "s": "grapefruitsaft",
+  "q": "^Grapefruit juice, white, raw$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Ananassaft",
+  "e": "🧃",
+  "s": "ananassaft",
+  "q": "^Pineapple juice, canned or bottled, unsweetened, without added ascorbic acid$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Zitronensaft",
+  "e": "🧃",
+  "s": "zitronensaft",
+  "q": "^Lemon juice, raw$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Kokoswasser",
+  "e": "🥥",
+  "s": "kokoswasser coconut water",
+  "q": "^Nuts, coconut water \\(liquid from coconuts\\)$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Thunfisch (frisch)",
+  "e": "🐟",
+  "s": "thunfischsteak yellowfin",
+  "q": "^Fish, tuna, fresh, yellowfin, raw$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Wolfsbarsch",
+  "e": "🐟",
+  "s": "loup de mer sea bass",
+  "q": "^Fish, sea bass, mixed species, cooked, dry heat$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Scholle",
+  "e": "🐟",
+  "s": "flunder plaice flounder",
+  "q": "^Fish, flatfish \\(flounder and sole species\\), cooked, dry heat$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Zander",
+  "e": "🐟",
+  "s": "zander pike",
+  "q": "^Fish, pike, walleye, cooked, dry heat$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Karpfen",
+  "e": "🐟",
+  "s": "karpfen carp",
+  "q": "^Fish, carp, cooked, dry heat$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Aal",
+  "e": "🐟",
+  "s": "aal eel",
+  "q": "^Fish, eel, mixed species, cooked, dry heat$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Krabbenfleisch",
+  "e": "🦀",
+  "s": "krabben crab",
+  "q": "^Crustaceans, crab, blue, cooked, moist heat$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Hummer",
+  "e": "🦞",
+  "s": "hummer lobster",
+  "q": "^Crustaceans, lobster, northern, cooked, moist heat$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Austern",
+  "e": "🦪",
+  "s": "austern oysters",
+  "q": "^Mollusks, oyster, eastern, wild, cooked, dry heat$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Jakobsmuscheln",
+  "e": "🦪",
+  "s": "jakobsmuschel scallops",
+  "q": "^Mollusks, scallop, \\(bay and sea\\), cooked, steamed$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Rinderleber",
+  "e": "🥩",
+  "s": "leber liver",
+  "q": "^Beef, variety meats and by-products, liver, cooked, pan-fried$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Hackbraten",
+  "e": "🥩",
+  "s": "falscher hase meatloaf",
+  "q": "^Beef, ground, 90% lean meat / 10% fat, loaf, cooked, baked$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Gulasch",
+  "e": "🍲",
+  "s": "gulasch stew",
+  "q": "^Beef stew, canned entree$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Kassler",
+  "e": "🍖",
+  "s": "kasseler smoked pork",
+  "q": "^Pork, cured, ham, whole, separable lean only, roasted$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Corned Beef",
+  "e": "🥩",
+  "s": "corned beef",
+  "q": "^Beef, cured, corned beef, canned$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Roastbeef (Aufschnitt)",
+  "e": "🥩",
+  "s": "roastbeef aufschnitt",
+  "q": "^Beef, round, top round roast, boneless, separable lean only, trimmed to 0. fat, select, cooked, roasted$",
+  "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Vollkorntoast",
+  "e": "🍞",
+  "s": "vollkorntoast",
+  "q": "^Bread, whole-wheat, commercially prepared, toasted$",
+  "cat": "Weitere Grundnahrungsmittel"
+ }
+]

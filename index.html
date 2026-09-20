@@ -1137,7 +1137,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.258</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.259</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -3035,6 +3035,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
 <script src="js/actions.js"></script>
 <script src="js/fooddb.js"></script>
+<script src="js/fooddb-usda.js"></script>
 <script src="js/idb-photos.js"></script>
 <script src="js/changelog.js"></script>
 <script>
@@ -3042,6 +3043,8 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 // SECTION: DATABASE
 // ════════════════════════════════════════
 // DB + DE_EN sind nach js/fooddb.js ausgelagert (window.DB / window.DE_EN).
+// js/fooddb-usda.js haengt danach die erzeugte USDA-Ergaenzung an window.DB an
+// (Quelle: tools/fooddb-usda.map.json + tools/build-fooddb.js).
 
 
 // ════════════════════════════════════════
@@ -3053,7 +3056,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.258';
+var APP_VERSION='0.259';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -4281,6 +4284,12 @@ function fuzzy(item,q){
   if(ql.length>=4&&(n.includes(ql.slice(0,-1))||s.includes(ql.slice(0,-1))))return 1;
   return 0;
 }
+function dbPer100(f){
+  // Die Basis-DB (js/fooddb.js) fuehrt nur k/p/c/f, die erzeugte USDA-Ergaenzung
+  // (js/fooddb-usda.js) zusaetzlich g Zucker, b Ballaststoffe, l Salz. Fehlende
+  // Felder bleiben 0 — so lesen beide Quellen ueber denselben Weg.
+  return{kcal:f.k,protein:f.p,carbs:f.c,fat:f.f,sugar:f.g||0,fiber:f.b||0,salt:f.l||0};
+}
 function findInLocalDB(name){
   var nl=name.toLowerCase().trim();
   if(!nl)return null;
@@ -4318,7 +4327,7 @@ function searchLocal(q){
     if(s>0)add({name:f.name,emoji:f.emoji,per100:f.per100,badge:'🕐',bdgCls:'saved'},s+5);
   });
   // Built-in DB
-  DB.forEach(function(f){var s=fuzzy(f,q);if(s>0||!ql)add({name:f.n,emoji:f.e,per100:{kcal:f.k,protein:f.p,carbs:f.c,fat:f.f,sugar:0,fiber:0,salt:0}},s);});
+  DB.forEach(function(f){var s=fuzzy(f,q);if(s>0||!ql)add({name:f.n,emoji:f.e,per100:dbPer100(f)},s);});
   results.sort(function(a,b){return b.score-a.score;});
   var out=[],seenOut={};
   results.forEach(function(x){var k=x.item.name.toLowerCase();if(!seenOut[k]){seenOut[k]=true;out.push(x.item);}});
@@ -4340,7 +4349,7 @@ function lookupNutrients(rawItems,onDone){
     // 1. Local DB
     var loc=findInLocalDB(name);
     if(loc){
-      results[idx]={name:loc.n,emoji:loc.e,amount:grams||0,per100:{kcal:loc.k,protein:loc.p,carbs:loc.c,fat:loc.f,sugar:0,fiber:0,salt:0},missingGrams:grams===null};
+      results[idx]={name:loc.n,emoji:loc.e,amount:grams||0,per100:dbPer100(loc),missingGrams:grams===null};
       pending--;if(!pending)onDone(results);return;
     }
     // 2. Open Food Facts
@@ -4773,7 +4782,7 @@ function recEditSearch(){
   var q=(document.getElementById('recEditSearchQ')||{}).value||'';
   var results=[],seen={};
   customFoods.forEach(function(f){if(!seen[f.name.toLowerCase()]){seen[f.name.toLowerCase()]=true;results.push({name:f.name,emoji:f.emoji,per100:f.per100});}});
-  DB.forEach(function(f){var s=fuzzy(f,q);if((s>0||!q)&&!seen[f.n.toLowerCase()]){seen[f.n.toLowerCase()]=true;results.push({name:f.n,emoji:f.e,per100:{kcal:f.k,protein:f.p,carbs:f.c,fat:f.f,sugar:0,fiber:0,salt:0},score:s});}});
+  DB.forEach(function(f){var s=fuzzy(f,q);if((s>0||!q)&&!seen[f.n.toLowerCase()]){seen[f.n.toLowerCase()]=true;results.push({name:f.n,emoji:f.e,per100:dbPer100(f),score:s});}});
   if(q)results.sort(function(a,b){return(b.score||0)-(a.score||0);});
   results=results.slice(0,12);
   window._recEditResults=results;
@@ -6859,7 +6868,7 @@ function renderLibrary(){
     // Custom foods + DB
     var allFoods=[];
     customFoods.forEach(function(f){allFoods.push({name:f.name,emoji:f.emoji,per100:f.per100,isCustom:true});});
-    DB.forEach(function(f){allFoods.push({name:f.n,emoji:f.e,per100:{kcal:f.k,protein:f.p,carbs:f.c,fat:f.f,sugar:0,fiber:0,salt:0},isCustom:false});});
+    DB.forEach(function(f){allFoods.push({name:f.n,emoji:f.e,per100:dbPer100(f),isCustom:false});});
     var filtered=allFoods.filter(function(f){return !ql||f.name.toLowerCase().includes(ql);});
     filtered=filtered.slice(0,30);
     if(!filtered.length){

@@ -41,6 +41,9 @@ var pickerTorchOn=false;
 // SECTION: INGREDIENT PICKER (universell)
 // ════════════════════════════════════════
 function openPicker(meal, defaultTab){
+  // Der Normalfall ist „eintragen“. Nur der Weg „Neues Rezept → aus dem
+  // Internet“ schaltet direkt nach diesem Aufruf auf „nur in die Bibliothek“.
+  window._pickerRecipeOnly=false;
   pickerMeal = meal || mealByTime();
   pickerSelFood = null;
   pickerIngredients = [];
@@ -78,6 +81,7 @@ function openPicker(meal, defaultTab){
   // Title
   document.getElementById('pickerTitle').textContent=(MEAL_NAMES[pickerMeal]||'Mahlzeit')+' – Zutat hinzufügen';
   document.getElementById('pickerSub').textContent='Lokal + Online kombiniert';
+  _pickerRecipeOnlyUI();
   // Default tab
   pickerSetTab(defaultTab||'chat');
   // Load search results non-blocking
@@ -1184,6 +1188,19 @@ function pickerPhotoAddFromResult(i){
   showToast((p.emoji||'🍽')+' '+p.name+' hinzugefügt');
 }
 
+// Im Bibliothek-Modus gibt es nichts einzutragen: Der Knopf „✓ Eintragen“
+// verschwindet, und „📋 Als Rezept“ sagt, was es wirklich tut.
+function _pickerRecipeOnlyUI(){
+  var on=!!window._pickerRecipeOnly;
+  [['pickerLinkAddBtn','pickerLinkRecBtn'],
+   ['pickerPhotoAddBtn','pickerPhotoRecBtn'],
+   ['pickerChatAddBtn','pickerChatRecBtn']].forEach(function(pair){
+    var a=document.getElementById(pair[0]),b=document.getElementById(pair[1]);
+    if(a)a.style.display=on?'none':'';
+    if(b)b.textContent=on?'📚 In die Bibliothek':'📋 Als Rezept';
+  });
+}
+
 function _pickerAdd(emoji,nameId,portionsId,defaultName,saveAsRecipe,hasEditMode){
   if(!pickerIngredients.length){showToast('Keine Zutaten');return;}
   var ings=JSON.parse(JSON.stringify(pickerIngredients));
@@ -1203,8 +1220,22 @@ function _pickerAdd(emoji,nameId,portionsId,defaultName,saveAsRecipe,hasEditMode
   var scaled=scaleNutrients(t,portions);
   var createdRec=null;
   if(saveAsRecipe){
+    // Ein zweites „Spaghetti Bolognese“ neben dem ersten faellt erst auf, wenn
+    // die Bibliothek unuebersichtlich ist. Deshalb VOR dem Anlegen fragen.
+    if(window.NTPlan&&NTPlan.confirmNotDuplicate&&!NTPlan.confirmNotDuplicate(name,ings))return null;
     createdRec={id:Date.now().toString(),name:name,emoji:emoji,ingredients:ings};
     recipes.unshift(createdRec);saveX();
+    // Aus dem Wochenplan heraus angelegt: Das Rezept ist Vorrat, keine Mahlzeit
+    // von heute. Bis v0.259 landete es beides — in der Bibliothek UND als
+    // Eintrag im Tagebuch, obwohl es niemand gegessen hatte.
+    if(window._pickerRecipeOnly){
+      window._pickerRecipeOnly=false;
+      _pickerSavePhotoIfWanted();closePicker();
+      if(window.NTPlan&&NTPlan.noteRecipeCreated)NTPlan.noteRecipeCreated(createdRec);
+      else showToast(emoji+' '+name+' in der Bibliothek gespeichert');
+      if(typeof renderLibrary==='function')renderLibrary();
+      return createdRec;
+    }
     getDay().meals[pickerMeal].push(Object.assign({name:name,emoji:emoji,isRecipe:true,recipeId:createdRec.id,portions:portions,ingredients:ings},scaled));
     showToast(emoji+' '+name+' als Rezept gespeichert');
   } else {
@@ -1926,6 +1957,7 @@ function _pickerLinkFill(rec,btn){
     pickerUpdateLinkTotal();
     _pickerLinkResetShopBtn();
     document.getElementById('pickerLinkResult').classList.remove('hidden');
+    _pickerRecipeOnlyUI();
     if(btn){btn.disabled=false;btn.textContent='🔗 Neu laden';btn.style.opacity='1';}
   });
 }

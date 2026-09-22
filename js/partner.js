@@ -325,6 +325,36 @@ function packetTitle(it){
   if(p.t==='p')return 'Zeitraum';
   return 'Sendung';
 }
+// ── Sendungen, die zu EINER Mahlzeit gehoeren (v0.260) ───────────────
+// Die Flagge in der Kopfzeile sagt nur DASS etwas da ist. Wo es hingehoert,
+// weiss das Paket aber selbst: eine Mahlzeit (t:'m') nennt ihren Slot, ein
+// ganzer Tag (t:'d') bringt seine Mahlzeiten mit. Beides wird deshalb auch an
+// der betreffenden Mahlzeit angezeigt — und ist von dort aus uebernehmbar.
+function newForMeal(meal){
+  return inbox().filter(function(it){
+    if(it.st!=='new'||!it.p)return false;
+    var p=it.p;
+    if(p.t==='m')return (p.m||'breakfast')===meal;
+    if(p.t==='d')return !!(((p.mm||{})[meal])||[]).length;
+    return false;
+  });
+}
+// Genau eine Sendung → direkt die Bestaetigung, mit dieser Mahlzeit vorgewaehlt.
+// Mehrere → das Postfach, weil die Wahl dann beim Nutzer liegt.
+function openForMeal(meal){
+  var items=inbox(),idx=-1,n=0;
+  items.forEach(function(it,i){
+    if(it.st!=='new'||!it.p)return;
+    var p=it.p;
+    var hit=(p.t==='m')?((p.m||'breakfast')===meal):(p.t==='d'?!!(((p.mm||{})[meal])||[]).length:false);
+    if(!hit)return;
+    n++;if(idx<0)idx=i;
+  });
+  if(!n){showToast('Nichts Neues f\u00fcr diese Mahlzeit');return;}
+  if(n===1){openPacket(idx);return;}
+  openInbox();
+}
+
 function renderInbox(){
   var el=document.getElementById('partnerInboxList');
   if(!el)return;
@@ -398,6 +428,13 @@ function refreshBadges(){
     flag.style.display=n?'block':'none';
     flag.textContent=n>9?'9+':String(n);
   }
+  ['breakfast','lunch','dinner','snack'].forEach(function(m){
+    var b=document.getElementById('mealInbox-'+m);
+    if(!b)return;
+    var c=newForMeal(m).length;
+    b.style.display=c?'flex':'none';
+    b.textContent=c>1?('\ud83d\udcec '+c):'\ud83d\udcec';
+  });
   var sub=document.getElementById('partnerHubSub');
   if(sub){
     sub.textContent=!on
@@ -470,6 +507,7 @@ document.addEventListener('visibilitychange',function(){
 });
 
 window.NTPartner={
+  newForMeal:newForMeal,openForMeal:openForMeal,packetTitle:packetTitle,
   boot:boot,open:open,close:close,openInbox:openInbox,closeInbox:closeInbox,
   send:send,run:run,active:active,code:code,statusText:statusText,
   renderUI:renderUI,renderInbox:renderInbox,refreshBadges:refreshBadges,

@@ -97,11 +97,11 @@ function resolve(it){
   if(!it)return null;
   var r=rec(it.r);
   if(r)return {name:r.name,emoji:r.emoji||'📋',ingredients:r.ingredients||[],own:true};
-  if(it.s)return {name:it.s.n,emoji:it.s.em||'📋',own:false,
+  if(it.s)return {name:it.s.n,emoji:it.s.em||'📋',own:false,hist:!!it.h,
     ingredients:(it.s.i||[]).map(function(g){return {name:g.n,emoji:g.em||'🍽',amount:g.a,per100:g.p};})};
   return null;
 }
-function itemKcal(it){var r=resolve(it);if(!r)return 0;return ingTotal(r.ingredients).kcal*(it.p||1);}
+function itemKcal(it){if(isNote(it))return 0;var r=resolve(it);if(!r)return 0;return ingTotal(r.ingredients).kcal*(it.p||1);}
 function dayKcal(date){
   var p=planFor(date,false);if(!p)return 0;
   var sum=0;
@@ -113,6 +113,77 @@ function dayCount(date){
   var n=0;SLOTS.forEach(function(s){n+=(p[s.id]||[]).length;});return n;
 }
 function isEmptyPlan(date){return dayCount(date)===0;}
+
+// ── Freitext statt Rezept (v0.260) ────────────────────────────────
+// Ein Planeintrag muss kein Rezept sein. „Pizza bestellen“, „Reste“, „bei Oma
+// essen“ stehen in einem Wochenplan genauso oft wie ein Rezept — und wer dafuer
+// erst ein Rezept anlegen muss, plant es gar nicht erst ein. Eine Notiz ist
+// `{x:'<Text>'}`: kein Verweis, keine Zutaten, 0 kcal. Sie laesst sich spaeter
+// mit einem Rezept hinterlegen; dann wird aus `{x}` ein `{r}`.
+function isNote(it){return !!(it&&it.x&&!it.r&&!it.s);}
+function noteCount(date){
+  var p=planFor(date,false);if(!p)return 0;
+  var n=0;SLOTS.forEach(function(s){(p[s.id]||[]).forEach(function(it){if(isNote(it))n++;});});
+  return n;
+}
+function goalKcal(){return Math.max(0,Math.round(S.goal||0));}
+
+// ── Namen vergleichbar machen ───────────────────────────────────
+// Reicht fuer die eine Frage „steht das schon in der Bibliothek?“ — keine
+// Fuzzy-Suche, nur Kleinschreibung, aufgeloeste Umlaute, Satzzeichen weg.
+function norm(x){
+  return String(x||'').toLowerCase()
+    .replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss')
+    .replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim();
+}
+function words(x){return norm(x).split(' ').filter(function(w){return w.length>2;});}
+// Zeichen-Bigramme (Dice). Der Wortvergleich allein sieht „Spagetti Bolognese“
+// und „Spaghetti Bolognese“ als zwei Drittel fremd — ein Buchstabe Unterschied
+// macht aus einem Wort ein anderes. Gemessen an Bigrammen sind es 0,91.
+function dice(a,b){
+  a=norm(a);b=norm(b);
+  if(!a||!b)return 0;
+  if(a===b)return 1;
+  if(a.length<2||b.length<2)return 0;
+  var m={},i,g,hit=0;
+  for(i=0;i<a.length-1;i++){g=a.substr(i,2);m[g]=(m[g]||0)+1;}
+  for(i=0;i<b.length-1;i++){g=b.substr(i,2);if(m[g]>0){m[g]--;hit++;}}
+  return 2*hit/((a.length-1)+(b.length-1));
+}
+function jacc(a,b){
+  if(!a.length||!b.length)return 0;
+  var inA={},uni={},hit=0,seen={};
+  a.forEach(function(w){inA[w]=1;uni[w]=1;});
+  b.forEach(function(w){uni[w]=1;if(inA[w]&&!seen[w]){hit++;seen[w]=1;}});
+  return hit/Object.keys(uni).length;
+}
+// Das aehnlichste vorhandene Rezept — oder null. Zwei Wege fuehren zum Treffer:
+// aehnlicher Name, oder fast dieselben Zutaten unter anderem Namen („Chili“ vs.
+// „Chili con Carne“, oder zweimal dasselbe Rezept aus zwei Quellen).
+function similarRecipe(name,ings,skipId){
+  var nw=words(name);
+  var iw=(ings||[]).map(function(g){return norm(g&&(g.name||g.n));}).filter(Boolean);
+  var best=null;
+  recipes.forEach(function(r){
+    if(skipId&&r.id===skipId)return;
+    var rn=norm(r.name);
+    var ns=(rn&&rn===norm(name))?1:Math.max(jacc(nw,words(r.name)),dice(name,r.name)>=0.8?dice(name,r.name):0);
+    var rs=jacc(iw,(r.ingredients||[]).map(function(g){return norm(g.name);}).filter(Boolean));
+    if(!(ns>=0.6||(ns>=0.3&&rs>=0.5)||rs>=0.8))return;
+    var sc=Math.max(ns,ns*0.5+rs*0.5);
+    if(!best||sc>best.score)best={r:r,score:sc,name:ns>=0.6};
+  });
+  return best;
+}
+// true = speichern, false = abgebrochen. Ein Hinweis, keine Sperre: zwei
+// Varianten desselben Gerichts sind ein legitimer Wunsch.
+function confirmNotDuplicate(name,ings,skipId){
+  var m=similarRecipe(name,ings,skipId);
+  if(!m)return true;
+  return confirm('In deiner Bibliothek steht schon „'+m.r.name+'“ ('
+    +(m.name?'ähnlicher Name':'fast dieselben Zutaten')+').\n\n„'+name
+    +'“ trotzdem zusätzlich anlegen?');
+}
 
 // ── Wochenplan-Ansicht ────────────────────────────────────────────────────
 function open(date){
@@ -134,7 +205,12 @@ function render(){
   var sub=document.getElementById('planOvSub');
   var total=0,filled=0;
   for(var i=0;i<7;i++){var d=iso(addDays(mo,i));total+=dayKcal(d);if(!isEmptyPlan(d))filled++;}
-  if(sub)sub.textContent=filled?(filled+' von 7 Tagen geplant · '+Math.round(total)+' kcal'):'Noch nichts geplant';
+  var goal=goalKcal();
+  if(sub){
+    if(!filled)sub.textContent='Noch nichts geplant';
+    else sub.textContent=filled+' von 7 Tagen geplant · '+Math.round(total)+' kcal'
+      +(goal?(' · Ziel '+(goal*filled)+' kcal'):'');
+  }
 
   var el=document.getElementById('planDays');if(!el)return;
   var weekEmpty=true;
@@ -149,15 +225,32 @@ function render(){
     return;
   }
   var todayIso=(typeof today==='function')?today():iso(new Date());
+  var openNotes=0;
+  for(var n0=0;n0<7;n0++)openNotes+=noteCount(iso(addDays(mo,n0)));
   var html='';
+  // Offene Notizen stehen oben, weil sie sonst untergehen: Sie zaehlen mit
+  // 0 kcal und wandern nicht ins Tagebuch — der Plan sieht ohne diesen Hinweis
+  // voller aus, als er ist.
+  if(openNotes){
+    html+='<div class="plan-notehint">📝 <b>'+openNotes+' Eintr'+(openNotes===1?'ag':'äge')+' ohne Rezept.</b> '
+      +'Tipp drauf, um ein Rezept zu hinterlegen — bis dahin zählen sie mit 0 kcal und stehen nicht auf dem Einkaufszettel.</div>';
+  }
   for(var k=0;k<7;k++){
     var dt=addDays(mo,k),ds=iso(dt),isToday=(ds===todayIso);
     var kc=Math.round(dayKcal(ds));
     var applied=S.planApplied&&S.planApplied[ds];
+    // Der Tag wird gegen das Kalorienziel gezeigt, nicht nur als Summe: Ein
+    // Wochenplan, dessen Tage 1200 oder 3400 kcal ergeben, hat seinen Zweck
+    // verfehlt, und das soll man sehen, ohne nachzurechnen.
+    var kcCls='',kcTxt='—';
+    if(kc){
+      kcTxt=goal?(kc+' / '+goal+' kcal'):(kc+' kcal');
+      if(goal)kcCls=(Math.abs(kc-goal)<=goal*0.1)?' is-ok':' is-off';
+    }
     html+='<div class="plan-day'+(isToday?' is-today':'')+'">'
       +'<div class="plan-dh">'
         +'<div class="plan-dt">'+DOW[k]+' · '+dt.getDate()+'. '+MON[dt.getMonth()]+(isToday?' <span class="plan-badge">heute</span>':'')+'</div>'
-        +'<div class="plan-dk">'+(kc?kc+' kcal':'—')+'</div>'
+        +'<div class="plan-dk'+kcCls+'">'+kcTxt+'</div>'
       +'</div>';
     SLOTS.forEach(function(s){
       var items=slotItems(ds,s.id);
@@ -165,6 +258,10 @@ function render(){
         +'<div class="plan-si" title="'+esc(s.label)+'">'+s.ic+'</div>'
         +'<div class="plan-sc">';
       items.forEach(function(it,idx){
+        if(isNote(it)){
+          html+='<span class="plan-chip is-note" onclick="NTPlan.openItem(\''+ds+'\',\''+s.id+'\','+idx+')">📝 '+esc(it.x)+'</span>';
+          return;
+        }
         var r=resolve(it);
         if(!r){html+='<span class="plan-chip is-gone" onclick="NTPlan.removeItem(\''+ds+'\',\''+s.id+'\','+idx+')">Rezept gelöscht ✕</span>';return;}
         // Fremdes Rezept (nur als Abzug da): erkennbar, aber gleichwertig nutzbar.
@@ -186,7 +283,7 @@ function render(){
 // ── Rezept in einen Slot legen ────────────────────────────────────────────
 var _target=null;
 function pick(date,slot){
-  _target={date:date,slot:slot};
+  _target={date:date,slot:slot};_replaceIdx=null;
   var q=document.getElementById('planPickQ');if(q)q.value='';
   var s=SLOTS.filter(function(x){return x.id===slot;})[0];
   var sub=document.getElementById('planPickSub');
@@ -196,13 +293,25 @@ function pick(date,slot){
 }
 function renderPick(){
   var el=document.getElementById('planPickList');if(!el)return;
-  var q=((document.getElementById('planPickQ')||{}).value||'').toLowerCase().trim();
+  var raw=((document.getElementById('planPickQ')||{}).value||'').trim();
+  var q=raw.toLowerCase();
   var list=recipes.filter(function(r){return !q||r.name.toLowerCase().indexOf(q)>=0;});
+  // Dasselbe Feld, zwei Ausgaenge: Was getippt wurde, laesst sich als Rezept
+  // suchen ODER direkt als Notiz einplanen. Ein zweites Eingabefeld daneben
+  // haette dieselbe Frage zweimal gestellt.
+  var noteRow=raw
+    ?('<div class="ri" onclick="NTPlan.addNote()">'
+      +'<div style="font-size:22px;">📝</div>'
+      +'<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:13px;">„'+esc(raw)+'“ als Notiz einplanen</div>'
+      +'<div style="font-size:11px;color:var(--mu);">Ohne Rezept — das lässt sich später hinterlegen</div></div>'
+      +'<div style="font-size:18px;color:var(--g2);font-weight:900;">＋</div></div>')
+    :'';
   if(!list.length){
-    el.innerHTML='<div style="font-size:13px;color:var(--mu);font-style:italic;text-align:center;padding:20px;">Kein Rezept gefunden</div>';
+    el.innerHTML=noteRow
+      +'<div style="font-size:13px;color:var(--mu);font-style:italic;text-align:center;padding:20px;">Kein Rezept gefunden</div>';
     return;
   }
-  el.innerHTML=list.map(function(r){
+  el.innerHTML=noteRow+list.map(function(r){
     var t=ingTotal(r.ingredients||[]);
     return '<div class="ri" onclick="NTPlan.addToSlot(\''+esc(r.id)+'\')">'
       +'<div style="font-size:22px;">'+(r.emoji||'📋')+'</div>'
@@ -213,26 +322,86 @@ function renderPick(){
 }
 function addToSlot(recipeId){
   if(!_target)return;
-  var p=planFor(_target.date,true);
-  p[_target.slot].push({r:recipeId,p:1});
-  if(S.planApplied)delete S.planApplied[_target.date];
-  touch(_target.date);
+  var t=_target,repl=_replaceIdx;
+  _target=null;_replaceIdx=null;
+  var p=planFor(t.date,true);
+  // Aus der Notiz ist ein Rezept geworden — sie wird ersetzt, nicht ergaenzt.
+  if(repl!==null&&repl!==undefined&&p[t.slot][repl])p[t.slot].splice(repl,1,{r:recipeId,p:1});
+  else p[t.slot].push({r:recipeId,p:1});
+  if(S.planApplied)delete S.planApplied[t.date];
+  touch(t.date);
   saveS();Sync.schedule();closeOv('planPickOv');render();refreshCard();
   var r=rec(recipeId);
-  showToast((r?(r.emoji||'📋')+' '+r.name:'Rezept')+' eingeplant ✓');
+  showToast((r?(r.emoji||'📋')+' '+r.name:'Rezept')+(repl!==null&&repl!==undefined?' hinterlegt ✓':' eingeplant ✓'));
+}
+
+// ── Notiz einplanen und spaeter aufloesen ───────────────────────────
+var _replaceIdx=null;
+function addNote(){
+  if(!_target)return;
+  var txt=((document.getElementById('planPickQ')||{}).value||'').trim();
+  if(!txt){showToast('Erst etwas eintippen');return;}
+  var t=_target,repl=_replaceIdx;
+  _target=null;_replaceIdx=null;
+  var p=planFor(t.date,true);
+  if(repl!==null&&repl!==undefined&&p[t.slot][repl])p[t.slot].splice(repl,1,{x:txt});
+  else p[t.slot].push({x:txt});
+  if(S.planApplied)delete S.planApplied[t.date];
+  touch(t.date);
+  saveS();Sync.schedule();closeOv('planPickOv');render();refreshCard();
+  showToast('📝 '+txt+' eingeplant — Rezept später');
+}
+function saveNote(){
+  if(!_item)return;
+  var it=slotItems(_item.date,_item.slot)[_item.idx];if(!it||!isNote(it))return;
+  var txt=((document.getElementById('planItemNoteText')||{}).value||'').trim();
+  if(!txt){showToast('Die Notiz braucht einen Text');return;}
+  it.x=txt;
+  touch(_item.date);
+  saveS();Sync.schedule();closeOv('planItemOv');render();refreshCard();
+}
+// „Rezept hinterlegen“: derselbe Auswahl-Dialog wie ＋, nur dass der Treffer
+// die Notiz ersetzt. Der Notiztext steht schon im Suchfeld — meistens heisst
+// das Rezept genauso.
+function noteToRecipe(){
+  if(!_item)return;
+  var it=slotItems(_item.date,_item.slot)[_item.idx];if(!it||!isNote(it))return;
+  var d=_item.date,sl=_item.slot,ix=_item.idx,txt=it.x;
+  closeOv('planItemOv');
+  setTimeout(function(){
+    pick(d,sl);
+    _replaceIdx=ix;
+    var q=document.getElementById('planPickQ');
+    if(q){q.value=txt;renderPick();}
+  },200);
 }
 
 // ── Einzelnen Planeintrag bearbeiten ──────────────────────────────────────
 var _item=null;
 function openItem(date,slot,idx){
   var it=slotItems(date,slot)[idx];if(!it)return;
-  var r=resolve(it);if(!r){removeItem(date,slot,idx);return;}
+  var note=isNote(it);
+  var r=note?null:resolve(it);
+  if(!note&&!r){removeItem(date,slot,idx);return;}
   _item={date:date,slot:slot,idx:idx};
-  document.getElementById('planItemTitle').textContent=(r.emoji||'📋')+' '+r.name+(r.own?'':' · von einer geteilten Liste');
   var d=parse(date),s=SLOTS.filter(function(x){return x.id===slot;})[0];
+  var nw=document.getElementById('planItemNoteWrap');
+  var rw=document.getElementById('planItemRecWrap');
+  if(nw)nw.style.display=note?'':'none';
+  if(rw)rw.style.display=note?'none':'';
+  if(note){
+    document.getElementById('planItemTitle').textContent='📝 '+it.x;
+    var ne=document.getElementById('planItemNoteText');if(ne)ne.value=it.x;
+  } else {
+    // Woher der Eintrag stammt, gehoert in die Zeile: ein Abzug aus einer
+    // geteilten Liste und ein Vorschlag aus dem eigenen Tagebuch sehen im
+    // Plan gleich aus, verhalten sich aber verschieden (kein Rezept dahinter).
+    var src=r.own?'':(r.hist?' · aus deinem Tagebuch':' · von einer geteilten Liste');
+    document.getElementById('planItemTitle').textContent=(r.emoji||'📋')+' '+r.name+src;
+    document.getElementById('planItemPortions').value=it.p||1;
+    planItemTotal();
+  }
   document.getElementById('planItemSub').textContent=DOW[(d.getDay()+6)%7]+' · '+shortDate(d)+' · '+(s?s.label:'');
-  document.getElementById('planItemPortions').value=it.p||1;
-  planItemTotal();
   openOv('planItemOv');
 }
 function planItemTotal(){
@@ -266,6 +435,7 @@ function deleteItem(){
 function itemToShop(){
   if(!_item||!window.NTShop)return;
   var it=slotItems(_item.date,_item.slot)[_item.idx];if(!it)return;
+  if(isNote(it)){showToast('Diese Notiz hat noch kein Rezept — nichts zum Einkaufen');return;}
   var r=resolve(it);if(!r){showToast('Rezept nicht gefunden');return;}
   // Bewusst NICHT NTShop.addRecipe(id): ein von aussen geteiltes Rezept steht
   // nicht in der eigenen Bibliothek, die ID liefe dort ins Leere.
@@ -275,38 +445,194 @@ function itemToShop(){
   }),r.name);
 }
 
-// ── Automatisch fuellen ───────────────────────────────────────────────────
-// Deterministisch genug, um nachvollziehbar zu bleiben, aber ohne Anspruch auf
-// Naehrwert-Optimierung: gefuellt werden nur LEERE Mittag- und Abend-Slots, und
-// innerhalb einer Woche wird ein Rezept nicht wiederholt, solange die Bibliothek
-// gross genug ist. Was schon geplant ist, bleibt unangetastet.
+// ── Automatisch fuellen ────────────────────────────────────────
+// Zwei Fragen entscheiden, was vorgeschlagen wird — und beide standen bis
+// v0.259 nicht im Code:
+//
+//  1. WORAUS wird gewaehlt? Bisher: ausschliesslich die Rezeptbibliothek.
+//     Jetzt zusaetzlich das Tagebuch — aber nur als ganze Mahlzeit, nicht als
+//     einzelne Zeile: „Burger mit Pommes“ darf vorkommen, „200 g Magerquark“
+//     nicht. Ein einzelnes Lebensmittel ist kein Abendessen, und genau solche
+//     Zeilen kamen vorher als Vorschlag zurueck. Rezepte bleiben der Regelfall
+//     (siehe HIST_PENALTY): ein Tagebuch-Vorschlag muss deutlich besser passen,
+//     um eines zu verdraengen.
+//
+//  2. WIE VIEL? Bisher: ein Rezept je Mittag und Abend, Portion 1, Kalorien
+//     egal — sieben Tage zwischen 900 und 3000 kcal. Jetzt bekommt jeder Tag
+//     das Kalorienziel als Vorgabe: die leeren Slots teilen sich, was nach dem
+//     schon Geplanten uebrig ist (Fruehstueck 25 %, Mittag 35 %, Abend 30 %,
+//     Snack 10 %), und danach zieht rebalance() die Portionen nach, bis der Tag
+//     innerhalb von 5 % liegt. Von Hand Geplantes wird dabei nie angefasst.
+//
+// Was schon im Plan steht, bleibt unangetastet; innerhalb einer Woche wird
+// nichts wiederholt, solange genug Auswahl da ist.
+var HIST_DAYS=90;          // so weit zurueck wird das Tagebuch gelesen
+var HIST_PENALTY=0.45;     // Aufschlag, den ein Tagebuch-Vorschlag mitbringt
+var PORTION_STEPS=[0.5,0.75,1,1.25,1.5,2];
+var SLOT_BUDGET={breakfast:0.25,lunch:0.35,dinner:0.30,snack:0.10};
+
+// Ein Tagebuch-Eintrag als Zutatenliste. Rezept-Eintraege tragen ihre Zutaten
+// je Portion, alles andere hat per100 — und wenn nicht, wird es aus der
+// eingetragenen Menge zurueckgerechnet.
+function entryToIngredients(e){
+  if(!e)return [];
+  if(e.isRecipe&&Array.isArray(e.ingredients)&&e.ingredients.length){
+    var f=e.portions||1;
+    return e.ingredients.map(function(g){
+      return {name:g.name,emoji:g.emoji||'🍽',amount:Math.round((g.amount||0)*f*10)/10,
+              per100:g.per100||{kcal:0,protein:0,carbs:0,fat:0}};
+    });
+  }
+  var per=e.per100;
+  if(!per&&e.amount>0){
+    var r=100/e.amount;
+    per={kcal:(e.kcal||0)*r,protein:(e.protein||0)*r,carbs:(e.carbs||0)*r,fat:(e.fat||0)*r};
+  }
+  if(!per)return [];
+  return [{name:e.name||'Eintrag',emoji:e.emoji||'🍽',amount:e.amount||0,per100:per}];
+}
+function comboName(names){
+  if(names.length===1)return names[0];
+  if(names.length===2)return names[0]+' mit '+names[1];
+  return names.slice(0,-1).join(', ')+' und '+names[names.length-1];
+}
+// Mahlzeiten aus dem Tagebuch, die als Vorschlag taugen. Eine Mahlzeit zaehlt,
+// wenn sie aus mehreren Posten bestand oder als Rezept eingetragen wurde.
+// Was selbst aus dem Plan kam (_fromPlan), bleibt draussen — sonst fuettert
+// sich der Plan mit seinen eigenen Vorschlaegen.
+function historyCombos(){
+  var byKey={},list=[];
+  if(!S.days||typeof S.days!=='object')return list;
+  var limit=iso(addDays(new Date(),-HIST_DAYS));
+  Object.keys(S.days).forEach(function(k){
+    if(k<limit)return;
+    var day=S.days[k];
+    if(!day||day._compressed||!day.meals)return;
+    SLOTS.forEach(function(sl){
+      var en=(day.meals[sl.id]||[]).filter(function(e){return e&&e.name&&!e._fromPlan;});
+      if(!en.length)return;
+      if(en.length<2&&!en[0].isRecipe)return;
+      var names=en.map(function(e){return e.name;});
+      var key=sl.id+'|'+names.map(function(n){return norm(n);}).sort().join('+');
+      if(byKey[key]){byKey[key].n++;return;}
+      var ings=[];
+      en.forEach(function(e){ings=ings.concat(entryToIngredients(e));});
+      if(!ings.length)return;
+      byKey[key]={n:1,slot:sl.id,name:comboName(names),emoji:en[0].emoji||'🍽',ings:ings};
+      list.push(byKey[key]);
+    });
+  });
+  // Was als Rezept in der Bibliothek steht, kommt nicht zweimal in die Auswahl.
+  return list.filter(function(c){return !similarRecipe(c.name,c.ings);});
+}
+
+// Die Auswahl fuer einen Slot: Rezepte plus die Tagebuch-Mahlzeiten, die zu
+// dieser Tageszeit gegessen wurden (Ruehrei ist kein Abendessen, nur weil es
+// kalorisch passt). Aus den drei Bestpassenden wird gewuerfelt — „🎲 Füllen“
+// soll zweimal hintereinander nicht dieselbe Woche liefern.
+function bestCandidate(cands,used,slot,target,relax){
+  var scored=[];
+  cands.forEach(function(c){
+    if(!relax&&used[c.key])return;
+    if(c.slot&&c.slot!==slot)return;
+    var bp=PORTION_STEPS[0],bd=Infinity;
+    PORTION_STEPS.forEach(function(pp){
+      var d=Math.abs(c.kcal*pp-target);
+      if(d<bd){bd=d;bp=pp;}
+    });
+    scored.push({c:c,p:bp,score:(target>0?bd/target:bd)+(c.hist?HIST_PENALTY:0)});
+  });
+  if(!scored.length)return relax?null:bestCandidate(cands,used,slot,target,true);
+  scored.sort(function(a,b){return a.score-b.score;});
+  var top=scored.slice(0,3);
+  return top[Math.floor(Math.random()*top.length)];
+}
+
+// Portionen der SOEBEN gesetzten Eintraege nachziehen, bis der Tag das
+// Kalorienziel trifft. Nur diese — was von Hand geplant wurde, ist eine
+// Entscheidung und keine Stellschraube.
+function rebalance(date,fresh,goal){
+  if(!goal||!fresh.length)return;
+  for(var round=0;round<40;round++){
+    var cur=dayKcal(date);
+    var diff=goal-cur;
+    if(Math.abs(diff)<=goal*0.05)return;
+    var bestIt=null,bestP=0,bestGain=0;
+    fresh.forEach(function(it){
+      var per=itemKcal(it)/(it.p||1);
+      if(!(per>0))return;
+      var np=Math.round(((it.p||1)+(diff>0?0.25:-0.25))*100)/100;
+      if(np<0.5||np>3)return;
+      var gain=Math.abs(diff)-Math.abs(goal-(cur-itemKcal(it)+per*np));
+      if(gain>bestGain){bestGain=gain;bestIt=it;bestP=np;}
+    });
+    if(!bestIt)return;
+    bestIt.p=bestP;
+  }
+}
+
 function autoFill(){
-  if(!recipes.length){showToast('Erst ein Rezept anlegen');return;}
-  var mo=weekStart(),pool=recipes.slice(),used={},added=0;
-  // Bereits in dieser Woche geplante Rezepte gelten als verbraucht.
+  var hist=historyCombos();
+  if(!recipes.length&&!hist.length){showToast('Erst ein Rezept anlegen');return;}
+  var cands=[];
+  recipes.forEach(function(r){
+    var k=ingTotal(r.ingredients||[]).kcal;
+    if(!(k>0))return;
+    cands.push({key:'r:'+r.id,kcal:k,slot:null,hist:false,
+      make:function(pp){return {r:r.id,p:pp};}});
+  });
+  hist.forEach(function(c){
+    var k=ingTotal(c.ings).kcal;
+    if(!(k>0))return;
+    // Als Abzug, nicht als Verweis: Der Vorschlag steht in keiner Bibliothek,
+    // und er soll auch keine anlegen. resolve() zeigt ihn trotzdem vollstaendig.
+    cands.push({key:'h:'+norm(c.name),kcal:k,slot:c.slot,hist:true,
+      make:function(pp){return {r:'',p:pp,h:1,s:{n:c.name,em:c.emoji,
+        i:c.ings.map(function(g){return {n:g.name,em:g.emoji,a:g.amount,p:g.per100};})}};}});
+  });
+  if(!cands.length){showToast('Zu wenig Daten — leg ein Rezept an');return;}
+
+  var mo=weekStart(),goal=goalKcal(),used={},added=0;
   for(var i=0;i<7;i++){
     var d0=iso(addDays(mo,i));
-    SLOTS.forEach(function(s){slotItems(d0,s.id).forEach(function(it){used[it.r]=true;});});
-  }
-  function next(){
-    var free=pool.filter(function(r){return !used[r.id];});
-    if(!free.length){used={};free=pool.slice();} // Bibliothek zu klein → Runde neu
-    var r=free[Math.floor(Math.random()*free.length)];
-    used[r.id]=true;return r;
+    SLOTS.forEach(function(s){slotItems(d0,s.id).forEach(function(it){
+      if(it.r)used['r:'+it.r]=true;
+      else if(it.s&&it.s.n)used['h:'+norm(it.s.n)]=true;
+    });});
   }
   for(var k=0;k<7;k++){
     var ds=iso(addDays(mo,k));
-    ['lunch','dinner'].forEach(function(slot){
-      if(slotItems(ds,slot).length)return;
-      var p=planFor(ds,true);
-      p[slot].push({r:next().id,p:1});
-      added++;
+    var pl=planFor(ds,true);
+    var open=[];
+    SLOTS.forEach(function(s){if(!(pl[s.id]||[]).length)open.push(s.id);});
+    if(!open.length)continue;
+    var budSum=open.reduce(function(a,sl){return a+SLOT_BUDGET[sl];},0);
+    var rest=Math.max(0,goal-dayKcal(ds));
+    var fresh=[];
+    open.forEach(function(slot){
+      var target=budSum>0?rest*(SLOT_BUDGET[slot]/budSum):0;
+      var picked=bestCandidate(cands,used,slot,target,false);
+      if(!picked)return;
+      used[picked.c.key]=true;
+      var it=picked.c.make(picked.p);
+      pl[slot].push(it);fresh.push(it);added++;
     });
+    if(!fresh.length)continue;
+    rebalance(ds,fresh,goal);
     if(S.planApplied)delete S.planApplied[ds];
-    if(added)touch(ds);
+    touch(ds);
   }
   saveS();Sync.schedule();render();refreshCard();
-  showToast(added?(added+' Mahlzeiten eingeplant ✓'):'Die Woche ist schon voll');
+  if(!added){showToast('Die Woche ist schon voll');return;}
+  var inGoal=0,planned=0;
+  for(var z=0;z<7;z++){
+    var dz=iso(addDays(mo,z));
+    if(isEmptyPlan(dz))continue;
+    planned++;
+    if(!goal||Math.abs(dayKcal(dz)-goal)<=goal*0.1)inGoal++;
+  }
+  showToast(added+' Mahlzeiten eingeplant ✓'
+    +(goal?(' · '+inGoal+' von '+planned+' Tagen im Kalorienziel'):''));
 }
 
 function clearDay(date){
@@ -346,6 +672,7 @@ function weekToShop(){
     days++;
     SLOTS.forEach(function(s){
       slotItems(ds,s.id).forEach(function(it){
+        if(isNote(it))return;
         var r=resolve(it);if(!r)return;
         r.ingredients.forEach(function(ing){
           var key=String(ing.name||'').toLowerCase().trim();
@@ -379,10 +706,14 @@ function toDiary(date){
   if(day._compressed){showToast('Dieser Tag ist archiviert und lässt sich nicht mehr befüllen');return;}
   if(!day.meals)day.meals={breakfast:[],lunch:[],dinner:[],snack:[]};
   if(!Array.isArray(day.exercise))day.exercise=[];
-  var n=0;
+  var n=0,skipped=0;
   SLOTS.forEach(function(s){
     if(!Array.isArray(day.meals[s.id]))day.meals[s.id]=[];
     slotItems(date,s.id).forEach(function(it){
+      // Eine Notiz hat keine Naehrwerte — sie ins Tagebuch zu schreiben hiesse,
+      // eine Mahlzeit mit 0 kcal zu behaupten. Sie bleibt im Plan stehen und
+      // wird beim Toast benannt, statt stillschweigend zu verschwinden.
+      if(isNote(it)){skipped++;return;}
       var r=resolve(it);if(!r)return;
       var p=it.p||1,t=ingTotal(r.ingredients);
       day.meals[s.id].push(Object.assign({
@@ -398,7 +729,8 @@ function toDiary(date){
   saveS();
   if(typeof renderAll==='function')renderAll();
   render();refreshCard();
-  showToast(n+' Mahlzeit'+(n===1?'':'en')+' ins Tagebuch übernommen ✓');
+  showToast(n+' Mahlzeit'+(n===1?'':'en')+' ins Tagebuch übernommen ✓'
+    +(skipped?(' · '+skipped+' Notiz'+(skipped===1?'':'en')+' ohne Rezept übersprungen'):''));
 }
 
 // ── Dashboard-Kachel ──────────────────────────────────────────────────────
@@ -417,7 +749,10 @@ function refreshCard(){
   var rows='';
   SLOTS.forEach(function(s){
     var items=slotItems(ds,s.id);if(!items.length)return;
-    var names=items.map(function(it){var r=resolve(it);return r?((r.emoji||'📋')+' '+esc(r.name)):'—';}).join(', ');
+    var names=items.map(function(it){
+      if(isNote(it))return '📝 '+esc(it.x);
+      var r=resolve(it);return r?((r.emoji||'📋')+' '+esc(r.name)):'—';
+    }).join(', ');
     rows+='<div style="display:flex;gap:6px;font-size:12px;margin-top:3px;"><span style="flex-shrink:0;">'+s.ic+'</span><span style="color:var(--tx);min-width:0;">'+names+'</span></div>';
   });
   var applied=S.planApplied&&S.planApplied[ds];
@@ -433,10 +768,39 @@ function refreshCard(){
 // Die Bibliothek steht NACH den Rezept-Overlays und wuerde sie sonst verdecken.
 // Sie wird deshalb geschlossen und nach dem Anlegen wieder geoeffnet.
 var _from=null;
+// Wer aus ＋ eines Slots heraus „Neues Rezept“ antippt, will es dort haben.
+// Der Slot wird deshalb ueber das Anlegen hinweg gemerkt und danach befuellt.
+var _pendingSlot=null;
 function newRecipe(){
   _from=isOpen('libraryOv')?'library':(isOpen('planOv')?'plan':null);
+  _pendingSlot=(_from==='plan'&&_target&&_target.date)?{date:_target.date,slot:_target.slot}:null;
+  _target=null;_replaceIdx=null;
   if(_from==='library')closeOv('libraryOv');
   openOv('recNewOv');
+}
+
+// ── Ein frisch angelegtes Rezept landet in der Bibliothek ─────────────
+// … und NICHT im Tagebuch. Bis v0.259 tat der Weg „aus dem Internet“ beides:
+// Er legte das Rezept an UND buchte es als Mahlzeit des heutigen Tages, obwohl
+// es niemand gegessen hatte — aus dem Wochenplan heraus angelegt war das immer
+// falsch. Wer es wirklich essen will, traegt es ueber ＋ ein.
+// Diese Stelle ist die einzige, die entscheidet, was danach passiert; die drei
+// Wege (selbst, Foto, Link) rufen sie alle auf.
+function noteRecipeCreated(r){
+  if(!r||!r.id)return;
+  var slot=_pendingSlot;_pendingSlot=null;
+  if(slot){
+    var pl=planFor(slot.date,true);
+    pl[slot.slot].push({r:r.id,p:1});
+    if(S.planApplied)delete S.planApplied[slot.date];
+    touch(slot.date);
+    saveS();Sync.schedule();
+    showToast((r.emoji||'📋')+' '+r.name+' gespeichert und eingeplant ✓');
+  } else {
+    showToast((r.emoji||'📋')+' '+r.name+' in der Bibliothek gespeichert ✓');
+  }
+  render();refreshCard();
+  if(typeof renderLibrary==='function')renderLibrary();
 }
 function closeNew(){closeOv('recNewOv');backToOrigin();}
 function closePhoto(){closeOv('recPhotoOv');backToOrigin();}
@@ -463,13 +827,23 @@ function newBlank(){
   closeOv('recNewOv');
   setTimeout(function(){
     if(typeof openRecipeEditor==='function')openRecipeEditor(r.id);
+    // openRecipeEditor setzt die Herkunft selbst auf 'settings' und wuerde
+    // danach die Bibliothek aufschlagen. Aus dem Wochenplan heraus gehoert der
+    // Rueckweg in den Plan — deshalb erst oeffnen, dann ueberschreiben.
+    if(_pendingSlot)window.recEditOpenedFrom='plan';
   },200);
 }
+// Der Editor speichert selbst; hier wird nur noch aufgeraeumt bzw. — wenn
+// wirklich etwas entstanden ist — der Slot befuellt, aus dem heraus angelegt
+// wurde. Die Dublettenpruefung sitzt im Editor (saveRecipe), weil erst dort
+// Name und Zutaten feststehen.
 function discardEmptyDraft(){
   if(!_draftId)return;
   var id=_draftId;_draftId=null;
   var r=rec(id);
-  if(r&&!(r.ingredients||[]).length){
+  if(r&&(r.ingredients||[]).length){noteRecipeCreated(r);return;}
+  _pendingSlot=null;
+  if(r){
     recipes=recipes.filter(function(x){return x.id!==id;});
     // `recipes` ist eine globale Variable aus index.html — die Neuzuweisung
     // oben trifft die globale Bindung, weil hier kein eigenes `var` steht.
@@ -484,7 +858,11 @@ function newFromLink(){
   _from=null;
   closeOv('recNewOv');closeOv('planOv');closeOv('libraryOv');
   setTimeout(function(){
-    if(typeof openPicker==='function')openPicker(null,'link');
+    if(typeof openPicker!=='function')return;
+    openPicker(null,'link');
+    // NACH openPicker: der Dialog setzt seinen Zustand beim Oeffnen zurueck.
+    window._pickerRecipeOnly=true;
+    if(typeof _pickerRecipeOnlyUI==='function')_pickerRecipeOnlyUI();
   },200);
 }
 
@@ -647,6 +1025,7 @@ function savePhotoRecipe(){
   var p=Math.max(1,parseFloat((document.getElementById('recPhotoPortions')||{}).value)||1);
   var missing=_photoIngs.filter(function(g){return !g.amount;}).length;
   if(missing&&!confirm(missing+' Zutat'+(missing===1?' hat':'en haben')+' keine Menge und zählen mit 0 g. Trotzdem speichern?'))return;
+  if(!confirmNotDuplicate(name,_photoIngs))return;
   var r={
     id:Date.now().toString(),
     name:name,
@@ -661,9 +1040,8 @@ function savePhotoRecipe(){
   };
   recipes.unshift(r);saveX();
   closeOv('recPhotoOv');
-  render();refreshCard();
   backToOrigin();
-  showToast((r.emoji||'📋')+' '+r.name+' gespeichert ✓');
+  noteRecipeCreated(r);
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -679,9 +1057,11 @@ function dayPayload(date){
   var out={};
   SLOTS.forEach(function(sl){
     out[sl.id]=(p[sl.id]||[]).map(function(it){
-      var o={r:it.r,p:it.p||1};
-      var snap=snapOf(it.r)||it.s;
+      if(isNote(it))return {x:it.x,p:1};
+      var o={r:it.r||'',p:it.p||1};
+      var snap=(it.r?snapOf(it.r):null)||it.s;
       if(snap)o.s=snap;
+      if(it.h)o.h=1;
       return o;
     });
   });
@@ -721,8 +1101,10 @@ function applyRec(id,rev,payload,room){
   var p={breakfast:[],lunch:[],dinner:[],snack:[],rev:rev};
   SLOTS.forEach(function(sl){
     p[sl.id]=((payload.d||{})[sl.id]||[]).map(function(o){
-      var it={r:o.r,p:o.p||1};
+      if(o&&o.x)return {x:String(o.x)};
+      var it={r:o.r||'',p:o.p||1};
       if(o.s)it.s=o.s;
+      if(o.h)it.h=1;
       return it;
     });
   });
@@ -788,6 +1170,9 @@ window.NTPlan={
   shiftWeek:shiftWeek,autoFill:autoFill,clearDay:clearDay,clearWeek:clearWeek,
   weekToShop:weekToShop,toDiary:toDiary,
   pick:pick,renderPick:renderPick,addToSlot:addToSlot,
+  addNote:addNote,saveNote:saveNote,noteToRecipe:noteToRecipe,
+  similarRecipe:similarRecipe,confirmNotDuplicate:confirmNotDuplicate,
+  noteRecipeCreated:noteRecipeCreated,
   openItem:openItem,saveItem:saveItem,deleteItem:deleteItem,removeItem:removeItem,
   itemToShop:itemToShop,planItemTotal:planItemTotal,
   openSync:openSync,renderSyncUI:renderSyncUI,openLinks:openLinks,syncNow:syncNow,Sync:Sync,

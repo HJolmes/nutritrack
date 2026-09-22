@@ -44,14 +44,13 @@ var FEATURES=[
   {id:'meals', ic:'🍽', label:'Mahlzeiten', card:'mealsCard', fixed:true,
    sub:'Frühstück, Mittag, Abend, Snack',
    actions:[
-     {ic:'📚', label:'Bibliothek',                hint:'Rezepte & eigene Lebensmittel', act:'openLibrary'},
      {ic:'🔁', label:'Wiederkehrende Mahlzeiten', hint:'Automatisch an festen Wochentagen', act:'NTRecur.openManage'},
      {ic:'🎙', label:'Alexa-Einwurf',             hint:'Per Sprache eintragen', act:'openAlexaSync'},
      {ic:'📥', label:'Code / Link einlösen',      hint:'Geteiltes Rezept übernehmen', act:'openImportPaste'}
    ]},
 
   {id:'plan', ic:'📅', label:'Wochenplan', card:'planCard',
-   sub:'Rezepte auf die Woche verteilen',
+   sub:'Rezepte und Notizen auf die Woche verteilen',
    actions:[
      {ic:'📅', label:'Wochenplan öffnen', hint:'Woche planen, füllen, übernehmen', act:'NTPlan.open'},
      {ic:'🔗', label:'Verbindungen',      hint:'Plan mit jemandem teilen', act:'NTSync.open'}

@@ -86,10 +86,11 @@ var FEATURES=[
   // „Einstellungen → Profil" — also weder an der Kachel noch bei den anderen
   // Schaltern, sondern an einer dritten Stelle.
   {id:'baby', ic:'👶', label:'Baby-Tagebuch', card:'babyCard', flag:'babyOn',
-   sub:'Stillen, Flasche, Windeln, Temperatur',
+   sub:'Stillen, Flasche, Beikost, Windeln, Schlaf, Wachstum',
    actions:[
      {ic:'👶', label:'Tagebuch öffnen',   hint:'Einträge sehen und ergänzen', act:'NTBaby.openDiary'},
-     {ic:'⭐', label:'Meilensteine',     hint:'Entwicklung passend zum Alter abhaken', act:'NTMile.open'},
+     {ic:'⭐', label:'U-Heft',           hint:'U-Termine, Impftermine, Meilensteine', act:'NTMile.open'},
+     {ic:'💊', label:'Medizin & Gaben',  hint:'Vitamin D, Fiebermittel mit Abstand', act:'NTBabyMed.open'},
      {ic:'📝', label:'Angaben zum Baby', hint:'Name, Geburtsdatum, ein/aus', act:'NTFeat.openBabySettings'},
      {ic:'🔗', label:'Verbindungen',     hint:'Tagebuch mit jemandem teilen', act:'NTSync.open'}
    ]},
@@ -291,6 +292,7 @@ function openBabySettings(){
   S.baby=S.baby||{name:'',birth:''};
   var nm=document.getElementById('sbabyname'); if(nm)nm.value=S.baby.name||'';
   var bd=document.getElementById('sbabybirth');if(bd)bd.value=S.baby.birth||'';
+  var sx=document.getElementById('sbabysex');  if(sx)sx.value=S.baby.sex||'';
   if(typeof updateBabyUI==='function')updateBabyUI();
   openOv('babySetOv');
 }
@@ -300,6 +302,7 @@ function saveBaby(){
   S.baby=S.baby||{name:'',birth:''};
   var nm=document.getElementById('sbabyname'); if(nm)S.baby.name=nm.value.trim();
   var bd=document.getElementById('sbabybirth');if(bd)S.baby.birth=bd.value||'';
+  var sx=document.getElementById('sbabysex');  if(sx)S.baby.sex=sx.value||'';
   saveS();
   if(window.NTBaby&&NTBaby.refresh)NTBaby.refresh();
   if(typeof renderAll==='function')renderAll();

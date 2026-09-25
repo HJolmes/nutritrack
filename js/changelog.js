@@ -1,6 +1,15 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.263',items:[
+    {icon:'🍼',text:'Die Baby-Kachel zeigt jetzt die <b>letzte Mahlzeit</b> mit Abstand („vor 2 h 40 Min.“), statt nur des letzten Eintrags.',where:'Heute → Baby'},
+    {icon:'⏱',text:'<b>Stillen mit Stoppuhr</b>: „⏱ Stillen“ im Tagebuch startet, „⇄ Seite“ wechselt die Brust, „■ Stopp“ trägt die Minuten ein. Auch als Schnell-Knopf einstellbar.',where:'Baby-Tagebuch'},
+    {icon:'💊',text:'<b>Medizin &amp; Gaben</b>: eigene Liste, z.B. Vitamin D (täglich) oder ein Fiebermittel mit Mindestabstand. Die Kachel meldet, was heute noch offen ist und ab wann die nächste Gabe frühestens möglich ist. Dosis und Abstand trägst du selbst ein, die App schlägt nichts vor.',where:'Baby-Tagebuch → 💊 Medizin'},
+    {icon:'📈',text:'Neuer Reiter <b>Wachstum</b>: Gewicht, Länge und Kopfumfang mit Datum eintragen (auch nachträglich aus dem Gelben Heft) und auf den <b>WHO-Perzentilkurven</b> sehen. Dafür unter „Angaben zum Baby“ das Geschlecht wählen.',where:'Baby-Tagebuch → 📈 Wachstum'},
+    {icon:'📊',text:'Neuer Reiter <b>Verlauf</b>: Mahlzeiten, Windeln und Schlaf der letzten 7 oder 14 Tage, dazu eine Übersicht der eingeführten Beikost mit Reaktionen und ein <b>Bericht für Arzt oder Hebamme</b> zum Teilen.',where:'Baby-Tagebuch → 📊 Verlauf'},
+    {icon:'🥣',text:'Neue Eintragsarten <b>Beikost</b> (mit „zum ersten Mal“ und Reaktion) und <b>Abpumpen</b>.',where:'Baby-Tagebuch → ＋ Eintrag'},
+    {icon:'🩺',text:'Der Reiter heißt jetzt <b>U-Heft</b>: Zeitraum jeder U-Untersuchung mit Datum zum Abhaken, eigene Termine und Impftermine. Anstehendes erscheint ab einer Woche vorher auf der Kachel.',where:'Baby-Tagebuch → ⭐ U-Heft'}
+  ]},
   {v:'0.262',items:[
     {icon:'\ud83d\udd27',text:'Nach einem Update liess sich der Reiter „Meilensteine“ im Baby-Tagebuch nicht antippen, bis die App einmal ganz geschlossen wurde. Ursache: Die neue Oberfläche lief zunächst noch mit Programmteilen der Vorversion. Ab jetzt kommen nach einem Update sofort alle Teile in der neuen Fassung.'}
   ]},

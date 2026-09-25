@@ -525,13 +525,16 @@ function deleteQuickFromEdit(){
 // js/sync-core.js. Hier bleibt nur die Form DIESES Topfes: Einträge liegen nach
 // Tag gruppiert, deshalb reist der Tag als eigenes Feld mit — ohne ihn wüsste
 // die Gegenseite nicht, wohin ein Eintrag gehört.
-// S.babyMiles = {<id>:{d:'YYYY-MM-DD'|'',rev}}. v0.261 speicherte nur das
-// Datum als Zeichenkette — das wird hier einmalig mit einer rev versehen,
-// damit die Haken beim ersten Abgleich mitgehen.
+// S.babyMiles = {<id>:{d:'YYYY-MM-DD'|'',rev}}. Eine fruehe Vorabform
+// speicherte nur das Datum als Zeichenkette — das wird hier einmalig mit einer
+// rev versehen, damit die Haken beim ersten Abgleich mitgehen.
+var OLD_MILE=/^m\d/;
 function milesStore(){
   if(!S.babyMiles||typeof S.babyMiles!=='object')S.babyMiles={};
   var ms=S.babyMiles;
   Object.keys(ms).forEach(function(k){
+    // `m2_1` usw. waren die CDC-Punkte der Vorabversion — Texte ersetzt, Haken weg.
+    if(OLD_MILE.test(k)){delete ms[k];return;}
     if(typeof ms[k]==='string')ms[k]={d:ms[k],rev:nextRev()};
   });
   return ms;
@@ -576,7 +579,7 @@ function applyRec(id,rev,payload,room){
   if(id.indexOf('mile_')===0){
     // Ohne `mile` kommt es von einer App vor v0.261, die den Datensatz fuer
     // einen geloeschten Eintrag hielt — nicht als Baby-Eintrag verbuchen.
-    if(!payload||!payload.mile)return false;
+    if(!payload||!payload.mile||OLD_MILE.test(payload.mile))return false;
     var miles=milesStore(),cur=miles[payload.mile];
     if(cur&&(cur.rev||0)>=rev)return false;
     var m={d:payload.d||'',rev:rev};

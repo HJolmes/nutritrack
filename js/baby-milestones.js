@@ -4,166 +4,128 @@
 // S.babyMiles = {<id>:{d:'YYYY-MM-DD'|'',rev}} (Tag des Abhakens). Speichern
 // und Sync (Baby-Topf) laufen ueber NTBaby.milesStore/setMile.
 //
-// Inhalt: CDC „Learn the Signs. Act Early." (Checklisten 2022). Ein Meilenstein
-// steht bei dem Alter, in dem ihn etwa 75 % der Kinder erreicht haben. Die IDs
-// sind fest (Alter + laufende Nummer) — nie umnummerieren, sonst wandern
-// gespeicherte Haken auf einen anderen Text.
+// Inhalt: Gelbes Kinderuntersuchungsheft des G-BA (Stand Juni 2026), je U die
+// „Orientierende Beurteilung der Entwicklung" unter „Aktuelle Anamnese des
+// Kindes". Texte woertlich, nur je Satz in einen eigenen Punkt geteilt; rein
+// medizinische Fragen (Hoeren, Schnarchen, Stuhl …) sind nicht uebernommen.
+// Die U-Zeitraeume geben das Alter vor: „3.–4. Lebensmonat" beginnt nach
+// 2 vollen Monaten (from:{m:2}).
+// Die IDs (`u4_3` = U4, dritter Punkt) sind fest — nie umnummerieren, sonst
+// wandern gespeicherte Haken auf einen anderen Text.
 (function(){
 'use strict';
 
-var CAT={s:'💛',l:'💬',k:'🧠',m:'🏃'};
-var CAT_LABEL={s:'Sozial & Gefühle',l:'Sprache',k:'Denken & Lernen',m:'Bewegung'};
+var CAT={g:'🏃',f:'✋',k:'🧠',l:'💬',s:'💛',i:'🤝'};
+var CAT_LABEL={g:'Grobmotorik',f:'Feinmotorik',k:'Perzeption/Kognition',l:'Sprache',s:'Soziale/emotionale Kompetenz',i:'Interaktion/Kommunikation'};
 
 var STAGES=[
-  {m:2,label:'2 Monate',items:[
-    ['s','Beruhigt sich, wenn man es anspricht oder hochnimmt'],
-    ['s','Schaut dir ins Gesicht'],
-    ['s','Freut sich, wenn du kommst'],
-    ['s','Lächelt, wenn du es ansprichst oder anlächelst'],
-    ['l','Macht andere Laute als Weinen'],
-    ['l','Reagiert auf laute Geräusche'],
-    ['k','Folgt dir mit den Augen, wenn du dich bewegst'],
-    ['k','Schaut ein Spielzeug mehrere Sekunden lang an'],
-    ['m','Hebt in Bauchlage den Kopf'],
-    ['m','Bewegt beide Arme und beide Beine'],
-    ['m','Öffnet kurz die Hände']
+  {u:'U3',span:'4.–5. Lebenswoche',from:{d:21},items:[
+    ['g','Kopf wird in schwebender Bauchlage für wenigstens 3 Sekunden gehalten.'],
+    ['g','Kopf wird in Rumpfebene und in Rückenlage für 10 Sekunden in Mittelstellung gehalten.'],
+    ['f','Hände werden spontan geöffnet, insgesamt sind die Hände noch eher geschlossen.'],
+    ['k','Folgt mit den Augen einem Gegenstand nach beiden Seiten bis mindestens 45 Grad.'],
+    ['s','Aufmerksames Schauen auf nahe Gesichter nächster Bindungspersonen.']
   ]},
-  {m:4,label:'4 Monate',items:[
-    ['s','Lächelt von sich aus, um deine Aufmerksamkeit zu bekommen'],
-    ['s','Gluckst, wenn du es zum Lachen bringen willst'],
-    ['s','Schaut dich an, bewegt sich oder macht Laute, um deine Aufmerksamkeit zu halten'],
-    ['l','Gurrt und macht Laute wie „oooh", „aaah"'],
-    ['l','Macht Laute zurück, wenn du mit ihm sprichst'],
-    ['l','Dreht den Kopf zu deiner Stimme'],
-    ['k','Öffnet den Mund, wenn es Hunger hat und Brust oder Flasche sieht'],
-    ['k','Schaut interessiert auf die eigenen Hände'],
-    ['m','Hält den Kopf ohne Stütze, wenn du es hältst'],
-    ['m','Hält ein Spielzeug fest, wenn du es ihm in die Hand gibst'],
-    ['m','Schwingt mit dem Arm nach Spielzeug'],
-    ['m','Führt die Hände zum Mund'],
-    ['m','Stützt sich in Bauchlage auf Ellbogen oder Unterarme']
+  {u:'U4',span:'3.–4. Lebensmonat',from:{m:2},items:[
+    ['g','Kräftiges alternierendes und beidseitiges Beugen und Strecken der Arme und Beine.'],
+    ['g','Hält den Kopf in der Sitzhaltung aufrecht, mind. 30 Sekunden.'],
+    ['g','Bauchlage wird toleriert, Abstützen auf den Unterarmen, der Kopf wird in der Bauchlage zwischen 40° und 90° mindestens eine Minute gehoben.'],
+    ['k','Fixiert ein bewegtes Gesicht und folgt ihm.'],
+    ['k','Versucht durch Kopfdrehen, Quellen eines bekannten Geräusches zu sehen.'],
+    ['f','Hände können spontan zur Körpermitte gebracht werden.'],
+    ['s','Kind freut sich über Zuwendung, Blickkontakt kann gehalten werden.'],
+    ['s','Reaktion auf Ansprache, erwidert Lächeln einer Bezugsperson („soziales Lächeln").']
   ]},
-  {m:6,label:'6 Monate',items:[
-    ['s','Erkennt vertraute Menschen'],
-    ['s','Schaut sich gern im Spiegel an'],
-    ['s','Lacht'],
-    ['l','Macht abwechselnd mit dir Laute'],
-    ['l','Pustet „Himbeeren" (Zunge raus und prusten)'],
-    ['l','Quietscht'],
-    ['k','Steckt Dinge in den Mund, um sie zu erkunden'],
-    ['k','Greift nach einem Spielzeug, das es haben will'],
-    ['k','Schließt die Lippen, wenn es nicht mehr essen will'],
-    ['m','Dreht sich vom Bauch auf den Rücken'],
-    ['m','Stemmt sich in Bauchlage auf gestreckte Arme hoch'],
-    ['m','Stützt sich im Sitzen mit den Händen ab']
+  {u:'U5',span:'6.–7. Lebensmonat',from:{m:5},items:[
+    ['g','Handstütz mit gestreckten Armen auf den Handflächen.'],
+    ['g','Bei Traktionsreaktion Kopf symmetrisch in Verlängerung der Wirbelsäule und Beugung beider Arme.'],
+    ['g','Federn mit den Beinen.'],
+    ['k','Objekte, Spielzeuge werden mit beiden Händen ergriffen, in den Mund gesteckt, benagt, jedoch wenig intensiv betrachtet; (erkundet oral und manuell).'],
+    ['f','Wechselt Spielzeug zwischen den Händen, palmares, radial betontes Greifen.'],
+    ['l','Rhythmische Silbenketten (z. B. ge-ge-ge, mem-mem-mem, dei-dei-dei).'],
+    ['s','Lacht stimmhaft, wenn es geneckt wird.'],
+    ['s','Benimmt sich gegen Bekannte und Unbekannte unterschiedlich.'],
+    ['s','Freut sich beim Erscheinen eines anderen Kindes.']
   ]},
-  {m:9,label:'9 Monate',items:[
-    ['s','Fremdelt bei Unbekannten'],
-    ['s','Zeigt verschiedene Gesichtsausdrücke (fröhlich, traurig, wütend, überrascht)'],
-    ['s','Schaut, wenn du seinen Namen rufst'],
-    ['s','Reagiert, wenn du gehst (schaut, greift nach dir, weint)'],
-    ['s','Lächelt oder lacht beim Guck-guck-Spiel'],
-    ['l','Macht Silbenketten wie „mamama", „bababa"'],
-    ['l','Hebt die Arme, um hochgenommen zu werden'],
-    ['k','Sucht Dinge, die es fallen gelassen hat'],
-    ['k','Schlägt zwei Dinge aneinander'],
-    ['m','Kommt allein in den Sitz'],
-    ['m','Gibt Dinge von einer Hand in die andere'],
-    ['m','Holt Essen mit den Fingern heran'],
-    ['m','Sitzt ohne Stütze']
+  {u:'U6',span:'10.–12. Lebensmonat',from:{m:9},items:[
+    ['g','Freies Sitzen mit geradem Rücken und sicherer Gleichgewichtskontrolle.'],
+    ['g','Zieht sich in den Stand hoch und bleibt einige Sekunden stehen.'],
+    ['g','Selbständiges, flüssiges Drehen von Rückenlage zu Bauchlage und zurück.'],
+    ['k','Gibt der Mutter oder dem Vater nach Aufforderung einen Gegenstand.'],
+    ['k','Verfolgt den Zeigefinger in die gezeigte Richtung.'],
+    ['f','Greift kleinen Gegenstand zwischen Daumen und gestrecktem Zeigefinger.'],
+    ['f','Klopft 2 Würfel aneinander.'],
+    ['l','Spontane Äußerung von längeren Silbenketten.'],
+    ['l','Produziert Doppelsilben (z. B. ba-ba, da-da).'],
+    ['l','Ahmt Laute nach.'],
+    ['s','Kann alleine aus der Flasche trinken, trinkt aus der Tasse, aus dem Becher mit etwas Hilfe.'],
+    ['s','Das Kind kann zwischen fremden und bekannten Personen unterscheiden.'],
+    ['s','Freut sich über andere Kinder.']
   ]},
-  {m:12,label:'12 Monate',items:[
-    ['s','Spielt mit dir, z. B. Backe-backe-Kuchen'],
-    ['l','Winkt „Tschüss"'],
-    ['l','Sagt „Mama", „Papa" oder einen anderen Namen gezielt'],
-    ['l','Versteht „Nein" (hält kurz inne)'],
-    ['k','Legt etwas in einen Behälter, z. B. einen Klotz in eine Dose'],
-    ['k','Sucht Dinge, die du vor seinen Augen versteckst'],
-    ['m','Zieht sich zum Stehen hoch'],
-    ['m','Läuft an Möbeln entlang'],
-    ['m','Trinkt aus einem offenen Becher, den du hältst'],
-    ['m','Greift kleine Dinge mit Daumen und Zeigefinger (Pinzettengriff)']
+  {u:'U7',span:'21.–24. Lebensmonat',from:{m:20},items:[
+    ['g','Kann über längere Zeit frei und sicher gehen.'],
+    ['g','Geht 3 Stufen im Kinderschritt hinunter, hält sich mit einer Hand fest.'],
+    ['f','Malt flache Spirale.'],
+    ['f','Kann eingewickelte Bonbons oder andere kleine Gegenstände auswickeln oder auspacken.'],
+    ['l','Einwortsprache (wenigstens 10 richtige Wörter ohne Mama und Papa).'],
+    ['l','Versteht und befolgt einfache Aufforderungen.'],
+    ['l','Drückt durch Gestik oder Sprache (Kopfschütteln oder Nein-Sagen) aus, dass es etwas ablehnt oder eigene Vorstellungen hat.'],
+    ['l','Zeigt oder blickt auf 3 benannte Körperteile.'],
+    ['k','Stapelt 3 Würfel.'],
+    ['k','Zeigt im Bilderbuch auf bekannte Gegenstände.'],
+    ['s','Bleibt und spielt etwa 15 min alleine, auch wenn die Mutter/der Vater nicht im Zimmer, jedoch in der Nähe ist.'],
+    ['s','Kann mit dem Löffel selber essen.'],
+    ['s','Hat Interesse an anderen Kindern.'],
+    ['i','Versucht Eltern irgendwo hinzuziehen.']
   ]},
-  {m:15,label:'15 Monate',items:[
-    ['s','Ahmt andere Kinder beim Spielen nach'],
-    ['s','Zeigt dir etwas, das es mag'],
-    ['s','Klatscht, wenn es sich freut'],
-    ['s','Umarmt ein Kuscheltier oder eine Puppe'],
-    ['s','Zeigt Zuneigung (umarmen, kuscheln, küssen)'],
-    ['l','Sagt ein oder zwei Wörter außer „Mama"/„Papa"'],
-    ['l','Schaut auf einen bekannten Gegenstand, wenn du ihn benennst'],
-    ['l','Befolgt Aufforderungen mit Geste und Wort („Gib mir das")'],
-    ['l','Zeigt auf etwas, um danach zu fragen oder Hilfe zu bekommen'],
-    ['k','Versucht, Dinge richtig zu benutzen (Telefon, Becher, Buch)'],
-    ['k','Stapelt zwei kleine Dinge, z. B. Bauklötze'],
-    ['m','Macht ein paar Schritte allein'],
-    ['m','Isst mit den Fingern selbst']
+  {u:'U7a',span:'34.–36. Lebensmonat',from:{m:33},items:[
+    ['g','Beidseitiges Abhüpfen von der untersten Treppenstufe mit sicherer Gleichgewichtskontrolle.'],
+    ['g','Steigt 2 Stufen im Erwachsenenschritt, hält sich mit der Hand fest.'],
+    ['f','Präziser Dreifinger-Spitzgriff (Daumen, Zeige-Mittelfinger) zur Manipulation auch sehr kleiner Gegenstände möglich.'],
+    ['l','Spricht mindestens Dreiwortsätze.'],
+    ['l','Spricht von sich in der Ich-Form.'],
+    ['l','Kennt und sagt seinen Rufnamen.'],
+    ['k','Kann zuhören und konzentriert spielen, Als-Ob-Spiele.'],
+    ['k','Öffnet große Knöpfe selbst.'],
+    ['s','Kann sich gut über einige Stunden trennen, wenn es von vertrauter Person betreut wird.'],
+    ['s','Beteiligt sich an häuslichen Tätigkeiten, will mithelfen.'],
+    ['i','Gemeinsames Spielen mit gleichaltrigen Kindern, auch Rollenspiele.']
   ]},
-  {m:18,label:'18 Monate',items:[
-    ['s','Entfernt sich, schaut aber, ob du in der Nähe bleibst'],
-    ['s','Zeigt auf etwas, um es dir zu zeigen'],
-    ['s','Streckt dir die Hände zum Waschen hin'],
-    ['s','Schaut mit dir ein Buch an'],
-    ['s','Hilft beim Anziehen (Arm in den Ärmel)'],
-    ['l','Versucht, drei oder mehr Wörter außer „Mama"/„Papa" zu sagen'],
-    ['l','Befolgt einfache Aufforderungen ohne Geste („Gib mir das Spielzeug")'],
-    ['k','Macht dir Alltägliches nach, z. B. Fegen'],
-    ['k','Spielt auf einfache Weise mit Spielzeug (schiebt ein Auto)'],
-    ['m','Läuft ohne sich festzuhalten'],
-    ['m','Kritzelt'],
-    ['m','Trinkt aus einem offenen Becher, auch wenn mal etwas daneben geht'],
-    ['m','Versucht, mit dem Löffel zu essen'],
-    ['m','Klettert ohne Hilfe auf Sofa oder Stuhl und wieder herunter']
+  {u:'U8',span:'46.–48. Lebensmonat',from:{m:45},items:[
+    ['g','Laufrad oder ähnliches Fahrzeug wird zielgerichtet und sicher bewegt.'],
+    ['g','Hüpft über ein 20-50 cm breites Blatt.'],
+    ['f','Mal-Zeichenstift wird richtig zwischen den ersten drei Fingern gehalten.'],
+    ['f','Zeichnet geschlossene Kreise.'],
+    ['l','Spricht 6-Wortsätze in Kindersprache.'],
+    ['l','Geschichten werden etwa in zeitlichem und logischem Verlauf wiedergegeben.'],
+    ['k','Fragt warum, wie, wo, wieso, woher.'],
+    ['s','Kann sich selbst an- und ausziehen.'],
+    ['s','Gießt Flüssigkeiten ein.'],
+    ['s','Bei alltäglichen Ereignissen kann das Kind seine Emotionen meist selbst regulieren.'],
+    ['s','Toleriert meist leichtere, übliche Enttäuschungen, Freude, Ängste, Stress-Situationen.'],
+    ['i','Gemeinsames Spielen mit gleichaltrigen Kindern, auch Rollenspiele, hält sich an Spielregeln.']
   ]},
-  {m:24,label:'2 Jahre',items:[
-    ['s','Merkt, wenn andere verletzt oder traurig sind'],
-    ['s','Schaut dir ins Gesicht, um zu sehen, wie du in einer neuen Lage reagierst'],
-    ['l','Zeigt auf Dinge in einem Buch, wenn du fragst („Wo ist der Bär?")'],
-    ['l','Sagt mindestens zwei Wörter zusammen („mehr Milch")'],
-    ['l','Zeigt auf mindestens zwei Körperteile, wenn du fragst'],
-    ['l','Nutzt mehr Gesten als Winken und Zeigen (Kusshand, Nicken)'],
-    ['k','Hält etwas in einer Hand und benutzt die andere (Deckel abnehmen)'],
-    ['k','Probiert Knöpfe und Schalter an Spielzeug aus'],
-    ['k','Spielt mit mehr als einem Spielzeug gleichzeitig'],
-    ['m','Kickt einen Ball'],
-    ['m','Rennt'],
-    ['m','Geht ein paar Stufen hoch (mit oder ohne Hilfe)'],
-    ['m','Isst mit dem Löffel']
-  ]},
-  {m:30,label:'2½ Jahre',items:[
-    ['s','Spielt neben anderen Kindern und manchmal mit ihnen'],
-    ['s','Zeigt, was es kann („Schau mal!")'],
-    ['s','Befolgt einfache Abläufe, z. B. beim Aufräumen mithelfen'],
-    ['l','Sagt etwa 50 Wörter'],
-    ['l','Sagt zwei oder mehr Wörter mit einem Tunwort („Hund läuft")'],
-    ['l','Benennt Dinge in einem Buch, wenn du darauf zeigst'],
-    ['l','Sagt Wörter wie „ich", „mich", „wir"'],
-    ['k','Spielt „So tun als ob" (füttert eine Puppe)'],
-    ['k','Löst einfache Probleme (holt einen Hocker, um etwas zu erreichen)'],
-    ['k','Befolgt Aufforderungen aus zwei Schritten („Leg das hin und schließ die Tür")'],
-    ['k','Kennt mindestens eine Farbe'],
-    ['m','Dreht Dinge mit der Hand (Türgriff, Deckel)'],
-    ['m','Zieht einige Kleidungsstücke selbst aus'],
-    ['m','Springt mit beiden Füßen ab'],
-    ['m','Blättert Buchseiten einzeln um']
-  ]},
-  {m:36,label:'3 Jahre',items:[
-    ['s','Beruhigt sich innerhalb von 10 Minuten, nachdem du gegangen bist (z. B. in der Kita)'],
-    ['s','Bemerkt andere Kinder und spielt mit ihnen'],
-    ['l','Unterhält sich mit dir mindestens zwei Wechsel lang'],
-    ['l','Stellt W-Fragen (wer, was, wo, warum)'],
-    ['l','Sagt, was auf einem Bild oder in einem Buch passiert'],
-    ['l','Sagt seinen Vornamen, wenn man fragt'],
-    ['l','Spricht meist so, dass andere es verstehen'],
-    ['k','Malt einen Kreis, wenn du es vormachst'],
-    ['k','Meidet heiße Dinge wie den Herd, wenn du warnst'],
-    ['m','Fädelt Dinge auf, z. B. große Perlen oder Nudeln'],
-    ['m','Zieht sich einige Kleidungsstücke selbst an'],
-    ['m','Isst mit der Gabel']
+  {u:'U9',span:'60.–64. Lebensmonat',from:{m:59},items:[
+    ['g','Hüpft auf einem Bein, jeweils rechts und links, und kurzer Einbeinstand.'],
+    ['g','Größere Bälle können aufgefangen werden.'],
+    ['g','Läuft Treppen vorwärts rauf und runter im Erwachsenenschritt (wechselfüßig) ohne sich festzuhalten.'],
+    ['f','Nachmalen eines Kreises, Quadrates, Dreiecks möglich.'],
+    ['f','Stifthaltung wie ein Erwachsener.'],
+    ['f','Kann mit einer Kinderschere an einer geraden Linie entlang schneiden.'],
+    ['l','Fehlerfreie Aussprache, vereinzelt können noch Laute fehlerhaft ausgesprochen werden.'],
+    ['l','Ereignisse und Geschichten werden im richtigen zeitlichen und logischen Ablauf wiedergegeben in korrekten, jedoch noch einfach strukturierten Sätzen.'],
+    ['k','Mindestens 3 Farben werden erkannt und richtig benannt.'],
+    ['s','Kann sich mit anderen Kindern gut im Spiel abwechseln.'],
+    ['s','Ist bereit zu teilen.'],
+    ['s','Kind kann seine Emotionen meist selbst regulieren.'],
+    ['s','Toleriert meist leichtere, übliche Enttäuschungen.'],
+    ['i','Das Kind lädt andere Kinder zu sich ein und wird selbst eingeladen.'],
+    ['i','Intensive Rollenspiele: Verkleiden, Verwandlung in Tiere, Vorbilder (Ritter, Piraten, Helden), auch mit anderen Kindern.']
   ]}
 ];
 STAGES.forEach(function(st){
-  st.items=st.items.map(function(it,i){return {id:'m'+st.m+'_'+(i+1),c:it[0],t:it[1]};});
+  st.label=st.u+' · '+st.span;
+  st.items=st.items.map(function(it,i){return {id:st.u.toLowerCase()+'_'+(i+1),c:it[0],t:it[1]};});
 });
 
 var _open={};// welche Altersstufe aufgeklappt ist (nur Anzeige)
@@ -175,20 +137,37 @@ function store(){return NTBaby.milesStore();}
 function dateOf(id){var m=store()[id];return (m&&m.d)||'';}
 
 // Volle Lebensmonate (Kalendermonate, nicht Tage/30) — null ohne Geburtsdatum.
+function birthDate(){
+  var p=((S.baby&&S.baby.birth)||'').split('-');
+  return p.length===3?new Date(+p[0],+p[1]-1,+p[2]):null;
+}
 function ageMonths(){
-  var b=(S.baby&&S.baby.birth)||'';
-  var p=b.split('-');if(p.length!==3)return null;
+  var b=birthDate();if(!b)return null;
   var now=new Date();
-  var m=(now.getFullYear()-(+p[0]))*12+(now.getMonth()-(+p[1]-1));
-  if(now.getDate()<(+p[2]))m--;
+  var m=(now.getFullYear()-b.getFullYear())*12+(now.getMonth()-b.getMonth());
+  if(now.getDate()<b.getDate())m--;
   return m<0?null:m;
 }
-// Aktuelle Stufe = die letzte, deren Alter erreicht ist; nächste = die danach.
-function stageIdx(age){
+function ageDays(){
+  var b=birthDate();if(!b)return null;
+  var d=Math.floor((new Date()-b)/86400000);
+  return d<0?null:d;
+}
+function reached(st,months,days){
+  return st.from.d!==undefined?days>=st.from.d:months>=st.from.m;
+}
+// Aktuelle Stufe = die letzte, deren U-Zeitraum begonnen hat; nächste = die danach.
+function stageIdx(months,days){
   var cur=-1;
-  if(age===null)return cur;
-  STAGES.forEach(function(st,i){if(age>=st.m)cur=i;});
+  if(months===null)return cur;
+  STAGES.forEach(function(st,i){if(reached(st,months,days))cur=i;});
   return cur;
+}
+function ageLabel(months,days){
+  if(days<14)return days+(days===1?' Tag':' Tage');
+  if(days<70)return Math.floor(days/7)+' Wochen';
+  if(months<24)return months+' Monate';
+  return Math.floor(months/12)+' Jahre'+(months%12?' '+(months%12)+' Mon.':'');
 }
 function doneCount(st){
   var s=store();
@@ -199,8 +178,8 @@ function fmtD(k){var p=(k||'').split('-');return p.length===3?(p[2]+'.'+p[1]+'.'
 function render(){
   var box=document.getElementById('babyMileList');
   if(!box)return;
-  var age=ageMonths();
-  var cur=stageIdx(age);
+  var age=ageMonths(),days=ageDays();
+  var cur=stageIdx(age,days);
   var next=cur+1<STAGES.length?cur+1:-1;
   if(_auto){
     _open={};
@@ -214,10 +193,9 @@ function render(){
       head.innerHTML='Ohne Geburtsdatum kann die App die passende Altersstufe nicht wählen. '
         +'<button type="button" class="seb" style="margin:8px 0 0;" data-act="NTFeat.openBabySettings">📝 Geburtsdatum eintragen</button>';
     }else{
-      var a=age<24?(age+(age===1?' Monat':' Monate')):(Math.floor(age/12)+' Jahre'+(age%12?' '+(age%12)+' Mon.':''));
-      var txt=esc(name)+' ist <b>'+a+'</b> alt.';
-      if(cur>=0)txt+=' Aktuell: <b>'+STAGES[cur].label+'</b> ('+doneCount(STAGES[cur])+'/'+STAGES[cur].items.length+' erreicht).';
-      if(next>=0)txt+=' Als Nächstes: '+STAGES[next].label+'.';
+      var txt=esc(name)+' ist <b>'+ageLabel(age,days)+'</b> alt.';
+      if(cur>=0)txt+=' Aktuell: <b>'+STAGES[cur].u+'</b> ('+doneCount(STAGES[cur])+'/'+STAGES[cur].items.length+' erreicht).';
+      if(next>=0)txt+=' Als Nächstes: '+STAGES[next].u+' ('+STAGES[next].span+').';
       head.innerHTML=txt;
     }
   }

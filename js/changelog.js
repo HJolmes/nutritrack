@@ -1,6 +1,11 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.264',items:[
+    {icon:'\ud83d\udc76',text:'Baby-Einträge per Alexa brauchen das Wort „Baby“ nicht mehr davor: „Wickeln Stuhl und Pipi“, „Stillen rechts“, „Flasche 120 Milliliter“, „Schläft“, „Fieber 38,5 Grad“ werden direkt der richtigen Art zugeordnet. Mit „Baby“ davor geht weiter alles wie bisher.',where:'\ud83c\udf99 Alexa-Einwurf'},
+    {icon:'\ud83d\udd27',text:'„Wickeln“ landete bisher als Notiz im Tagebuch statt als Windel — der Skill kannte nur „Windel“ und „gewickelt“. Neu ist auch „Beides“: Wer Stuhl und Pipi zusammen sagt, bekommt einen Eintrag mit beidem statt nur Stuhl.',where:'\ud83d\udc76 Baby-Tagebuch'},
+    {icon:'\u26a0\ufe0f',text:'Dafür müssen Sprachmodell und Skill-Code einmal neu in die Alexa-Konsole eingespielt werden (Build → JSON Editor → Build Model, danach Code → Deploy). Ohne das bleibt es beim alten Verhalten.',where:'\ud83c\udf99 Alexa-Einwurf'}
+  ]},
   {v:'0.263',items:[
     {icon:'🍼',text:'Die Baby-Kachel zeigt jetzt die <b>letzte Mahlzeit</b> mit Abstand („vor 2 h 40 Min.“), statt nur des letzten Eintrags.',where:'Heute → Baby'},
     {icon:'⏱',text:'<b>Stillen mit Stoppuhr</b>: „⏱ Stillen“ im Tagebuch startet, „⇄ Seite“ wechselt die Brust, „■ Stopp“ trägt die Minuten ein. Auch als Schnell-Knopf einstellbar.',where:'Baby-Tagebuch'},

@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.262"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.263"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.262"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.263"></script>
 <script>
   (function(){
     if(typeof ZXingWASM==='undefined'){console.warn('zxing-wasm load failed, ZXing-JS fallback aktiv');return;}
@@ -155,6 +155,26 @@ body:has(#setupScreen.active) .fb-fab{display:none;}
 .mile-it.done .mile-cb{background:var(--g2);border-color:var(--g2);}
 .mile-it.done .mile-tx{color:var(--mu);}
 .mile-d{display:block;font-size:11px;color:var(--g2);font-weight:600;}
+.mile-d.now{color:var(--g1);font-weight:800;}
+/* Baby-Tagebuch v0.263: Hinweise, Stoppuhr, Verlauf */
+.bby-hint,.bby-run{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;line-height:1.4;padding:5px 0;border-top:1px dashed var(--br);color:var(--tx);}
+.bby-run{border-top:none;font-weight:700;color:var(--g1);padding:2px 0;}
+.bby-pill{flex-shrink:0;background:var(--gl);border:1.5px solid var(--g3);border-radius:999px;color:var(--g1);font-size:11px;font-weight:700;padding:4px 10px;cursor:pointer;white-space:nowrap;}
+.bby-pill.on{background:var(--g2);border-color:var(--g2);color:#fff;}
+.bby-sec{font-size:13px;font-weight:800;color:var(--tx);margin:12px 2px 6px;}
+.bby-link{background:none;border:none;color:var(--g1);font-size:12px;font-weight:700;padding:6px 2px;cursor:pointer;}
+.bby-avg{background:var(--gl);border-radius:12px;padding:9px 12px;font-size:12px;color:var(--g1);line-height:1.5;margin-bottom:8px;}
+.bby-wk{font-size:11px;}
+.bby-wk-h,.bby-wk-r{display:grid;grid-template-columns:62px 1fr 1fr 1fr;gap:5px;align-items:center;}
+.bby-wk-h{color:var(--mu);font-weight:700;margin-bottom:4px;}
+.bby-wk-r{padding:3px 0;border-top:1px solid var(--br);}
+.bby-wk-r.empty{opacity:.45;}
+.bby-wk-d{font-weight:700;color:var(--tx);white-space:nowrap;}
+.bby-wk-c{position:relative;display:block;height:20px;border-radius:6px;background:var(--gl);overflow:hidden;}
+.bby-bar{position:absolute;left:0;top:0;bottom:0;background:var(--g3);opacity:.55;}
+.bby-wk-t{position:relative;display:block;padding:3px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--tx);font-weight:600;}
+.bby-solid{font-size:12px;line-height:1.45;padding:5px 2px;border-top:1px solid var(--br);}
+#babyTabs .stab{flex:1;min-width:0;padding:7px 4px;font-size:11px;}
 .mf{height:100%;border-radius:4px;background:white;transition:width .6s;}
 
 /* ── MEAL CARDS ── */
@@ -937,6 +957,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
       <div id="babyCardSum" style="font-size:12px;color:var(--mu);line-height:1.5;">Noch nichts eingetragen</div>
       <div id="babyCardLast" style="font-size:12px;color:var(--g1);font-weight:600;margin-top:4px;min-height:16px;"></div>
       <div id="babyNextSide" style="font-size:11px;color:var(--mu);margin-top:4px;min-height:14px;"></div>
+      <div id="babyCardHints" style="margin-top:4px;"></div>
       <div id="babyQuickBtns" style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;"></div>
     </div>
     <div class="wc" id="partnerCard" style="display:none;">
@@ -1177,7 +1198,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.262</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.263</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1524,19 +1545,27 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="mbd">
       <div id="babyTabs" style="display:flex;gap:6px;margin-bottom:10px;">
-        <button type="button" class="stab act" style="flex:1;" data-tab="log" data-act="NTBaby.setTab" data-args='["log"]'>📖 Tagebuch</button>
-        <button type="button" class="stab" style="flex:1;" data-tab="mile" data-act="NTBaby.setTab" data-args='["mile"]'>⭐ Meilensteine</button>
+        <button type="button" class="stab act" data-tab="log" data-act="NTBaby.setTab" data-args='["log"]'>📖 Tagebuch</button>
+        <button type="button" class="stab" data-tab="week" data-act="NTBaby.setTab" data-args='["week"]'>📊 Verlauf</button>
+        <button type="button" class="stab" data-tab="growth" data-act="NTBaby.setTab" data-args='["growth"]'>📈 Wachstum</button>
+        <button type="button" class="stab" data-tab="mile" data-act="NTBaby.setTab" data-args='["mile"]'>⭐ U-Heft</button>
       </div>
       <div id="babyPaneLog">
       <div style="background:var(--gl);border-radius:12px;padding:10px 12px;margin-bottom:10px;">
         <div id="babyOvSum" style="font-size:12px;color:var(--g1);font-weight:600;line-height:1.5;">Noch nichts eingetragen</div>
         <div id="babyOvNextSide" style="font-size:11px;color:var(--mu);margin-top:4px;display:none;"></div>
+        <div id="babyOvFeed" style="font-size:12px;color:var(--g1);font-weight:600;margin-top:4px;"></div>
+        <div id="babyOvHints" style="margin-top:2px;"></div>
       </div>
       <div id="babyOvQuickBtns" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>
-      <button type="button" class="svb" style="margin-bottom:8px;" data-act="NTBaby.openEntry" data-args='["breast"]'>＋ Eintrag (Zeit &amp; Details)</button>
+      <div style="display:flex;gap:6px;margin-bottom:8px;">
+        <button type="button" class="svb" style="flex:2;width:auto;margin:0;" data-act="NTBaby.openEntry" data-args='["breast"]'>＋ Eintrag</button>
+        <button type="button" class="seb" style="flex:1;width:auto;margin:0;" data-act="NTBaby.startFeed">⏱ Stillen</button>
+      </div>
       <div style="display:flex;gap:6px;margin-bottom:10px;">
-        <button type="button" class="seb" style="flex:1;margin:0;" data-act="NTBaby.openQuickManage">⚙️ Schnell-Knöpfe</button>
-        <button type="button" class="seb" style="flex:1;margin:0;" data-act="NTBaby.openSync">🔄 Sync <span id="babySyncBadge" style="display:none;">✓</span></button>
+        <button type="button" class="seb" style="flex:1;width:auto;margin:0;padding-left:4px;padding-right:4px;" data-act="NTBaby.openQuickManage">⚙️ Knöpfe</button>
+        <button type="button" class="seb" style="flex:1;width:auto;margin:0;padding-left:4px;padding-right:4px;" data-act="NTBabyMed.open">💊 Medizin</button>
+        <button type="button" class="seb" style="flex:1;width:auto;margin:0;padding-left:4px;padding-right:4px;" data-act="NTBaby.openSync">🔄 Sync <span id="babySyncBadge" style="display:none;">✓</span></button>
       </div>
       <div id="babyFeverWarn" style="display:none;background:#ffebee;border:1px solid #ef9a9a;border-radius:10px;padding:10px;font-size:12px;color:#c62828;line-height:1.5;margin-bottom:10px;">
         🌡️ Fieber gemessen (ab 38,0&nbsp;°C). Im ersten Lebensjahr – und bei Säuglingen unter 3&nbsp;Monaten immer – bitte ärztlich abklären lassen. Das Tagebuch stellt keine Diagnose.
@@ -1544,9 +1573,36 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
       <div class="baby-tl" id="babyTimeline" style="max-height:46vh;overflow-y:auto;"></div>
       <div style="font-size:11px;color:var(--mu);margin-top:10px;line-height:1.5;">Die Einträge gehören zum oben gezeigten Tag – über die Pfeile auf „Heute" blätterst du zu anderen Tagen. Das Tagebuch wandert mit in jedes Backup.</div>
       </div>
+      <div id="babyPaneWeek" style="display:none;">
+        <div id="babyWeekRange" style="display:flex;gap:6px;margin-bottom:10px;">
+          <button type="button" class="stab act" style="flex:1;" data-wr="7" data-act="NTBabyWeek.setRange" data-args="[7]">7 Tage</button>
+          <button type="button" class="stab" style="flex:1;" data-wr="14" data-act="NTBabyWeek.setRange" data-args="[14]">14 Tage</button>
+        </div>
+        <div style="max-height:56vh;overflow-y:auto;" class="baby-tl">
+          <div id="babyWeekBody"></div>
+          <div id="babySolidBody"></div>
+        </div>
+        <button type="button" class="svb" style="margin-top:10px;" data-act="NTBabyWeek.openReport">🩺 Bericht für Arzt/Hebamme (7 Tage)</button>
+      </div>
+      <div id="babyPaneGrowth" style="display:none;">
+        <div id="babyGrowthKinds" style="display:flex;gap:6px;margin-bottom:8px;">
+          <button type="button" class="stab act" style="flex:1;" data-gk="w" data-act="NTGrowth.setKind" data-args='["w"]'>Gewicht</button>
+          <button type="button" class="stab" style="flex:1;" data-gk="l" data-act="NTGrowth.setKind" data-args='["l"]'>Länge</button>
+          <button type="button" class="stab" style="flex:1;" data-gk="h" data-act="NTGrowth.setKind" data-args='["h"]'>Kopf</button>
+        </div>
+        <div id="babyGrowthHead" style="background:var(--gl);border-radius:12px;padding:10px 12px;margin-bottom:8px;font-size:12px;color:var(--g1);line-height:1.5;"></div>
+        <div id="babyGrowthChart"></div>
+        <button type="button" class="svb" style="margin:8px 0;" data-act="NTBaby.openEntry" data-args='["growth"]'>＋ Messung</button>
+        <div class="baby-tl" id="babyGrowthList" style="max-height:30vh;overflow-y:auto;"></div>
+        <div style="font-size:11px;color:var(--mu);margin-top:10px;line-height:1.5;">Kurven: WHO-Wachstumsstandards 0–5 Jahre (P3, P15, P50, P85, P97). Länge bis 2 Jahre liegend, danach stehend gemessen. Die Einordnung macht die Kinderärztin oder der Kinderarzt.</div>
+      </div>
       <div id="babyPaneMile" style="display:none;">
         <div id="babyMileHead" style="background:var(--gl);border-radius:12px;padding:10px 12px;margin-bottom:10px;font-size:12px;color:var(--g1);line-height:1.5;"></div>
-        <div id="babyMileList" style="max-height:52vh;overflow-y:auto;"></div>
+        <div style="max-height:56vh;overflow-y:auto;" class="baby-tl">
+        <div id="babyUDates" style="margin-bottom:6px;"></div>
+        <div class="bby-sec">⭐ Meilensteine</div>
+        <div id="babyMileList"></div>
+        </div>
         <div style="font-size:11px;color:var(--mu);margin-top:10px;line-height:1.5;">Antippen hakt ab (mit Datum), nochmal antippen nimmt den Haken zurück. Haken werden wie das Tagebuch mit verbundenen Personen abgeglichen. 🏃 Grobmotorik · ✋ Feinmotorik · 🧠 Wahrnehmung/Denken · 💬 Sprache · 💛 Sozial/Gefühle · 🤝 Miteinander. Quelle: Gelbes Kinderuntersuchungsheft des G-BA (Stand Juni 2026), „Orientierende Beurteilung der Entwicklung“ je U-Untersuchung. Jedes Kind entwickelt sich in seinem Tempo – die Beurteilung macht die Kinderärztin oder der Kinderarzt bei der U.</div>
       </div>
     </div>
@@ -1589,6 +1645,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
         <select class="sinp" id="bqType" onchange="NTBaby.updateQuickTypeFields()">
           <option value="breast">🤱 Stillen</option>
           <option value="bottle">🍼 Flasche</option>
+          <option value="pump">🍶 Abpumpen</option>
           <option value="diaper">👶 Windel</option>
           <option value="temp">🌡️ Temperatur</option>
           <option value="sleep">😴 Schlaf</option>
@@ -1607,6 +1664,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
           </div>
           <div class="sf"><label class="lbl">Dauer (Min.)</label><input type="number" class="sinp" id="bqMin" min="0" max="180" placeholder="optional"></div>
         </div>
+        <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:4px 0 8px;"><input type="checkbox" id="bqTimer"> Mit Stoppuhr (Tipp startet, nächster Tipp stoppt)</label>
         <div class="sf" id="bqMainWrap" style="display:none;margin-top:8px;"><label class="lbl">Hauptseite (mehr getrunken)</label>
           <select class="sinp" id="bqMain">
             <option value="">Vorschlag nutzen</option>
@@ -1625,6 +1683,18 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
               <option value="folge">Folgemilch</option>
             </select>
           </div>
+        </div>
+      </div>
+      <div id="bqFields-pump" style="display:none;">
+        <div class="srow">
+          <div class="sf"><label class="lbl">Brust</label>
+            <select class="sinp" id="bqPumpSide">
+              <option value="b">Beide</option>
+              <option value="l">Links</option>
+              <option value="r">Rechts</option>
+            </select>
+          </div>
+          <div class="sf"><label class="lbl">Menge (ml)</label><input type="number" class="sinp" id="bqPumpMl" min="1" max="1000" placeholder="100"></div>
         </div>
       </div>
       <div id="bqFields-diaper" style="display:none;">
@@ -1647,6 +1717,51 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
       </div>
       <button type="button" class="svb" data-act="NTBaby.saveQuick">Speichern ✓</button>
       <button type="button" id="bqDeleteBtn" class="seb" style="display:none;margin-top:8px;color:#c62828;" data-act="NTBaby.deleteQuickFromEdit">🗑 Knopf löschen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ BABY: MEDIKAMENTE & TÄGLICHE GABEN ══ -->
+<div class="ov" id="babyMedOv" data-bg-close="babyMedOv">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" data-act="closeOv" data-args='["babyMedOv"]'>✕</button>
+      <div class="mti">💊 Medizin &amp; Gaben</div>
+      <div class="msu">Eigene Liste – ein Tipp trägt die Gabe ein</div>
+    </div>
+    <div class="mbd">
+      <div class="baby-tl" id="babyMedList" style="max-height:34vh;overflow-y:auto;"></div>
+      <div class="bby-sec" id="bmFormTitle">Neu anlegen</div>
+      <div class="srow">
+        <div class="sf"><label class="lbl">Name</label><input type="text" class="sinp" id="bmName" maxlength="40" placeholder="z.B. Vitamin D"></div>
+        <div class="sf"><label class="lbl">Dosis</label><input type="text" class="sinp" id="bmDose" maxlength="40" placeholder="wie verordnet"></div>
+      </div>
+      <div class="sf"><label class="lbl">Mindestabstand (Stunden)</label><input type="number" step="0.5" min="0" max="72" class="sinp" id="bmEvery" placeholder="optional – laut Arzt/Beipackzettel"></div>
+      <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:4px 0 10px;"><input type="checkbox" id="bmDaily"> Täglich – Hinweis auf der Kachel, solange heute nicht gegeben</label>
+      <button type="button" class="svb" id="bmSaveBtn" data-act="NTBabyMed.save">＋ Hinzufügen</button>
+      <button type="button" class="seb" id="bmDelBtn" style="display:none;color:#c62828;" data-act="NTBabyMed.del">🗑 Aus der Liste löschen</button>
+      <div style="font-size:11px;color:var(--mu);line-height:1.5;margin-top:10px;">Dosis und Abstand kommen von Kinderarzt, Apotheke oder Beipackzettel – die App schlägt nichts vor. Die Liste wird mit verbundenen Personen geteilt.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ BABY: BERICHT FÜR ARZT/HEBAMME ══ -->
+<div class="ov" id="babyReportOv" data-bg-close="babyReportOv">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" data-act="closeOv" data-args='["babyReportOv"]'>✕</button>
+      <div class="mti">🩺 Bericht (7 Tage)</div>
+      <div class="msu">Zum Vorzeigen oder Verschicken</div>
+    </div>
+    <div class="mbd">
+      <textarea id="babyReportText" class="sinp" style="height:46vh;font-size:12px;line-height:1.45;font-family:inherit;resize:vertical;"></textarea>
+      <div style="display:flex;gap:6px;margin-top:8px;">
+        <button type="button" class="svb" style="flex:1;width:auto;margin:0;" data-act="NTBabyWeek.shareReport">📤 Teilen</button>
+        <button type="button" class="seb" style="flex:1;width:auto;margin:0;" data-act="NTBabyWeek.copyReport">📋 Kopieren</button>
+      </div>
+      <div style="font-size:11px;color:var(--mu);line-height:1.5;margin-top:8px;">Der Text lässt sich vor dem Teilen noch bearbeiten. Er enthält Gesundheitsdaten deines Kindes – nur an Praxis oder Hebamme schicken.</div>
     </div>
   </div>
 </div>
@@ -1686,12 +1801,18 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
       <div id="babyTypeTabs" style="display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:2px;">
         <button type="button" class="stab act" data-bt="breast" data-act="NTBaby.setType" data-args='["breast"]'>🤱 Stillen</button>
         <button type="button" class="stab" data-bt="bottle" data-act="NTBaby.setType" data-args='["bottle"]'>🍼 Flasche</button>
+        <button type="button" class="stab" data-bt="solid" data-act="NTBaby.setType" data-args='["solid"]'>🥣 Beikost</button>
         <button type="button" class="stab" data-bt="diaper" data-act="NTBaby.setType" data-args='["diaper"]'>👶 Windel</button>
-        <button type="button" class="stab" data-bt="temp" data-act="NTBaby.setType" data-args='["temp"]'>🌡️ Temp.</button>
         <button type="button" class="stab" data-bt="sleep" data-act="NTBaby.setType" data-args='["sleep"]'>😴 Schlaf</button>
+        <button type="button" class="stab" data-bt="temp" data-act="NTBaby.setType" data-args='["temp"]'>🌡️ Temp.</button>
+        <button type="button" class="stab" data-bt="med" data-act="NTBaby.setType" data-args='["med"]'>💊 Medizin</button>
+        <button type="button" class="stab" data-bt="pump" data-act="NTBaby.setType" data-args='["pump"]'>🍶 Abpumpen</button>
         <button type="button" class="stab" data-bt="note" data-act="NTBaby.setType" data-args='["note"]'>📝 Notiz</button>
       </div>
-      <div class="sf" id="babyEntryTimeRow"><label class="lbl">Uhrzeit</label><input type="time" class="sinp" id="babyEntryTime"></div>
+      <div class="srow">
+        <div class="sf" id="babyEntryDateRow" style="display:none;"><label class="lbl">Datum</label><input type="date" class="sinp" id="babyEntryDate"></div>
+        <div class="sf" id="babyEntryTimeRow"><label class="lbl">Uhrzeit</label><input type="time" class="sinp" id="babyEntryTime"></div>
+      </div>
 
       <div id="babyFields-breast">
         <div class="srow">
@@ -1788,7 +1909,76 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
       </div>
 
       <div id="babyFields-note" style="display:none;">
-        <div class="sf"><label class="lbl">Notiz</label><input type="text" class="sinp" id="babyNoteText" placeholder="z.B. Vitamin D gegeben, unruhig, Bauchweh"></div>
+        <div class="sf"><label class="lbl">Notiz</label><input type="text" class="sinp" id="babyNoteText" placeholder="z.B. unruhig, Bauchweh"></div>
+      </div>
+
+      <div id="babyFields-solid" style="display:none;">
+        <div class="srow">
+          <div class="sf"><label class="lbl">Lebensmittel</label><input type="text" class="sinp" id="babySolidFood" list="babyFoodList" placeholder="z.B. Karotte"><datalist id="babyFoodList"></datalist></div>
+          <div class="sf" style="max-width:120px;"><label class="lbl">Menge</label><input type="text" class="sinp" id="babySolidAmount" placeholder="z.B. 3 Löffel"></div>
+        </div>
+        <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:4px 0 10px;"><input type="checkbox" id="babySolidFirst"> Zum ersten Mal gegessen</label>
+        <div class="sf"><label class="lbl">Reaktion</label>
+          <select class="sinp" id="babySolidReact">
+            <option value="none">keine</option>
+            <option value="skin">Hautausschlag</option>
+            <option value="tummy">Bauchweh/Blähungen</option>
+            <option value="vomit">Erbrechen</option>
+            <option value="diarr">Durchfall</option>
+            <option value="other">andere (unten beschreiben)</option>
+          </select>
+        </div>
+        <div style="font-size:11px;color:var(--mu);line-height:1.5;margin-bottom:8px;">Neue Lebensmittel und Reaktionen stehen gesammelt unter 📊 Verlauf. Bei Atemnot, starker Schwellung oder Kreislaufproblemen sofort den Notruf 112 wählen.</div>
+      </div>
+
+      <div id="babyFields-pump" style="display:none;">
+        <div class="srow">
+          <div class="sf"><label class="lbl">Brust</label>
+            <select class="sinp" id="babyPumpSide">
+              <option value="b">Beide</option>
+              <option value="l">Links</option>
+              <option value="r">Rechts</option>
+            </select>
+          </div>
+          <div class="sf"><label class="lbl">Menge (ml)</label><input type="number" class="sinp" id="babyPumpMl" min="1" max="1000" placeholder="100"></div>
+        </div>
+      </div>
+
+      <div id="babyFields-med" style="display:none;">
+        <div class="sf"><label class="lbl">Aus meiner Liste</label>
+          <select class="sinp" id="babyMedPick" onchange="NTBaby.medPicked()"></select>
+        </div>
+        <div class="srow">
+          <div class="sf"><label class="lbl">Medikament</label><input type="text" class="sinp" id="babyMedName" placeholder="z.B. Vitamin D"></div>
+          <div class="sf"><label class="lbl">Dosis</label><input type="text" class="sinp" id="babyMedDose" placeholder="wie verordnet"></div>
+        </div>
+        <div class="sf"><label class="lbl">Mindestabstand zur nächsten Gabe (Stunden)</label><input type="number" step="0.5" min="0" max="72" class="sinp" id="babyMedEvery" placeholder="optional – laut Arzt/Beipackzettel"></div>
+        <div style="font-size:11px;color:var(--mu);line-height:1.5;margin-bottom:8px;">Die App berechnet keine Dosis. Mit Abstand zeigt die Kachel, ab wann die nächste Gabe frühestens möglich ist.</div>
+      </div>
+
+      <div id="babyFields-growth" style="display:none;">
+        <div class="srow">
+          <div class="sf"><label class="lbl">Gewicht (g)</label><input type="number" class="sinp" id="babyGrowthG" min="300" max="40000" placeholder="3450"></div>
+          <div class="sf"><label class="lbl">Länge (cm)</label><input type="number" step="0.1" class="sinp" id="babyGrowthCm" min="20" max="130" placeholder="52"></div>
+          <div class="sf"><label class="lbl">Kopf (cm)</label><input type="number" step="0.1" class="sinp" id="babyGrowthHc" min="20" max="60" placeholder="35"></div>
+        </div>
+        <div style="font-size:11px;color:var(--mu);line-height:1.5;margin-bottom:8px;">Ein Wert genügt. Ältere Werte aus dem Gelben Heft mit ihrem Datum nachtragen.</div>
+      </div>
+
+      <div id="babyFields-appt" style="display:none;">
+        <div class="srow">
+          <div class="sf"><label class="lbl">Art</label>
+            <select class="sinp" id="babyApptKind">
+              <option value="u">U-Untersuchung</option>
+              <option value="vacc">Impfung</option>
+              <option value="doc">Kinderarzt</option>
+              <option value="mw">Hebamme</option>
+              <option value="other">Sonstiges</option>
+            </select>
+          </div>
+          <div class="sf"><label class="lbl">Bezeichnung</label><input type="text" class="sinp" id="babyApptTitle" placeholder="z.B. U5 oder 2. Impfung"></div>
+        </div>
+        <div style="font-size:11px;color:var(--mu);line-height:1.5;margin-bottom:8px;">Uhrzeit leer lassen = ganztägig. Ab 7 Tage vorher erscheint der Termin auf der Kachel.</div>
       </div>
 
       <div class="sf"><label class="lbl">Bemerkung (optional)</label><input type="text" class="sinp" id="babyEntryNote" placeholder="optional"></div>
@@ -2739,6 +2929,13 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
               <div class="sf"><label class="lbl">Name des Babys</label><input type="text" class="sinp" id="sbabyname" placeholder="optional"></div>
               <div class="sf"><label class="lbl">Geburtsdatum</label><input type="date" class="sinp" id="sbabybirth"></div>
             </div>
+            <div class="sf"><label class="lbl">Geschlecht (für die WHO-Wachstumskurven)</label>
+              <select class="sinp" id="sbabysex">
+                <option value="">keine Angabe</option>
+                <option value="f">Mädchen</option>
+                <option value="m">Junge</option>
+              </select>
+            </div>
             <div style="font-size:11px;color:var(--mu);line-height:1.5;">Unabhängig von Schwangerschaft und Stillzeit – auch Partner, Väter und Betreuende können das Tagebuch führen. Danach erscheint die Kachel auf „Heute"; Angaben und Verbindungen stehen unter Mehr → 🧩 Funktionen.</div>
           </div>
         </div>
@@ -3095,11 +3292,11 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.262"></script>
-<script src="js/fooddb.js?v=0.262"></script>
-<script src="js/fooddb-usda.js?v=0.262"></script>
-<script src="js/idb-photos.js?v=0.262"></script>
-<script src="js/changelog.js?v=0.262"></script>
+<script src="js/actions.js?v=0.263"></script>
+<script src="js/fooddb.js?v=0.263"></script>
+<script src="js/fooddb-usda.js?v=0.263"></script>
+<script src="js/idb-photos.js?v=0.263"></script>
+<script src="js/changelog.js?v=0.263"></script>
 <script>
 // ════════════════════════════════════════
 // SECTION: DATABASE
@@ -3118,7 +3315,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.262';
+var APP_VERSION='0.263';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -3488,8 +3685,8 @@ window.addEventListener('DOMContentLoaded',function(){
   // Auch ohne Tab-Wechsel: eine offene App soll um Mitternacht selbst umschalten.
   setInterval(function(){
     if(checkDayRollover())return;// hat bereits alles neu gezeichnet
-    // Laufender Baby-Schlaf: „läuft seit …" soll mitzählen statt einzufrieren.
-    if(window.NTBaby&&NTBaby.hasRunningSleep&&NTBaby.hasRunningSleep())NTBaby.refresh();
+    // Baby: „letzte Mahlzeit vor …", Stoppuhr und laufender Schlaf zählen mit.
+    if(window.NTBaby&&NTBaby.tick)NTBaby.tick();
   },60000);
   // Baby-Tagebuch: höchste bekannte Revision merken und einmal abgleichen.
   // No-op, solange das Tagebuch aus oder keine Kopplung eingerichtet ist.
@@ -7642,23 +7839,27 @@ function axTestSync(){
 }
 
 </script>
-<script src="picker.js?v=0.262"></script>
-<script src="js/health-sync.js?v=0.262"></script>
-<script src="js/sync-core.js?v=0.262"></script>
-<script src="js/baby.js?v=0.262"></script>
-<script src="js/baby-milestones.js?v=0.262"></script>
-<script src="js/shopping.js?v=0.262"></script>
-<script src="js/partner.js?v=0.262"></script>
-<script src="js/alexa-sync.js?v=0.262"></script>
-<script src="js/dashboard.js?v=0.262"></script>
-<script src="js/features.js?v=0.262"></script>
-<script src="js/mealplan.js?v=0.262"></script>
-<script src="js/onedrive.js?v=0.262"></script>
-<script src="js/recurring.js?v=0.262"></script>
-<script src="js/stats.js?v=0.262"></script>
-<script src="js/reminders.js?v=0.262"></script>
-<script src="js/templates.js?v=0.262"></script>
-<script src="js/offline-queue.js?v=0.262"></script>
+<script src="picker.js?v=0.263"></script>
+<script src="js/health-sync.js?v=0.263"></script>
+<script src="js/sync-core.js?v=0.263"></script>
+<script src="js/baby.js?v=0.263"></script>
+<script src="js/baby-meds.js?v=0.263"></script>
+<script src="js/baby-growth-data.js?v=0.263"></script>
+<script src="js/baby-growth.js?v=0.263"></script>
+<script src="js/baby-week.js?v=0.263"></script>
+<script src="js/baby-milestones.js?v=0.263"></script>
+<script src="js/shopping.js?v=0.263"></script>
+<script src="js/partner.js?v=0.263"></script>
+<script src="js/alexa-sync.js?v=0.263"></script>
+<script src="js/dashboard.js?v=0.263"></script>
+<script src="js/features.js?v=0.263"></script>
+<script src="js/mealplan.js?v=0.263"></script>
+<script src="js/onedrive.js?v=0.263"></script>
+<script src="js/recurring.js?v=0.263"></script>
+<script src="js/stats.js?v=0.263"></script>
+<script src="js/reminders.js?v=0.263"></script>
+<script src="js/templates.js?v=0.263"></script>
+<script src="js/offline-queue.js?v=0.263"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

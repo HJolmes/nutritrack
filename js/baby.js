@@ -21,8 +21,21 @@ var TYPES={
   diaper:{ic:'👶',label:'Windel'},
   temp:  {ic:'🌡️',label:'Temperatur'},
   sleep: {ic:'😴',label:'Schlaf'},
-  note:  {ic:'📝',label:'Notiz'}
+  note:  {ic:'📝',label:'Notiz'},
+  // seit v0.263
+  solid: {ic:'🥣',label:'Beikost'},
+  pump:  {ic:'🍶',label:'Abpumpen'},
+  med:   {ic:'💊',label:'Medizin'},
+  growth:{ic:'📏',label:'Messung'},
+  appt:  {ic:'📅',label:'Termin'}
 };
+// Mahlzeiten des Babys – daraus rechnet „letzte Mahlzeit vor …".
+var FEEDS={breast:1,bottle:1,solid:1};
+// Messung und Termin gehören zu einem frei gewählten Datum, nicht zum gerade
+// angezeigten Tag (Werte aus dem U-Heft nachtragen, Termin in drei Wochen).
+var DATED={growth:1,appt:1};
+var REACTION={none:'keine Reaktion',skin:'Hautausschlag',tummy:'Bauchweh/Blähungen',vomit:'Erbrechen',diarr:'Durchfall',other:'andere Reaktion'};
+var APPT={u:'U-Untersuchung',vacc:'Impfung',doc:'Kinderarzt',mw:'Hebamme',other:'Termin'};
 var SIDES={l:'Links',r:'Rechts',b:'Beide'};
 // Bei „Beide" trinkt ein Baby fast nie gleich viel an beiden Seiten. Die
 // Hauptseite (e.main) hält fest, an welcher es überwiegend getrunken hat –
@@ -157,12 +170,17 @@ function ageText(){
 
 // ── Zusammenfassung eines Tages ──
 function summary(key){
-  var arr=log(key);
-  var s={breast:0,breastMin:0,bottle:0,ml:0,diaper:0,poo:0,temp:null,sleepMin:0,sleepOpen:null};
+  // Nur lesen: log() legte für jeden abgefragten Tag ein leeres Array an – der
+  // Verlauf (js/baby-week.js) fragt 14 Tage auf einmal ab.
+  var arr=logRO(key);
+  var s={breast:0,breastMin:0,bottle:0,ml:0,diaper:0,pee:0,poo:0,temp:null,sleepMin:0,sleepOpen:null,solid:0,pump:0,pumpMl:0,med:0};
   arr.forEach(function(e){
     if(e.t==='breast'){s.breast++;s.breastMin+=parseInt(e.min,10)||0;}
+    else if(e.t==='solid')s.solid++;
+    else if(e.t==='pump'){s.pump++;s.pumpMl+=parseInt(e.ml,10)||0;}
+    else if(e.t==='med')s.med++;
     else if(e.t==='bottle'){s.bottle++;s.ml+=parseInt(e.ml,10)||0;}
-    else if(e.t==='diaper'){s.diaper++;if(e.kind==='poo'||e.kind==='both')s.poo++;}
+    else if(e.t==='diaper'){s.diaper++;if(e.kind==='poo'||e.kind==='both')s.poo++;if(e.kind==='pee'||e.kind==='both')s.pee++;}
     else if(e.t==='temp'){if(!s.temp||e.ts>s.temp.ts)s.temp=e;}
     // Schlaf wird unten über sleepSegments() gezählt – tagesgenau, auch wenn er
     // über Mitternacht läuft und deshalb an einem anderen Tag gespeichert ist.
@@ -286,23 +304,114 @@ function endSleep(id){
   refresh();
   showToast('Wach um '+hit.e.to+' ✓');
 }
+// ── Stillen mit Stoppuhr (v0.263) ──
+// Ein laufendes Stillen ist ein normaler Still-Eintrag mit `run:1`; ts ist der
+// Beginn. Stopp rechnet die Minuten aus und nimmt `run` weg. So reist die
+// laufende Stoppuhr per Sync mit, und ein zweites Gerät kann sie beenden.
+function runningFeed(){
+  var t=_today(),days=[t,addDayKey(t,-1)];
+  for(var d=0;d<days.length;d++){
+    var arr=logRO(days[d]).filter(function(e){return e.t==='breast'&&e.run;});
+    if(arr.length){arr.sort(function(a,b){return (a.ts||0)-(b.ts||0);});return arr[arr.length-1];}
+  }
+  return null;
+}
+function startFeed(side){
+  if(!S.babyOn)return;
+  if(runningFeed()){showToast('Die Stoppuhr läuft schon');return;}
+  var key=_today();
+  side=side||nextSide(key)||'l';
+  add({t:'breast',side:side,run:1,ts:Date.now()},key);
+  showToast('⏱ Stillen '+SIDES[side]+' läuft');
+}
+function stopFeed(silent){
+  var e=runningFeed();
+  if(!e)return null;
+  e.min=Math.max(1,Math.round((Date.now()-(e.ts||Date.now()))/60000));
+  delete e.run;
+  e.rev=nextRev();
+  saveS();
+  Sync.schedule();
+  refresh();
+  if(!silent)showToast('🤱 '+SIDES[e.side]+' · '+e.min+' Min. eingetragen ✓');
+  return e;
+}
+// Seite wechseln = laufende Seite beenden, andere sofort starten.
+function switchFeed(){
+  var e=stopFeed(true);
+  if(!e)return;
+  var other=e.side==='l'?'r':'l';
+  add({t:'breast',side:other,run:1,ts:Date.now()},_today());
+  showToast('⇄ Jetzt '+SIDES[other]+' ('+SIDES[e.side]+' '+e.min+' Min.)');
+}
+// Letzte Mahlzeit über die letzten Tage – beantwortet nachts „wann zuletzt?".
+function lastFeed(){
+  var t=_today(),now=Date.now(),best=null;
+  for(var i=0;i<4;i++){
+    logRO(addDayKey(t,-i)).forEach(function(e){
+      if(!FEEDS[e.t]||!e.ts||e.ts>now)return;
+      if(!best||e.ts>best.ts)best=e;
+    });
+    if(best)break;
+  }
+  return best;
+}
+function sinceText(ts){
+  var min=Math.max(0,Math.floor((Date.now()-ts)/60000));
+  if(min<1)return 'gerade eben';
+  return 'vor '+fmtDur(min);
+}
+function feedLineHtml(){
+  var run=runningFeed();
+  if(run){
+    var m=Math.max(0,Math.floor((Date.now()-run.ts)/60000));
+    return '<div class="bby-run"><span>⏱ Stillt '+esc(SIDES[run.side]||'')+' seit '+fmtDur(m)+'</span>'
+      +'<span style="display:flex;gap:6px;">'
+      +'<button type="button" class="bby-pill" data-act="NTBaby.switchFeed">⇄ Seite</button>'
+      +'<button type="button" class="bby-pill on" data-act="NTBaby.stopFeed">■ Stopp</button></span></div>';
+  }
+  var f=lastFeed();
+  if(!f)return '';
+  return '<span style="color:var(--mu);">🍼 Letzte Mahlzeit </span><b>'+sinceText(f.ts)+'</b>'
+    +'<span style="color:var(--mu);"> · '+hhmm(f.ts)+' '+esc(entryTitle(f))+'</span>';
+}
+
 function summaryText(key){
   var s=summary(key);
   var parts=[];
   if(s.breast)parts.push(s.breast+'× gestillt'+(s.breastMin?' ('+s.breastMin+' Min.)':''));
   if(s.bottle)parts.push(s.bottle+'× Flasche'+(s.ml?' ('+s.ml+' ml)':''));
+  if(s.solid)parts.push(s.solid+'× Beikost');
+  if(s.pump)parts.push(s.pumpMl+' ml abgepumpt');
   if(s.diaper)parts.push(s.diaper+(s.diaper===1?' Windel':' Windeln')+(s.poo?' · '+s.poo+'× 💩':''));
   if(s.sleepMin)parts.push('Schlaf '+fmtDur(s.sleepMin)+(s.sleepOpen?' (schläft noch)':''));
   else if(s.sleepOpen)parts.push('schläft seit '+(s.sleepOpen.cont?'gestern ':'')+s.sleepOpen.e.from);
   if(s.temp)parts.push('🌡️ '+fmtTemp(s.temp.c)+' °C');
   return parts.join(' · ');
 }
+// Zahl mit bis zu `dec` Nachkommastellen, deutsches Komma, ohne Null-Schwanz.
+function fmtNum(v,dec){
+  var x=(parseFloat(v)||0).toFixed(dec);
+  if(x.indexOf('.')>=0)x=x.replace(/0+$/,'').replace(/\.$/,'');
+  return x.replace('.',',');
+}
 function fmtTemp(c){return (Math.round((parseFloat(c)||0)*10)/10).toFixed(1).replace('.',',');}
 function isFever(c){return (parseFloat(c)||0)>=FEVER;}
 
 // ── Eintrags-Zeile als Text ──
 function entryTitle(e){
-  if(e.t==='breast')return 'Stillen · '+sideLabel(e)+(e.min?' · '+e.min+' Min.':'');
+  if(e.t==='breast')return 'Stillen · '+sideLabel(e)+(e.run?' · läuft':(e.min?' · '+e.min+' Min.':''));
+  if(e.t==='solid')return 'Beikost · '+(e.food||'?')+(e.amount?' · '+e.amount:'')+(e.first?' · neu':'')+(e.react&&e.react!=='none'?' · ⚠️ '+(REACTION[e.react]||''):'');
+  if(e.t==='pump')return 'Abgepumpt · '+(e.ml||0)+' ml'+(SIDES[e.side]?' · '+SIDES[e.side]:'');
+  if(e.t==='med')return (e.name||'Medizin')+(e.dose?' · '+e.dose:'');
+  if(e.t==='growth'){
+    var g=[];
+    if(e.g)g.push(fmtNum(e.g/1000,3)+' kg');
+    if(e.cm)g.push(fmtNum(e.cm,1)+' cm');
+    if(e.hc)g.push('Kopf '+fmtNum(e.hc,1)+' cm');
+    return 'Messung · '+(g.join(' · ')||'–');
+  }
+  if(e.t==='appt')return (e.title||APPT[e.kind]||'Termin')+(e.kind&&e.title&&APPT[e.kind]?' ('+APPT[e.kind]+')':'');
   if(e.t==='bottle')return 'Flasche · '+(e.ml||0)+' ml'+(BOTTLE[e.kind]?' · '+BOTTLE[e.kind]:'');
   if(e.t==='diaper'){
     var d=DIAPER[e.kind]||'Windel';
@@ -361,6 +470,11 @@ function quick(qid){
     showToast('😴 Schläft seit jetzt ✓');
     return;
   }
+  // Stoppuhr-Knopf: erster Tipp startet, der nächste stoppt.
+  if(q.t==='breast'&&q.p&&q.p.timer){
+    if(runningFeed())stopFeed();else startFeed(q.p.side);
+    return;
+  }
   var e=Object.assign({t:q.t},JSON.parse(JSON.stringify(q.p||{})));
   // „Nächste Seite"-Vorschlag nur, wenn der Knopf keine Seite vorgibt
   if(q.t==='breast'&&!e.side)e.side=nextSide(key)||'l';
@@ -399,7 +513,8 @@ function quickSubtitle(q){
   var t=(TYPES[q.t]&&TYPES[q.t].label)||q.t;
   var p=q.p||{};
   var det=[];
-  if(q.t==='breast'){det.push(p.side?sideLabel(p):'Seite wird vorgeschlagen');if(p.min)det.push(p.min+' Min.');}
+  if(q.t==='breast'){det.push(p.side?sideLabel(p):'Seite wird vorgeschlagen');if(p.timer)det.push('Stoppuhr');else if(p.min)det.push(p.min+' Min.');}
+  else if(q.t==='pump'){if(p.ml)det.push(p.ml+' ml');if(p.side)det.push(SIDES[p.side]);}
   else if(q.t==='bottle'){if(p.ml)det.push(p.ml+' ml');if(p.kind)det.push(BOTTLE[p.kind]||'');}
   else if(q.t==='diaper'){det.push((DIAPER[p.kind]||'').replace(/^[^ ]+ /,''));}
   else if(q.t==='temp'){det.push('Dialog öffnet sich');}
@@ -438,6 +553,9 @@ function openQuickEdit(id){
   document.getElementById('bqSide').value=p.side||'';
   document.getElementById('bqMain').value=p.main||'';
   document.getElementById('bqMin').value=p.min||'';
+  document.getElementById('bqTimer').checked=!!p.timer;
+  document.getElementById('bqPumpMl').value=(q&&q.t==='pump'&&p.ml)||'';
+  document.getElementById('bqPumpSide').value=(q&&q.t==='pump'&&p.side)||'b';
   document.getElementById('bqMl').value=p.ml||'';
   document.getElementById('bqBottleKind').value=p.kind&&BOTTLE[p.kind]?p.kind:'mm';
   document.getElementById('bqDiaperKind').value=(q&&q.t==='diaper'&&p.kind)||'pee';
@@ -449,7 +567,7 @@ function openQuickEdit(id){
 }
 function updateQuickTypeFields(){
   var t=document.getElementById('bqType').value;
-  ['breast','bottle','diaper','temp','sleep','note'].forEach(function(k){
+  ['breast','bottle','pump','diaper','temp','sleep','note'].forEach(function(k){
     var el=document.getElementById('bqFields-'+k);
     if(el)el.style.display=(k===t)?'block':'none';
   });
@@ -471,8 +589,15 @@ function saveQuick(){
     if(side)p.side=side;
     var main=document.getElementById('bqMain').value;
     if(side==='b'&&main)p.main=main;
-    var min=parseInt(document.getElementById('bqMin').value,10);
-    if(min>0)p.min=min;
+    if(document.getElementById('bqTimer').checked)p.timer=1;
+    else{
+      var min=parseInt(document.getElementById('bqMin').value,10);
+      if(min>0)p.min=min;
+    }
+  }else if(t==='pump'){
+    var pml=parseInt(document.getElementById('bqPumpMl').value,10);
+    if(!(pml>0)){showToast('Bitte eine Menge in ml angeben');return;}
+    p.ml=pml;p.side=document.getElementById('bqPumpSide').value;
   }else if(t==='bottle'){
     var ml=parseInt(document.getElementById('bqMl').value,10);
     if(!(ml>0)){showToast('Bitte eine Menge in ml angeben');return;}
@@ -566,6 +691,11 @@ function records(){
     var m=miles[mid];
     out.push({id:'mile_'+mid,rev:m.rev||0,holder:m,payload:{mile:mid,d:m.d||''}});
   });
+  // Medikamenten-Liste (js/baby-meds.js) – damit beide Eltern dieselben Gaben
+  // und Abstände sehen. Gelöscht wird weich (del:1), die rev entscheidet.
+  (Array.isArray(S.babyMeds)?S.babyMeds:[]).forEach(function(m){
+    out.push({id:'medcfg_'+m.id,rev:m.rev||0,holder:m,payload:{med:stripSy(m)}});
+  });
   S.babyTomb=S.babyTomb||{};
   Object.keys(S.babyTomb).forEach(function(id){
     var t=S.babyTomb[id];if(!t)return;
@@ -585,6 +715,19 @@ function applyRec(id,rev,payload,room){
     var m={d:payload.d||'',rev:rev};
     NTSync.ack(m,room,rev);
     miles[payload.mile]=m;
+    if(rev>_lastRev)_lastRev=rev;
+    return true;
+  }
+  if(id.indexOf('medcfg_')===0){
+    // Ohne `med` kommt es von einer App vor v0.263 (sie hält den Datensatz
+    // für einen gelöschten Eintrag) – ignorieren.
+    if(!payload||!payload.med||!payload.med.id)return false;
+    if(!Array.isArray(S.babyMeds))S.babyMeds=[];
+    var mi=S.babyMeds.findIndex(function(x){return x.id===payload.med.id;});
+    if(mi>=0&&(S.babyMeds[mi].rev||0)>=rev)return false;
+    var med=Object.assign({},payload.med,{rev:rev});
+    NTSync.ack(med,room,rev);
+    if(mi>=0)S.babyMeds[mi]=med;else S.babyMeds.push(med);
     if(rev>_lastRev)_lastRev=rev;
     return true;
   }
@@ -660,18 +803,27 @@ function renderCard(){
   if(ttl)ttl.textContent='👶 '+name+(age?' · '+age:'');
   var sum=document.getElementById('babyCardSum');
   if(sum)sum.textContent=summaryText(key)||'Noch nichts eingetragen';
+  // Seit v0.263 steht hier die letzte Mahlzeit (bzw. die laufende Stoppuhr)
+  // statt des letzten beliebigen Eintrags – das ist die Frage, die nachts zählt.
   var last=document.getElementById('babyCardLast');
-  if(last){
-    var rows=dayRows(key);
-    var r=rows[rows.length-1];
-    last.innerHTML=r?('<span style="color:var(--mu);">zuletzt '+hhmm(r.ts)+' · </span>'+esc(rowTitle(r))):'';
-  }
+  if(last)last.innerHTML=feedLineHtml();
+  var hints=document.getElementById('babyCardHints');
+  if(hints)hints.innerHTML=hintsHtml();
   var hint=document.getElementById('babyNextSide');
   if(hint){
     var nx=nextSide(key);
     hint.textContent=nx?('Vorschlag: nächste Seite '+SIDES[nx]):'';
   }
   renderQuickBtns();
+}
+// Hinweise auf der Kachel: fällige Gaben (js/baby-meds.js) und anstehende
+// Termine/U-Untersuchungen (js/baby-milestones.js). Beide Module liefern HTML
+// oder '' – die Kachel bleibt leer, wenn nichts ansteht.
+function hintsHtml(){
+  var h='';
+  if(window.NTBabyMed)h+=NTBabyMed.cardHtml();
+  if(window.NTMile&&NTMile.cardHtml)h+=NTMile.cardHtml();
+  return h;
 }
 // Merker „zuletzt welche Brust" – aus dem letzten Still-Eintrag der letzten Tage
 function nextSide(key){
@@ -696,18 +848,27 @@ function openDiary(){
   Sync.startPoll(function(){return isOpen('babyOv');});
 }
 function closeDiary(){Sync.stopPoll();closeOv('babyOv');}
-// Reiter im Tagebuch: 'log' (Einträge des Tages) oder 'mile' (Meilensteine,
-// js/baby-milestones.js). Beim Öffnen steht immer das Tagebuch vorn.
+// Reiter im Tagebuch: 'log' (Einträge des Tages), 'week' (Verlauf, Beikost,
+// Arzt-Bericht – js/baby-week.js), 'growth' (Wachstum – js/baby-growth.js),
+// 'mile' (U-Heft: U-Termine, Termine, Meilensteine – js/baby-milestones.js).
+// Beim Öffnen steht immer das Tagebuch vorn.
+var TABS={log:'babyPaneLog',week:'babyPaneWeek',growth:'babyPaneGrowth',mile:'babyPaneMile'};
 var _tab='log';
 function setTab(t){
-  _tab=(t==='mile')?'mile':'log';
+  _tab=TABS[t]?t:'log';
   document.querySelectorAll('#babyTabs [data-tab]').forEach(function(b){
     b.classList.toggle('act',b.getAttribute('data-tab')===_tab);
   });
-  var pl=document.getElementById('babyPaneLog'),pm=document.getElementById('babyPaneMile');
-  if(pl)pl.style.display=_tab==='log'?'':'none';
-  if(pm)pm.style.display=_tab==='mile'?'':'none';
+  Object.keys(TABS).forEach(function(k){
+    var el=document.getElementById(TABS[k]);
+    if(el)el.style.display=(k===_tab)?'':'none';
+  });
+  renderTab();
+}
+function renderTab(){
   if(_tab==='mile'&&window.NTMile)NTMile.render();
+  else if(_tab==='week'&&window.NTBabyWeek)NTBabyWeek.render();
+  else if(_tab==='growth'&&window.NTGrowth)NTGrowth.render();
 }
 function renderDiary(){
   var key=dayKey();
@@ -727,7 +888,11 @@ function renderDiary(){
   }
   renderQuickBtns();
   renderSyncUI();
-  if(_tab==='mile'&&window.NTMile)NTMile.render();
+  renderTab();
+  var feed=document.getElementById('babyOvFeed');
+  if(feed)feed.innerHTML=feedLineHtml();
+  var hints=document.getElementById('babyOvHints');
+  if(hints)hints.innerHTML=hintsHtml();
   var list=document.getElementById('babyTimeline');
   if(!list)return;
   var rows=dayRows(key);
@@ -737,13 +902,19 @@ function renderDiary(){
     list.innerHTML=rows.map(function(r){
       var e=r.e,seg=r.seg;
       var ic=(TYPES[e.t]&&TYPES[e.t].ic)||'•';
-      var fever=(e.t==='temp'&&isFever(e.c));
+      var fever=(e.t==='temp'&&isFever(e.c))||(e.t==='solid'&&e.react&&e.react!=='none');
       var running=!!(seg&&seg.live);
-      // Laufender Schlaf: ein Tipp beendet ihn, statt den Dialog zu öffnen.
+      var feeding=(e.t==='breast'&&e.run);
+      // Laufender Schlaf/laufendes Stillen: ein Tipp beendet es, statt den Dialog zu öffnen.
       var right=running
         ?'<button type="button" onclick="event.stopPropagation();NTBaby.endSleep(\''+e.id+'\')" style="background:var(--g2);border:none;border-radius:999px;color:#fff;font-size:11px;font-weight:700;padding:5px 10px;cursor:pointer;flex-shrink:0;">Wach jetzt</button>'
+        :feeding
+        ?'<button type="button" onclick="event.stopPropagation();NTBaby.stopFeed()" style="background:var(--g2);border:none;border-radius:999px;color:#fff;font-size:11px;font-weight:700;padding:5px 10px;cursor:pointer;flex-shrink:0;">■ Stopp</button>'
         :'<div class="fe-ic">✏️</div>';
-      var bits=[hhmm(r.ts)];
+      var bits=[(e.t==='appt'&&!e.time)?'ganztägig':hhmm(r.ts)];
+      if(feeding)bits.push('läuft seit '+fmtDur(Math.max(0,Math.floor((Date.now()-e.ts)/60000))));
+      if(e.t==='growth'&&window.NTGrowth){var pc=NTGrowth.pctText(e);if(pc)bits.push(pc);}
+      if(e.t==='med'&&e.every)bits.push('Abstand '+e.every+' h');
       if(seg&&seg.cont)bits.push('Fortsetzung von gestern');
       if(seg&&seg.spill)bits.push('geht weiter am Folgetag');
       if(running)bits.push('läuft seit '+fmtDur(seg.totalMin));
@@ -766,10 +937,30 @@ function renderDiary(){
 function openEntry(type,id){
   _editId=id||null;
   var key=dayKey();
-  var e=id?(findAnywhere(id)||{}).e:null;
+  var hitE=id?findAnywhere(id):null;
+  var e=hitE?hitE.e:null;
   var t=type||(e&&e.t)||'breast';
   setType(t);
-  document.getElementById('babyEntryTime').value=e?hhmm(e.ts):nowTimeOnDay(key);
+  // Datum nur bei Messung/Termin: vorbelegt mit dem Tag des Eintrags bzw. heute.
+  document.getElementById('babyEntryDate').value=hitE?hitE.day:_today();
+  fillMedPick((e&&e.mid)||'');
+  document.getElementById('babyMedName').value=(e&&e.t==='med'&&e.name)||'';
+  document.getElementById('babyMedDose').value=(e&&e.t==='med'&&e.dose)||'';
+  document.getElementById('babyMedEvery').value=(e&&e.t==='med'&&e.every)||'';
+  if(!e&&t==='med')medPicked();
+  document.getElementById('babySolidFood').value=(e&&e.food)||'';
+  document.getElementById('babySolidAmount').value=(e&&e.amount)||'';
+  document.getElementById('babySolidFirst').checked=!!(e&&e.first);
+  document.getElementById('babySolidReact').value=(e&&e.react)||'none';
+  fillFoodList();
+  document.getElementById('babyPumpSide').value=(e&&e.t==='pump'&&e.side)||'b';
+  document.getElementById('babyPumpMl').value=(e&&e.t==='pump'&&e.ml)||'';
+  document.getElementById('babyGrowthG').value=(e&&e.g)||'';
+  document.getElementById('babyGrowthCm').value=(e&&e.cm)||'';
+  document.getElementById('babyGrowthHc').value=(e&&e.hc)||'';
+  document.getElementById('babyApptKind').value=(e&&e.t==='appt'&&e.kind)||'u';
+  document.getElementById('babyApptTitle').value=(e&&e.t==='appt'&&e.title)||'';
+  document.getElementById('babyEntryTime').value=(t==='appt')?((e&&e.time)||''):(e?hhmm(e.ts):nowTimeOnDay(key));
   document.getElementById('babyEntryNote').value=(e&&e.note)||'';
   var side=(e&&e.side)||nextSide(key)||'l';
   document.getElementById('babySide').value=side;
@@ -788,12 +979,50 @@ function openEntry(type,id){
   document.getElementById('babySleepFrom').value=(e&&e.from)||'';
   document.getElementById('babySleepTo').value=(e&&e.to)||'';
   document.getElementById('babyNoteText').value=(e&&e.t==='note'&&e.text)||'';
-  document.getElementById('babyEntryTitle').textContent=(id?'Eintrag bearbeiten':'Neuer Eintrag');
+  document.getElementById('babyEntryTitle').textContent=id?(t==='growth'?'Messung bearbeiten':t==='appt'?'Termin bearbeiten':'Eintrag bearbeiten')
+    :(t==='growth'?'Neue Messung':t==='appt'?'Neuer Termin':'Neuer Eintrag');
   document.getElementById('babyDeleteBtn').style.display=id?'block':'none';
   updateDiaperFields();
   openOv('babyEntryOv');
 }
 function editEntry(id){openEntry(null,id);}
+// Medizin: Auswahl aus der eigenen Liste (js/baby-meds.js) oder frei.
+function fillMedPick(sel){
+  var el=document.getElementById('babyMedPick');
+  if(!el)return;
+  var meds=window.NTBabyMed?NTBabyMed.list():[];
+  el.innerHTML='<option value="">– frei eingeben –</option>'+meds.map(function(m){
+    return '<option value="'+esc(m.id)+'">'+esc(m.name)+'</option>';
+  }).join('');
+  el.value=meds.some(function(m){return m.id===sel;})?sel:(meds.length&&!_editId?meds[0].id:'');
+}
+function medPicked(){
+  var id=document.getElementById('babyMedPick').value;
+  var m=id&&window.NTBabyMed?NTBabyMed.byId(id):null;
+  if(!m)return;
+  document.getElementById('babyMedName').value=m.name||'';
+  document.getElementById('babyMedDose').value=m.dose||'';
+  document.getElementById('babyMedEvery').value=m.every||'';
+}
+// Beikost: Vorschläge aus der eingebauten Lebensmittel-Datenbank (window.DB)
+// plus allem, was schon einmal als Beikost eingetragen wurde.
+function fillFoodList(){
+  var dl=document.getElementById('babyFoodList');
+  if(!dl)return;
+  var seen={},names=[];
+  solidFoods().concat((window.DB||[]).map(function(d){return d.n;})).forEach(function(n){
+    var k=(n||'').toLowerCase();
+    if(k&&!seen[k]){seen[k]=1;names.push(n);}
+  });
+  dl.innerHTML=names.map(function(n){return '<option value="'+esc(n)+'">';}).join('');
+}
+function solidFoods(){
+  var out=[];
+  Object.keys(S.babyLog||{}).forEach(function(d){
+    logRO(d).forEach(function(e){if(e.t==='solid'&&e.food)out.push(e.food);});
+  });
+  return out;
+}
 function setType(t){
   document.querySelectorAll('#babyTypeTabs [data-bt]').forEach(function(b){
     b.classList.toggle('act',b.getAttribute('data-bt')===t);
@@ -802,7 +1031,14 @@ function setType(t){
   // daneben wäre widersprüchlich (welches gilt?) und stellte den Eintrag in der
   // Zeitleiste an die falsche Stelle.
   var tr=document.getElementById('babyEntryTimeRow');
-  if(tr)tr.style.display=(t==='sleep')?'none':'';
+  // Messung: das Datum genügt, eine Uhrzeit wäre Schein-Genauigkeit.
+  if(tr)tr.style.display=(t==='sleep'||t==='growth')?'none':'';
+  var dr=document.getElementById('babyEntryDateRow');
+  if(dr)dr.style.display=DATED[t]?'':'none';
+  // Messung und Termin kommen aus ihrem eigenen Reiter – dort passt die
+  // Typ-Leiste nicht (ein Wechsel auf „Windel" ergäbe keinen Sinn).
+  var tabs=document.getElementById('babyTypeTabs');
+  if(tabs)tabs.style.display=DATED[t]?'none':'flex';
   Object.keys(TYPES).forEach(function(k){
     var el=document.getElementById('babyFields-'+k);
     if(el)el.style.display=(k===t)?'block':'none';
@@ -831,7 +1067,11 @@ function updateDiaperFields(){
 function saveEntry(){
   var key=dayKey();
   var t=currentType();
-  var time=document.getElementById('babyEntryTime').value||nowTimeOnDay(key);
+  if(DATED[t]){
+    key=document.getElementById('babyEntryDate').value||'';
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(key)){showToast('Bitte ein Datum angeben');return;}
+  }
+  var time=document.getElementById('babyEntryTime').value||(DATED[t]?(t==='appt'?'09:00':'12:00'):nowTimeOnDay(key));
   var e={t:t,ts:tsFor(key,time),note:document.getElementById('babyEntryNote').value.trim()};
   if(t==='breast'){
     e.side=document.getElementById('babySide').value;
@@ -865,15 +1105,57 @@ function saveEntry(){
   }else if(t==='note'){
     e.text=document.getElementById('babyNoteText').value.trim();
     if(!e.text){showToast('Bitte Notiz eingeben');return;}
+  }else if(t==='solid'){
+    e.food=document.getElementById('babySolidFood').value.trim();
+    if(!e.food){showToast('Bitte das Lebensmittel angeben');return;}
+    e.amount=document.getElementById('babySolidAmount').value.trim();
+    if(document.getElementById('babySolidFirst').checked)e.first=1;
+    e.react=document.getElementById('babySolidReact').value||'none';
+  }else if(t==='pump'){
+    e.side=document.getElementById('babyPumpSide').value;
+    e.ml=parseInt(document.getElementById('babyPumpMl').value,10)||0;
+    if(!e.ml){showToast('Bitte Menge in ml angeben');return;}
+  }else if(t==='med'){
+    e.name=document.getElementById('babyMedName').value.trim();
+    if(!e.name){showToast('Bitte das Medikament angeben');return;}
+    e.dose=document.getElementById('babyMedDose').value.trim();
+    var ev=parseFloat(String(document.getElementById('babyMedEvery').value).replace(',','.'));
+    if(ev>0)e.every=ev;
+    var mid=document.getElementById('babyMedPick').value;
+    if(mid)e.mid=mid;
+  }else if(t==='growth'){
+    var g=parseInt(document.getElementById('babyGrowthG').value,10);
+    var cm=parseFloat(String(document.getElementById('babyGrowthCm').value).replace(',','.'));
+    var hc=parseFloat(String(document.getElementById('babyGrowthHc').value).replace(',','.'));
+    if(g>0)e.g=g;
+    if(cm>0)e.cm=cm;
+    if(hc>0)e.hc=hc;
+    if(!e.g&&!e.cm&&!e.hc){showToast('Bitte mindestens einen Messwert angeben');return;}
+    // Häufigster Tippfehler: kg statt g – 3,4 wäre ein unmögliches Gewicht.
+    if(e.g&&e.g<300){showToast('Gewicht bitte in Gramm (z.B. 3450)');return;}
+  }else if(t==='appt'){
+    e.kind=document.getElementById('babyApptKind').value;
+    e.title=document.getElementById('babyApptTitle').value.trim();
+    // Uhrzeit nur speichern, wenn eine eingegeben wurde – sonst „ganztägig".
+    e.time=document.getElementById('babyEntryTime').value||'';
   }
   if(_editId){
     var hit=findAnywhere(_editId);
     if(hit){
       // Eintrag bleibt an seinem Tag; nur die Felder werden ersetzt.
       var target=hit.e;
+      // Laufende Stoppuhr bleibt laufen, solange keine Dauer eingetragen wird.
+      if(t==='breast'&&target.run&&!e.min)e.run=1;
       Object.keys(target).forEach(function(k2){if(k2!=='id')delete target[k2];});
       Object.assign(target,e);
-      target.ts=(t==='sleep'&&(e.from||e.to))?tsFor(hit.day,e.from||e.to):tsFor(hit.day,time);
+      var day=hit.day;
+      // Messung/Termin: neues Datum = Eintrag wandert an diesen Tag.
+      if(DATED[t]&&key!==hit.day){
+        S.babyLog[hit.day].splice(hit.idx,1);
+        log(key).push(target);
+        day=key;
+      }
+      target.ts=(t==='sleep'&&(e.from||e.to))?tsFor(day,e.from||e.to):tsFor(day,time);
       target.rev=nextRev();
       saveS();
       Sync.schedule();
@@ -884,7 +1166,8 @@ function saveEntry(){
   _editId=null;
   closeOv('babyEntryOv');
   refresh();
-  if(t==='temp'&&isFever(e.c))showToast('🌡️ '+fmtTemp(e.c)+' °C – Fieber. Im 1. Lebensjahr bitte ärztlich abklären.',5000);
+  if(t==='solid'&&e.react!=='none')showToast('⚠️ Reaktion notiert – bei Atemnot, starker Schwellung oder Kreislaufproblemen sofort den Notruf 112 wählen.',6000);
+  else if(t==='temp'&&isFever(e.c))showToast('🌡️ '+fmtTemp(e.c)+' °C – Fieber. Im 1. Lebensjahr bitte ärztlich abklären.',5000);
   else showToast('Eingetragen ✓');
 }
 function deleteEntry(){
@@ -906,6 +1189,7 @@ function boot(){
   });
   var ms=S.babyMiles||{};
   Object.keys(ms).forEach(function(k){var m=ms[k];if(m&&(m.rev||0)>_lastRev)_lastRev=m.rev;});
+  (Array.isArray(S.babyMeds)?S.babyMeds:[]).forEach(function(m){if((m.rev||0)>_lastRev)_lastRev=m.rev;});
   milesStore();
   if(S.babyOn)Sync.run();
 }
@@ -919,9 +1203,16 @@ function hasRunningSleep(){
   if(!S.babyOn)return false;
   return sleepSegments(dayKey()).some(function(seg){return seg.live;});
 }
+// Minutentakt aus index.html: Kachel immer („letzte Mahlzeit vor …", fällige
+// Gaben), das offene Tagebuch nur, wenn dort etwas mitzählt.
+function tick(){
+  if(!S.babyOn)return;
+  renderCard();
+  if(isOpen('babyOv')&&(hasRunningSleep()||runningFeed()))renderDiary();
+}
 
 window.NTBaby={
-  boot:boot,refresh:refresh,hasRunningSleep:hasRunningSleep,
+  boot:boot,refresh:refresh,hasRunningSleep:hasRunningSleep,tick:tick,
   // add() ist der programmatische Einfuege-Pfad (Alexa-Einwurf, js/alexa-sync.js).
   // Der Aufrufer liefert einen fertigen Eintrag {t,...} plus Tagesschluessel;
   // Sync, Speichern und Neuzeichnen passieren hier drin.
@@ -937,6 +1228,12 @@ window.NTBaby={
   // Fuer den Alexa-Einwurf: welche Brust waere als Naechstes dran?
   nextSide:nextSide,
   // Meilensteine (js/baby-milestones.js): Haken lesen/setzen, synchronisiert.
-  milesStore:milesStore,setMile:setMile
+  milesStore:milesStore,setMile:setMile,
+  // v0.263: Stoppuhr, Medizin-Auswahl, gemeinsame Helfer für Verlauf/Wachstum/Gaben
+  startFeed:startFeed,stopFeed:stopFeed,switchFeed:switchFeed,medPicked:medPicked,
+  summary:summary,entryTitle:entryTitle,logRO:logRO,addDayKey:addDayKey,today:_today,
+  fmtDur:fmtDur,fmtNum:fmtNum,isFever:isFever,fmtTemp:fmtTemp,ageText:ageText,
+  REACTION:REACTION,APPT:APPT,SIDES:SIDES,
+  _nextRev:nextRev,_bumpRev:function(r){if(r>_lastRev)_lastRev=r;},_schedule:function(){Sync.schedule();}
 };
 })();

@@ -172,6 +172,17 @@ if (!mCore) {
   }
   if (!missing) ok(`Alle ${srcs.length} lokal eingebundenen Scripts stehen in sw.js CORE_ASSETS.`);
 
+  // Jedes lokale Script muss ?v=<APP_VERSION> tragen (tools/bump.js setzt es).
+  // Fehlt es, liefert der alte Service Worker nach einem Update die ALTE Datei
+  // aus seinem Cache zur NEUEN index.html.
+  const appV = (indexHtml.match(/APP_VERSION\s*=\s*'([^']+)'/) || [])[1];
+  const badV = srcs.filter((s) => (s.match(/[?&]v=([^&]+)/) || [])[1] !== appV);
+  if (badV.length) {
+    badV.forEach((s) => fail(`index.html bindet '${s}' ohne ?v=${appV} ein — node tools/bump.js ${appV} setzt es.`));
+  } else {
+    ok(`Alle ${srcs.length} lokalen Scripts tragen ?v=${appV}.`);
+  }
+
   // Umgekehrt: CORE_ASSETS darf nicht auf Dateileichen zeigen.
   for (const a of coreAssets) {
     if (a === '' || a.endsWith('/')) continue;

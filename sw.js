@@ -1,6 +1,6 @@
 // NutriTrack Service Worker
 // Version wird bei jedem Release hochgezählt - löst automatisches Update aus
-var VERSION = '0.261';
+var VERSION = '0.262';
 var CACHE = 'nt-' + VERSION;
 var SKIP = ['workers.dev','corsproxy.io','openfoodfacts.org','fonts.googleapis.com','fonts.gstatic.com','unpkg.com','esm.sh','jsdelivr.net','is.gd','v.gd'];
 // Kern-Assets, die für den Offline-Betrieb vorab gecacht werden. Relativ zur
@@ -83,9 +83,21 @@ self.addEventListener('fetch', function(e) {
     );
     return;
   }
-  // Cache-first für alle anderen Assets
+  // Versionierte Scripts (?v=…, gesetzt von tools/bump.js): Gehoert die
+  // Version nicht zu DIESEM Worker, ist die Seite neuer (oder aelter) als sein
+  // Cache — dann aus dem Netz, und nur offline aus dem Cache. Sonst lieferte ein
+  // alter Worker alte Module zur neuen index.html.
+  var ver = null;
+  try { ver = new URL(u).searchParams.get('v'); } catch (x) {}
+  if (ver && ver !== VERSION) {
+    e.respondWith(fetch(e.request).catch(function() {
+      return caches.match(e.request, { ignoreSearch: true });
+    }));
+    return;
+  }
+  // Cache-first für alle anderen Assets (eigene Version: Cache ohne ?v= vorab gefuellt)
   e.respondWith(
-    caches.match(e.request).then(function(c) {
+    caches.match(e.request, { ignoreSearch: !!ver }).then(function(c) {
       if (c) return c;
       return fetch(e.request).then(function(r) {
         if (r.ok) {

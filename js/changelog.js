@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.261',items:[
+    {icon:'\u2b50',text:'Das Baby-Tagebuch hat einen zweiten Reiter: <b>Meilensteine</b>. Er zeigt die Entwicklungsschritte aus dem <b>Gelben U-Heft</b> — von der U3 bis zur U9, sortiert nach Motorik, Sprache, Wahrnehmung und Sozialverhalten. Die passende U ergibt sich aus dem Geburtsdatum. Antippen hakt ab und merkt sich das Datum; ist das Tagebuch mit jemandem verbunden, sieht die andere Person die Haken auch.',where:'Heute → Baby-Kachel → ⭐ Meilensteine, oder Mehr → 🧩 Funktionen → Baby-Tagebuch'}
+  ]},
   {v:'0.260',items:[
     {icon:'\ud83d\udcda',text:'Die <b>Rezeptbibliothek</b> steht wieder direkt unter „Mehr“ — zusammen mit dem Wochenplan unter „Meine Inhalte“. Bisher führte der Weg über Mehr → 🧩 Funktionen → 🍽 Mahlzeiten → Bibliothek, also drei Tipps tief.',where:'Mehr'},
     {icon:'\ud83d\udcec',text:'Eine zugeschickte Mahlzeit erscheint jetzt <b>an der Mahlzeit, für die sie gedacht ist</b> — als 📬 an der Kachel auf „Heute“ und als Zeile in der geöffneten Mahlzeit. Ein Tipp darauf öffnet die Übernahme direkt, mit der richtigen Mahlzeit schon ausgewählt. Bisher gab es dafür nur die kleine Flagge oben rechts.',where:'Heute · 🍽 Mahlzeit'},

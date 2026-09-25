@@ -648,12 +648,27 @@ function nextSide(key){
 // ════════ Tagebuch-Overlay ════════
 function openDiary(){
   if(!S.babyOn){showToast('Baby-Tagebuch erst unter Mehr → Funktionen einschalten');return;}
+  setTab('log');
+  if(window.NTMile)NTMile.resetView();
   renderDiary();
   openOv('babyOv');
   Sync.run();
   Sync.startPoll(function(){return isOpen('babyOv');});
 }
 function closeDiary(){Sync.stopPoll();closeOv('babyOv');}
+// Reiter im Tagebuch: 'log' (Einträge des Tages) oder 'mile' (Meilensteine,
+// js/baby-milestones.js). Beim Öffnen steht immer das Tagebuch vorn.
+var _tab='log';
+function setTab(t){
+  _tab=(t==='mile')?'mile':'log';
+  document.querySelectorAll('#babyTabs [data-tab]').forEach(function(b){
+    b.classList.toggle('act',b.getAttribute('data-tab')===_tab);
+  });
+  var pl=document.getElementById('babyPaneLog'),pm=document.getElementById('babyPaneMile');
+  if(pl)pl.style.display=_tab==='log'?'':'none';
+  if(pm)pm.style.display=_tab==='mile'?'':'none';
+  if(_tab==='mile'&&window.NTMile)NTMile.render();
+}
 function renderDiary(){
   var key=dayKey();
   var head=document.getElementById('babyOvSub');
@@ -672,6 +687,7 @@ function renderDiary(){
   }
   renderQuickBtns();
   renderSyncUI();
+  if(_tab==='mile'&&window.NTMile)NTMile.render();
   var list=document.getElementById('babyTimeline');
   if(!list)return;
   var rows=dayRows(key);
@@ -867,7 +883,7 @@ window.NTBaby={
   // Der Aufrufer liefert einen fertigen Eintrag {t,...} plus Tagesschluessel;
   // Sync, Speichern und Neuzeichnen passieren hier drin.
   add:add,
-  openDiary:openDiary,closeDiary:closeDiary,renderDiary:renderDiary,renderCard:renderCard,
+  openDiary:openDiary,closeDiary:closeDiary,renderDiary:renderDiary,setTab:setTab,renderCard:renderCard,
   quick:quick,openEntry:openEntry,editEntry:editEntry,setType:setType,endSleep:endSleep,
   updateDiaperFields:updateDiaperFields,updateBreastFields:updateBreastFields,saveEntry:saveEntry,deleteEntry:deleteEntry,
   openQuickManage:openQuickManage,openQuickEdit:openQuickEdit,updateQuickTypeFields:updateQuickTypeFields,updateQuickBreastFields:updateQuickBreastFields,

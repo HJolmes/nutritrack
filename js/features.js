@@ -89,6 +89,7 @@ var FEATURES=[
    sub:'Stillen, Flasche, Windeln, Temperatur',
    actions:[
      {ic:'👶', label:'Tagebuch öffnen',   hint:'Einträge sehen und ergänzen', act:'NTBaby.openDiary'},
+     {ic:'⭐', label:'Meilensteine',     hint:'Entwicklung passend zum Alter abhaken', act:'NTMile.open'},
      {ic:'📝', label:'Angaben zum Baby', hint:'Name, Geburtsdatum, ein/aus', act:'NTFeat.openBabySettings'},
      {ic:'🔗', label:'Verbindungen',     hint:'Tagebuch mit jemandem teilen', act:'NTSync.open'}
    ]},

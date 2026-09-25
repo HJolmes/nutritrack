@@ -142,6 +142,19 @@ body:has(#setupScreen.active) .fb-fab{display:none;}
 .diet-btn.act{background:var(--g1);border-color:var(--g1);color:white;}
 .stab{border:1.5px solid var(--br);background:white;border-radius:10px;padding:7px 10px;font-size:12px;font-weight:700;color:var(--mu);white-space:nowrap;transition:all .15s;}
 .stab.act{background:var(--g2);border-color:var(--g2);color:white;}
+.mile-st{border:1px solid var(--br);border-radius:12px;margin-bottom:8px;background:var(--card);overflow:hidden;}
+.mile-st.cur{border-color:var(--g2);}
+.mile-sh{display:flex;justify-content:space-between;align-items:center;width:100%;background:none;border:none;padding:11px 12px;font-size:14px;font-weight:700;color:var(--tx);cursor:pointer;text-align:left;}
+.mile-tag{font-size:10px;font-weight:700;background:var(--g2);color:#fff;border-radius:999px;padding:2px 7px;margin-left:4px;vertical-align:middle;}
+.mile-tag.nx{background:var(--gl);color:var(--g1);}
+.mile-cnt{font-size:12px;color:var(--mu);font-weight:700;}
+.mile-cnt.full{color:var(--g2);}
+.mile-items{padding:0 8px 8px;}
+.mile-it{display:flex;gap:10px;align-items:flex-start;width:100%;background:none;border:none;border-top:1px solid var(--br);padding:9px 4px;font-size:13px;color:var(--tx);text-align:left;cursor:pointer;line-height:1.4;}
+.mile-cb{flex-shrink:0;width:20px;height:20px;border:2px solid var(--br);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;}
+.mile-it.done .mile-cb{background:var(--g2);border-color:var(--g2);}
+.mile-it.done .mile-tx{color:var(--mu);}
+.mile-d{display:block;font-size:11px;color:var(--g2);font-weight:600;}
 .mf{height:100%;border-radius:4px;background:white;transition:width .6s;}
 
 /* ── MEAL CARDS ── */
@@ -1164,7 +1177,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.260</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.261</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1510,6 +1523,11 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
       <div class="msu" id="babyOvSub">Baby</div>
     </div>
     <div class="mbd">
+      <div id="babyTabs" style="display:flex;gap:6px;margin-bottom:10px;">
+        <button type="button" class="stab act" style="flex:1;" data-tab="log" data-act="NTBaby.setTab" data-args='["log"]'>📖 Tagebuch</button>
+        <button type="button" class="stab" style="flex:1;" data-tab="mile" data-act="NTBaby.setTab" data-args='["mile"]'>⭐ Meilensteine</button>
+      </div>
+      <div id="babyPaneLog">
       <div style="background:var(--gl);border-radius:12px;padding:10px 12px;margin-bottom:10px;">
         <div id="babyOvSum" style="font-size:12px;color:var(--g1);font-weight:600;line-height:1.5;">Noch nichts eingetragen</div>
         <div id="babyOvNextSide" style="font-size:11px;color:var(--mu);margin-top:4px;display:none;"></div>
@@ -1525,6 +1543,12 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
       </div>
       <div class="baby-tl" id="babyTimeline" style="max-height:46vh;overflow-y:auto;"></div>
       <div style="font-size:11px;color:var(--mu);margin-top:10px;line-height:1.5;">Die Einträge gehören zum oben gezeigten Tag – über die Pfeile auf „Heute" blätterst du zu anderen Tagen. Das Tagebuch wandert mit in jedes Backup.</div>
+      </div>
+      <div id="babyPaneMile" style="display:none;">
+        <div id="babyMileHead" style="background:var(--gl);border-radius:12px;padding:10px 12px;margin-bottom:10px;font-size:12px;color:var(--g1);line-height:1.5;"></div>
+        <div id="babyMileList" style="max-height:52vh;overflow-y:auto;"></div>
+        <div style="font-size:11px;color:var(--mu);margin-top:10px;line-height:1.5;">Antippen hakt ab (mit Datum), nochmal antippen nimmt den Haken zurück. 💛 Sozial · 💬 Sprache · 🧠 Denken · 🏃 Bewegung. Richtwerte nach den CDC-Checklisten: Ein Meilenstein steht bei dem Alter, in dem ihn etwa drei von vier Kindern erreicht haben. Jedes Kind entwickelt sich in seinem Tempo – bei Sorgen die Kinderärztin oder den Kinderarzt fragen (U-Untersuchungen).</div>
+      </div>
     </div>
   </div>
 </div>
@@ -3088,13 +3112,13 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 // ════════════════════════════════════════
 // SECTION: STATE
 // ════════════════════════════════════════
-var S={apiKey:'',name:'Du',goal:2000,goalManual:false,weight:0,height:0,age:0,gender:'',activity:'',pregnant:0,pregnantET:'',pregWarn:false,nursing:0,nursWarn:false,babyOn:false,baby:{name:'',birth:''},babyLog:{},babyTomb:{},babyQuick:null,babySync:null,shopList:[],shopTomb:{},shopSync:null,shopRecent:[],shopCats:[],shopCatMem:{},links:[],linksMigrated:0,planTomb:{},goalWeight:0,goalDate:'',goalAchievedShown:'',dietPrefs:[],dietFree:'',savedDietFree:[],dietWarn:false,macroTargets:{protein:0,carbs:0,fat:0},macroGoalMode:'percent',macroGoalG:{protein:0,carbs:0,fat:0},reminders:[],weightLog:{},portionMemory:{},waterGoal:8,waterUnit:250,mealTemplates:[],recurringMeals:[],exerciseLibrary:[],dashOrder:null,dashHidden:null,mealPlan:{},planApplied:{},currentDate:'',days:{}};
+var S={apiKey:'',name:'Du',goal:2000,goalManual:false,weight:0,height:0,age:0,gender:'',activity:'',pregnant:0,pregnantET:'',pregWarn:false,nursing:0,nursWarn:false,babyOn:false,baby:{name:'',birth:''},babyLog:{},babyTomb:{},babyMiles:{},babyQuick:null,babySync:null,shopList:[],shopTomb:{},shopSync:null,shopRecent:[],shopCats:[],shopCatMem:{},links:[],linksMigrated:0,planTomb:{},goalWeight:0,goalDate:'',goalAchievedShown:'',dietPrefs:[],dietFree:'',savedDietFree:[],dietWarn:false,macroTargets:{protein:0,carbs:0,fat:0},macroGoalMode:'percent',macroGoalG:{protein:0,carbs:0,fat:0},reminders:[],weightLog:{},portionMemory:{},waterGoal:8,waterUnit:250,mealTemplates:[],recurringMeals:[],exerciseLibrary:[],dashOrder:null,dashHidden:null,mealPlan:{},planApplied:{},currentDate:'',days:{}};
 // Tracking für Settings-Session: manuelle Eingabe vs. „Kalorienbedarf berechnen"
 var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.260';
+var APP_VERSION='0.261';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -7622,6 +7646,7 @@ function axTestSync(){
 <script src="js/health-sync.js"></script>
 <script src="js/sync-core.js"></script>
 <script src="js/baby.js"></script>
+<script src="js/baby-milestones.js"></script>
 <script src="js/shopping.js"></script>
 <script src="js/partner.js"></script>
 <script src="js/alexa-sync.js"></script>

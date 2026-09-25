@@ -2,7 +2,7 @@
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
   {v:'0.261',items:[
-    {icon:'\u2b50',text:'Das Baby-Tagebuch hat einen zweiten Reiter: <b>Meilensteine</b>. Passend zum Alter deines Babys (aus dem Geburtsdatum) zeigt er die aktuelle und die nächste Altersstufe — von 2 Monaten bis 3 Jahren, nach Sozial, Sprache, Denken und Bewegung. Antippen hakt ab und merkt sich das Datum.',where:'Heute → Baby-Kachel → ⭐ Meilensteine, oder Mehr → 🧩 Funktionen → Baby-Tagebuch'}
+    {icon:'\u2b50',text:'Das Baby-Tagebuch hat einen zweiten Reiter: <b>Meilensteine</b>. Passend zum Alter deines Babys (aus dem Geburtsdatum) zeigt er die aktuelle und die nächste Altersstufe — von 2 Monaten bis 3 Jahren, nach Sozial, Sprache, Denken und Bewegung. Antippen hakt ab und merkt sich das Datum. Ist das Tagebuch mit jemandem verbunden, sieht die andere Person die Haken auch.',where:'Heute → Baby-Kachel → ⭐ Meilensteine, oder Mehr → 🧩 Funktionen → Baby-Tagebuch'}
   ]},
   {v:'0.260',items:[
     {icon:'\ud83d\udcda',text:'Die <b>Rezeptbibliothek</b> steht wieder direkt unter „Mehr“ — zusammen mit dem Wochenplan unter „Meine Inhalte“. Bisher führte der Weg über Mehr → 🧩 Funktionen → 🍽 Mahlzeiten → Bibliothek, also drei Tipps tief.',where:'Mehr'},

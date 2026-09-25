@@ -1,7 +1,8 @@
 // NutriTrack – Baby-Meilensteine (Reiter im Baby-Tagebuch, v0.261).
 // Klassisches Script, exportiert window.NTMile. Zeigt die Entwicklungs-
 // Meilensteine passend zum Alter aus S.baby.birth; abgehakt wird in
-// S.babyMiles = {<id>:'YYYY-MM-DD'} (Tag des Abhakens).
+// S.babyMiles = {<id>:{d:'YYYY-MM-DD'|'',rev}} (Tag des Abhakens). Speichern
+// und Sync (Baby-Topf) laufen ueber NTBaby.milesStore/setMile.
 //
 // Inhalt: CDC „Learn the Signs. Act Early." (Checklisten 2022). Ein Meilenstein
 // steht bei dem Alter, in dem ihn etwa 75 % der Kinder erreicht haben. Die IDs
@@ -170,7 +171,8 @@ var _auto=true;// solange nichts geklickt wurde: aktuelle + nächste Stufe offen
 
 function pad(n){return n<10?'0'+n:''+n;}
 function today(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
-function store(){if(!S.babyMiles||typeof S.babyMiles!=='object')S.babyMiles={};return S.babyMiles;}
+function store(){return NTBaby.milesStore();}
+function dateOf(id){var m=store()[id];return (m&&m.d)||'';}
 
 // Volle Lebensmonate (Kalendermonate, nicht Tage/30) — null ohne Geburtsdatum.
 function ageMonths(){
@@ -190,7 +192,7 @@ function stageIdx(age){
 }
 function doneCount(st){
   var s=store();
-  return st.items.filter(function(it){return !!s[it.id];}).length;
+  return st.items.filter(function(it){return !!(s[it.id]&&s[it.id].d);}).length;
 }
 function fmtD(k){var p=(k||'').split('-');return p.length===3?(p[2]+'.'+p[1]+'.'+p[0].slice(2)):'';}
 
@@ -230,7 +232,7 @@ function render(){
       +'<span class="mile-cnt'+(n===tot?' full':'')+'">'+n+'/'+tot+'</span></button>';
     if(open){
       h+='<div class="mile-items">'+st.items.map(function(it){
-        var d=s[it.id];
+        var d=(s[it.id]&&s[it.id].d)||'';
         return '<button type="button" class="mile-it'+(d?' done':'')+'" data-act="NTMile.check" data-args=\'["'+it.id+'"]\' title="'+CAT_LABEL[it.c]+'">'
           +'<span class="mile-cb">'+(d?'✓':'')+'</span>'
           +'<span class="mile-tx">'+CAT[it.c]+' '+esc(it.t)+(d?'<span class="mile-d">erreicht '+fmtD(d)+'</span>':'')+'</span>'
@@ -247,9 +249,7 @@ function toggle(i){
   render();
 }
 function check(id){
-  var s=store();
-  if(s[id])delete s[id];else s[id]=today();
-  saveS();
+  NTBaby.setMile(id,dateOf(id)?'':today());
   render();
 }
 // Einstieg von außen (Funktions-Blatt): Tagebuch öffnen, direkt im Reiter.

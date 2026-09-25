@@ -525,6 +525,24 @@ function deleteQuickFromEdit(){
 // js/sync-core.js. Hier bleibt nur die Form DIESES Topfes: Einträge liegen nach
 // Tag gruppiert, deshalb reist der Tag als eigenes Feld mit — ohne ihn wüsste
 // die Gegenseite nicht, wohin ein Eintrag gehört.
+// S.babyMiles = {<id>:{d:'YYYY-MM-DD'|'',rev}}. v0.261 speicherte nur das
+// Datum als Zeichenkette — das wird hier einmalig mit einer rev versehen,
+// damit die Haken beim ersten Abgleich mitgehen.
+function milesStore(){
+  if(!S.babyMiles||typeof S.babyMiles!=='object')S.babyMiles={};
+  var ms=S.babyMiles;
+  Object.keys(ms).forEach(function(k){
+    if(typeof ms[k]==='string')ms[k]={d:ms[k],rev:nextRev()};
+  });
+  return ms;
+}
+// Haken setzen/zuruecknehmen: neue rev, speichern, Abgleich anstossen.
+function setMile(mid,d){
+  var ms=milesStore();
+  ms[mid]={d:d||'',rev:nextRev()};
+  saveS();
+  Sync.schedule();
+}
 function stripSy(e){
   var c={};
   Object.keys(e).forEach(function(k){if(k!=='_sy')c[k]=e[k];});
@@ -538,6 +556,13 @@ function records(){
       out.push({id:e.id,rev:e.rev||0,holder:e,payload:{day:day,e:stripSy(e)}});
     });
   });
+  // Meilenstein-Haken (js/baby-milestones.js) reisen im selben Topf mit —
+  // eigener ID-Raum `mile_<id>`, Payload {mile,d}; d='' heisst „nicht erreicht".
+  var miles=milesStore();
+  Object.keys(miles).forEach(function(mid){
+    var m=miles[mid];
+    out.push({id:'mile_'+mid,rev:m.rev||0,holder:m,payload:{mile:mid,d:m.d||''}});
+  });
   S.babyTomb=S.babyTomb||{};
   Object.keys(S.babyTomb).forEach(function(id){
     var t=S.babyTomb[id];if(!t)return;
@@ -548,6 +573,18 @@ function records(){
 
 // Merge: höhere rev gewinnt. Gilt für Einträge und Löschmarken gleichermaßen.
 function applyRec(id,rev,payload,room){
+  if(id.indexOf('mile_')===0){
+    // Ohne `mile` kommt es von einer App vor v0.261, die den Datensatz fuer
+    // einen geloeschten Eintrag hielt — nicht als Baby-Eintrag verbuchen.
+    if(!payload||!payload.mile)return false;
+    var miles=milesStore(),cur=miles[payload.mile];
+    if(cur&&(cur.rev||0)>=rev)return false;
+    var m={d:payload.d||'',rev:rev};
+    NTSync.ack(m,room,rev);
+    miles[payload.mile]=m;
+    if(rev>_lastRev)_lastRev=rev;
+    return true;
+  }
   S.babyLog=S.babyLog||{};S.babyTomb=S.babyTomb||{};
   var tomb=S.babyTomb[id];
   if(tomb&&(tomb.rev||0)>=rev)return false;// lokal später gelöscht
@@ -864,6 +901,9 @@ function boot(){
   Object.keys(S.babyTomb||{}).forEach(function(id){
     var t=S.babyTomb[id];if(t&&(t.rev||0)>_lastRev)_lastRev=t.rev;
   });
+  var ms=S.babyMiles||{};
+  Object.keys(ms).forEach(function(k){var m=ms[k];if(m&&(m.rev||0)>_lastRev)_lastRev=m.rev;});
+  milesStore();
   if(S.babyOn)Sync.run();
 }
 document.addEventListener('visibilitychange',function(){
@@ -892,6 +932,8 @@ window.NTBaby={
   openSync:openSync,renderSyncUI:renderSyncUI,openLinks:openLinks,syncNow:syncNow,
   Sync:Sync,summaryText:summaryText,TYPES:TYPES,
   // Fuer den Alexa-Einwurf: welche Brust waere als Naechstes dran?
-  nextSide:nextSide
+  nextSide:nextSide,
+  // Meilensteine (js/baby-milestones.js): Haken lesen/setzen, synchronisiert.
+  milesStore:milesStore,setMile:setMile
 };
 })();

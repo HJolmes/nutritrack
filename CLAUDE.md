@@ -18,7 +18,7 @@ Befolge ausserdem immer die vollständigen Regeln in `AGENTS.md`. Die wichtigste
 2. `VERSION` in `sw.js` – auf denselben Wert setzen
 3. Sichtbarer Versionstext `Beta vX.XXX` in `index.html` – alle hartkodierten Vorkommen (derzeit 1×; die zweite Stelle wird dynamisch aus `APP_VERSION` gesetzt)
 
-**Punkt 1–3 in einem Zug:** `node tools/bump.js` (+0.001) oder `node tools/bump.js 0.260`.
+**Punkt 1–3 in einem Zug:** `node tools/bump.js` (+0.001) oder `node tools/bump.js 0.260`. Das Skript setzt auch das `?v=<Version>` an jedem lokalen `<script src>` — neue Scripts deshalb mit `?v=…` einbinden (`tools/check.js` prüft es), sonst liefert der alte Service Worker nach einem Update alte Module zur neuen `index.html`.
 
 **`CHANGELOG`-Eintrag (Punkt 4) NUR bei nutzerwahrnehmbaren Änderungen** (neue Features, UI-Änderungen, sichtbare Bugfixes). Refactorings, interne Cleanups, Doku-im-Code, Performance-Tweaks ohne UI-Effekt usw. erhalten **keinen** CHANGELOG-Eintrag — der „Was ist neu"-Dialog bleibt für diese Versionen still (`checkWhatsNew()` überspringt Versionen ohne `CHANGELOG`-Eintrag automatisch).
 
@@ -57,7 +57,7 @@ Die verbliebenen `onclick` (14 statisch, 114 in generiertem HTML) laufen unverä
 ## Architektur
 
 - HTML, CSS und State/Render-Code: in `index.html`. CSS bleibt dort.
-- Klar abgegrenzte JS-Features dürfen in eigene klassische `<script>`-Dateien unter `js/` ausgelagert werden (Beispiele: `picker.js` im Repo-Root, `js/health-sync.js`, `js/onedrive.js`, `js/stats.js`). Keine ES-Module, keine Bundler — die Datei wird per `<script src="…"></script>` vor `</body>` eingebunden, exportiert ihre API über ein `window.<Namespace>`-Objekt und greift auf existierende globale Funktionen (`saveS`, `renderAll`, `S` …) direkt zu. Bestehende Logik in `index.html` wird **nicht** prophylaktisch verschoben — nur neue Features modular, der alte Monolith bleibt liegen.
+- Klar abgegrenzte JS-Features dürfen in eigene klassische `<script>`-Dateien unter `js/` ausgelagert werden (Beispiele: `picker.js` im Repo-Root, `js/health-sync.js`, `js/onedrive.js`, `js/stats.js`). Keine ES-Module, keine Bundler — die Datei wird per `<script src="js/x.js?v=0.262"></script>` vor `</body>` eingebunden, exportiert ihre API über ein `window.<Namespace>`-Objekt und greift auf existierende globale Funktionen (`saveS`, `renderAll`, `S` …) direkt zu. Bestehende Logik in `index.html` wird **nicht** prophylaktisch verschoben — nur neue Features modular, der alte Monolith bleibt liegen.
 - Bei neuen JS-Modulen sicherstellen, dass sie über den Service-Worker erreichbar sind (Cache-First-Pfad in `sw.js`) — sonst funktioniert die PWA offline nicht.
 - `sw.js` – Service Worker, Versions-Bump nötig
 - `worker/` – Cloudflare Worker AI-Proxy, separat deployen

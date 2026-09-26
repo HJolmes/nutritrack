@@ -112,6 +112,19 @@ function add(){
   render();NTBaby.refresh();
   showToast('❓ Frage notiert');
 }
+// Von aussen (Alexa-Einwurf): feste ID, damit derselbe Einwurf auf beiden
+// Telefonen EINE Frage ergibt. Eine schon bekannte ID – auch eine geloeschte –
+// wird nicht erneut angelegt.
+function addExternal(q,id,at){
+  q=String(q||'').trim();
+  if(!q||!id)return false;
+  if(all().some(function(x){return x.id===id;}))return false;
+  var x={id:id,q:q,a:'',done:0,doneAt:'',at:at||Date.now()};
+  all().push(x);
+  touch(x);
+  render();
+  return true;
+}
 function toggle(id){
   var x=byId(id);if(!x)return;
   x.done=x.done?0:1;
@@ -181,6 +194,6 @@ function open(){
 }
 
 window.NTMidwife={list:list,render:render,setFilter:setFilter,search:search,clearSearch:clearSearch,
-  add:add,toggle:toggle,edit:edit,answerInput:answerInput,save:save,del:del,closeEdit:closeEdit,
+  add:add,addExternal:addExternal,toggle:toggle,edit:edit,answerInput:answerInput,save:save,del:del,closeEdit:closeEdit,
   cardHtml:cardHtml,open:open,openCount:openCount};
 })();

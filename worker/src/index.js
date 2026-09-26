@@ -774,7 +774,10 @@ function sanitizeAlexaItem(raw) {
   const ts = clampNumber(raw.ts, 0, Date.now() + 1000 * 60 * 60 * 24);
   out.ts = ts !== null && ts > 0 ? Math.round(ts) : Date.now();
 
-  const text = alexaText(raw.text, 200);
+  // Fragen an die Hebamme (Baby-Notiz mit babyP.mw) duerfen so lang sein wie im
+  // Eingabefeld der App (500); alles andere bleibt bei 200.
+  const isMidwife = kind === "baby" && raw.babyP && typeof raw.babyP === "object" && raw.babyP.mw;
+  const text = alexaText(raw.text, isMidwife ? 500 : 200);
   if (kind === "baby") {
     const bt = typeof raw.babyType === "string" ? raw.babyType.trim().toLowerCase() : "";
     if (!ALEXA_BABY_TYPES.has(bt)) return null;
@@ -1550,7 +1553,7 @@ export default {
         alexaInboxConfigured: Boolean(env.SHARE_KV),
         planSyncConfigured: Boolean(env.SHARE_KV),
         decoderSecretConfigured: Boolean(env.DECODER_SECRET),
-        codeVersion: "v0.255-alexa-family",
+        codeVersion: "v0.265-alexa-midwife",
       });
     }
 

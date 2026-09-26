@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.264"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.265"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.264"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.265"></script>
 <script>
   (function(){
     if(typeof ZXingWASM==='undefined'){console.warn('zxing-wasm load failed, ZXing-JS fallback aktiv');return;}
@@ -1210,7 +1210,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.264</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.265</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -2231,6 +2231,11 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
           „Baby Windel gewechselt" · „Baby schläft"<br>
           „Baby 120 Milliliter Flasche" · „Baby gestillt links"<br>
           „Baby gestillt beide, hauptsächlich links" — bei beiden Seiten die Hauptseite mitsagen, dann stimmt der Vorschlag fürs nächste Mal<br><br>
+          <b>Fragen an die Hebamme</b> — landen im Reiter 🤱 Hebamme<br>
+          „Hebamme: Ab wann darf ich baden?"<br>
+          „Frag die Hebamme, ob sie Fencheltee trinken darf"<br>
+          „Ich hab eine Frage an die Hebamme: …"<br>
+          Nur „Hebamme" sagen → Alexa fragt „Was möchtest du die Hebamme fragen?" → Frage sprechen<br><br>
           <b>Einzeln, ohne vorher zu starten</b><br>
           „Alexa, sage mein Tagebuch, ich habe zwei Brötchen gegessen"
         </div>
@@ -3337,11 +3342,11 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.264"></script>
-<script src="js/fooddb.js?v=0.264"></script>
-<script src="js/fooddb-usda.js?v=0.264"></script>
-<script src="js/idb-photos.js?v=0.264"></script>
-<script src="js/changelog.js?v=0.264"></script>
+<script src="js/actions.js?v=0.265"></script>
+<script src="js/fooddb.js?v=0.265"></script>
+<script src="js/fooddb-usda.js?v=0.265"></script>
+<script src="js/idb-photos.js?v=0.265"></script>
+<script src="js/changelog.js?v=0.265"></script>
 <script>
 // ════════════════════════════════════════
 // SECTION: DATABASE
@@ -3360,7 +3365,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.264';
+var APP_VERSION='0.265';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -7884,28 +7889,28 @@ function axTestSync(){
 }
 
 </script>
-<script src="picker.js?v=0.264"></script>
-<script src="js/health-sync.js?v=0.264"></script>
-<script src="js/sync-core.js?v=0.264"></script>
-<script src="js/baby.js?v=0.264"></script>
-<script src="js/baby-meds.js?v=0.264"></script>
-<script src="js/baby-growth-data.js?v=0.264"></script>
-<script src="js/baby-growth.js?v=0.264"></script>
-<script src="js/baby-week.js?v=0.264"></script>
-<script src="js/baby-milestones.js?v=0.264"></script>
-<script src="js/baby-midwife.js?v=0.264"></script>
-<script src="js/shopping.js?v=0.264"></script>
-<script src="js/partner.js?v=0.264"></script>
-<script src="js/alexa-sync.js?v=0.264"></script>
-<script src="js/dashboard.js?v=0.264"></script>
-<script src="js/features.js?v=0.264"></script>
-<script src="js/mealplan.js?v=0.264"></script>
-<script src="js/onedrive.js?v=0.264"></script>
-<script src="js/recurring.js?v=0.264"></script>
-<script src="js/stats.js?v=0.264"></script>
-<script src="js/reminders.js?v=0.264"></script>
-<script src="js/templates.js?v=0.264"></script>
-<script src="js/offline-queue.js?v=0.264"></script>
+<script src="picker.js?v=0.265"></script>
+<script src="js/health-sync.js?v=0.265"></script>
+<script src="js/sync-core.js?v=0.265"></script>
+<script src="js/baby.js?v=0.265"></script>
+<script src="js/baby-meds.js?v=0.265"></script>
+<script src="js/baby-growth-data.js?v=0.265"></script>
+<script src="js/baby-growth.js?v=0.265"></script>
+<script src="js/baby-week.js?v=0.265"></script>
+<script src="js/baby-milestones.js?v=0.265"></script>
+<script src="js/baby-midwife.js?v=0.265"></script>
+<script src="js/shopping.js?v=0.265"></script>
+<script src="js/partner.js?v=0.265"></script>
+<script src="js/alexa-sync.js?v=0.265"></script>
+<script src="js/dashboard.js?v=0.265"></script>
+<script src="js/features.js?v=0.265"></script>
+<script src="js/mealplan.js?v=0.265"></script>
+<script src="js/onedrive.js?v=0.265"></script>
+<script src="js/recurring.js?v=0.265"></script>
+<script src="js/stats.js?v=0.265"></script>
+<script src="js/reminders.js?v=0.265"></script>
+<script src="js/templates.js?v=0.265"></script>
+<script src="js/offline-queue.js?v=0.265"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

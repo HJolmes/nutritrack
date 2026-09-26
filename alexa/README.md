@@ -129,6 +129,20 @@ Satz geschlossen, ein Dialog nach „öffne" mit `new: false` und bleibt offen.
 | Baby mit Menge | „Alexa, sage mein Tagebuch, Baby 120 Milliliter Flasche" |
 | Baby, Seite | „Alexa, sage mein Tagebuch, Baby gestillt links" |
 | Baby, beide Seiten | „Alexa, sage mein Tagebuch, Baby gestillt beide, hauptsächlich links" |
+| Frage an die Hebamme | „Alexa, sage mein Tagebuch, Hebamme: ab wann darf ich baden" |
+| Frage an die Hebamme | „Frag die Hebamme, ob sie Fencheltee trinken darf" |
+| Frage an die Hebamme | „Ich hab eine Frage an die Hebamme: …" |
+| Frage in zwei Schritten | „Alexa, sage mein Tagebuch, Hebamme" → „Was möchtest du die Hebamme fragen?" → Frage sprechen |
+
+Fragen an die Hebamme landen im Reiter 🤱 Hebamme des Baby-Tagebuchs (Tagebuch
+muss eingeschaltet sein), bis 500 Zeichen. Alle Satzanfänge stehen in
+`MidwifeQuestionIntent` im Sprachmodell. Die Nachfrage nach „Hebamme" allein
+läuft über das Dialog-Modell (`dialog`/`prompts` im JSON, `Dialog.ElicitSlot`
+in der Lambda) — Alexa legt die nächste Antwort wörtlich in den Slot, auch wenn
+sie keinem Satzmuster entspricht. Technisch reisen die Fragen als Baby-Notiz
+mit `babyP.mw=1`; eine ältere App legt sie als Notiz ins Tagebuch. Die
+500-Zeichen-Grenze braucht den Worker ab `v0.265-alexa-midwife`, ein älterer
+Worker kürzt auf 200.
 
 ### Warum der Aufrufname „mein tagebuch" heißt
 

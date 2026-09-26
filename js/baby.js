@@ -696,6 +696,11 @@ function records(){
   (Array.isArray(S.babyMeds)?S.babyMeds:[]).forEach(function(m){
     out.push({id:'medcfg_'+m.id,rev:m.rev||0,holder:m,payload:{med:stripSy(m)}});
   });
+  // Fragen an die Hebamme (js/baby-midwife.js) – Frage, Antwort, Haken.
+  // Gelöscht wird weich (del:1), die rev entscheidet.
+  (Array.isArray(S.babyQs)?S.babyQs:[]).forEach(function(q){
+    out.push({id:'hqa_'+q.id,rev:q.rev||0,holder:q,payload:{hq:stripSy(q)}});
+  });
   S.babyTomb=S.babyTomb||{};
   Object.keys(S.babyTomb).forEach(function(id){
     var t=S.babyTomb[id];if(!t)return;
@@ -728,6 +733,18 @@ function applyRec(id,rev,payload,room){
     var med=Object.assign({},payload.med,{rev:rev});
     NTSync.ack(med,room,rev);
     if(mi>=0)S.babyMeds[mi]=med;else S.babyMeds.push(med);
+    if(rev>_lastRev)_lastRev=rev;
+    return true;
+  }
+  if(id.indexOf('hqa_')===0){
+    // Ohne `hq` kommt es von einer App vor v0.264 – ignorieren.
+    if(!payload||!payload.hq||!payload.hq.id)return false;
+    if(!Array.isArray(S.babyQs))S.babyQs=[];
+    var qi=S.babyQs.findIndex(function(x){return x.id===payload.hq.id;});
+    if(qi>=0&&(S.babyQs[qi].rev||0)>=rev)return false;
+    var hq=Object.assign({},payload.hq,{rev:rev});
+    NTSync.ack(hq,room,rev);
+    if(qi>=0)S.babyQs[qi]=hq;else S.babyQs.push(hq);
     if(rev>_lastRev)_lastRev=rev;
     return true;
   }
@@ -823,6 +840,7 @@ function hintsHtml(){
   var h='';
   if(window.NTBabyMed)h+=NTBabyMed.cardHtml();
   if(window.NTMile&&NTMile.cardHtml)h+=NTMile.cardHtml();
+  if(window.NTMidwife)h+=NTMidwife.cardHtml();
   return h;
 }
 // Merker „zuletzt welche Brust" – aus dem letzten Still-Eintrag der letzten Tage
@@ -850,9 +868,10 @@ function openDiary(){
 function closeDiary(){Sync.stopPoll();closeOv('babyOv');}
 // Reiter im Tagebuch: 'log' (Einträge des Tages), 'week' (Verlauf, Beikost,
 // Arzt-Bericht – js/baby-week.js), 'growth' (Wachstum – js/baby-growth.js),
-// 'mile' (U-Heft: U-Termine, Termine, Meilensteine – js/baby-milestones.js).
+// 'mile' (U-Heft: U-Termine, Termine, Meilensteine – js/baby-milestones.js),
+// 'mw' (Fragen an die Hebamme – js/baby-midwife.js).
 // Beim Öffnen steht immer das Tagebuch vorn.
-var TABS={log:'babyPaneLog',week:'babyPaneWeek',growth:'babyPaneGrowth',mile:'babyPaneMile'};
+var TABS={log:'babyPaneLog',week:'babyPaneWeek',growth:'babyPaneGrowth',mile:'babyPaneMile',mw:'babyPaneMw'};
 var _tab='log';
 function setTab(t){
   _tab=TABS[t]?t:'log';
@@ -869,6 +888,7 @@ function renderTab(){
   if(_tab==='mile'&&window.NTMile)NTMile.render();
   else if(_tab==='week'&&window.NTBabyWeek)NTBabyWeek.render();
   else if(_tab==='growth'&&window.NTGrowth)NTGrowth.render();
+  else if(_tab==='mw'&&window.NTMidwife)NTMidwife.render();
 }
 function renderDiary(){
   var key=dayKey();
@@ -1190,6 +1210,7 @@ function boot(){
   var ms=S.babyMiles||{};
   Object.keys(ms).forEach(function(k){var m=ms[k];if(m&&(m.rev||0)>_lastRev)_lastRev=m.rev;});
   (Array.isArray(S.babyMeds)?S.babyMeds:[]).forEach(function(m){if((m.rev||0)>_lastRev)_lastRev=m.rev;});
+  (Array.isArray(S.babyQs)?S.babyQs:[]).forEach(function(q){if((q.rev||0)>_lastRev)_lastRev=q.rev;});
   milesStore();
   if(S.babyOn)Sync.run();
 }

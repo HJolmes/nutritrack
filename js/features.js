@@ -90,6 +90,7 @@ var FEATURES=[
    actions:[
      {ic:'👶', label:'Tagebuch öffnen',   hint:'Einträge sehen und ergänzen', act:'NTBaby.openDiary'},
      {ic:'⭐', label:'U-Heft',           hint:'U-Termine, Impftermine, Meilensteine', act:'NTMile.open'},
+     {ic:'🤱', label:'Fragen an die Hebamme', hint:'Notieren, abhaken, Antworten suchen', act:'NTMidwife.open'},
      {ic:'💊', label:'Medizin & Gaben',  hint:'Vitamin D, Fiebermittel mit Abstand', act:'NTBabyMed.open'},
      {ic:'📝', label:'Angaben zum Baby', hint:'Name, Geburtsdatum, ein/aus', act:'NTFeat.openBabySettings'},
      {ic:'🔗', label:'Verbindungen',     hint:'Tagebuch mit jemandem teilen', act:'NTSync.open'}

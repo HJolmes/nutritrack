@@ -219,6 +219,29 @@
             "beim Baby {event}",
             "Baby hat {event}"
           ]
+        },
+        {
+          "name": "MidwifeQuestionIntent",
+          "slots": [
+            {
+              "name": "question",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "Frage an die Hebamme {question}",
+            "Frage für die Hebamme {question}",
+            "Hebammenfrage {question}",
+            "Hebamme {question}",
+            "frag die Hebamme {question}",
+            "frage die Hebamme {question}",
+            "notiere für die Hebamme {question}",
+            "schreib für die Hebamme auf {question}",
+            "ich will die Hebamme fragen {question}",
+            "ich muss die Hebamme fragen {question}",
+            "dass ich die Hebamme fragen will {question}",
+            "dass ich die Hebamme fragen muss {question}"
+          ]
         }
       ],
       "types": []

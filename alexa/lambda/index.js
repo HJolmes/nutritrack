@@ -234,6 +234,28 @@ function failed(err) {
   return say('Das hat gerade nicht geklappt. Versuch es später nochmal.');
 }
 
+// Frage an die Hebamme: Sie reist als Baby-Notiz mit Kennzeichen `babyP.mw`,
+// nicht als eigener Typ. So braucht der Worker kein Update, und eine ältere
+// App, die das Kennzeichen nicht kennt, legt sie wenigstens als Notiz ins
+// Tagebuch, statt sie zu verwerfen.
+// "ob sie Fencheltee trinken darf" → "Ob sie Fencheltee trinken darf?"
+function midwifeText(raw) {
+  let t = String(raw || '').trim()
+    .replace(/^(?:frage\s+)?(?:an|für)\s+die\s+hebamme\s*/i, '')
+    .replace(/^(?:hebamme|frage)[,:]?\s+/i, '')
+    .trim();
+  if (!t) return '';
+  t = t.charAt(0).toUpperCase() + t.slice(1);
+  if (!/[?.!]$/.test(t)) t += '?';
+  return t;
+}
+async function pushMidwife(raw, keepOpen, ctx) {
+  const q = midwifeText(raw);
+  if (!q) return say('Was möchtest du die Hebamme fragen?', false);
+  await push({ kind: 'baby', babyType: 'note', text: q, babyP: { mw: 1 } }, ctx);
+  return confirm('Frage an die Hebamme.', keepOpen);
+}
+
 // ── Intents ──
 const HANDLERS = {
   async LogMealIntent(request, keepOpen, ctx) {
@@ -276,6 +298,9 @@ const HANDLERS = {
     const spokenRaw = slot(request, 'event');
     if (!spokenRaw) return say('Was soll ins Baby-Tagebuch?', false);
     const kindRaw = spokenRaw.toLowerCase();
+    // "Baby Frage an die Hebamme …" landet hier statt im eigenen Intent.
+    // Nur mit "frag…": "Baby Hebamme war da" bleibt eine Notiz.
+    if (/hebamme/.test(kindRaw) && /frag/.test(kindRaw)) return pushMidwife(spokenRaw.replace(/^.*?hebamme\w*[,:]?\s*/i, ''), keepOpen, ctx);
     // Menge steht im Freitext: "120 Milliliter Flasche", "38,5 Grad Fieber".
     const amount = extractUnit(kindRaw, /(\d+(?:[.,]\d+)?)\s*(?:ml|milliliter|grad)\b/i)
       || extractUnit(kindRaw, /(\d+(?:[.,]\d+)?)/);
@@ -326,6 +351,10 @@ const HANDLERS = {
     await push(payload, ctx);
     return confirm(spoken, keepOpen);
   },
+
+  async MidwifeQuestionIntent(request, keepOpen, ctx) {
+    return pushMidwife(slot(request, 'question'), keepOpen, ctx);
+  },
 };
 
 // ── Einstieg ──
@@ -350,7 +379,7 @@ exports.handler = async function (event) {
 
   if (name === 'AMAZON.HelpIntent') {
     return say(
-      'Du kannst mir Essen, Wasser, Sport, Einkäufe und Baby-Einträge diktieren. ' +
+      'Du kannst mir Essen, Wasser, Sport, Einkäufe, Baby-Einträge und Fragen an die Hebamme diktieren. ' +
       'Zum Beispiel: Ich habe 150 Gramm Reis gegessen. Oder: Ich war 30 Minuten joggen. ' +
       'Nachlesen kannst du alles in der NutriTrack-App.',
       false

@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.263"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.264"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.263"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.264"></script>
 <script>
   (function(){
     if(typeof ZXingWASM==='undefined'){console.warn('zxing-wasm load failed, ZXing-JS fallback aktiv');return;}
@@ -161,6 +161,16 @@ body:has(#setupScreen.active) .fb-fab{display:none;}
 .bby-run{border-top:none;font-weight:700;color:var(--g1);padding:2px 0;}
 .bby-pill{flex-shrink:0;background:var(--gl);border:1.5px solid var(--g3);border-radius:999px;color:var(--g1);font-size:11px;font-weight:700;padding:4px 10px;cursor:pointer;white-space:nowrap;}
 .bby-pill.on{background:var(--g2);border-color:var(--g2);color:#fff;}
+.qa-it{display:flex;gap:10px;align-items:flex-start;border-top:1px solid var(--br);padding:9px 2px;}
+.qa-cb{background:none;cursor:pointer;padding:0;margin-top:1px;}
+.qa-it.done .qa-cb{background:var(--g2);border-color:var(--g2);}
+.qa-body{flex:1;min-width:0;cursor:pointer;}
+.qa-q{font-size:13px;font-weight:700;color:var(--tx);line-height:1.4;word-wrap:break-word;}
+.qa-it.done .qa-q{color:var(--mu);}
+.qa-a{font-size:12px;color:var(--tx);line-height:1.45;background:var(--gl);border-radius:8px;padding:6px 8px;margin-top:5px;word-wrap:break-word;}
+.qa-add{font-size:11px;color:var(--g1);font-weight:700;margin-top:4px;}
+.qa-meta{font-size:10px;color:var(--mu);margin-top:4px;}
+.qa-it mark{background:#fff176;color:inherit;border-radius:2px;padding:0 1px;}
 .bby-sec{font-size:13px;font-weight:800;color:var(--tx);margin:12px 2px 6px;}
 .bby-link{background:none;border:none;color:var(--g1);font-size:12px;font-weight:700;padding:6px 2px;cursor:pointer;}
 .bby-avg{background:var(--gl);border-radius:12px;padding:9px 12px;font-size:12px;color:var(--g1);line-height:1.5;margin-bottom:8px;}
@@ -174,7 +184,9 @@ body:has(#setupScreen.active) .fb-fab{display:none;}
 .bby-bar{position:absolute;left:0;top:0;bottom:0;background:var(--g3);opacity:.55;}
 .bby-wk-t{position:relative;display:block;padding:3px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--tx);font-weight:600;}
 .bby-solid{font-size:12px;line-height:1.45;padding:5px 2px;border-top:1px solid var(--br);}
-#babyTabs .stab{flex:1;min-width:0;padding:7px 4px;font-size:11px;}
+#babyTabs .stab{flex:1;min-width:0;padding:6px 1px;font-size:10px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;}
+/* v0.264: fuenf Reiter – Symbol ueber dem Text, sonst wird auf 360 px abgeschnitten */
+#babyTabs .stab i{display:block;font-style:normal;font-size:14px;margin-bottom:1px;}
 .mf{height:100%;border-radius:4px;background:white;transition:width .6s;}
 
 /* ── MEAL CARDS ── */
@@ -1198,7 +1210,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.263</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.264</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1544,11 +1556,12 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
       <div class="msu" id="babyOvSub">Baby</div>
     </div>
     <div class="mbd">
-      <div id="babyTabs" style="display:flex;gap:6px;margin-bottom:10px;">
-        <button type="button" class="stab act" data-tab="log" data-act="NTBaby.setTab" data-args='["log"]'>📖 Tagebuch</button>
-        <button type="button" class="stab" data-tab="week" data-act="NTBaby.setTab" data-args='["week"]'>📊 Verlauf</button>
-        <button type="button" class="stab" data-tab="growth" data-act="NTBaby.setTab" data-args='["growth"]'>📈 Wachstum</button>
-        <button type="button" class="stab" data-tab="mile" data-act="NTBaby.setTab" data-args='["mile"]'>⭐ U-Heft</button>
+      <div id="babyTabs" style="display:flex;gap:4px;margin-bottom:10px;">
+        <button type="button" class="stab act" data-tab="log" data-act="NTBaby.setTab" data-args='["log"]'><i>📖</i>Tagebuch</button>
+        <button type="button" class="stab" data-tab="week" data-act="NTBaby.setTab" data-args='["week"]'><i>📊</i>Verlauf</button>
+        <button type="button" class="stab" data-tab="growth" data-act="NTBaby.setTab" data-args='["growth"]'><i>📈</i>Wachstum</button>
+        <button type="button" class="stab" data-tab="mile" data-act="NTBaby.setTab" data-args='["mile"]'><i>⭐</i>U-Heft</button>
+        <button type="button" class="stab" data-tab="mw" data-act="NTBaby.setTab" data-args='["mw"]'><i>🤱</i>Hebamme</button>
       </div>
       <div id="babyPaneLog">
       <div style="background:var(--gl);border-radius:12px;padding:10px 12px;margin-bottom:10px;">
@@ -1604,6 +1617,19 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
         <div id="babyMileList"></div>
         </div>
         <div style="font-size:11px;color:var(--mu);margin-top:10px;line-height:1.5;">Antippen hakt ab (mit Datum), nochmal antippen nimmt den Haken zurück. Haken werden wie das Tagebuch mit verbundenen Personen abgeglichen. 🏃 Grobmotorik · ✋ Feinmotorik · 🧠 Wahrnehmung/Denken · 💬 Sprache · 💛 Sozial/Gefühle · 🤝 Miteinander. Quelle: Gelbes Kinderuntersuchungsheft des G-BA (Stand Juni 2026), „Orientierende Beurteilung der Entwicklung“ je U-Untersuchung. Jedes Kind entwickelt sich in seinem Tempo – die Beurteilung macht die Kinderärztin oder der Kinderarzt bei der U.</div>
+      </div>
+      <div id="babyPaneMw" style="display:none;">
+        <div id="babyQaHead" style="background:var(--gl);border-radius:12px;padding:10px 12px;margin-bottom:8px;font-size:12px;color:var(--g1);font-weight:600;line-height:1.5;"></div>
+        <textarea class="sinp" id="bqaNew" rows="2" maxlength="500" placeholder="Frage an die Hebamme, z.B. „Wie oft nachts wecken zum Stillen?“" style="resize:vertical;"></textarea>
+        <button type="button" class="svb" style="margin:6px 0 10px;" data-act="NTMidwife.add">＋ Frage notieren</button>
+        <input type="search" class="sinp" id="bqaSearch" placeholder="🔍 Fragen &amp; Antworten durchsuchen" oninput="NTMidwife.search(this.value)" style="margin:0 0 8px;">
+        <div id="babyQaFilter" style="display:flex;gap:6px;margin-bottom:6px;">
+          <button type="button" class="stab act" style="flex:1;" data-qf="open" data-act="NTMidwife.setFilter" data-args='["open"]'>Offen</button>
+          <button type="button" class="stab" style="flex:1;" data-qf="done" data-act="NTMidwife.setFilter" data-args='["done"]'>Abgehakt</button>
+          <button type="button" class="stab" style="flex:1;" data-qf="all" data-act="NTMidwife.setFilter" data-args='["all"]'>Alle</button>
+        </div>
+        <div class="baby-tl" id="babyQaList" style="max-height:46vh;overflow-y:auto;"></div>
+        <div style="font-size:11px;color:var(--mu);margin-top:10px;line-height:1.5;">Kästchen antippen hakt die Frage ab (mit Datum). Frage antippen, um die Antwort der Hebamme einzutragen oder zu ändern. Die Suche findet Wörter in Fragen und Antworten – auch in abgehakten. Die Liste wird mit verbundenen Personen geteilt und wandert mit ins Backup.</div>
       </div>
     </div>
   </div>
@@ -1717,6 +1743,25 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
       </div>
       <button type="button" class="svb" data-act="NTBaby.saveQuick">Speichern ✓</button>
       <button type="button" id="bqDeleteBtn" class="seb" style="display:none;margin-top:8px;color:#c62828;" data-act="NTBaby.deleteQuickFromEdit">🗑 Knopf löschen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ BABY: FRAGE AN DIE HEBAMME BEARBEITEN ══ -->
+<div class="ov" id="babyQaOv" data-bg-close="babyQaOv">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" data-act="NTMidwife.closeEdit">✕</button>
+      <div class="mti">🤱 Frage an die Hebamme</div>
+      <div class="msu" id="bqaMeta"></div>
+    </div>
+    <div class="mbd">
+      <div class="sf"><label class="lbl">Frage</label><textarea class="sinp" id="bqaQ" rows="3" maxlength="500" style="resize:vertical;"></textarea></div>
+      <div class="sf"><label class="lbl">Antwort der Hebamme</label><textarea class="sinp" id="bqaA" rows="5" maxlength="2000" placeholder="Was hat die Hebamme gesagt?" oninput="NTMidwife.answerInput()" style="resize:vertical;"></textarea></div>
+      <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:4px 0 10px;"><input type="checkbox" id="bqaDone"> Besprochen – abgehakt</label>
+      <button type="button" class="svb" data-act="NTMidwife.save">Speichern ✓</button>
+      <button type="button" class="seb" style="margin-top:8px;color:#c62828;" data-act="NTMidwife.del">🗑 Frage löschen</button>
     </div>
   </div>
 </div>
@@ -3292,11 +3337,11 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.263"></script>
-<script src="js/fooddb.js?v=0.263"></script>
-<script src="js/fooddb-usda.js?v=0.263"></script>
-<script src="js/idb-photos.js?v=0.263"></script>
-<script src="js/changelog.js?v=0.263"></script>
+<script src="js/actions.js?v=0.264"></script>
+<script src="js/fooddb.js?v=0.264"></script>
+<script src="js/fooddb-usda.js?v=0.264"></script>
+<script src="js/idb-photos.js?v=0.264"></script>
+<script src="js/changelog.js?v=0.264"></script>
 <script>
 // ════════════════════════════════════════
 // SECTION: DATABASE
@@ -3309,13 +3354,13 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 // ════════════════════════════════════════
 // SECTION: STATE
 // ════════════════════════════════════════
-var S={apiKey:'',name:'Du',goal:2000,goalManual:false,weight:0,height:0,age:0,gender:'',activity:'',pregnant:0,pregnantET:'',pregWarn:false,nursing:0,nursWarn:false,babyOn:false,baby:{name:'',birth:''},babyLog:{},babyTomb:{},babyMiles:{},babyQuick:null,babySync:null,shopList:[],shopTomb:{},shopSync:null,shopRecent:[],shopCats:[],shopCatMem:{},links:[],linksMigrated:0,planTomb:{},goalWeight:0,goalDate:'',goalAchievedShown:'',dietPrefs:[],dietFree:'',savedDietFree:[],dietWarn:false,macroTargets:{protein:0,carbs:0,fat:0},macroGoalMode:'percent',macroGoalG:{protein:0,carbs:0,fat:0},reminders:[],weightLog:{},portionMemory:{},waterGoal:8,waterUnit:250,mealTemplates:[],recurringMeals:[],exerciseLibrary:[],dashOrder:null,dashHidden:null,mealPlan:{},planApplied:{},currentDate:'',days:{}};
+var S={apiKey:'',name:'Du',goal:2000,goalManual:false,weight:0,height:0,age:0,gender:'',activity:'',pregnant:0,pregnantET:'',pregWarn:false,nursing:0,nursWarn:false,babyOn:false,baby:{name:'',birth:''},babyLog:{},babyTomb:{},babyMiles:{},babyQs:[],babyQuick:null,babySync:null,shopList:[],shopTomb:{},shopSync:null,shopRecent:[],shopCats:[],shopCatMem:{},links:[],linksMigrated:0,planTomb:{},goalWeight:0,goalDate:'',goalAchievedShown:'',dietPrefs:[],dietFree:'',savedDietFree:[],dietWarn:false,macroTargets:{protein:0,carbs:0,fat:0},macroGoalMode:'percent',macroGoalG:{protein:0,carbs:0,fat:0},reminders:[],weightLog:{},portionMemory:{},waterGoal:8,waterUnit:250,mealTemplates:[],recurringMeals:[],exerciseLibrary:[],dashOrder:null,dashHidden:null,mealPlan:{},planApplied:{},currentDate:'',days:{}};
 // Tracking für Settings-Session: manuelle Eingabe vs. „Kalorienbedarf berechnen"
 var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.263';
+var APP_VERSION='0.264';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -7839,27 +7884,28 @@ function axTestSync(){
 }
 
 </script>
-<script src="picker.js?v=0.263"></script>
-<script src="js/health-sync.js?v=0.263"></script>
-<script src="js/sync-core.js?v=0.263"></script>
-<script src="js/baby.js?v=0.263"></script>
-<script src="js/baby-meds.js?v=0.263"></script>
-<script src="js/baby-growth-data.js?v=0.263"></script>
-<script src="js/baby-growth.js?v=0.263"></script>
-<script src="js/baby-week.js?v=0.263"></script>
-<script src="js/baby-milestones.js?v=0.263"></script>
-<script src="js/shopping.js?v=0.263"></script>
-<script src="js/partner.js?v=0.263"></script>
-<script src="js/alexa-sync.js?v=0.263"></script>
-<script src="js/dashboard.js?v=0.263"></script>
-<script src="js/features.js?v=0.263"></script>
-<script src="js/mealplan.js?v=0.263"></script>
-<script src="js/onedrive.js?v=0.263"></script>
-<script src="js/recurring.js?v=0.263"></script>
-<script src="js/stats.js?v=0.263"></script>
-<script src="js/reminders.js?v=0.263"></script>
-<script src="js/templates.js?v=0.263"></script>
-<script src="js/offline-queue.js?v=0.263"></script>
+<script src="picker.js?v=0.264"></script>
+<script src="js/health-sync.js?v=0.264"></script>
+<script src="js/sync-core.js?v=0.264"></script>
+<script src="js/baby.js?v=0.264"></script>
+<script src="js/baby-meds.js?v=0.264"></script>
+<script src="js/baby-growth-data.js?v=0.264"></script>
+<script src="js/baby-growth.js?v=0.264"></script>
+<script src="js/baby-week.js?v=0.264"></script>
+<script src="js/baby-milestones.js?v=0.264"></script>
+<script src="js/baby-midwife.js?v=0.264"></script>
+<script src="js/shopping.js?v=0.264"></script>
+<script src="js/partner.js?v=0.264"></script>
+<script src="js/alexa-sync.js?v=0.264"></script>
+<script src="js/dashboard.js?v=0.264"></script>
+<script src="js/features.js?v=0.264"></script>
+<script src="js/mealplan.js?v=0.264"></script>
+<script src="js/onedrive.js?v=0.264"></script>
+<script src="js/recurring.js?v=0.264"></script>
+<script src="js/stats.js?v=0.264"></script>
+<script src="js/reminders.js?v=0.264"></script>
+<script src="js/templates.js?v=0.264"></script>
+<script src="js/offline-queue.js?v=0.264"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

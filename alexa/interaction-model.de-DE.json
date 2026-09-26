@@ -225,26 +225,105 @@
           "slots": [
             {
               "name": "question",
-              "type": "AMAZON.SearchQuery"
+              "type": "AMAZON.SearchQuery",
+              "samples": [
+                "{question}"
+              ]
             }
           ],
           "samples": [
             "Frage an die Hebamme {question}",
             "Frage für die Hebamme {question}",
+            "Frage an Hebamme {question}",
+            "Frage Hebamme {question}",
+            "Fragen an die Hebamme {question}",
+            "eine Frage an die Hebamme {question}",
+            "eine Frage für die Hebamme {question}",
+            "neue Frage an die Hebamme {question}",
+            "neue Frage für die Hebamme {question}",
             "Hebammenfrage {question}",
+            "neue Hebammenfrage {question}",
             "Hebamme {question}",
+            "Hebamme fragen {question}",
+            "die Hebamme fragen {question}",
             "frag die Hebamme {question}",
             "frage die Hebamme {question}",
-            "notiere für die Hebamme {question}",
-            "schreib für die Hebamme auf {question}",
+            "frag mal die Hebamme {question}",
+            "ich habe eine Frage an die Hebamme {question}",
+            "ich hab eine Frage an die Hebamme {question}",
+            "ich habe eine Frage für die Hebamme {question}",
+            "ich hab eine Frage für die Hebamme {question}",
+            "wir haben eine Frage an die Hebamme {question}",
+            "wir haben eine Frage für die Hebamme {question}",
             "ich will die Hebamme fragen {question}",
             "ich muss die Hebamme fragen {question}",
+            "ich möchte die Hebamme fragen {question}",
+            "ich sollte die Hebamme fragen {question}",
+            "wir müssen die Hebamme fragen {question}",
+            "wir wollen die Hebamme fragen {question}",
+            "wir sollten die Hebamme fragen {question}",
+            "notiere für die Hebamme {question}",
+            "notiere eine Frage für die Hebamme {question}",
+            "notiere eine Frage an die Hebamme {question}",
+            "schreib für die Hebamme auf {question}",
+            "schreib eine Frage für die Hebamme auf {question}",
+            "trag eine Frage für die Hebamme ein {question}",
+            "merk dir für die Hebamme {question}",
+            "merke für die Hebamme {question}",
             "dass ich die Hebamme fragen will {question}",
-            "dass ich die Hebamme fragen muss {question}"
+            "dass ich die Hebamme fragen muss {question}",
+            "dass ich die Hebamme fragen möchte {question}",
+            "dass wir die Hebamme fragen müssen {question}",
+            "dass ich eine Frage an die Hebamme habe {question}",
+            "dass ich eine Frage für die Hebamme habe {question}",
+            "Hebamme",
+            "Hebammenfrage",
+            "Frage an die Hebamme",
+            "Frage für die Hebamme",
+            "neue Frage an die Hebamme",
+            "frag die Hebamme",
+            "die Hebamme fragen",
+            "ich habe eine Frage an die Hebamme",
+            "ich hab eine Frage an die Hebamme",
+            "ich habe eine Frage für die Hebamme",
+            "ich hab eine Frage für die Hebamme",
+            "notiere eine Frage für die Hebamme"
           ]
         }
       ],
       "types": []
-    }
+    },
+    "dialog": {
+      "intents": [
+        {
+          "name": "MidwifeQuestionIntent",
+          "confirmationRequired": false,
+          "prompts": {},
+          "slots": [
+            {
+              "name": "question",
+              "type": "AMAZON.SearchQuery",
+              "confirmationRequired": false,
+              "elicitationRequired": true,
+              "prompts": {
+                "elicitation": "Elicit.Slot.MidwifeQuestion.question"
+              }
+            }
+          ]
+        }
+      ],
+      "delegationStrategy": "SKILL_RESPONSE"
+    },
+    "prompts": [
+      {
+        "id": "Elicit.Slot.MidwifeQuestion.question",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "Was möchtest du die Hebamme fragen?"
+          }
+        ]
+      }
+    ]
   }
 }

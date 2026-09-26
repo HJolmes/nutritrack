@@ -2,7 +2,8 @@
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
   {v:'0.264',items:[
-    {icon:'🤱',text:'Neuer Reiter <b>Hebamme</b>: Fragen an die Hebamme notieren, nach dem Besuch <b>abhaken</b> und ihre <b>Antwort</b> dazuschreiben. Die Suche findet Wörter in Fragen und Antworten, auch in längst abgehakten. Offene Fragen erscheinen als Hinweis auf der Kachel; verbundene Personen sehen dieselbe Liste.',where:'Baby-Tagebuch → 🤱 Hebamme'}
+    {icon:'🤱',text:'Neuer Reiter <b>Hebamme</b>: Fragen an die Hebamme notieren, nach dem Besuch <b>abhaken</b> und ihre <b>Antwort</b> dazuschreiben. Die Suche findet Wörter in Fragen und Antworten, auch in längst abgehakten. Offene Fragen erscheinen als Hinweis auf der Kachel; verbundene Personen sehen dieselbe Liste.',where:'Baby-Tagebuch → 🤱 Hebamme'},
+    {icon:'🩺',text:'Der <b>Bericht für Arzt/Hebamme</b> listet am Ende die noch <b>offenen Fragen</b> auf.',where:'Baby-Tagebuch → 📊 Verlauf → Bericht'}
   ]},
   {v:'0.263',items:[
     {icon:'🍼',text:'Die Baby-Kachel zeigt jetzt die <b>letzte Mahlzeit</b> mit Abstand („vor 2 h 40 Min.“), statt nur des letzten Eintrags.',where:'Heute → Baby'},

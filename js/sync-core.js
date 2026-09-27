@@ -355,7 +355,35 @@ function close(){closeOv('linksOv');}
 function isOpen(){var e=document.getElementById('linksOv');return !!(e&&e.classList.contains('open'));}
 function renderIfOpen(){if(isOpen())render();}
 
+// Verbindungen mit eigenem Mechanismus (v0.269): Partner-Postfach (ein Partner,
+// eigenes Postfach in js/partner.js) und Alexa (Token fuer den Skill). Sie
+// laufen nicht ueber die Personenliste, stehen aber am selben Ort — vorher
+// lagen sie in den Funktions-Blaettern und wurden dort nicht gefunden.
+function renderExtra(){
+  var el=document.getElementById('linksExtra');
+  if(!el)return;
+  var p=window.NTPartner, pOn=!!(p&&p.active()), pName=pOn&&p.peerName?p.peerName():'';
+  var ax=window.NTAlexa?NTAlexa.endpointInfo():{}, axOn=!!(ax.token||ax.familyToken);
+  function row(id,ic,name,sub,on){
+    return '<div class="list-row" data-act="NTSync.openOther" data-args=\'["'+id+'"]\'>'
+      +'<div class="lr-ic">'+ic+'</div>'
+      +'<div class="lr-body"><div class="lr-name">'+name+'</div><div class="lr-sub">'+esc(sub)+'</div></div>'
+      +'<div class="lr-val" style="font-size:13px;color:'+(on?'var(--g1)':'var(--mu)')+';">'+(on?'✓':'›')+'</div>'
+      +'</div>';
+  }
+  el.innerHTML=row('partner','📬','Partner-Postfach',pOn?('Gekoppelt mit '+pName):'Nicht gekoppelt',pOn)
+    +row('alexa','🗣️','Alexa',axOn?'Token eingerichtet':'Kein Token eingerichtet',axOn);
+}
+// Alle .ov teilen z-index:300; partnerOv und alexaOv stehen im DOM VOR linksOv
+// und laegen sonst dahinter. Darum erst schliessen, dann oeffnen.
+function openOther(id){
+  close();
+  if(id==='partner'&&window.NTPartner)NTPartner.open();
+  else if(id==='alexa'&&typeof openAlexaSync==='function')openAlexaSync();
+}
+
 function render(){
+  renderExtra();
   var el=document.getElementById('linksList');
   if(!el)return;
   var a=links();
@@ -515,7 +543,7 @@ window.NTSync={
   TOPICS:TOPICS,engine:engine,links:links,forTopic:forTopic,anyFor:anyFor,
   ack:ackSet,ackOf:ackOf,
   linkById:linkById,codeOf:codeOf,cryptoOk:cryptoOk,errText:errText,
-  open:open,close:close,render:render,renderIfOpen:renderIfOpen,isOpen:isOpen,
+  open:open,close:close,render:render,openOther:openOther,renderIfOpen:renderIfOpen,isOpen:isOpen,
   openAdd:openAdd,submitAdd:submitAdd,shareCode:shareCode,toggle:toggle,
   pause:pause,remove:removeUi,rename:rename,
   runAll:runAll,runTopic:runTopic,migrate:migrate,dropKeys:dropKeys,

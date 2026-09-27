@@ -45,7 +45,6 @@ var FEATURES=[
    sub:'Frühstück, Mittag, Abend, Snack',
    actions:[
      {ic:'🔁', label:'Wiederkehrende Mahlzeiten', hint:'Automatisch an festen Wochentagen', act:'NTRecur.openManage'},
-     {ic:'🎙', label:'Alexa-Einwurf',             hint:'Per Sprache eintragen', act:'openAlexaSync'},
      {ic:'📥', label:'Code / Link einlösen',      hint:'Geteiltes Rezept übernehmen', act:'openImportPaste'}
    ]},
 
@@ -98,10 +97,9 @@ var FEATURES=[
 
   {id:'partner', ic:'📬', label:'Vom Partner', card:'partnerCard',
    sub:'Mahlzeiten direkt zugeschickt bekommen',
-   note:'Erscheint, sobald eine Kopplung besteht',
+   note:'Erscheint nach der Kopplung (Mehr → 🔗 Verbindungen)',
    actions:[
-     {ic:'📬', label:'Postfach',    hint:'Empfangene Sendungen übernehmen', act:'NTPartner.openInbox'},
-     {ic:'🤝', label:'Kopplung',    hint:'Partner verbinden oder lösen', act:'NTPartner.open'}
+     {ic:'📬', label:'Postfach',    hint:'Empfangene Sendungen übernehmen', act:'NTPartner.openInbox'}
    ]}
 ];
 

@@ -31,7 +31,7 @@ App-Start und bei jeder Rückkehr in den Vordergrund ab.
 
 ### 1. Token in NutriTrack erzeugen
 
-Mehr → 🗣️ Alexa-Einwurf → „🎲 Neu erzeugen" → „Speichern ✓". Token und Endpunkt-URL
+Mehr → 🔗 Verbindungen → 🗣️ Alexa → „🎲 Neu erzeugen" → „Speichern ✓". Token und Endpunkt-URL
 stehen dort zum Kopieren.
 
 ### 2. Skill anlegen
@@ -78,7 +78,7 @@ nicht nötig**, solange du ihn nicht veröffentlichst.
 
 ### 7. Zu zweit nutzen (optional)
 
-**Geteilt:** Baby-Tagebuch und Einkaufszettel. In NutriTrack unter Mehr → 🗣️ Alexa-Einwurf
+**Geteilt:** Baby-Tagebuch und Einkaufszettel. In NutriTrack unter Mehr → 🔗 Verbindungen → 🗣️ Alexa
 ein **Familien-Token** erzeugen, auf **beiden** Telefonen dasselbe eintragen und im Skill
 als `NUTRITRACK_FAMILY_TOKEN` hinterlegen. Ab dann sieht jeder jeden Einwurf, sobald er
 seine App öffnet — unabhängig davon, wer gesprochen hat.
@@ -194,7 +194,7 @@ Der Skill nennt die Ursache in der Sprachantwort, statt pauschal zu scheitern:
 | „Ich weiß nicht, wie ich dir dabei helfen kann" | Der Skill wurde gar nicht aufgerufen — Sprachmodell fehlt oder ist nicht gebaut | Build → JSON Editor → Modell einfügen → Save → **Build Model** |
 | „Das habe ich nicht zuordnen können …" | Der Skill läuft, aber der Satzbau passt zu keinem Befehl | eine Formulierung aus der Tabelle oben nehmen |
 | „Der Skill ist noch nicht eingerichtet" | `TOKEN` oder `ENDPOINT` ist leer | Code-Reiter, die zwei Zeilen oben ausfüllen, Deploy |
-| „Das Token im Skill passt nicht zu dem in NutriTrack" | HTTP 401 — die beiden Token sind verschieden | Mehr → 🗣️ Alexa-Einwurf, Token vergleichen |
+| „Das Token im Skill passt nicht zu dem in NutriTrack" | HTTP 401 — die beiden Token sind verschieden | Mehr → 🔗 Verbindungen → 🗣️ Alexa, Token vergleichen |
 | „Die Endpunkt-Adresse stimmt nicht" | HTTP 404 — die URL endet nicht auf `/alexa/inbox` | `ENDPOINT` korrigieren |
 | „Der NutriTrack-Server ist nicht vollständig eingerichtet" | HTTP 503 — dem Worker fehlt der KV-Namespace | `GET /health` prüfen, `alexaInboxConfigured` muss `true` sein |
 | „Ich erreiche den NutriTrack-Server gerade nicht" | Zeitüberschreitung oder Netzfehler | Worker-URL im Browser aufrufen |

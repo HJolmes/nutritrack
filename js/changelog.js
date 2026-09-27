@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.269',items:[
+    {icon:'\ud83d\udd17',text:'<b>Partner-Kopplung und Alexa-Token</b> stehen jetzt unter <b>Verbindungen</b> – bei „Weitere Verbindungen“, mit Status (gekoppelt / Token eingerichtet). Vorher waren sie in den Funktions-Blättern „Vom Partner“ und „Mahlzeiten“ versteckt.',where:'Mehr → 🔗 Verbindungen'}
+  ]},
   {v:'0.268',items:[
     {icon:'\ud83d\udcbe',text:'<b>Lokaler Autospeicher auf dem iPhone repariert</b>: Die Stände liegen jetzt im großen Gerätespeicher statt im knappen Browser-Speicher, der auf iOS schnell voll war – dann wurde still nichts gesichert. Schlägt eine Sicherung fehl, erscheint ein Hinweis. Außerdem sichert die App auch beim Zurückkehren (höchstens 1× täglich), weil iOS die App selten ganz neu startet.',where:'Mehr → Einstellungen → Backup → Autospeicher'},
     {icon:'\ud83d\udd8c\ufe0f',text:'Die Autospeicher-Liste wird wieder richtig angezeigt: als Fenster mit Rahmen, Datum lesbar, „Laden“-Knopf daneben statt darüber.',where:'Mehr → Einstellungen → Backup → Autospeicher'}

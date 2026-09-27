@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.267',items:[
+    {icon:'\u2601\ufe0f',text:'<b>Autospeicher an einem Ort</b>: Mit OneDrive verbunden landet der Autospeicher nur noch in OneDrive (1× täglich, 5 Slots) statt zusätzlich auf dem Gerät. Ohne OneDrive wird wie bisher bei jedem Start lokal gesichert. Klappt der Upload nicht (offline, Anmeldung abgelaufen), sichert die App ersatzweise lokal.',where:'Mehr → Einstellungen → Backup → Autospeicher'}
+  ]},
   {v:'0.265',items:[
     {icon:'\ud83d\udde3\ufe0f',text:'<b>Fragen an die Hebamme per Alexa</b>: „Hebamme: ab wann darf ich baden“, „Frag die Hebamme, ob …“ oder „Ich hab eine Frage an die Hebamme …“. Oder nur „Hebamme“ sagen – Alexa fragt nach, dann die Frage sprechen. Bis 500 Zeichen; die Frage steht danach im Reiter Hebamme, auf beiden verbundenen Telefonen. Dafür einmal Sprachmodell und Code im Alexa-Skill neu einspielen.',where:'Baby-Tagebuch → 🤱 Hebamme'}
   ]},

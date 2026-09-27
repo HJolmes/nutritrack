@@ -1,6 +1,10 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.268',items:[
+    {icon:'\ud83d\udcbe',text:'<b>Lokaler Autospeicher auf dem iPhone repariert</b>: Die Stände liegen jetzt im großen Gerätespeicher statt im knappen Browser-Speicher, der auf iOS schnell voll war – dann wurde still nichts gesichert. Schlägt eine Sicherung fehl, erscheint ein Hinweis. Außerdem sichert die App auch beim Zurückkehren (höchstens 1× täglich), weil iOS die App selten ganz neu startet.',where:'Mehr → Einstellungen → Backup → Autospeicher'},
+    {icon:'\ud83d\udd8c\ufe0f',text:'Die Autospeicher-Liste wird wieder richtig angezeigt: als Fenster mit Rahmen, Datum lesbar, „Laden“-Knopf daneben statt darüber.',where:'Mehr → Einstellungen → Backup → Autospeicher'}
+  ]},
   {v:'0.267',items:[
     {icon:'\u2601\ufe0f',text:'<b>Autospeicher an einem Ort</b>: Mit OneDrive verbunden landet der Autospeicher nur noch in OneDrive (1× täglich, 5 Slots) statt zusätzlich auf dem Gerät. Ohne OneDrive wird wie bisher bei jedem Start lokal gesichert. Klappt der Upload nicht (offline, Anmeldung abgelaufen), sichert die App ersatzweise lokal.',where:'Mehr → Einstellungen → Backup → Autospeicher'}
   ]},

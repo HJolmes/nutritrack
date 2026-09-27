@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.266"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.267"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.266"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.267"></script>
 <script>
   (function(){
     if(typeof ZXingWASM==='undefined'){console.warn('zxing-wasm load failed, ZXing-JS fallback aktiv');return;}
@@ -1210,7 +1210,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.266</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.267</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -3319,7 +3319,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
         </div>
         <div style="padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--br);">
           <label class="lbl" style="margin-bottom:8px;">🕹️ Autospeicher</label>
-          <div style="font-size:12px;color:var(--mu);margin-bottom:8px;">Wird bei jedem App-Start automatisch gespeichert. Bis zu 5 Stände.</div>
+          <div style="font-size:12px;color:var(--mu);margin-bottom:8px;">Mit OneDrive: 1× täglich in 5 rotierende Slots. Ohne OneDrive: lokal bei jedem App-Start, bis zu 3 Stände.</div>
           <button type="button" class="seb" data-act="openAutoSaves">📂 Autospeicher anzeigen</button>
         </div>
         <div style="padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--br);">
@@ -3342,11 +3342,11 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.266"></script>
-<script src="js/fooddb.js?v=0.266"></script>
-<script src="js/fooddb-usda.js?v=0.266"></script>
-<script src="js/idb-photos.js?v=0.266"></script>
-<script src="js/changelog.js?v=0.266"></script>
+<script src="js/actions.js?v=0.267"></script>
+<script src="js/fooddb.js?v=0.267"></script>
+<script src="js/fooddb-usda.js?v=0.267"></script>
+<script src="js/idb-photos.js?v=0.267"></script>
+<script src="js/changelog.js?v=0.267"></script>
 <script>
 // ════════════════════════════════════════
 // SECTION: DATABASE
@@ -3365,7 +3365,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.266';
+var APP_VERSION='0.267';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -3906,6 +3906,15 @@ function submitProxyPw(){
   });
 }
 var AUTOSAVE_MAX=3;
+// Ein Autospeicher pro Start, an EINEM Ort: Mit OneDrive in die rotierenden Slots
+// (1× täglich), sonst lokal. Lokal nur als Ersatz, wenn der Upload heute nicht
+// klappt (offline, Token abgelaufen, Graph-Fehler) – sonst fehlt der Stand ganz.
+function runAutosave(){
+  if(!NTDrive.tokens()){_autosaveCreate();return;}
+  if(localStorage.getItem('nt_od_sync_date')===today())return;
+  if(!isOnline){_autosaveCreate();return;}
+  NTDrive.syncSlot().catch(function(){_autosaveCreate();showToast('💾 Autospeicher lokal gesichert');});
+}
 function _autosaveCreate(){
   var saves=[];
   try{saves=JSON.parse(localStorage.getItem('nt_autosaves')||'[]');}catch(e){}
@@ -3958,22 +3967,26 @@ function renderAutoSaves(){
           +'</div>';
       }
     }
+    var local=_autosaveLocalHtml();
+    if(local)html+='<div style="font-size:12px;color:var(--mu);margin:16px 0 12px;">💾 Lokal auf diesem Gerät (Ersatz, wenn OneDrive nicht erreichbar war)</div>'+local;
     el.innerHTML=html;
   }else{
-    // Fallback: lokale Snapshots
-    var saves=[];
-    try{saves=JSON.parse(localStorage.getItem('nt_autosaves')||'[]');}catch(e){}
-    if(!saves.length){el.innerHTML='<div style="text-align:center;color:var(--mu);font-size:13px;padding:24px;">Noch keine Autospeicher vorhanden.<br><br>OneDrive verbinden für Cloud-Autospeicher.</div>';return;}
-    el.innerHTML='<div style="font-size:12px;color:var(--mu);margin-bottom:12px;">💾 Lokale Snapshots (OneDrive nicht verbunden)</div>'
-      +saves.map(function(s,i){
-        var d=new Date(s.savedAt);
-        var label=d.toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'2-digit'})+' · '+d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
-        return '<div style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--gl);border-radius:12px;margin-bottom:8px;">'
-          +'<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:var(--tx);">'+label+'</div></div>'
-          +'<button type="button" class="seb" style="flex-shrink:0;" onclick="_autosaveLoad('+i+')">Laden</button>'
-          +'</div>';
-      }).join('');
+    var list=_autosaveLocalHtml();
+    if(!list){el.innerHTML='<div style="text-align:center;color:var(--mu);font-size:13px;padding:24px;">Noch keine Autospeicher vorhanden.<br><br>OneDrive verbinden für Cloud-Autospeicher.</div>';return;}
+    el.innerHTML='<div style="font-size:12px;color:var(--mu);margin-bottom:12px;">💾 Lokale Snapshots (OneDrive nicht verbunden)</div>'+list;
   }
+}
+function _autosaveLocalHtml(){
+  var saves=[];
+  try{saves=JSON.parse(localStorage.getItem('nt_autosaves')||'[]');}catch(e){}
+  return saves.map(function(s,i){
+    var d=new Date(s.savedAt);
+    var label=d.toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'2-digit'})+' · '+d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+    return '<div style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--gl);border-radius:12px;margin-bottom:8px;">'
+      +'<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:var(--tx);">'+label+'</div></div>'
+      +'<button type="button" class="seb" style="flex-shrink:0;" onclick="_autosaveLoad('+i+')">Laden</button>'
+      +'</div>';
+      }).join('');
 }
 function dismissOdBanner(){
   var el=document.getElementById('odMissingBanner');
@@ -4111,8 +4124,7 @@ function showMain(){
   setTimeout(compressOldDays,5000);
   setTimeout(_migratePhotosToIdb,2000);
   checkProxyPwGate();
-  setTimeout(_autosaveCreate,1000);
-  setTimeout(NTDrive.autoSync,3000);
+  setTimeout(runAutosave,3000);
   setTimeout(NTDrive.checkBanner,3500);
 }
 function checkBackupReminder(){
@@ -7889,28 +7901,28 @@ function axTestSync(){
 }
 
 </script>
-<script src="picker.js?v=0.266"></script>
-<script src="js/health-sync.js?v=0.266"></script>
-<script src="js/sync-core.js?v=0.266"></script>
-<script src="js/baby.js?v=0.266"></script>
-<script src="js/baby-meds.js?v=0.266"></script>
-<script src="js/baby-growth-data.js?v=0.266"></script>
-<script src="js/baby-growth.js?v=0.266"></script>
-<script src="js/baby-week.js?v=0.266"></script>
-<script src="js/baby-milestones.js?v=0.266"></script>
-<script src="js/baby-midwife.js?v=0.266"></script>
-<script src="js/shopping.js?v=0.266"></script>
-<script src="js/partner.js?v=0.266"></script>
-<script src="js/alexa-sync.js?v=0.266"></script>
-<script src="js/dashboard.js?v=0.266"></script>
-<script src="js/features.js?v=0.266"></script>
-<script src="js/mealplan.js?v=0.266"></script>
-<script src="js/onedrive.js?v=0.266"></script>
-<script src="js/recurring.js?v=0.266"></script>
-<script src="js/stats.js?v=0.266"></script>
-<script src="js/reminders.js?v=0.266"></script>
-<script src="js/templates.js?v=0.266"></script>
-<script src="js/offline-queue.js?v=0.266"></script>
+<script src="picker.js?v=0.267"></script>
+<script src="js/health-sync.js?v=0.267"></script>
+<script src="js/sync-core.js?v=0.267"></script>
+<script src="js/baby.js?v=0.267"></script>
+<script src="js/baby-meds.js?v=0.267"></script>
+<script src="js/baby-growth-data.js?v=0.267"></script>
+<script src="js/baby-growth.js?v=0.267"></script>
+<script src="js/baby-week.js?v=0.267"></script>
+<script src="js/baby-milestones.js?v=0.267"></script>
+<script src="js/baby-midwife.js?v=0.267"></script>
+<script src="js/shopping.js?v=0.267"></script>
+<script src="js/partner.js?v=0.267"></script>
+<script src="js/alexa-sync.js?v=0.267"></script>
+<script src="js/dashboard.js?v=0.267"></script>
+<script src="js/features.js?v=0.267"></script>
+<script src="js/mealplan.js?v=0.267"></script>
+<script src="js/onedrive.js?v=0.267"></script>
+<script src="js/recurring.js?v=0.267"></script>
+<script src="js/stats.js?v=0.267"></script>
+<script src="js/reminders.js?v=0.267"></script>
+<script src="js/templates.js?v=0.267"></script>
+<script src="js/offline-queue.js?v=0.267"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

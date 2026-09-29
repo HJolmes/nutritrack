@@ -97,8 +97,8 @@ function resolve(it){
   if(!it)return null;
   var r=rec(it.r);
   if(r)return {name:r.name,emoji:r.emoji||'📋',ingredients:r.ingredients||[],own:true};
-  if(it.s)return {name:it.s.n,emoji:it.s.em||'📋',own:false,hist:!!it.h,
-    ingredients:(it.s.i||[]).map(function(g){return {name:g.n,emoji:g.em||'🍽',amount:g.a,per100:g.p};})};
+  if(it.s)return {name:it.s.n,emoji:safeEmoji(it.s.em,'📋'),own:false,hist:!!it.h,
+    ingredients:(it.s.i||[]).map(function(g){return {name:g.n,emoji:safeEmoji(g.em,'🍽'),amount:g.a,per100:g.p};})};
   return null;
 }
 function itemKcal(it){if(isNote(it))return 0;var r=resolve(it);if(!r)return 0;return ingTotal(r.ingredients).kcal*(it.p||1);}
@@ -266,7 +266,7 @@ function render(){
         if(!r){html+='<span class="plan-chip is-gone" onclick="NTPlan.removeItem(\''+ds+'\',\''+s.id+'\','+idx+')">Rezept gelöscht ✕</span>';return;}
         // Fremdes Rezept (nur als Abzug da): erkennbar, aber gleichwertig nutzbar.
         html+='<span class="plan-chip'+(r.own?'':' is-guest')+'" onclick="NTPlan.openItem(\''+ds+'\',\''+s.id+'\','+idx+')">'
-          +(r.emoji||'📋')+' '+esc(r.name)+((it.p||1)!==1?' <b>'+(it.p||1)+'×</b>':'')+'</span>';
+          +esc(r.emoji||'📋')+' '+esc(r.name)+((it.p||1)!==1?' <b>'+(it.p||1)+'×</b>':'')+'</span>';
       });
       html+='<button type="button" class="plan-add" onclick="NTPlan.pick(\''+ds+'\',\''+s.id+'\')">＋</button>'
         +'</div></div>';
@@ -314,7 +314,7 @@ function renderPick(){
   el.innerHTML=noteRow+list.map(function(r){
     var t=ingTotal(r.ingredients||[]);
     return '<div class="ri" onclick="NTPlan.addToSlot(\''+esc(r.id)+'\')">'
-      +'<div style="font-size:22px;">'+(r.emoji||'📋')+'</div>'
+      +'<div style="font-size:22px;">'+esc(r.emoji||'📋')+'</div>'
       +'<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:13px;">'+esc(r.name)+'</div>'
       +'<div style="font-size:11px;color:var(--mu);">'+Math.round(t.kcal)+' kcal / Portion · '+(r.ingredients||[]).length+' Zutaten</div></div>'
       +'<div style="font-size:18px;color:var(--g2);font-weight:900;">＋</div></div>';

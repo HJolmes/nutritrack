@@ -310,10 +310,10 @@ function renderDates(){
     +'<button type="button" class="bby-pill on" data-act="NTBaby.openEntry" data-args=\'["appt"]\'>＋ Termin</button></div>';
   if(!as.length)h+='<div style="font-size:12px;color:var(--mu);padding:4px 2px 8px;">Noch keine Termine. Impftermine und Arztbesuche hier eintragen – sie erscheinen ab einer Woche vorher auf der Kachel.</div>';
   var row=function(a,old){
-    return '<div class="fe" onclick="NTBaby.editEntry(\''+a.e.id+'\')"'+(old?' style="opacity:.6;"':'')+'>'
+    return '<div class="fe" data-act="NTBaby.editEntry" data-args="'+esc(JSON.stringify([a.e.id]))+'"'+(old?' style="opacity:.6;"':'')+'>'
       +'<div class="fee">'+(a.e.kind==='vacc'?'💉':a.e.kind==='u'?'🩺':'📅')+'</div>'
       +'<div class="fei"><div class="fen">'+esc(NTBaby.entryTitle(a.e))+'</div>'
-      +'<div class="fem">'+apptWhen(a)+(a.e.note?' · '+esc(a.e.note):'')+'</div></div><div class="fe-ic">✏️</div></div>';
+      +'<div class="fem">'+esc(apptWhen(a))+(a.e.note?' · '+esc(a.e.note):'')+'</div></div><div class="fe-ic">✏️</div></div>';
   };
   h+=up.map(function(a){return row(a,false);}).join('');
   if(past.length)h+='<div style="font-size:11px;color:var(--mu);margin:6px 2px 2px;">Zuletzt</div>'+past.map(function(a){return row(a,true);}).join('');

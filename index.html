@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.270"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.271"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.270"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.271"></script>
 <script>
   (function(){
     if(typeof ZXingWASM==='undefined'){console.warn('zxing-wasm load failed, ZXing-JS fallback aktiv');return;}
@@ -1211,7 +1211,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.270</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.271</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -3345,11 +3345,11 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.270"></script>
-<script src="js/fooddb.js?v=0.270"></script>
-<script src="js/fooddb-usda.js?v=0.270"></script>
-<script src="js/idb-photos.js?v=0.270"></script>
-<script src="js/changelog.js?v=0.270"></script>
+<script src="js/actions.js?v=0.271"></script>
+<script src="js/fooddb.js?v=0.271"></script>
+<script src="js/fooddb-usda.js?v=0.271"></script>
+<script src="js/idb-photos.js?v=0.271"></script>
+<script src="js/changelog.js?v=0.271"></script>
 <script>
 // ════════════════════════════════════════
 // SECTION: DATABASE
@@ -3368,7 +3368,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.270';
+var APP_VERSION='0.271';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -3390,6 +3390,9 @@ function fetchT(url,opts,ms){
 }
 // HTML-Escaping für alle Namen/Freitexte aus untrusted Quellen (Import-Payloads,
 // OpenFoodFacts, KI-Antworten), die per innerHTML eingefügt werden — schützt vor XSS.
+// Symbol aus fremder Quelle (Share-Link, Partner, Plan-Sync): kurz halten und
+// ohne HTML-Zeichen — die Anzeige escaped zusaetzlich (#236).
+function safeEmoji(s,fb){s=String(s==null?'':s).replace(/[&<>"'`=\\/]/g,'').slice(0,16);return s||fb||'';}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -4433,7 +4436,7 @@ function renderAll(){
           if(dworst)dot+=dietAmpelDot(dworst.ampel);
         }
         return'<div class="fe'+(isR?' is-recipe':'')+'" onclick="'+(isR?'openEntryMenu':'openEditEntry')+'(\''+m+'\','+i+')">'
-          +'<div class="fee">'+(e.emoji||'🍽')+'</div>'
+          +'<div class="fee">'+esc(e.emoji||'🍽')+'</div>'
           +'<div class="fei"><div class="fen">'+esc(e.name)+(e._recurId?' 🔁':'')+(e._alexaPending?' 🗣️':'')+'</div><div class="fem">'+sub+'</div></div>'
           +'<div class="fek">'+Math.round(e.kcal)+' kcal</div>'
           +'<div style="display:flex;align-items:center;">'+dot+'<div class="fe-ic">✏️</div></div>'
@@ -4872,7 +4875,7 @@ function renderEditBody(e){
       var nid='edit-n-'+i;
       return'<div class="ing-wrap">'
         +'<div class="ing-item">'
-        +'<div class="ing-e" onclick="ingToggle(event,\''+nid+'\')">'+(ing.emoji||'🍽')+'</div>'
+        +'<div class="ing-e" onclick="ingToggle(event,\''+nid+'\')">'+esc(ing.emoji||'🍽')+'</div>'
         +'<div class="ing-n" onclick="ingToggle(event,\''+nid+'\')">'+esc(ing.name)+ampelDot+'</div>'
         +'<input type="number" class="ing-amt" value="'+amtVal+'" min="1" placeholder="g?" style="'+bStyle+'" onchange="editIngAmt('+i+',this.value)">'
         +'<div class="ing-u">g</div>'+warn
@@ -5063,7 +5066,7 @@ function recEditRenderIng(ings){
     var nid='reced-n-'+i;
     return'<div class="ing-wrap">'
       +'<div class="ing-item">'
-      +'<div class="ing-e" onclick="ingToggle(event,\''+nid+'\')">'+(ing.emoji||'🍽')+'</div>'
+      +'<div class="ing-e" onclick="ingToggle(event,\''+nid+'\')">'+esc(ing.emoji||'🍽')+'</div>'
       +'<div class="ing-n" onclick="ingToggle(event,\''+nid+'\')">'+esc(ing.name)+'</div>'
       +'<input type="number" class="ing-amt" value="'+amtVal+'" min="1" placeholder="g?" style="'+bStyle+'" onchange="recEditIngAmt('+i+',this.value)">'
       +'<div class="ing-u">g</div>'
@@ -5097,7 +5100,7 @@ function recEditSearch(){
   if(!results.length){el.innerHTML='<div class="nr" style="padding:8px;">Kein Ergebnis</div>';return;}
   el.innerHTML=results.map(function(p,i){
     return'<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1.5px solid var(--br);border-radius:10px;cursor:pointer;margin-bottom:4px;background:white;" onclick="recEditAddFood('+i+')">'
-      +'<div style="font-size:18px;">'+(p.emoji||'🍽')+'</div>'
+      +'<div style="font-size:18px;">'+esc(p.emoji||'🍽')+'</div>'
       +'<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:13px;">'+esc(p.name)+'</div>'
       +'<div style="font-size:11px;color:var(--mu);">'+Math.round(p.per100.kcal)+' kcal pro 100g</div></div>'
       +'<div style="font-size:18px;color:var(--g2);font-weight:900;">＋</div></div>';
@@ -5481,11 +5484,11 @@ var _pendingImport=null;
 var _pendingImportMeta=null;
 
 function _materializeRecipe(d){
-  var ings=(d.i||[]).map(function(x){return{name:x.n,emoji:x.em||x.e,amount:x.a||100,per100:{kcal:x.p.k||0,protein:x.p.pr||0,carbs:x.p.c||0,fat:x.p.f||0,sugar:0,fiber:0,salt:0}};});
-  return{id:Date.now().toString(),name:d.n||'Importiertes Rezept',emoji:d.em||d.e||'📋',ingredients:ings,instructions:d.ins||''};
+  var ings=(d.i||[]).map(function(x){return{name:x.n,emoji:safeEmoji(x.em||x.e,'🍽'),amount:x.a||100,per100:{kcal:x.p.k||0,protein:x.p.pr||0,carbs:x.p.c||0,fat:x.p.f||0,sugar:0,fiber:0,salt:0}};});
+  return{id:Date.now().toString(),name:d.n||'Importiertes Rezept',emoji:safeEmoji(d.em||d.e,'📋'),ingredients:ings,instructions:d.ins||''};
 }
 function _materializeFood(d){
-  return{name:d.n||'Importiertes Lebensmittel',emoji:d.em||d.e||'🍽',per100:{kcal:d.p.k||0,protein:d.p.pr||0,carbs:d.p.c||0,fat:d.p.f||0,sugar:0,fiber:0,salt:0}};
+  return{name:d.n||'Importiertes Lebensmittel',emoji:safeEmoji(d.em||d.e,'🍽'),per100:{kcal:d.p.k||0,protein:d.p.pr||0,carbs:d.p.c||0,fat:d.p.f||0,sugar:0,fiber:0,salt:0}};
 }
 function _materializeMealEntries(d){
   return _materializeEntryList(d.e||[]);
@@ -5493,13 +5496,13 @@ function _materializeMealEntries(d){
 function _materializeEntryList(arr){
   return(arr||[]).map(function(x){
     if(x.t==='r'){
-      var ings=(x.i||[]).map(function(ing){return{name:ing.n,emoji:ing.em,amount:ing.a||100,per100:{kcal:ing.p.k||0,protein:ing.p.pr||0,carbs:ing.p.c||0,fat:ing.p.f||0,sugar:0,fiber:0,salt:0}};});
+      var ings=(x.i||[]).map(function(ing){return{name:ing.n,emoji:safeEmoji(ing.em,'🍽'),amount:ing.a||100,per100:{kcal:ing.p.k||0,protein:ing.p.pr||0,carbs:ing.p.c||0,fat:ing.p.f||0,sugar:0,fiber:0,salt:0}};});
       var t=ingTotal(ings);
-      return Object.assign({name:x.n,emoji:x.em,isRecipe:true,recipeId:null,portions:x.p||1,ingredients:ings},scaleNutrients(t,x.p||1));
+      return Object.assign({name:x.n,emoji:safeEmoji(x.em,'📋'),isRecipe:true,recipeId:null,portions:x.p||1,ingredients:ings},scaleNutrients(t,x.p||1));
     }
     var per100={kcal:x.p.k||0,protein:x.p.pr||0,carbs:x.p.c||0,fat:x.p.f||0,sugar:0,fiber:0,salt:0};
     var r=(x.a||100)/100;
-    return Object.assign({name:x.n,emoji:x.em,amount:x.a||100,per100:per100},scaleNutrients(per100,r));
+    return Object.assign({name:x.n,emoji:safeEmoji(x.em,'🍽'),amount:x.a||100,per100:per100},scaleNutrients(per100,r));
   });
 }
 
@@ -6624,7 +6627,7 @@ function renderRecentList(){
   if(!items.length){el.innerHTML='<div style="text-align:center;color:var(--mu);padding:20px;font-size:13px;">Noch keine Einträge</div>';return;}
   el.innerHTML=items.map(function(item,i){
     return'<div class="ri" onclick="pickerAddRecent('+i+')">'
-      +'<div class="ri-e">'+(item.emoji||'🍽')+'</div>'
+      +'<div class="ri-e">'+esc(item.emoji||'🍽')+'</div>'
       +'<div style="flex:1;min-width:0;"><div class="ri-n">'+esc(item.name)+'</div>'
       +(item.per100?'<div class="ri-d">'+Math.round(item.per100.kcal)+' kcal/100g</div>':'<div class="ri-d">'+(item.kcal?Math.round(item.kcal)+' kcal':'')+'</div>')
       +'</div>'
@@ -6879,7 +6882,7 @@ function renderShoppingItems(recipeId){
   el.innerHTML=rec.ingredients.map(function(ing){
     var amt=Math.round((ing.amount||100)*p);
     return'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--br);">'
-      +'<div style="font-size:13px;">'+(ing.emoji||'🍽')+' '+esc(ing.name)+'</div>'
+      +'<div style="font-size:13px;">'+esc(ing.emoji||'🍽')+' '+esc(ing.name)+'</div>'
       +'<div style="font-size:13px;font-weight:700;color:var(--g1);">'+amt+'g</div>'
       +'</div>';
   }).join('');
@@ -6952,7 +6955,7 @@ function renderExercisePresets(){
     var isLib=!EXERCISE_PRESETS.find(function(x){return x.name===p.name;});
     var safeName=(p.name||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     var delBtn=isLib?('<span onclick="event.stopPropagation();deleteExerciseFromLibrary(\''+esc(safeName)+'\');void(0)" style="font-size:10px;color:var(--re);cursor:pointer;margin-left:4px;">✕</span>'):'';
-    return'<div style="display:inline-flex;align-items:center;background:var(--gl);border:1.5px solid var(--g3);border-radius:20px;padding:5px 10px;font-size:12px;font-weight:700;color:var(--g1);margin:2px;cursor:pointer;" onclick="selectExercisePreset(\''+esc(safeName)+'\')">'      +(p.emoji||'🏃')+' '+esc(p.name)+delBtn+'</div>';
+    return'<div style="display:inline-flex;align-items:center;background:var(--gl);border:1.5px solid var(--g3);border-radius:20px;padding:5px 10px;font-size:12px;font-weight:700;color:var(--g1);margin:2px;cursor:pointer;" onclick="selectExercisePreset(\''+esc(safeName)+'\')">'      +esc(p.emoji||'🏃')+' '+esc(p.name)+delBtn+'</div>';
   }).join('');
 }
 
@@ -7061,7 +7064,7 @@ function renderExercise(){
       srcBadge=' · <span style="background:var(--gl);border-radius:6px;padding:1px 5px;font-size:10px;font-weight:700;color:var(--g1);">'+label+'</span>';
     }
     return'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--br);">'
-      +'<div style="font-size:20px;">'+(e.emoji||'🏃')+'</div>'
+      +'<div style="font-size:20px;">'+esc(e.emoji||'🏃')+'</div>'
       +'<div style="flex:1;">'
         +'<div style="font-size:13px;font-weight:700;">'+esc(e.name)+(e._alexaPending?' ⚠️':'')+'</div>'
         +'<div style="font-size:11px;color:var(--mu);">'+(e.duration?e.duration+' Min. · ':'')+intLabel+srcBadge+'</div>'
@@ -7358,7 +7361,7 @@ function renderMealDetail(meal){
       var isR=!!e.isRecipe;
       var sub=isR?(e.portions||1)+'× Portion · '+Math.round(e.kcal)+' kcal':e.amount+'g · '+Math.round(e.protein)+'g P · '+Math.round(e.carbs)+'g C · '+Math.round(e.fat)+'g F';
       return'<div class="fe" onclick="'+(isR?'openEntryMenu':'openEditEntry')+'(\''+meal+'\','+i+')">'
-        +'<div class="fee" style="background:var(--gl);width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;">'+(e.emoji||'🍽')+'</div>'
+        +'<div class="fee" style="background:var(--gl);width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;">'+esc(e.emoji||'🍽')+'</div>'
         +'<div class="fei"><div class="fen">'+esc(e.name)+(e._recurId?' 🔁':'')+(e._alexaPending?' 🗣️':'')+'</div><div class="fem">'+sub+'</div></div>'
         +'<div class="fek">'+Math.round(e.kcal)+'</div>'
         +'</div>';
@@ -7910,29 +7913,29 @@ function axTestSync(){
 }
 
 </script>
-<script src="picker.js?v=0.270"></script>
-<script src="js/health-sync.js?v=0.270"></script>
-<script src="js/sync-core.js?v=0.270"></script>
-<script src="js/baby.js?v=0.270"></script>
-<script src="js/baby-meds.js?v=0.270"></script>
-<script src="js/baby-growth-data.js?v=0.270"></script>
-<script src="js/baby-growth.js?v=0.270"></script>
-<script src="js/baby-week.js?v=0.270"></script>
-<script src="js/baby-milestones.js?v=0.270"></script>
-<script src="js/baby-midwife.js?v=0.270"></script>
-<script src="js/shopping.js?v=0.270"></script>
-<script src="js/partner.js?v=0.270"></script>
-<script src="js/alexa-sync.js?v=0.270"></script>
-<script src="js/dashboard.js?v=0.270"></script>
-<script src="js/features.js?v=0.270"></script>
-<script src="js/mealplan.js?v=0.270"></script>
-<script src="js/onedrive.js?v=0.270"></script>
-<script src="js/autosave.js?v=0.270"></script>
-<script src="js/recurring.js?v=0.270"></script>
-<script src="js/stats.js?v=0.270"></script>
-<script src="js/reminders.js?v=0.270"></script>
-<script src="js/templates.js?v=0.270"></script>
-<script src="js/offline-queue.js?v=0.270"></script>
+<script src="picker.js?v=0.271"></script>
+<script src="js/health-sync.js?v=0.271"></script>
+<script src="js/sync-core.js?v=0.271"></script>
+<script src="js/baby.js?v=0.271"></script>
+<script src="js/baby-meds.js?v=0.271"></script>
+<script src="js/baby-growth-data.js?v=0.271"></script>
+<script src="js/baby-growth.js?v=0.271"></script>
+<script src="js/baby-week.js?v=0.271"></script>
+<script src="js/baby-milestones.js?v=0.271"></script>
+<script src="js/baby-midwife.js?v=0.271"></script>
+<script src="js/shopping.js?v=0.271"></script>
+<script src="js/partner.js?v=0.271"></script>
+<script src="js/alexa-sync.js?v=0.271"></script>
+<script src="js/dashboard.js?v=0.271"></script>
+<script src="js/features.js?v=0.271"></script>
+<script src="js/mealplan.js?v=0.271"></script>
+<script src="js/onedrive.js?v=0.271"></script>
+<script src="js/autosave.js?v=0.271"></script>
+<script src="js/recurring.js?v=0.271"></script>
+<script src="js/stats.js?v=0.271"></script>
+<script src="js/reminders.js?v=0.271"></script>
+<script src="js/templates.js?v=0.271"></script>
+<script src="js/offline-queue.js?v=0.271"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

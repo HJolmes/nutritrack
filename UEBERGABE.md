@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.270 (2026-09-29) — Branch `claude/awesome-mccarthy-ez28lf`. **v0.270: Datenverlust-Fixes aus Code-Durchsicht** (#227–#235). Offene Bugs aus derselben Durchsicht: GitHub `label:bug` #236–#247 (je ein `topic:`). Nur App.
+**Stand:** v0.271 (2026-09-29) — Branch `claude/awesome-mccarthy-ez28lf` (PR #248). **v0.270: Datenverlust-Fixes** (#227–#235), **v0.271: XSS-Härtung** (#236). Offene Bugs aus derselben Code-Durchsicht: GitHub `label:bug` #237–#247 (je ein `topic:`). Nur App.
 
 ## URLs
 
@@ -45,6 +45,7 @@
 - **Erweiterte Lebensmittel-DB (v0.259, #207):** `js/fooddb-usda.js` (276 Eintraege, 31 KB, in `CORE_ASSETS`, direkt nach `js/fooddb.js` eingebunden) haengt sich per `window.DB=window.DB.concat(window.DB_USDA)` an. **Erzeugt, nicht von Hand gepflegt:** `node tools/build-fooddb.js` liest `tools/fooddb-usda.map.json` (deutscher Name, Emoji, Synonyme, Suchmuster auf die englische USDA-Beschreibung) und zieht die Naehrwerte aus USDA SR28 — bezogen ueber das npm-Paket `fda-nutrient-database`, weil `fdc.nal.usda.gov` aus der Agent-Umgebung gesperrt ist. `--check` prueft, ob die erzeugte Datei zur Map passt (nicht in CI: braucht Netz). Namen, die `js/fooddb.js` schon fuehrt, werden uebersprungen (105 Stueck) — die Basis-DB bleibt fuer sie massgeblich, damit `findInLocalDB()` keinen Doppeltreffer hat. Neue Felder `g` Zucker, `b` Ballaststoffe, `l` Salz; `dbPer100(f)` (index.html) ist der gemeinsame Weg von DB-Eintrag zu `per100` und setzt fehlende Felder auf 0.
 - **Fotos in IndexedDB (v0.208):** `js/idb-photos.js` → `window.NTPhotos` (put/get/del, DB `nt-photos`). Einträge tragen `mealPhotoId` statt Base64 (`saveMealPhoto`); Anzeige lädt asynchron nach (`_mealPhotoImgHtml`/`_hydratePhotoImgs` via `img[data-phid]`, `renderMealDetail`-`mdPhoto` direkt per `NTPhotos.get`). Boot-Migration `_migratePhotosToIdb` (Flag `nt_photos_migrated`, löscht bei IDB-Fehler nichts); nach jedem Import/Restore ruft `_migratePhotosAfterImport()` sie erneut. `deleteEntry`/`compressOldDays`/`saveMealPhoto` löschen Fotos nur über `delPhotoIfUnused` (`photoInUse` prüft Tage, `S.mealTemplates`, `S.recurringMeals` — Vorlagen kopieren `mealPhotoId`). Offline-Foto-Queue speichert `{phid,…}` statt Base64; `processOfflineQueue` öffnet den Picker sichtbar und nimmt das Foto erst per `NTQueue.done` (aus `pickerAnalyze` nach KI-Antwort) aus Queue + IDB. Ohne IndexedDB: Fallback aufs alte `mealPhoto`-Feld. **Fotos sind gerätelokal, nicht Teil der Backups.**
 - **Archiv-Tage (v0.270):** `getDay()`/`_ensureDayForImport`/Wochenplan öffnen komprimierte Alt-Tage (`_compressed`, aus `compressOldDays`) per `reopenArchivedDay` wieder: Summen als Snack-Eintrag `_archived` („📦 Archivierte Tageswerte“), Flag `_reopened` hält `NTRecur` fern; beim nächsten Start wieder komprimiert. `getRecentFoods`/`copyMealFromYesterday` überspringen `_archived`, `renderHistory` zeigt `day.kcal`.
+- **Fremde Daten (v0.271):** Symbole aus Share/Partner/Plan-Sync laufen beim Übernehmen durch `safeEmoji` (index.html, neben `esc`); jede HTML-Ausgabe von `emoji` geht durch `esc()`. IDs aus Sync (Baby, Einkauf) stehen nie roh in `onclick`, sondern in `data-act` + `data-args` (`esc(JSON.stringify([id]))`). Alexa-Baby-Felder: `every` → Zahl, `time` nur `H:MM`, `id` verworfen.
 - **Service Worker (v0.270):** nur same-origin-GETs laufen durch den Cache; fremde Hosts (OneDrive Graph, eigene Worker-URL) gehen direkt ins Netz.
 - **Stabilität (v0.201):** `renderStreak()`-Geisteraufruf entfernt (Streak rendert `renderWeekBars`). `lookupNutrients` schreibt Ergebnisse per Index → Zutaten-Reihenfolge = Eingabe-Reihenfolge.
 - **XSS-Härtung (v0.182/v0.203):** `esc()` (`index.html`) / `_esc()` (`picker.js`) jetzt **flächendeckend** in allen Render-Pfaden, die Namen/Freitexte aus untrusted Quellen (Share-Imports, OFF, KI, Nutzereingaben) per `innerHTML`/Attribut interpolieren — inkl. `value="…"`-Attribute (editName, OneDrive-Pfad), Kochanleitungen, Chat-User-Bubble, Barcode-Code. Bei neuen innerHTML-Stellen immer `esc()` verwenden.
@@ -243,11 +244,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.266 | #222 | Worker: KV-Änderungsmarke je Briefkasten — Abrufe ohne Änderung kosten 1× `get` statt `list` (KV-Tageslimit Gratis-Tarif). Worker deployen. |
 | v0.267 | — | Autospeicher: `runAutosave()` — mit OneDrive nur Slot (1×/Tag), sonst lokal; lokaler Ersatz bei Upload-Fehler. `NTDrive.autoSync` entfernt. |
 | v0.268 | — | Lokaler Autospeicher → IndexedDB (`js/autosave.js`, iOS-localStorage zu klein), Sicherung beim Fortsetzen 1×/Tag, Dialog-Layout (`.mod`, Knopfbreite) repariert. |
 | v0.269 | — | Partner-Postfach + Alexa-Token unter Mehr → Verbindungen („Weitere Verbindungen“), aus Funktions-Blättern entfernt; Hilfe + `alexa/README.md` angepasst. |
-| v0.270 | — | Datenverlust-Fixes #227–#235: SW nur same-origin, OAuth-Rückweg ohne Abbruch, Bibliothek-Index, `_editEntryMode`-Reset, Zutaten tief kopiert, Archiv-Tage wieder öffnen, Offline-Foto erst nach KI-Antwort löschen, Fotos referenzgeprüft löschen, IDB `onabort`, Quota-Stufe 2 halbiert Caches. |
+| v0.270 | #248 | Datenverlust-Fixes #227–#235: SW nur same-origin, OAuth-Rückweg ohne Abbruch, Bibliothek-Index, `_editEntryMode`-Reset, Zutaten tief kopiert, Archiv-Tage wieder öffnen, Offline-Foto erst nach KI-Antwort löschen, Fotos referenzgeprüft löschen, IDB `onabort`, Quota-Stufe 2 halbiert Caches. |
+| v0.271 | #248 | XSS-Härtung #236: `safeEmoji` beim Import, `esc()` an 16 Emoji-Ausgaben, Baby/Einkauf-IDs per `data-act`, Alexa-Baby-Felder typgeprüft. |
 
 ---
 

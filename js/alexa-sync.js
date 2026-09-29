@@ -284,6 +284,10 @@
     var e={t:item.babyType};
     var p=item.babyP||{};
     for(var k in p){if(Object.prototype.hasOwnProperty.call(p,k))e[k]=p[k];}
+    // Felder aus dem Briefkasten sind fremde Daten: nur erwartete Formen (#236).
+    if('every' in e){e.every=parseFloat(e.every);if(!(e.every>0))delete e.every;}
+    if('time' in e&&!/^\d{1,2}:\d{2}$/.test(String(e.time)))delete e.time;
+    if('id' in e)delete e.id;
     // Gesprochen wurde nur „gestillt“, ohne Seite: denselben Alternations-
     // Vorschlag nutzen wie die Schnell-Knöpfe, statt die Seite leer zu lassen.
     if(e.t==='breast'&&!e.side&&window.NTBaby.nextSide)e.side=window.NTBaby.nextSide(key)||'';

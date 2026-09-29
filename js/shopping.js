@@ -574,7 +574,7 @@ function itemRow(it,done){
   var nameStyle=done?'font-weight:700;font-size:13px;text-decoration:line-through;color:var(--mu);':'font-weight:700;font-size:14px;';
   var src=srcLine(it);
   return '<div style="display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--br);">'
-    +'<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;cursor:pointer;" onclick="NTShop.toggle(\''+it.id+'\')">'
+    +'<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;cursor:pointer;" data-act="NTShop.toggle" data-args="'+esc(JSON.stringify([it.id]))+'">'
       +box
       +'<div style="font-size:19px;flex-shrink:0;">'+esc(it.ic||'🛒')+'</div>'
       +'<div style="flex:1;min-width:0;">'
@@ -583,7 +583,7 @@ function itemRow(it,done){
         +(src?'<div style="font-size:10px;color:var(--mu);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-style:italic;">'+esc(src)+'</div>':'')
       +'</div>'
     +'</div>'
-    +'<button type="button" onclick="NTShop.openItem(\''+it.id+'\')" style="background:none;border:none;font-size:15px;color:var(--mu);padding:4px 2px;cursor:pointer;flex-shrink:0;">✏️</button>'
+    +'<button type="button" data-act="NTShop.openItem" data-args="'+esc(JSON.stringify([it.id]))+'" style="background:none;border:none;font-size:15px;color:var(--mu);padding:4px 2px;cursor:pointer;flex-shrink:0;">✏️</button>'
     +'</div>';
 }
 

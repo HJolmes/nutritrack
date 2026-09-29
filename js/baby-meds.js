@@ -111,7 +111,7 @@ function render(){
     var sub=[];
     if(m.dose)sub.push(esc(m.dose));
     if(m.daily)sub.push('täglich');
-    if(m.every)sub.push('Abstand '+String(m.every).replace('.',',')+' h');
+    if(m.every)sub.push('Abstand '+esc(String(m.every).replace('.',','))+' h');
     sub.push(last?('zuletzt '+(last.ts>=tsToday()?'heute ':'')+hhmm(last.ts)):'noch nie gegeben');
     var args=JSON.stringify([m.id]).replace(/'/g,'&#39;');
     return '<div class="fe" style="cursor:default;">'

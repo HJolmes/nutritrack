@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.269"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.270"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.269"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.270"></script>
 <script>
   (function(){
     if(typeof ZXingWASM==='undefined'){console.warn('zxing-wasm load failed, ZXing-JS fallback aktiv');return;}
@@ -1211,7 +1211,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.269</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.270</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -3345,11 +3345,11 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.269"></script>
-<script src="js/fooddb.js?v=0.269"></script>
-<script src="js/fooddb-usda.js?v=0.269"></script>
-<script src="js/idb-photos.js?v=0.269"></script>
-<script src="js/changelog.js?v=0.269"></script>
+<script src="js/actions.js?v=0.270"></script>
+<script src="js/fooddb.js?v=0.270"></script>
+<script src="js/fooddb-usda.js?v=0.270"></script>
+<script src="js/idb-photos.js?v=0.270"></script>
+<script src="js/changelog.js?v=0.270"></script>
 <script>
 // ════════════════════════════════════════
 // SECTION: DATABASE
@@ -3368,7 +3368,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.269';
+var APP_VERSION='0.270';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -4883,12 +4883,7 @@ function renderEditBody(e){
       +_mealPhotoImgHtml(e)
       +'<button type="button" class="cb2" onclick="saveEditEntry()">Speichern ✓</button>'
       +'<button type="button" class="seb" style="margin-bottom:8px;border-color:var(--mu);color:var(--mu);" onclick="NTTpl.saveFromMeal(\''+editMeal+'\')" >📋 Als Vorlage speichern</button>'
-      +'<button type="button" class="seb" style="margin-bottom:8px;" onclick="openMoveEntry()">↕ Mahlzeit wechseln</button>'
-      +'<div id="moveEntryPanel" style="display:none;background:var(--gl);border-radius:12px;padding:12px;margin-bottom:8px;">'
-      +'<div style="font-size:12px;font-weight:700;color:var(--mu);margin-bottom:8px;text-transform:uppercase;">Verschieben nach:</div>'
-      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">'
-      +MEALS.filter(function(m){return m!==editMeal;}).map(function(m){return'<button type="button" class="svb" style="margin:0;padding:8px;" onclick="moveEntry(\''+m+'\')">'+MEAL_NAMES[m]+'</button>';}).join('')
-      +'</div></div>'
+      +_moveEntryPanelHtml()
       +'<button type="button" class="del-btn" onclick="deleteEntry()">🗑️ Eintrag löschen</button>';
   } else {
     var _r2=(e.amount||100)/100;
@@ -4902,12 +4897,7 @@ function renderEditBody(e){
       +'<input type="file" id="editMealPhoto" accept="image/*" capture="environment" style="display:none" onchange="handleEditMealPhoto(event)">'
       +'<button type="button" class="seb" style="margin-bottom:8px;" onclick="document.getElementById(\'editMealPhoto\').click()">📷 '+((e.mealPhoto||e.mealPhotoId)?'Foto ändern':'Foto hinzufügen')+'</button>'
       +'<button type="button" class="cb2" onclick="saveEditEntry()">Speichern ✓</button>'
-      +'<button type="button" class="seb" style="margin-bottom:8px;" onclick="openMoveEntry()">↕ Mahlzeit wechseln</button>'
-      +'<div id="moveEntryPanel" style="display:none;background:var(--gl);border-radius:12px;padding:12px;margin-bottom:8px;">'
-      +'<div style="font-size:12px;font-weight:700;color:var(--mu);margin-bottom:8px;text-transform:uppercase;">Verschieben nach:</div>'
-      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">'
-      +MEALS.filter(function(m){return m!==editMeal;}).map(function(m){return'<button type="button" class="svb" style="margin:0;padding:8px;" onclick="moveEntry(\''+m+'\')">'+MEAL_NAMES[m]+'</button>';}).join('')
-      +'</div></div>'
+      +_moveEntryPanelHtml()
       +'<button type="button" class="del-btn" onclick="deleteEntry()">🗑️ Eintrag löschen</button>';
   }
   _hydratePhotoImgs();
@@ -4985,12 +4975,64 @@ function openMoveEntry(){
   if(p)p.style.display=p.style.display==='none'?'block':'none';
 }
 
-function moveEntry(targetMeal){
-  var day=getDay();
-  var entry=day.meals[editMeal].splice(editIdx,1)[0];
-  day.meals[targetMeal].push(entry);
+// Verschieben/Kopieren: Zieltag + Zielmahlzeit waehlen. Vorbelegt mit dem
+// angezeigten Tag und der aktuellen Mahlzeit.
+function _moveEntryPanelHtml(){
+  return'<button type="button" class="seb" style="margin-bottom:8px;" data-act="openMoveEntry">↕ Verschieben / Kopieren</button>'
+    +'<div id="moveEntryPanel" style="display:none;background:var(--gl);border-radius:12px;padding:12px;margin-bottom:8px;">'
+    +'<label class="lbl">Tag</label>'
+    +'<input type="date" class="sinp" id="moveEntryDate" value="'+esc(S.currentDate)+'" style="margin-bottom:8px;">'
+    +'<label class="lbl">Mahlzeit</label>'
+    +'<select class="sinp" id="moveEntryMeal" style="margin-bottom:10px;">'
+    +MEALS.map(function(m){return'<option value="'+m+'"'+(m===editMeal?' selected':'')+'>'+MEAL_NAMES[m]+'</option>';}).join('')
+    +'</select>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">'
+    +'<button type="button" class="svb" style="margin:0;padding:8px;" data-act="moveEntry" data-args=\'["move"]\'>↕ Verschieben</button>'
+    +'<button type="button" class="svb" style="margin:0;padding:8px;" data-act="moveEntry" data-args=\'["copy"]\'>⧉ Kopieren</button>'
+    +'</div></div>';
+}
+
+function moveEntry(mode){
+  var copy=mode==='copy';
+  var dEl=document.getElementById('moveEntryDate'),mEl=document.getElementById('moveEntryMeal');
+  var key=(dEl&&dEl.value)||S.currentDate;
+  var targetMeal=(mEl&&mEl.value)||editMeal;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(key)||MEALS.indexOf(targetMeal)<0){showToast('Tag und Mahlzeit wählen');return;}
+  var sameDay=key===S.currentDate;
+  if(!copy&&sameDay&&targetMeal===editMeal){showToast('Eintrag ist schon dort');return;}
+  // Komprimierte Alt-Tage (>90 Tage, compressOldDays) haben nur noch Summen –
+  // ein Eintrag dort wuerde die Summen nicht aendern und nie angezeigt.
+  var tgt=(S.days||{})[key];
+  if(tgt&&tgt._compressed){showToast('Dieser Tag ist archiviert');return;}
+  var day=getDay(),src=day.meals[editMeal];
+  var entry=src[editIdx];if(!entry)return;
+  var td=sameDay?day:_ensureDayForImport(key);
+  var label=MEAL_NAMES[targetMeal]+(sameDay?'':' · '+fmtDate(key));
+  if(copy){
+    var c=JSON.parse(JSON.stringify(entry));
+    // Kopie ist ein eigener Eintrag: keine Herkunfts-Marken, die Dedup
+    // (Alexa), Wiederholungs-Badge oder Plan-Abgleich auf sie beziehen.
+    delete c._recurId;delete c._alexaId;delete c._alexaPending;delete c._fromPlan;
+    // Foto teilen hiesse: Loeschen des einen nimmt dem anderen das Bild.
+    if(c.mealPhotoId){
+      var oldPid=c.mealPhotoId;delete c.mealPhotoId;
+      if(window.NTPhotos&&NTPhotos.ok()){
+        var pid='ph'+Date.now()+Math.random().toString(36).slice(2,8);
+        NTPhotos.get(oldPid).then(function(d){
+          if(!d)return;
+          return NTPhotos.put(pid,d).then(function(){c.mealPhotoId=pid;saveS();});
+        }).catch(function(){});
+      }
+    }
+    td.meals[targetMeal].push(c);
+    showToast('⧉ Nach '+label+' kopiert');
+  } else {
+    src.splice(editIdx,1);
+    if(!sameDay)delete entry._recurId;
+    td.meals[targetMeal].push(entry);
+    showToast('↕ Nach '+label+' verschoben');
+  }
   saveS();renderAll();closeOv('editOv');
-  showToast('↕ Nach '+MEAL_NAMES[targetMeal]+' verschoben');
 }
 
 // ─── EINTRAG KURZMENÜ (Hauptansicht, Rezepte) ───
@@ -7874,29 +7916,29 @@ function axTestSync(){
 }
 
 </script>
-<script src="picker.js?v=0.269"></script>
-<script src="js/health-sync.js?v=0.269"></script>
-<script src="js/sync-core.js?v=0.269"></script>
-<script src="js/baby.js?v=0.269"></script>
-<script src="js/baby-meds.js?v=0.269"></script>
-<script src="js/baby-growth-data.js?v=0.269"></script>
-<script src="js/baby-growth.js?v=0.269"></script>
-<script src="js/baby-week.js?v=0.269"></script>
-<script src="js/baby-milestones.js?v=0.269"></script>
-<script src="js/baby-midwife.js?v=0.269"></script>
-<script src="js/shopping.js?v=0.269"></script>
-<script src="js/partner.js?v=0.269"></script>
-<script src="js/alexa-sync.js?v=0.269"></script>
-<script src="js/dashboard.js?v=0.269"></script>
-<script src="js/features.js?v=0.269"></script>
-<script src="js/mealplan.js?v=0.269"></script>
-<script src="js/onedrive.js?v=0.269"></script>
-<script src="js/autosave.js?v=0.269"></script>
-<script src="js/recurring.js?v=0.269"></script>
-<script src="js/stats.js?v=0.269"></script>
-<script src="js/reminders.js?v=0.269"></script>
-<script src="js/templates.js?v=0.269"></script>
-<script src="js/offline-queue.js?v=0.269"></script>
+<script src="picker.js?v=0.270"></script>
+<script src="js/health-sync.js?v=0.270"></script>
+<script src="js/sync-core.js?v=0.270"></script>
+<script src="js/baby.js?v=0.270"></script>
+<script src="js/baby-meds.js?v=0.270"></script>
+<script src="js/baby-growth-data.js?v=0.270"></script>
+<script src="js/baby-growth.js?v=0.270"></script>
+<script src="js/baby-week.js?v=0.270"></script>
+<script src="js/baby-milestones.js?v=0.270"></script>
+<script src="js/baby-midwife.js?v=0.270"></script>
+<script src="js/shopping.js?v=0.270"></script>
+<script src="js/partner.js?v=0.270"></script>
+<script src="js/alexa-sync.js?v=0.270"></script>
+<script src="js/dashboard.js?v=0.270"></script>
+<script src="js/features.js?v=0.270"></script>
+<script src="js/mealplan.js?v=0.270"></script>
+<script src="js/onedrive.js?v=0.270"></script>
+<script src="js/autosave.js?v=0.270"></script>
+<script src="js/recurring.js?v=0.270"></script>
+<script src="js/stats.js?v=0.270"></script>
+<script src="js/reminders.js?v=0.270"></script>
+<script src="js/templates.js?v=0.270"></script>
+<script src="js/offline-queue.js?v=0.270"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.269 (2026-09-27) — Branch `claude/autosave-onedrive-integration-hyezap`. **v0.269: Partner-Postfach und Alexa unter Verbindungen** (`NTSync.renderExtra/openOther`), aus den Funktions-Blättern entfernt. Nur App.
+**Stand:** v0.270 (2026-09-29) — Branch `claude/move-copy-entries-tags-4hdf5l`. **v0.270: Einträge auf anderen Tag verschieben/kopieren** (`moveEntry(mode)` + `_moveEntryPanelHtml()` im Bearbeiten-Dialog; Kopie ohne `_recurId/_alexaId/_alexaPending/_fromPlan`, eigenes IDB-Foto; archivierte Tage abgelehnt). Nur App.
 
 ## URLs
 
@@ -240,11 +240,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.265 | — | Alexa: `MidwifeQuestionIntent` — Fragen an die Hebamme (viele Satzanfaenge, Nachfrage nach „Hebamme“ allein, bis 500 Zeichen) landen im Reiter Hebamme (Baby-Notiz mit `babyP.mw`). Worker + Skill deployen. |
 | v0.266 | #222 | Worker: KV-Änderungsmarke je Briefkasten — Abrufe ohne Änderung kosten 1× `get` statt `list` (KV-Tageslimit Gratis-Tarif). Worker deployen. |
 | v0.267 | — | Autospeicher: `runAutosave()` — mit OneDrive nur Slot (1×/Tag), sonst lokal; lokaler Ersatz bei Upload-Fehler. `NTDrive.autoSync` entfernt. |
 | v0.268 | — | Lokaler Autospeicher → IndexedDB (`js/autosave.js`, iOS-localStorage zu klein), Sicherung beim Fortsetzen 1×/Tag, Dialog-Layout (`.mod`, Knopfbreite) repariert. |
 | v0.269 | — | Partner-Postfach + Alexa-Token unter Mehr → Verbindungen („Weitere Verbindungen“), aus Funktions-Blättern entfernt; Hilfe + `alexa/README.md` angepasst. |
+| v0.270 | — | Eintrag verschieben/kopieren auf beliebigen Tag + Mahlzeit (Bearbeiten-Dialog, ersetzt „Mahlzeit wechseln“). |
 
 ---
 

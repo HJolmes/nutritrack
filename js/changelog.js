@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.270',items:[
+    {icon:'\u2195',text:'<b>Einträge auf einen anderen Tag verschieben oder kopieren</b>: Im Bearbeiten-Dialog Tag und Mahlzeit wählen, dann „Verschieben“ oder „Kopieren“. Eine Kopie bekommt ein eigenes Foto.',where:'Eintrag antippen (Rezept: → ✏️ Eintrag bearbeiten) → „↕ Verschieben / Kopieren“'}
+  ]},
   {v:'0.269',items:[
     {icon:'\ud83d\udd17',text:'<b>Partner-Kopplung und Alexa-Token</b> stehen jetzt unter <b>Verbindungen</b> – bei „Weitere Verbindungen“, mit Status (gekoppelt / Token eingerichtet). Vorher waren sie in den Funktions-Blättern „Vom Partner“ und „Mahlzeiten“ versteckt.',where:'Mehr → 🔗 Verbindungen'}
   ]},

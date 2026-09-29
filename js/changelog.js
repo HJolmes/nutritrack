@@ -1,6 +1,11 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.270',items:[
+    {icon:'\ud83d\udee1\ufe0f',text:'<b>Mehrere Fehler behoben, bei denen Daten verloren gehen konnten</b>: „Aus OneDrive laden“ holt jetzt immer den aktuellen Stand statt einer zwischengespeicherten Kopie. In der Bibliothek öffnet ✎ nach einer Suche das richtige Lebensmittel. Ein abgebrochenes „Zutat hinzufügen“ wirkt nicht mehr nach. Zutaten-Änderungen an einem Eintrag verändern nicht mehr das Rezept in der Bibliothek.'},
+    {icon:'\ud83d\udce6',text:'<b>Tage älter als 90 Tage</b> lassen sich wieder befüllen: Die archivierte Tagessumme steht dann als Eintrag „📦 Archivierte Tageswerte“ im Snack, neue Einträge kommen dazu. Der Verlauf zeigt bei archivierten Tagen die gespeicherte Summe statt 0 kcal.',where:'Heute → ‹ zurückblättern'},
+    {icon:'\ud83d\udcf7',text:'<b>Offline-Fotos</b>: „Jetzt analysieren“ öffnet das Foto sichtbar in der Suche. Das Foto bleibt gespeichert, bis die KI geantwortet hat. Fotos aus Vorlagen verschwinden nicht mehr, wenn man eine Kopie löscht.',where:'Trends → 📷 Offline-Fotos'}
+  ]},
   {v:'0.269',items:[
     {icon:'\ud83d\udd17',text:'<b>Partner-Kopplung und Alexa-Token</b> stehen jetzt unter <b>Verbindungen</b> – bei „Weitere Verbindungen“, mit Status (gekoppelt / Token eingerichtet). Vorher waren sie in den Funktions-Blättern „Vom Partner“ und „Mahlzeiten“ versteckt.',where:'Mehr → 🔗 Verbindungen'}
   ]},

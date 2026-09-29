@@ -700,10 +700,9 @@ function toDiary(date){
   }
   if(!S.days[date])S.days[date]={meals:{breakfast:[],lunch:[],dinner:[],snack:[]},water:0,exercise:[]};
   var day=S.days[date];
-  // Archivierte Tage (compressOldDays) haben kein meals-Objekt mehr; getDay()
-  // liefert dort eine Wegwerf-Kopie. Hineinschreiben wuerde stillschweigend
-  // nichts bewirken — deshalb wird es benannt statt getan.
-  if(day._compressed){showToast('Dieser Tag ist archiviert und lässt sich nicht mehr befüllen');return;}
+  // Archivierte Tage (compressOldDays) werden wieder aufgemacht; die Summen
+  // bleiben als ein Eintrag erhalten (#232).
+  if(day._compressed)reopenArchivedDay(day);
   if(!day.meals)day.meals={breakfast:[],lunch:[],dinner:[],snack:[]};
   if(!Array.isArray(day.exercise))day.exercise=[];
   var n=0,skipped=0;

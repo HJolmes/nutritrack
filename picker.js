@@ -44,6 +44,10 @@ function openPicker(meal, defaultTab){
   // Der Normalfall ist „eintragen“. Nur der Weg „Neues Rezept → aus dem
   // Internet“ schaltet direkt nach diesem Aufruf auf „nur in die Bibliothek“.
   window._pickerRecipeOnly=false;
+  // „Zutat hinzufuegen" setzt den Modus erst NACH openPicker (editAddIng) —
+  // jeder andere Aufruf beginnt ohne ihn (#230).
+  window._editEntryMode=false;
+  window._pickerQueueItem=null;// setzt processOfflineQueue erst nach openPicker
   pickerMeal = meal || mealByTime();
   pickerSelFood = null;
   pickerIngredients = [];
@@ -91,6 +95,7 @@ function openPicker(meal, defaultTab){
 }
 
 function closePicker(){
+  window._editEntryMode=false;// abgebrochenes „Zutat hinzufuegen" nicht nachwirken lassen (#230)
   pickerStopScan();
   if(typeof pickerVoiceStop==='function')pickerVoiceStop();
   closeOv('pickerOv');
@@ -1107,6 +1112,8 @@ function pickerAnalyze(){
   var prompt=getFotoPrompt();
   callClaude('claude-sonnet-4-6',[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:window._pickerPhotoB64}},{type:'text',text:prompt}],1024,
     function(text){
+      // Foto aus der Offline-Warteschlange: KI hat geantwortet → erst jetzt raus (#233).
+      if(window._pickerQueueItem){NTQueue.done(window._pickerQueueItem);window._pickerQueueItem=null;}
       var parsed=parsePhotoResponse(text);
       btn.disabled=false;btn.textContent='📷 Erneut analysieren';
       // Badge sofort einfrieren: es soll die Vision-Anfrage zeigen, nicht die
@@ -1368,7 +1375,7 @@ function pickerChatAddLocal(i){
     if(!rec){msgs.innerHTML+='<div class="cm a">❌ Rezept nicht mehr vorhanden.</div>';return;}
     var t=ingTotal(rec.ingredients||[]);
     var portions=rec.portions||1;
-    getDay().meals[pickerMeal].push(Object.assign({name:rec.name,emoji:rec.emoji||'📋',isRecipe:true,recipeId:rec.id,portions:portions,ingredients:rec.ingredients||[]},scaleNutrients(t,portions)));
+    getDay().meals[pickerMeal].push(Object.assign({name:rec.name,emoji:rec.emoji||'📋',isRecipe:true,recipeId:rec.id,portions:portions,ingredients:JSON.parse(JSON.stringify(rec.ingredients||[]))},scaleNutrients(t,portions)));
     saveS();renderAll();closePicker();
     showToast('📋 '+rec.name+' eingetragen');
     return;
@@ -2065,7 +2072,7 @@ function pickerAddRecent(i){
   if(item.isRecipe||item.ingredients){
     var t=ingTotal(item.ingredients||[]);
     var portions=item.portions||1;
-    getDay().meals[pickerMeal].push(Object.assign({name:item.name,emoji:item.emoji,isRecipe:true,recipeId:item.recipeId||null,portions:portions,ingredients:item.ingredients||[]},scaleNutrients(t,portions)));
+    getDay().meals[pickerMeal].push(Object.assign({name:item.name,emoji:item.emoji,isRecipe:true,recipeId:item.recipeId||null,portions:portions,ingredients:JSON.parse(JSON.stringify(item.ingredients||[]))},scaleNutrients(t,portions)));
   } else {
     var recalled=recallPortion(item.name)||item.amount||100;
     var r=recalled/100;

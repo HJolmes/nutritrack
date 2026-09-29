@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.269"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.270"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.269"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.270"></script>
 <script>
   (function(){
     if(typeof ZXingWASM==='undefined'){console.warn('zxing-wasm load failed, ZXing-JS fallback aktiv');return;}
@@ -1211,7 +1211,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.269</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.270</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -3345,11 +3345,11 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.269"></script>
-<script src="js/fooddb.js?v=0.269"></script>
-<script src="js/fooddb-usda.js?v=0.269"></script>
-<script src="js/idb-photos.js?v=0.269"></script>
-<script src="js/changelog.js?v=0.269"></script>
+<script src="js/actions.js?v=0.270"></script>
+<script src="js/fooddb.js?v=0.270"></script>
+<script src="js/fooddb-usda.js?v=0.270"></script>
+<script src="js/idb-photos.js?v=0.270"></script>
+<script src="js/changelog.js?v=0.270"></script>
 <script>
 // ════════════════════════════════════════
 // SECTION: DATABASE
@@ -3368,7 +3368,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.269';
+var APP_VERSION='0.270';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -3615,7 +3615,9 @@ function _freeQuota(step){
     // Alt-Autosaves (vor v0.268 in localStorage, seither IndexedDB) – grösstes verzichtbares Objekt.
     try{localStorage.removeItem('nt_autosaves');}catch(e){}
   }else if(step===2){
-    _pruneFoodCache(FOODCACHE_MAX);_pruneBarcodeCache(BARCODECACHE_MAX);
+    // Auf die Haelfte: auf FOODCACHE_MAX kuerzt saveX ohnehin bei jedem
+    // Speichern — das gaebe hier keinen Platz frei (#235).
+    _pruneFoodCache(Math.floor(FOODCACHE_MAX/2));_pruneBarcodeCache(Math.floor(BARCODECACHE_MAX/2));
     saveX();saveBarcodeCache();
   }
 }
@@ -3685,14 +3687,10 @@ window.addEventListener('DOMContentLoaded',function(){
   var _params=new URLSearchParams(window.location.search);
   var _odCode=_params.get('code');
   var _odState=_params.get('state');
-  if(_odCode&&_odState){
-    loadS();loadX();loadBarcodeCache();
-    var hadLegacyApiKey=!!S.apiKey;
-    NTDrive.handleCallback(_odCode,_odState);
-    clearLegacyApiKey();
-    if(S.setupDone||hadLegacyApiKey||S.name!=='Du')showMain();
-    return;
-  }
+  // Kein vorzeitiges return: der normale Start (heutiges Datum, Tageswechsel,
+  // online/offline, Service Worker) muss auch nach der Rueckleitung laufen (#228).
+  // handleCallback bereinigt die URL synchron und holt den Token asynchron.
+  if(_odCode&&_odState)NTDrive.handleCallback(_odCode,_odState);
   var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
   if(isIOS)setAppleTouchIconPNG();
   loadS();loadX();loadBarcodeCache();
@@ -4264,13 +4262,28 @@ function checkDayRollover(){
   if(window.NTBaby&&NTBaby.refresh)NTBaby.refresh();
   return true;
 }
+// Macht einen komprimierten Alt-Tag wieder bearbeitbar. Die archivierten
+// Summen bleiben als ein Eintrag im Snack erhalten; beim naechsten Start
+// komprimiert compressOldDays den Tag erneut — mit der neuen Gesamtsumme.
+// _reopened haelt wiederkehrende Mahlzeiten fern (recurring.js).
+function reopenArchivedDay(d){
+  if(!d||!d._compressed)return d;
+  var p={kcal:d.kcal||0,protein:d.protein||0,carbs:d.carbs||0,fat:d.fat||0,sugar:0,fiber:0,salt:0};
+  var snack=(p.kcal||p.protein||p.carbs||p.fat)
+    ?[Object.assign({name:'Archivierte Tageswerte',emoji:'📦',_archived:true,amount:100,per100:p},p)]:[];
+  ['_compressed','kcal','protein','carbs','fat'].forEach(function(k){delete d[k];});
+  d.meals={breakfast:[],lunch:[],dinner:[],snack:snack};
+  d.water=d.water||0;
+  d.exercise=[];
+  d._reopened=true;
+  return d;
+}
 function getDay(){
   var d=S.days[S.currentDate];
   if(!d){d={meals:{breakfast:[],lunch:[],dinner:[],snack:[]},water:0,exercise:[]};S.days[S.currentDate]=d;}
-  // Komprimierte Alt-Tage (siehe compressOldDays) haben kein meals-Objekt.
-  // Temporäres leeres Tages-Objekt zurückgeben, damit renderAll nicht crasht.
-  // Änderungen an diesem Objekt werden bewusst NICHT gespeichert (Tag ist archiviert).
-  if(d._compressed){return {meals:{breakfast:[],lunch:[],dinner:[],snack:[]},water:d.water||0,exercise:[],_compressed:true};}
+  // Komprimierte Alt-Tage (siehe compressOldDays) werden wieder aufgemacht,
+  // sonst gingen Eintraege dort still verloren (#232).
+  if(d._compressed)reopenArchivedDay(d);
   if(!d.meals)d.meals={breakfast:[],lunch:[],dinner:[],snack:[]};
   if(!d.exercise)d.exercise=[];
   return d;
@@ -4975,8 +4988,8 @@ function editSaveAsRecipe(){
 
 function deleteEntry(){
   var _e=getDay().meals[editMeal][editIdx];
-  if(_e&&_e.mealPhotoId&&window.NTPhotos&&NTPhotos.ok())NTPhotos.del(_e.mealPhotoId).catch(function(){});
   getDay().meals[editMeal].splice(editIdx,1);
+  if(_e)delPhotoIfUnused(_e.mealPhotoId);// erst nach dem Entfernen pruefen (#234)
   saveS();renderAll();closeOv('editOv');
 }
 
@@ -5497,7 +5510,7 @@ function _ensureDayForImport(key){
   S.days=S.days||{};
   var d=S.days[key];
   if(!d){d={meals:{breakfast:[],lunch:[],dinner:[],snack:[]},water:0,exercise:[]};S.days[key]=d;}
-  if(d._compressed)delete d._compressed;
+  if(d._compressed)reopenArchivedDay(d);// Summen behalten (#232)
   if(!d.meals)d.meals={breakfast:[],lunch:[],dinner:[],snack:[]};
   ['breakfast','lunch','dinner','snack'].forEach(function(m){if(!Array.isArray(d.meals[m]))d.meals[m]=[];});
   if(!d.exercise)d.exercise=[];
@@ -6559,8 +6572,10 @@ function dietAmpelDot(ampel){
 function copyMealFromYesterday(meal){
   var yesterday=addDays(S.currentDate,-1);
   var yd=S.days[yesterday];
-  if(!yd||!(yd.meals[meal]||[]).length){showToast('Gestern kein Eintrag für diese Mahlzeit');return;}
-  var copies=JSON.parse(JSON.stringify(yd.meals[meal]));
+  // Archiv-Tage haben keine Einzeleintraege; die Summe gehoert nicht kopiert (#232).
+  var src=(yd&&yd.meals&&yd.meals[meal]||[]).filter(function(e){return !e._archived;});
+  if(!src.length){showToast('Gestern kein Eintrag für diese Mahlzeit');return;}
+  var copies=JSON.parse(JSON.stringify(src));
   var day=getDay();
   day.meals[meal]=day.meals[meal].concat(copies);
   saveS();renderAll();
@@ -6586,8 +6601,10 @@ function getRecentFoods(){
   var dates=Object.keys(S.days).sort().reverse().slice(0,14);
   dates.forEach(function(d){
     var day=S.days[d];
+    if(!day||!day.meals)return;// komprimierter Alt-Tag (#232)
     MEALS.forEach(function(m){
       (day.meals[m]||[]).forEach(function(e){
+        if(e._archived)return;
         if(e.isRecipe||(e.ingredients&&e.ingredients.length)){
           var k=(e.name||'').toLowerCase();
           if(!seen[k]&&e.name){seen[k]=true;list.push({name:e.name,emoji:e.emoji,kcal:e.kcal,amount:e.amount,per100:e.per100,isRecipe:e.isRecipe,recipeId:e.recipeId,ingredients:e.ingredients,portions:e.portions});}
@@ -6710,6 +6727,23 @@ function handleEditMealPhoto(e){
 // Fotos wandern nach IndexedDB (window.NTPhotos), am Eintrag bleibt nur die
 // mealPhotoId. Ohne IndexedDB (Private-Mode-Edge-Fälle) Fallback auf das alte
 // Base64-Feld mealPhoto im localStorage-State.
+// Vorlagen und wiederkehrende Mahlzeiten kopieren Eintraege samt mealPhotoId —
+// dasselbe Foto kann also an mehreren Stellen haengen. Geloescht wird es erst,
+// wenn keine davon mehr darauf zeigt (#234).
+function photoInUse(pid){
+  var hit=function(list){return (list||[]).some(function(e){return e&&e.mealPhotoId===pid;});};
+  var days=S.days||{};
+  for(var k in days){
+    var m=days[k]&&days[k].meals;if(!m)continue;
+    for(var meal in m)if(hit(m[meal]))return true;
+  }
+  if((S.mealTemplates||[]).some(function(t){return hit(t.entries);}))return true;
+  return (S.recurringMeals||[]).some(function(r){return hit(r.entries);});
+}
+function delPhotoIfUnused(pid){
+  if(!pid||!window.NTPhotos||!NTPhotos.ok()||photoInUse(pid))return;
+  NTPhotos.del(pid).catch(function(){});
+}
 function saveMealPhoto(meal,idx,b64){
   var day=getDay();
   var entry=day.meals[meal]&&day.meals[meal][idx];
@@ -6719,7 +6753,7 @@ function saveMealPhoto(meal,idx,b64){
     var old=entry.mealPhotoId;
     NTPhotos.put(pid,b64).then(function(){
       entry.mealPhotoId=pid;delete entry.mealPhoto;
-      if(old)NTPhotos.del(old).catch(function(){});
+      delPhotoIfUnused(old);
       saveS();
       showToast('📷 Foto gespeichert');
     }).catch(function(){entry.mealPhoto=b64;saveS();showToast('📷 Foto gespeichert');});
@@ -6791,9 +6825,10 @@ function compressOldDays(){
       var day=S.days[d];
       var all=day.meals.breakfast.concat(day.meals.lunch,day.meals.dinner,day.meals.snack);
       var t=calcM(all);
-      if(window.NTPhotos&&NTPhotos.ok())all.forEach(function(e){if(e&&e.mealPhotoId)NTPhotos.del(e.mealPhotoId).catch(function(){});});
-      // Nur Summen behalten, Details + Fotos löschen
+      // Nur Summen behalten, Details + Fotos löschen — Fotos erst nach dem
+      // Ersetzen, und nur wenn keine Vorlage/Kopie sie noch nutzt (#234).
       S.days[d]={_compressed:true,kcal:Math.round(t.kcal),protein:Math.round(t.protein),carbs:Math.round(t.carbs),fat:Math.round(t.fat),water:day.water||0};
+      all.forEach(function(e){if(e)delPhotoIfUnused(e.mealPhotoId);});
       changed=true;
     }
   });
@@ -7171,7 +7206,7 @@ function renderLibrary(){
   } else {
     // Custom foods + DB
     var allFoods=[];
-    customFoods.forEach(function(f){allFoods.push({name:f.name,emoji:f.emoji,per100:f.per100,isCustom:true});});
+    customFoods.forEach(function(f,ci){allFoods.push({name:f.name,emoji:f.emoji,per100:f.per100,isCustom:true,ci:ci});});
     DB.forEach(function(f){allFoods.push({name:f.n,emoji:f.e,per100:dbPer100(f),isCustom:false});});
     var filtered=allFoods.filter(function(f){return !ql||f.name.toLowerCase().includes(ql);});
     filtered=filtered.slice(0,30);
@@ -7180,7 +7215,7 @@ function renderLibrary(){
     } else {
       window._libFoods=filtered;
     filtered.forEach(function(f,i){
-      var editBtn=f.isCustom?('<button type="button" onclick="openOwnFoodEdit('+i+')" style="background:none;border:none;font-size:16px;color:var(--g2);padding:4px;">&#9998;</button>'):'';
+      var editBtn=f.isCustom?('<button type="button" onclick="openOwnFoodEdit('+f.ci+')" style="background:none;border:none;font-size:16px;color:var(--g2);padding:4px;">&#9998;</button>'):'';
       var shareBtn='<button type="button" onclick="shareLibFood('+i+')" style="background:none;border:none;font-size:16px;color:var(--mu);padding:4px;" title="Teilen">📤</button>';
       html+='<div style="background:white;border-radius:12px;padding:10px 14px;box-shadow:var(--sh);display:flex;align-items:center;gap:10px;">'
         +'<div style="font-size:22px;">'+esc(f.emoji||'&#127374;')+'</div>'
@@ -7397,11 +7432,12 @@ function renderHistory(){
     var day=S.days[k]||{};var meals=day.meals||{};
     var kcal=0,count=0;
     Object.keys(meals).forEach(function(m){(meals[m]||[]).forEach(function(e){kcal+=e.kcal||0;count++;});});
+    if(day._compressed)kcal=day.kcal||0;// Archiv-Tag: nur die Summe ist erhalten (#232)
     var d=new Date(k+'T00:00:00');
     var dayLabel=days[d.getDay()]+', '+d.getDate()+'. '+months[d.getMonth()];
     return'<div class="list-row" onclick="goToDay(\''+k+'\')">'
       +'<div class="lr-ic">📅</div>'
-      +'<div class="lr-body"><div class="lr-name">'+dayLabel+'</div><div class="lr-sub">'+count+' Posten</div></div>'
+      +'<div class="lr-body"><div class="lr-name">'+dayLabel+'</div><div class="lr-sub">'+(day._compressed?'Archiviert':count+' Posten')+'</div></div>'
       +'<div class="lr-val">'+Math.round(kcal)+'<small style="font-family:Inter;font-size:11px;color:var(--mu);font-weight:500;"> kcal</small></div>'
       +(count?'<button type="button" title="Diesen Tag teilen" onclick="event.stopPropagation();shareDay(\''+k+'\')" style="background:none;border:none;font-size:16px;color:var(--mu);padding:4px 2px 4px 8px;cursor:pointer;">📤</button>':'')
       +'</div>';
@@ -7874,29 +7910,29 @@ function axTestSync(){
 }
 
 </script>
-<script src="picker.js?v=0.269"></script>
-<script src="js/health-sync.js?v=0.269"></script>
-<script src="js/sync-core.js?v=0.269"></script>
-<script src="js/baby.js?v=0.269"></script>
-<script src="js/baby-meds.js?v=0.269"></script>
-<script src="js/baby-growth-data.js?v=0.269"></script>
-<script src="js/baby-growth.js?v=0.269"></script>
-<script src="js/baby-week.js?v=0.269"></script>
-<script src="js/baby-milestones.js?v=0.269"></script>
-<script src="js/baby-midwife.js?v=0.269"></script>
-<script src="js/shopping.js?v=0.269"></script>
-<script src="js/partner.js?v=0.269"></script>
-<script src="js/alexa-sync.js?v=0.269"></script>
-<script src="js/dashboard.js?v=0.269"></script>
-<script src="js/features.js?v=0.269"></script>
-<script src="js/mealplan.js?v=0.269"></script>
-<script src="js/onedrive.js?v=0.269"></script>
-<script src="js/autosave.js?v=0.269"></script>
-<script src="js/recurring.js?v=0.269"></script>
-<script src="js/stats.js?v=0.269"></script>
-<script src="js/reminders.js?v=0.269"></script>
-<script src="js/templates.js?v=0.269"></script>
-<script src="js/offline-queue.js?v=0.269"></script>
+<script src="picker.js?v=0.270"></script>
+<script src="js/health-sync.js?v=0.270"></script>
+<script src="js/sync-core.js?v=0.270"></script>
+<script src="js/baby.js?v=0.270"></script>
+<script src="js/baby-meds.js?v=0.270"></script>
+<script src="js/baby-growth-data.js?v=0.270"></script>
+<script src="js/baby-growth.js?v=0.270"></script>
+<script src="js/baby-week.js?v=0.270"></script>
+<script src="js/baby-milestones.js?v=0.270"></script>
+<script src="js/baby-midwife.js?v=0.270"></script>
+<script src="js/shopping.js?v=0.270"></script>
+<script src="js/partner.js?v=0.270"></script>
+<script src="js/alexa-sync.js?v=0.270"></script>
+<script src="js/dashboard.js?v=0.270"></script>
+<script src="js/features.js?v=0.270"></script>
+<script src="js/mealplan.js?v=0.270"></script>
+<script src="js/onedrive.js?v=0.270"></script>
+<script src="js/autosave.js?v=0.270"></script>
+<script src="js/recurring.js?v=0.270"></script>
+<script src="js/stats.js?v=0.270"></script>
+<script src="js/reminders.js?v=0.270"></script>
+<script src="js/templates.js?v=0.270"></script>
+<script src="js/offline-queue.js?v=0.270"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

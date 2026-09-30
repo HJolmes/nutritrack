@@ -1,7 +1,9 @@
-// NutriTrack – Statistik, Gewichtsverlauf und Wochenbericht (v0.250)
+// NutriTrack – Statistik, Gewichtsverlauf und Wochenbericht (v0.277)
 // Klassisches Script, kein Modul. Exportiert window.NTStats und greift direkt auf
 // die globalen Helfer aus index.html zu (S, saveS, esc, showToast, today,
-// addDays, fmtDate, calcM, getDay, callClaude, canUseAi, openOv, closeOv).
+// addDays, fmtDate, calcM, getDay, callClaude, canUseAi, showAiUnavailable,
+// aiSourceBadgeHtml, _kcalAmpel, getMacroTargets, openOv, closeOv) sowie auf
+// window.NTQueue.
 //
 // Gewicht liegt in S.weightLog als {datum: kg} – ein Wert je Tag, der letzte
 // gewinnt. Das ist Absicht: Wer sich morgens und abends wiegt, will keine zwei
@@ -55,10 +57,15 @@ function renderStatsPanel(){
   renderWeightChart();
   // 7-Tage-Balken (rendert auch die Streak-Kachel)
   renderWeekBars();
-  // Offline-Queue
-  renderOfflineQueuePanel();
+  // Offline-Queue – renderOfflineQueuePanel ist in offline-queue.js privat
+  // (IIFE); der blosse Name warf seit v0.249 bei jedem Oeffnen einen
+  // ReferenceError und riss alles darunter mit.
+  if(window.NTQueue)NTQueue.renderPanel();
   // Zielüberprüfung
   checkGoalAchieved();
+  // Wochenbericht zuletzt und gekapselt: Ein unerwarteter Tag darf den Rest
+  // des Panels nicht mitreissen.
+  try{renderWeekReport();}catch(e){console.warn('[NTStats] Wochenbericht',e);}
 }
 
 function renderWeightChart(){
@@ -124,11 +131,11 @@ function renderWeekBars(){
   if(!barsEl)return;
   var days=[];
   for(var i=n-1;i>=0;i--)days.push(addDays(today(),-i));
+  // dayTotals: robust gegen Archivtage und Tage ohne meals/Slots (Import,
+  // Altversion) – sonst warf der Balken und riss den Wochenbericht mit (#208).
   var kcals=days.map(function(d){
-    var day=S.days[d];if(!day)return 0;
-    if(day._compressed)return day.kcal||0;
-    var all=day.meals.breakfast.concat(day.meals.lunch,day.meals.dinner,day.meals.snack);
-    return Math.round(calcM(all).kcal);
+    var t=dayTotals(S.days[d]);
+    return t?Math.round(t.kcal):0;
   });
   var maxK=Math.max(S.goal,Math.max.apply(null,kcals),1);
   var isToday=today();
@@ -159,54 +166,232 @@ function renderWeekBars(){
   var avg=0,cnt=0;
   kcals.forEach(function(k,i){if(k>0&&days[i]!==isToday){avg+=k;cnt++;}});
   var streak=0,d2=today();
-  while(true){var dy=S.days[d2];if(!dy)break;var k=dy._compressed?dy.kcal:calcM(dy.meals.breakfast.concat(dy.meals.lunch,dy.meals.dinner,dy.meals.snack)).kcal;if(k<10)break;streak++;d2=addDays(d2,-1);}
+  while(true){var dt=dayTotals(S.days[d2]);if(!dt)break;if((dt.kcal||0)<10)break;streak++;d2=addDays(d2,-1);}
   var streakEl=document.getElementById('streakNum');
   var avgEl=document.getElementById('avgKcal');
   if(streakEl)streakEl.textContent=streak;
   if(avgEl)avgEl.textContent=cnt?Math.round(avg/cnt):0;
 }
 
-// ── KI-Wochenbericht ──
+// ── Wochenbericht ──
+// Deterministisch aus S gerechnet, ohne Netz; die KI formuliert auf Wunsch nur
+// dieselben Kennzahlen aus (#208). Der Bericht schreibt nichts nach S – Backup,
+// Import, Sync und aeltere App-Versionen sind nicht betroffen.
+//
+// Datenbasis: die letzten 7 ABGESCHLOSSENEN Tage (heute zaehlt nicht, er ist
+// angefangen), netto mit Sport wie die Hero-Ampel (kcal − Sport). Eine andere
+// Antwort auf die Frage „heute mitzaehlen?" kostet genau diese Zeile.
+var REPORT_INCLUDE_TODAY=false;
+// Ein Tag gilt ab 10 kcal als eingetragen – dieselbe Grenze wie die Streak.
+var REPORT_MIN_KCAL=10;
+// Die Bewertung nutzt nur vorhandene App-Schwellen:
+// - kcal: _kcalAmpel (±10 % = im Plan, sonst nach Zielrichtung aus
+//   S.goalWeight vs. S.weight). Bewertet wird gegen das HEUTIGE S.goal; ein
+//   Ziel je Tag wird nicht gespeichert.
+// - Makros: getMacroTargets() mit den Grenzen der Naehrwert-Ampel
+//   (renderNutrientAmpel): Protein ≥90 % gruen, ≥60 % gelb; Kohlenhydrate und
+//   Fett ≤100 % gruen, ≤130 % gelb.
+// - Protein je kg Koerpergewicht nur als Zahl, ohne Korridor und ohne Wertung.
+// Empfehlung – genau eine, feste Liste, nur relativ zu App-Zielen, in dieser
+// Rangfolge:
+//   1. Protein unter 60 % des App-Ziels  → eiweissreiche Lebensmittel einplanen
+//   2. mehr als die Haelfte der Tage abseits des Ziels → naeher ans kcal-Ziel,
+//      mit der Zahl der Tage je Richtung (darueber/darunter)
+//   3. weniger als 4 eingetragene Tage   → an mehr Tagen eintragen
+//   4. sonst                             → weiter so
+// Es gibt keinen Baustein, der zu weniger als dem Kalorienziel raet.
+
+// Summen eines Tages, robust gegen Archivtage (_compressed: nur Summen, kein
+// meals), fehlendes meals, fehlende Slots und fehlendes exercise – Tage aus
+// einem Import oder einer aelteren Version (wie _encDayMeals in index.html).
+function dayTotals(d){
+  if(!d)return null;
+  if(d._compressed)return{kcal:d.kcal||0,protein:d.protein||0,carbs:d.carbs||0,fat:d.fat||0,burned:0};
+  var m=d.meals||{};
+  var all=[].concat(m.breakfast||[],m.lunch||[],m.dinner||[],m.snack||[]).filter(Boolean);
+  var t=calcM(all);
+  var burned=(d.exercise||[]).reduce(function(a,e){return a+((e&&e.kcal)||0);},0);
+  return{kcal:t.kcal,protein:t.protein,carbs:t.carbs,fat:t.fat,burned:burned};
+}
+
+function _macroStatus(val,target,moreIsBetter){
+  if(!(target>0))return '';// ohne Ziel keine Wertung
+  var r=val/target;
+  if(moreIsBetter)return r>=0.9?'gruen':r>=0.6?'gelb':'rot';
+  return r<=1?'gruen':r<=1.3?'gelb':'rot';
+}
+
+function weekStats(){
+  var t0=today();
+  var first=REPORT_INCLUDE_TODAY?0:1;
+  var goal=S.goal||2000;
+  var days=[];
+  for(var i=first+6;i>=first;i--)days.push(addDays(t0,-i));
+  var rows=[];
+  days.forEach(function(d){
+    var t=dayTotals(S.days&&S.days[d]);
+    if(!t||t.kcal<REPORT_MIN_KCAL)return;
+    var net=Math.max(0,t.kcal-t.burned);
+    var a=_kcalAmpel(goal,net,S);
+    var pct=Math.round(Math.abs(goal-net)/goal*100);// wie in _kcalAmpel
+    rows.push({date:d,kcal:t.kcal,burned:t.burned,net:net,protein:t.protein,carbs:t.carbs,fat:t.fat,
+      pct:pct,above:net>goal,state:a.state});
+  });
+  var n=rows.length;
+  var r={from:days[0],to:days[days.length-1],span:days.length,goal:goal,rows:rows,tracked:n,
+    inPlan:0,dirOk:0,off:0,offAbove:0,offBelow:0,best:null,worst:null,
+    avgKcal:0,avgNet:0,avgBurned:0,avgP:0,avgC:0,avgF:0,
+    mt:null,stP:'',stC:'',stF:'',kg:0,proteinPerKg:null,weightDelta:null,weightFrom:null,weightTo:null,dir:'maintain'};
+  var sum={kcal:0,net:0,burned:0,p:0,c:0,f:0};
+  rows.forEach(function(x){
+    if(x.pct<=10)r.inPlan++;
+    else if(x.state==='balanced')r.dirOk++;
+    else{r.off++;if(x.above)r.offAbove++;else r.offBelow++;}
+    // Bester Tag: kleinste Abweichung vom Ziel; bei Gleichstand der fruehere.
+    if(!r.best||x.pct<r.best.pct)r.best=x;
+    // Schwaechster Tag: groesste Abweichung unter den Tagen abseits des Ziels.
+    if(x.state==='over'&&(!r.worst||x.pct>r.worst.pct))r.worst=x;
+    sum.kcal+=x.kcal;sum.net+=x.net;sum.burned+=x.burned;sum.p+=x.protein;sum.c+=x.carbs;sum.f+=x.fat;
+  });
+  if(n){
+    r.avgKcal=Math.round(sum.kcal/n);r.avgNet=Math.round(sum.net/n);r.avgBurned=Math.round(sum.burned/n);
+    r.avgP=Math.round(sum.p/n);r.avgC=Math.round(sum.c/n);r.avgF=Math.round(sum.f/n);
+  }
+  var mt=getMacroTargets()||{};
+  r.mt={protein:+mt.protein||0,carbs:+mt.carbs||0,fat:+mt.fat||0};
+  r.stP=_macroStatus(r.avgP,r.mt.protein,true);
+  r.stC=_macroStatus(r.avgC,r.mt.carbs,false);
+  r.stF=_macroStatus(r.avgF,r.mt.fat,false);
+  // Gewicht: Eintraege im Fenster; fuer g/kg der letzte davon, sonst das
+  // neueste bekannte Gewicht.
+  var wl=S.weightLog||{};
+  var wd=Object.keys(wl).filter(function(d){return d>=r.from&&d<=r.to&&+wl[d]>0;}).sort();
+  if(wd.length>=2){
+    r.weightFrom=+wl[wd[0]];r.weightTo=+wl[wd[wd.length-1]];
+    r.weightDelta=Math.round((r.weightTo-r.weightFrom)*10)/10;
+  }
+  r.kg=wd.length?+wl[wd[wd.length-1]]:(+_latestWeight()||0);
+  if(r.kg>0&&n)r.proteinPerKg=Math.round(r.avgP/r.kg*10)/10;
+  // Zielrichtung nur fuer den Text – dieselbe Regel wie _kcalAmpel.
+  if(S.goalWeight&&S.weight){
+    if(S.goalWeight<S.weight-0.5)r.dir='lose';
+    else if(S.goalWeight>S.weight+0.5)r.dir='gain';
+  }
+  r.advice=_weekAdvice(r);
+  return r;
+}
+
+function _num1(x){return String(Math.round(x*10)/10).replace('.',',');}
+function _signed(x,unit){return(x>0?'+':x<0?'−':'±')+_num1(Math.abs(x))+unit;}
+function _devText(x){return x.pct?x.pct+' % '+(x.above?'über':'unter')+' Ziel':'genau im Ziel';}
+function _shortDate(d){var p=d.split('-');return p[2]+'.'+p[1]+'.';}
+
+function _tage(n){return n===1?'1 Tag':n+' Tagen';}
+function _weekAdvice(r){
+  if(!r.tracked)return '';
+  if(r.stP==='rot')
+    return 'Protein im Schnitt '+r.avgP+' g von '+r.mt.protein+' g – eiweißreiche Lebensmittel einplanen.';
+  // Die Zahlen je Richtung getrennt: Beim Halten koennen beide vorkommen, und
+  // „an 4 Tagen darueber" waere bei 2 darueber und 2 darunter falsch.
+  if(r.off*2>r.tracked)
+    return 'Näher an dein Ziel von '+r.goal+' kcal – an '
+      +(r.offAbove&&r.offBelow?_tage(r.offAbove)+' lagst du mehr als 10 % darüber, an '+r.offBelow+' darunter'
+        :_tage(r.off)+' lagst du mehr als 10 % '+(r.offAbove?'darüber':'darunter'))+'.';
+  if(r.tracked<4)
+    return 'An mehr Tagen eintragen, damit der Bericht aussagekräftig ist.';
+  // Hier liegt hoechstens die Haelfte abseits – „an den meisten Tagen" waere
+  // bei genau der Haelfte falsch, deshalb die Zahl.
+  return 'Weiter so – deine Kalorien lagen an '+(r.tracked-r.off)+' von '+r.tracked+' Tagen im Rahmen deines Ziels.';
+}
+
+var _ST_COL={gruen:'#2d7d52',gelb:'#f07700',rot:'#c62828'};
+function _dot(st){return st?'<span style="color:'+_ST_COL[st]+';">●</span> ':'';}
+
+function renderWeekReport(){
+  var el=document.getElementById('weekReportText');
+  if(!el)return;
+  var r=weekStats();
+  // Nur #weekReportText. #weekReportAi und #weekReportSource gehoeren dem
+  // KI-Teil und bleiben stehen, wenn das Panel neu gerendert wird (Wiegen,
+  // Tab-Wechsel) – sonst waere eine bezahlte Ausformulierung sofort weg.
+  if(!r.tracked){
+    el.innerHTML='<div>Noch keine eingetragenen Tage in den letzten 7 Tagen.'+(REPORT_INCLUDE_TODAY?'':' Der heutige Tag zählt, sobald er vorbei ist.')+'</div>';
+    return;
+  }
+  var dirName=r.dir==='lose'?'Abnehmen':r.dir==='gain'?'Zunehmen':'Halten';
+  var L=[];
+  L.push('<div style="font-size:11px;">'+esc(_shortDate(r.from))+'–'+esc(_shortDate(r.to))+' · '+esc(r.tracked)+' von '+esc(r.span)+' Tagen eingetragen'+(REPORT_INCLUDE_TODAY?'':' · heute zählt nicht')+'</div>');
+  var kc='An '+esc(r.inPlan)+' von '+esc(r.tracked)+' Tagen im Plan (±10 %)';
+  if(r.dirOk)kc+=', an '+esc(r.dirOk)+' weiteren passend zu deinem Ziel ('+esc(dirName)+')';
+  L.push('– '+kc+'.');
+  var avgDev=Math.round((r.avgNet-r.goal)/r.goal*100);
+  L.push('– Ø '+esc(r.avgNet)+' kcal/Tag netto'+(r.avgBurned?' ('+esc(r.avgKcal)+' gegessen − '+esc(r.avgBurned)+' Sport)':'')
+    +' · Ziel '+esc(r.goal)+' kcal ('+esc(_signed(avgDev,' %'))+')');
+  if(r.best&&r.tracked>=2)
+    L.push('– Bester Tag: '+esc(fmtDate(r.best.date))+' ('+esc(Math.round(r.best.net))+' kcal, '+esc(_devText(r.best))+')');
+  if(r.worst&&r.worst!==r.best)
+    L.push('– Schwächster Tag: '+esc(fmtDate(r.worst.date))+' ('+esc(Math.round(r.worst.net))+' kcal, '+esc(_devText(r.worst))+')');
+  var pl='– '+_dot(r.stP)+'Protein Ø '+esc(r.avgP)+' g';
+  if(r.mt.protein>0)pl+=' = '+esc(Math.round(r.avgP/r.mt.protein*100))+' % deines Ziels von '+esc(r.mt.protein)+' g';
+  if(r.proteinPerKg!=null)pl+=' · '+esc(_num1(r.proteinPerKg))+' g je kg Körpergewicht';
+  L.push(pl);
+  var cf='– '+_dot(r.stC)+'Kohlenhydrate Ø '+esc(r.avgC)+' g'+(r.mt.carbs>0?' (Ziel '+esc(r.mt.carbs)+' g)':'')
+    +' · '+_dot(r.stF)+'Fett Ø '+esc(r.avgF)+' g'+(r.mt.fat>0?' (Ziel '+esc(r.mt.fat)+' g)':'');
+  L.push(cf);
+  if(r.weightDelta!=null)
+    L.push('– Gewicht: '+esc(_signed(r.weightDelta,' kg'))+' in dieser Woche ('+esc(_num1(r.weightFrom))+' → '+esc(_num1(r.weightTo))+' kg)');
+  L.push('<div style="margin-top:6px;color:var(--tx);"><b>Empfehlung:</b> '+esc(r.advice)+'</div>');
+  el.innerHTML=L.map(function(x){return x.charAt(0)==='<'?x:'<div>'+x+'</div>';}).join('');
+}
+
+// ── KI-Ausformulierung (optional) ──
+// Die KI rechnet nichts: Sie bekommt die Kennzahlen aus weekStats() und
+// formuliert sie nur aus. Ergebnis und Quellen-Badge stehen unter dem Bericht.
+var _WR_LABEL='✨ Ausformulieren';
 function requestWeekReport(){
   if(!canUseAi()){showAiUnavailable();return;}
   var btn=document.getElementById('weekReportBtn');
+  var r=weekStats();
+  if(!r.tracked){showToast('Keine Daten dieser Woche');return;}
+  var aiEl=document.getElementById('weekReportAi');
+  var srcEl=document.getElementById('weekReportSource');
+  if(aiEl)aiEl.textContent='';
+  if(srcEl)srcEl.innerHTML='';
   if(btn){btn.disabled=true;btn.textContent='⏳...';}
-  var lines=[];
-  var avgKcal=0,cnt=0;
-  for(var i=6;i>=0;i--){
-    var d=addDays(today(),-i);
-    var dy=S.days[d];if(!dy)continue;
-    var all=dy.meals.breakfast.concat(dy.meals.lunch,dy.meals.dinner,dy.meals.snack);
-    var t=calcM(all);if(t.kcal<10)continue;
-    lines.push(fmtDate(d)+': '+Math.round(t.kcal)+' kcal, P '+Math.round(t.protein)+'g, F '+Math.round(t.fat)+'g, C '+Math.round(t.carbs)+'g');
-    avgKcal+=t.kcal;cnt++;
-  }
-  if(!cnt){showToast('Keine Daten dieser Woche');if(btn){btn.disabled=false;btn.textContent='Erstellen';}return;}
   var allPrefs=(S.dietPrefs||[]).concat(S.dietFree?[S.dietFree]:[]);
-  var dir='maintain';
-  if(S.goalWeight&&S.weight){
-    if(S.goalWeight<S.weight-0.5)dir='lose';
-    else if(S.goalWeight>S.weight+0.5)dir='gain';
-  }
-  var dirText=dir==='lose'?'Abnehmen (Kaloriendefizit)':dir==='gain'?'Zunehmen (Kalorienüberschuss)'  :'Gewicht halten';
-  var prompt='Erstelle einen deutschen Wochenbericht zur Ernährung.\n'
-    +'Format: 3–5 Stichpunkte (je 1 kurzer Satz, mit „–" einleiten), danach „Empfehlung für nächste Woche:" gefolgt von 1–2 konkreten Sätzen. Kein einleitender Satz.\n'
-    +'Tagesdaten:\n'+lines.join('\n')+'\n'
-    +'Kalorienziel: '+S.goal+' kcal/Tag\n'
-    +'Zielrichtung: '+dirText+'\n'
-    +(S.goalWeight&&S.weight?'Gewicht: '+S.weight+' kg → Ziel: '+S.goalWeight+' kg\n':'')
-    +(allPrefs.length?'Ernährungspräferenzen: '+allPrefs.join(', ')+'\n':'')
-    +'Durchschnitt: '+Math.round(avgKcal/cnt)+' kcal/Tag\n'
-    +'Bewerte Tage relativ zur Zielrichtung (nicht nach absolutem kcal). Besten/schlechtesten Tag benennen.';
+  var dirText=r.dir==='lose'?'Abnehmen (Kaloriendefizit)':r.dir==='gain'?'Zunehmen (Kalorienüberschuss)':'Gewicht halten';
+  var stName={gruen:'im Ziel',gelb:'knapp daneben',rot:'deutlich daneben'};
+  var lines=r.rows.map(function(x){
+    return fmtDate(x.date)+': '+Math.round(x.net)+' kcal netto'+(x.burned?' ('+Math.round(x.kcal)+' gegessen, '+Math.round(x.burned)+' Sport)':'')
+      +', '+x.pct+' % '+(x.above?'über':'unter')+' Ziel, P '+Math.round(x.protein)+'g, F '+Math.round(x.fat)+'g, C '+Math.round(x.carbs)+'g';
+  });
+  var facts=[
+    'Zeitraum: letzte 7 '+(REPORT_INCLUDE_TODAY?'Tage inklusive heute':'abgeschlossene Tage')+', davon '+r.tracked+' eingetragen',
+    'Kalorienziel: '+r.goal+' kcal/Tag, Zielrichtung: '+dirText,
+    'Im Plan (±10 %): '+r.inPlan+' Tage; weitere passend zur Zielrichtung: '+r.dirOk+'; abseits des Ziels: '+r.off,
+    'Durchschnitt: '+r.avgNet+' kcal/Tag netto ('+r.avgKcal+' gegessen, '+r.avgBurned+' Sport)',
+    r.best&&r.tracked>=2?'Bester Tag: '+fmtDate(r.best.date)+' ('+r.best.pct+' % Abweichung)':'',
+    r.worst&&r.worst!==r.best?'Schwächster Tag: '+fmtDate(r.worst.date)+' ('+r.worst.pct+' % Abweichung)':'',
+    'Protein Ø '+r.avgP+' g'+(r.mt.protein>0?' von '+r.mt.protein+' g Ziel ('+stName[r.stP]+')':'')+(r.proteinPerKg!=null?', '+r.proteinPerKg+' g je kg':''),
+    'Kohlenhydrate Ø '+r.avgC+' g'+(r.mt.carbs>0?' von '+r.mt.carbs+' g ('+stName[r.stC]+')':'')+', Fett Ø '+r.avgF+' g'+(r.mt.fat>0?' von '+r.mt.fat+' g ('+stName[r.stF]+')':''),
+    r.weightDelta!=null?'Gewichtsänderung: '+r.weightDelta+' kg ('+r.weightFrom+' → '+r.weightTo+' kg)':'',
+    allPrefs.length?'Ernährungspräferenzen: '+allPrefs.join(', '):'',
+    'Empfehlung der App: '+r.advice
+  ].filter(Boolean);
+  var prompt='Formuliere diesen deutschen Wochenbericht zur Ernährung aus.\n'
+    +'Format: 3–5 Stichpunkte (je 1 kurzer Satz, mit „–" einleiten), danach „Empfehlung für nächste Woche:" mit 1–2 Sätzen, die die Empfehlung der App aufgreifen. Kein einleitender Satz.\n'
+    +'Nutze ausschließlich die folgenden Kennzahlen. Rechne nichts neu, erfinde keine Zahlen und nenne keine eigenen Richtwerte.\n'
+    +'Kennzahlen:\n'+facts.join('\n')+'\n'
+    +'Tage:\n'+lines.join('\n');
   callClaude('claude-haiku-4-5',[{type:'text',text:prompt}],400,
     function(text){
-      var el=document.getElementById('weekReportText');
-      if(el)el.textContent=text.trim();
-      var srcEl=document.getElementById('weekReportSource');
-      if(srcEl)srcEl.innerHTML=aiSourceBadgeHtml();
-      if(btn){btn.disabled=false;btn.textContent='Aktualisieren';}
+      var a=document.getElementById('weekReportAi');
+      if(a)a.textContent=text.trim();
+      var s=document.getElementById('weekReportSource');
+      if(s)s.innerHTML=aiSourceBadgeHtml();
+      if(btn){btn.disabled=false;btn.textContent=_WR_LABEL;}
     },
-    function(err){if(btn){btn.disabled=false;btn.textContent='Erstellen';}showToast('Fehler: '+err);}
+    function(err){if(btn){btn.disabled=false;btn.textContent=_WR_LABEL;}showToast('Fehler: '+err);}
   );
 }
 
@@ -267,7 +452,7 @@ function checkGoalAchieved(){
 }
 
 // Nach aussen nur, was index.html und das generierte HTML wirklich rufen.
-// Intern bleiben: renderWeightChart, renderWeekBars
+// Intern bleiben: renderWeightChart, renderWeekBars, renderWeekReport, weekStats, dayTotals
 window.NTStats={
   logWeight:logWeight,
   switchTab:switchStatsTab,

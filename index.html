@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.285"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.286"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.285"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.286"></script>
 <script>
   (function(){
     if(typeof ZXingWASM==='undefined'){console.warn('zxing-wasm load failed, ZXing-JS fallback aktiv');return;}
@@ -1059,10 +1059,11 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
         <div id="weightChartEmpty" style="text-align:center;color:var(--mu);font-size:13px;padding:20px 0;">Noch keine Gewichtsdaten</div>
       </div>
       <div class="trend-card">
-        <div class="head"><h4>KI-Bericht ✨</h4>
-          <button type="button" data-act="NTStats.weekReport" id="weekReportBtn" style="font-size:12px;background:var(--g1);border:none;border-radius:999px;padding:6px 12px;color:white;font-weight:600;cursor:pointer;">Erstellen</button>
+        <div class="head"><h4>Wochenbericht</h4>
+          <button type="button" data-act="NTStats.weekReport" id="weekReportBtn" style="font-size:12px;background:var(--g1);border:none;border-radius:999px;padding:6px 12px;color:white;font-weight:600;cursor:pointer;">✨ Ausformulieren</button>
         </div>
         <div id="weekReportText" style="font-size:13px;color:var(--mu);line-height:1.6;margin-top:8px;"></div>
+        <div id="weekReportAi" style="font-size:13px;color:var(--tx);line-height:1.6;margin-top:8px;white-space:pre-line;"></div>
         <div id="weekReportSource" style="margin-top:6px;"></div>
       </div>
       <div class="trend-card" id="offlineQueueWrap" style="display:none;">
@@ -1217,7 +1218,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.285</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.286</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1525,7 +1526,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
       <details><summary>👫 Partner</summary><div class="hb">Unter <strong>Mehr → 🔗 Verbindungen → 📬 Partner-Postfach</strong> verbindest du dein Gerät mit dem deines Partners: auf einem Gerät „Kopplung starten", den Code auf dem anderen einfügen. Trag dort auch deinen Namen ein — der steht beim Empfänger an jeder Sendung.<br><br><strong>Es wird nichts automatisch übertragen.</strong> Nur was du ausdrücklich sendest, geht raus und landet im <strong>Postfach</strong> des anderen. Das sitzt auf „Heute" oben rechts (📬) und trägt eine Flagge mit der Zahl der ungelesenen Sendungen; bei etwas Neuem erscheint zusätzlich eine Kachel im Tagesüberblick. Eine Sendung, die zu einer bestimmten Mahlzeit gehört, zeigt ihr 📬 außerdem <strong>an genau dieser Mahlzeit</strong> — an der Kachel auf „Heute" und in der geöffneten Mahlzeit. Ein Tipp darauf öffnet die Übernahme direkt, mit der richtigen Mahlzeit schon ausgewählt. Dort wird jede Sendung einzeln angesehen und übernommen — bei einem ganzen Tag wählst du, welche Mahlzeiten du willst, auf welchen Tag sie sollen und ob Vorhandenes ergänzt oder ersetzt wird; bei einem Zeitraum hakst du einzelne Tage ab. Eure Tagebücher bleiben also getrennt.<br><br>Die Sendungen werden auf dem Gerät verschlüsselt; der Schlüssel steckt nur im Kopplungs-Code und wird nie übertragen. Der Code gilt <strong>nur</strong> fürs Partner-Postfach — Einkaufszettel und Baby-Tagebuch haben eigene Codes und bleiben unberührt. Neue Sendungen holt die App beim Start, beim Zurückkehren in die App und solange das Postfach offen ist; das kann bis zu einer Minute dauern.</div></details>
       <details><summary>💾 Backup</summary><div class="hb">Alle Sicherungswege liegen unter <strong>Mehr → 💾 Backup &amp; Daten</strong>: „Jetzt sichern"-Knopf, Datei-Export/-Import (JSON), OneDrive-Sync mit täglichem Autospeicher sowie lokale Autospeicher-Stände. Tipp: Vor einem Gerätewechsel einmal exportieren. Hinweis: Mahlzeit-Fotos sind gerätelokal und nicht Teil der Backup-Datei.</div></details>
       <details><summary>🏃 Sport-Sync</summary><div class="hb">Unter <strong>Mehr → 🧩 Funktionen → 🏃 Sport &amp; Aktivität → Sport-Sync</strong> erzeugst du ein Token und verbindest eine iOS-Kurzbefehl-Automation („Wenn Training endet") oder einen Android-HTTP-Shortcut. Abgeschlossene Workouts erscheinen dann automatisch mit Apple-/Samsung-Badge und reduzieren dein Tagesziel.</div></details>
-      <details><summary>🤖 KI</summary><div class="hb">Foto-Erkennung, Chat und Wochenbericht laufen über einen geschützten KI-Zugang — dafür brauchst du das Proxy-Passwort (Mehr → 🤖 KI). Optional kannst du dort einen eigenen KI-Anbieter (DeepSeek, OpenAI, Gemini, …) mit eigenem API-Key hinterlegen. Ohne Passwort funktioniert alles außer den KI-Funktionen.</div></details>
+      <details><summary>🤖 KI</summary><div class="hb">Foto-Erkennung, Chat und das Ausformulieren des Wochenberichts laufen über einen geschützten KI-Zugang — dafür brauchst du das Proxy-Passwort (Mehr → 🤖 KI). Optional kannst du dort einen eigenen KI-Anbieter (DeepSeek, OpenAI, Gemini, …) mit eigenem API-Key hinterlegen. Ohne Passwort funktioniert alles außer den KI-Funktionen — der Wochenbericht selbst wird ohne KI berechnet.</div></details>
       <details><summary>🤰 Schwangerschaft &amp; 🤱 Stillzeit</summary><div class="hb">Unter <strong>Mehr → Profil</strong> kannst du Schwangerschaft (Trimester oder errechneter Termin) oder Stillzeit angeben — beides schließt sich gegenseitig aus. Zuschläge auf den Kalorienbedarf: 2. Trimester +300, 3. Trimester +500, ausschließliches Stillen +500, Teilstillen mit Beikost +250 kcal/Tag (Richtwerte nach DGE). Der Zuschlag greift, sobald du „🧮 Kalorienbedarf berechnen" antippst. Beim Abnehmen in der Stillzeit deckelt die App das Defizit auf 500 kcal/Tag und geht nie unter 1800 kcal — darunter leiden Milchmenge und Nährstoffdichte. Zusätzlich kannst du die <strong>Lebensmittel-Ampel</strong> einschalten: Sie bewertet eingetragene Lebensmittel und meldet sich bei gelben und roten Treffern. Die Stillzeit-Ampel ist bewusst liberaler als die Schwangerschafts-Ampel — Rohmilchkäse, Sushi und Salami sind beim Stillen unbedenklich. Die Ampel ersetzt keine Beratung durch Hebamme, Ärztin oder Arzt.</div></details>
       <details><summary>👶 Baby-Tagebuch</summary><div class="hb">Einschalten unter <strong>Mehr → 🧩 Funktionen</strong> — unabhängig von Schwangerschaft und Stillzeit, damit auch Partner, Väter und Betreuende es führen können. Danach erscheint eine Kachel auf „Heute"; alles Weitere steht unter <strong>Mehr → 🧩 Funktionen → 👶 Baby-Tagebuch</strong>. Festhalten lassen sich: <ul><li><strong>Stillen</strong> — welche Brust und wie lange; die App schlägt vor, welche Seite als Nächstes dran ist. Bei „Beide" lässt sich die <strong>Hauptseite</strong> angeben (die, an der mehr getrunken wurde) — daraus ergibt sich der Vorschlag für das nächste Mal</li><li><strong>Flasche</strong> — Menge in ml und Art (Muttermilch, Pre, Folgemilch)</li><li><strong>Windel</strong> — Pipi, Stuhl oder beides, bei Stuhl zusätzlich Farbe und Konsistenz</li><li><strong>Temperatur</strong> — mit Messort; ab 38,0 °C wird der Eintrag rot markiert</li><li><strong>Schlaf</strong> — von/bis, wobei eines von beiden genügt: Trag „schläft seit 13:00" ein, während es noch schläft, und tippe später in der Liste auf <strong>Wach jetzt</strong>. Ein Schnell-Knopf vom Typ Schlaf schaltet mit einem Tipp zwischen einschlafen und aufwachen um.</li><li><strong>Notiz</strong> — Freitext, z. B. „Vitamin D gegeben"</li></ul>Die Schnell-Knöpfe tragen mit einem Tipp und der aktuellen Uhrzeit ein — jeder Eintrag lässt sich danach antippen und in Zeit und Details korrigieren. Über <strong>⚙️ Schnell-Knöpfe</strong> stellst du sie frei ein: eigene Knöpfe anlegen (z. B. „Fläschchen 120 ml" oder „Vitamin D gegeben"), Symbol und Beschriftung wählen, sortieren, löschen oder alles zurücksetzen. Ein Knopf vom Typ Temperatur öffnet den Dialog, weil dort ein Messwert gebraucht wird; ein Schlaf-Knopf schaltet direkt zwischen einschlafen und aufwachen um.<br><br><strong>🔄 Zu zweit führen:</strong> Über „🔄 Sync" im Tagebuch koppelst du ein zweites Gerät — auf dem ersten „Kopplung starten", den Code auf dem zweiten Gerät einfügen. Danach gleichen sich die Einträge automatisch ab: nach jeder Änderung, beim Öffnen des Tagebuchs und beim Zurückkehren in die App. Ein Abgleich kann bis zu einer Minute brauchen; ohne Netz wird alles gesammelt und später nachgeholt. Ändern beide Geräte denselben Eintrag, gewinnt die spätere Änderung. <strong>Übertragen wird ausschließlich das Baby-Tagebuch</strong> — Mahlzeiten, Kalorien, Gewicht und Profil bleiben auf deinem Gerät. Die Einträge werden vor dem Senden auf dem Gerät verschlüsselt; der Schlüssel steckt nur im Kopplungs-Code. Deshalb: Den Code nur direkt an die Person weitergeben, die mitlesen soll — und wer ihn verliert, koppelt einfach neu. Sagt ihr Einträge per Alexa an, kommen sie bei <b>beiden</b> an, sobald einer von euch die App öffnet — dafür tragen beide Handys dasselbe Familien-Token (Mehr → 🔗 Verbindungen → 🗣️ Alexa). Die Einträge gehören immer zum Tag, der oben auf „Heute" ausgewählt ist, und wandern in jedes Backup mit. Das Tagebuch ist eine Gedächtnisstütze, keine medizinische Überwachung und stellt keine Diagnose.</div></details>
       <details><summary>❓ FAQ</summary><div class="hb"><strong>Warum stimmt eine Schätzung nicht?</strong> KI-Werte sind Näherungen — Menge und Zutaten lassen sich jederzeit anpassen.<br><strong>Funktioniert die App offline?</strong> Ja, Tagebuch, Suche (lokale Datenbank) und Bibliothek laufen offline; KI und Online-Suche brauchen Netz.<br><strong>Erinnerungen kommen nicht?</strong> Technisch bedingt erscheinen sie nur, solange die App geöffnet ist.<br><strong>Daten weg?</strong> Mehr → Backup &amp; Daten → Autospeicher anzeigen — dort liegen die letzten Stände.</div></details>
@@ -3281,7 +3282,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
       <!-- TAB: KI -->
       <div id="spanel-ki" style="display:none;">
         <div class="sf" style="margin-bottom:0;"><label class="lbl">🔑 Proxy-Passwort</label>
-          <div style="font-size:12px;color:var(--mu);line-height:1.5;margin-bottom:8px;">Passwort sichert den KI-Zugang (Foto-Erkennung, Chat, Wochenbericht). Es wird als SHA-256 Hash gespeichert – nie im Klartext.</div>
+          <div style="font-size:12px;color:var(--mu);line-height:1.5;margin-bottom:8px;">Passwort sichert den KI-Zugang (Foto-Erkennung, Chat, Ausformulieren des Wochenberichts). Es wird als SHA-256 Hash gespeichert – nie im Klartext.</div>
           <div id="aiProxyStatus" style="font-size:12px;color:var(--g1);font-weight:700;margin-bottom:10px;"></div>
           <input type="password" id="settProxyPwInput" placeholder="Neues Passwort eingeben" autocomplete="new-password"
             style="width:100%;box-sizing:border-box;padding:10px 12px;border:2px solid var(--br);border-radius:10px;font-size:14px;outline:none;margin-bottom:8px;"
@@ -3290,7 +3291,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
         </div>
         <div style="padding-top:12px;border-top:1px solid var(--br);margin-top:12px;">
           <label class="lbl" style="margin-bottom:8px;">🤖 KI-Anbieter (Chat &amp; Text)</label>
-          <div style="font-size:12px;color:var(--mu);line-height:1.5;margin-bottom:8px;">Wähle, an welchen KI-Anbieter die Text-Schätzungen (Chat, Wochenbericht) gehen. Fotos steuerst du separat unter „📷 Foto-KI". Mit eigenem API-Key wird dieser <b>zuerst</b> genutzt; ist das Kontingent aufgebraucht oder kommt kein Ergebnis, fällt NutriTrack automatisch auf Anthropic (Standard) zurück. Der Key wird nur auf diesem Gerät gespeichert.</div>
+          <div style="font-size:12px;color:var(--mu);line-height:1.5;margin-bottom:8px;">Wähle, an welchen KI-Anbieter die Text-Schätzungen (Chat, Ausformulieren des Wochenberichts) gehen. Fotos steuerst du separat unter „📷 Foto-KI". Mit eigenem API-Key wird dieser <b>zuerst</b> genutzt; ist das Kontingent aufgebraucht oder kommt kein Ergebnis, fällt NutriTrack automatisch auf Anthropic (Standard) zurück. Der Key wird nur auf diesem Gerät gespeichert.</div>
           <select id="aiProviderSelect" onchange="onAiProviderChange()"
             style="width:100%;box-sizing:border-box;padding:10px 12px;border:2px solid var(--br);border-radius:10px;font-size:14px;outline:none;margin-bottom:8px;background:#fff;"></select>
           <div id="aiProviderKeyWrap" style="display:none;">
@@ -3352,11 +3353,11 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.285"></script>
-<script src="js/fooddb.js?v=0.285"></script>
-<script src="js/fooddb-usda.js?v=0.285"></script>
-<script src="js/idb-photos.js?v=0.285"></script>
-<script src="js/changelog.js?v=0.285"></script>
+<script src="js/actions.js?v=0.286"></script>
+<script src="js/fooddb.js?v=0.286"></script>
+<script src="js/fooddb-usda.js?v=0.286"></script>
+<script src="js/idb-photos.js?v=0.286"></script>
+<script src="js/changelog.js?v=0.286"></script>
 <script>
 // ════════════════════════════════════════
 // SECTION: DATABASE
@@ -3375,7 +3376,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.285';
+var APP_VERSION='0.286';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -8053,29 +8054,29 @@ function axTestSync(){
 }
 
 </script>
-<script src="picker.js?v=0.285"></script>
-<script src="js/health-sync.js?v=0.285"></script>
-<script src="js/sync-core.js?v=0.285"></script>
-<script src="js/baby.js?v=0.285"></script>
-<script src="js/baby-meds.js?v=0.285"></script>
-<script src="js/baby-growth-data.js?v=0.285"></script>
-<script src="js/baby-growth.js?v=0.285"></script>
-<script src="js/baby-week.js?v=0.285"></script>
-<script src="js/baby-milestones.js?v=0.285"></script>
-<script src="js/baby-midwife.js?v=0.285"></script>
-<script src="js/shopping.js?v=0.285"></script>
-<script src="js/partner.js?v=0.285"></script>
-<script src="js/alexa-sync.js?v=0.285"></script>
-<script src="js/dashboard.js?v=0.285"></script>
-<script src="js/features.js?v=0.285"></script>
-<script src="js/mealplan.js?v=0.285"></script>
-<script src="js/onedrive.js?v=0.285"></script>
-<script src="js/autosave.js?v=0.285"></script>
-<script src="js/recurring.js?v=0.285"></script>
-<script src="js/stats.js?v=0.285"></script>
-<script src="js/reminders.js?v=0.285"></script>
-<script src="js/templates.js?v=0.285"></script>
-<script src="js/offline-queue.js?v=0.285"></script>
+<script src="picker.js?v=0.286"></script>
+<script src="js/health-sync.js?v=0.286"></script>
+<script src="js/sync-core.js?v=0.286"></script>
+<script src="js/baby.js?v=0.286"></script>
+<script src="js/baby-meds.js?v=0.286"></script>
+<script src="js/baby-growth-data.js?v=0.286"></script>
+<script src="js/baby-growth.js?v=0.286"></script>
+<script src="js/baby-week.js?v=0.286"></script>
+<script src="js/baby-milestones.js?v=0.286"></script>
+<script src="js/baby-midwife.js?v=0.286"></script>
+<script src="js/shopping.js?v=0.286"></script>
+<script src="js/partner.js?v=0.286"></script>
+<script src="js/alexa-sync.js?v=0.286"></script>
+<script src="js/dashboard.js?v=0.286"></script>
+<script src="js/features.js?v=0.286"></script>
+<script src="js/mealplan.js?v=0.286"></script>
+<script src="js/onedrive.js?v=0.286"></script>
+<script src="js/autosave.js?v=0.286"></script>
+<script src="js/recurring.js?v=0.286"></script>
+<script src="js/stats.js?v=0.286"></script>
+<script src="js/reminders.js?v=0.286"></script>
+<script src="js/templates.js?v=0.286"></script>
+<script src="js/offline-queue.js?v=0.286"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

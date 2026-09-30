@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.286',items:[
+    {icon:'📊',text:'<b>Wochenbericht ohne KI</b>: Der Bericht erscheint sofort und auch offline. Er wertet die letzten 7 abgeschlossenen Tage inklusive Sport aus: Tage im Plan, bester und schwächster Tag, Makros gegen deine Ziele, Gewichtsänderung und eine Empfehlung. Ausformulieren durch die KI gibt es auf Wunsch über „✨ Ausformulieren“. Außerdem erscheint die Karte mit offline aufgenommenen Fotos wieder.',where:'Trends → Wochenbericht'}
+  ]},
   {v:'0.285',items:[
     {icon:'⌨️',text:'<b>Tastatur verdeckt die Eingabe nicht mehr</b>: Im Chat bleibt das Eingabefeld beim Tippen über der Tastatur, neue Antworten und erkannte Zutaten erscheinen direkt darüber. Dialoge und Hinweise weichen der Tastatur zuverlässiger aus.',where:'＋ → 💬 Chat'}
   ]},

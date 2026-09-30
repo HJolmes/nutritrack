@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.280"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.281"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.280"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.281"></script>
 <script>
   (function(){
     if(typeof ZXingWASM==='undefined'){console.warn('zxing-wasm load failed, ZXing-JS fallback aktiv');return;}
@@ -1211,7 +1211,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.280</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.281</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -3346,11 +3346,11 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.280"></script>
-<script src="js/fooddb.js?v=0.280"></script>
-<script src="js/fooddb-usda.js?v=0.280"></script>
-<script src="js/idb-photos.js?v=0.280"></script>
-<script src="js/changelog.js?v=0.280"></script>
+<script src="js/actions.js?v=0.281"></script>
+<script src="js/fooddb.js?v=0.281"></script>
+<script src="js/fooddb-usda.js?v=0.281"></script>
+<script src="js/idb-photos.js?v=0.281"></script>
+<script src="js/changelog.js?v=0.281"></script>
 <script>
 // ════════════════════════════════════════
 // SECTION: DATABASE
@@ -3369,7 +3369,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.280';
+var APP_VERSION='0.281';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -5001,7 +5001,8 @@ function editUpdateTotal(pVal){
 
 function editIngAmt(i,v){
   var e=getDay().meals[editMeal][editIdx];
-  if(e.ingredients&&e.ingredients[i]){e.ingredients[i].amount=parseFloat(v)||0;editUpdateTotal(document.getElementById('editPortions').value);}
+  // Gramm eingetragen: das ⚠️ „ohne Grammangabe" hat sich erledigt (wie im Wochenplan).
+  if(e.ingredients&&e.ingredients[i]){e.ingredients[i].amount=parseFloat(v)||0;if(e.ingredients[i].amount>0)e.ingredients[i].missingGrams=false;editUpdateTotal(document.getElementById('editPortions').value);}
 }
 
 function editIngDel(i){
@@ -5180,7 +5181,7 @@ function recEditRenderIng(ings){
 
 function recEditIngAmt(i,v){
   var rec=recipes.find(function(r){return r.id===recEditId;});
-  if(rec&&rec.ingredients[i]){rec.ingredients[i].amount=parseFloat(v)||0;var t=ingTotal(rec.ingredients);document.getElementById('recEditTotal').textContent='Gesamt: '+totalStr(t);}
+  if(rec&&rec.ingredients[i]){rec.ingredients[i].amount=parseFloat(v)||0;if(rec.ingredients[i].amount>0)rec.ingredients[i].missingGrams=false;var t=ingTotal(rec.ingredients);document.getElementById('recEditTotal').textContent='Gesamt: '+totalStr(t);}
 }
 
 function recEditIngDel(i){
@@ -5466,12 +5467,19 @@ function _encDayMeals(key){
   });
   return any?mm:null;
 }
+// Menge aus dem Share-Format — so gerechnet wie beim Sender, damit Vorschau,
+// Senderzusammenfassung und Import dieselben kcal zeigen (#246):
+// Rezeptzutat ohne Menge (fehlt/null/0) = 0 g, denn ingTotal() rechnet (amount||0);
+// Lebensmittel-Eintrag (t:'f') ohne Menge = 100 g, denn _encEntry schreibt bei
+// Alteinträgen ohne per100 die Gesamtwerte als p, und der Editor nimmt (amount||100).
+function _shIngA(a){return parseFloat(a)||0;}
+function _shFoodA(a){return parseFloat(a)||100;}
 function _mmKcal(mm){
   var k=0;
   Object.keys(mm||{}).forEach(function(m){
     (mm[m]||[]).forEach(function(x){
-      if(x.t==='r')k+=(x.i||[]).reduce(function(s,i){return s+(i.p.k||0)*(i.a||0)/100;},0)*(x.p||1);
-      else k+=(x.p.k||0)*(x.a||0)/100;
+      if(x.t==='r')k+=(x.i||[]).reduce(function(s,i){return s+(i.p.k||0)*_shIngA(i.a)/100;},0)*(x.p||1);
+      else k+=(x.p.k||0)*_shFoodA(x.a)/100;
     });
   });
   return k;
@@ -5583,8 +5591,16 @@ var _pendingImport=null;
 // Woher kam die Vorschau? {from,packetId} bei Partner-Sendungen, sonst null.
 var _pendingImportMeta=null;
 
+// Rezeptzutat aus dem Share-Format. Ohne Menge: 0 g und ⚠️ wie beim Sender,
+// statt stiller 100 g (#246).
+function _materializeIng(x,em){
+  var a=_shIngA(x.a);
+  var ing={name:x.n,emoji:safeEmoji(em,'🍽'),amount:a,per100:{kcal:x.p.k||0,protein:x.p.pr||0,carbs:x.p.c||0,fat:x.p.f||0,sugar:0,fiber:0,salt:0}};
+  if(!(a>0))ing.missingGrams=true;
+  return ing;
+}
 function _materializeRecipe(d){
-  var ings=(d.i||[]).map(function(x){return{name:x.n,emoji:safeEmoji(x.em||x.e,'🍽'),amount:x.a||100,per100:{kcal:x.p.k||0,protein:x.p.pr||0,carbs:x.p.c||0,fat:x.p.f||0,sugar:0,fiber:0,salt:0}};});
+  var ings=(d.i||[]).map(function(x){return _materializeIng(x,x.em||x.e);});
   return{id:Date.now().toString(),name:d.n||'Importiertes Rezept',emoji:safeEmoji(d.em||d.e,'📋'),ingredients:ings,instructions:d.ins||''};
 }
 function _materializeFood(d){
@@ -5596,13 +5612,13 @@ function _materializeMealEntries(d){
 function _materializeEntryList(arr){
   return(arr||[]).map(function(x){
     if(x.t==='r'){
-      var ings=(x.i||[]).map(function(ing){return{name:ing.n,emoji:safeEmoji(ing.em,'🍽'),amount:ing.a||100,per100:{kcal:ing.p.k||0,protein:ing.p.pr||0,carbs:ing.p.c||0,fat:ing.p.f||0,sugar:0,fiber:0,salt:0}};});
+      var ings=(x.i||[]).map(function(ing){return _materializeIng(ing,ing.em);});
       var t=ingTotal(ings);
       return Object.assign({name:x.n,emoji:safeEmoji(x.em,'📋'),isRecipe:true,recipeId:null,portions:x.p||1,ingredients:ings},scaleNutrients(t,x.p||1));
     }
     var per100={kcal:x.p.k||0,protein:x.p.pr||0,carbs:x.p.c||0,fat:x.p.f||0,sugar:0,fiber:0,salt:0};
-    var r=(x.a||100)/100;
-    return Object.assign({name:x.n,emoji:safeEmoji(x.em,'🍽'),amount:x.a||100,per100:per100},scaleNutrients(per100,r));
+    var fa=_shFoodA(x.a);
+    return Object.assign({name:x.n,emoji:safeEmoji(x.em,'🍽'),amount:fa,per100:per100},scaleNutrients(per100,fa/100));
   });
 }
 
@@ -5650,12 +5666,12 @@ function _previewImport(d,meta){
 
   if(d.t==='r'){
     var ings=d.i||[];
-    var totalK=ings.reduce(function(a,g){var r=(g.a||0)/100;return a+(g.p.k||0)*r;},0);
+    var totalK=ings.reduce(function(a,g){var r=_shIngA(g.a)/100;return a+(g.p.k||0)*r;},0);
     titleEl.textContent='📥 Rezept importieren?';
     subEl.textContent=viaPartner?('Von '+fromWho+' gesendet'):'Du hast einen Rezept-Link geöffnet';
     nameEl.textContent=(d.em||'📋')+' '+d.n;
     summaryEl.textContent=ings.length+' Zutat'+(ings.length===1?'':'en')+' · '+Math.round(totalK)+' kcal';
-    detailEl.innerHTML=ings.map(function(i){return esc(i.em||'🍽')+' '+esc(i.n)+' <span style="color:var(--mu);">('+esc(i.a||0)+'g)</span>';}).join(' · ');
+    detailEl.innerHTML=ings.map(function(i){return esc(i.em||'🍽')+' '+esc(i.n)+' <span style="color:var(--mu);">('+esc(_shIngA(i.a))+'g'+(_shIngA(i.a)>0?'':' ⚠️')+')</span>';}).join(' · ');
     if(d.ins){insEl.style.display='block';insEl.textContent=d.ins.length>240?d.ins.substring(0,240)+'…':d.ins;}
     btn.textContent='✅ In Bibliothek speichern';
   } else if(d.t==='f'){
@@ -5669,10 +5685,10 @@ function _previewImport(d,meta){
     var entries=d.e||[];
     var totalKcal=entries.reduce(function(a,e){
       if(e.t==='r'){
-        var ek=(e.i||[]).reduce(function(s,i){return s+(i.p.k||0)*(i.a||0)/100;},0);
+        var ek=(e.i||[]).reduce(function(s,i){return s+(i.p.k||0)*_shIngA(i.a)/100;},0);
         return a+ek*(e.p||1);
       }
-      return a+(e.p.k||0)*(e.a||0)/100;
+      return a+(e.p.k||0)*_shFoodA(e.a)/100;
     },0);
     titleEl.textContent='📥 Mahlzeit importieren?';
     subEl.textContent=viaPartner?('Von '+fromWho+' gesendet'):'Du hast einen Mahlzeit-Link geöffnet';
@@ -8021,29 +8037,29 @@ function axTestSync(){
 }
 
 </script>
-<script src="picker.js?v=0.280"></script>
-<script src="js/health-sync.js?v=0.280"></script>
-<script src="js/sync-core.js?v=0.280"></script>
-<script src="js/baby.js?v=0.280"></script>
-<script src="js/baby-meds.js?v=0.280"></script>
-<script src="js/baby-growth-data.js?v=0.280"></script>
-<script src="js/baby-growth.js?v=0.280"></script>
-<script src="js/baby-week.js?v=0.280"></script>
-<script src="js/baby-milestones.js?v=0.280"></script>
-<script src="js/baby-midwife.js?v=0.280"></script>
-<script src="js/shopping.js?v=0.280"></script>
-<script src="js/partner.js?v=0.280"></script>
-<script src="js/alexa-sync.js?v=0.280"></script>
-<script src="js/dashboard.js?v=0.280"></script>
-<script src="js/features.js?v=0.280"></script>
-<script src="js/mealplan.js?v=0.280"></script>
-<script src="js/onedrive.js?v=0.280"></script>
-<script src="js/autosave.js?v=0.280"></script>
-<script src="js/recurring.js?v=0.280"></script>
-<script src="js/stats.js?v=0.280"></script>
-<script src="js/reminders.js?v=0.280"></script>
-<script src="js/templates.js?v=0.280"></script>
-<script src="js/offline-queue.js?v=0.280"></script>
+<script src="picker.js?v=0.281"></script>
+<script src="js/health-sync.js?v=0.281"></script>
+<script src="js/sync-core.js?v=0.281"></script>
+<script src="js/baby.js?v=0.281"></script>
+<script src="js/baby-meds.js?v=0.281"></script>
+<script src="js/baby-growth-data.js?v=0.281"></script>
+<script src="js/baby-growth.js?v=0.281"></script>
+<script src="js/baby-week.js?v=0.281"></script>
+<script src="js/baby-milestones.js?v=0.281"></script>
+<script src="js/baby-midwife.js?v=0.281"></script>
+<script src="js/shopping.js?v=0.281"></script>
+<script src="js/partner.js?v=0.281"></script>
+<script src="js/alexa-sync.js?v=0.281"></script>
+<script src="js/dashboard.js?v=0.281"></script>
+<script src="js/features.js?v=0.281"></script>
+<script src="js/mealplan.js?v=0.281"></script>
+<script src="js/onedrive.js?v=0.281"></script>
+<script src="js/autosave.js?v=0.281"></script>
+<script src="js/recurring.js?v=0.281"></script>
+<script src="js/stats.js?v=0.281"></script>
+<script src="js/reminders.js?v=0.281"></script>
+<script src="js/templates.js?v=0.281"></script>
+<script src="js/offline-queue.js?v=0.281"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

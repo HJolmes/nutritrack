@@ -163,14 +163,25 @@ function pickerSearch(){
   if(q&&isOnline)pickerFetchOnline(q);
 }
 
+// Laufende Nummer der Online-Suche: Nur die jüngste Antwort darf die Liste
+// ersetzen, und nur, solange das Suchfeld noch dieselbe Anfrage zeigt — sonst
+// überschriebe eine späte „apfel"-Antwort die Treffer für „banane" (#246).
+var _pickerOnlineSeq=0;
 function pickerFetchOnline(q){
+  var mine=++_pickerOnlineSeq;
   var btn=document.getElementById('pickerSearchBtn');
   btn.innerHTML='<span class="spin"></span>';btn.disabled=true;
   var ql=q.toLowerCase(),eng=DE_EN[ql]||null;
   var base='https://world.openfoodfacts.org/cgi/search.pl?search_simple=1&action=process&json=1&page_size=20&fields=product_name,product_name_de,nutriments,image_front_thumb_url';
   var terms=[q];if(eng)terms.push(eng);
   var fetches=terms.map(function(t){return fetchT(offProxyUrl(base+'&search_terms='+encodeURIComponent(t)),{},6000).then(function(r){return r.json();}).catch(function(){return{products:[]};});});
+  function stale(){
+    if(mine!==_pickerOnlineSeq)return true;// eine neuere Anfrage setzt Knopf und Liste selbst
+    btn.innerHTML='Suchen';btn.disabled=false;
+    return document.getElementById('pickerSearchQ').value.trim()!==q;// weitergetippt: Live-Treffer bleiben
+  }
   Promise.all(fetches).then(function(res){
+    if(stale())return;
     var local=searchLocal(q);
     var seen={};local.forEach(function(p){seen[p.name.toLowerCase()]=true;});
     var online=[];
@@ -187,10 +198,9 @@ function pickerFetchOnline(q){
     });
     online.sort(function(a,b){return b.score-a.score;});
     var all=local.concat(online.slice(0,8));
-    btn.innerHTML='Suchen';btn.disabled=false;
     document.getElementById('pickerSearchHint').textContent='Lokal + Online';
     pickerRenderResults(all,false);
-  }).catch(function(){btn.innerHTML='Suchen';btn.disabled=false;});
+  }).catch(function(){if(mine===_pickerOnlineSeq){btn.innerHTML='Suchen';btn.disabled=false;}});
 }
 
 function pickerRenderResults(products,loading){
@@ -221,22 +231,58 @@ function pickerSelResult(i){
   document.getElementById('pickerAddSec').classList.remove('hidden');
 }
 
+// ─── ZUTAT-MODUS („+ Zutat hinzufügen" im Bearbeiten-Dialog) ───
+// Ein Rezept wird dort EINE Zutat in Gramm: Menge = Gramm der Rezeptzutaten ×
+// Portionen, per100 = Nährwerte der Zutaten auf 100 g. Rezepte sind je Portion
+// gespeichert, ingTotal() liefert also eine Portion. Zutaten ohne Grammangabe
+// (amount 0) zählen weder kcal noch Gramm, der Quotient bleibt stimmig.
+// null, wenn keine Zutat Gramm hat — sonst entstünde eine 0-kcal-Zeile (#246).
+function _pickerIngsAsOne(name,emoji,ings,factor){
+  var g=(ings||[]).reduce(function(s,i){return s+(parseFloat(i.amount)||0);},0);
+  if(!(g>0)||!(factor>0))return null;
+  return {name:name,emoji:emoji,amount:Math.max(1,Math.round(g*factor)),per100:scaleNutrients(ingTotal(ings),100/g)};
+}
+var _PICKER_NO_GRAMS='Rezept ohne Grammangaben – als Zutat nicht möglich';
+// Hängt Zutaten an den offenen Eintrag und rechnet seine Summen neu (sonst
+// stünden nach „Schließen ohne Speichern" die alten kcal im Tag). Gibt immer
+// true zurück: Der Zutat-Modus hat den Klick verbraucht — auch wenn der
+// Eintrag inzwischen fehlt; dann ein Toast statt einer stillen Neubuchung.
+// Wer vorher etwas ablehnt (Rezept ohne Gramm), ruft das hier gar nicht erst
+// auf, damit der Modus aktiv bleibt.
+function _pickerAppendToEditEntry(items,beforeClose){
+  window._editEntryMode=false;
+  var meal=window._editEntryMeal,idx=window._editEntryIdx;
+  var list=getDay().meals[meal];
+  var e=list&&list[idx];
+  if(!e||(!e.ingredients&&!e.isRecipe)){closePicker();showToast('Eintrag nicht mehr vorhanden');return true;}
+  if(!e.ingredients)e.ingredients=[];
+  items.forEach(function(it){e.ingredients.push(it);});
+  Object.assign(e,scaleNutrients(ingTotal(e.ingredients),e.portions||1));
+  saveS();renderAll();
+  if(beforeClose)beforeClose();
+  closePicker();
+  openEditEntry(meal,idx);
+  showToast(items.length===1?((items[0].emoji||'🍽')+' '+items[0].name+' hinzugefügt'):(items.length+' Zutat(en) hinzugefügt'));
+  return true;
+}
+
 function pickerConfirmAdd(){
   if(!pickerSelFood)return;
   var amt=parseFloat(document.getElementById('pickerAmt').value)||1;
   var f=pickerSelFood;
-  // Check if we're adding to an existing diary entry's ingredient list
+  // Zutat-Modus: an den offenen Eintrag anhängen statt neu zu buchen.
   if(window._editEntryMode){
-    window._editEntryMode=false;
-    var e=getDay().meals[window._editEntryMeal][window._editEntryIdx];
-    if(e&&e.ingredients){
-      var per100=f.per100||{kcal:0,protein:0,carbs:0,fat:0};
-      e.ingredients.push({name:f.name,emoji:f.emoji,amount:amt,per100:per100});
-      saveS();closePicker();
-      openEditEntry(window._editEntryMeal,window._editEntryIdx);
-      showToast((f.emoji||'🍽')+' '+f.name+' hinzugefügt');
-      return;
+    var item;
+    if(f.isRecipe){
+      var erec=recipes.find(function(r){return r.id===f.recipeId;});
+      if(!erec){showToast('Rezept nicht gefunden');return;}
+      item=_pickerIngsAsOne(erec.name,erec.emoji||'📋',erec.ingredients,amt);
+      if(!item){showToast(_PICKER_NO_GRAMS);return;}
+    } else {
+      item={name:f.name,emoji:f.emoji,amount:amt,per100:f.per100||{kcal:0,protein:0,carbs:0,fat:0}};
     }
+    _pickerAppendToEditEntry([item]);
+    return;
   }
   // Normal: add to meal
   if(f.isRecipe){
@@ -1042,17 +1088,7 @@ function pickerBarcodeAdd(){
   var food=window._pickerBarcodeFood;if(!food)return;
   var amt=parseFloat(document.getElementById('pickerBcAmt').value)||100;
   var r=amt/100;
-  if(window._editEntryMode){
-    window._editEntryMode=false;
-    var e=getDay().meals[window._editEntryMeal][window._editEntryIdx];
-    if(e&&e.ingredients){
-      e.ingredients.push({name:food.name,emoji:food.emoji,amount:amt,per100:food.per100});
-      saveS();closePicker();
-      openEditEntry(window._editEntryMeal,window._editEntryIdx);
-      showToast((food.emoji||'🍽')+' '+food.name+' hinzugefügt');
-      return;
-    }
-  }
+  if(window._editEntryMode){_pickerAppendToEditEntry([{name:food.name,emoji:food.emoji,amount:amt,per100:food.per100}]);return;}
   getDay().meals[pickerMeal].push(Object.assign({name:food.name,emoji:food.emoji,amount:amt,per100:food.per100},scaleNutrients(food.per100,r)));
   var _bidx=getDay().meals[pickerMeal].length-1;
   saveS();renderAll();closePicker();
@@ -1212,15 +1248,7 @@ function _pickerAdd(emoji,nameId,portionsId,defaultName,saveAsRecipe,hasEditMode
   if(!pickerIngredients.length){showToast('Keine Zutaten');return;}
   var ings=JSON.parse(JSON.stringify(pickerIngredients));
   pickerIngredients.forEach(function(f){cacheFood(f);});
-  if(hasEditMode&&window._editEntryMode){
-    window._editEntryMode=false;
-    var e=getDay().meals[window._editEntryMeal][window._editEntryIdx];
-    if(e&&e.ingredients){
-      ings.forEach(function(ing){e.ingredients.push(ing);});
-      saveS();_pickerSavePhotoIfWanted();closePicker();openEditEntry(window._editEntryMeal,window._editEntryIdx);
-      showToast(ings.length+' Zutat(en) hinzugefügt');return;
-    }
-  }
+  if(hasEditMode&&window._editEntryMode){_pickerAppendToEditEntry(ings,_pickerSavePhotoIfWanted);return;}
   var name=document.getElementById(nameId).value.trim()||defaultName;
   var portions=parseFloat(document.getElementById(portionsId).value)||1;
   var t=ingTotal(ings);
@@ -1373,6 +1401,12 @@ function pickerChatAddLocal(i){
     // Rezept als Ganzes in die Mahlzeit übernehmen (analog pickerAddRecent).
     var rec=recipes.find(function(r){return r.id===p.recipeId;});
     if(!rec){msgs.innerHTML+='<div class="cm a">❌ Rezept nicht mehr vorhanden.</div>';return;}
+    if(window._editEntryMode){
+      var one=_pickerIngsAsOne(rec.name,rec.emoji||'📋',rec.ingredients,1);
+      if(!one){msgs.innerHTML+='<div class="cm a">❌ '+_esc(_PICKER_NO_GRAMS)+'.</div>';showToast(_PICKER_NO_GRAMS);return;}
+      _pickerAppendToEditEntry([one]);
+      return;
+    }
     var t=ingTotal(rec.ingredients||[]);
     var portions=rec.portions||1;
     getDay().meals[pickerMeal].push(Object.assign({name:rec.name,emoji:rec.emoji||'📋',isRecipe:true,recipeId:rec.id,portions:portions,ingredients:JSON.parse(JSON.stringify(rec.ingredients||[]))},scaleNutrients(t,portions)));
@@ -1642,8 +1676,9 @@ function _ingNormU(s){
 function _ingNum(tok){
   tok=String(tok||'').trim();
   if(_ING_FRAC[tok]!==undefined)return _ING_FRAC[tok];
-  var m=tok.match(/^(\d+)\s*\/\s*(\d+)$/);
-  if(m)return parseFloat(m[1])/parseFloat(m[2]);
+  // „1/2" und „1⁄2" (U+2044, Bruchstrich). Nenner 0 → keine Menge statt Infinity.
+  var m=tok.match(/^(\d+)\s*[\/⁄]\s*(\d+)$/);
+  if(m){var d=parseFloat(m[2]);return d?parseFloat(m[1])/d:null;}
   var v=parseFloat(tok.replace(',','.'));
   return isFinite(v)?v:null;
 }
@@ -1676,22 +1711,27 @@ function _stripBrackets(s){
   return out;
 }
 
-// „250 g Mehl", „2 EL Olivenöl", „1 Zwiebel", „1 ½ TL Salz", „2-3 Tomaten",
+// „250 g Mehl", „2 EL Olivenöl", „1 Zwiebel", „1 ½ TL Salz", „1/2 TL Salz", „2-3 Tomaten",
 // „Salz und Pfeffer" → {name, g, raw} – Menge immer in Gramm.
 function _parseIngLine(raw){
   var s=_stripTags(raw).replace(/ /g,' ').trim();
   if(!s)return null;
   var rest=_stripVague(s),v=null,unit='';
-  // Menge: Dezimal, Bruch, Unicode-Bruch, Bereich („2-3" → die kleinere Zahl,
-  // damit nichts zu großzügig gerechnet wird), optional gemischt („1 ½").
-  var m=rest.match(/^(\d+(?:[.,]\d+)?|[½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]|\d+\s*\/\s*\d+)\s*/);
+  // Menge: Bruch („1/2"), Dezimal („1,5"), Unicode-Bruch („½"), optional
+  // gemischt („1 1/2", „1 ½"), dann Bereich („2-3", „1 1/2-2" → die untere
+  // Grenze, damit nichts zu großzügig gerechnet wird). Der Bruch steht vorn,
+  // sonst griffe „\d+" schon bei „1/2" und ließe „/2 TL Salz" als Namen stehen.
+  // Der gemischte Bruch kommt VOR dem Bereich, sonst bliebe bei „1 1/2-2 EL"
+  // der Rest „-2 EL" stehen.
+  var m=rest.match(/^(\d+\s*[\/⁄]\s*\d+|\d+(?:[.,]\d+)?|[½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞])\s*/);
   if(m){
     v=_ingNum(m[1]);
     rest=rest.slice(m[0].length);
-    var r=rest.match(/^[-–bis]+\s*\d+(?:[.,]\d+)?\s*/i);
-    if(r)rest=rest.slice(r[0].length);// Bereich: obere Grenze verwerfen
-    var f=rest.match(/^([½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]|\d+\s*\/\s*\d+)\s*/);
-    if(f&&v!==null){var fv=_ingNum(f[1]);if(fv!==null){v+=fv;rest=rest.slice(f[0].length);}}
+    var f=rest.match(/^([½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]|\d+\s*[\/⁄]\s*\d+)\s*/);
+    if(f&&v!==null){var fv=_ingNum(f[1]);rest=rest.slice(f[0].length);v=fv!==null?v+fv:null;}
+    // Bereich: obere Grenze als vollständige Mengenangabe verwerfen
+    var r=rest.match(/^[-–bis]+\s*(?:\d+\s*[\/⁄]\s*\d+|\d+(?:[.,]\d+)?(?:\s*(?:\d+\s*[\/⁄]\s*\d+|[½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]))?|[½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞])\s*/i);
+    if(r)rest=rest.slice(r[0].length);
   }
   // Einheit: nur übernehmen, wenn danach noch ein Name steht — sonst ist
   // „1 Dose" der Artikel selbst.
@@ -2027,6 +2067,7 @@ function pickerSaveOwn(){
   if(onceEl&&onceEl.checked){
     // Einmalig eintragen: Werte gelten als Gesamtwerte der Portion (nicht pro 100 g).
     if(!kcal){showToast('Kalorien eingeben');return;}
+    if(window._editEntryMode){_pickerAppendToEditEntry([{name:name,emoji:emoji,amount:100,per100:{kcal:kcal,protein:p,carbs:c,fat:f,sugar:0,fiber:0,salt:0}}]);return;}
     getDay().meals[pickerMeal].push({name:name,emoji:emoji,amount:100,per100:{kcal:kcal,protein:p,carbs:c,fat:f,sugar:0,fiber:0,salt:0},kcal:kcal,protein:p,carbs:c,fat:f,sugar:0,fiber:0,salt:0});
     saveS();renderAll();closePicker();
     showToast(emoji+' '+name+' eingetragen');
@@ -2069,6 +2110,18 @@ function pickerIngDel(elId,i){var cb=window['_pickerIngCb_'+elId];if(cb)cb.onDel
 
 function pickerAddRecent(i){
   var item=(window._recentItems||[])[i];if(!item)return;
+  if(window._editEntryMode){
+    var it;
+    if(item.isRecipe||item.ingredients){
+      // Auch Chat-/Foto-Einträge ohne Rezept: die Zutaten des Eintrags zählen.
+      it=_pickerIngsAsOne(item.name,item.emoji||'📋',item.ingredients,item.portions||1);
+      if(!it){showToast(_PICKER_NO_GRAMS);return;}
+    } else {
+      it={name:item.name,emoji:item.emoji,amount:recallPortion(item.name)||item.amount||100,per100:item.per100};
+    }
+    _pickerAppendToEditEntry([it]);
+    return;
+  }
   if(item.isRecipe||item.ingredients){
     var t=ingTotal(item.ingredients||[]);
     var portions=item.portions||1;

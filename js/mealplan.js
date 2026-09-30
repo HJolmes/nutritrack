@@ -326,13 +326,15 @@ function addToSlot(recipeId){
   _target=null;_replaceIdx=null;
   var p=planFor(t.date,true);
   // Aus der Notiz ist ein Rezept geworden — sie wird ersetzt, nicht ergaenzt.
-  if(repl!==null&&repl!==undefined&&p[t.slot][repl])p[t.slot].splice(repl,1,{r:recipeId,p:1});
+  // repl = {idx,snap}: per Inhalt wiederfinden, der Sync kann umsortiert haben (#241).
+  if(repl)repl=findIdx(p[t.slot],repl.idx,repl.snap);
+  if(repl!==null&&repl>=0)p[t.slot].splice(repl,1,{r:recipeId,p:1});
   else p[t.slot].push({r:recipeId,p:1});
   if(S.planApplied)delete S.planApplied[t.date];
   touch(t.date);
   saveS();Sync.schedule();closeOv('planPickOv');render();refreshCard();
   var r=rec(recipeId);
-  showToast((r?(r.emoji||'📋')+' '+r.name:'Rezept')+(repl!==null&&repl!==undefined?' hinterlegt ✓':' eingeplant ✓'));
+  showToast((r?(r.emoji||'📋')+' '+r.name:'Rezept')+(repl!==null&&repl>=0?' hinterlegt ✓':' eingeplant ✓'));
 }
 
 // ── Notiz einplanen und spaeter aufloesen ───────────────────────────
@@ -344,7 +346,8 @@ function addNote(){
   var t=_target,repl=_replaceIdx;
   _target=null;_replaceIdx=null;
   var p=planFor(t.date,true);
-  if(repl!==null&&repl!==undefined&&p[t.slot][repl])p[t.slot].splice(repl,1,{x:txt});
+  if(repl)repl=findIdx(p[t.slot],repl.idx,repl.snap);
+  if(repl!==null&&repl>=0)p[t.slot].splice(repl,1,{x:txt});
   else p[t.slot].push({x:txt});
   if(S.planApplied)delete S.planApplied[t.date];
   touch(t.date);
@@ -352,8 +355,8 @@ function addNote(){
   showToast('📝 '+txt+' eingeplant — Rezept später');
 }
 function saveNote(){
-  if(!_item)return;
-  var it=slotItems(_item.date,_item.slot)[_item.idx];if(!it||!isNote(it))return;
+  var c=curItem();if(!c||!isNote(c.it))return;
+  var it=c.it;
   var txt=((document.getElementById('planItemNoteText')||{}).value||'').trim();
   if(!txt){showToast('Die Notiz braucht einen Text');return;}
   it.x=txt;
@@ -364,9 +367,9 @@ function saveNote(){
 // die Notiz ersetzt. Der Notiztext steht schon im Suchfeld — meistens heisst
 // das Rezept genauso.
 function noteToRecipe(){
-  if(!_item)return;
-  var it=slotItems(_item.date,_item.slot)[_item.idx];if(!it||!isNote(it))return;
-  var d=_item.date,sl=_item.slot,ix=_item.idx,txt=it.x;
+  var c=curItem();if(!c||!isNote(c.it))return;
+  var it=c.it;
+  var d=_item.date,sl=_item.slot,ix={idx:c.idx,snap:JSON.stringify(it)},txt=it.x;
   closeOv('planItemOv');
   setTimeout(function(){
     pick(d,sl);
@@ -378,12 +381,32 @@ function noteToRecipe(){
 
 // ── Einzelnen Planeintrag bearbeiten ──────────────────────────────────────
 var _item=null;
+// Der offene Eintrag wird ueber seinen Inhalt (snap) wiedergefunden, nicht
+// nur ueber die Position: der Abgleich alle 60 s ersetzt den ganzen Tag, und
+// dieselbe Position zeigte dann auf ein anderes Rezept (#241).
+function findIdx(items,idx,snap){
+  items=items||[];
+  if(items[idx]&&JSON.stringify(items[idx])===snap)return idx;
+  for(var i=0;i<items.length;i++)if(JSON.stringify(items[i])===snap)return i;
+  return -1;
+}
+function curItem(silent){
+  if(!_item)return null;
+  var items=slotItems(_item.date,_item.slot);
+  var i=findIdx(items,_item.idx,_item.snap);
+  if(i<0){
+    if(!silent){showToast('Eintrag wurde auf dem anderen Gerät geändert');closeOv('planItemOv');_item=null;}
+    return null;
+  }
+  _item.idx=i;
+  return {it:items[i],idx:i};
+}
 function openItem(date,slot,idx){
   var it=slotItems(date,slot)[idx];if(!it)return;
   var note=isNote(it);
   var r=note?null:resolve(it);
   if(!note&&!r){removeItem(date,slot,idx);return;}
-  _item={date:date,slot:slot,idx:idx};
+  _item={date:date,slot:slot,idx:idx,snap:JSON.stringify(it)};
   var d=parse(date),s=SLOTS.filter(function(x){return x.id===slot;})[0];
   var nw=document.getElementById('planItemNoteWrap');
   var rw=document.getElementById('planItemRecWrap');
@@ -405,16 +428,16 @@ function openItem(date,slot,idx){
   openOv('planItemOv');
 }
 function planItemTotal(){
-  if(!_item)return;
-  var it=slotItems(_item.date,_item.slot)[_item.idx];if(!it)return;
+  var c=curItem(true);if(!c)return;
+  var it=c.it;
   var r=resolve(it);if(!r)return;
   var p=parseFloat((document.getElementById('planItemPortions')||{}).value)||1;
   var el=document.getElementById('planItemTotal');
   if(el)el.textContent=totalStr(scaleNutrients(ingTotal(r.ingredients),p));
 }
 function saveItem(){
-  if(!_item)return;
-  var it=slotItems(_item.date,_item.slot)[_item.idx];if(!it)return;
+  var c=curItem();if(!c)return;
+  var it=c.it;
   it.p=parseFloat(document.getElementById('planItemPortions').value)||1;
   touch(_item.date);
   saveS();Sync.schedule();closeOv('planItemOv');render();refreshCard();
@@ -427,14 +450,15 @@ function removeItem(date,slot,idx){
   saveS();Sync.schedule();render();refreshCard();
 }
 function deleteItem(){
-  if(!_item)return;
-  removeItem(_item.date,_item.slot,_item.idx);
+  var c=curItem();if(!c)return;
+  removeItem(_item.date,_item.slot,c.idx);
   closeOv('planItemOv');
   showToast('Aus dem Plan entfernt');
 }
 function itemToShop(){
-  if(!_item||!window.NTShop)return;
-  var it=slotItems(_item.date,_item.slot)[_item.idx];if(!it)return;
+  if(!window.NTShop)return;
+  var c=curItem();if(!c)return;
+  var it=c.it;
   if(isNote(it)){showToast('Diese Notiz hat noch kein Rezept — nichts zum Einkaufen');return;}
   var r=resolve(it);if(!r){showToast('Rezept nicht gefunden');return;}
   // Bewusst NICHT NTShop.addRecipe(id): ein von aussen geteiltes Rezept steht

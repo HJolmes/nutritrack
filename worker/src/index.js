@@ -706,11 +706,15 @@ async function handleWorkoutCreate(request, origin, env) {
     return jsonResponse(400, "invalid_workout", "Workout payload is invalid (need id, source, start, kcal)", origin, env);
   }
   const key = WORKOUT_KV_PREFIX + token + ":" + workout.id;
-  await env.SHARE_KV.put(key, JSON.stringify(workout), {
+  // Cursor ist der Zeitpunkt des HOCHLADENS (srev), nicht der Trainingsbeginn:
+  // ein nachgereichtes Morgentraining laege sonst unter dem Cursor, den das
+  // schon abgeholte Abendtraining gesetzt hat (#239).
+  const srev = Date.now();
+  await env.SHARE_KV.put(key, JSON.stringify({ ...workout, srev }), {
     expirationTtl: WORKOUT_TTL_SECONDS,
-    metadata: { startMs: workout.startMs },
+    metadata: { startMs: workout.startMs, srev },
   });
-  await bumpMark(env, WORKOUT_KV_PREFIX + "#" + token, workout.startMs, WORKOUT_TTL_SECONDS);
+  await bumpMark(env, WORKOUT_KV_PREFIX + "#" + token, srev, WORKOUT_TTL_SECONDS);
   return jsonResponse(200, "ok", "ok", origin, env, {
     id: workout.id,
     stored: true,
@@ -750,9 +754,10 @@ async function handleWorkoutList(request, origin, env) {
     const list = await env.SHARE_KV.list({ prefix, limit: MAX_WORKOUT_LIST_LIMIT, cursor });
     for (const k of list.keys) {
       const meta = k.metadata && typeof k.metadata === "object" ? k.metadata : null;
-      if (!meta || !Number.isFinite(meta.startMs)) metaGap = true;
-      else if (meta.startMs > maxMeta) maxMeta = meta.startMs;
-      if (sinceMs && meta && Number.isFinite(meta.startMs) && meta.startMs <= sinceMs) continue;
+      const v = workoutCursorOf(meta);
+      if (v === null) metaGap = true;
+      else if (v > maxMeta) maxMeta = v;
+      if (sinceMs && v !== null && v <= sinceMs) continue;
       candidateKeys.push(k.name);
     }
     complete = list.list_complete !== false;
@@ -772,15 +777,25 @@ async function handleWorkoutList(request, origin, env) {
     } catch (_) {
       continue;
     }
-    if (sinceMs && Number.isFinite(parsed.startMs) && parsed.startMs <= sinceMs) continue;
+    const v = workoutCursorOf(parsed);
+    if (sinceMs && v !== null && v <= sinceMs) continue;
     workouts.push(parsed);
   }
   workouts.sort((a, b) => (a.startMs || 0) - (b.startMs || 0));
   return jsonResponse(200, "ok", "ok", origin, env, {
     workouts,
     count: workouts.length,
+    serverTime: Date.now(),
     truncated: Boolean(!complete),
   });
+}
+
+// Upload-Zeit (srev); Alt-Eintraege vor #239 kennen nur startMs.
+function workoutCursorOf(o) {
+  if (!o || typeof o !== "object") return null;
+  if (Number.isFinite(o.srev)) return o.srev;
+  if (Number.isFinite(o.startMs)) return o.startMs;
+  return null;
 }
 
 // ─── ALEXA-EINWURF (Sprachbefehle an einen privaten Alexa-Skill) ───
@@ -1247,7 +1262,10 @@ async function handleSyncPull(request, origin, env, cfg) {
   return jsonResponse(200, "ok", "ok", origin, env, {
     records,
     count: records.length,
-    cursor: maxSrev,
+    // Abgeschnittene Liste: KV listet nach Schluesselname, nicht nach srev —
+    // ungelesene Seiten koennen neuere Eintraege enthalten. Cursor nicht
+    // vorruecken, sonst waeren sie verloren (#238).
+    cursor: complete ? maxSrev : since,
     serverTime: Date.now(),
     truncated: Boolean(!complete),
   });
@@ -1647,7 +1665,7 @@ export default {
         alexaInboxConfigured: Boolean(env.SHARE_KV),
         planSyncConfigured: Boolean(env.SHARE_KV),
         decoderSecretConfigured: Boolean(env.DECODER_SECRET),
-        codeVersion: "v0.266-kv-mark",
+        codeVersion: "v0.272-sync-cursor",
       });
     }
 

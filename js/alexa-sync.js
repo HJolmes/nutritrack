@@ -517,7 +517,11 @@
             // wurde er nicht, aber abgeholt wird er auch nie wieder.
             if(mealsOk){
               meals.forEach(function(m){handled.push(m.id);});
-              if(maxSrev>since)localStorage.setItem(box.cursorKey,String(maxSrev));
+              // 2 Min. hinter der Serverzeit bleiben: ein spaeter sichtbarer
+              // Einwurf (KV-Verzoegerung) laege sonst fuer immer unter dem
+              // Cursor (#238). Schon Eingetragenes faengt _alexaId ab.
+              var next=data.truncated?since:(isFinite(data.now)?Math.min(maxSrev,data.now-120000):maxSrev);
+              if(next>since)localStorage.setItem(box.cursorKey,String(next));
             }
             // Mahlzeiten offen: Cursor stehen lassen, damit der naechste Lauf
             // alles erneut sieht. Was schon eingetragen ist, faengt die

@@ -31,6 +31,8 @@
 'use strict';
 
 var BASE=(typeof PROJECT_WORKER_BASE!=='undefined'?PROJECT_WORKER_BASE:'');
+// Wie weit der Abruf-Cursor hinter der Serverzeit bleibt (siehe nextCursor).
+var CURSOR_LAG_MS=120000;
 var TOPICS=[
   {id:'plan', ic:'📅', label:'Wochenplan',    sub:'Was wann gekocht wird'},
   {id:'shop', ic:'🛒', label:'Einkaufszettel', sub:'Artikel und eigene Kategorien'},
@@ -239,6 +241,35 @@ function engine(cfg){
       });
   }
 
+  // Der Worker vergibt srev beim BEGINN eines Pushs, und KV braucht bis ~60 s,
+  // bis ein Schreibvorgang ueberall sichtbar ist. Ein Cursor bis ganz nach
+  // vorn liesse einen langsameren/spaeter sichtbaren Push fuer immer unter
+  // `since` liegen (#238). Deshalb bleibt er CURSOR_LAG_MS hinter der
+  // Serverzeit; doppelt Geliefertes fangen die rev-Vergleiche in apply ab.
+  function nextCursor(since,d){
+    if(!d.cursor)return since;
+    var c=d.cursor;
+    if(isFinite(d.serverTime))c=Math.min(c,d.serverTime-CURSOR_LAG_MS);
+    return Math.max(since,c);
+  }
+
+  // Liefert der Server fuer einen Eintrag eine AELTERE Fassung, als hier liegt,
+  // hat ein spaeter angekommener Push die neuere ueberschrieben (KV kennt kein
+  // atomares Vergleichen-und-Schreiben, #240). Quittung loeschen → der naechste
+  // Push laedt die neuere Fassung wieder hoch.
+  function healOlder(link,recs){
+    var mine={};
+    (cfg.records()||[]).forEach(function(r){if(r&&r.id!=null)mine[r.id]=r;});
+    var healed=0;
+    recs.forEach(function(rec){
+      var m=mine[rec.id];
+      if(m&&m.holder&&(m.rev||0)>(rec.rev||0)&&m.holder._sy&&typeof m.holder._sy==='object'&&link.room in m.holder._sy){
+        delete m.holder._sy[link.room];healed++;
+      }
+    });
+    return healed;
+  }
+
   function pull(link){
     var h={};h[cfg.header]=link.room;
     var since=link.since[cfg.topic]||0;
@@ -247,14 +278,15 @@ function engine(cfg){
       .then(function(j){
         var d=(j&&j.data)||{};
         var recs=d.records||[];
-        if(!recs.length){if(d.cursor)link.since[cfg.topic]=Math.max(since,d.cursor);return 0;}
+        if(!recs.length){link.since[cfg.topic]=nextCursor(since,d);return 0;}
         return Promise.all(recs.map(function(rec){return decRec(link,rec);})).then(function(payloads){
           var applied=0;
           payloads.forEach(function(pl,i){
             if(pl&&cfg.apply(recs[i].id,recs[i].rev,pl,link.room))applied++;
           });
-          if(d.cursor)link.since[cfg.topic]=Math.max(since,d.cursor);
-          if(applied)saveS();
+          var healed=healOlder(link,recs);
+          link.since[cfg.topic]=nextCursor(since,d);
+          if(applied||healed)saveS();
           return applied;
         });
       });

@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.272"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.273"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.272"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.273"></script>
 <script>
   (function(){
     if(typeof ZXingWASM==='undefined'){console.warn('zxing-wasm load failed, ZXing-JS fallback aktiv');return;}
@@ -1211,7 +1211,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.272</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.273</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -3345,11 +3345,11 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.272"></script>
-<script src="js/fooddb.js?v=0.272"></script>
-<script src="js/fooddb-usda.js?v=0.272"></script>
-<script src="js/idb-photos.js?v=0.272"></script>
-<script src="js/changelog.js?v=0.272"></script>
+<script src="js/actions.js?v=0.273"></script>
+<script src="js/fooddb.js?v=0.273"></script>
+<script src="js/fooddb-usda.js?v=0.273"></script>
+<script src="js/idb-photos.js?v=0.273"></script>
+<script src="js/changelog.js?v=0.273"></script>
 <script>
 // ════════════════════════════════════════
 // SECTION: DATABASE
@@ -3368,7 +3368,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.272';
+var APP_VERSION='0.273';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -3400,7 +3400,55 @@ function _sha256hex(str){
   });
 }
 function getProxySecret(){return localStorage.getItem('nt_proxy_pw')||'';}
-function setProxySecret(pw){return _sha256hex(pw).then(function(h){localStorage.setItem('nt_proxy_pw',h);_aiKeyEncRefresh();_aiKeyEncTryDecrypt();return h;});}
+// Ein neues Passwort wird erst gespeichert, NACHDEM der Worker es geprueft
+// hat — vorher ueberschrieb ein Tippfehler das funktionierende Passwort und
+// verschluesselte die Backup-Kopien der KI-Keys damit neu (#242).
+// Ergebnis: 'ok' | 'wrong' | 'offline-saved' | 'offline-kept'.
+// Offline ohne bisheriges Passwort: ungeprueft merken (nt_proxy_pw_unverified),
+// beim naechsten Start mit Netz prueft recheckProxySecret nach. Offline MIT
+// bisherigem (geprueftem) Passwort: das alte bleibt.
+function trySetProxySecret(pw){
+  return _sha256hex(pw).then(function(h){
+    return verifyProxySecret(h).then(function(ok){
+      if(ok===true){_storeProxySecret(h,false);return 'ok';}
+      if(ok===false)return 'wrong';
+      if(getProxySecret()&&!localStorage.getItem('nt_proxy_pw_unverified'))return 'offline-kept';
+      _storeProxySecret(h,true);return 'offline-saved';
+    });
+  });
+}
+function _storeProxySecret(h,unverified){
+  localStorage.setItem('nt_proxy_pw',h);
+  if(unverified)localStorage.setItem('nt_proxy_pw_unverified','1');
+  else{localStorage.removeItem('nt_proxy_pw_unverified');_aiKeyEncRefresh();}
+  // Entschluesseln ist gefahrlos: mit falschem Passwort schlaegt es nur fehl.
+  _aiKeyEncTryDecrypt();
+}
+// Offline gemerktes Passwort nachpruefen (Start, Rueckkehr ins Netz).
+function recheckProxySecret(){
+  if(!localStorage.getItem('nt_proxy_pw_unverified')||!getProxySecret()||!isOnline)return Promise.resolve(null);
+  return verifyProxySecret().then(function(ok){
+    if(!localStorage.getItem('nt_proxy_pw_unverified'))return ok;// inzwischen neu gesetzt
+    if(ok===true){
+      localStorage.removeItem('nt_proxy_pw_unverified');
+      _aiKeyEncRefresh();
+    }else if(ok===false){
+      localStorage.removeItem('nt_proxy_pw');localStorage.removeItem('nt_proxy_pw_unverified');
+      localStorage.removeItem('nt_gate_skipped');
+      showToast('❌ KI-Passwort vom Server abgelehnt – bitte neu eingeben',4000);
+      checkProxyPwGate();
+    }
+    _renderProxyPwStatus();
+    return ok;
+  });
+}
+function _renderProxyPwStatus(){
+  var el=document.getElementById('aiProxyStatus');if(!el)return;
+  el.style.color='';
+  el.textContent=!getProxySecret()?'Noch kein Passwort – KI nicht verfügbar'
+    :localStorage.getItem('nt_proxy_pw_unverified')?'Gespeichert – wird geprüft, sobald Internet da ist'
+    :'Passwort gesetzt ✓';
+}
 
 // ── Konfigurierbarer KI-Anbieter ──────────────────────────────────────────
 // Standard = Anthropic über den eingebauten Proxy (kein eigener Key nötig).
@@ -3701,9 +3749,11 @@ window.addEventListener('DOMContentLoaded',function(){
   clearLegacyApiKey();
   S.currentDate=today();
   _appToday=S.currentDate;
-  window.addEventListener('online',function(){isOnline=true;updBadge();showToast('Online 🌐');});
+  window.addEventListener('online',function(){isOnline=true;updBadge();showToast('Online 🌐');recheckProxySecret();});
   window.addEventListener('offline',function(){isOnline=false;updBadge();showToast('Offline 📴');});
   updBadge();
+  // Offline gemerktes KI-Passwort nachpruefen (#242). No-op ohne Merker.
+  setTimeout(recheckProxySecret,1500);
   document.getElementById('setupBtn').addEventListener('click',doSetup);
   var _mainShown=(S.setupDone||hadLegacyApiKey||S.name!=='Du');
   if(_mainShown)showMain();
@@ -3878,11 +3928,13 @@ function skipProxyPwGate(){
   if(gate)gate.style.display='none';
   showToast('KI-Funktionen deaktiviert – Passwort jederzeit unter Mehr → 🤖 KI nachtragen');
 }
-// Prüft das gesetzte Passwort mit einem 1-Token-Ping gegen den Worker.
-// true = akzeptiert, false = 401/403 (falsch), null = offline/unklar.
-function verifyProxySecret(){
-  return fetchT(PROJECT_AI_PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json','x-app-proxy-secret':getProxySecret()},body:JSON.stringify({model:'claude-haiku-4-5',max_tokens:1,messages:[{role:'user',content:[{type:'text',text:'ping'}]}]})},10000)
-    .then(function(r){return r.status!==401&&r.status!==403;})
+// Prüft ein Passwort (Hash; ohne Argument das gespeicherte) mit einem
+// 1-Token-Ping gegen den Worker, OHNE es zu speichern.
+// true = akzeptiert, false = 401 (falsch), null = offline/unklar. 403 (Herkunft)
+// und 5xx (Worker nicht eingerichtet, Upstream) sagen nichts ueber das Passwort.
+function verifyProxySecret(h){
+  return fetchT(PROJECT_AI_PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json','x-app-proxy-secret':h||getProxySecret()},body:JSON.stringify({model:'claude-haiku-4-5',max_tokens:1,messages:[{role:'user',content:[{type:'text',text:'ping'}]}]})},10000)
+    .then(function(r){if(r.status===401)return false;if(r.status===403||r.status>=500)return null;return true;})
     .catch(function(){return null;});
 }
 function submitProxyPw(){
@@ -3893,12 +3945,10 @@ function submitProxyPw(){
     if(errEl){errEl.textContent='Bitte Passwort eingeben.';errEl.style.display='block';}
     return;
   }
-  setProxySecret(pw).then(function(){return verifyProxySecret();}).then(function(ok){
-    var aiStatus=document.getElementById('aiProxyStatus');
-    if(ok===false){
-      // Server lehnt ab → Gate offen lassen, klare Fehlermeldung statt späterem KI-Fehler.
-      if(errEl){errEl.textContent='❌ Passwort scheint falsch (Server lehnt ab).';errEl.style.display='block';}
-      if(aiStatus)aiStatus.textContent='❌ Passwort scheint falsch';
+  trySetProxySecret(pw).then(function(res){
+    if(res==='wrong'||res==='offline-kept'){
+      // Nichts gespeichert → Gate offen lassen, klare Meldung statt späterem KI-Fehler.
+      if(errEl){errEl.textContent=res==='wrong'?'❌ Passwort scheint falsch (Server lehnt ab).':'Offline – Passwort nicht geändert. Bitte mit Internet erneut eingeben.';errEl.style.display='block';}
       return;
     }
     localStorage.removeItem('nt_gate_skipped');
@@ -3906,7 +3956,9 @@ function submitProxyPw(){
     if(gate)gate.style.display='none';
     if(input)input.value='';
     if(errEl)errEl.style.display='none';
-    if(aiStatus)aiStatus.textContent=ok===true?'✓ Passwort geprüft':'Gespeichert (offline nicht prüfbar)';
+    _renderProxyPwStatus();
+    var aiStatus=document.getElementById('aiProxyStatus');
+    if(aiStatus&&res==='ok')aiStatus.textContent='✓ Passwort geprüft';
   });
 }
 // Ein Autospeicher an EINEM Ort: Mit OneDrive in die rotierenden Slots
@@ -3970,20 +4022,25 @@ function saveProxyPwFromSettings(){
   var input=document.getElementById('settProxyPwInput');
   var pw=(input?input.value:'').trim();
   if(!pw){showToast('Bitte Passwort eingeben');return;}
-  setProxySecret(pw).then(function(){
+  var aiStatus=document.getElementById('aiProxyStatus');
+  if(aiStatus){aiStatus.textContent='Prüfe Passwort …';aiStatus.style.color='';}
+  trySetProxySecret(pw).then(function(res){
+    if(res==='wrong'){
+      // Das bisherige Passwort bleibt unangetastet (#242).
+      if(aiStatus){aiStatus.textContent='❌ Passwort scheint falsch (Server lehnt ab) – bisheriges bleibt';aiStatus.style.color='var(--re)';}
+      showToast('❌ Passwort scheint falsch');
+      return;
+    }
+    if(res==='offline-kept'){
+      _renderProxyPwStatus();
+      showToast('Offline – Passwort nicht geändert. Bitte mit Internet erneut eingeben.',4000);
+      return;
+    }
     if(input)input.value='';
-    var aiStatus=document.getElementById('aiProxyStatus');
-    if(aiStatus){aiStatus.textContent='Prüfe Passwort …';aiStatus.style.color='';}
-    return verifyProxySecret().then(function(ok){
-      if(ok===false){
-        if(aiStatus){aiStatus.textContent='❌ Passwort scheint falsch (Server lehnt ab)';aiStatus.style.color='var(--re)';}
-        showToast('❌ Passwort scheint falsch');
-        return;
-      }
-      localStorage.removeItem('nt_gate_skipped');
-      if(aiStatus)aiStatus.textContent=ok===true?'✓ Passwort geprüft':'Gespeichert (offline nicht prüfbar)';
-      showToast('Proxy-Passwort gespeichert');
-    });
+    localStorage.removeItem('nt_gate_skipped');
+    _renderProxyPwStatus();
+    if(aiStatus&&res==='ok')aiStatus.textContent='✓ Passwort geprüft';
+    showToast(res==='ok'?'Proxy-Passwort gespeichert':'Gespeichert – wird geprüft, sobald Internet da ist');
   });
 }
 // ── KI-Anbieter-Einstellungen ──
@@ -6002,7 +6059,7 @@ function openSettings(tab){
   renderSavedDietFreeList();
   document.getElementById('cacheInfo').textContent=customFoods.length+' eigene Lebensmittel · '+recipes.length+' Rezepte · '+Object.keys(foodCache).length+' gespeichert';
   var aiStatus=document.getElementById('aiProxyStatus');
-  if(aiStatus)aiStatus.textContent=getProxySecret()?'Passwort gesetzt ✓':'Noch kein Passwort – KI nicht verfügbar';
+  if(aiStatus)_renderProxyPwStatus();
   var settPwInput=document.getElementById('settProxyPwInput');
   if(settPwInput)settPwInput.value='';
   renderAiProviderSettings();
@@ -7913,29 +7970,29 @@ function axTestSync(){
 }
 
 </script>
-<script src="picker.js?v=0.272"></script>
-<script src="js/health-sync.js?v=0.272"></script>
-<script src="js/sync-core.js?v=0.272"></script>
-<script src="js/baby.js?v=0.272"></script>
-<script src="js/baby-meds.js?v=0.272"></script>
-<script src="js/baby-growth-data.js?v=0.272"></script>
-<script src="js/baby-growth.js?v=0.272"></script>
-<script src="js/baby-week.js?v=0.272"></script>
-<script src="js/baby-milestones.js?v=0.272"></script>
-<script src="js/baby-midwife.js?v=0.272"></script>
-<script src="js/shopping.js?v=0.272"></script>
-<script src="js/partner.js?v=0.272"></script>
-<script src="js/alexa-sync.js?v=0.272"></script>
-<script src="js/dashboard.js?v=0.272"></script>
-<script src="js/features.js?v=0.272"></script>
-<script src="js/mealplan.js?v=0.272"></script>
-<script src="js/onedrive.js?v=0.272"></script>
-<script src="js/autosave.js?v=0.272"></script>
-<script src="js/recurring.js?v=0.272"></script>
-<script src="js/stats.js?v=0.272"></script>
-<script src="js/reminders.js?v=0.272"></script>
-<script src="js/templates.js?v=0.272"></script>
-<script src="js/offline-queue.js?v=0.272"></script>
+<script src="picker.js?v=0.273"></script>
+<script src="js/health-sync.js?v=0.273"></script>
+<script src="js/sync-core.js?v=0.273"></script>
+<script src="js/baby.js?v=0.273"></script>
+<script src="js/baby-meds.js?v=0.273"></script>
+<script src="js/baby-growth-data.js?v=0.273"></script>
+<script src="js/baby-growth.js?v=0.273"></script>
+<script src="js/baby-week.js?v=0.273"></script>
+<script src="js/baby-milestones.js?v=0.273"></script>
+<script src="js/baby-midwife.js?v=0.273"></script>
+<script src="js/shopping.js?v=0.273"></script>
+<script src="js/partner.js?v=0.273"></script>
+<script src="js/alexa-sync.js?v=0.273"></script>
+<script src="js/dashboard.js?v=0.273"></script>
+<script src="js/features.js?v=0.273"></script>
+<script src="js/mealplan.js?v=0.273"></script>
+<script src="js/onedrive.js?v=0.273"></script>
+<script src="js/autosave.js?v=0.273"></script>
+<script src="js/recurring.js?v=0.273"></script>
+<script src="js/stats.js?v=0.273"></script>
+<script src="js/reminders.js?v=0.273"></script>
+<script src="js/templates.js?v=0.273"></script>
+<script src="js/offline-queue.js?v=0.273"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

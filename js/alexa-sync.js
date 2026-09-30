@@ -370,19 +370,19 @@
     return true;
   }
 
-  // Grobe MET-Schätzung. Bewusst simpel: Wer genaue Werte will, nimmt den
-  // Sport-Sync aus Apple/Samsung Health — der liefert echte Messwerte.
-  var MET={lauf:9.8,jogg:8.0,renn:11,geh:3.5,spazier:3.0,wander:6.0,rad:7.5,fahrrad:7.5,velo:7.5,
-    schwimm:8.0,yoga:2.5,pilates:3.0,kraft:5.0,gewicht:5.0,gym:5.0,fitness:5.0,rudern:7.0,
-    tanz:5.0,fußball:7.0,fussball:7.0,tennis:7.3,boxen:9.0,seilspring:11,crosstrainer:6.0,hiit:9.0};
+  // kcal aus derselben MET-Suche wie der Sporteintrag der App
+  // (getExerciseMet: eigene Bibliothek → js/metdb.js, Compendium 2011).
+  // Ohne Treffer dieselben Rückfallwerte wie die App: 5 MET, 75 kg
+  // (Schätzwerte). Wer genaue Werte will, nimmt den Sport-Sync aus
+  // Apple/Samsung Health — der liefert echte Messwerte.
   function estimateKcal(name,mins){
-    var nl=(name||'').toLowerCase();
-    var met=4.0;
-    for(var k in MET){if(nl.indexOf(k)!==-1){met=MET[k];break;}}
-    var kg=(window.S&&S.weight)||70;
+    var met=(typeof window.getExerciseMet==='function'&&window.getExerciseMet(name,'medium'))||5;
+    var kg=(window.S&&S.weight)||75;
     return met*kg*(mins/60);
   }
   function exEmoji(name){
+    var hit=window.NTMet&&window.NTMet.lookup(name);
+    if(hit&&hit.e)return hit.e;
     var t=(name||'').toLowerCase();
     if(/lauf|jogg|renn/.test(t))return '🏃';
     if(/geh|spazier|wander/.test(t))return '🚶';

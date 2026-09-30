@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.288',items:[
+    {icon:'🏃',text:'<b>Rund 120 Sportarten ohne KI</b>: Aktivitäten werden auch in Formen wie „Joggen“, „Rad fahren“ oder „geschwommen“ erkannt, und das Namensfeld schlägt sie beim Tippen vor. Die Werte stammen aus dem Compendium of Physical Activities. Die kcal rechnen sich beim Ändern von Aktivität, Dauer oder Intensität neu. Alexa-Einträge rechnen genauso wie die App. Die Werte der bisherigen Schnellauswahl ändern sich dadurch teils, etwa bei Laufen, Radfahren und Wandern.'}
+  ]},
   {v:'0.287',items:[
     {icon:'🤱',text:'<b>Stillzeit-Ampel nach festen Regeln</b>: Die Ampel bewertet sofort und auch offline (Alkohol, Koffein, quecksilberreicher Fisch, Leber, Kräutertees). Stillzeit-Hinweise stehen jetzt auch im Mahlzeit-Detail. Bei Rezepten aus der Bibliothek bewertet die Ampel die einzelnen Zutaten statt nur den Rezeptnamen. Kommen mehrere Ampel-Hinweise gleichzeitig, zeigt das Banner alle.'}
   ]},

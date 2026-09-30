@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.275',items:[
+    {icon:'⏰',text:'<b>Erinnerungen repariert</b>: Jede Erinnerung meldet sich jetzt genau einmal am Tag. Vorher kamen bei mehreren Erinnerungen von Tag zu Tag mehr Meldungen, und gelöschte meldeten sich weiter. Auf Android erscheinen Erinnerungen und das Fastenende jetzt überhaupt, und ein Tippen auf die Meldung öffnet die App. Nach einem Backup-Import, „Aus OneDrive laden“ oder dem Laden eines Autospeichers gelten die geladenen Erinnerungen sofort, nicht erst nach einem Neustart.',where:'Mehr → Erinnerungen'}
+  ]},
   {v:'0.274',items:[
     {icon:'\ud83d\uded2',text:'<b>Einkaufszettel rechnet Mengen richtig zusammen</b>: Zwei Rezepte mit je 200 g Zwiebeln ergeben 400 g statt 200 g. „1,5 kg“ und „15 kg“ werden nicht mehr verwechselt. Ein schon abgehakter Artikel bekommt beim Rezept-Import nur die neue Menge, die gekaufte wird nicht mehr dazugezählt.',where:'Mehr → 🛒 Einkaufszettel'}
   ]},

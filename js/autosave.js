@@ -103,7 +103,7 @@ function load(idx){
     if(save.customFoods)customFoods=save.customFoods;
     if(save.recipes)recipes=save.recipes;
     _importAiFields(save);_migratePhotosAfterImport();
-    saveS();saveX();renderAll();closeOv('autoSavesOv');
+    saveS();saveX();renderAll();NTRemind.schedule();NTRemind.render();closeOv('autoSavesOv');
     showToast('Stand geladen ✓');
   }).catch(function(){showToast('Laden fehlgeschlagen');});
 }

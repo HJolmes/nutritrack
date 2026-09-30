@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.275 (2026-09-30) — Branch `claude/move-copy-entries-tags-4hdf5l`. **v0.275: Eintrag auf anderen Tag verschieben/kopieren** (`moveEntry(mode)` + `_moveEntryPanelHtml()` im Bearbeiten-Dialog; Kopie ohne `_recurId/_alexaId/_alexaPending/_fromPlan`, Foto-ID geteilt). Davor (PR #248): **v0.270: Datenverlust-Fixes** (#227–#235), **v0.271: XSS-Härtung** (#236), **v0.272: Sync-Cursor** (#238–#241, **Worker deployen**), **v0.273: KI-Passwort erst nach Prüfung speichern** (#242), **v0.274: Einkaufszettel-Mengen** (#243). Offene Bugs aus derselben Code-Durchsicht: GitHub `label:bug` #237, #244–#247 (je ein `topic:`). Nur App.
+**Stand:** v0.276 (2026-09-30) — Branch `claude/move-copy-entries-tags-4hdf5l`. **v0.276: Eintrag auf anderen Tag verschieben/kopieren** (`moveEntry(mode)` + `_moveEntryPanelHtml()` im Bearbeiten-Dialog; Kopie ohne `_recurId/_alexaId/_alexaPending/_fromPlan`, Foto-ID geteilt). Davor v0.275 (PR #219): Baby-Einträge per Alexa ohne „Baby“; PR #248: **v0.270: Datenverlust-Fixes** (#227–#235), **v0.271: XSS-Härtung** (#236), **v0.272: Sync-Cursor** (#238–#241, **Worker deployen**), **v0.273: KI-Passwort erst nach Prüfung speichern** (#242), **v0.274: Einkaufszettel-Mengen** (#243). Offene Bugs aus derselben Code-Durchsicht: GitHub `label:bug` #237, #244–#247 (je ein `topic:`). Nur App.
 
 ## URLs
 
@@ -155,6 +155,8 @@
 
 ## Live-Test offen
 
+- **v0.275 Baby per Alexa ohne „Baby“** (**vorher in der Alexa-Konsole: Build → JSON Editor → `alexa/interaction-model.de-DE.json` → Save → Build Model, dann Code → `alexa/lambda/index.js` → Deploy**): „Alexa, starte mein Tagebuch“ → **„Wickeln Stuhl und Pipi“** → Alexa sagt „Windel gewechselt, Stuhl und Pipi“, im Tagebuch steht **💧💩 Beides**. Im selben Dialog: **„Stillen rechts“** → Stillen rechts; **„Flasche 120 Milliliter“** → 120 ml; **„Schlaeft“** → Schlafbeginn; **„Fieber 38,5 Grad“** → 38,5 °C rot. Gegenproben: **„Baby Windel gewechselt“** geht weiter, **„Vitamin D gegeben“** bleibt Notiz, **„Hebamme: ab wann darf ich baden“** landet weiter im Reiter 🤱 Hebamme, **„Baby Frage an die Hebamme …“** ebenso.
+
 - **v0.274 Einkaufszettel**: Zwei Rezepte mit je „200 g Zwiebeln“ auf den Zettel → 400 g. Mehl „1,5 kg“ + „15 kg“ → 16,5 kg. Hackfleisch 500 g aus Rezept A abhaken, dann Rezept B mit 400 g → Artikel wieder offen mit 400 g (nicht 900 g), ohne „war vorher schon da“.
 - **v0.273 KI-Passwort**: Mehr → 🤖 KI → absichtlich falsches Passwort → „❌ … bisheriges bleibt“, KI-Chat funktioniert weiter. Flugmodus + neues Passwort → „Offline – Passwort nicht geändert“. Frisches Gerät (oder Passwort gelöscht) im Flugmodus mit Tippfehler → „wird geprüft, sobald Internet da ist“; Flugmodus aus → Toast „vom Server abgelehnt“, Passwort-Abfrage erscheint.
 - **v0.272 Sync** (**Worker deployen** — `GET /health` → `codeVersion:"v0.272-sync-cursor"`): (1) Watch/Kurzbefehl: Abendtraining hochladen, App öffnen (kommt an), danach ein Training mit früherer Startzeit nachreichen → kommt ebenfalls an. (2) Zwei Geräte, Einkaufszettel: auf beiden gleichzeitig Artikel anlegen → alle erscheinen binnen ~3 Min. überall. (3) Wochenplan offen auf Gerät 1 (Eintrag geöffnet), auf Gerät 2 denselben Tag umplanen → „Entfernen“ auf Gerät 1 trifft das richtige Rezept oder meldet „auf dem anderen Gerät geändert“. (4) Cloudflare → KV → Metrics nach 1–2 Tagen: `list` weiter deutlich unter 1000/Tag.
@@ -249,11 +251,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.271 | #248 | XSS-Härtung #236: `safeEmoji` beim Import, `esc()` an 16 Emoji-Ausgaben, Baby/Einkauf-IDs per `data-act`, Alexa-Baby-Felder typgeprüft. |
 | v0.272 | #248 | Sync #238–#241: Cursor-Lag 120 s (sync-core, Partner, Alexa, Health), Selbstheilung bei überschriebener rev, Worker: Workout-Cursor = Upload-Zeit, kein Cursor-Vorrücken bei `truncated`; Postfach per ID, Wochenplan per Snapshot. Worker deployen. |
 | v0.273 | #248 | KI-Passwort #242: erst nach Worker-Prüfung speichern, offline ungeprüft merken + Nachprüfung; nur Worker-eigene 401 = falsch (Nachbesserung in v0.274 nach Gegenprüfung: Anthropic-401, Race bei Nachprüfung, Refresh-Guard, Statusfarbe). |
 | v0.274 | #248 | Einkauf #243: `mergeQty` addiert auch gleiche Mengen, eigener Mengen-Vergleich `qtyKey` (Komma bleibt), abgehakter Artikel bekommt beim Rezept-Import nur die neue Menge. |
-| v0.275 | — | Eintrag verschieben/kopieren auf beliebigen Tag + Mahlzeit (Bearbeiten-Dialog, ersetzt „Mahlzeit wechseln“; Archiv-Tage via `_ensureDayForImport`). |
+| v0.275 | #219 | Nie gemergten Zweig `claude/alexa-voice-recognition-1bvw4c` nachgeholt: Baby-Eintraege per Alexa ohne „Baby“ (fuenf Intents, `babyEntry()`), „wickeln“ → Windel, Stuhl+Pipi → `both`; mit den Hebammen-Intents aus v0.265 zusammengefuehrt. Sprachmodell + Lambda neu einspielen. |
+| v0.276 | #251 | Eintrag verschieben/kopieren auf beliebigen Tag + Mahlzeit (Bearbeiten-Dialog, ersetzt „Mahlzeit wechseln“; Archiv-Tage via `_ensureDayForImport`). |
 
 ---
 

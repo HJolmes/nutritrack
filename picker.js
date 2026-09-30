@@ -1278,7 +1278,7 @@ function pickerShowPhotoResult(rezept){
   if(rezept&&!document.getElementById('pickerRecipeName').value)
     document.getElementById('pickerRecipeName').value=rezept;
   pickerRenderIngList('pickerPhotoIngList',pickerIngredients,
-    function(i,v){pickerIngredients[i].amount=parseFloat(v)||0;pickerUpdatePhotoTotal();},
+    function(i,v){pickerIngredients[i].amount=parseFloat(v)||0;pickerIngredients[i].missingGrams=false;pickerUpdatePhotoTotal();},
     function(i){pickerIngredients.splice(i,1);pickerShowPhotoResult(rezept);}
   );
   pickerUpdatePhotoTotal();
@@ -1387,7 +1387,7 @@ function pickerPhotoAdd(saveAsRecipe){_pickerAdd('📸','pickerRecipeName','pick
 // Bind ingredient list to pickerIngredients with a delete that re-renders the DOM (#112).
 function _pickerChatRebind(){
   pickerRenderIngList('pickerChatIngList',pickerIngredients,
-    function(i,v){pickerIngredients[i].amount=parseFloat(v)||0;pickerUpdateChatTotal();},
+    function(i,v){pickerIngredients[i].amount=parseFloat(v)||0;pickerIngredients[i].missingGrams=false;pickerUpdateChatTotal();},
     function(i){pickerIngredients.splice(i,1);_pickerChatRebind();pickerUpdateChatTotal();}
   );
 }
@@ -1462,6 +1462,123 @@ function _pickerDbHit(q){
   if(stripped&&stripped!==dbQ)return findInLocalDB(stripped);
   return null;
 }
+// Alle gleichwertigen DB-Treffer eines Namens: der exakte Name, sonst JEDES
+// exakte Synonym (Regel wie findInLocalDB Pass 2, Synonyme ≤2 Zeichen zählen
+// nicht) — aber ohne dessen Tiebreak nach Namenslänge. Der macht aus „Reis"
+// „Reis weiß (roh)" und aus „Kaffee" „Latte Macchiato" (#210).
+function _pickerDbExact(name){
+  var db=window.DB||[];
+  var nl=(name||'').toLowerCase().trim();if(!nl)return [];
+  var i,j,hits=[];
+  for(i=0;i<db.length;i++){if(db[i].n.toLowerCase()===nl)return [db[i]];}
+  for(i=0;i<db.length;i++){
+    var syns=(db[i].s||'').toLowerCase().split(' ');
+    for(j=0;j<syns.length;j++){if(syns[j].length>2&&syns[j]===nl){hits.push(db[i]);break;}}
+  }
+  return hits;
+}
+// DB-Treffer für die Karten: mehrdeutige Synonyme ALLE (die Nutzerin wählt),
+// sonst wie bisher _pickerDbHit (inkl. Präfix — die Karte ist ja eine Auswahl).
+function _pickerDbHits(q){
+  var dbQ=(q||'').trim();if(!dbQ)return [];
+  var hits=_pickerDbExact(dbQ);
+  if(!hits.length){var st=_pickerStripQty(dbQ);if(st&&st!==dbQ)hits=_pickerDbExact(st);}
+  if(hits.length)return hits;
+  var hit=_pickerDbHit(dbQ);
+  return hit?[hit]:[];
+}
+function _pickerDbItem(d){
+  return {name:d.n,emoji:d.e,per100:(typeof dbPer100==='function')?dbPer100(d):{kcal:d.k,protein:d.p,carbs:d.c,fat:d.f,sugar:0,fiber:0,salt:0},badge:'📦'};
+}
+
+// ─── CHAT: MENGE LOKAL LESEN (#210) ───
+// Ein Teil der Chat-Eingabe → {grams,count,name,lookupName,pieceG,unsure}.
+// Die Syntax liest NTAlexa.parseAmount (dieselbe wie beim Alexa-Einwurf);
+// fehlt der Export, gilt null und damit der Weg von vorher.
+//   grams      — „150 g", „0,5 l", „Haferflocken 50g" (ml ≈ g wie bei Alexa)
+//   count      — „2", „zwei", „eine halbe" (0,5)
+//   lookupName — der Name ohne Behälter-/Maßwort („Scheibe Brot" → „Brot")
+//   pieceG     — Gewicht EINES Stücks aus PIECE_G, nur an Wortgrenzen
+//   unsure     — vorn steht ein Maßwort ohne Stückgewicht (EL, cl, Dose,
+//                Portion …): die Anzahl wird dann mit NICHTS multipliziert.
+var _PICKER_CONTAINER=/^(scheiben?|gl(?:a|ä)s(?:er)?|tassen?|becher|kugeln?)\s+/i;
+var _PICKER_UNSURE=/^(el|tl|cl|dl|prisen?|msp\.?|messerspitzen?|handvoll|dosen?|packung(?:en)?|pck\.?|päckchen|stück|stueck|stk\.?|portion(?:en)?|flaschen?)(\s+|$)/i;
+function _pickerChatQty(part){
+  if(!(window.NTAlexa&&NTAlexa.parseAmount))return null;
+  var t=String(part||'').trim();if(!t)return null;
+  var a=NTAlexa.parseAmount(t);
+  if(a&&a.grams===undefined&&a.count===undefined){
+    // Nachgestellte Menge: „Haferflocken 50g" → „50 g Haferflocken"
+    var tm=t.match(/^(.*\S)\s+(\d+(?:[.,]\d+)?)\s*(g|gr|gramm|ml|milliliter|l|liter|kg|kilo|kilogramm)\.?$/i);
+    if(tm)a=NTAlexa.parseAmount(tm[2]+' '+tm[3]+' '+tm[1]);
+  }
+  if(!a)return null;
+  var name=(a.name||'').trim(),count=a.count,grams=a.grams;
+  // „eine halbe Banane": das zweite Zahlwort halbiert
+  var hm=name.match(/^halbe[nrs]?\s+(.*)$/i);
+  if(hm&&count>0){count=count*0.5;name=hm[1].trim();}
+  var lookup=name,unsure=false,um=name.match(_PICKER_UNSURE);
+  if(um){lookup=name.slice(um[0].length).trim();unsure=!(grams>0);}
+  else{var cm=name.match(_PICKER_CONTAINER);if(cm)lookup=name.slice(cm[0].length).trim();}
+  if(!lookup)return null;
+  var pg=(NTAlexa.pieceGramsStrict&&!unsure)?NTAlexa.pieceGramsStrict(name):null;
+  return {grams:grams>0?grams:0,count:count>0?count:0,name:name,lookupName:lookup,pieceG:pg||0,unsure:unsure};
+}
+// Gramm aus einer erkannten Menge: Gramm direkt, sonst Anzahl × Stückgewicht,
+// sonst Anzahl × Portionsgedächtnis. 0 = unbekannt (dann „g?").
+function _pickerQtyGrams(q,foodName){
+  if(!q)return 0;
+  if(q.grams>0)return Math.round(q.grams);
+  if(q.count>0&&!q.unsure){
+    var per=q.pieceG||((typeof recallPortion==='function')?recallPortion(foodName):0)||0;
+    if(per>0)return Math.max(1,Math.round(q.count*per));
+  }
+  return 0;
+}
+// Strenger, eindeutiger Treffer für den Direkteintrag — anders als
+// findInLocalDB ohne Tiebreak und ohne Präfix. Reihenfolge: eigenes
+// Lebensmittel, zuletzt Getracktes (kein Rezept), eingebaute DB.
+function _pickerSureHit(name){
+  var f=_pickerFold(name).trim();if(!f)return null;
+  var i,own=(typeof customFoods!=='undefined'?customFoods:[]).filter(function(c){return c&&c.per100&&_pickerFold(c.name).trim()===f;});
+  if(own.length===1)return {name:own[0].name,emoji:own[0].emoji||emo(own[0].name),per100:own[0].per100};
+  if(own.length>1)return null;
+  var rec=(typeof getRecentFoods==='function'?getRecentFoods():[]).filter(function(r){return !r.isRecipe&&!r.ingredients&&r.per100&&_pickerFold(r.name).trim()===f;});
+  if(rec.length)return {name:rec[0].name,emoji:rec[0].emoji||emo(rec[0].name),per100:rec[0].per100};
+  var db=_pickerDbExact(name);
+  if(db.length!==1)return null;
+  var it=_pickerDbItem(db[0]);
+  return {name:it.name,emoji:it.emoji,per100:it.per100};
+}
+// Vorab-Leser der Chat-Nachricht: Trägt NUR ein, wenn jeder Teil eine Menge
+// und einen strengen, eindeutigen Treffer hat — sonst null, und es gilt der
+// Weg von vorher (Karten, dann KI). Ein Rezept oder eigenes Lebensmittel, das
+// auch passt, geht vor: dann entscheidet die Nutzerin an der Karte.
+function _pickerChatPreParse(msg){
+  if(window._pickerPhotoB64)return null;
+  if(!(window.NTAlexa&&NTAlexa.parseAmount&&NTAlexa.splitItems))return null;
+  if(/\bmit\b/i.test(msg))return null;
+  var parts=NTAlexa.splitItems(msg);
+  if(!parts.length)return null;
+  var items=[],anyQty=false;
+  for(var i=0;i<parts.length;i++){
+    var q=_pickerChatQty(parts[i]);
+    if(!q||q.unsure)return null;
+    var own=pickerChatLocalSearch(q.lookupName).filter(function(r){return r.isRecipe||r.badge==='⭐';});
+    var hit=_pickerSureHit(q.lookupName);
+    if(!hit)return null;
+    // Jedes Rezept und jedes eigene Lebensmittel außer dem Treffer selbst
+    // (dasselbe per100-Objekt) ist ein Konkurrent — auch ein gleichnamiges:
+    // Ein eigenes „Roggenbrot" darf nicht vom DB-Roggenbrot für „Brot" verdrängt werden.
+    if(own.some(function(r){return r.isRecipe||r.per100!==hit.per100;}))return null;
+    if(q.grams>0||q.count>0)anyQty=true;
+    var amt=_pickerQtyGrams(q.grams>0||q.count>0?q:{count:1,pieceG:q.pieceG},hit.name);
+    if(!(amt>0))return null;
+    items.push({name:hit.name,emoji:hit.emoji,amount:amt,per100:hit.per100});
+  }
+  if(!anyQty&&items.length<2)return null;
+  return items;
+}
 function pickerChatLocalSearch(q){
   var qFull=_pickerFold(q).trim();
   var qTokens=_pickerTok(q);
@@ -1485,12 +1602,19 @@ function pickerChatLocalSearch(q){
   });
   // Einzelne Standard-Lebensmittel wie „Weißwein" direkt aus der eingebauten DB abfangen,
   // statt sie an die KI weiterzureichen (die bei Alkohol gern nichts Parsebares liefert, #135).
-  var dbHit=_pickerDbHit(q);
-  if(dbHit)add({name:dbHit.n,emoji:dbHit.e,per100:{kcal:dbHit.k,protein:dbHit.p,carbs:dbHit.c,fat:dbHit.f,sugar:0,fiber:0,salt:0},badge:'📦'},9);
+  // Mehrdeutige Synonyme („Reis": roh UND gekocht) stehen alle zur Wahl (#210).
+  _pickerDbHits(q).forEach(function(d){add(_pickerDbItem(d),9);});
   results.sort(function(a,b){return b.score-a.score;});
   return results.slice(0,6).map(function(x){return x.item;});
 }
 
+// Portionen eines Rezepts aus der Nachricht: „2 Chili" → 2. Eine Grammangabe
+// gilt bei Rezepten nicht (sie sind je Portion gespeichert).
+function _pickerQtyPortions(q){
+  if(!q||!(q.count>0))return 0;
+  if(q.unsure&&!/^portion/i.test(q.name))return 0;
+  return q.count;
+}
 function pickerChatAddLocal(i){
   var p=(window._pickerLocalResults||[])[i];if(!p)return;
   var cards=document.getElementById('pickerLocalCards');if(cards)cards.remove();
@@ -1500,19 +1624,23 @@ function pickerChatAddLocal(i){
     var rec=recipes.find(function(r){return r.id===p.recipeId;});
     if(!rec){msgs.innerHTML+='<div class="cm a">❌ Rezept nicht mehr vorhanden.</div>';return;}
     if(window._editEntryMode){
-      var one=_pickerIngsAsOne(rec.name,rec.emoji||'📋',rec.ingredients,1);
+      var one=_pickerIngsAsOne(rec.name,rec.emoji||'📋',rec.ingredients,_pickerQtyPortions(p.qty)||1);
       if(!one){msgs.innerHTML+='<div class="cm a">❌ '+_esc(_PICKER_NO_GRAMS)+'.</div>';showToast(_PICKER_NO_GRAMS);return;}
       _pickerAppendToEditEntry([one]);
       return;
     }
     var t=ingTotal(rec.ingredients||[]);
-    var portions=rec.portions||1;
+    var portions=_pickerQtyPortions(p.qty)||rec.portions||1;
     getDay().meals[pickerMeal].push(Object.assign({name:rec.name,emoji:rec.emoji||'📋',isRecipe:true,recipeId:rec.id,portions:portions,ingredients:JSON.parse(JSON.stringify(rec.ingredients||[]))},scaleNutrients(t,portions)));
     saveS();renderAll();closePicker();
     showToast('📋 '+rec.name+' eingetragen');
     return;
   }
-  pickerIngredients=[{name:p.name,emoji:p.emoji,g:100,amount:100,per100:p.per100}];
+  // Menge aus der Nachricht (#210): „2 Bier" ist nicht 100 g. Ohne Stückgewicht
+  // und ohne Portionsgedächtnis bleibt das Feld leer („g?") statt geraten.
+  var ing={name:p.name,emoji:p.emoji,g:100,amount:100,per100:p.per100};
+  if(p.qty){var ga=_pickerQtyGrams(p.qty,p.name);ing.g=ga||null;ing.amount=ga;if(!ga)ing.missingGrams=true;}
+  pickerIngredients=[ing];
   if(!document.getElementById('pickerChatRecipeName').value)
     document.getElementById('pickerChatRecipeName').value=p.name.slice(0,50);
   msgs.innerHTML+='<div class="cm a">✓ '+_esc(p.name)+' übernommen.</div>';
@@ -1541,8 +1669,9 @@ function pickerChatKiFallback(msg){
         // Die Eingabe selbst als ein Lebensmittel an die Nährwert-Suche geben (DB → OpenFoodFacts →
         // KI-Nährwerte → Schätzung). Nur bei kurzer Eingabe (sieht nach einem Einzel-Lebensmittel
         // aus); echte Mehr-Zutaten-Sätze brauchen die KI-Zerlegung und bleiben beim Hinweis (#135).
-        var clean=_pickerStripQty(msg)||(msg||'').trim();
-        if(clean&&clean.split(/\s+/).length<=4){raw=[{name:clean,g:null}];}
+        var nq=_pickerChatQty(msg);// „150 g Bier" → Bier, 150 g (#210)
+        var clean=(nq&&nq.lookupName)||_pickerStripQty(msg)||(msg||'').trim();
+        if(clean&&clean.split(/\s+/).length<=4){raw=[{name:clean,g:_pickerQtyGrams(nq,clean)||null}];}
         else{msgs.innerHTML+='<div class="cm a">❌ Konnte nicht parsen. Genauer beschreiben.</div>';document.getElementById('pickerChatSend').disabled=false;return;}
       }
       var _src=(typeof aiSourceBadgeHtml==='function')?aiSourceBadgeHtml():'';
@@ -1572,14 +1701,38 @@ function pickerSendChat(){
   document.getElementById('pickerChatResult').classList.add('hidden');
   msgs.scrollTop=msgs.scrollHeight;
   window._pickerChatLastMsg=msg;
+  // Eindeutig lokal Erkanntes direkt als Zutatenliste, ohne KI (#210).
+  var pre=_pickerChatPreParse(msg);
+  if(pre){
+    pickerIngredients=pre;
+    if(!document.getElementById('pickerChatRecipeName').value)
+      document.getElementById('pickerChatRecipeName').value=msg.slice(0,50);
+    msgs.innerHTML+='<div class="cm a">📦 Lokal erkannt (ohne KI): '+pre.length+' Zutat'+(pre.length===1?'':'en')+'.'
+      +'<div style="padding-top:2px;"><button type="button" data-act="pickerChatKiFallback" data-args="'+esc(JSON.stringify([msg]))+'" style="background:none;border:none;color:var(--mu);font-size:12px;cursor:pointer;padding:4px 0;text-decoration:underline;">🤖 Stattdessen KI fragen</button></div></div>';
+    msgs.scrollTop=msgs.scrollHeight;
+    _pickerChatRebind();
+    pickerUpdateChatTotal();
+    document.getElementById('pickerChatResult').classList.remove('hidden');
+    document.getElementById('pickerChatSend').disabled=false;
+    return;
+  }
   // Lokale Suche zuerst (#113): Rezepte, Custom Foods, Cache, DB. KI nur als Fallback.
-  var results=pickerChatLocalSearch(msg);
+  // Eine erkannte Menge wird abgetrennt und in jede Karte gelegt (#210).
+  var cq=(window.NTAlexa&&NTAlexa.splitItems&&NTAlexa.splitItems(msg).length===1)?_pickerChatQty(msg):null;
+  if(cq&&!(cq.grams>0||cq.count>0))cq=null;
+  var results=pickerChatLocalSearch(cq?cq.lookupName:msg);
   if(results.length){
+    results.forEach(function(p){if(cq)p.qty=cq;});
     window._pickerLocalResults=results;
     var html='<div id="pickerLocalCards" style="display:flex;flex-direction:column;gap:6px;margin-top:4px;">';
     html+='<div class="cm a">📚 '+results.length+' Treffer in deinem Bestand:</div>';
     results.forEach(function(p,i){
       var sub=p.isRecipe?'Rezept':(p.per100?Math.round(p.per100.kcal)+' kcal · P'+(p.per100.protein||0).toFixed(1)+'g · K'+(p.per100.carbs||0).toFixed(1)+'g · F'+(p.per100.fat||0).toFixed(1)+'g /100g':'');
+      if(p.qty){
+        var qp=p.isRecipe?_pickerQtyPortions(p.qty):0,qg=p.isRecipe?0:_pickerQtyGrams(p.qty,p.name);
+        var qs=p.isRecipe?(qp?qp+' Portion'+(qp===1?'':'en'):''):(qg?qg+' g':'Menge g?');
+        if(qs)sub=qs+(sub?' · '+sub:'');
+      }
       var badge=p.badge||'';
       html+='<div style="background:var(--gl);border:1px solid var(--br);border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:8px;">'
         +'<div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:13px;">'+esc(p.emoji||'🍽')+' '+_esc(p.name)+(badge?' <span style="font-size:11px;color:var(--mu);">'+_esc(badge)+'</span>':'')+'</div>'
@@ -2094,7 +2247,7 @@ function _pickerLinkFill(rec,btn){
     }
     function rebindLink(){
       pickerRenderIngList('pickerLinkIngList',pickerIngredients,
-        function(i,v){pickerIngredients[i].amount=parseFloat(v)||0;pickerUpdateLinkTotal();},
+        function(i,v){pickerIngredients[i].amount=parseFloat(v)||0;pickerIngredients[i].missingGrams=false;pickerUpdateLinkTotal();},
         function(i){pickerIngredients.splice(i,1);rebindLink();pickerUpdateLinkTotal();}
       );
     }

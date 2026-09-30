@@ -19,6 +19,11 @@
 //   sync({force})         — holt neue Einwürfe, trägt sie ein, quittiert
 //   endpointInfo()        — {url, token, familyToken} für die Skill-Einrichtung
 //   onMutation(cb)        — Callback „es kam etwas an"
+//   parseAmount(text)     — „150 g Reis" → {grams,name}, „zwei Eier" → {count,name}
+//   splitItems(text)      — „2 Eier und ein Brötchen, Kaffee" → drei Teile
+//   pieceGrams(name)      — Gewicht EINES Stücks (Teilstring-Treffer, wie Alexa rechnet)
+//   pieceGramsStrict(name)— dasselbe, aber nur an Wortgrenzen („Apfelschorle" → null)
+//   Die vier Mengenhelfer nutzt auch der Chat im Picker (#210).
 //
 // ZWEI BRIEFKÄSTEN (v0.244): Essen, Sport und Wasser sind persönlich und liegen
 // unter dem persönlichen Token — pro Person eines, im Skill über das
@@ -143,10 +148,13 @@
     }
     return {name:t};
   }
-  // „zwei Eier und ein Brötchen, dazu Kaffee" → drei Teile
+  // „zwei Eier und ein Brötchen, dazu Kaffee" → drei Teile. Ein Komma vor
+  // einer Ziffer ist ein Dezimalkomma („0,5 l Bier") und trennt nicht (#210).
+  // Bewusst ohne Lookbehind: den kennt Safari erst ab 16.4, und ein
+  // Parsefehler legte die ganze Datei lahm.
   function splitItems(text){
     return String(text||'')
-      .split(/\s*(?:,|;|\bund\b|\bsowie\b|\bdazu\b|\bplus\b)\s*/i)
+      .split(/\s*(?:,(?!\d)|;|\bund\b|\bsowie\b|\bdazu\b|\bplus\b)\s*/i)
       .map(function(s){return s.trim();})
       .filter(function(s){return s.length>0;});
   }
@@ -159,9 +167,9 @@
   // Schätzung als eine falsche Konstante.
   var PIECE_G=[
     [/(brötchen|broetchen|semmel|schrippe|weck)/,50],
-    [/(toast|scheibe brot|brotscheibe|knäckebrot)/,40],
-    [/(scheibe käse|käsescheibe)/,30],
-    [/(scheibe wurst|wurstscheibe|salami|aufschnitt)/,15],
+    [/(toast|scheiben? brot|brotscheiben?|knäckebrot)/,40],
+    [/(scheiben? käse|käsescheiben?)/,30],
+    [/(scheiben? wurst|wurstscheiben?|salami|aufschnitt)/,15],
     [/(^| )ei(er)?($| )/,60],
     [/(apfel|äpfel)/,150],
     [/(banane)/,120],
@@ -186,13 +194,28 @@
     [/(kugel eis|eiskugel)/,50],
     [/(würstchen|wiener|bratwurst)/,100],
     [/(schnitzel|steak|kotelett)/,150],
-    [/(scheibe pizza|pizzastück)/,125]
+    [/(scheiben? pizza|pizzastück)/,125]
   ];
   // Liefert das Gewicht EINES Stücks oder null, wenn nichts passt.
   function pieceGrams(name){
     var n=String(name||'').toLowerCase();
     for(var i=0;i<PIECE_G.length;i++){
       if(PIECE_G[i][0].test(n))return PIECE_G[i][1];
+    }
+    return null;
+  }
+  // Wie pieceGrams, aber ein Treffer zählt nur, wenn danach höchstens eine
+  // Pluralendung und dann ein Wortende folgt. Sonst träfe „apfel" schon in
+  // „Apfelschorle" und schlüge in „Glas Apfelsaft" das Glas (#210).
+  function pieceGramsStrict(name){
+    var n=String(name||'').toLowerCase();
+    for(var i=0;i<PIECE_G.length;i++){
+      var re=new RegExp(PIECE_G[i][0].source,'g'),m;
+      while((m=re.exec(n))){
+        var rest=n.slice(m.index+m[0].length);
+        if(/\s$/.test(m[0])||/^(n|en|e|er|s)?(\s|$)/.test(rest))return PIECE_G[i][1];
+        if(!m[0].length)re.lastIndex++;
+      }
     }
     return null;
   }
@@ -583,5 +606,6 @@
     getFamilyToken:getFamilyToken,setFamilyToken:setFamilyToken,clearFamilyToken:clearFamilyToken,
     getWorkerBase:getWorkerBase,setWorkerBase:setWorkerBase,
     sync:sync,onMutation:onMutation,endpointInfo:endpointInfo,
+    parseAmount:parseAmount,splitItems:splitItems,pieceGrams:pieceGrams,pieceGramsStrict:pieceGramsStrict,
   };
 })();

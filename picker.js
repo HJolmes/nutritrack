@@ -1622,10 +1622,10 @@ function pickerChatAddLocal(i){
   if(p.isRecipe){
     // Rezept als Ganzes in die Mahlzeit übernehmen (analog pickerAddRecent).
     var rec=recipes.find(function(r){return r.id===p.recipeId;});
-    if(!rec){msgs.innerHTML+='<div class="cm a">❌ Rezept nicht mehr vorhanden.</div>';return;}
+    if(!rec){msgs.innerHTML+='<div class="cm a">❌ Rezept nicht mehr vorhanden.</div>';_pickerChatScrollEnd();return;}
     if(window._editEntryMode){
       var one=_pickerIngsAsOne(rec.name,rec.emoji||'📋',rec.ingredients,_pickerQtyPortions(p.qty)||1);
-      if(!one){msgs.innerHTML+='<div class="cm a">❌ '+_esc(_PICKER_NO_GRAMS)+'.</div>';showToast(_PICKER_NO_GRAMS);return;}
+      if(!one){msgs.innerHTML+='<div class="cm a">❌ '+_esc(_PICKER_NO_GRAMS)+'.</div>';_pickerChatScrollEnd();showToast(_PICKER_NO_GRAMS);return;}
       _pickerAppendToEditEntry([one]);
       return;
     }
@@ -1647,14 +1647,15 @@ function pickerChatAddLocal(i){
   _pickerChatRebind();
   pickerUpdateChatTotal();
   document.getElementById('pickerChatResult').classList.remove('hidden');
+  _pickerChatScrollEnd();
 }
 
 function pickerChatKiFallback(msg){
   var msgs=document.getElementById('pickerChatMsgs');
   var cards=document.getElementById('pickerLocalCards');if(cards)cards.remove();
-  if(!isOnline){msgs.innerHTML+='<div class="cm a">📵 KI benötigt eine Internet-Verbindung.</div>';document.getElementById('pickerChatSend').disabled=false;return;}
+  if(!isOnline){msgs.innerHTML+='<div class="cm a">📵 KI benötigt eine Internet-Verbindung.</div>';_pickerChatScrollEnd();document.getElementById('pickerChatSend').disabled=false;return;}
   msgs.innerHTML+='<div class="cm a">🤖 KI schätzt Nährwerte...</div>';
-  msgs.scrollTop=msgs.scrollHeight;
+  _pickerChatScrollEnd();
   document.getElementById('pickerChatSend').disabled=true;
   var hasPhoto=!!window._pickerPhotoB64;
   var content=hasPhoto
@@ -1672,11 +1673,11 @@ function pickerChatKiFallback(msg){
         var nq=_pickerChatQty(msg);// „150 g Bier" → Bier, 150 g (#210)
         var clean=(nq&&nq.lookupName)||_pickerStripQty(msg)||(msg||'').trim();
         if(clean&&clean.split(/\s+/).length<=4){raw=[{name:clean,g:_pickerQtyGrams(nq,clean)||null}];}
-        else{msgs.innerHTML+='<div class="cm a">❌ Konnte nicht parsen. Genauer beschreiben.</div>';document.getElementById('pickerChatSend').disabled=false;return;}
+        else{msgs.innerHTML+='<div class="cm a">❌ Konnte nicht parsen. Genauer beschreiben.</div>';_pickerChatScrollEnd();document.getElementById('pickerChatSend').disabled=false;return;}
       }
       var _src=(typeof aiSourceBadgeHtml==='function')?aiSourceBadgeHtml():'';
       msgs.innerHTML+='<div class="cm a">✨ '+raw.length+' Zutaten erkannt'+_src+'. Suche Nährwerte...</div>';
-      msgs.scrollTop=msgs.scrollHeight;
+      _pickerChatScrollEnd();
       lookupNutrients(raw,function(resolved){
         pickerIngredients=resolved;
         if(!document.getElementById('pickerChatRecipeName').value)
@@ -1684,10 +1685,11 @@ function pickerChatKiFallback(msg){
         _pickerChatRebind();
         pickerUpdateChatTotal();
         document.getElementById('pickerChatResult').classList.remove('hidden');
+        _pickerChatScrollEnd();
         document.getElementById('pickerChatSend').disabled=false;
       });
     },
-    function(err){msgs.innerHTML+='<div class="cm a">❌ '+pickerFriendlyAiError(err)+'</div>';document.getElementById('pickerChatSend').disabled=false;}
+    function(err){msgs.innerHTML+='<div class="cm a">❌ '+pickerFriendlyAiError(err)+'</div>';_pickerChatScrollEnd();document.getElementById('pickerChatSend').disabled=false;}
   );
 }
 
@@ -1699,7 +1701,7 @@ function pickerSendChat(){
   _pickerChatShrink();
   document.getElementById('pickerChatSend').disabled=true;
   document.getElementById('pickerChatResult').classList.add('hidden');
-  msgs.scrollTop=msgs.scrollHeight;
+  _pickerChatScrollEnd();
   window._pickerChatLastMsg=msg;
   // Eindeutig lokal Erkanntes direkt als Zutatenliste, ohne KI (#210).
   var pre=_pickerChatPreParse(msg);
@@ -1709,10 +1711,10 @@ function pickerSendChat(){
       document.getElementById('pickerChatRecipeName').value=msg.slice(0,50);
     msgs.innerHTML+='<div class="cm a">📦 Lokal erkannt (ohne KI): '+pre.length+' Zutat'+(pre.length===1?'':'en')+'.'
       +'<div style="padding-top:2px;"><button type="button" data-act="pickerChatKiFallback" data-args="'+esc(JSON.stringify([msg]))+'" style="background:none;border:none;color:var(--mu);font-size:12px;cursor:pointer;padding:4px 0;text-decoration:underline;">🤖 Stattdessen KI fragen</button></div></div>';
-    msgs.scrollTop=msgs.scrollHeight;
     _pickerChatRebind();
     pickerUpdateChatTotal();
     document.getElementById('pickerChatResult').classList.remove('hidden');
+    _pickerChatScrollEnd();
     document.getElementById('pickerChatSend').disabled=false;
     return;
   }
@@ -1743,11 +1745,11 @@ function pickerSendChat(){
     html+='<div style="text-align:center;padding-top:2px;"><button type="button" onclick="pickerChatKiFallback(window._pickerChatLastMsg)" style="background:none;border:none;color:var(--mu);font-size:12px;cursor:pointer;padding:4px 8px;text-decoration:underline;">🤖 Stattdessen KI fragen</button></div>';
     html+='</div>';
     msgs.innerHTML+=html;
-    msgs.scrollTop=msgs.scrollHeight;
+    _pickerChatScrollEnd();
     document.getElementById('pickerChatSend').disabled=false;
     return;
   }
-  if(!isOnline){msgs.innerHTML+='<div class="cm a">📵 Offline und nichts im Bestand gefunden. Verbinde dich oder lege es als „Eigenes Lebensmittel" an.</div>';document.getElementById('pickerChatSend').disabled=false;return;}
+  if(!isOnline){msgs.innerHTML+='<div class="cm a">📵 Offline und nichts im Bestand gefunden. Verbinde dich oder lege es als „Eigenes Lebensmittel" an.</div>';_pickerChatScrollEnd();document.getElementById('pickerChatSend').disabled=false;return;}
   pickerChatKiFallback(msg);
 }
 
@@ -1803,7 +1805,7 @@ function _pickerVoiceStart(hold){
     if(ev.error==='not-allowed'||ev.error==='service-not-allowed'||ev.error==='audio-capture'){
       var msgs=document.getElementById('pickerChatMsgs');
       msgs.innerHTML+='<div class="cm a">🎙️ Kein Mikrofon-Zugriff. Bitte erlaube das Mikrofon für diese App in den Browser-/System-Einstellungen.</div>';
-      msgs.scrollTop=msgs.scrollHeight;
+      _pickerChatScrollEnd();
     }
     // 'no-speech'/'aborted' bewusst still — Button-Zustand ist schon zurückgesetzt.
   };
@@ -1847,6 +1849,13 @@ function _pickerChatGrow(){
   inp.style.height=Math.min(inp.scrollHeight+4,120)+'px';
 }
 function _pickerChatShrink(){var inp=document.getElementById('pickerChatInp');if(inp)inp.style.height='';}
+// Neueste Nachricht direkt über die feste Eingabe holen (#181). Gescrollt wird
+// das Modal: #pickerChatMsgs hat kein eigenes overflow. Aufruf NACH dem Einblenden.
+// Nur im Chat-Tab: eine späte KI-Antwort darf einen anderen Tab nicht ans Ende werfen.
+function _pickerChatScrollEnd(){
+  var pn=document.getElementById('ppanel-chat');if(!pn||!pn.classList.contains('act'))return;
+  var m=document.querySelector('#pickerOv .mod');if(m)m.scrollTop=m.scrollHeight;
+}
 (function(){
   var inp=document.getElementById('pickerChatInp');
   if(inp)inp.addEventListener('input',_pickerChatGrow);

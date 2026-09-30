@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.284"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.285"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.284"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.285"></script>
 <script>
   (function(){
     if(typeof ZXingWASM==='undefined'){console.warn('zxing-wasm load failed, ZXing-JS fallback aktiv');return;}
@@ -302,6 +302,8 @@ body:has(#setupScreen.active) .fb-fab{display:none;}
 .cm.a{background:var(--gl);color:var(--tx);align-self:flex-start;border-bottom-left-radius:4px;border:1px solid var(--g3);}
 .cm.h{background:var(--bg);color:var(--mu);align-self:center;font-style:italic;font-size:12px;text-align:center;border:none;padding:6px;}
 .chat-row{display:flex;gap:8px;align-items:flex-end;}
+/* Chat-Eingabe im Picker fest am unteren Dialogrand (#181), Muster wie #pickerAddSec */
+#ppanel-chat .chat-row{position:sticky;bottom:0;background:#fff;z-index:2;padding:6px 0 calc(6px + env(safe-area-inset-bottom,0px));}
 .chat-inp{flex:1;border:2px solid var(--br);border-radius:11px;padding:10px 13px;font-size:15px;outline:none;resize:none;line-height:1.4;max-height:120px;overflow-y:auto;}
 .chat-inp:focus{border-color:var(--g2);}
 .chat-send{background:var(--g2);color:white;border:none;border-radius:11px;padding:10px 14px;font-size:18px;flex-shrink:0;}
@@ -500,8 +502,12 @@ button,input,select,textarea{font-family:var(--fs-body);}
 }
 /* Tastatur offen (#181): Nav ausblenden, bottom-fixe Overlays über die Tastatur heben */
 body.kb-open .bnav{display:none;}
-body.kb-open .ov .mod{bottom:var(--kbh,0px);max-height:calc(88vh - var(--kbh,0px));}
+body.kb-open .ov .mod{bottom:var(--kbh,0px);max-height:min(calc(88vh - var(--kbh,0px)), calc(var(--vvh,100vh) - 8px));}
 body.kb-open #feedbackFab{display:none;}
+body.kb-open .tst{bottom:calc(var(--kbh,0px) + 12px);}
+/* Über der Tastatur liegt kein Home-Indikator: Safe-Area-Polster weglassen */
+body.kb-open #ppanel-chat .chat-row{padding-bottom:6px;}
+body.kb-open #pickerAddSec{padding-bottom:10px;}
 /* Solange ein Overlay offen ist, gehoert die Flaeche dem Overlay. Der FAB hat
    z-index 400, die Overlays 300 — er lag also ueber jedem Dialog und verdeckte
    dessen rechte untere Ecke (im Funktions-Katalog einen Schalter).
@@ -1211,7 +1217,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.284</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.285</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -2344,7 +2350,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 
 <!-- ══ EINKAUFSZETTEL: ARTIKEL BEARBEITEN ══ -->
 <div class="ov" id="shopItemOv" data-bg-close="shopItemOv">
-  <div class="mod" style="height:auto;max-height:88vh;">
+  <div class="mod" style="height:auto;">
     <div class="mhan"></div>
     <div class="mhd">
       <button type="button" class="mcl" data-act="closeOv" data-args='["shopItemOv"]'>✕</button>
@@ -3346,11 +3352,11 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.284"></script>
-<script src="js/fooddb.js?v=0.284"></script>
-<script src="js/fooddb-usda.js?v=0.284"></script>
-<script src="js/idb-photos.js?v=0.284"></script>
-<script src="js/changelog.js?v=0.284"></script>
+<script src="js/actions.js?v=0.285"></script>
+<script src="js/fooddb.js?v=0.285"></script>
+<script src="js/fooddb-usda.js?v=0.285"></script>
+<script src="js/idb-photos.js?v=0.285"></script>
+<script src="js/changelog.js?v=0.285"></script>
 <script>
 // ════════════════════════════════════════
 // SECTION: DATABASE
@@ -3369,7 +3375,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.284';
+var APP_VERSION='0.285';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -3826,17 +3832,20 @@ window.addEventListener('DOMContentLoaded',function(){
   // `kb-open` nur mit echtem Beleg: der visualViewport ist tatsächlich geschrumpft
   // UND ein Textfeld hat Fokus. Touch-Fähigkeit allein reicht nicht — Tablets am
   // Magic Keyboard und Touch-Notebooks öffnen keine Bildschirmtastatur.
-  var _kbH=0;
+  // _kbVis = Erkennung (Viewport geschrumpft), _kbH = Versatz der Unterkante
+  // (Tastaturüberdeckung abzüglich offsetTop). Getrennt, weil iOS den Visual
+  // Viewport verschiebt: dann sinkt _kbH unter die Schwelle, obwohl die Tastatur offen ist.
+  var _kbH=0,_kbVis=false;
   function _setKbOpen(on){
     if(document.body)document.body.classList.toggle('kb-open',!!on);
   }
   function _syncKbState(){
-    _setKbOpen(_kbH>0&&_isTextEntry(document.activeElement));
+    _setKbOpen(_kbVis&&_isTextEntry(document.activeElement));
   }
   // Fokussiertes Feld nach vorn holen (auch in scrollenden Overlays)
   function _revealFocused(){
     var t=document.activeElement;
-    if(_kbH<=0||!_isTextEntry(t))return;
+    if(!_kbVis||!_isTextEntry(t))return;
     try{t.scrollIntoView({block:'center'});}catch(_e){}
   }
   document.addEventListener('focusin',function(e){
@@ -3851,15 +3860,22 @@ window.addEventListener('DOMContentLoaded',function(){
   },true);
   if(window.visualViewport){
     // Tastaturhöhe als --kbh: bottom-fixe Overlays weichen nach oben aus (#181)
+    // --vvh = sichtbare Höhe: das Modal wird bei offener Tastatur nie höher als sie
+    var _kbCss={};
+    var _setKbVar=function(k,v){
+      if(_kbCss[k]===v)return;// nur bei Änderung neu setzen (kein Relayout je Viewport-Scroll)
+      _kbCss[k]=v;document.documentElement.style.setProperty(k,v);
+    };
     var _syncKbMetrics=function(){
       var vv=window.visualViewport;
-      var kb=Math.max(0,Math.round(window.innerHeight-vv.height-vv.offsetTop));
-      var was=_kbH>0;
-      _kbH=kb>120?kb:0;
-      document.documentElement.style.setProperty('--kbh',_kbH+'px');
+      var wasVis=_kbVis;
+      _kbVis=(window.innerHeight-vv.height)>120;
+      _kbH=_kbVis?Math.max(0,Math.round(window.innerHeight-vv.height-vv.offsetTop)):0;
+      _setKbVar('--kbh',_kbH+'px');
+      _setKbVar('--vvh',Math.round(vv.height)+'px');
       _syncKbState();
       // Nur beim Aufgehen nachziehen, nicht bei jedem Viewport-Scroll
-      if(_kbH>0&&!was)_revealFocused();
+      if(_kbVis&&!wasVis)_revealFocused();
     };
     window.visualViewport.addEventListener('resize',_syncKbMetrics);
     window.visualViewport.addEventListener('scroll',_syncKbMetrics);
@@ -8037,29 +8053,29 @@ function axTestSync(){
 }
 
 </script>
-<script src="picker.js?v=0.284"></script>
-<script src="js/health-sync.js?v=0.284"></script>
-<script src="js/sync-core.js?v=0.284"></script>
-<script src="js/baby.js?v=0.284"></script>
-<script src="js/baby-meds.js?v=0.284"></script>
-<script src="js/baby-growth-data.js?v=0.284"></script>
-<script src="js/baby-growth.js?v=0.284"></script>
-<script src="js/baby-week.js?v=0.284"></script>
-<script src="js/baby-milestones.js?v=0.284"></script>
-<script src="js/baby-midwife.js?v=0.284"></script>
-<script src="js/shopping.js?v=0.284"></script>
-<script src="js/partner.js?v=0.284"></script>
-<script src="js/alexa-sync.js?v=0.284"></script>
-<script src="js/dashboard.js?v=0.284"></script>
-<script src="js/features.js?v=0.284"></script>
-<script src="js/mealplan.js?v=0.284"></script>
-<script src="js/onedrive.js?v=0.284"></script>
-<script src="js/autosave.js?v=0.284"></script>
-<script src="js/recurring.js?v=0.284"></script>
-<script src="js/stats.js?v=0.284"></script>
-<script src="js/reminders.js?v=0.284"></script>
-<script src="js/templates.js?v=0.284"></script>
-<script src="js/offline-queue.js?v=0.284"></script>
+<script src="picker.js?v=0.285"></script>
+<script src="js/health-sync.js?v=0.285"></script>
+<script src="js/sync-core.js?v=0.285"></script>
+<script src="js/baby.js?v=0.285"></script>
+<script src="js/baby-meds.js?v=0.285"></script>
+<script src="js/baby-growth-data.js?v=0.285"></script>
+<script src="js/baby-growth.js?v=0.285"></script>
+<script src="js/baby-week.js?v=0.285"></script>
+<script src="js/baby-milestones.js?v=0.285"></script>
+<script src="js/baby-midwife.js?v=0.285"></script>
+<script src="js/shopping.js?v=0.285"></script>
+<script src="js/partner.js?v=0.285"></script>
+<script src="js/alexa-sync.js?v=0.285"></script>
+<script src="js/dashboard.js?v=0.285"></script>
+<script src="js/features.js?v=0.285"></script>
+<script src="js/mealplan.js?v=0.285"></script>
+<script src="js/onedrive.js?v=0.285"></script>
+<script src="js/autosave.js?v=0.285"></script>
+<script src="js/recurring.js?v=0.285"></script>
+<script src="js/stats.js?v=0.285"></script>
+<script src="js/reminders.js?v=0.285"></script>
+<script src="js/templates.js?v=0.285"></script>
+<script src="js/offline-queue.js?v=0.285"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

@@ -1,6 +1,6 @@
 // NutriTrack Service Worker
 // Version wird bei jedem Release hochgezählt - löst automatisches Update aus
-var VERSION = '0.269';
+var VERSION = '0.274';
 var CACHE = 'nt-' + VERSION;
 var SKIP = ['workers.dev','corsproxy.io','openfoodfacts.org','fonts.googleapis.com','fonts.gstatic.com','unpkg.com','esm.sh','jsdelivr.net','is.gd','v.gd'];
 // Kern-Assets, die für den Offline-Betrieb vorab gecacht werden. Relativ zur
@@ -57,6 +57,10 @@ self.addEventListener('activate', function(e) {
 
 self.addEventListener('fetch', function(e) {
   var u = e.request.url;
+  // Nur eigene GET-Anfragen gehen durch den Cache. Fremde Server (OneDrive,
+  // eigene Worker-URL …) liefern unter gleicher URL wechselnde Daten — ein
+  // Cache-Treffer dort hiess: alter Backup-Stand ueberschreibt den neuen.
+  if (e.request.method !== 'GET' || new URL(u).origin !== self.location.origin) return;
   for (var i = 0; i < SKIP.length; i++) {
     if (u.includes(SKIP[i])) {
       e.respondWith(fetch(e.request).catch(function() {

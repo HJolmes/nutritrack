@@ -155,16 +155,23 @@
       var data=j&&j.data;
       var arr=(data&&Array.isArray(data.workouts))?data.workouts:[];
       var added=0;
-      var maxStartMs=since;
+      // Cursor = Upload-Zeit (srev) des Workers, Alt-Eintraege ohne srev
+      // liefern startMs (#239). 2 Min. hinter der Serverzeit bleiben, damit
+      // ein spaeter sichtbarer Upload nicht uebersprungen wird; Doppeltes
+      // faengt _appendWorkout ueber _healthId ab.
+      var maxCur=since;
       for(var i=0;i<arr.length;i++){
         var w=arr[i];
         if(_appendWorkout(w))added++;
-        if(w&&Number.isFinite(w.startMs)&&w.startMs>maxStartMs)maxStartMs=w.startMs;
+        var v=w&&(Number.isFinite(w.srev)?w.srev:w.startMs);
+        if(Number.isFinite(v)&&v>maxCur)maxCur=v;
       }
+      if(data&&data.truncated)maxCur=since;
+      else if(data&&Number.isFinite(data.serverTime))maxCur=Math.min(maxCur,data.serverTime-120000);
       // Only advance the watermark if we actually saw newer workouts.
       // Otherwise a missed sync (offline, throttle) wouldn't reset the cursor.
-      if(maxStartMs>since){
-        localStorage.setItem(KEY_LAST,String(maxStartMs));
+      if(maxCur>since){
+        localStorage.setItem(KEY_LAST,String(maxCur));
       }
       _onMutation(added);
       return {ok:true,added:added,total:arr.length};

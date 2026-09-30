@@ -45,7 +45,6 @@ var FEATURES=[
    sub:'Frühstück, Mittag, Abend, Snack',
    actions:[
      {ic:'🔁', label:'Wiederkehrende Mahlzeiten', hint:'Automatisch an festen Wochentagen', act:'NTRecur.openManage'},
-     {ic:'🎙', label:'Alexa-Einwurf',             hint:'Per Sprache eintragen', act:'openAlexaSync'},
      {ic:'📥', label:'Code / Link einlösen',      hint:'Geteiltes Rezept übernehmen', act:'openImportPaste'}
    ]},
 
@@ -90,6 +89,7 @@ var FEATURES=[
    actions:[
      {ic:'👶', label:'Tagebuch öffnen',   hint:'Einträge sehen und ergänzen', act:'NTBaby.openDiary'},
      {ic:'⭐', label:'U-Heft',           hint:'U-Termine, Impftermine, Meilensteine', act:'NTMile.open'},
+     {ic:'🤱', label:'Fragen an die Hebamme', hint:'Notieren, abhaken, Antworten suchen', act:'NTMidwife.open'},
      {ic:'💊', label:'Medizin & Gaben',  hint:'Vitamin D, Fiebermittel mit Abstand', act:'NTBabyMed.open'},
      {ic:'📝', label:'Angaben zum Baby', hint:'Name, Geburtsdatum, ein/aus', act:'NTFeat.openBabySettings'},
      {ic:'🔗', label:'Verbindungen',     hint:'Tagebuch mit jemandem teilen', act:'NTSync.open'}
@@ -97,10 +97,9 @@ var FEATURES=[
 
   {id:'partner', ic:'📬', label:'Vom Partner', card:'partnerCard',
    sub:'Mahlzeiten direkt zugeschickt bekommen',
-   note:'Erscheint, sobald eine Kopplung besteht',
+   note:'Erscheint nach der Kopplung (Mehr → 🔗 Verbindungen)',
    actions:[
-     {ic:'📬', label:'Postfach',    hint:'Empfangene Sendungen übernehmen', act:'NTPartner.openInbox'},
-     {ic:'🤝', label:'Kopplung',    hint:'Partner verbinden oder lösen', act:'NTPartner.open'}
+     {ic:'📬', label:'Postfach',    hint:'Empfangene Sendungen übernehmen', act:'NTPartner.openInbox'}
    ]}
 ];
 

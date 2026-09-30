@@ -31,7 +31,7 @@ App-Start und bei jeder Rückkehr in den Vordergrund ab.
 
 ### 1. Token in NutriTrack erzeugen
 
-Mehr → 🗣️ Alexa-Einwurf → „🎲 Neu erzeugen" → „Speichern ✓". Token und Endpunkt-URL
+Mehr → 🔗 Verbindungen → 🗣️ Alexa → „🎲 Neu erzeugen" → „Speichern ✓". Token und Endpunkt-URL
 stehen dort zum Kopieren.
 
 ### 2. Skill anlegen
@@ -78,7 +78,7 @@ nicht nötig**, solange du ihn nicht veröffentlichst.
 
 ### 7. Zu zweit nutzen (optional)
 
-**Geteilt:** Baby-Tagebuch und Einkaufszettel. In NutriTrack unter Mehr → 🗣️ Alexa-Einwurf
+**Geteilt:** Baby-Tagebuch und Einkaufszettel. In NutriTrack unter Mehr → 🔗 Verbindungen → 🗣️ Alexa
 ein **Familien-Token** erzeugen, auf **beiden** Telefonen dasselbe eintragen und im Skill
 als `NUTRITRACK_FAMILY_TOKEN` hinterlegen. Ab dann sieht jeder jeden Einwurf, sobald er
 seine App öffnet — unabhängig davon, wer gesprochen hat.
@@ -131,6 +131,20 @@ Satz geschlossen, ein Dialog nach „öffne" mit `new: false` und bleibt offen.
 | Baby, Schlaf | „Schläft" |
 | Baby, Fieber | „Fieber 38,5 Grad" |
 | Baby, mit „Baby" davor | „Alexa, sage mein Tagebuch, Baby Windel gewechselt" |
+| Frage an die Hebamme | „Alexa, sage mein Tagebuch, Hebamme: ab wann darf ich baden" |
+| Frage an die Hebamme | „Frag die Hebamme, ob sie Fencheltee trinken darf" |
+| Frage an die Hebamme | „Ich hab eine Frage an die Hebamme: …" |
+| Frage in zwei Schritten | „Alexa, sage mein Tagebuch, Hebamme" → „Was möchtest du die Hebamme fragen?" → Frage sprechen |
+
+Fragen an die Hebamme landen im Reiter 🤱 Hebamme des Baby-Tagebuchs (Tagebuch
+muss eingeschaltet sein), bis 500 Zeichen. Alle Satzanfänge stehen in
+`MidwifeQuestionIntent` im Sprachmodell. Die Nachfrage nach „Hebamme" allein
+läuft über das Dialog-Modell (`dialog`/`prompts` im JSON, `Dialog.ElicitSlot`
+in der Lambda) — Alexa legt die nächste Antwort wörtlich in den Slot, auch wenn
+sie keinem Satzmuster entspricht. Technisch reisen die Fragen als Baby-Notiz
+mit `babyP.mw=1`; eine ältere App legt sie als Notiz ins Tagebuch. Die
+500-Zeichen-Grenze braucht den Worker ab `v0.265-alexa-midwife`, ein älterer
+Worker kürzt auf 200.
 
 ### Warum der Aufrufname „mein tagebuch" heißt
 
@@ -196,7 +210,7 @@ Der Skill nennt die Ursache in der Sprachantwort, statt pauschal zu scheitern:
 | „Das habe ich nicht zuordnen können …" | Der Skill läuft, aber der Satzbau passt zu keinem Befehl | eine Formulierung aus der Tabelle oben nehmen |
 | „Notiz." statt Windel oder Stillen | Das Sprachmodell ist älter als der Code (oder umgekehrt) | beides neu einspielen: Build → JSON Editor → **Build Model**, danach Code → Deploy |
 | „Der Skill ist noch nicht eingerichtet" | `TOKEN` oder `ENDPOINT` ist leer | Code-Reiter, die zwei Zeilen oben ausfüllen, Deploy |
-| „Das Token im Skill passt nicht zu dem in NutriTrack" | HTTP 401 — die beiden Token sind verschieden | Mehr → 🗣️ Alexa-Einwurf, Token vergleichen |
+| „Das Token im Skill passt nicht zu dem in NutriTrack" | HTTP 401 — die beiden Token sind verschieden | Mehr → 🔗 Verbindungen → 🗣️ Alexa, Token vergleichen |
 | „Die Endpunkt-Adresse stimmt nicht" | HTTP 404 — die URL endet nicht auf `/alexa/inbox` | `ENDPOINT` korrigieren |
 | „Der NutriTrack-Server ist nicht vollständig eingerichtet" | HTTP 503 — dem Worker fehlt der KV-Namespace | `GET /health` prüfen, `alexaInboxConfigured` muss `true` sein |
 | „Ich erreiche den NutriTrack-Server gerade nicht" | Zeitüberschreitung oder Netzfehler | Worker-URL im Browser aufrufen |

@@ -327,6 +327,57 @@ async function pushBaby(type, detail, noteRaw, keepOpen, ctx) {
   return confirm(e.spoken, keepOpen);
 }
 
+// Frage an die Hebamme: Sie reist als Baby-Notiz mit Kennzeichen `babyP.mw`,
+// nicht als eigener Typ. So braucht der Worker kein Update, und eine ältere
+// App, die das Kennzeichen nicht kennt, legt sie wenigstens als Notiz ins
+// Tagebuch, statt sie zu verwerfen.
+// "ob sie Fencheltee trinken darf" → "Ob sie Fencheltee trinken darf?"
+function midwifeText(raw) {
+  let t = String(raw || '').trim()
+    .replace(/^(?:frage\s+)?(?:an|für)\s+die\s+hebamme\s*/i, '')
+    .replace(/^(?:hebamme|frage|fragen|habe|hab)[,:]?\s+/i, '')
+    .trim();
+  if (!t) return '';
+  // Sprach-Eingaben sind nicht begrenzt, der Worker schneidet bei 500 ab —
+  // hier schon, damit das Fragezeichen nicht mit abgeschnitten wird.
+  t = t.slice(0, 499);
+  t = t.charAt(0).toUpperCase() + t.slice(1);
+  if (!/[?.!]$/.test(t)) t += '?';
+  return t;
+}
+
+// Nur "Hebamme" gesagt: Alexa fragt nach und legt die nächste Antwort
+// wörtlich in den Slot `question` (Dialog-Modell im Sprachmodell). Ohne diesen
+// Schritt landete die Frage als eigener Satz im Fallback, weil sie keinem
+// Satzmuster entspricht. `mwOneShot` merkt sich, dass der Nutzer mit einem
+// Einzelbefehl kam — nach der Frage wird dann geschlossen, nicht "Was noch?".
+function elicitMidwife(ctx) {
+  return {
+    version: '1.0',
+    sessionAttributes: { mwOneShot: Boolean(ctx.oneShot) },
+    response: {
+      outputSpeech: { type: 'PlainText', text: 'Was möchtest du die Hebamme fragen?' },
+      reprompt: { outputSpeech: { type: 'PlainText', text: 'Sag mir deine Frage an die Hebamme.' } },
+      shouldEndSession: false,
+      directives: [{
+        type: 'Dialog.ElicitSlot',
+        slotToElicit: 'question',
+        updatedIntent: {
+          name: 'MidwifeQuestionIntent',
+          confirmationStatus: 'NONE',
+          slots: { question: { name: 'question', confirmationStatus: 'NONE' } },
+        },
+      }],
+    },
+  };
+}
+async function pushMidwife(raw, keepOpen, ctx) {
+  const q = midwifeText(raw);
+  if (!q) return elicitMidwife(ctx);
+  await push({ kind: 'baby', babyType: 'note', text: q, babyP: { mw: 1 } }, ctx);
+  return confirm('Frage an die Hebamme.', keepOpen);
+}
+
 // ── Intents ──
 const HANDLERS = {
   async LogMealIntent(request, keepOpen, ctx) {
@@ -368,6 +419,10 @@ const HANDLERS = {
   async LogBabyIntent(request, keepOpen, ctx) {
     const spokenRaw = slot(request, 'event');
     if (!spokenRaw) return say('Was soll ins Baby-Tagebuch?', false);
+    const kindRaw = spokenRaw.toLowerCase();
+    // "Baby Frage an die Hebamme …" landet hier statt im eigenen Intent.
+    // Nur mit "frag…": "Baby Hebamme war da" bleibt eine Notiz.
+    if (/hebamme/.test(kindRaw) && /frag/.test(kindRaw)) return pushMidwife(spokenRaw.replace(/^.*?hebamme\w*[,:]?\s*/i, ''), keepOpen, ctx);
     // "Baby gestillt rechts": Die Art steckt im Freitext und wird geraten.
     return pushBaby(babyTypeOf(spokenRaw), spokenRaw, spokenRaw, keepOpen, ctx);
   },
@@ -395,6 +450,10 @@ const HANDLERS = {
     const d = slot(request, 'detail');
     return pushBaby('temp', d, d, keepOpen, ctx);
   },
+
+  async MidwifeQuestionIntent(request, keepOpen, ctx) {
+    return pushMidwife(slot(request, 'question'), keepOpen, ctx);
+  },
 };
 
 // ── Einstieg ──
@@ -419,7 +478,7 @@ exports.handler = async function (event) {
 
   if (name === 'AMAZON.HelpIntent') {
     return say(
-      'Du kannst mir Essen, Wasser, Sport, Einkäufe und Baby-Einträge diktieren. ' +
+      'Du kannst mir Essen, Wasser, Sport, Einkäufe, Baby-Einträge und Fragen an die Hebamme diktieren. ' +
       'Zum Beispiel: Ich habe 150 Gramm Reis gegessen. Oder: Ich war 30 Minuten joggen. ' +
       'Nachlesen kannst du alles in der NutriTrack-App.',
       false
@@ -446,14 +505,18 @@ exports.handler = async function (event) {
     // mit "öffne mein Tagebuch" gestartet wurde. Fehlt die Angabe, wird
     // geschlossen: eine grundlos offene Sitzung wartet auf eine Antwort, die
     // niemand erwartet, und wirkt wie ein hängender Skill.
-    const keepOpen = Boolean(event.session && event.session.new === false);
+    // Ausnahme: Nach "Hebamme" allein hat der Skill nachgefragt — kam der
+    // Nutzer mit einem Einzelbefehl, schließt die Antwort die Sitzung wieder.
+    const attrs = (event.session && event.session.attributes) || {};
+    const keepOpen = Boolean(event.session && event.session.new === false) && !attrs.mwOneShot;
     // Die personId ist die einzige Möglichkeit, zwei Personen an einem Echo zu
     // unterscheiden. Sie wird geloggt, damit man sie für NUTRITRACK_PERSONS
     // ablesen kann (Alexa Console → Code → Logs); sie ist eine anonyme
     // Amazon-Kennung, kein Name.
     const personId = event.context?.System?.person?.personId || '';
     console.log('[nutritrack] personId:', personId || '(kein Stimmprofil erkannt)');
-    return await handler(event.request, keepOpen, { personId });
+    const oneShot = Boolean(event.session && event.session.new !== false);
+    return await handler(event.request, keepOpen, { personId, oneShot });
   } catch (e) {
     if (e && e.message === 'not_configured') {
       return say(

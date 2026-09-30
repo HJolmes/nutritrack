@@ -20,6 +20,8 @@
 // Gesichert wird in FUENF rotierende Slots statt in eine Datei: Ein kaputter
 // Zustand, der einmal hochgeladen wurde, ueberschreibt sonst die einzige
 // Sicherung. Mit der Rotation stehen immer die letzten fuenf Staende bereit.
+// Wann gesichert wird, entscheidet runAutosave() in index.html (1× taeglich,
+// lokaler Ersatz bei Fehlschlag).
 //
 // Tokens liegen in localStorage ('nt_od'), NICHT in S – sie gehoeren zum Geraet
 // und haben in einem Backup nichts zu suchen, das auf ein anderes wandert.
@@ -52,13 +54,6 @@ function _odSaveFolder(path){
 function _odSlotsMetaGet(){try{return JSON.parse(localStorage.getItem('nt_od_slots_meta')||'[null,null,null,null,null]');}catch(e){return [null,null,null,null,null];}}
 
 function _odSlotsMetaSave(m){try{localStorage.setItem('nt_od_slots_meta',JSON.stringify(m));}catch(e){}}
-
-function _odAutoSync(){
-  if(!_odLoadTokens())return;
-  if(!isOnline)return;
-  if(localStorage.getItem('nt_od_sync_date')===today())return;
-  oneDriveSyncSlot().catch(function(){});
-}
 
 function _checkOdBanner(){
   if(_odLoadTokens())return;
@@ -331,7 +326,6 @@ window.NTDrive={
   syncSlot:oneDriveSyncSlot,
   slotLoad:_odSlotLoad,
   renderStatus:renderOneDriveStatus,
-  autoSync:_odAutoSync,
   checkBanner:_checkOdBanner
 };
 })();

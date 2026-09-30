@@ -47,7 +47,7 @@ function applyRecurringMeals(dateKey){
   var rules=S.recurringMeals||[];if(!rules.length)return false;
   if(dateKey>today())return false;
   var day=S.days[dateKey];
-  if(day&&day._compressed)return false;
+  if(day&&(day._compressed||day._reopened))return false;// Archiv-Tage nicht nachtraeglich befuellen
   if(!day){day={meals:{breakfast:[],lunch:[],dinner:[],snack:[]},water:0,exercise:[]};S.days[dateKey]=day;}
   if(!day.meals)day.meals={breakfast:[],lunch:[],dinner:[],snack:[]};
   if(!day._recurMarks)day._recurMarks=[];

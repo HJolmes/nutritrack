@@ -572,6 +572,61 @@ async function handleFeedback(request, origin, env) {
   });
 }
 
+// ─── ÄNDERUNGSMARKE: ABRUF OHNE KV-LIST ───
+// Jeder Abruf (Sync, Workouts, Alexa) listete bisher den ganzen Präfix auf —
+// auch wenn sich nichts geändert hatte. `list` ist im Gratis-Tarif auf 1.000
+// Operationen pro Tag gedeckelt, und die App fragt alle 30–60 s sowie bei jedem
+// App-Wechsel nach. Deshalb trägt jeder Briefkasten eine Marke `{v, at}`:
+// `v` = höchster Cursor-Wert (srev bzw. startMs), der je geschrieben wurde,
+// `at` = Zeitpunkt der letzten Erhöhung. Ein Abruf mit `since >= v` kostet
+// dann nur einen Lesezugriff (Limit 100.000/Tag).
+//
+// Der Marken-Schlüssel enthält `#` — Räume und Token bestehen nur aus
+// [A-Za-z0-9_-], die Marke fällt also nie in das `list`-Präfix `<p><room>:`.
+//
+// Schutz gegen Nebenläufigkeit und Eventual Consistency: Solange die letzte
+// Erhöhung jünger als MARK_HOT_MS ist, wird trotzdem voll gelistet. Zwei fast
+// gleichzeitige Pushes können die Marke kurz zu niedrig hinterlassen, und ein
+// anderer Edge-Standort sieht die neue Marke bis zu ~60 s später; beides ist
+// nach diesem Fenster ausgeglichen. Fehlt die Marke (Altbestand vor dem Deploy,
+// abgelaufen), wird gelistet und die Marke aus den Metadaten nachgetragen.
+const MARK_HOT_MS = 2 * 60 * 1000;
+
+async function readMark(env, key) {
+  try {
+    const m = await env.SHARE_KV.get(key, { type: "json" });
+    if (m && Number.isFinite(m.v) && Number.isFinite(m.at)) return m;
+  } catch (_) {
+    // kaputte Marke → wie fehlend behandeln, der Abruf listet dann voll
+  }
+  return null;
+}
+
+// true = Abruf darf ohne `list` mit „nichts Neues" antworten.
+function markSaysNothingNew(mark, since) {
+  if (!mark) return false;
+  if (Date.now() - mark.at < MARK_HOT_MS) return false;
+  return mark.v <= since;
+}
+
+// Erhöht die Marke nur, wenn `v` größer ist — spart Schreibzugriffe (Limit
+// 1.000/Tag) bei Wiederholungen und bei älteren Workouts.
+async function bumpMark(env, key, v, ttl) {
+  if (!Number.isFinite(v)) return;
+  const cur = await readMark(env, key);
+  if (cur && cur.v >= v) return;
+  await env.SHARE_KV.put(key, JSON.stringify({ v, at: Date.now() }), { expirationTtl: ttl });
+}
+
+// Nach einem vollständigen `list` ohne Marke: Marke einmalig aus den Metadaten
+// aller Schlüssel nachtragen (auch 0 für einen leeren Briefkasten).
+// `at` = jetzt, damit die nächsten Abrufe im Heiß-Fenster noch voll listen,
+// falls parallel ein Push lief.
+async function backfillMark(env, key, maxV, ttl) {
+  if (await readMark(env, key)) return;// inzwischen von einem Push gesetzt
+  await env.SHARE_KV.put(key, JSON.stringify({ v: maxV, at: Date.now() }), { expirationTtl: ttl });
+}
+
 // ─── HEALTH WORKOUT INGEST (Apple Health / Samsung Health via Shortcuts/Tasker) ───
 // Per-user token in `X-User-Token` (24–64 chars, base58-ish). Workouts are
 // stored in SHARE_KV under `wo:<userToken>:<workoutId>` with a TTL so the
@@ -651,10 +706,15 @@ async function handleWorkoutCreate(request, origin, env) {
     return jsonResponse(400, "invalid_workout", "Workout payload is invalid (need id, source, start, kcal)", origin, env);
   }
   const key = WORKOUT_KV_PREFIX + token + ":" + workout.id;
-  await env.SHARE_KV.put(key, JSON.stringify(workout), {
+  // Cursor ist der Zeitpunkt des HOCHLADENS (srev), nicht der Trainingsbeginn:
+  // ein nachgereichtes Morgentraining laege sonst unter dem Cursor, den das
+  // schon abgeholte Abendtraining gesetzt hat (#239).
+  const srev = Date.now();
+  await env.SHARE_KV.put(key, JSON.stringify({ ...workout, srev }), {
     expirationTtl: WORKOUT_TTL_SECONDS,
-    metadata: { startMs: workout.startMs },
+    metadata: { startMs: workout.startMs, srev },
   });
+  await bumpMark(env, WORKOUT_KV_PREFIX + "#" + token, srev, WORKOUT_TTL_SECONDS);
   return jsonResponse(200, "ok", "ok", origin, env, {
     id: workout.id,
     stored: true,
@@ -677,6 +737,13 @@ async function handleWorkoutList(request, origin, env) {
   const since = Number(sinceRaw);
   const sinceMs = Number.isFinite(since) && since > 0 ? since : 0;
   const prefix = WORKOUT_KV_PREFIX + token + ":";
+  const markKey = WORKOUT_KV_PREFIX + "#" + token;
+  const mark = await readMark(env, markKey);
+  if (markSaysNothingNew(mark, sinceMs)) {
+    return jsonResponse(200, "ok", "ok", origin, env, { workouts: [], count: 0, truncated: false });
+  }
+  let maxMeta = 0;
+  let metaGap = false; // Schlüssel ohne Cursor-Metadatum → keine Marke nachtragen
   // Page through the whole namespace via cursor so tokens with >200 workouts
   // don't silently lose older entries. Bounded by MAX_WORKOUT_LIST_PAGES.
   const candidateKeys = [];
@@ -687,13 +754,17 @@ async function handleWorkoutList(request, origin, env) {
     const list = await env.SHARE_KV.list({ prefix, limit: MAX_WORKOUT_LIST_LIMIT, cursor });
     for (const k of list.keys) {
       const meta = k.metadata && typeof k.metadata === "object" ? k.metadata : null;
-      if (sinceMs && meta && Number.isFinite(meta.startMs) && meta.startMs <= sinceMs) continue;
+      const v = workoutCursorOf(meta);
+      if (v === null) metaGap = true;
+      else if (v > maxMeta) maxMeta = v;
+      if (sinceMs && v !== null && v <= sinceMs) continue;
       candidateKeys.push(k.name);
     }
     complete = list.list_complete !== false;
     cursor = list.cursor;
     pages++;
   } while (!complete && cursor && pages < MAX_WORKOUT_LIST_PAGES);
+  if (!mark && complete && !metaGap) await backfillMark(env, markKey, maxMeta, WORKOUT_TTL_SECONDS);
 
   // Fetch the surviving keys in parallel (KV has no batch-get).
   const raws = await Promise.all(candidateKeys.map((name) => env.SHARE_KV.get(name)));
@@ -706,15 +777,25 @@ async function handleWorkoutList(request, origin, env) {
     } catch (_) {
       continue;
     }
-    if (sinceMs && Number.isFinite(parsed.startMs) && parsed.startMs <= sinceMs) continue;
+    const v = workoutCursorOf(parsed);
+    if (sinceMs && v !== null && v <= sinceMs) continue;
     workouts.push(parsed);
   }
   workouts.sort((a, b) => (a.startMs || 0) - (b.startMs || 0));
   return jsonResponse(200, "ok", "ok", origin, env, {
     workouts,
     count: workouts.length,
+    serverTime: Date.now(),
     truncated: Boolean(!complete),
   });
+}
+
+// Upload-Zeit (srev); Alt-Eintraege vor #239 kennen nur startMs.
+function workoutCursorOf(o) {
+  if (!o || typeof o !== "object") return null;
+  if (Number.isFinite(o.srev)) return o.srev;
+  if (Number.isFinite(o.startMs)) return o.startMs;
+  return null;
 }
 
 // ─── ALEXA-EINWURF (Sprachbefehle an einen privaten Alexa-Skill) ───
@@ -774,7 +855,10 @@ function sanitizeAlexaItem(raw) {
   const ts = clampNumber(raw.ts, 0, Date.now() + 1000 * 60 * 60 * 24);
   out.ts = ts !== null && ts > 0 ? Math.round(ts) : Date.now();
 
-  const text = alexaText(raw.text, 200);
+  // Fragen an die Hebamme (Baby-Notiz mit babyP.mw) duerfen so lang sein wie im
+  // Eingabefeld der App (500); alles andere bleibt bei 200.
+  const isMidwife = kind === "baby" && raw.babyP && typeof raw.babyP === "object" && raw.babyP.mw;
+  const text = alexaText(raw.text, isMidwife ? 500 : 200);
   if (kind === "baby") {
     const bt = typeof raw.babyType === "string" ? raw.babyType.trim().toLowerCase() : "";
     if (!ALEXA_BABY_TYPES.has(bt)) return null;
@@ -848,6 +932,7 @@ async function handleAlexaPush(request, origin, env) {
     expirationTtl: shared ? ALEXA_SHARED_TTL_SECONDS : ALEXA_TTL_SECONDS,
     metadata: { srev, shared: shared ? 1 : 0 },
   });
+  await bumpMark(env, ALEXA_KV_PREFIX + "#" + token, srev, ALEXA_TTL_SECONDS);
   return jsonResponse(200, "ok", "ok", origin, env, { id: item.id, stored: true });
 }
 
@@ -866,6 +951,13 @@ async function handleAlexaPull(request, origin, env) {
   const sinceRaw = Number(url.searchParams.get("since") || "0");
   const sinceMs = Number.isFinite(sinceRaw) && sinceRaw > 0 ? sinceRaw : 0;
   const prefix = ALEXA_KV_PREFIX + token + ":";
+  const markKey = ALEXA_KV_PREFIX + "#" + token;
+  const mark = await readMark(env, markKey);
+  if (markSaysNothingNew(mark, sinceMs)) {
+    return jsonResponse(200, "ok", "ok", origin, env, { items: [], count: 0, now: Date.now(), truncated: false });
+  }
+  let maxMeta = 0;
+  let metaGap = false; // Schlüssel ohne Cursor-Metadatum → keine Marke nachtragen
 
   const names = [];
   let cursor;
@@ -875,6 +967,8 @@ async function handleAlexaPull(request, origin, env) {
     const list = await env.SHARE_KV.list({ prefix, limit: MAX_ALEXA_LIST_LIMIT, cursor });
     for (const k of list.keys) {
       const meta = k.metadata && typeof k.metadata === "object" ? k.metadata : null;
+      if (!meta || !Number.isFinite(meta.srev)) metaGap = true;
+      else if (meta.srev > maxMeta) maxMeta = meta.srev;
       if (sinceMs && meta && Number.isFinite(meta.srev) && meta.srev <= sinceMs) continue;
       names.push(k.name);
     }
@@ -882,6 +976,7 @@ async function handleAlexaPull(request, origin, env) {
     cursor = list.cursor;
     pages++;
   } while (!complete && cursor && pages < MAX_ALEXA_LIST_PAGES);
+  if (!mark && complete && !metaGap) await backfillMark(env, markKey, maxMeta, ALEXA_TTL_SECONDS);
 
   const raws = await Promise.all(names.map((n) => env.SHARE_KV.get(n)));
   const items = [];
@@ -1092,6 +1187,7 @@ async function handleSyncPush(request, origin, env, cfg) {
     })
   );
   const stored = results.filter(Boolean).length;
+  if (stored) await bumpMark(env, cfg.prefix + "#" + room, srev, ROOM_TTL_SECONDS);
   return jsonResponse(200, "ok", "ok", origin, env, {
     stored,
     outdated: clean.length - stored,
@@ -1115,6 +1211,19 @@ async function handleSyncPull(request, origin, env, cfg) {
   const sinceRaw = Number(url.searchParams.get("since") || "0");
   const since = Number.isFinite(sinceRaw) && sinceRaw > 0 ? sinceRaw : 0;
   const prefix = cfg.prefix + room + ":";
+  const markKey = cfg.prefix + "#" + room;
+  const mark = await readMark(env, markKey);
+  if (markSaysNothingNew(mark, since)) {
+    return jsonResponse(200, "ok", "ok", origin, env, {
+      records: [],
+      count: 0,
+      cursor: since,
+      serverTime: Date.now(),
+      truncated: false,
+    });
+  }
+  let maxMeta = 0;
+  let metaGap = false; // Schlüssel ohne Cursor-Metadatum → keine Marke nachtragen
   const candidateKeys = [];
   let cursor;
   let pages = 0;
@@ -1123,6 +1232,8 @@ async function handleSyncPull(request, origin, env, cfg) {
     const listed = await env.SHARE_KV.list({ prefix, limit: MAX_ROOM_LIST_LIMIT, cursor });
     for (const k of listed.keys) {
       const meta = k.metadata && typeof k.metadata === "object" ? k.metadata : null;
+      if (!meta || !Number.isFinite(meta.srev)) metaGap = true;
+      else if (meta.srev > maxMeta) maxMeta = meta.srev;
       if (since && meta && Number.isFinite(meta.srev) && meta.srev <= since) continue;
       candidateKeys.push(k.name);
     }
@@ -1130,6 +1241,7 @@ async function handleSyncPull(request, origin, env, cfg) {
     cursor = listed.cursor;
     pages++;
   } while (!complete && cursor && pages < MAX_ROOM_LIST_PAGES);
+  if (!mark && complete && !metaGap) await backfillMark(env, markKey, maxMeta, ROOM_TTL_SECONDS);
 
   const raws = await Promise.all(candidateKeys.map((name) => env.SHARE_KV.get(name)));
   const records = [];
@@ -1150,7 +1262,10 @@ async function handleSyncPull(request, origin, env, cfg) {
   return jsonResponse(200, "ok", "ok", origin, env, {
     records,
     count: records.length,
-    cursor: maxSrev,
+    // Abgeschnittene Liste: KV listet nach Schluesselname, nicht nach srev —
+    // ungelesene Seiten koennen neuere Eintraege enthalten. Cursor nicht
+    // vorruecken, sonst waeren sie verloren (#238).
+    cursor: complete ? maxSrev : since,
     serverTime: Date.now(),
     truncated: Boolean(!complete),
   });
@@ -1550,7 +1665,7 @@ export default {
         alexaInboxConfigured: Boolean(env.SHARE_KV),
         planSyncConfigured: Boolean(env.SHARE_KV),
         decoderSecretConfigured: Boolean(env.DECODER_SECRET),
-        codeVersion: "v0.255-alexa-family",
+        codeVersion: "v0.272-sync-cursor",
       });
     }
 

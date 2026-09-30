@@ -285,11 +285,15 @@ function parseQty(s){
   // beim Addieren „4 el".
   return {v:parseFloat(m[1].replace(',','.')),u:(m[2]||'').toLowerCase(),raw:m[2]||''};
 }
+// Mengen vergleichen OHNE norm(): norm() wirft Komma und Punkt weg, dann
+// waeren „1,5 kg" und „15 kg" gleich (#243).
+function qtyKey(s){return String(s||'').toLowerCase().trim().replace(/\s+/g,' ');}
 function mergeQty(a,b){
   a=String(a||'').trim();b=String(b||'').trim();
   if(!a)return b;
   if(!b)return a;
-  if(norm(a)===norm(b))return a;
+  // Kein Sonderfall fuer gleiche Mengen: zwei Rezepte mit je „200 g" brauchen
+  // 400 g (#243). Nur Angaben ohne Zahl („etwas") bleiben unten einmal stehen.
   var rb=parseQty(b);
   // Die vorhandene Menge kann selbst schon zusammengesetzt sein („2 Stück + 150 g").
   // Deshalb teilweise addieren: den Teil mit gleicher Einheit erhöhen, den Rest
@@ -304,7 +308,7 @@ function mergeQty(a,b){
       }
     }
   }
-  for(var j=0;j<parts.length;j++)if(norm(parts[j])===norm(b))return a;
+  for(var j=0;j<parts.length;j++)if(qtyKey(parts[j])===qtyKey(b))return a;
   return a+' + '+b;
 }
 
@@ -320,9 +324,12 @@ function add(name,qty,c,ic,opts){
   var ex=(opts.id&&byId(opts.id))||findByName(name);
   if(ex){
     // Schon auf dem Zettel: abgehakt → wieder aktiv, sonst nur Menge ergänzen.
-    if(ex.d){ex.d=0;delete ex.da;}
-    if(qty)ex.q=opts.mergeQty?mergeQty(ex.q,qty):qty;
-    if(opts.recipe)tagSource(ex,opts.recipe,true);
+    // Abgehakt heisst gekauft: der alte Bedarf ist erledigt, es gilt nur die
+    // neue Menge — sonst stuenden gekaufte 500 g + neue 400 g als 900 g da (#243).
+    var bought=!!ex.d;
+    if(bought){ex.d=0;delete ex.da;delete ex.rc;delete ex.pre;}
+    if(qty)ex.q=(opts.mergeQty&&!bought)?mergeQty(ex.q,qty):qty;
+    if(opts.recipe)tagSource(ex,opts.recipe,!bought);
     ex.rev=nextRev();
     saveS();Sync.schedule();render();
     return ex;
@@ -574,7 +581,7 @@ function itemRow(it,done){
   var nameStyle=done?'font-weight:700;font-size:13px;text-decoration:line-through;color:var(--mu);':'font-weight:700;font-size:14px;';
   var src=srcLine(it);
   return '<div style="display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--br);">'
-    +'<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;cursor:pointer;" onclick="NTShop.toggle(\''+it.id+'\')">'
+    +'<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;cursor:pointer;" data-act="NTShop.toggle" data-args="'+esc(JSON.stringify([it.id]))+'">'
       +box
       +'<div style="font-size:19px;flex-shrink:0;">'+esc(it.ic||'🛒')+'</div>'
       +'<div style="flex:1;min-width:0;">'
@@ -583,7 +590,7 @@ function itemRow(it,done){
         +(src?'<div style="font-size:10px;color:var(--mu);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-style:italic;">'+esc(src)+'</div>':'')
       +'</div>'
     +'</div>'
-    +'<button type="button" onclick="NTShop.openItem(\''+it.id+'\')" style="background:none;border:none;font-size:15px;color:var(--mu);padding:4px 2px;cursor:pointer;flex-shrink:0;">✏️</button>'
+    +'<button type="button" data-act="NTShop.openItem" data-args="'+esc(JSON.stringify([it.id]))+'" style="background:none;border:none;font-size:15px;color:var(--mu);padding:4px 2px;cursor:pointer;flex-shrink:0;">✏️</button>'
     +'</div>';
 }
 

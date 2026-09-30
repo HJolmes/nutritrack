@@ -136,7 +136,7 @@ function render(){
       var p=pctFor(e,m.day,k);
       parts.push(fmtVal(v,k)+(p?' ('+p+')':''));
     });
-    return '<div class="fe" onclick="NTBaby.editEntry(\''+e.id+'\')">'
+    return '<div class="fe" data-act="NTBaby.editEntry" data-args="'+esc(JSON.stringify([e.id]))+'">'
       +'<div class="fee">📏</div>'
       +'<div class="fei"><div class="fen">'+esc(parts.join(' · '))+'</div>'
       +'<div class="fem">'+fmtD(m.day)+(ageDays(m.day)!==null&&ageDays(m.day)>=0?' · '+ageShort(ageDays(m.day)):'')+(e.note?' · '+esc(e.note):'')+'</div></div>'

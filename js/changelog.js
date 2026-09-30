@@ -1,10 +1,38 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
-  {v:'0.264',items:[
-    {icon:'\ud83d\udc76',text:'Baby-Einträge per Alexa brauchen das Wort „Baby“ nicht mehr davor: „Wickeln Stuhl und Pipi“, „Stillen rechts“, „Flasche 120 Milliliter“, „Schläft“, „Fieber 38,5 Grad“ werden direkt der richtigen Art zugeordnet. Mit „Baby“ davor geht weiter alles wie bisher.',where:'\ud83c\udf99 Alexa-Einwurf'},
+  {v:'0.275',items:[
+    {icon:'\ud83d\udc76',text:'Baby-Einträge per Alexa brauchen das Wort „Baby“ nicht mehr davor: „Wickeln Stuhl und Pipi“, „Stillen rechts“, „Flasche 120 Milliliter“, „Schläft“, „Fieber 38,5 Grad“ werden direkt der richtigen Art zugeordnet. Mit „Baby“ davor geht weiter alles wie bisher.',where:'Mehr \u2192 \ud83d\udd17 Verbindungen \u2192 \ud83d\udde3\ufe0f Alexa'},
     {icon:'\ud83d\udd27',text:'„Wickeln“ landete bisher als Notiz im Tagebuch statt als Windel — der Skill kannte nur „Windel“ und „gewickelt“. Neu ist auch „Beides“: Wer Stuhl und Pipi zusammen sagt, bekommt einen Eintrag mit beidem statt nur Stuhl.',where:'\ud83d\udc76 Baby-Tagebuch'},
-    {icon:'\u26a0\ufe0f',text:'Dafür müssen Sprachmodell und Skill-Code einmal neu in die Alexa-Konsole eingespielt werden (Build → JSON Editor → Build Model, danach Code → Deploy). Ohne das bleibt es beim alten Verhalten.',where:'\ud83c\udf99 Alexa-Einwurf'}
+    {icon:'\u26a0\ufe0f',text:'Dafür müssen Sprachmodell und Skill-Code einmal neu in die Alexa-Konsole eingespielt werden (Build → JSON Editor → Build Model, danach Code → Deploy). Ohne das bleibt es beim alten Verhalten.',where:'Mehr \u2192 \ud83d\udd17 Verbindungen \u2192 \ud83d\udde3\ufe0f Alexa'}
+  ]},
+  {v:'0.274',items:[
+    {icon:'\ud83d\uded2',text:'<b>Einkaufszettel rechnet Mengen richtig zusammen</b>: Zwei Rezepte mit je 200 g Zwiebeln ergeben 400 g statt 200 g. „1,5 kg“ und „15 kg“ werden nicht mehr verwechselt. Ein schon abgehakter Artikel bekommt beim Rezept-Import nur die neue Menge, die gekaufte wird nicht mehr dazugezählt.',where:'Mehr → 🛒 Einkaufszettel'}
+  ]},
+  {v:'0.273',items:[
+    {icon:'\ud83d\udd11',text:'<b>Ein vertipptes KI-Passwort überschreibt nicht mehr das richtige</b>: Die App prüft ein neues Passwort erst beim Server und speichert es nur, wenn es stimmt. Ohne Internet wird es vorgemerkt und beim nächsten Start mit Internet geprüft. Ist schon ein Passwort gespeichert, bleibt das alte.',where:'Mehr → 🤖 KI'}
+  ]},
+  {v:'0.270',items:[
+    {icon:'\ud83d\udee1\ufe0f',text:'<b>Mehrere Fehler behoben, bei denen Daten verloren gehen konnten</b>: „Aus OneDrive laden“ holt jetzt immer den aktuellen Stand statt einer zwischengespeicherten Kopie. In der Bibliothek öffnet ✎ nach einer Suche das richtige Lebensmittel. Ein abgebrochenes „Zutat hinzufügen“ wirkt nicht mehr nach. Zutaten-Änderungen an einem Eintrag verändern nicht mehr das Rezept in der Bibliothek.'},
+    {icon:'\ud83d\udce6',text:'<b>Tage älter als 90 Tage</b> lassen sich wieder befüllen: Die archivierte Tagessumme steht dann als Eintrag „📦 Archivierte Tageswerte“ im Snack, neue Einträge kommen dazu. Der Verlauf zeigt bei archivierten Tagen die gespeicherte Summe statt 0 kcal.',where:'Heute → ‹ zurückblättern'},
+    {icon:'\ud83d\udcf7',text:'<b>Offline-Fotos</b>: „Jetzt analysieren“ öffnet das Foto sichtbar in der Suche. Das Foto bleibt gespeichert, bis die KI geantwortet hat. Fotos aus Vorlagen verschwinden nicht mehr, wenn man eine Kopie löscht.',where:'Trends → 📷 Offline-Fotos'}
+  ]},
+  {v:'0.269',items:[
+    {icon:'\ud83d\udd17',text:'<b>Partner-Kopplung und Alexa-Token</b> stehen jetzt unter <b>Verbindungen</b> – bei „Weitere Verbindungen“, mit Status (gekoppelt / Token eingerichtet). Vorher waren sie in den Funktions-Blättern „Vom Partner“ und „Mahlzeiten“ versteckt.',where:'Mehr → 🔗 Verbindungen'}
+  ]},
+  {v:'0.268',items:[
+    {icon:'\ud83d\udcbe',text:'<b>Lokaler Autospeicher auf dem iPhone repariert</b>: Die Stände liegen jetzt im großen Gerätespeicher statt im knappen Browser-Speicher, der auf iOS schnell voll war – dann wurde still nichts gesichert. Schlägt eine Sicherung fehl, erscheint ein Hinweis. Außerdem sichert die App auch beim Zurückkehren (höchstens 1× täglich), weil iOS die App selten ganz neu startet.',where:'Mehr → Einstellungen → Backup → Autospeicher'},
+    {icon:'\ud83d\udd8c\ufe0f',text:'Die Autospeicher-Liste wird wieder richtig angezeigt: als Fenster mit Rahmen, Datum lesbar, „Laden“-Knopf daneben statt darüber.',where:'Mehr → Einstellungen → Backup → Autospeicher'}
+  ]},
+  {v:'0.267',items:[
+    {icon:'\u2601\ufe0f',text:'<b>Autospeicher an einem Ort</b>: Mit OneDrive verbunden landet der Autospeicher nur noch in OneDrive (1× täglich, 5 Slots) statt zusätzlich auf dem Gerät. Ohne OneDrive wird wie bisher bei jedem Start lokal gesichert. Klappt der Upload nicht (offline, Anmeldung abgelaufen), sichert die App ersatzweise lokal.',where:'Mehr → Einstellungen → Backup → Autospeicher'}
+  ]},
+  {v:'0.265',items:[
+    {icon:'\ud83d\udde3\ufe0f',text:'<b>Fragen an die Hebamme per Alexa</b>: „Hebamme: ab wann darf ich baden“, „Frag die Hebamme, ob …“ oder „Ich hab eine Frage an die Hebamme …“. Oder nur „Hebamme“ sagen – Alexa fragt nach, dann die Frage sprechen. Bis 500 Zeichen; die Frage steht danach im Reiter Hebamme, auf beiden verbundenen Telefonen. Dafür einmal Sprachmodell und Code im Alexa-Skill neu einspielen.',where:'Baby-Tagebuch → 🤱 Hebamme'}
+  ]},
+  {v:'0.264',items:[
+    {icon:'🤱',text:'Neuer Reiter <b>Hebamme</b>: Fragen an die Hebamme notieren, nach dem Besuch <b>abhaken</b> und ihre <b>Antwort</b> dazuschreiben. Die Suche findet Wörter in Fragen und Antworten, auch in längst abgehakten. Offene Fragen erscheinen als Hinweis auf der Kachel; verbundene Personen sehen dieselbe Liste.',where:'Baby-Tagebuch → 🤱 Hebamme'},
+    {icon:'🩺',text:'Der <b>Bericht für Arzt/Hebamme</b> listet am Ende die noch <b>offenen Fragen</b> auf.',where:'Baby-Tagebuch → 📊 Verlauf → Bericht'}
   ]},
   {v:'0.263',items:[
     {icon:'🍼',text:'Die Baby-Kachel zeigt jetzt die <b>letzte Mahlzeit</b> mit Abstand („vor 2 h 40 Min.“), statt nur des letzten Eintrags.',where:'Heute → Baby'},

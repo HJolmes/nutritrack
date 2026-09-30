@@ -44,6 +44,10 @@ function openPicker(meal, defaultTab){
   // Der Normalfall ist „eintragen“. Nur der Weg „Neues Rezept → aus dem
   // Internet“ schaltet direkt nach diesem Aufruf auf „nur in die Bibliothek“.
   window._pickerRecipeOnly=false;
+  // „Zutat hinzufuegen" setzt den Modus erst NACH openPicker (editAddIng) —
+  // jeder andere Aufruf beginnt ohne ihn (#230).
+  window._editEntryMode=false;
+  window._pickerQueueItem=null;// setzt processOfflineQueue erst nach openPicker
   pickerMeal = meal || mealByTime();
   pickerSelFood = null;
   pickerIngredients = [];
@@ -91,6 +95,7 @@ function openPicker(meal, defaultTab){
 }
 
 function closePicker(){
+  window._editEntryMode=false;// abgebrochenes „Zutat hinzufuegen" nicht nachwirken lassen (#230)
   pickerStopScan();
   if(typeof pickerVoiceStop==='function')pickerVoiceStop();
   closeOv('pickerOv');
@@ -195,7 +200,7 @@ function pickerRenderResults(products,loading){
     var bdg=p.badge?'<span class="ri-bdg'+(p.bdgCls?' '+p.bdgCls:'')+'">'+(p.badge)+'</span>':'';
     var isR=p.isRecipe;
     return'<div class="ri'+(isR?' is-recipe':'')+'" onclick="pickerSelResult('+i+')" id="pri'+i+'">'+bdg
-      +'<div class="ri-e">'+(p.emoji||'🍽')+'</div>'
+      +'<div class="ri-e">'+esc(p.emoji||'🍽')+'</div>'
       +'<div style="flex:1;min-width:0;"><div class="ri-n">'+_esc(p.name)+'</div>'
       +(p.per100?'<div class="ri-d">P '+(p.per100.protein||0).toFixed(1)+'g · K '+(p.per100.carbs||0).toFixed(1)+'g · F '+(p.per100.fat||0).toFixed(1)+'g · /100g</div>':'<div class="ri-d">Rezept</div>')
       +'</div>'
@@ -1016,7 +1021,7 @@ function pickerShowBarcodeResult(food,fromCache){
   if(!food||!food.per100||!_hasNutrients(food.per100)){pickerBarcodeAskManual((food&&food.barcode)||'',(food&&food.name)||'');return;}
   el.innerHTML='<div style="background:var(--gl);border:1.5px solid var(--g3);border-radius:12px;padding:12px;">'
     +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'
-    +'<div style="font-size:28px;">'+(food.emoji||'🍽')+'</div>'
+    +'<div style="font-size:28px;">'+esc(food.emoji||'🍽')+'</div>'
     +'<div style="flex:1;"><div style="font-weight:700;font-size:14px;">'+_esc(food.name)+'</div>'
     +'<div style="font-size:11px;color:var(--mu);margin-top:2px;">P '+food.per100.protein+'g · K '+food.per100.carbs+'g · F '+food.per100.fat+'g pro 100g</div>'
     +(fromCache?'<div style="font-size:10px;color:var(--g2);margin-top:2px;">📴 Aus Cache</div>':'')
@@ -1107,6 +1112,8 @@ function pickerAnalyze(){
   var prompt=getFotoPrompt();
   callClaude('claude-sonnet-4-6',[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:window._pickerPhotoB64}},{type:'text',text:prompt}],1024,
     function(text){
+      // Foto aus der Offline-Warteschlange: KI hat geantwortet → erst jetzt raus (#233).
+      if(window._pickerQueueItem){NTQueue.done(window._pickerQueueItem);window._pickerQueueItem=null;}
       var parsed=parsePhotoResponse(text);
       btn.disabled=false;btn.textContent='📷 Erneut analysieren';
       // Badge sofort einfrieren: es soll die Vision-Anfrage zeigen, nicht die
@@ -1169,7 +1176,7 @@ function pickerPhotoAddSearch(){
   window._pickerPhotoAddRes=results;
   el.innerHTML=results.slice(0,8).map(function(p,i){
     return'<div class="ri" onclick="pickerPhotoAddFromResult('+i+')">'
-      +'<div class="ri-e">'+(p.emoji||'🍽')+'</div>'
+      +'<div class="ri-e">'+esc(p.emoji||'🍽')+'</div>'
       +'<div style="flex:1;min-width:0;"><div class="ri-n">'+_esc(p.name)+'</div>'
       +(p.per100?'<div class="ri-d">'+Math.round(p.per100.kcal)+' kcal/100g</div>':'')
       +'</div>'
@@ -1368,7 +1375,7 @@ function pickerChatAddLocal(i){
     if(!rec){msgs.innerHTML+='<div class="cm a">❌ Rezept nicht mehr vorhanden.</div>';return;}
     var t=ingTotal(rec.ingredients||[]);
     var portions=rec.portions||1;
-    getDay().meals[pickerMeal].push(Object.assign({name:rec.name,emoji:rec.emoji||'📋',isRecipe:true,recipeId:rec.id,portions:portions,ingredients:rec.ingredients||[]},scaleNutrients(t,portions)));
+    getDay().meals[pickerMeal].push(Object.assign({name:rec.name,emoji:rec.emoji||'📋',isRecipe:true,recipeId:rec.id,portions:portions,ingredients:JSON.parse(JSON.stringify(rec.ingredients||[]))},scaleNutrients(t,portions)));
     saveS();renderAll();closePicker();
     showToast('📋 '+rec.name+' eingetragen');
     return;
@@ -1443,7 +1450,7 @@ function pickerSendChat(){
       var sub=p.isRecipe?'Rezept':(p.per100?Math.round(p.per100.kcal)+' kcal · P'+(p.per100.protein||0).toFixed(1)+'g · K'+(p.per100.carbs||0).toFixed(1)+'g · F'+(p.per100.fat||0).toFixed(1)+'g /100g':'');
       var badge=p.badge||'';
       html+='<div style="background:var(--gl);border:1px solid var(--br);border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:8px;">'
-        +'<div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:13px;">'+(p.emoji||'🍽')+' '+_esc(p.name)+(badge?' <span style="font-size:11px;color:var(--mu);">'+_esc(badge)+'</span>':'')+'</div>'
+        +'<div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:13px;">'+esc(p.emoji||'🍽')+' '+_esc(p.name)+(badge?' <span style="font-size:11px;color:var(--mu);">'+_esc(badge)+'</span>':'')+'</div>'
         +(sub?'<div style="font-size:11px;color:var(--mu);">'+sub+'</div>':'')+'</div>'
         +'<button type="button" onclick="pickerChatAddLocal('+i+')" style="background:var(--g1);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:14px;font-weight:700;cursor:pointer;flex-shrink:0;">＋</button>'
         +'</div>';
@@ -2044,7 +2051,7 @@ function pickerRenderIngList(elId,ings,onAmtChange,onDel){
     var nid=elId+'-n-'+i;
     return'<div class="ing-wrap">'
       +'<div class="ing-item">'
-      +'<div class="ing-e" onclick="ingToggle(event,\''+nid+'\')">'+(ing.emoji||'🍽')+'</div>'
+      +'<div class="ing-e" onclick="ingToggle(event,\''+nid+'\')">'+esc(ing.emoji||'🍽')+'</div>'
       +'<div class="ing-n" onclick="ingToggle(event,\''+nid+'\')">'+_esc(ing.name)+ampelDot+'</div>'
       +'<input type="number" class="ing-amt" value="'+amtVal+'" min="1" placeholder="g?" style="'+borderStyle+'" data-i="'+i+'" onchange="pickerIngAmtChange(\''+elId+'\','+i+',this.value)">'
       +'<div class="ing-u">g</div>'
@@ -2065,7 +2072,7 @@ function pickerAddRecent(i){
   if(item.isRecipe||item.ingredients){
     var t=ingTotal(item.ingredients||[]);
     var portions=item.portions||1;
-    getDay().meals[pickerMeal].push(Object.assign({name:item.name,emoji:item.emoji,isRecipe:true,recipeId:item.recipeId||null,portions:portions,ingredients:item.ingredients||[]},scaleNutrients(t,portions)));
+    getDay().meals[pickerMeal].push(Object.assign({name:item.name,emoji:item.emoji,isRecipe:true,recipeId:item.recipeId||null,portions:portions,ingredients:JSON.parse(JSON.stringify(item.ingredients||[]))},scaleNutrients(t,portions)));
   } else {
     var recalled=recallPortion(item.name)||item.amount||100;
     var r=recalled/100;

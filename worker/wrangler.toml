@@ -8,12 +8,9 @@ ANTHROPIC_VERSION = "2023-06-01"
 # .github/workflows/preview.yml). EIGENER Origin und damit eigener
 # localStorage — ein Test dort kann das echte Tagebuch nicht anfassen.
 ALLOWED_ORIGINS = "https://hjolmes.github.io,https://nutritrack.hjolmes.org,https://nutritrack-preview.pages.dev,http://localhost:8000,http://127.0.0.1:8000,http://localhost:8787,http://127.0.0.1:8787"
-# When "true", a failed OSS-decode falls back to Claude Vision (costs money).
-# Default off so the OSS-Decoder is the only server path.
-ENABLE_VISION_FALLBACK = "false"
 
 # Set these as Cloudflare Worker secrets, never in this file:
-# wrangler secret put ANTHROPIC_API_KEY      # only required if ENABLE_VISION_FALLBACK=true
+# wrangler secret put ANTHROPIC_API_KEY      # /v1/messages (KI-Foto/Chat)
 # wrangler secret put NUTRITRACK_PROXY_TOKEN
 # wrangler secret put DECODER_URL            # https://nutritrack-decoder-xxxxx-ew.a.run.app
 

@@ -63,6 +63,9 @@ function openPicker(meal, defaultTab){
   document.getElementById('pickerPhotoStatus').classList.add('hidden');
   document.getElementById('pickerAnalyzeBtn').disabled=true;
   document.getElementById('pickerAnalyzeBtn').textContent='📷 KI-Analyse starten';
+  // pickerShowBcConfirm blendet den Knopf aus – jeder neue Anlauf zeigt ihn wieder (#209).
+  document.getElementById('pickerAnalyzeBtn').style.display='';
+  window._pickerPhotoSeq=(window._pickerPhotoSeq||0)+1;// verspätete Barcode-Treffer eines alten Fotos verwerfen
   document.getElementById('pickerPhotoResult').classList.add('hidden');
   document.getElementById('pickerChatMsgs').innerHTML='<div class="cm h">Beschreibe was du gegessen hast, z.B.:<br>„Körnerbrötchen mit Marmelade und Skyr"</div>';
   document.getElementById('pickerChatResult').classList.add('hidden');
@@ -311,6 +314,9 @@ function pickerConfirmAdd(){
 // ─── PICKER: FOTO TAB ───
 function pickerHandlePhoto(e){
   var file=e.target.files[0];if(!file)return;
+  // Marke dieses Fotos: ein Barcode-Treffer, der erst nach „Ändern" oder einem
+  // neuen Foto eintrifft, darf keine Rückfrage mehr öffnen (#209).
+  var seq=window._pickerPhotoSeq=(window._pickerPhotoSeq||0)+1;
   // Input sofort zurücksetzen damit iOS erneutes Auswählen erlaubt
   e.target.value='';
   var reader=new FileReader();
@@ -330,9 +336,11 @@ function pickerHandlePhoto(e){
       document.getElementById('pickerPrevWrap').classList.remove('hidden');
       document.getElementById('pickerPhotoPickArea').style.display='none';
       document.getElementById('pickerAnalyzeBtn').disabled=false;
+      document.getElementById('pickerAnalyzeBtn').style.display='';
+      document.getElementById('pickerBcConfirm').classList.add('hidden');
       _pickerRefreshPhotoSaveHint();
       // Barcode-Scan verzögert damit UI sofort reagiert
-      setTimeout(function(){pickerTryBarcode(c);},100);
+      setTimeout(function(){pickerTryBarcode(c,seq);},100);
     };
     img.onerror=function(){showToast('Foto konnte nicht geladen werden');};
     img.src=ev.target.result;
@@ -343,9 +351,12 @@ function pickerHandlePhoto(e){
 
 function pickerResetPhoto(){
   window._pickerPhotoB64=null;
+  window._pickerPhotoSeq=(window._pickerPhotoSeq||0)+1;
+  pickerBcFound=null;
   document.getElementById('pickerPrevWrap').classList.add('hidden');
   document.getElementById('pickerPhotoPickArea').style.display='block';
   document.getElementById('pickerAnalyzeBtn').disabled=true;
+  document.getElementById('pickerAnalyzeBtn').style.display='';
   document.getElementById('pickerBcConfirm').classList.add('hidden');
   document.getElementById('pickerPhotoResult').classList.add('hidden');
   document.getElementById('pickerPhotoStatus').classList.add('hidden');
@@ -398,30 +409,75 @@ function _pickerRefreshPhotoSaveHint(show){
   el.classList.remove('hidden');
 }
 
-function pickerTryBarcode(canvas){
-  var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
-  if(typeof ZXing!=='undefined'){
-    var hints=new Map();
-    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39]);
-    hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
-    try{
-      var r=new ZXing.BrowserMultiFormatReader(hints).decodeFromCanvas(canvas);
-      if(r&&r.getText()){pickerFetchBarcodeForConfirm(r.getText());return;}
-    }catch(e){}
+// Die Formate, die ZXing (WASM wie JS) lesen soll. ZBar kennt keine solche
+// Einschränkung und liest auch QR-Codes – die filtert _pickerZbarText.
+var _PICKER_ZXW_FORMATS=['EAN-13','EAN-8','UPC-A','UPC-E','Code128','Code39'];
+function _pickerZxingJsHints(){
+  var hints=new Map();
+  hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39]);
+  hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
+  return hints;
+}
+
+// Erster verwertbarer Text aus den ZBar-Symbolen. QR-Symbole werden
+// übersprungen: Ein QR-Code auf der Verpackung (meist eine URL) ist kein
+// Produktcode, und OpenFoodFacts bekäme sonst einen kaputten Pfad (#209).
+// Fehlt typeName, wird das Symbol wie bisher genommen.
+function _pickerZbarText(symbols){
+  if(!symbols||!symbols.length)return null;
+  for(var i=0;i<symbols.length;i++){
+    var sym=symbols[i];if(!sym)continue;
+    if(sym.typeName&&String(sym.typeName).toUpperCase().indexOf('QR')>=0)continue;
+    var t=sym.decode?sym.decode():(sym.data||'');
+    if(t)return String(t);
   }
-  // iOS: Claude Haiku als Fallback für Barcode-Erkennung
-  if(!isIOS)return;
-  if(!canUseAi())return;
-  var b64=canvas.toDataURL('image/jpeg',0.85).split(',')[1];
-  callClaude('claude-haiku-4-5',[
-    {type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},
-    {type:'text',text:'Is there a barcode in this image? If yes, reply with ONLY the digits. If no barcode, reply exactly "NONE".'}
-  ],20,
-  function(text){
-    var code=(text||'').trim().replace(/\s/g,'');
-    if(code!=='NONE'&&/^\d{8,14}$/.test(code))pickerFetchBarcodeForConfirm(code);
-  },
-  function(){});
+  return null;
+}
+
+// Lokale Decoder-Kette für ein Standbild (Foto-Tab und 📸 Foto-Scan im
+// Barcode-Tab): 1. ZXing-WASM, 2. ZBar-WASM (andere Algorithmen), 3. ZXing-JS.
+// Liefert ein Promise auf den ersten Treffer oder null – nie eine Ablehnung.
+// Filter (Graustufen/Kontrast) legt der Aufrufer vorher auf den Canvas.
+function _pickerDecodeCanvasLocal(canvas){
+  var p=Promise.resolve(null);
+  if(window.ZXingWasm&&window.ZXingWasm.readBarcodes){
+    try{
+      p=window.ZXingWasm.readBarcodes(canvas,{
+        formats:_PICKER_ZXW_FORMATS,
+        tryHarder:true,tryRotate:true,tryInvert:true,maxNumberOfSymbols:1
+      }).then(function(rs){return rs&&rs.length&&rs[0].text?String(rs[0].text):null;}).catch(function(){return null;});
+    }catch(e){p=Promise.resolve(null);}
+  }
+  return p.then(function(code){
+    if(code)return code;
+    if(!window.ZBarWasm||!window.ZBarWasm.scanImageData)return null;
+    try{
+      var imgData=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height);
+      return window.ZBarWasm.scanImageData(imgData).then(_pickerZbarText).catch(function(){return null;});
+    }catch(e){return null;}
+  }).then(function(code){
+    if(code)return code;
+    if(typeof ZXing==='undefined')return null;
+    try{
+      var r=new ZXing.BrowserMultiFormatReader(_pickerZxingJsHints()).decodeFromCanvas(canvas);
+      if(r&&r.getText())return String(r.getText());
+    }catch(e){}
+    return null;
+  });
+}
+
+// Foto-Tab: sucht im geladenen Foto einen Barcode – nur lokal, ohne KI und
+// ohne Server (#209): Das Foto verlässt das Gerät erst, wenn die Nutzerin
+// „KI-Analyse starten" antippt. Nur GTIN-artige Treffer (8–14 Ziffern) gehen
+// an OpenFoodFacts; seq ist die Marke des Fotos aus pickerHandlePhoto.
+function pickerTryBarcode(canvas,seq){
+  _pickerDecodeCanvasLocal(canvas).then(function(code){
+    if(!code)return;
+    code=String(code).replace(/\s/g,'');
+    if(!/^\d{8,14}$/.test(code))return;
+    if(seq!==undefined&&seq!==window._pickerPhotoSeq)return;
+    pickerFetchBarcodeForConfirm(code,seq);
+  });
 }
 
 function pickerToggleTorch(){
@@ -512,48 +568,80 @@ function _pickerFrameLoop(videoEl,canvas,ctx,detect,label){
 }
 
 // Server-Decode-Loop: streamt parallel zum lokalen Decoder ~1.4 fps gecropte
-// JPEG-Frames an den Cloudflare-Worker (POST /decode-barcode), der per Claude
-// Haiku Vision die Ziffern liest. Lokaler Decoder läuft weiter – wer zuerst
-// trifft, gewinnt. Auf iOS ist der Worker-Pfad meist der einzige, der trifft.
+// JPEG-Frames an den Cloudflare-Worker (POST /decode-barcode), der sie an den
+// OSS-Decoder (OpenCV + pyzbar auf Cloud Run) weiterreicht – keine KI. Lokaler
+// Decoder läuft weiter – wer zuerst trifft, gewinnt.
 function _pickerServerDecodeUrl(){
   if(typeof PROJECT_AI_PROXY_URL!=='string'||!PROJECT_AI_PROXY_URL)return null;
   return PROJECT_AI_PROXY_URL.replace(/\/v1\/messages\/?$/,'/decode-barcode');
+}
+// Grenze des Workers für /decode-barcode (MAX_BARCODE_BODY_BYTES = 1024 * 200).
+// Größer wird mit 413 abgelehnt – dann lieber gar nicht erst senden.
+var _PICKER_SERVER_MAX_BYTES=200*1024;
+// JPEG für den Foto-Serverschritt: erst 0.85; ist es zu groß, EINMAL neu
+// kodieren (lange Kante ≤ 1280 px, Qualität 0.6). Passt auch das nicht, kommt
+// null zurück (#209).
+function _pickerServerJpeg(canvas,cb){
+  canvas.toBlob(function(blob){
+    if(blob&&blob.size<=_PICKER_SERVER_MAX_BYTES){cb(blob);return;}
+    var src=canvas;
+    var scale=Math.min(1,1280/Math.max(canvas.width,canvas.height));
+    if(scale<1){
+      src=document.createElement('canvas');
+      src.width=Math.max(1,Math.round(canvas.width*scale));
+      src.height=Math.max(1,Math.round(canvas.height*scale));
+      src.getContext('2d').drawImage(canvas,0,0,src.width,src.height);
+    }
+    src.toBlob(function(b2){
+      cb(b2&&b2.size<=_PICKER_SERVER_MAX_BYTES?b2:null);
+    },'image/jpeg',0.6);
+  },'image/jpeg',0.85);
 }
 function _pickerStartServerDecodeLoop(canvas){
   if(typeof canUseAi!=='function'||!canUseAi())return false;
   var url=_pickerServerDecodeUrl();if(!url)return false;
   pickerBcServerActive=true;
+  // Sitzungsmarke: Nach Stopp und Neustart des Scanners stehen die globalen
+  // Flags wieder auf true – eine noch laufende Anfrage (und der Takt) der alten
+  // Sitzung darf dann weder einen Lookup auslösen noch weiterlaufen.
+  var sess=window._pickerBcSess=(window._pickerBcSess||0)+1;
+  function alive(){return pickerBcActive&&pickerBcServerActive&&sess===window._pickerBcSess;}
   var inFlight=0;var nextAt=Date.now()+500;var reqCount=0;
-  // Mehrfrachen-Bestätigung: erst nach 2 identischen gültigen Codes wird der Lookup gestartet.
-  // Schützt gegen seltene Halluzinationen mit zufällig gültiger Prüfziffer.
+  // Der OSS-Decoder liefert nur Codes mit gültiger Prüfziffer – der erste
+  // Treffer wird übernommen wie bei den lokalen Decodern (#209). Nur ein alter
+  // Worker mit Vision-Fallback (source 'anthropic') braucht noch zwei gleiche
+  // Codes, als Schutz gegen erfundene Ziffern mit zufällig gültiger Prüfziffer.
   var lastCode=null;
   function setStatus(s){var el=document.getElementById('bcDbgServer');if(el)el.textContent='Server: '+s;}
   setStatus('warte');
   function tick(){
-    if(!pickerBcActive||!pickerBcServerActive)return;
+    if(!alive())return;
     var now=Date.now();
     if(inFlight>=1||now<nextAt||!canvas.width||canvas.width<16){setTimeout(tick,120);return;}
     nextAt=now+700;inFlight++;reqCount++;
     setStatus('scan… ('+reqCount+')');
     canvas.toBlob(function(blob){
-      if(!pickerBcActive||!pickerBcServerActive||!blob){inFlight--;setTimeout(tick,120);return;}
+      if(!alive()||!blob){inFlight--;setTimeout(tick,120);return;}
       fetch(url,{
         method:'POST',
         headers:{'Content-Type':'image/jpeg','x-app-proxy-secret':getProxySecret()},
         body:blob
       }).then(function(r){
-        if(!pickerBcActive||!pickerBcServerActive)return null;
+        if(!alive())return null;
         if(!r.ok){setStatus('Fehler '+r.status+' ('+reqCount+')');return null;}
         return r.json();
       }).then(function(d){
-        if(!pickerBcActive||!pickerBcServerActive||!d)return;
+        if(!alive()||!d)return;
         var data=d.data||{};
         var raw=data.raw?String(data.raw):'';
         var code=data.code?String(data.code):'';
         var candidate=data.candidate?String(data.candidate):'';
         var checksumOk=Boolean(data.checksumValid);
         if(code){
-          if(lastCode===code){
+          if(String(data.source||'')!=='anthropic'){
+            setStatus('✓ '+code);
+            pickerStopScan();pickerLookupBarcode(code);
+          }else if(lastCode===code){
             setStatus('✓✓ '+code);
             pickerStopScan();pickerLookupBarcode(code);
           }else{
@@ -581,7 +669,7 @@ function pickerStartScan(){
   wrap.classList.remove('hidden');
   document.getElementById('pickerBcStartBtn').style.display='none';
   document.getElementById('pickerBcStopBtn').style.display='block';
-  document.getElementById('pickerBarcodeResult').innerHTML='<div style="font-size:13px;color:var(--g1);padding:10px;text-align:center;"><span class="spin" style="display:inline-block;width:14px;height:14px;border:2px solid var(--g2);border-top-color:transparent;border-radius:50%;vertical-align:middle;margin-right:6px;"></span>Kamera startetâ¦</div>';
+  document.getElementById('pickerBarcodeResult').innerHTML='<div style="font-size:13px;color:var(--g1);padding:10px;text-align:center;"><span class="spin" style="display:inline-block;width:14px;height:14px;border:2px solid var(--g2);border-top-color:transparent;border-radius:50%;vertical-align:middle;margin-right:6px;"></span>Kamera startet…</div>';
   pickerBcActive=true;
   var videoEl=document.getElementById('pickerBarcodeVideo');
   videoEl.setAttribute('playsinline','');
@@ -641,15 +729,7 @@ function pickerStartScan(){
         if(!window.ZBarWasm||!window.ZBarWasm.scanImageData)return Promise.resolve(null);
         try{
           var imageData=ctx.getImageData(0,0,c.width,c.height);
-          return window.ZBarWasm.scanImageData(imageData).then(function(symbols){
-            if(symbols&&symbols.length){
-              for(var i=0;i<symbols.length;i++){
-                var t=symbols[i].decode?symbols[i].decode():(symbols[i].data||'');
-                if(t)return String(t);
-              }
-            }
-            return null;
-          }).catch(function(){return null;});
+          return window.ZBarWasm.scanImageData(imageData).then(_pickerZbarText).catch(function(){return null;});
         }catch(e){return Promise.resolve(null);}
       }
       function startZXingWasm(){
@@ -747,7 +827,7 @@ function pickerStartScan(){
       // 1. BarcodeDetector (Chrome/Edge: GPU-nativ, sehr schnell)
       // 2. zxing-wasm (iOS Safari & alle Browser ohne BarcodeDetector – C++/WASM, robust)
       // 3. ZXing-JS (Fallback falls WASM-Modul nicht laden konnte)
-      // PARALLEL: Server-Decode über Cloudflare-Worker (Claude Haiku Vision).
+      // PARALLEL: Server-Decode über den Worker (OSS-Decoder OpenCV + pyzbar, Cloud Run).
       // Nur auf Plattformen ohne BarcodeDetector aktivieren – auf Chrome/Android
       // trifft der lokale Decoder ohnehin in <100ms, da brauchen wir keinen Roundtrip.
       if(!('BarcodeDetector' in window)){
@@ -786,7 +866,7 @@ function pickerStartScan(){
     else{videoEl.oncanplay=function(){videoEl.oncanplay=null;startScanWhenReady();};}
   }).catch(function(err){
     var msg=err.name==='NotAllowedError'
-      ?'Kamerazugriff verweigert â in Einstellungen → Safari → Kamera erlauben.'
+      ?'Kamerazugriff verweigert – in Einstellungen → Safari → Kamera erlauben.'
       :'Kamera nicht verfügbar: '+err.message;
     document.getElementById('pickerBarcodeResult').innerHTML='<div style="font-size:13px;color:var(--re);padding:10px;text-align:center;">❌ '+msg+'</div>';
     document.getElementById('pickerBcPhotoBtn').style.display='block';
@@ -820,14 +900,15 @@ function pickerStopScan(){
   pickerTorchOn=false;
 }
 
-// Decodet ein hochauflösendes Foto mit allen verfügbaren Decodern + Server.
+// Decodet ein hochauflösendes Foto mit den lokalen Decodern, danach über den
+// OSS-Decoder des Workers (kein KI-Aufruf).
 // Foto-Pfad ist robuster als Live-Stream, weil iOS hier Hardware-Auto-Focus,
 // Stabilisierung und volle Sensor-Auflösung nutzt (~4032×3024 statt 1080×1920).
 function pickerScanFromPhoto(event){
   var file=event.target.files&&event.target.files[0];
   if(!file)return;
   var el=document.getElementById('pickerBarcodeResult');
-  el.innerHTML='<div style="font-size:13px;color:var(--g1);padding:8px;text-align:center;"><span class="spin" style="display:inline-block;width:14px;height:14px;border:2px solid var(--g2);border-top-color:transparent;border-radius:50%;vertical-align:middle;margin-right:6px;"></span>Foto wird analysiert (alle Decoder + KI)…</div>';
+  el.innerHTML='<div style="font-size:13px;color:var(--g1);padding:8px;text-align:center;"><span class="spin" style="display:inline-block;width:14px;height:14px;border:2px solid var(--g2);border-top-color:transparent;border-radius:50%;vertical-align:middle;margin-right:6px;"></span>Foto wird analysiert…</div>';
   var img=new Image();
   var url=URL.createObjectURL(file);
   img.onload=function(){
@@ -858,49 +939,15 @@ function pickerScanFromPhoto(event){
         +'</div>';
       var inp=document.getElementById('pickerBcPhoto');if(inp)inp.value='';
     }
-    // 1. ZXing-WASM (modern, schnell)
-    var p1=Promise.resolve(null);
-    if(window.ZXingWasm&&window.ZXingWasm.readBarcodes){
-      p1=window.ZXingWasm.readBarcodes(canvas,{
-        formats:['EAN-13','EAN-8','UPC-A','UPC-E','Code128','Code39'],
-        tryHarder:true,tryRotate:true,tryInvert:true,maxNumberOfSymbols:1
-      }).then(function(rs){return rs&&rs.length&&rs[0].text?rs[0].text:null;}).catch(function(){return null;});
-    }
-    p1.then(function(c){
-      if(c){hit(c,'wasm');return;}
-      // 2. ZBar-WASM (andere Algorithmen)
-      if(window.ZBarWasm&&window.ZBarWasm.scanImageData){
-        try{
-          var imgData=ctx.getImageData(0,0,w,h);
-          return window.ZBarWasm.scanImageData(imgData).then(function(syms){
-            if(syms&&syms.length){
-              for(var i=0;i<syms.length;i++){
-                var t=syms[i].decode?syms[i].decode():(syms[i].data||'');
-                if(t){hit(String(t),'zbar');return null;}
-              }
-            }
-            return null;
-          }).catch(function(){return null;});
-        }catch(e){}
-      }
-      return null;
-    }).then(function(){
+    // 1.–3. lokal: ZXing-WASM → ZBar-WASM → ZXing-JS (gemeinsame Kette mit dem Foto-Tab)
+    _pickerDecodeCanvasLocal(canvas).then(function(c){
       if(done)return;
-      // 3. ZXing-JS (Fallback)
-      if(typeof ZXing!=='undefined'){
-        try{
-          var hints=new Map();
-          hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39]);
-          hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
-          var r=new ZXing.BrowserMultiFormatReader(hints).decodeFromCanvas(canvas);
-          if(r&&r.getText()){hit(r.getText(),'zxingjs');return;}
-        }catch(e){}
-      }
-      // 4. Server (Claude Vision) als letzter Ausweg
+      if(c){hit(c,'local');return;}
+      // 4. Server: OSS-Decoder (OpenCV + pyzbar auf Cloud Run) über den Worker
       if(typeof canUseAi==='function'&&canUseAi()){
         var serverUrl=_pickerServerDecodeUrl&&_pickerServerDecodeUrl();
         if(serverUrl){
-          canvas.toBlob(function(blob){
+          _pickerServerJpeg(canvas,function(blob){
             if(!blob){fail();return;}
             fetch(serverUrl,{
               method:'POST',
@@ -910,7 +957,7 @@ function pickerScanFromPhoto(event){
               if(d&&d.ok&&d.data&&d.data.code){hit(d.data.code,'server');}
               else{fail();}
             }).catch(fail);
-          },'image/jpeg',0.85);
+          });
           return;
         }
       }
@@ -942,22 +989,30 @@ function _pickerCachedBarcode(code){
   return null;
 }
 
-function pickerFetchBarcodeForConfirm(code){
+// Foto-Tab: Produkt zum erkannten Barcode holen und die Rückfrage zeigen.
+// seq (optional) ist die Marke des Fotos – wurde es inzwischen ersetzt oder
+// zurückgesetzt, bleibt die späte Antwort still (#209).
+function pickerFetchBarcodeForConfirm(code,seq){
+  function stale(){return seq!==undefined&&seq!==window._pickerPhotoSeq;}
   var cached=_pickerCachedBarcode(code);
   if(cached){pickerShowBcConfirm(cached);return;}
   if(!isOnline)return;
   fetchT(offProxyUrl('https://world.openfoodfacts.org/api/v0/product/'+code+'.json'),{},6000)
     .then(function(r){return r.json();})
     .then(function(data){
+      if(stale())return;
       if(data.status!==1||!data.product){showToast('Barcode '+code+' nicht gefunden – bitte manuell eintragen');return;}
       var p=data.product,nm=p.nutriments||{};
       var name=p.product_name_de||p.product_name||'Unbekannt';
       var per100=_pickerOffPer100(nm);
-      if(!_hasNutrients(per100)){showToast('⚠️ Keine Nährwerte verfügbar für „'+name+'" – bitte manuell eintragen');pickerOpenManualBarcode();document.getElementById('bcManualName').value=name;return;}
+      // Nur Hinweis: Die Nutzerin bleibt im Foto-Tab, „KI-Analyse starten" ist
+      // dort weiter sichtbar. (Vorher lief hier ein Zugriff auf #bcManualName,
+      // das es nur nach pickerShowBarcodeNotFound gibt → TypeError, #209.)
+      if(!_hasNutrients(per100)){showToast('⚠️ „'+name+'“ hat in der Datenbank keine Nährwerte – KI-Analyse starten oder unter „Eigenes“ eintragen',4000);return;}
       var food={name:name,emoji:emo(name),barcode:code,per100:per100};
       barcodeCache[code]=food;saveBarcodeCache();cacheFood(food);
       pickerShowBcConfirm(food);
-    }).catch(function(){showToast('Produkt-Abruf fehlgeschlagen – bist du online?');});
+    }).catch(function(){if(!stale())showToast('Produkt-Abruf fehlgeschlagen – bist du online?');});
 }
 
 function pickerShowBcConfirm(food){
@@ -980,6 +1035,8 @@ function pickerBcYes(){
 function pickerBcNo(){
   document.getElementById('pickerBcConfirm').classList.add('hidden');
   pickerBcFound=null;
+  // Knopf wieder zeigen: scheitert die KI, bleibt „Erneut analysieren" erreichbar (#209).
+  document.getElementById('pickerAnalyzeBtn').style.display='';
   pickerAnalyze();
 }
 
@@ -988,21 +1045,62 @@ function pickerBcNo(){
 // die EAN-Klartextziffern unter dem Strichcode extrem zuverlässig liest.
 function pickerOpenManualBarcode(){
   pickerStopScan();
+  _pickerManualWarn=null;// jede neu geöffnete Eingabe warnt wieder bei falscher Prüfziffer
   var el=document.getElementById('pickerBarcodeResult');
   if(!el)return;
   el.innerHTML='<div style="background:var(--gl);border:1.5px solid var(--br);border-radius:12px;padding:12px;">'
     +'<div style="font-size:12px;color:var(--mu);margin-bottom:6px;">Tippe die 13 Ziffern unter dem Strichcode ein.</div>'
     +'<div style="font-size:11px;color:var(--mu);margin-bottom:10px;line-height:1.4;">📱 <strong>iPhone-Tipp:</strong> Halte das Eingabefeld lang gedrückt → „Text scannen" → mit Kamera die Ziffern lesen lassen (Apples Live Text).</div>'
-    +'<input type="text" id="bcDirectInput" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="z.B. 4011200296898" style="width:100%;box-sizing:border-box;border:2px solid var(--br);border-radius:9px;padding:10px;font-size:16px;font-family:ui-monospace,Menlo,monospace;letter-spacing:1px;outline:none;margin-bottom:10px;" maxlength="14">'
-    +'<button type="button" onclick="pickerSubmitManualBarcode()" style="width:100%;background:linear-gradient(135deg,var(--g1),var(--g2));color:white;border:none;border-radius:10px;padding:11px;font-weight:800;font-size:14px;">Suchen ✓</button>'
+    +'<input type="text" id="bcDirectInput" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="z.B. 4006381333931" style="width:100%;box-sizing:border-box;border:2px solid var(--br);border-radius:9px;padding:10px;font-size:16px;font-family:ui-monospace,Menlo,monospace;letter-spacing:1px;outline:none;margin-bottom:10px;" maxlength="14">'
+    +'<button type="button" data-act="pickerSubmitManualBarcode" style="width:100%;background:linear-gradient(135deg,var(--g1),var(--g2));color:white;border:none;border-radius:10px;padding:11px;font-weight:800;font-size:14px;">Suchen ✓</button>'
     +'</div>';
   setTimeout(function(){var i=document.getElementById('bcDirectInput');if(i)i.focus();},50);
 }
+// Prüfziffer einer GTIN (EAN-8, UPC-A, EAN-13, GTIN-14): Mod 10, Gewichte
+// 3/1 von rechts ohne die Prüfziffer. Achtstellig kann auch ein UPC-E sein –
+// dann gilt die Prüfziffer seiner Erweiterung auf UPC-A. Andere Längen oder
+// Nicht-Ziffern (Code 128/39) lassen sich nicht prüfen und gelten als ok.
+function _pickerGtinMod10(d){
+  var sum=0;
+  for(var i=d.length-2,w=3;i>=0;i--,w=(w===3?1:3))sum+=(d.charCodeAt(i)-48)*w;
+  return (10-(sum%10))%10===d.charCodeAt(d.length-1)-48;
+}
+function _pickerUpcEToA(e){
+  // e: 8 Ziffern = Zahlensystem (0/1) + 6 Nutzziffern + Prüfziffer
+  if(e.charAt(0)!=='0'&&e.charAt(0)!=='1')return null;
+  var m=e.substr(1,6),last=m.charAt(5),body;
+  if(last==='0'||last==='1'||last==='2')body=m.substr(0,2)+last+'0000'+m.substr(2,3);
+  else if(last==='3')body=m.substr(0,3)+'00000'+m.substr(3,2);
+  else if(last==='4')body=m.substr(0,4)+'00000'+m.charAt(4);
+  else body=m.substr(0,5)+'0000'+last;
+  return e.charAt(0)+body+e.charAt(7);
+}
+function _pickerGtinOk(code){
+  var c=String(code==null?'':code);
+  if(!/^\d+$/.test(c))return true;
+  var n=c.length;
+  if(n!==8&&n!==12&&n!==13&&n!==14)return true;
+  if(_pickerGtinMod10(c))return true;
+  if(n===8){var a=_pickerUpcEToA(c);return !!(a&&_pickerGtinMod10(a));}
+  return false;
+}
+
+// Zweites Antippen mit demselben Code sucht trotz falscher Prüfziffer.
+var _pickerManualWarn=null;
 function pickerSubmitManualBarcode(){
   var i=document.getElementById('bcDirectInput');
   if(!i)return;
   var code=(i.value||'').replace(/\D/g,'');
   if(code.length<8){showToast('Mindestens 8 Ziffern eingeben');return;}
+  // Hinweis statt Sperre (#209): Ein Tippfehler fällt auf, bevor unter dem
+  // falschen Code eigene Werte im Barcode-Cache landen; ein Code, der trotzdem
+  // in der Datenbank steht, bleibt mit einem zweiten Antippen erreichbar.
+  if(!_pickerGtinOk(code)&&_pickerManualWarn!==code){
+    _pickerManualWarn=code;
+    showToast('⚠️ Prüfziffer passt nicht – Tippfehler? Nochmal „Suchen“ tippen, um trotzdem zu suchen.',4000);
+    return;
+  }
+  _pickerManualWarn=null;
   pickerLookupBarcode(code);
 }
 

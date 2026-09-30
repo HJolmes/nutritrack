@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.283',items:[
+    {icon:'📷',text:'<b>Barcode ohne KI</b>: Der Foto-Tab erkennt Barcodes direkt auf dem Gerät, ohne das Foto an eine KI zu schicken. Der Barcode-Scanner übernimmt einen Server-Treffer sofort statt erst beim zweiten Bild, und QR-Codes auf der Verpackung werden nicht mehr als Barcode gelesen. Bei manueller Code-Eingabe warnt die App vor einer falschen Prüfziffer; ein zweites „Suchen“ sucht trotzdem. Behoben: „KI-Analyse starten“ blieb nach einer Barcode-Rückfrage unsichtbar, im Foto-Tab erschien bei Produkten ohne Nährwerte „Produkt-Abruf fehlgeschlagen“, zwei Scanner-Texte waren verstümmelt.',where:'＋ → 📷 Foto / Barcode'}
+  ]},
   {v:'0.282',items:[
     {icon:'👶',text:'<b>Baby-Tagebuch</b>: Der Temperatur-Schnellknopf öffnet den Eintrags-Dialog, statt 0,0 °C einzutragen. Per Alexa eingetragene Temperaturen erscheinen mit ihrem Wert und der Fieberwarnung. Einträge ohne Messwert stehen als „Temperatur (ohne Wert)“ in der Zeitleiste und nicht mehr in Kachel und Arzt-Bericht. Außerdem stimmen jetzt das Alter nach der Zeitumstellung, die U-Stufe am Monatsende, der Stopp-Knopf alter Stoppuhren und bei den Medikamenten der Tag der nächsten und der letzten Gabe.',where:'👶 Baby-Tagebuch'}
   ]},

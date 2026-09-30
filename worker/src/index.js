@@ -14,7 +14,6 @@ const DEFAULT_ALLOWED_ORIGINS = [
 ];
 const MAX_BODY_BYTES = 1024 * 1024 * 4;
 const MAX_BARCODE_BODY_BYTES = 1024 * 200; // 200 KB pro Frame reicht
-const BARCODE_MODEL = "claude-haiku-4-5";
 const DECODER_TIMEOUT_MS = 1500;
 // OpenFoodFacts verlangt einen aussagekräftigen User-Agent und blockt anonyme
 // Browser-Requests; deshalb läuft jeder OFF-Aufruf serverseitig über /off.
@@ -157,28 +156,9 @@ async function readJsonLimited(request, max) {
   return { json: value };
 }
 
-function bytesToBase64(bytes) {
-  let binary = "";
-  const chunk = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunk) {
-    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
-  }
-  return btoa(binary);
-}
-
-function extractBarcodeDigits(text) {
-  if (typeof text !== "string") return null;
-  const cleaned = text.trim().toUpperCase();
-  if (cleaned === "NONE" || cleaned === "" || cleaned.includes("NONE")) return null;
-  const digits = cleaned.replace(/\D/g, "");
-  // EAN-13, EAN-8, UPC-A (12), UPC-E (8), Code128/39 typ. 8-14
-  if (digits.length < 8 || digits.length > 14) return null;
-  return digits;
-}
-
 // Validates EAN-13 / EAN-8 / UPC-A check digit (last digit).
 // Returns true for codes with a correct check digit, false otherwise.
-// Strong filter against hallucinated digits from the vision model.
+// Filter against misreads of the OSS-Decoder.
 function isValidBarcodeChecksum(code) {
   if (typeof code !== "string" || !/^\d+$/.test(code)) return false;
   if (code.length !== 13 && code.length !== 12 && code.length !== 8) {
@@ -237,15 +217,11 @@ async function handleDecodeBarcode(request, origin, env) {
   if (origin && !allowedOrigins(env).has(origin)) {
     return jsonResponse(403, "origin_not_allowed", "Origin is not allowed", origin, env);
   }
-  const visionFallbackEnabled = env.ENABLE_VISION_FALLBACK === "true";
   if (!env.NUTRITRACK_PROXY_TOKEN) {
     return jsonResponse(500, "worker_not_configured", "Required Worker secrets are missing", origin, env);
   }
-  if (visionFallbackEnabled && !env.ANTHROPIC_API_KEY) {
-    return jsonResponse(500, "worker_not_configured", "ANTHROPIC_API_KEY is required when ENABLE_VISION_FALLBACK is true", origin, env);
-  }
-  if (!env.DECODER_URL && !visionFallbackEnabled) {
-    return jsonResponse(500, "worker_not_configured", "DECODER_URL or ENABLE_VISION_FALLBACK must be set", origin, env);
+  if (!env.DECODER_URL) {
+    return jsonResponse(500, "worker_not_configured", "DECODER_URL must be set", origin, env);
   }
   const token = request.headers.get("x-app-proxy-secret") || "";
   if (token !== env.NUTRITRACK_PROXY_TOKEN) {
@@ -270,95 +246,30 @@ async function handleDecodeBarcode(request, origin, env) {
   const contentType = request.headers.get("content-type") || "image/jpeg";
   const mediaType = contentType.split(";")[0].trim() || "image/jpeg";
 
-  // Primary path: OSS-Decoder (OpenCV + pyzbar). Skips Anthropic entirely on hit.
-  if (env.DECODER_URL) {
-    const decoded = await tryExternalDecoder(env.DECODER_URL, buffer, mediaType, env.DECODER_SECRET);
-    const decodedCode = decoded && typeof decoded.code === "string" ? decoded.code : null;
-    if (decodedCode && isValidBarcodeChecksum(decodedCode)) {
-      return jsonResponse(200, "ok", "ok", origin, env, {
-        code: decodedCode,
-        raw: decodedCode,
-        candidate: decodedCode,
-        checksumValid: true,
-        found: true,
-        source: "opencv",
-      });
-    }
-  }
-
-  // Fallback path is opt-in. Without it, we return a clean miss so the client
-  // can fall back to its local decoders / manual entry without paying for Vision.
-  if (!visionFallbackEnabled) {
+  // Einziger Pfad: OSS-Decoder (OpenCV + pyzbar). Ein Vision-Fallback existiert
+  // seit #209 nicht mehr — ein Miss bleibt ein Miss, und der Client faellt auf
+  // seine lokalen Decoder bzw. die manuelle Eingabe zurueck.
+  const decoded = await tryExternalDecoder(env.DECODER_URL, buffer, mediaType, env.DECODER_SECRET);
+  const decodedCode = decoded && typeof decoded.code === "string" ? decoded.code : null;
+  if (decodedCode && isValidBarcodeChecksum(decodedCode)) {
+    const decodedSource = decoded && typeof decoded.source === "string" && decoded.source ? decoded.source.slice(0, 32) : "opencv";
     return jsonResponse(200, "ok", "ok", origin, env, {
-      code: null,
-      raw: "",
-      candidate: null,
-      checksumValid: false,
-      found: false,
-      source: "opencv-miss",
+      code: decodedCode,
+      raw: decodedCode,
+      candidate: decodedCode,
+      checksumValid: true,
+      found: true,
+      source: decodedSource,
     });
   }
-
-  const base64 = bytesToBase64(buffer);
-
-  const body = {
-    model: BARCODE_MODEL,
-    max_tokens: 32,
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "image",
-            source: { type: "base64", media_type: mediaType, data: base64 },
-          },
-          {
-            type: "text",
-            text: "Read the EAN-13 barcode in this image. Below the black bars there is a row of 13 digits printed in plain text. Reply with ONLY those 13 digits, no spaces, no other text. If you cannot clearly read all 13 digits, reply exactly NONE. Do NOT guess any digit. Do NOT invent digits. NONE is the right answer when the barcode is blurry, partially occluded, or not in the image.",
-          },
-        ],
-      },
-    ],
-  };
-
-  let upstream;
-  try {
-    upstream = await fetch(ANTHROPIC_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": env.ANTHROPIC_API_KEY,
-        "anthropic-version": env.ANTHROPIC_VERSION || DEFAULT_ANTHROPIC_VERSION,
-      },
-      body: JSON.stringify(body),
-    });
-  } catch (error) {
-    return jsonResponse(502, "upstream_error", "Failed to reach Anthropic", origin, env);
-  }
-  if (!upstream.ok) {
-    return jsonResponse(upstream.status, "upstream_error", "Anthropic returned an error", origin, env);
-  }
-
-  let answer;
-  try {
-    answer = await upstream.json();
-  } catch (error) {
-    return jsonResponse(502, "upstream_error", "Anthropic returned invalid JSON", origin, env);
-  }
-  const block = (answer && answer.content && answer.content[0]) || null;
-  const text = block && block.type === "text" ? block.text : "";
-  const candidate = extractBarcodeDigits(text);
-  const rawTrimmed = (text || "").trim().slice(0, 64);
-  const checksumValid = candidate ? isValidBarcodeChecksum(candidate) : false;
-  const code = checksumValid ? candidate : null;
 
   return jsonResponse(200, "ok", "ok", origin, env, {
-    code: code,
-    raw: rawTrimmed,
-    candidate: candidate,
-    checksumValid: checksumValid,
-    found: Boolean(code),
-    source: "anthropic",
+    code: null,
+    raw: "",
+    candidate: null,
+    checksumValid: false,
+    found: false,
+    source: "opencv-miss",
   });
 }
 
@@ -1897,7 +1808,6 @@ async function route(request, env) {
       service: "nutritrack-ai-proxy",
       configured: Boolean(env.ANTHROPIC_API_KEY && env.NUTRITRACK_PROXY_TOKEN),
       decoderConfigured: Boolean(env.DECODER_URL),
-      visionFallbackEnabled: env.ENABLE_VISION_FALLBACK === "true",
       shareConfigured: Boolean(env.SHARE_KV),
       feedbackConfigured: Boolean(env.GITHUB_TOKEN),
       workoutsConfigured: Boolean(env.SHARE_KV),
@@ -1907,7 +1817,7 @@ async function route(request, env) {
       alexaInboxConfigured: Boolean(env.SHARE_KV),
       planSyncConfigured: Boolean(env.SHARE_KV),
       decoderSecretConfigured: Boolean(env.DECODER_SECRET),
-      codeVersion: "v0.278-worker-hardening",
+      codeVersion: "v0.283-no-vision",
     });
   }
 

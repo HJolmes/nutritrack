@@ -2,17 +2,23 @@
 
 Standalone HTTP service: takes a JPEG/PNG, returns a decoded EAN-13/EAN-8/
 UPC-A/Code-128 barcode using **OpenCV** (CNN-based `BarcodeDetector`) chained
-with **pyzbar** (ZBar) as a fallback. Designed to be the **primary** server-
-side decode path for NutriTrack on iOS Safari, replacing per-frame Claude
-Haiku Vision calls.
+with **pyzbar** (ZBar) as a fallback. It is the **only** server-side decode
+path for NutriTrack (Worker `/decode-barcode`); the former Claude-Vision
+fallback in the Worker was removed with #209.
 
 ## Why this exists
 
-iOS Safari has no `BarcodeDetector` API and every WASM-based decoder we
-tried (zxing-wasm, zbar-wasm, zxing-js) failed unreliably across packaging
-types. Until now we used Claude Vision as the only working server fallback —
-expensive, data-intensive, and limited to barcodes with a readable plain-text
-EAN line. This service replaces that path with a real strip-decoder.
+iOS Safari has no `BarcodeDetector` API. When this service was written, every
+WASM-based decoder we tried (zxing-wasm, zbar-wasm, zxing-js) failed
+unreliably across packaging types, and Claude Vision was the only working
+server fallback — expensive, data-intensive, and limited to barcodes with a
+readable plain-text EAN line. This service replaced that path with a real
+strip-decoder.
+
+*Outdated:* the zxing-wasm statement predates the Canvas→ImageData wrapper in
+`index.html` (v0.196; before it, zxing-wasm never got valid input). Since then
+zxing-wasm (hosted in `js/zxing/`) and zbar-wasm run in the app and deliver
+hits there; this service runs in addition to them.
 
 ## Endpoints
 
@@ -23,7 +29,7 @@ EAN line. This service replaces that path with a real strip-decoder.
   ```json
   {
     "found": true,
-    "code": "4011200296909",
+    "code": "4006381333931",
     "format": "EAN13",
     "source": "opencv",
     "candidates": [...],

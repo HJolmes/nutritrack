@@ -239,7 +239,7 @@ async function main() {
   section('/health');
   {
     const r = await call('GET', '/health');
-    check('codeVersion ist v0.278-worker-hardening', r.json && r.json.data && r.json.data.codeVersion === 'v0.278-worker-hardening', r.json && r.json.data && r.json.data.codeVersion);
+    check('codeVersion ist v0.283-no-vision', r.json && r.json.data && r.json.data.codeVersion === 'v0.283-no-vision', r.json && r.json.data && r.json.data.codeVersion);
   }
 
   // ── (a) Body null / kein Objekt → 400 mit CORS, keine Ausnahme ──
@@ -575,6 +575,57 @@ async function main() {
     const issue = gh.find((c) => /\/issues$/.test(c.url));
     const issueText = issue ? JSON.parse(issue.body).body : '';
     check('werfender Upload: Issue nennt "upload threw", nicht die Fehlermeldung', r.status === 200 && /upload threw/.test(issueText) && issueText.indexOf('7f3a') < 0, issueText.split('\n').filter((l) => /Screenshot/.test(l)).join(' '));
+  }
+
+  // ── (i) /decode-barcode ohne Vision-Fallback (#209) ──
+  // Auch ein altes ENABLE_VISION_FALLBACK="true" im Dashboard darf keinen
+  // Anthropic-Aufruf mehr ausloesen; die Quelle des Decoders wird durchgereicht.
+  section('(i) /decode-barcode: nur OSS-Decoder, keine Vision');
+  {
+    const jpeg = { headers: { 'x-app-proxy-secret': SECRET, 'Content-Type': 'image/jpeg' }, body: new Uint8Array(2048).fill(7) };
+    const oldFlag = env.ENABLE_VISION_FALLBACK;
+    env.ENABLE_VISION_FALLBACK = 'true';
+    try {
+      outbound.length = 0;
+      upstream = async (url) => {
+        if (url === 'https://decoder.test/decode') return new Response(JSON.stringify({ found: false, code: null }), { status: 200 });
+        if (url.indexOf('api.anthropic.com') >= 0) return new Response(JSON.stringify({ content: [{ type: 'text', text: '4006381333931' }] }), { status: 200 });
+        throw new Error('unerwartet ' + url);
+      };
+      let r = await call('POST', '/decode-barcode', jpeg);
+      const toAnthropic = outbound.filter((u) => u.indexOf('api.anthropic.com') >= 0).length;
+      check('Decoder-Miss (Flag alt auf "true") → found:false, source opencv-miss, kein Anthropic-Aufruf', r.status === 200 && r.json.data.found === false && r.json.data.source === 'opencv-miss' && toAnthropic === 0, show(r) + ', Anthropic-Aufrufe ' + toAnthropic);
+
+      upstream = async (url) => {
+        if (url === 'https://decoder.test/decode') return new Response(JSON.stringify({ found: true, code: '4006381333931', source: 'pyzbar' }), { status: 200 });
+        throw new Error('unerwartet ' + url);
+      };
+      r = await call('POST', '/decode-barcode', jpeg);
+      check('Decoder-Treffer mit source pyzbar → source pyzbar durchgereicht', r.status === 200 && r.json.data.code === '4006381333931' && r.json.data.source === 'pyzbar', show(r));
+
+      upstream = async (url) => {
+        if (url === 'https://decoder.test/decode') return new Response(JSON.stringify({ found: true, code: '4006381333931' }), { status: 200 });
+        throw new Error('unerwartet ' + url);
+      };
+      r = await call('POST', '/decode-barcode', jpeg);
+      check('Decoder-Treffer ohne source → opencv (wie bisher)', r.status === 200 && r.json.data.source === 'opencv', show(r));
+
+      const oldUrl = env.DECODER_URL;
+      delete env.DECODER_URL;
+      try {
+        outbound.length = 0;
+        r = await call('POST', '/decode-barcode', jpeg);
+        check('ohne DECODER_URL → 500 worker_not_configured, kein Abruf', r.status === 500 && r.json.error.code === 'worker_not_configured' && outbound.length === 0, show(r) + ', Abrufe ' + outbound.length);
+      } finally {
+        env.DECODER_URL = oldUrl;
+      }
+
+      r = await call('GET', '/health');
+      check('/health meldet kein visionFallbackEnabled mehr', r.status === 200 && !('visionFallbackEnabled' in r.json.data), show(r));
+    } finally {
+      if (oldFlag === undefined) delete env.ENABLE_VISION_FALLBACK;
+      else env.ENABLE_VISION_FALLBACK = oldFlag;
+    }
   }
 
   // ── Bekannte Grenze (Folge-Issue): unauthentifizierte Abrufe kosten KV ──

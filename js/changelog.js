@@ -1,6 +1,11 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.275',items:[
+    {icon:'\ud83d\udc76',text:'Baby-Einträge per Alexa brauchen das Wort „Baby“ nicht mehr davor: „Wickeln Stuhl und Pipi“, „Stillen rechts“, „Flasche 120 Milliliter“, „Schläft“, „Fieber 38,5 Grad“ werden direkt der richtigen Art zugeordnet. Mit „Baby“ davor geht weiter alles wie bisher.',where:'Mehr \u2192 \ud83d\udd17 Verbindungen \u2192 \ud83d\udde3\ufe0f Alexa'},
+    {icon:'\ud83d\udd27',text:'„Wickeln“ landete bisher als Notiz im Tagebuch statt als Windel — der Skill kannte nur „Windel“ und „gewickelt“. Neu ist auch „Beides“: Wer Stuhl und Pipi zusammen sagt, bekommt einen Eintrag mit beidem statt nur Stuhl.',where:'\ud83d\udc76 Baby-Tagebuch'},
+    {icon:'\u26a0\ufe0f',text:'Dafür müssen Sprachmodell und Skill-Code einmal neu in die Alexa-Konsole eingespielt werden (Build → JSON Editor → Build Model, danach Code → Deploy). Ohne das bleibt es beim alten Verhalten.',where:'Mehr \u2192 \ud83d\udd17 Verbindungen \u2192 \ud83d\udde3\ufe0f Alexa'}
+  ]},
   {v:'0.274',items:[
     {icon:'\ud83d\uded2',text:'<b>Einkaufszettel rechnet Mengen richtig zusammen</b>: Zwei Rezepte mit je 200 g Zwiebeln ergeben 400 g statt 200 g. „1,5 kg“ und „15 kg“ werden nicht mehr verwechselt. Ein schon abgehakter Artikel bekommt beim Rezept-Import nur die neue Menge, die gekaufte wird nicht mehr dazugezählt.',where:'Mehr → 🛒 Einkaufszettel'}
   ]},

@@ -356,6 +356,20 @@ const EXPECTED_NAMESPACES = [
   }
   console.log(`  ok  ${clicked} sichtbare data-act-Elemente angeklickt, ohne neuen Fehler.`);
 
+  // 4b. Jeden Reiter der unteren Leiste einmal oeffnen (#253): renderStatsPanel
+  // warf seit v0.250 bei jedem Oeffnen des Trends-Tabs einen ReferenceError –
+  // eine Funktion war ins Modul gewandert, die alte Aufrufstelle blieb. Keiner
+  // der Klickschritte oben oeffnete den Tab. Fehler landen ueber den
+  // pageerror-Listener in `errors`.
+  const tabErrBefore = errors.length;
+  for (const tab of ['trends', 'history', 'more', 'main']) {
+    await page.evaluate((t) => { try { switchTab(t); } catch (e) { throw e; } }, tab).catch((e) => record('switchTab ' + tab, e.message));
+    await page.waitForTimeout(250);
+  }
+  const reportOk = await page.evaluate(() => { const el = document.getElementById('weekReportText'); return !!(el && el.innerHTML.trim()); });
+  if (!reportOk) record('trends', 'Wochenbericht nach switchTab(\'trends\') leer');
+  if (errors.length === tabErrBefore) console.log('  ok  Alle Reiter geoeffnet (Trends mit Wochenbericht), ohne neuen Fehler.');
+
   // 5. Liegt ein geoeffnetes Menue wirklich OBEN?
   // Alle `.ov` teilen `z-index:300` — oben liegt das, was in der DOM-Reihenfolge
   // zuletzt steht. `featSheetOv`/`featCatOv` stehen fast am Ende, also verdeckten

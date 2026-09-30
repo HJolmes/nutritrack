@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.280',items:[
+    {icon:'🔧',text:'<b>Kleinere Korrekturen</b>: Pausierte wiederkehrende Mahlzeiten werden für die Pausentage nicht mehr nachträglich eingetragen. Der Glückwunsch zum Zielgewicht kommt auch bei Zunahmezielen erst, wenn das Ziel erreicht ist, und nach einem neuen Ziel wieder. Im Wochenplan lassen sich Tage leeren, auf denen nur Notizen stehen, und Rezepte mit 0 kcal lassen sich ins Tagebuch übernehmen. Die Wochentage in der Statistik stimmen jetzt auch außerhalb Europas, und die Hilfe nennt den richtigen Alexa-Pfad.'}
+  ]},
   {v:'0.279',items:[
     {icon:'⏰',text:'<b>Fastenende und Erinnerungen</b>: Die Meldung zum Fastenende geht nach einem Neuladen der App oder im Geräteschlaf nicht mehr verloren, solange NutriTrack geöffnet ist. Erinnerungen tragen einen neutralen Titel („⏰ NutriTrack – Name“). Kann der Browser keine Meldungen zeigen oder sind sie blockiert, sagt das ein Hinweis beim Speichern bzw. beim Fastenstart. Eine in einem anderen Fenster gelöschte Erinnerung meldet sich nicht mehr.',where:'Mehr → Erinnerungen'}
   ]},

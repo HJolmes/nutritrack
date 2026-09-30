@@ -1,7 +1,7 @@
 // NutriTrack – Wiederkehrende Mahlzeiten (v0.250)
 // Klassisches Script, kein Modul. Exportiert window.NTRecur und greift direkt auf
 // die globalen Helfer aus index.html zu (S, saveS, renderAll, openOv, closeOv,
-// esc, showToast, today, getDay, MEAL_NAMES, fmtDate).
+// esc, showToast, today, addDays, getDay, MEAL_NAMES, fmtDate).
 //
 // Zweck: Was jede Woche gleich ist – der Haferbrei am Werktagmorgen – soll nicht
 // jeden Tag neu eingetippt werden. Eine Regel traegt Wochentage, ein Startdatum
@@ -20,8 +20,15 @@
 'use strict';
 
 // ── Wiederkehrende Mahlzeiten (#122) ──
-// Regel-Schema: {id,name,meal,weekdays:[0..6],entries:[...],startDate,active}
+// Regel-Schema: {id,name,meal,weekdays:[0..6],entries:[...],startDate,active,
+//               pausedAt?, pauses?:[{from,to}]}
 // weekdays nutzt JS getDay(): 0=So … 6=Sa. Default Mo–Fr = [1,2,3,4,5].
+// pausedAt/pauses (#247): Ein vergangener, nie geoeffneter Tag wird beim
+// Oeffnen nachgetragen (s. o.) – aber nicht, wenn die Regel an diesem Tag
+// pausiert war. pausedAt ist der Tag des Pausierens, pauses die abgeschlossenen
+// Pausen (beide Grenzen einschliesslich). Fehlen die Felder (Altdaten, oder ein
+// Geraet mit aelterer App-Version hat die Regel umgeschaltet), gilt: keine
+// Pause – das Verhalten von vorher.
 var WEEKDAY_SHORT=['So','Mo','Di','Mi','Do','Fr','Sa'];
 
 var WEEKDAY_ORDER=[1,2,3,4,5,6,0]; // Anzeige: Mo zuerst
@@ -55,6 +62,7 @@ function applyRecurringMeals(dateKey){
   rules.forEach(function(r){
     if(!r.active)return;
     if(dateKey<r.startDate)return;
+    if(_recurPausedOn(r,dateKey))return;
     if((r.weekdays||[]).indexOf(wd)<0)return;
     if(day._recurMarks.indexOf(r.id)>=0)return;
     var copies=JSON.parse(JSON.stringify(r.entries||[]));
@@ -65,6 +73,26 @@ function applyRecurringMeals(dateKey){
     changed=true;
   });
   return changed;
+}
+
+function _recurPausedOn(r,dateKey){
+  return (r.pauses||[]).some(function(p){return p&&dateKey>=p.from&&dateKey<=p.to;});
+}
+
+// Beginn einer Pause, deren Anfang nicht (verlaesslich) bekannt ist: der Tag
+// nach dem letzten Tag, an dem die Regel eingetragen wurde. Trifft Regeln, die
+// vor #247 pausiert wurden (kein pausedAt), und ein pausedAt, das stehen blieb,
+// weil ein Geraet mit aelterer App-Version die Regel zwischendurch aktiviert und
+// wieder angewendet hat. Liegt die letzte Markierung in einem komprimierten Tag
+// (compressOldDays wirft _recurMarks weg), bleibt startDate – das sperrt auch
+// jene Tage, und die werden ohnehin nie befuellt (Archiv-Tage, s. o.).
+function _recurLastMarkNext(r){
+  var last='';
+  Object.keys(S.days||{}).forEach(function(k){
+    var d=S.days[k];
+    if(d&&d._recurMarks&&d._recurMarks.indexOf(r.id)>=0&&k>last)last=k;
+  });
+  return last?addDays(last,1):(r.startDate||'');
 }
 
 // Für den aktuell angezeigten Tag anwenden und bei Änderung speichern + neu rendern.
@@ -139,6 +167,23 @@ function renderRecurManage(){
 function toggleRecurringRule(id){
   var r=(S.recurringMeals||[]).find(function(x){return x.id===id;});
   if(!r)return;
+  if(r.active){
+    // Pausieren: immer ueberschreiben – ein stehengebliebenes pausedAt einer
+    // frueheren Pause (s. _recurLastMarkNext) gilt hier nicht mehr.
+    r.pausedAt=today();
+  }else{
+    // Aktivieren: Die Pause wird zum Intervall bis gestern. Heute wird wie
+    // bisher sofort befuellt. Ein pausedAt an einer AKTIVEN Regel wird nie
+    // ausgewertet – nur dieser Zweig (vorher inaktiv) liest es.
+    var from=_recurLastMarkNext(r);
+    if(r.pausedAt&&r.pausedAt>from)from=r.pausedAt;
+    var to=addDays(today(),-1);
+    if(from&&from<=to)(r.pauses=r.pauses||[]).push({from:from,to:to});
+    delete r.pausedAt;
+  }
+  // Reihenfolge: erst das Intervall, dann aktivieren und anwenden – sonst
+  // fuellte ensureRecurringForCurrentDay() einen gerade angezeigten
+  // vergangenen Pausentag noch.
   r.active=!r.active;
   saveS();
   if(r.active)ensureRecurringForCurrentDay();

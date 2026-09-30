@@ -148,7 +148,10 @@ function renderWeekBars(){
   if(labelsEl){
     labelsEl.innerHTML=n===7?days.map(function(d,i){
       var isT=d===isToday;
-      var label=['Mo','Di','Mi','Do','Fr','Sa','So'][new Date(d).getDay()===0?6:new Date(d).getDay()-1];
+      // Ortszeit: new Date('YYYY-MM-DD') waere UTC-Mitternacht und westlich
+      // von UTC der Vortag (#247) – dieselbe Form wie renderHistory.
+      var wd=new Date(d+'T00:00:00').getDay();
+      var label=['Mo','Di','Mi','Do','Fr','Sa','So'][(wd+6)%7];
       return'<div style="flex:1;text-align:center;font-size:10px;color:'+(isT?'var(--g1)':'var(--mu)')+';font-weight:'+(isT?'800':'400')+';">'+label+'</div>';
     }).join('') : '';
   }
@@ -208,13 +211,55 @@ function requestWeekReport(){
 }
 
 // ── Zielüberprüfung ──
+// Ob ein Ziel erreicht ist, haengt an seiner Richtung: 60 → 70 kg ist bei 60 kg
+// nicht erreicht, 80 → 70 kg bei 70,4 kg schon (#247). Die Richtung ergibt sich
+// aus dem Gewicht beim Setzen des Ziels – S.weight taugt dafuer nicht, es wird
+// bei jedem Wiegen ueberschrieben. Darum S.goalStart={w,key}: w ist das Gewicht
+// beim Setzen, key das Ziel, zu dem es gehoert (goalWeight|goalDate). Passt key
+// nicht zum aktuellen Ziel oder fehlt goalStart (Altdaten; ein Geraet mit
+// aelterer App-Version hat das Ziel geaendert, ohne goalStart anzufassen), wird
+// es einmalig aus dem aktuellen Gewicht nachgetragen. Fuer ein noch offenes Ziel
+// ist das die richtige Richtung. Einzige Fehlerart: Wer vor dem Update schon
+// unter sein Abnahmeziel gerutscht war, bekommt keinen Glueckwunsch – harmloser
+// als ein falscher.
+function _goalKey(){return S.goalWeight+'|'+S.goalDate;}
+// Neuestes Gewicht als Kommawert: weightLog statt S.weight, denn saveSettings
+// speichert S.weight per parseInt (69,6 → 69). Weicht S.weight schon in der
+// ganzen Zahl ab, ist es in den Einstellungen neu eingetragen worden und gilt.
+function _latestWeight(){
+  var wl=S.weightLog||{},ks=Object.keys(wl).sort(),lw=ks.length?+wl[ks[ks.length-1]]:0;
+  if(lw&&(!S.weight||Math.floor(lw)===Math.floor(S.weight)))return lw;
+  return S.weight||lw||0;
+}
+function _goalReached(cur,goal,start){
+  if(goal>start+0.5)return cur>=goal-0.5;   // Zunahme
+  if(goal<start-0.5)return cur<=goal+0.5;   // Abnahme (wie vor #247)
+  return Math.abs(cur-goal)<=0.5;           // Halten
+}
+// Aus saveSettings, wenn sich Zielgewicht oder Zieldatum geaendert haben: neuer
+// Start, und der Glueckwunsch ist fuer das neue Ziel wieder offen (einmal je Ziel).
+function setGoalStart(){
+  S.goalStart={w:_latestWeight(),key:_goalKey()};
+  S.goalAchievedShown='';
+}
 function checkGoalAchieved(){
   if(!S.goalWeight||!S.goalDate)return;
   var today2=today();
+  var gs=S.goalStart,key=_goalKey();
+  if(!gs||gs.key!==key||!gs.w){
+    var w0=_latestWeight();
+    if(!w0)return; // ohne Gewicht keine Richtung – und auch vorher keine Meldung
+    // Ein Start zu einem ANDEREN Ziel heisst: das Ziel wurde anderswo geaendert.
+    // Dann ist es ein neues Ziel, und sein Glueckwunsch ist noch offen.
+    if(gs&&gs.key&&gs.key!==key)S.goalAchievedShown='';
+    S.goalStart=gs={w:w0,key:key};saveS();
+  }
   // Zieldatum erreicht?
   if(S.goalDate<=today2&&!S.goalAchievedShown){
-    var currentW=S.weightLog&&S.weightLog[today2]||S.weight;
-    if(currentW&&currentW<=S.goalWeight+0.5){
+    // Kommawert wie beim Start: S.weight kann per parseInt gekuerzt sein
+    // (69,6 → 69) und verfehlte dann ein Zunahmeziel knapp.
+    var currentW=S.weightLog&&S.weightLog[today2]||_latestWeight();
+    if(currentW&&_goalReached(currentW,S.goalWeight,gs.w)){
       S.goalAchievedShown=today2;saveS();
       setTimeout(function(){showToast('🎉 Zielgewicht erreicht! Neues Ziel setzen?');},1000);
     }
@@ -229,6 +274,7 @@ window.NTStats={
   setRange:setStatsRange,
   weekReport:requestWeekReport,
   checkGoal:checkGoalAchieved,
+  setGoalStart:setGoalStart,
   renderPanel:renderStatsPanel
 };
 })();

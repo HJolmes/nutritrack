@@ -148,14 +148,17 @@
     }
     return {name:t};
   }
-  // „zwei Eier und ein Brötchen, dazu Kaffee" → drei Teile. Ein Komma vor
-  // einer Ziffer ist ein Dezimalkomma („0,5 l Bier") und trennt nicht (#210).
-  // Bewusst ohne Lookbehind: den kennt Safari erst ab 16.4, und ein
-  // Parsefehler legte die ganze Datei lahm.
+  // „zwei Eier und ein Brötchen, dazu Kaffee" → drei Teile. Ein Komma
+  // ZWISCHEN zwei Ziffern ist ein Dezimalkomma („0,5 l Bier") und trennt
+  // nicht (#210); „Brot,2 Eier" trennt weiter. Bewusst ohne Lookbehind: den
+  // kennt Safari erst ab 16.4, und ein Parsefehler legte die ganze Datei lahm.
+  // Deshalb wird das Dezimalkomma vorher durch \u0000 ersetzt und danach
+  // zurückgesetzt.
   function splitItems(text){
     return String(text||'')
-      .split(/\s*(?:,(?!\d)|;|\bund\b|\bsowie\b|\bdazu\b|\bplus\b)\s*/i)
-      .map(function(s){return s.trim();})
+      .replace(/(\d),(?=\d)/g,'$1\u0000')
+      .split(/\s*(?:,|;|\bund\b|\bsowie\b|\bdazu\b|\bplus\b)\s*/i)
+      .map(function(s){return s.replace(/\u0000/g,',').trim();})
       .filter(function(s){return s.length>0;});
   }
 

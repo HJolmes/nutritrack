@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.289',items:[
+    {icon:'🔧',text:'<b>Nachbesserungen</b>: Lange Hinweise (fehlende Meldungs-Berechtigung, Prüfziffer, Produkt ohne Nährwerte) brechen jetzt um und sind auf dem Handy ganz lesbar. Die Stillzeit-Ampel bewertet auch Rezepte aus der Chat-Karte und aus „Zuletzt“ sowie Zutaten, die man an einen Eintrag anhängt. Im Wochenbericht geht die Durchschnittszeile auch an Tagen mit viel Sport auf. „Brot,2 Eier“ wird wieder als zwei Posten erkannt.'}
+  ]},
   {v:'0.288',items:[
     {icon:'🏃',text:'<b>Rund 120 Sportarten ohne KI</b>: Aktivitäten werden auch in Formen wie „Joggen“, „Rad fahren“ oder „geschwommen“ erkannt, und das Namensfeld schlägt sie beim Tippen vor. Die Werte stammen aus dem Compendium of Physical Activities. Die kcal rechnen sich beim Ändern von Aktivität, Dauer oder Intensität neu. Alexa-Einträge rechnen genauso wie die App. Die Werte der bisherigen Schnellauswahl ändern sich dadurch teils, etwa bei Laufen, Radfahren und Wandern.'}
   ]},

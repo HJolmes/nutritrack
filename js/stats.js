@@ -234,7 +234,9 @@ function weekStats(){
     var net=Math.max(0,t.kcal-t.burned);
     var a=_kcalAmpel(goal,net,S);
     var pct=Math.round(Math.abs(goal-net)/goal*100);// wie in _kcalAmpel
-    rows.push({date:d,kcal:t.kcal,burned:t.burned,net:net,protein:t.protein,carbs:t.carbs,fat:t.fat,
+    // counted = angerechneter Sport: netto wird wie in der Hero-Ampel bei 0
+    // gekappt, sonst ginge „Ø gegessen − Ø Sport = Ø netto“ nicht auf.
+    rows.push({date:d,kcal:t.kcal,burned:t.burned,counted:Math.min(t.burned,t.kcal),net:net,protein:t.protein,carbs:t.carbs,fat:t.fat,
       pct:pct,above:net>goal,state:a.state});
   });
   var n=rows.length;
@@ -251,7 +253,7 @@ function weekStats(){
     if(!r.best||x.pct<r.best.pct)r.best=x;
     // Schwaechster Tag: groesste Abweichung unter den Tagen abseits des Ziels.
     if(x.state==='over'&&(!r.worst||x.pct>r.worst.pct))r.worst=x;
-    sum.kcal+=x.kcal;sum.net+=x.net;sum.burned+=x.burned;sum.p+=x.protein;sum.c+=x.carbs;sum.f+=x.fat;
+    sum.kcal+=x.kcal;sum.net+=x.net;sum.burned+=x.counted;sum.p+=x.protein;sum.c+=x.carbs;sum.f+=x.fat;
   });
   if(n){
     r.avgKcal=Math.round(sum.kcal/n);r.avgNet=Math.round(sum.net/n);r.avgBurned=Math.round(sum.burned/n);

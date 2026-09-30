@@ -99,7 +99,7 @@ function load(idx){
     var d=new Date(save.savedAt);
     var label=d.toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit'})+' · '+d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
     if(!confirm('Stand vom '+label+' laden?\nAktuelle Daten werden überschrieben.'))return;
-    if(save.state){delete save.state.apiKey;Object.assign(S,save.state);S.apiKey='';S.setupDone=true;}
+    if(save.state){delete save.state.apiKey;if(!('goalStart' in save.state))S.goalStart=null;Object.assign(S,save.state);S.apiKey='';S.setupDone=true;}
     if(save.customFoods)customFoods=save.customFoods;
     if(save.recipes)recipes=save.recipes;
     _importAiFields(save);_migratePhotosAfterImport();

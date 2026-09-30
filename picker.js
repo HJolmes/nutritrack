@@ -246,6 +246,15 @@ function _pickerIngsAsOne(name,emoji,ings,factor){
   return {name:name,emoji:emoji,amount:Math.max(1,Math.round(g*factor)),per100:scaleNutrients(ingTotal(ings),100/g)};
 }
 var _PICKER_NO_GRAMS='Rezept ohne Grammangaben – als Zutat nicht möglich';
+// Ampeln fuer einen gerade gebuchten Eintrag (#205): Rezepte ueber ihre Zutaten,
+// ein Einzel-Lebensmittel ueber eine Kopie seines Namens – nie das Eintrags-
+// objekt selbst, sonst schriebe die Ampel ihr Ergebnis und ihre Karte ins selbe
+// Feld. `ings` (optional) bewertet nur diese Zutaten (Zutat-Modus).
+function _pickerRateEntry(meal,idx,ings){
+  var e=(getDay().meals[meal]||[])[idx];if(!e)return;
+  var list=ings||((e.ingredients&&e.ingredients.length)?e.ingredients:[{name:e.name}]);
+  checkPregWarn(list,meal,idx);checkNursWarn(list,meal,idx);checkDietWarn(list,meal,idx);
+}
 // Hängt Zutaten an den offenen Eintrag und rechnet seine Summen neu (sonst
 // stünden nach „Schließen ohne Speichern" die alten kcal im Tag). Gibt immer
 // true zurück: Der Zutat-Modus hat den Klick verbraucht — auch wenn der
@@ -262,6 +271,8 @@ function _pickerAppendToEditEntry(items,beforeClose){
   items.forEach(function(it){e.ingredients.push(it);});
   Object.assign(e,scaleNutrients(ingTotal(e.ingredients),e.portions||1));
   saveS();renderAll();
+  // Nur die neuen Zutaten bewerten; die Ampel ergaenzt die Karte am Eintrag (#205).
+  _pickerRateEntry(meal,idx,items);
   if(beforeClose)beforeClose();
   closePicker();
   openEditEntry(meal,idx);
@@ -1642,6 +1653,7 @@ function pickerChatAddLocal(i){
     var portions=_pickerQtyPortions(p.qty)||rec.portions||1;
     getDay().meals[pickerMeal].push(Object.assign({name:rec.name,emoji:rec.emoji||'📋',isRecipe:true,recipeId:rec.id,portions:portions,ingredients:JSON.parse(JSON.stringify(rec.ingredients||[]))},scaleNutrients(t,portions)));
     saveS();renderAll();closePicker();
+    _pickerRateEntry(pickerMeal,getDay().meals[pickerMeal].length-1);
     showToast('📋 '+rec.name+' eingetragen');
     return;
   }
@@ -2401,5 +2413,6 @@ function pickerAddRecent(i){
     getDay().meals[pickerMeal].push({name:item.name,emoji:item.emoji,amount:recalled,per100:item.per100,kcal:(item.per100.kcal||0)*r,protein:(item.per100.protein||0)*r,carbs:(item.per100.carbs||0)*r,fat:(item.per100.fat||0)*r,sugar:(item.per100.sugar||0)*r,fiber:(item.per100.fiber||0)*r,salt:(item.per100.salt||0)*r});
   }
   saveS();renderAll();closePicker();
+  _pickerRateEntry(pickerMeal,getDay().meals[pickerMeal].length-1);
   showToast((item.emoji||'🍽')+' '+item.name+' hinzugefügt');
 }

@@ -158,8 +158,11 @@ function ageText(){
   var b=(S.baby&&S.baby.birth)||'';
   if(!b)return '';
   var p=b.split('-');if(p.length!==3)return '';
-  var birth=new Date(+p[0],+p[1]-1,+p[2]);
-  var days=Math.floor((new Date()-birth)/86400000);
+  // Kalendertage statt Millisekunden/24 h: Nach der Umstellung auf Sommerzeit
+  // fehlt dem Tag eine Stunde, und zwischen 0 und 1 Uhr war das Alter sonst
+  // einen Tag zu klein (wie js/baby-growth.js).
+  var n=new Date();
+  var days=Math.round((Date.UTC(n.getFullYear(),n.getMonth(),n.getDate())-Date.UTC(+p[0],+p[1]-1,+p[2]))/86400000);
   if(days<0)return '';
   if(days<14)return days+' Tage alt';
   if(days<70)return Math.floor(days/7)+' Wochen alt';
@@ -181,7 +184,9 @@ function summary(key){
     else if(e.t==='med')s.med++;
     else if(e.t==='bottle'){s.bottle++;s.ml+=parseInt(e.ml,10)||0;}
     else if(e.t==='diaper'){s.diaper++;if(e.kind==='poo'||e.kind==='both')s.poo++;if(e.kind==='pee'||e.kind==='both')s.pee++;}
-    else if(e.t==='temp'){if(!s.temp||e.ts>s.temp.ts)s.temp=e;}
+    // Nur Einträge mit Messwert: ein wertloser (alter Schnell-Knopf, Alexa ohne
+    // Zahl) verdrängt sonst den echten Wert von früher am Tag.
+    else if(e.t==='temp'){if(tempC(e)!==null&&(!s.temp||e.ts>s.temp.ts))s.temp=e;}
     // Schlaf wird unten über sleepSegments() gezählt – tagesgenau, auch wenn er
     // über Mitternacht läuft und deshalb an einem anderen Tag gespeichert ist.
   });
@@ -324,8 +329,17 @@ function startFeed(side){
   add({t:'breast',side:side,run:1,ts:Date.now()},key);
   showToast('⏱ Stillen '+SIDES[side]+' läuft');
 }
-function stopFeed(silent){
-  var e=runningFeed();
+// Mit `id` (Knopf in der Zeitleiste) genau dieser Eintrag – auch an einem
+// älteren Tag oder wenn zwei Geräte je eine Stoppuhr gestartet haben. Läuft er
+// nicht mehr (z.B. per Sync schon gestoppt), passiert nichts außer Neuzeichnen:
+// kein Rückfall auf runningFeed(), sonst träfe es einen anderen Lauf.
+function stopFeed(silent,id){
+  var e;
+  if(id){
+    var hit=findAnywhere(id);
+    e=(hit&&hit.e.t==='breast'&&hit.e.run)?hit.e:null;
+    if(!e){refresh();return null;}
+  }else e=runningFeed();
   if(!e)return null;
   e.min=Math.max(1,Math.round((Date.now()-(e.ts||Date.now()))/60000));
   delete e.run;
@@ -386,7 +400,7 @@ function summaryText(key){
   if(s.diaper)parts.push(s.diaper+(s.diaper===1?' Windel':' Windeln')+(s.poo?' · '+s.poo+'× 💩':''));
   if(s.sleepMin)parts.push('Schlaf '+fmtDur(s.sleepMin)+(s.sleepOpen?' (schläft noch)':''));
   else if(s.sleepOpen)parts.push('schläft seit '+(s.sleepOpen.cont?'gestern ':'')+s.sleepOpen.e.from);
-  if(s.temp)parts.push('🌡️ '+fmtTemp(s.temp.c)+' °C');
+  if(s.temp)parts.push('🌡️ '+fmtTemp(tempC(s.temp))+' °C');
   return parts.join(' · ');
 }
 // Zahl mit bis zu `dec` Nachkommastellen, deutsches Komma, ohne Null-Schwanz.
@@ -397,6 +411,15 @@ function fmtNum(v,dec){
 }
 function fmtTemp(c){return (Math.round((parseFloat(c)||0)*10)/10).toFixed(1).replace('.',',');}
 function isFever(c){return (parseFloat(c)||0)>=FEVER;}
+// Messwert eines Temperatur-Eintrags oder null („ohne Wert"). Nur lesend: Der
+// Alexa-Einwurf legt die Zahl seit v0.238 in `temp` statt `c` ab, auch als
+// Text mit Komma ('38,5'); gespeichert und synchronisiert bleibt beides so.
+function tempC(e){
+  if(!e)return null;
+  var v=(e.c!=null&&e.c!=='')?e.c:e.temp;
+  var n=parseFloat(String(v==null?'':v).replace(',','.'));
+  return n>0?n:null;
+}
 
 // ── Eintrags-Zeile als Text ──
 function entryTitle(e){
@@ -420,7 +443,10 @@ function entryTitle(e){
     if(e.cons)extra.push(e.cons);
     return d+(extra.length?' · '+extra.join(', '):'');
   }
-  if(e.t==='temp')return fmtTemp(e.c)+' °C'+(TEMP_SITE[e.site]?' · '+TEMP_SITE[e.site]:'');
+  if(e.t==='temp'){
+    var tc=tempC(e);
+    return (tc!==null?fmtTemp(tc)+' °C':'Temperatur (ohne Wert)')+(TEMP_SITE[e.site]?' · '+TEMP_SITE[e.site]:'');
+  }
   if(e.t==='sleep'){
     if(e.from&&e.to)return 'Schlaf '+e.from+'–'+e.to+(e.to<e.from?' (+1 Tag)':'');
     if(e.from)return 'Schläft seit '+e.from;
@@ -470,6 +496,10 @@ function quick(qid){
     showToast('😴 Schläft seit jetzt ✓');
     return;
   }
+  // Temperatur braucht einen Messwert: Der Knopf öffnet den Eintrags-Dialog
+  // (Pflichtprüfung und Fieber-Hinweis dort), statt einen Eintrag ohne Zahl
+  // anzulegen.
+  if(q.t==='temp'){openEntry('temp');return;}
   // Stoppuhr-Knopf: erster Tipp startet, der nächste stoppt.
   if(q.t==='breast'&&q.p&&q.p.timer){
     if(runningFeed())stopFeed();else startFeed(q.p.side);
@@ -922,14 +952,14 @@ function renderDiary(){
     list.innerHTML=rows.map(function(r){
       var e=r.e,seg=r.seg;
       var ic=(TYPES[e.t]&&TYPES[e.t].ic)||'•';
-      var fever=(e.t==='temp'&&isFever(e.c))||(e.t==='solid'&&e.react&&e.react!=='none');
+      var fever=(e.t==='temp'&&isFever(tempC(e)))||(e.t==='solid'&&e.react&&e.react!=='none');
       var running=!!(seg&&seg.live);
       var feeding=(e.t==='breast'&&e.run);
       // Laufender Schlaf/laufendes Stillen: ein Tipp beendet es, statt den Dialog zu öffnen.
       var right=running
         ?'<button type="button" data-act="NTBaby.endSleep" data-args="'+esc(JSON.stringify([e.id]))+'" style="background:var(--g2);border:none;border-radius:999px;color:#fff;font-size:11px;font-weight:700;padding:5px 10px;cursor:pointer;flex-shrink:0;">Wach jetzt</button>'
         :feeding
-        ?'<button type="button" data-act="NTBaby.stopFeed" style="background:var(--g2);border:none;border-radius:999px;color:#fff;font-size:11px;font-weight:700;padding:5px 10px;cursor:pointer;flex-shrink:0;">■ Stopp</button>'
+        ?'<button type="button" data-act="NTBaby.stopFeed" data-args="'+esc(JSON.stringify([false,e.id]))+'" style="background:var(--g2);border:none;border-radius:999px;color:#fff;font-size:11px;font-weight:700;padding:5px 10px;cursor:pointer;flex-shrink:0;">■ Stopp</button>'
         :'<div class="fe-ic">✏️</div>';
       var bits=[(e.t==='appt'&&!e.time)?'ganztägig':hhmm(r.ts)];
       if(feeding)bits.push('läuft seit '+fmtDur(Math.max(0,Math.floor((Date.now()-e.ts)/60000))));
@@ -948,7 +978,7 @@ function renderDiary(){
         +'</div>';
     }).join('');
   }
-  var fev=logRO(key).filter(function(e){return e.t==='temp'&&isFever(e.c);});
+  var fev=logRO(key).filter(function(e){return e.t==='temp'&&isFever(tempC(e));});
   var fw=document.getElementById('babyFeverWarn');
   if(fw)fw.style.display=fev.length?'block':'none';
 }
@@ -994,7 +1024,7 @@ function openEntry(type,id){
   document.getElementById('babyDiaperKind').value=(e&&e.t==='diaper'&&e.kind)||'pee';
   document.getElementById('babyStoolColor').value=(e&&e.color)||'';
   document.getElementById('babyStoolCons').value=(e&&e.cons)||'';
-  document.getElementById('babyTempC').value=(e&&e.c)||'';
+  document.getElementById('babyTempC').value=(e&&tempC(e))||'';
   document.getElementById('babyTempSite').value=(e&&e.site)||'rektal';
   document.getElementById('babySleepFrom').value=(e&&e.from)||'';
   document.getElementById('babySleepTo').value=(e&&e.to)||'';
@@ -1253,7 +1283,7 @@ window.NTBaby={
   // v0.263: Stoppuhr, Medizin-Auswahl, gemeinsame Helfer für Verlauf/Wachstum/Gaben
   startFeed:startFeed,stopFeed:stopFeed,switchFeed:switchFeed,medPicked:medPicked,
   summary:summary,entryTitle:entryTitle,logRO:logRO,addDayKey:addDayKey,today:_today,
-  fmtDur:fmtDur,fmtNum:fmtNum,isFever:isFever,fmtTemp:fmtTemp,ageText:ageText,
+  fmtDur:fmtDur,fmtNum:fmtNum,isFever:isFever,fmtTemp:fmtTemp,tempC:tempC,ageText:ageText,
   REACTION:REACTION,APPT:APPT,SIDES:SIDES,
   _nextRev:nextRev,_bumpRev:function(r){if(r>_lastRev)_lastRev=r;},_schedule:function(){Sync.schedule();}
 };

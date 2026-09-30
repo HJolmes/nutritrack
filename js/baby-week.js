@@ -142,7 +142,11 @@ function reportText(){
   ks.slice().reverse().forEach(function(k){
     NTBaby.logRO(k).slice().sort(function(a,b){return (a.ts||0)-(b.ts||0);}).forEach(function(e){
       var at=dLabel(k)+' '+hhmm(e.ts);
-      if(e.t==='temp')temps.push(at+': '+NTBaby.fmtTemp(e.c)+' °C'+(e.site?' ('+e.site+')':'')+(NTBaby.isFever(e.c)?' – Fieber':''));
+      if(e.t==='temp'){
+        // Einträge ohne Messwert gehören nicht in den Bericht (statt „0,0 °C").
+        var tc=NTBaby.tempC(e);
+        if(tc!==null)temps.push(at+': '+NTBaby.fmtTemp(tc)+' °C'+(e.site?' ('+e.site+')':'')+(NTBaby.isFever(tc)?' – Fieber':''));
+      }
       else if(e.t==='med')meds.push(at+': '+NTBaby.entryTitle(e));
       else if(e.t==='diaper'&&e.color&&/weiß|schwarz|blutig/.test(e.color))stool.push(at+': Stuhl '+e.color+(e.cons?', '+e.cons:''));
       else if(e.t==='solid'&&e.react&&e.react!=='none')reacts.push(at+': '+e.food+' → '+(NTBaby.REACTION[e.react]||''));

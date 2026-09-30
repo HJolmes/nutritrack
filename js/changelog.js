@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.282',items:[
+    {icon:'👶',text:'<b>Baby-Tagebuch</b>: Der Temperatur-Schnellknopf öffnet den Eintrags-Dialog, statt 0,0 °C einzutragen. Per Alexa eingetragene Temperaturen erscheinen mit ihrem Wert und der Fieberwarnung. Einträge ohne Messwert stehen als „Temperatur (ohne Wert)“ in der Zeitleiste und nicht mehr in Kachel und Arzt-Bericht. Außerdem stimmen jetzt das Alter nach der Zeitumstellung, die U-Stufe am Monatsende, der Stopp-Knopf alter Stoppuhren und bei den Medikamenten der Tag der nächsten und der letzten Gabe.',where:'👶 Baby-Tagebuch'}
+  ]},
   {v:'0.281',items:[
     {icon:'🔗',text:'<b>Link-Import und Zutaten</b>: Brüche wie „1/2 TL“, „3/4 l“ oder „1 1/2–2 EL“ werden richtig in Gramm umgerechnet. Mit „＋ Zutat hinzufügen“ wird ein Rezept eine Zutat in Gramm mit seinen echten Nährwerten statt einer Zutat mit 1 g und 0 kcal. Chat, „Zuletzt“ und „Eigenes“ hängen die Zutat an den offenen Eintrag an, statt einen zweiten Eintrag zu buchen. Eine veraltete Online-Suche überschreibt keine neueren Treffer mehr. Beim Import geteilter Rezepte, Mahlzeiten und Tage zeigen Vorschau und Import dieselben kcal; Zutaten ohne Grammangabe kommen mit 0 g und ⚠️ an.',where:'＋ → 🔗 Link · Eintrag → ＋ Zutat hinzufügen'}
   ]},

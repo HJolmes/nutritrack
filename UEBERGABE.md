@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.275 (2026-09-30) — Branch `claude/orphaned-branches-overview-yecy5b` (PR #219). **v0.275 holt den nie gemergten Zweig `claude/alexa-voice-recognition-1bvw4c` nach**: Baby-Eintraege per Alexa ohne das Wort „Baby“ — fuenf Intents (`BabyDiaperIntent`, `BabyBreastIntent`, `BabyBottleIntent`, `BabySleepIntent`, `BabyTempIntent`) tragen die Art, alle Wege enden in `babyEntry()`; „wickeln“ → Windel statt Notiz, Stuhl+Pipi → `both`. Hebammen-Fragen (v0.265) bleiben unveraendert, `LogBabyIntent` prueft sie weiter zuerst. **Sprachmodell UND Lambda neu in die Alexa-Konsole.** Davor: v0.271 (2026-09-29) — Branch `claude/awesome-mccarthy-ez28lf` (PR #248). **v0.270: Datenverlust-Fixes** (#227–#235), **v0.271: XSS-Härtung** (#236), **v0.272: Sync-Cursor** (#238–#241, **Worker deployen**), **v0.273: KI-Passwort erst nach Prüfung speichern** (#242), **v0.274: Einkaufszettel-Mengen** (#243). Offene Bugs aus derselben Code-Durchsicht: GitHub `label:bug` #237, #244–#247 (je ein `topic:`). Nur App.
+**Stand:** v0.276 (2026-09-30) — Branch `claude/move-copy-entries-tags-4hdf5l`. **v0.276: Eintrag auf anderen Tag verschieben/kopieren** (`moveEntry(mode)` + `_moveEntryPanelHtml()` im Bearbeiten-Dialog; Kopie ohne `_recurId/_alexaId/_alexaPending/_fromPlan`, Foto-ID geteilt). Davor v0.275 (PR #219): Baby-Einträge per Alexa ohne „Baby“; PR #248: **v0.270: Datenverlust-Fixes** (#227–#235), **v0.271: XSS-Härtung** (#236), **v0.272: Sync-Cursor** (#238–#241, **Worker deployen**), **v0.273: KI-Passwort erst nach Prüfung speichern** (#242), **v0.274: Einkaufszettel-Mengen** (#243). Offene Bugs aus derselben Code-Durchsicht: GitHub `label:bug` #237, #244–#247 (je ein `topic:`). Nur App.
 
 ## URLs
 
@@ -251,11 +251,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.271 | #248 | XSS-Härtung #236: `safeEmoji` beim Import, `esc()` an 16 Emoji-Ausgaben, Baby/Einkauf-IDs per `data-act`, Alexa-Baby-Felder typgeprüft. |
 | v0.272 | #248 | Sync #238–#241: Cursor-Lag 120 s (sync-core, Partner, Alexa, Health), Selbstheilung bei überschriebener rev, Worker: Workout-Cursor = Upload-Zeit, kein Cursor-Vorrücken bei `truncated`; Postfach per ID, Wochenplan per Snapshot. Worker deployen. |
 | v0.273 | #248 | KI-Passwort #242: erst nach Worker-Prüfung speichern, offline ungeprüft merken + Nachprüfung; nur Worker-eigene 401 = falsch (Nachbesserung in v0.274 nach Gegenprüfung: Anthropic-401, Race bei Nachprüfung, Refresh-Guard, Statusfarbe). |
 | v0.274 | #248 | Einkauf #243: `mergeQty` addiert auch gleiche Mengen, eigener Mengen-Vergleich `qtyKey` (Komma bleibt), abgehakter Artikel bekommt beim Rezept-Import nur die neue Menge. |
 | v0.275 | #219 | Nie gemergten Zweig `claude/alexa-voice-recognition-1bvw4c` nachgeholt: Baby-Eintraege per Alexa ohne „Baby“ (fuenf Intents, `babyEntry()`), „wickeln“ → Windel, Stuhl+Pipi → `both`; mit den Hebammen-Intents aus v0.265 zusammengefuehrt. Sprachmodell + Lambda neu einspielen. |
+| v0.276 | #251 | Eintrag verschieben/kopieren auf beliebigen Tag + Mahlzeit (Bearbeiten-Dialog, ersetzt „Mahlzeit wechseln“; Archiv-Tage via `_ensureDayForImport`). |
 
 ---
 

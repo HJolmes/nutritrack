@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.276',items:[
+    {icon:'\u2195',text:'<b>Einträge auf einen anderen Tag verschieben oder kopieren</b>: Im Bearbeiten-Dialog Tag und Mahlzeit wählen, dann „Verschieben“ oder „Kopieren“.',where:'Eintrag antippen (Rezept: → ✏️ Eintrag bearbeiten) → „↕ Verschieben / Kopieren“'}
+  ]},
   {v:'0.275',items:[
     {icon:'\ud83d\udc76',text:'Baby-Einträge per Alexa brauchen das Wort „Baby“ nicht mehr davor: „Wickeln Stuhl und Pipi“, „Stillen rechts“, „Flasche 120 Milliliter“, „Schläft“, „Fieber 38,5 Grad“ werden direkt der richtigen Art zugeordnet. Mit „Baby“ davor geht weiter alles wie bisher.',where:'Mehr \u2192 \ud83d\udd17 Verbindungen \u2192 \ud83d\udde3\ufe0f Alexa'},
     {icon:'\ud83d\udd27',text:'„Wickeln“ landete bisher als Notiz im Tagebuch statt als Windel — der Skill kannte nur „Windel“ und „gewickelt“. Neu ist auch „Beides“: Wer Stuhl und Pipi zusammen sagt, bekommt einen Eintrag mit beidem statt nur Stuhl.',where:'\ud83d\udc76 Baby-Tagebuch'},

@@ -82,13 +82,18 @@ function fire(r,at){
   _timers.delete(r);
   // Geloescht oder durch einen Import ersetzt: nicht mehr melden.
   if((S.reminders||[]).indexOf(r)<0||!r.active)return;
+  // Tagelang eingefroren: es zaehlt der juengste Termin bis jetzt, nicht der
+  // gespeicherte – sonst fiele der von heute (vielleicht erst Minuten alt) mit weg.
+  var n;
+  while((n=nextAt(r.time,at))&&n.getTime()<=Date.now())at=n.getTime();
   planOne(r,at);
   if(Date.now()-at>LATE_MS)return;
   notify('🍽 NutriTrack – '+(r.label||'Mahlzeit eintragen'),{
     body:r.body||'Zeit zum Eintragen!',
     // Je Erinnerung (Uhrzeit + Name) und Tag: zwei offene Tabs ergeben eine
-    // Meldung statt zwei; zwei Erinnerungen zur selben Uhrzeit ersetzen sich
-    // nicht, und die vom Vortag wird nicht still ersetzt.
+    // Meldung statt zwei; zur selben Uhrzeit ersetzen sich nur Erinnerungen mit
+    // gleichem Namen (gleicher Inhalt, eine Meldung), und die vom Vortag wird
+    // nicht still ersetzt.
     tag:'nt-rem-'+r.time+'-'+(r.label||'')+'-'+ymd(new Date(at))
   });
 }
@@ -100,20 +105,35 @@ function scheduleReminders(){
   (S.reminders||[]).forEach(function(r){planOne(r);});
 }
 
-// App wieder vorn: jeden Timer mit seinem Termin neu stellen. Timer laufen auf
-// einer Uhr, die im Geraeteschlaf steht – ein um 22 Uhr fuer 8 Uhr gestellter
-// Timer kaeme nach acht Stunden Schlaf sonst erst am Nachmittag. Ein Termin, der
-// schon vorbei ist, feuert sofort, und fire() entscheidet ueber die Verspaetung.
-// Nicht schedule(): das plante vom jetzigen Moment aus und verloere eine
-// Erinnerung, die erst Sekunden ueberfaellig ist.
+// App wieder vorn: die Timer neu stellen. Timer laufen auf einer Uhr, die im
+// Geraeteschlaf steht – ein um 22 Uhr fuer 8 Uhr gestellter Timer kaeme nach
+// acht Stunden Schlaf sonst erst am Nachmittag.
+// - Ein Termin, der schon vorbei ist, feuert sofort mit seinem gespeicherten
+//   Wert, und fire() entscheidet ueber die Verspaetung. Nicht schedule(): das
+//   plante vom jetzigen Moment aus und verloere eine Erinnerung, die erst
+//   Sekunden ueberfaellig ist.
+// - Ein kuenftiger wird neu gerechnet (gleicher Wert, ausser die Zeitzone hat
+//   gewechselt – dann gilt 08:00 der neuen Zone statt 02:00 nachts).
+// - Eine Erinnerung ohne Timer (Kette ohne Berechtigung abgerissen, Berechtigung
+//   erst spaeter erteilt) wird wieder aufgenommen.
 function rearm(){
-  var list=[];
+  var list=[],now=Date.now();
   _timers.forEach(function(e,r){list.push([r,e.at]);});
-  list.forEach(function(x){arm(x[0],x[1]);});
+  list.forEach(function(x){if(x[1]>now)planOne(x[0]);else arm(x[0],x[1]);});
+  if(canNotify())(S.reminders||[]).forEach(function(r){if(r&&r.active&&!_timers.has(r))planOne(r);});
 }
 document.addEventListener('visibilitychange',function(){
   if(document.visibilityState==='visible')rearm();
 });
+// Geraeteschlaf OHNE Sichtbarkeitswechsel (Desktop: das Fenster bleibt ueber das
+// Zuklappen „sichtbar"): steht ein Timer noch aus, obwohl sein Termin vorbei ist,
+// wird neu gestellt. Nach dem Aufwachen laeuft dieser Takt spaetestens nach einer
+// Minute wieder – deutlich unter LATE_MS.
+setInterval(function(){
+  var due=false,now=Date.now()-1000;
+  _timers.forEach(function(e){if(e.at<=now)due=true;});
+  if(due)rearm();
+},60000);
 
 // ── Anzeige (#244) ──
 // Ueber den Service Worker, wo es ihn gibt: Chrome auf Android lehnt

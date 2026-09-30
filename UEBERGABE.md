@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.275 (2026-09-30) — Branch `ccr-53c1be0c-dlbc7f` (PR folgt). **v0.275: Erinnerungen** (#244): ein Timer je Erinnerung, Anzeige über den Service Worker (Android), Überspringen ab 15 min Verspätung, Neuplanung nach Import/Restore. Davor v0.270–v0.274 (PR #248; **Worker für v0.272 deployen**). Offene Bugs aus der Code-Durchsicht: GitHub `label:bug` #237, #245–#247, #249 (je ein `topic:`). Nur App.
+**Stand:** v0.275 (2026-09-30) — Branch `ccr-53c1be0c-dlbc7f` (PR #250). **v0.275: Erinnerungen** (#244): ein Timer je Erinnerung, Anzeige über den Service Worker (Android), Überspringen ab 15 min Verspätung, Neuplanung nach Import/Restore. Davor v0.270–v0.274 (PR #248; **Worker für v0.272 deployen**). Offene Bugs aus der Code-Durchsicht: GitHub `label:bug` #237, #245–#247, #249 (je ein `topic:`). Nur App.
 
 ## URLs
 
@@ -255,7 +255,7 @@
 | v0.272 | #248 | Sync #238–#241: Cursor-Lag 120 s (sync-core, Partner, Alexa, Health), Selbstheilung bei überschriebener rev, Worker: Workout-Cursor = Upload-Zeit, kein Cursor-Vorrücken bei `truncated`; Postfach per ID, Wochenplan per Snapshot. Worker deployen. |
 | v0.273 | #248 | KI-Passwort #242: erst nach Worker-Prüfung speichern, offline ungeprüft merken + Nachprüfung; nur Worker-eigene 401 = falsch (Nachbesserung in v0.274 nach Gegenprüfung: Anthropic-401, Race bei Nachprüfung, Refresh-Guard, Statusfarbe). |
 | v0.274 | #248 | Einkauf #243: `mergeQty` addiert auch gleiche Mengen, eigener Mengen-Vergleich `qtyKey` (Komma bleibt), abgehakter Artikel bekommt beim Rezept-Import nur die neue Menge. |
-| v0.275 | (PR folgt) | Erinnerungen #244: ein Timer je Erinnerung (Map, `arm`/`fire`), Anzeige über `showNotification` (Android), `notificationclick` in sw.js, Überspringen ab 15 min Verspätung + Neustellen nach Geräteschlaf/Zeitzonenwechsel, Neuplanung nach Import/Restore, Fastenende über denselben Weg. Nebenbefunde in #249. |
+| v0.275 | #250 | Erinnerungen #244: ein Timer je Erinnerung (Map, `arm`/`fire`), Anzeige über `showNotification` (Android), `notificationclick` in sw.js, Überspringen ab 15 min Verspätung + Neustellen nach Geräteschlaf/Zeitzonenwechsel, Neuplanung nach Import/Restore, Fastenende über denselben Weg. Nebenbefunde in #249. |
 
 ---
 

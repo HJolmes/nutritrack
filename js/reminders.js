@@ -1,4 +1,4 @@
-// NutriTrack – Erinnerungen (v0.250, Timer und Anzeige v0.275)
+// NutriTrack – Erinnerungen (v0.250, Timer und Anzeige v0.277)
 // Klassisches Script, kein Modul. Exportiert window.NTRemind und greift direkt auf
 // die globalen Helfer aus index.html zu (S, saveS, esc, showToast).
 //
@@ -14,7 +14,7 @@
 'use strict';
 
 // ── Genau ein Timer je Erinnerung (#244) ──
-// Bis v0.274 wurde der Rueckgabewert von setTimeout verworfen, und jedes
+// Bis v0.276 wurde der Rueckgabewert von setTimeout verworfen, und jedes
 // Ausloesen plante ALLE Erinnerungen neu. Bei zwei Erinnerungen wuchs die Zahl
 // der Meldungen je Tag wie die Fibonacci-Reihe (gemessen an Tag 4: 21 um 8 Uhr,
 // 34 um 12 Uhr), und eine geloeschte feuerte weiter. Jetzt haelt _timers je

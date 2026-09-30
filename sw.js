@@ -1,6 +1,6 @@
 // NutriTrack Service Worker
 // Version wird bei jedem Release hochgezählt - löst automatisches Update aus
-var VERSION = '0.275';
+var VERSION = '0.277';
 var CACHE = 'nt-' + VERSION;
 var SKIP = ['workers.dev','corsproxy.io','openfoodfacts.org','fonts.googleapis.com','fonts.gstatic.com','unpkg.com','esm.sh','jsdelivr.net','is.gd','v.gd'];
 // Kern-Assets, die für den Offline-Betrieb vorab gecacht werden. Relativ zur
@@ -120,7 +120,7 @@ self.addEventListener('fetch', function(e) {
   );
 });
 
-// Tippen auf eine Erinnerung (#244): Seit v0.275 kommen Meldungen ueber den
+// Tippen auf eine Erinnerung (#244): Seit v0.277 kommen Meldungen ueber den
 // Service Worker (js/reminders.js, NTRemind.notify). Ein Klick darauf loest nur
 // dieses Ereignis aus – ohne Handler taete er nichts, auch auf dem Desktop nicht,
 // wo eine Meldung aus der Seite den Tab von selbst nach vorn geholt hat.

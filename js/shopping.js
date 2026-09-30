@@ -285,11 +285,15 @@ function parseQty(s){
   // beim Addieren „4 el".
   return {v:parseFloat(m[1].replace(',','.')),u:(m[2]||'').toLowerCase(),raw:m[2]||''};
 }
+// Mengen vergleichen OHNE norm(): norm() wirft Komma und Punkt weg, dann
+// waeren „1,5 kg" und „15 kg" gleich (#243).
+function qtyKey(s){return String(s||'').toLowerCase().trim().replace(/\s+/g,' ');}
 function mergeQty(a,b){
   a=String(a||'').trim();b=String(b||'').trim();
   if(!a)return b;
   if(!b)return a;
-  if(norm(a)===norm(b))return a;
+  // Kein Sonderfall fuer gleiche Mengen: zwei Rezepte mit je „200 g" brauchen
+  // 400 g (#243). Nur Angaben ohne Zahl („etwas") bleiben unten einmal stehen.
   var rb=parseQty(b);
   // Die vorhandene Menge kann selbst schon zusammengesetzt sein („2 Stück + 150 g").
   // Deshalb teilweise addieren: den Teil mit gleicher Einheit erhöhen, den Rest
@@ -304,7 +308,7 @@ function mergeQty(a,b){
       }
     }
   }
-  for(var j=0;j<parts.length;j++)if(norm(parts[j])===norm(b))return a;
+  for(var j=0;j<parts.length;j++)if(qtyKey(parts[j])===qtyKey(b))return a;
   return a+' + '+b;
 }
 
@@ -320,9 +324,12 @@ function add(name,qty,c,ic,opts){
   var ex=(opts.id&&byId(opts.id))||findByName(name);
   if(ex){
     // Schon auf dem Zettel: abgehakt → wieder aktiv, sonst nur Menge ergänzen.
-    if(ex.d){ex.d=0;delete ex.da;}
-    if(qty)ex.q=opts.mergeQty?mergeQty(ex.q,qty):qty;
-    if(opts.recipe)tagSource(ex,opts.recipe,true);
+    // Abgehakt heisst gekauft: der alte Bedarf ist erledigt, es gilt nur die
+    // neue Menge — sonst stuenden gekaufte 500 g + neue 400 g als 900 g da (#243).
+    var bought=!!ex.d;
+    if(bought){ex.d=0;delete ex.da;delete ex.rc;delete ex.pre;}
+    if(qty)ex.q=(opts.mergeQty&&!bought)?mergeQty(ex.q,qty):qty;
+    if(opts.recipe)tagSource(ex,opts.recipe,!bought);
     ex.rev=nextRev();
     saveS();Sync.schedule();render();
     return ex;

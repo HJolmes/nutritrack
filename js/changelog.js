@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.274',items:[
+    {icon:'\ud83d\uded2',text:'<b>Einkaufszettel rechnet Mengen richtig zusammen</b>: Zwei Rezepte mit je 200 g Zwiebeln ergeben 400 g statt 200 g. „1,5 kg“ und „15 kg“ werden nicht mehr verwechselt. Ein schon abgehakter Artikel bekommt beim Rezept-Import nur die neue Menge, die gekaufte wird nicht mehr dazugezählt.',where:'Mehr → 🛒 Einkaufszettel'}
+  ]},
   {v:'0.273',items:[
     {icon:'\ud83d\udd11',text:'<b>Ein vertipptes KI-Passwort überschreibt nicht mehr das richtige</b>: Die App prüft ein neues Passwort erst beim Server und speichert es nur, wenn es stimmt. Ohne Internet wird es vorgemerkt und beim nächsten Start mit Internet geprüft. Ist schon ein Passwort gespeichert, bleibt das alte.',where:'Mehr → 🤖 KI'}
   ]},

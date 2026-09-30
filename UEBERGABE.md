@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie ist die Single Source of Truth für den aktuellen Projekt-Stand. **Knapp halten** — siehe „Pflege" unten.
 
-**Stand:** v0.271 (2026-09-29) — Branch `claude/awesome-mccarthy-ez28lf` (PR #248). **v0.270: Datenverlust-Fixes** (#227–#235), **v0.271: XSS-Härtung** (#236), **v0.272: Sync-Cursor** (#238–#241, **Worker deployen**), **v0.273: KI-Passwort erst nach Prüfung speichern** (#242). Offene Bugs aus derselben Code-Durchsicht: GitHub `label:bug` #237, #243–#247 (je ein `topic:`). Nur App.
+**Stand:** v0.271 (2026-09-29) — Branch `claude/awesome-mccarthy-ez28lf` (PR #248). **v0.270: Datenverlust-Fixes** (#227–#235), **v0.271: XSS-Härtung** (#236), **v0.272: Sync-Cursor** (#238–#241, **Worker deployen**), **v0.273: KI-Passwort erst nach Prüfung speichern** (#242), **v0.274: Einkaufszettel-Mengen** (#243). Offene Bugs aus derselben Code-Durchsicht: GitHub `label:bug` #237, #244–#247 (je ein `topic:`). Nur App.
 
 ## URLs
 
@@ -155,6 +155,7 @@
 
 ## Live-Test offen
 
+- **v0.274 Einkaufszettel**: Zwei Rezepte mit je „200 g Zwiebeln“ auf den Zettel → 400 g. Mehl „1,5 kg“ + „15 kg“ → 16,5 kg. Hackfleisch 500 g aus Rezept A abhaken, dann Rezept B mit 400 g → Artikel wieder offen mit 400 g (nicht 900 g), ohne „war vorher schon da“.
 - **v0.273 KI-Passwort**: Mehr → 🤖 KI → absichtlich falsches Passwort → „❌ … bisheriges bleibt“, KI-Chat funktioniert weiter. Flugmodus + neues Passwort → „Offline – Passwort nicht geändert“. Frisches Gerät (oder Passwort gelöscht) im Flugmodus mit Tippfehler → „wird geprüft, sobald Internet da ist“; Flugmodus aus → Toast „vom Server abgelehnt“, Passwort-Abfrage erscheint.
 - **v0.272 Sync** (**Worker deployen** — `GET /health` → `codeVersion:"v0.272-sync-cursor"`): (1) Watch/Kurzbefehl: Abendtraining hochladen, App öffnen (kommt an), danach ein Training mit früherer Startzeit nachreichen → kommt ebenfalls an. (2) Zwei Geräte, Einkaufszettel: auf beiden gleichzeitig Artikel anlegen → alle erscheinen binnen ~3 Min. überall. (3) Wochenplan offen auf Gerät 1 (Eintrag geöffnet), auf Gerät 2 denselben Tag umplanen → „Entfernen“ auf Gerät 1 trifft das richtige Rezept oder meldet „auf dem anderen Gerät geändert“. (4) Cloudflare → KV → Metrics nach 1–2 Tagen: `list` weiter deutlich unter 1000/Tag.
 - **v0.270 Datenverlust** (Testabzug): (1) OneDrive → „Aus OneDrive laden“ zweimal hintereinander, dazwischen auf anderem Gerät sichern → zweites Laden bringt den neuen Stand. (2) OneDrive neu verbinden, vorher einen alten Tag offen → nach Rückkehr steht „Heute“. (3) Bibliothek → Lebensmittel → Suche nach dem 2. eigenen Lebensmittel → ✎ öffnet genau dieses. (4) Tag >90 Tage zurück → Eintrag hinzufügen → bleibt nach Neustart, „📦 Archivierte Tageswerte“ im Snack, Verlauf zeigt Summe. (5) Flugmodus-Foto → online „Jetzt analysieren“ → Picker öffnet mit Foto; bei KI-Fehler bleibt es im Panel.
@@ -248,11 +249,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.269 | — | Partner-Postfach + Alexa-Token unter Mehr → Verbindungen („Weitere Verbindungen“), aus Funktions-Blättern entfernt; Hilfe + `alexa/README.md` angepasst. |
 | v0.270 | #248 | Datenverlust-Fixes #227–#235: SW nur same-origin, OAuth-Rückweg ohne Abbruch, Bibliothek-Index, `_editEntryMode`-Reset, Zutaten tief kopiert, Archiv-Tage wieder öffnen, Offline-Foto erst nach KI-Antwort löschen, Fotos referenzgeprüft löschen, IDB `onabort`, Quota-Stufe 2 halbiert Caches. |
 | v0.271 | #248 | XSS-Härtung #236: `safeEmoji` beim Import, `esc()` an 16 Emoji-Ausgaben, Baby/Einkauf-IDs per `data-act`, Alexa-Baby-Felder typgeprüft. |
 | v0.272 | #248 | Sync #238–#241: Cursor-Lag 120 s (sync-core, Partner, Alexa, Health), Selbstheilung bei überschriebener rev, Worker: Workout-Cursor = Upload-Zeit, kein Cursor-Vorrücken bei `truncated`; Postfach per ID, Wochenplan per Snapshot. Worker deployen. |
 | v0.273 | #248 | KI-Passwort #242: erst nach Worker-Prüfung speichern, offline ungeprüft merken + Nachprüfung, 401-only = falsch. |
+| v0.274 | #248 | Einkauf #243: `mergeQty` addiert auch gleiche Mengen, eigener Mengen-Vergleich `qtyKey` (Komma bleibt), abgehakter Artikel bekommt beim Rezept-Import nur die neue Menge. |
 
 ---
 

@@ -4593,14 +4593,19 @@ function requestFastNotification(f){
     var delay=end-Date.now();
     if(delay<=0)return;
     setTimeout(function(){
-      var end=new Date(f.start+f.hours*3600000);
+      // Abgebrochen oder neu gestartet (auch in einem anderen Tab): nicht melden.
+      // Bis v0.274 kam die Meldung trotzdem – auf Android blieb das nur
+      // unsichtbar, weil new Notification() dort warf.
+      var cur=loadFast();
+      if(!cur||cur.start!==f.start)return;
       // Ueber den Service Worker – new Notification() wirft auf Android (#244)
       NTRemind.notify('🌙 NutriTrack – Fasten beendet!',{body:'Du kannst wieder essen! ('+f.hours+'h geschafft)',tag:'nt-fast-'+f.start});
     },delay);
   };
   if(Notification.permission==='granted'){send();}
   else if(Notification.permission!=='denied'){
-    Notification.requestPermission().then(function(p){if(p==='granted')send();});
+    // Erteilt: auch die Mahlzeit-Erinnerungen planen, die beim Start ohne Berechtigung liegen blieben
+    Notification.requestPermission().then(function(p){if(p==='granted'){send();NTRemind.schedule();}});
   }
 }
 function renderFasting(){

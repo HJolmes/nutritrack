@@ -40,14 +40,17 @@ function canNotify(){
 function ymd(d){
   return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
 }
-// Naechster Termin zur Uhrzeit `time` STRENG nach `after` (ms). setDate behaelt
-// die Ortszeit, auch ueber die Zeitumstellung.
+// Naechster Termin zur Uhrzeit `time` STRENG nach `after` (ms). Die Uhrzeit wird
+// nach jedem Tagessprung neu gesetzt: Am Tag der Sommerzeit-Umstellung gibt es
+// 02:30 nicht (setHours liefert 03:30), und setDate allein truege diese 03:30 in
+// den Folgetag weiter.
 function nextAt(time,after){
   var m=TIME_RE.exec(typeof time==='string'?time:'');
   if(!m)return null;
+  var h=parseInt(m[1],10),mi=parseInt(m[2],10);
   var t=new Date(after);
-  t.setHours(parseInt(m[1],10),parseInt(m[2],10),0,0);
-  while(t.getTime()<=after)t.setDate(t.getDate()+1);
+  t.setHours(h,mi,0,0);
+  while(t.getTime()<=after){t.setDate(t.getDate()+1);t.setHours(h,mi,0,0);}
   return t;
 }
 
@@ -68,9 +71,10 @@ function planOne(r,after){
     planOne(r,at.getTime());
     notify('🍽 NutriTrack – '+(r.label||'Mahlzeit eintragen'),{
       body:r.body||'Zeit zum Eintragen!',
-      // Je Erinnerung und Tag: zwei offene Tabs ergeben eine Meldung statt zwei;
-      // die vom Vortag wird nicht still ersetzt.
-      tag:'nt-rem-'+r.time+'-'+ymd(at)
+      // Je Erinnerung (Uhrzeit + Name) und Tag: zwei offene Tabs ergeben eine
+      // Meldung statt zwei; zwei Erinnerungen zur selben Uhrzeit ersetzen sich
+      // nicht, und die vom Vortag wird nicht still ersetzt.
+      tag:'nt-rem-'+r.time+'-'+(r.label||'')+'-'+ymd(at)
     });
   },at.getTime()-Date.now()));
 }
@@ -132,7 +136,10 @@ function addReminder(){
   if('Notification' in window&&Notification.permission==='default'){
     Notification.requestPermission().then(function(p){if(p==='granted')scheduleReminders();});
   } else {
-    planOne(r); // nur die neue – die anderen laufen schon
+    // Alle, nicht nur die neue: Wurde die Berechtigung erst nach dem Start
+    // erteilt, sind die bestehenden noch nicht geplant. schedule() bricht
+    // vorher alle ab, es entsteht kein Timer doppelt.
+    scheduleReminders();
   }
   showToast('⏰ Erinnerung gespeichert');
 }

@@ -1,5 +1,9 @@
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 const DEFAULT_ANTHROPIC_VERSION = "2023-06-01";
+// Abbruch des /v1/messages-Abrufs. Bewusst ÜBER dem längsten Client-Timeout
+// (25 s in _callAnthropic, 10 s beim Verbindungstest): Der Client bricht zuerst
+// ab, der Worker räumt nur hängende Abrufe weg. Schätzwert.
+const ANTHROPIC_TIMEOUT_MS = 30000;
 const DEFAULT_ALLOWED_ORIGINS = [
   "https://hjolmes.github.io",
   "https://nutritrack-preview.pages.dev",
@@ -87,6 +91,70 @@ function getContentLength(request) {
   if (!raw) return 0;
   const parsed = Number(raw);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+// Liest höchstens `max` Bytes aus einem Stream. Content-Length allein reicht als
+// Grenze nicht: Ein chunked Upload trägt den Header nicht, und request.json()
+// läse ihn ungebremst in den Speicher. `overflow` = es gab mehr als `max`; der
+// Rest wird dann nicht mehr gelesen (reader.cancel()).
+async function readStreamBytes(stream, max) {
+  if (!stream) return { bytes: new Uint8Array(0), overflow: false };
+  const reader = stream.getReader();
+  const chunks = [];
+  let total = 0;
+  let overflow = false;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const chunk = value instanceof Uint8Array ? value : new Uint8Array(value);
+    if (total + chunk.byteLength > max) {
+      chunks.push(chunk.subarray(0, max - total));
+      total = max;
+      overflow = true;
+      try {
+        await reader.cancel();
+      } catch (_) {}
+      break;
+    }
+    chunks.push(chunk);
+    total += chunk.byteLength;
+  }
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const c of chunks) {
+    bytes.set(c, offset);
+    offset += c.byteLength;
+  }
+  return { bytes, overflow };
+}
+
+// Request-Body mit Größengrenze: {tooLarge} | {failed} | {bytes}.
+async function readBodyLimited(request, max) {
+  if (getContentLength(request) > max) return { tooLarge: true };
+  try {
+    const r = await readStreamBytes(request.body, max);
+    return r.overflow ? { tooLarge: true } : { bytes: r.bytes };
+  } catch (_) {
+    return { failed: true };
+  }
+}
+
+// JSON-Body mit Größengrenze: {tooLarge} | {invalid} | {json}. `invalid` auch
+// dann, wenn das Ergebnis kein einfaches Objekt ist (`null`, Array, Zahl) —
+// jeder Handler liest danach Felder wie `body.code`, und `null.code` wäre eine
+// unbehandelte Ausnahme statt einer 400.
+async function readJsonLimited(request, max) {
+  const r = await readBodyLimited(request, max);
+  if (r.tooLarge) return r;
+  if (!r.bytes) return { invalid: true };
+  let value;
+  try {
+    value = JSON.parse(new TextDecoder().decode(r.bytes));
+  } catch (_) {
+    return { invalid: true };
+  }
+  if (!value || typeof value !== "object" || Array.isArray(value)) return { invalid: true };
+  return { json: value };
 }
 
 function bytesToBase64(bytes) {
@@ -187,12 +255,14 @@ async function handleDecodeBarcode(request, origin, env) {
     return jsonResponse(413, "request_too_large", "Frame is too large", origin, env);
   }
 
-  let buffer;
-  try {
-    buffer = new Uint8Array(await request.arrayBuffer());
-  } catch (error) {
+  const read = await readBodyLimited(request, MAX_BARCODE_BODY_BYTES);
+  if (read.tooLarge) {
+    return jsonResponse(413, "request_too_large", "Frame is too large", origin, env);
+  }
+  if (!read.bytes) {
     return jsonResponse(400, "invalid_body", "Frame body could not be read", origin, env);
   }
+  const buffer = read.bytes;
   if (!buffer.length || buffer.length > MAX_BARCODE_BODY_BYTES) {
     return jsonResponse(400, "invalid_body", "Frame body is empty or too large", origin, env);
   }
@@ -324,12 +394,14 @@ async function handleShareCreate(request, origin, env) {
   if (getContentLength(request) > MAX_SHARE_CODE_BYTES) {
     return jsonResponse(413, "request_too_large", "Code is too large", origin, env);
   }
-  let body;
-  try {
-    body = await request.json();
-  } catch (e) {
+  const read = await readJsonLimited(request, MAX_SHARE_CODE_BYTES);
+  if (read.tooLarge) {
+    return jsonResponse(413, "request_too_large", "Code is too large", origin, env);
+  }
+  if (!read.json) {
     return jsonResponse(400, "invalid_json", "Body must be JSON", origin, env);
   }
+  const body = read.json;
   const code = typeof body.code === "string" ? body.code.trim() : "";
   if (!code || code.length < 8 || code.length > MAX_SHARE_CODE_CHARS || !/^[A-Za-z0-9+/=_-]+$/.test(code)) {
     return jsonResponse(400, "invalid_code", "Invalid share code", origin, env);
@@ -457,30 +529,18 @@ async function handleFeedback(request, origin, env) {
   if (!env.NUTRITRACK_PROXY_TOKEN || proxyToken !== env.NUTRITRACK_PROXY_TOKEN) {
     return jsonResponse(401, "unauthorized", "Invalid app proxy secret", origin, env);
   }
-  // Defense in depth: cap feedback submissions per IP per day (best-effort KV).
-  if (env.SHARE_KV) {
-    const ip = request.headers.get("cf-connecting-ip") || "unknown";
-    const day = new Date().toISOString().slice(0, 10);
-    const rlKey = "fbrl:" + ip + ":" + day;
-    const cnt = parseInt((await env.SHARE_KV.get(rlKey)) || "0", 10) || 0;
-    if (cnt >= MAX_FEEDBACK_PER_IP_DAY) {
-      return jsonResponse(429, "rate_limited", "Too many feedback submissions today", origin, env);
-    }
-    await env.SHARE_KV.put(rlKey, String(cnt + 1), { expirationTtl: 60 * 60 * 24 });
-  }
   const repo = ((env.GITHUB_REPO || FEEDBACK_DEFAULT_REPO) + "").trim();
   if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo)) {
     return jsonResponse(500, "github_repo_invalid", "GITHUB_REPO is invalid", origin, env);
   }
-  if (getContentLength(request) > MAX_FEEDBACK_BODY_BYTES) {
+  const read = await readJsonLimited(request, MAX_FEEDBACK_BODY_BYTES);
+  if (read.tooLarge) {
     return jsonResponse(413, "request_too_large", "Feedback is too large", origin, env);
   }
-  let body;
-  try {
-    body = await request.json();
-  } catch (e) {
+  if (!read.json) {
     return jsonResponse(400, "invalid_json", "Body must be JSON", origin, env);
   }
+  const body = read.json;
   const type = body && (body.type === "bug" || body.type === "enhancement") ? body.type : null;
   if (!type) {
     return jsonResponse(400, "invalid_type", "type must be 'bug' or 'enhancement'", origin, env);
@@ -504,6 +564,36 @@ async function handleFeedback(request, origin, env) {
     if (screenshotB64.length > MAX_FEEDBACK_SCREENSHOT_BYTES) {
       return jsonResponse(413, "screenshot_too_large", "Screenshot is too large", origin, env);
     }
+    // Abgelegt wird immer als `.jpg` im öffentlichen Zweig — deshalb nur echte
+    // JPEGs annehmen. "/9j/" ist die Base64-Form von FF D8 FF (JPEG-Anfang);
+    // beide Client-Wege erzeugen toDataURL('image/jpeg', …).
+    if (!screenshotB64.startsWith("/9j/")) {
+      return jsonResponse(400, "invalid_screenshot", "Screenshot must be JPEG", origin, env);
+    }
+  }
+
+  // Defense in depth: cap feedback submissions per IP per day (best-effort KV).
+  // Erst NACH Größen- und Inhaltsprüfung, damit ungültige Anfragen keinen
+  // KV-Schreibzugriff kosten (Tageskontingent). Wirft KV (z. B. Kontingent
+  // erschöpft), geht das Feedback trotzdem durch — der Zähler ist nur Beiwerk.
+  if (env.SHARE_KV) {
+    const ip = request.headers.get("cf-connecting-ip") || "unknown";
+    const day = new Date().toISOString().slice(0, 10);
+    const rlKey = "fbrl:" + ip + ":" + day;
+    let cnt = 0;
+    try {
+      cnt = parseInt((await env.SHARE_KV.get(rlKey)) || "0", 10) || 0;
+    } catch (e) {
+      console.log("feedback counter read failed", e && e.message);
+    }
+    if (cnt >= MAX_FEEDBACK_PER_IP_DAY) {
+      return jsonResponse(429, "rate_limited", "Too many feedback submissions today", origin, env);
+    }
+    try {
+      await env.SHARE_KV.put(rlKey, String(cnt + 1), { expirationTtl: 60 * 60 * 24 });
+    } catch (e) {
+      console.log("feedback counter write failed", e && e.message);
+    }
   }
 
   let screenshotUrl = null;
@@ -513,7 +603,9 @@ async function handleFeedback(request, origin, env) {
       screenshotUrl = await uploadFeedbackScreenshot(env, repo, screenshotB64);
       if (!screenshotUrl) screenshotError = "upload returned no URL";
     } catch (e) {
-      screenshotError = (e && e.message) || "upload threw";
+      // Die echte Meldung nur ins Worker-Log — das Issue ist öffentlich.
+      console.log("feedback screenshot upload threw", e && e.message);
+      screenshotError = "upload threw";
     }
   }
 
@@ -695,12 +787,14 @@ async function handleWorkoutCreate(request, origin, env) {
   if (getContentLength(request) > MAX_WORKOUT_BODY_BYTES) {
     return jsonResponse(413, "request_too_large", "Workout body is too large", origin, env);
   }
-  let body;
-  try {
-    body = await request.json();
-  } catch (e) {
+  const read = await readJsonLimited(request, MAX_WORKOUT_BODY_BYTES);
+  if (read.tooLarge) {
+    return jsonResponse(413, "request_too_large", "Workout body is too large", origin, env);
+  }
+  if (!read.json) {
     return jsonResponse(400, "invalid_json", "Body must be JSON", origin, env);
   }
+  const body = read.json;
   const workout = sanitizeWorkout(body);
   if (!workout) {
     return jsonResponse(400, "invalid_workout", "Workout payload is invalid (need id, source, start, kcal)", origin, env);
@@ -912,12 +1006,14 @@ async function handleAlexaPush(request, origin, env) {
   if (getContentLength(request) > MAX_ALEXA_BODY_BYTES) {
     return jsonResponse(413, "request_too_large", "Alexa payload is too large", origin, env);
   }
-  let body;
-  try {
-    body = await request.json();
-  } catch (e) {
+  const read = await readJsonLimited(request, MAX_ALEXA_BODY_BYTES);
+  if (read.tooLarge) {
+    return jsonResponse(413, "request_too_large", "Alexa payload is too large", origin, env);
+  }
+  if (!read.json) {
     return jsonResponse(400, "invalid_json", "Body must be JSON", origin, env);
   }
+  const body = read.json;
   const item = sanitizeAlexaItem(body);
   if (!item) {
     return jsonResponse(400, "invalid_item", "Payload is invalid (need id, known kind, text)", origin, env);
@@ -1016,12 +1112,14 @@ async function handleAlexaAck(request, origin, env) {
   if (getContentLength(request) > MAX_ALEXA_BODY_BYTES) {
     return jsonResponse(413, "request_too_large", "Ack payload is too large", origin, env);
   }
-  let body;
-  try {
-    body = await request.json();
-  } catch (e) {
+  const read = await readJsonLimited(request, MAX_ALEXA_BODY_BYTES);
+  if (read.tooLarge) {
+    return jsonResponse(413, "request_too_large", "Ack payload is too large", origin, env);
+  }
+  if (!read.json) {
     return jsonResponse(400, "invalid_json", "Body must be JSON", origin, env);
   }
+  const body = read.json;
   const ids = Array.isArray(body && body.ids) ? body.ids : null;
   if (!ids) {
     return jsonResponse(400, "invalid_ids", "Body must contain an ids array", origin, env);
@@ -1142,12 +1240,14 @@ async function handleSyncPush(request, origin, env, cfg) {
   if (getContentLength(request) > MAX_ROOM_BODY_BYTES) {
     return jsonResponse(413, "request_too_large", "Sync body is too large", origin, env);
   }
-  let body;
-  try {
-    body = await request.json();
-  } catch (e) {
+  const read = await readJsonLimited(request, MAX_ROOM_BODY_BYTES);
+  if (read.tooLarge) {
+    return jsonResponse(413, "request_too_large", "Sync body is too large", origin, env);
+  }
+  if (!read.json) {
     return jsonResponse(400, "invalid_json", "Body must be JSON", origin, env);
   }
+  const body = read.json;
   const list = Array.isArray(body && body.records) ? body.records : null;
   if (!list) {
     return jsonResponse(400, "invalid_records", "Body needs a records array", origin, env);
@@ -1348,6 +1448,125 @@ async function handleOffProxy(request, origin, env) {
 // ─── URL FETCH PROXY (Rezept-Import) ──────────────────────────────────
 // Holt eine beliebige Rezept-Seite serverseitig als Text. Durch das
 // App-Proxy-Secret abgesichert (kein offener Proxy) + SSRF-Schutz + Größenlimit.
+//
+// SSRF-Schutz: Geprüft wird der Hostname jedes Sprungs — auch jedes Ziels einer
+// Weiterleitung, die deshalb von Hand verfolgt wird (redirect: "manual"). Namen,
+// die per DNS auf private Adressen zeigen, erkennt der Worker nicht (keine
+// DNS-API); gesperrt werden Adress-Literale und die bekannten lokalen Namen.
+const MAX_URL_REDIRECTS = 5;
+
+// IPv4 wie der URL-Parser (inet_aton): 1–4 Teile, je dezimal, 0x-hex oder
+// 0-oktal; der letzte Teil füllt die restlichen Bytes (127.1 = 127.0.0.1,
+// 2130706433 = 127.0.0.1). null = kein IPv4-Literal, NaN = sieht numerisch aus,
+// ist aber ungültig (→ sperren).
+function parseIPv4Host(host) {
+  const parts = host.split(".");
+  if (!parts.every((p) => /^(0x[0-9a-f]*|[0-9]+)$/i.test(p))) return null;
+  if (parts.length > 4) return NaN;
+  const nums = [];
+  for (const p of parts) {
+    let n;
+    if (/^0x/i.test(p)) n = p.length > 2 ? parseInt(p.slice(2), 16) : 0;
+    else if (/^0[0-7]*$/.test(p)) n = parseInt(p, 8);
+    else if (/^[1-9][0-9]*$/.test(p)) n = parseInt(p, 10);
+    else return NaN; // z. B. "08" — ungültig oktal
+    nums.push(n);
+  }
+  const last = nums.pop();
+  for (const n of nums) if (n > 255) return NaN;
+  if (last >= Math.pow(256, 4 - nums.length)) return NaN;
+  let v = last;
+  for (let i = 0; i < nums.length; i++) v += nums[i] * Math.pow(256, 3 - i);
+  return v;
+}
+
+function isBlockedIPv4(v) {
+  const a = Math.floor(v / 16777216) % 256;
+  const b = Math.floor(v / 65536) % 256;
+  const c = Math.floor(v / 256) % 256;
+  return (
+    a === 0 || // 0/8 „dieses Netz"
+    a === 10 || // 10/8 privat
+    (a === 100 && b >= 64 && b <= 127) || // 100.64/10 Carrier-NAT
+    a === 127 || // 127/8 Loopback
+    (a === 169 && b === 254) || // 169.254/16 Link-local, Cloud-Metadaten
+    (a === 172 && b >= 16 && b <= 31) || // 172.16/12 privat
+    (a === 192 && b === 0 && c === 0) || // 192.0.0/24 IETF-Protokoll
+    (a === 192 && b === 168) || // 192.168/16 privat
+    (a === 198 && (b === 18 || b === 19)) || // 198.18/15 Benchmark
+    a >= 224 // Multicast, reserviert, Broadcast
+  );
+}
+
+// IPv6-Literal (ohne Klammern) → 8 Hextets, null bei ungültiger Form.
+function parseIPv6(host) {
+  let h = host;
+  const v4 = h.match(/^(.*:)(\d+\.\d+\.\d+\.\d+)$/);
+  if (v4) {
+    const n = parseIPv4Host(v4[2]);
+    if (typeof n !== "number" || !Number.isFinite(n)) return null;
+    h = v4[1] + (Math.floor(n / 65536)).toString(16) + ":" + (n % 65536).toString(16);
+  }
+  const halves = h.split("::");
+  if (halves.length > 2) return null;
+  const head = halves[0] ? halves[0].split(":") : [];
+  const tail = halves.length === 2 && halves[1] ? halves[1].split(":") : [];
+  const fill = 8 - head.length - tail.length;
+  if (halves.length === 2 ? fill < 1 : fill !== 0) return null;
+  const all = head.concat(new Array(halves.length === 2 ? fill : 0).fill("0"), tail);
+  const out = [];
+  for (const g of all) {
+    if (!/^[0-9a-f]{1,4}$/i.test(g)) return null;
+    out.push(parseInt(g, 16));
+  }
+  return out;
+}
+
+// Erlaubt ist bei IPv6 nur Global Unicast (2000::/3). Damit fallen ::, ::1,
+// ::ffff:<IPv4>, 64:ff9b::/96 (NAT64), fc00::/7, fe80::/10 und Multicast weg.
+// Zusätzlich gesperrt: 2002::/16 (6to4) und 2001:0::/32 (Teredo) — beide
+// tragen eine IPv4-Adresse in sich, die auch privat sein kann.
+function isBlockedIPv6(host) {
+  const g = parseIPv6(host);
+  if (!g) return true;
+  if (g[0] < 0x2000 || g[0] > 0x3fff) return true;
+  if (g[0] === 0x2002) return true;
+  if (g[0] === 0x2001 && g[1] === 0) return true;
+  return false;
+}
+
+function isBlockedHost(hostname) {
+  let host = String(hostname || "").toLowerCase().replace(/\.+$/, ""); // "localhost." = "localhost"
+  if (!host) return true;
+  if (host.charAt(0) === "[") {
+    if (host.charAt(host.length - 1) !== "]") return true;
+    return isBlockedIPv6(host.slice(1, -1));
+  }
+  if (host.indexOf(":") >= 0) return isBlockedIPv6(host);
+  if (
+    host === "localhost" || host.endsWith(".localhost") ||
+    host.endsWith(".internal") || host.endsWith(".local")
+  ) {
+    return true;
+  }
+  const v4 = parseIPv4Host(host);
+  if (v4 === null) return false; // ein Name
+  if (!Number.isFinite(v4)) return true;
+  return isBlockedIPv4(v4);
+}
+
+// Schema und Host eines Abrufziels prüfen — für das erste Ziel und jeden
+// Weiterleitungssprung. null = erlaubt, sonst die Fehlerantwort.
+function urlTargetRefusal(u, origin, env) {
+  if (u.protocol !== "https:" && u.protocol !== "http:") {
+    return jsonResponse(403, "bad_scheme", "Only http(s) is allowed", origin, env);
+  }
+  if (isBlockedHost(u.hostname)) {
+    return jsonResponse(403, "host_not_allowed", "Host not allowed", origin, env);
+  }
+  return null;
+}
+
 async function handleUrlProxy(request, origin, env) {
   const token = request.headers.get("x-app-proxy-secret") || "";
   if (!env.NUTRITRACK_PROXY_TOKEN || token !== env.NUTRITRACK_PROXY_TOKEN) {
@@ -1360,26 +1579,48 @@ async function handleUrlProxy(request, origin, env) {
   } catch (e) {
     return jsonResponse(400, "bad_url", "Invalid 'u' parameter", origin, env);
   }
-  if (t.protocol !== "https:" && t.protocol !== "http:") {
-    return jsonResponse(403, "bad_scheme", "Only http(s) is allowed", origin, env);
-  }
-  const host = t.hostname.toLowerCase();
-  if (
-    host === "localhost" || host === "0.0.0.0" || host.endsWith(".internal") ||
-    /^127\./.test(host) || /^10\./.test(host) || /^192\.168\./.test(host) ||
-    /^169\.254\./.test(host) || /^172\.(1[6-9]|2\d|3[01])\./.test(host)
-  ) {
-    return jsonResponse(403, "host_not_allowed", "Host not allowed", origin, env);
-  }
+  const refused = urlTargetRefusal(t, origin, env);
+  if (refused) return refused;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), URL_FETCH_TIMEOUT_MS);
   try {
-    const res = await fetch(t.toString(), {
-      headers: URL_FETCH_HEADERS,
-      redirect: "follow",
-      signal: ctrl.signal,
-    });
-    let raw = await res.text();
+    // Weiterleitungen von Hand: Jedes Ziel geht durch dieselbe Prüfung wie das
+    // erste — sonst leitete eine erlaubte Seite unbemerkt auf 127.0.0.1 um.
+    // Timer und Signal gelten für alle Sprünge zusammen.
+    let current = t;
+    let res;
+    for (let hop = 0; ; hop++) {
+      res = await fetch(current.toString(), {
+        headers: URL_FETCH_HEADERS,
+        redirect: "manual",
+        signal: ctrl.signal,
+      });
+      if (res.status < 300 || res.status > 399) break;
+      const location = res.headers.get("location");
+      if (res.body) {
+        try {
+          await res.body.cancel();
+        } catch (_) {}
+      }
+      if (!location) {
+        return jsonResponse(502, "bad_redirect", "Upstream redirect without Location (HTTP " + res.status + ")", origin, env);
+      }
+      if (hop >= MAX_URL_REDIRECTS) {
+        return jsonResponse(502, "bad_redirect", "Too many redirects", origin, env);
+      }
+      let next;
+      try {
+        next = new URL(location, current);
+      } catch (e) {
+        return jsonResponse(502, "bad_redirect", "Upstream sent an invalid redirect", origin, env);
+      }
+      const refusedHop = urlTargetRefusal(next, origin, env);
+      if (refusedHop) return refusedHop;
+      current = next;
+    }
+    // Begrenzt lesen: res.text() hielte eine beliebig große Seite ganz im
+    // Speicher und kappte erst danach.
+    let raw = new TextDecoder().decode((await readStreamBytes(res.body, MAX_URL_READ_BYTES)).bytes);
     if (raw.length > MAX_URL_READ_BYTES) raw = raw.slice(0, MAX_URL_READ_BYTES);
     const ld = extractLdJsonBlocks(raw);
     // Eine Seite, die weder ordentlich geantwortet noch Rezeptdaten mitgeliefert
@@ -1546,12 +1787,14 @@ async function handleAiProvider(request, origin, env) {
     return jsonResponse(400, "missing_provider_key", "Missing provider API key", origin, env);
   }
 
-  let payload;
-  try {
-    payload = await request.json();
-  } catch (error) {
+  const read = await readJsonLimited(request, MAX_BODY_BYTES);
+  if (read.tooLarge) {
+    return jsonResponse(413, "request_too_large", "Request body is too large", origin, env);
+  }
+  if (!read.json) {
     return jsonResponse(400, "invalid_json", "Request body must be valid JSON", origin, env);
   }
+  const payload = read.json;
 
   const messages = payload.messages || [];
   const hasImage = payloadHasImage(messages);
@@ -1641,128 +1884,133 @@ async function handleAiProvider(request, origin, env) {
   }
 }
 
-export default {
-  async fetch(request, env) {
-    const origin = request.headers.get("Origin") || "";
-    const url = new URL(request.url);
+async function route(request, env) {
+  const origin = request.headers.get("Origin") || "";
+  const url = new URL(request.url);
 
-    if (request.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: corsHeaders(origin, env) });
-    }
+  if (request.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: corsHeaders(origin, env) });
+  }
 
-    if (request.method === "GET" && url.pathname === "/health") {
-      return jsonResponse(200, "ok", "ok", origin, env, {
-        service: "nutritrack-ai-proxy",
-        configured: Boolean(env.ANTHROPIC_API_KEY && env.NUTRITRACK_PROXY_TOKEN),
-        decoderConfigured: Boolean(env.DECODER_URL),
-        visionFallbackEnabled: env.ENABLE_VISION_FALLBACK === "true",
-        shareConfigured: Boolean(env.SHARE_KV),
-        feedbackConfigured: Boolean(env.GITHUB_TOKEN),
-        workoutsConfigured: Boolean(env.SHARE_KV),
-        babySyncConfigured: Boolean(env.SHARE_KV),
-        shopSyncConfigured: Boolean(env.SHARE_KV),
-        partnerSyncConfigured: Boolean(env.SHARE_KV),
-        alexaInboxConfigured: Boolean(env.SHARE_KV),
-        planSyncConfigured: Boolean(env.SHARE_KV),
-        decoderSecretConfigured: Boolean(env.DECODER_SECRET),
-        codeVersion: "v0.272-sync-cursor",
-      });
-    }
+  if (request.method === "GET" && url.pathname === "/health") {
+    return jsonResponse(200, "ok", "ok", origin, env, {
+      service: "nutritrack-ai-proxy",
+      configured: Boolean(env.ANTHROPIC_API_KEY && env.NUTRITRACK_PROXY_TOKEN),
+      decoderConfigured: Boolean(env.DECODER_URL),
+      visionFallbackEnabled: env.ENABLE_VISION_FALLBACK === "true",
+      shareConfigured: Boolean(env.SHARE_KV),
+      feedbackConfigured: Boolean(env.GITHUB_TOKEN),
+      workoutsConfigured: Boolean(env.SHARE_KV),
+      babySyncConfigured: Boolean(env.SHARE_KV),
+      shopSyncConfigured: Boolean(env.SHARE_KV),
+      partnerSyncConfigured: Boolean(env.SHARE_KV),
+      alexaInboxConfigured: Boolean(env.SHARE_KV),
+      planSyncConfigured: Boolean(env.SHARE_KV),
+      decoderSecretConfigured: Boolean(env.DECODER_SECRET),
+      codeVersion: "v0.278-worker-hardening",
+    });
+  }
 
-    if (request.method === "POST" && url.pathname === "/decode-barcode") {
-      return handleDecodeBarcode(request, origin, env);
-    }
+  if (request.method === "POST" && url.pathname === "/decode-barcode") {
+    return handleDecodeBarcode(request, origin, env);
+  }
 
-    if (request.method === "POST" && url.pathname === "/share") {
-      return handleShareCreate(request, origin, env);
-    }
-    if (request.method === "POST" && url.pathname === "/feedback") {
-      return handleFeedback(request, origin, env);
-    }
-    if (request.method === "POST" && url.pathname === "/baby/sync") {
-      return handleSyncPush(request, origin, env, SYNC_BABY);
-    }
-    if (request.method === "GET" && url.pathname === "/baby/sync") {
-      return handleSyncPull(request, origin, env, SYNC_BABY);
-    }
-    if (request.method === "POST" && url.pathname === "/shop/sync") {
-      return handleSyncPush(request, origin, env, SYNC_SHOP);
-    }
-    if (request.method === "GET" && url.pathname === "/shop/sync") {
-      return handleSyncPull(request, origin, env, SYNC_SHOP);
-    }
-    if (request.method === "POST" && url.pathname === "/plan/sync") {
-      return handleSyncPush(request, origin, env, SYNC_PLAN);
-    }
-    if (request.method === "GET" && url.pathname === "/plan/sync") {
-      return handleSyncPull(request, origin, env, SYNC_PLAN);
-    }
-    if (request.method === "POST" && url.pathname === "/partner/sync") {
-      return handleSyncPush(request, origin, env, SYNC_PARTNER);
-    }
-    if (request.method === "GET" && url.pathname === "/partner/sync") {
-      return handleSyncPull(request, origin, env, SYNC_PARTNER);
-    }
-    if (request.method === "POST" && url.pathname === "/workout") {
-      return handleWorkoutCreate(request, origin, env);
-    }
-    if (request.method === "GET" && url.pathname === "/workouts") {
-      return handleWorkoutList(request, origin, env);
-    }
-    if (request.method === "POST" && url.pathname === "/alexa/inbox") {
-      return handleAlexaPush(request, origin, env);
-    }
-    if (request.method === "GET" && url.pathname === "/alexa/inbox") {
-      return handleAlexaPull(request, origin, env);
-    }
-    if (request.method === "POST" && url.pathname === "/alexa/ack") {
-      return handleAlexaAck(request, origin, env);
-    }
-    if (request.method === "GET" && url.pathname === "/off") {
-      return handleOffProxy(request, origin, env);
-    }
-    if (request.method === "GET" && url.pathname === "/fetch") {
-      return handleUrlProxy(request, origin, env);
-    }
-    if (request.method === "POST" && url.pathname === "/ai/messages") {
-      return handleAiProvider(request, origin, env);
-    }
-    if (request.method === "GET" && url.pathname.startsWith("/share/")) {
-      return handleShareLookup(request, origin, env);
-    }
-    if (request.method === "GET" && url.pathname.startsWith("/s/")) {
-      return handleShareRedirect(request, env);
-    }
+  if (request.method === "POST" && url.pathname === "/share") {
+    return handleShareCreate(request, origin, env);
+  }
+  if (request.method === "POST" && url.pathname === "/feedback") {
+    return handleFeedback(request, origin, env);
+  }
+  if (request.method === "POST" && url.pathname === "/baby/sync") {
+    return handleSyncPush(request, origin, env, SYNC_BABY);
+  }
+  if (request.method === "GET" && url.pathname === "/baby/sync") {
+    return handleSyncPull(request, origin, env, SYNC_BABY);
+  }
+  if (request.method === "POST" && url.pathname === "/shop/sync") {
+    return handleSyncPush(request, origin, env, SYNC_SHOP);
+  }
+  if (request.method === "GET" && url.pathname === "/shop/sync") {
+    return handleSyncPull(request, origin, env, SYNC_SHOP);
+  }
+  if (request.method === "POST" && url.pathname === "/plan/sync") {
+    return handleSyncPush(request, origin, env, SYNC_PLAN);
+  }
+  if (request.method === "GET" && url.pathname === "/plan/sync") {
+    return handleSyncPull(request, origin, env, SYNC_PLAN);
+  }
+  if (request.method === "POST" && url.pathname === "/partner/sync") {
+    return handleSyncPush(request, origin, env, SYNC_PARTNER);
+  }
+  if (request.method === "GET" && url.pathname === "/partner/sync") {
+    return handleSyncPull(request, origin, env, SYNC_PARTNER);
+  }
+  if (request.method === "POST" && url.pathname === "/workout") {
+    return handleWorkoutCreate(request, origin, env);
+  }
+  if (request.method === "GET" && url.pathname === "/workouts") {
+    return handleWorkoutList(request, origin, env);
+  }
+  if (request.method === "POST" && url.pathname === "/alexa/inbox") {
+    return handleAlexaPush(request, origin, env);
+  }
+  if (request.method === "GET" && url.pathname === "/alexa/inbox") {
+    return handleAlexaPull(request, origin, env);
+  }
+  if (request.method === "POST" && url.pathname === "/alexa/ack") {
+    return handleAlexaAck(request, origin, env);
+  }
+  if (request.method === "GET" && url.pathname === "/off") {
+    return handleOffProxy(request, origin, env);
+  }
+  if (request.method === "GET" && url.pathname === "/fetch") {
+    return handleUrlProxy(request, origin, env);
+  }
+  if (request.method === "POST" && url.pathname === "/ai/messages") {
+    return handleAiProvider(request, origin, env);
+  }
+  if (request.method === "GET" && url.pathname.startsWith("/share/")) {
+    return handleShareLookup(request, origin, env);
+  }
+  if (request.method === "GET" && url.pathname.startsWith("/s/")) {
+    return handleShareRedirect(request, env);
+  }
 
-    if (request.method !== "POST" || url.pathname !== "/v1/messages") {
-      return jsonResponse(404, "not_found", "Endpoint not found", origin, env);
-    }
+  if (request.method !== "POST" || url.pathname !== "/v1/messages") {
+    return jsonResponse(404, "not_found", "Endpoint not found", origin, env);
+  }
 
-    if (origin && !allowedOrigins(env).has(origin)) {
-      return jsonResponse(403, "origin_not_allowed", "Origin is not allowed", origin, env);
-    }
+  if (origin && !allowedOrigins(env).has(origin)) {
+    return jsonResponse(403, "origin_not_allowed", "Origin is not allowed", origin, env);
+  }
 
-    if (!env.ANTHROPIC_API_KEY || !env.NUTRITRACK_PROXY_TOKEN) {
-      return jsonResponse(500, "worker_not_configured", "Required Worker secrets are missing", origin, env);
-    }
+  if (!env.ANTHROPIC_API_KEY || !env.NUTRITRACK_PROXY_TOKEN) {
+    return jsonResponse(500, "worker_not_configured", "Required Worker secrets are missing", origin, env);
+  }
 
-    const token = request.headers.get("x-app-proxy-secret") || "";
-    if (token !== env.NUTRITRACK_PROXY_TOKEN) {
-      return jsonResponse(401, "unauthorized", "Invalid app proxy secret", origin, env);
-    }
+  const token = request.headers.get("x-app-proxy-secret") || "";
+  if (token !== env.NUTRITRACK_PROXY_TOKEN) {
+    return jsonResponse(401, "unauthorized", "Invalid app proxy secret", origin, env);
+  }
 
-    if (getContentLength(request) > MAX_BODY_BYTES) {
-      return jsonResponse(413, "request_too_large", "Request body is too large", origin, env);
-    }
+  if (getContentLength(request) > MAX_BODY_BYTES) {
+    return jsonResponse(413, "request_too_large", "Request body is too large", origin, env);
+  }
 
-    let payload;
-    try {
-      payload = await request.json();
-    } catch (error) {
-      return jsonResponse(400, "invalid_json", "Request body must be valid JSON", origin, env);
-    }
+  const read = await readJsonLimited(request, MAX_BODY_BYTES);
+  if (read.tooLarge) {
+    return jsonResponse(413, "request_too_large", "Request body is too large", origin, env);
+  }
+  if (!read.json) {
+    return jsonResponse(400, "invalid_json", "Request body must be valid JSON", origin, env);
+  }
+  const payload = read.json;
 
-    const anthropicResponse = await fetch(ANTHROPIC_URL, {
+  // Ohne try/catch würde ein Netzfehler zur Cloudflare-Fehlerseite ohne CORS,
+  // und der Browser zeigte „Server nicht erreichbar" statt einer Meldung.
+  let anthropicResponse;
+  try {
+    anthropicResponse = await fetch(ANTHROPIC_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -1770,15 +2018,41 @@ export default {
         "anthropic-version": env.ANTHROPIC_VERSION || DEFAULT_ANTHROPIC_VERSION,
       },
       body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(ANTHROPIC_TIMEOUT_MS),
     });
+  } catch (e) {
+    const timedOut = e && (e.name === "TimeoutError" || e.name === "AbortError");
+    return jsonResponse(
+      timedOut ? 504 : 502,
+      "upstream_error",
+      timedOut ? "Anthropic timed out" : "Failed to reach Anthropic",
+      origin,
+      env,
+    );
+  }
 
-    return new Response(anthropicResponse.body, {
-      status: anthropicResponse.status,
-      headers: {
-        ...corsHeaders(origin, env),
-        "Content-Type": anthropicResponse.headers.get("Content-Type") || "application/json; charset=utf-8",
-        "Cache-Control": "no-store",
-      },
-    });
+  return new Response(anthropicResponse.body, {
+    status: anthropicResponse.status,
+    headers: {
+      ...corsHeaders(origin, env),
+      "Content-Type": anthropicResponse.headers.get("Content-Type") || "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
+// Hülle um den Router: Jede unbehandelte Ausnahme (z. B. KV wirft, weil das
+// Tageskontingent erschöpft ist) wird zu einer JSON-Antwort MIT CORS-Headern.
+// Ohne sie käme die Cloudflare-Fehlerseite ohne Access-Control-Allow-Origin an,
+// und die App sähe nur „Server nicht erreichbar". `return await` ist nötig,
+// sonst fängt das catch die abgelehnte Promise nicht.
+export default {
+  async fetch(request, env) {
+    try {
+      return await route(request, env);
+    } catch (e) {
+      console.log("unhandled", e && (e.stack || e.message));
+      return jsonResponse(500, "internal_error", "Internal worker error", request.headers.get("Origin") || "", env);
+    }
   },
 };

@@ -1,8 +1,19 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.275',items:[
+    {icon:'\u2195',text:'<b>Einträge auf einen anderen Tag verschieben oder kopieren</b>: Im Bearbeiten-Dialog Tag und Mahlzeit wählen, dann „Verschieben“ oder „Kopieren“.',where:'Eintrag antippen (Rezept: → ✏️ Eintrag bearbeiten) → „↕ Verschieben / Kopieren“'}
+  ]},
+  {v:'0.274',items:[
+    {icon:'\ud83d\uded2',text:'<b>Einkaufszettel rechnet Mengen richtig zusammen</b>: Zwei Rezepte mit je 200 g Zwiebeln ergeben 400 g statt 200 g. „1,5 kg“ und „15 kg“ werden nicht mehr verwechselt. Ein schon abgehakter Artikel bekommt beim Rezept-Import nur die neue Menge, die gekaufte wird nicht mehr dazugezählt.',where:'Mehr → 🛒 Einkaufszettel'}
+  ]},
+  {v:'0.273',items:[
+    {icon:'\ud83d\udd11',text:'<b>Ein vertipptes KI-Passwort überschreibt nicht mehr das richtige</b>: Die App prüft ein neues Passwort erst beim Server und speichert es nur, wenn es stimmt. Ohne Internet wird es vorgemerkt und beim nächsten Start mit Internet geprüft. Ist schon ein Passwort gespeichert, bleibt das alte.',where:'Mehr → 🤖 KI'}
+  ]},
   {v:'0.270',items:[
-    {icon:'\u2195',text:'<b>Einträge auf einen anderen Tag verschieben oder kopieren</b>: Im Bearbeiten-Dialog Tag und Mahlzeit wählen, dann „Verschieben“ oder „Kopieren“. Eine Kopie bekommt ein eigenes Foto.',where:'Eintrag antippen (Rezept: → ✏️ Eintrag bearbeiten) → „↕ Verschieben / Kopieren“'}
+    {icon:'\ud83d\udee1\ufe0f',text:'<b>Mehrere Fehler behoben, bei denen Daten verloren gehen konnten</b>: „Aus OneDrive laden“ holt jetzt immer den aktuellen Stand statt einer zwischengespeicherten Kopie. In der Bibliothek öffnet ✎ nach einer Suche das richtige Lebensmittel. Ein abgebrochenes „Zutat hinzufügen“ wirkt nicht mehr nach. Zutaten-Änderungen an einem Eintrag verändern nicht mehr das Rezept in der Bibliothek.'},
+    {icon:'\ud83d\udce6',text:'<b>Tage älter als 90 Tage</b> lassen sich wieder befüllen: Die archivierte Tagessumme steht dann als Eintrag „📦 Archivierte Tageswerte“ im Snack, neue Einträge kommen dazu. Der Verlauf zeigt bei archivierten Tagen die gespeicherte Summe statt 0 kcal.',where:'Heute → ‹ zurückblättern'},
+    {icon:'\ud83d\udcf7',text:'<b>Offline-Fotos</b>: „Jetzt analysieren“ öffnet das Foto sichtbar in der Suche. Das Foto bleibt gespeichert, bis die KI geantwortet hat. Fotos aus Vorlagen verschwinden nicht mehr, wenn man eine Kopie löscht.',where:'Trends → 📷 Offline-Fotos'}
   ]},
   {v:'0.269',items:[
     {icon:'\ud83d\udd17',text:'<b>Partner-Kopplung und Alexa-Token</b> stehen jetzt unter <b>Verbindungen</b> – bei „Weitere Verbindungen“, mit Status (gekoppelt / Token eingerichtet). Vorher waren sie in den Funktions-Blättern „Vom Partner“ und „Mahlzeiten“ versteckt.',where:'Mehr → 🔗 Verbindungen'}

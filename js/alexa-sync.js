@@ -284,6 +284,10 @@
     var e={t:item.babyType};
     var p=item.babyP||{};
     for(var k in p){if(Object.prototype.hasOwnProperty.call(p,k))e[k]=p[k];}
+    // Felder aus dem Briefkasten sind fremde Daten: nur erwartete Formen (#236).
+    if('every' in e){e.every=parseFloat(e.every);if(!(e.every>0))delete e.every;}
+    if('time' in e&&!/^\d{1,2}:\d{2}$/.test(String(e.time)))delete e.time;
+    if('id' in e)delete e.id;
     // Gesprochen wurde nur „gestillt“, ohne Seite: denselben Alternations-
     // Vorschlag nutzen wie die Schnell-Knöpfe, statt die Seite leer zu lassen.
     if(e.t==='breast'&&!e.side&&window.NTBaby.nextSide)e.side=window.NTBaby.nextSide(key)||'';
@@ -513,7 +517,11 @@
             // wurde er nicht, aber abgeholt wird er auch nie wieder.
             if(mealsOk){
               meals.forEach(function(m){handled.push(m.id);});
-              if(maxSrev>since)localStorage.setItem(box.cursorKey,String(maxSrev));
+              // 2 Min. hinter der Serverzeit bleiben: ein spaeter sichtbarer
+              // Einwurf (KV-Verzoegerung) laege sonst fuer immer unter dem
+              // Cursor (#238). Schon Eingetragenes faengt _alexaId ab.
+              var next=data.truncated?since:(isFinite(data.now)?Math.min(maxSrev,data.now-120000):maxSrev);
+              if(next>since)localStorage.setItem(box.cursorKey,String(next));
             }
             // Mahlzeiten offen: Cursor stehen lassen, damit der naechste Lauf
             // alles erneut sieht. Was schon eingetragen ist, faengt die

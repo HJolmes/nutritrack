@@ -197,6 +197,14 @@ function announce(){
 }
 
 // ── Empfangen ──
+// Cursor 2 Min. hinter der Serverzeit halten: ein spaeter sichtbarer Push
+// (KV-Verzoegerung, parallele Pushs) wuerde sonst uebersprungen (#238).
+// Doppelt Geliefertes faengt die ID-Pruefung gegen das Postfach ab.
+function lagCursor(since,d){
+  if(!d.cursor)return since;
+  var cur=isFinite(d.serverTime)?Math.min(d.cursor,d.serverTime-120000):d.cursor;
+  return Math.max(since,cur);
+}
 function pull(){
   var c=st();
   return fetch(API+'?since='+encodeURIComponent(c.since||0),{headers:{'X-Partner-Room':c.room}})
@@ -204,7 +212,7 @@ function pull(){
     .then(function(j){
       var d=(j&&j.data)||{};
       var recs=d.records||[];
-      if(!recs.length){if(d.cursor)c.since=Math.max(c.since||0,d.cursor);return 0;}
+      if(!recs.length){c.since=lagCursor(c.since||0,d);return 0;}
       return Promise.all(recs.map(decRec)).then(function(bodies){
         var added=0,added0=false;
         bodies.forEach(function(b,i){
@@ -223,7 +231,7 @@ function pull(){
           added++;
         });
         trimInbox();
-        if(d.cursor)c.since=Math.max(c.since||0,d.cursor);
+        c.since=lagCursor(c.since||0,d);
         if(added||added0)saveS();
         return added;
       });
@@ -351,7 +359,7 @@ function openForMeal(meal){
     n++;if(idx<0)idx=i;
   });
   if(!n){showToast('Nichts Neues f\u00fcr diese Mahlzeit');return;}
-  if(n===1){openPacket(idx);return;}
+  if(n===1){openPacket(items[idx].id);return;}
   openInbox();
 }
 
@@ -365,7 +373,7 @@ function renderInbox(){
   }
   el.innerHTML=items.map(function(it,i){
     var isNew=it.st==='new';
-    return '<div class="list-row" style="'+(isNew?'border:1.5px solid var(--g2);':'opacity:.65;')+'" onclick="NTPartner.openPacket('+i+')">'
+    return '<div class="list-row" style="'+(isNew?'border:1.5px solid var(--g2);':'opacity:.65;')+'" data-act="NTPartner.openPacket" data-args="'+esc(JSON.stringify([it.id]))+'">'
       +'<div class="lr-ic">'+packetIcon(it.p)+'</div>'
       +'<div class="lr-body">'
         +'<div class="lr-name">'+esc(packetTitle(it))+(isNew?' <span style="color:var(--g2);font-size:11px;">• neu</span>':'')+'</div>'
@@ -376,8 +384,10 @@ function renderInbox(){
   }).join('')
   +'<button type="button" class="seb" style="margin-top:12px;" onclick="NTPartner.clearInbox()">🗑 Postfach leeren</button>';
 }
-function openPacket(i){
-  var it=inbox()[i];
+// Ueber die ID, nicht die Listenposition: der Poll fuegt neue Sendungen vorn
+// ein, waehrend das Postfach offen ist — ein Index traefe dann die falsche (#241).
+function openPacket(id){
+  var it=inbox().filter(function(x){return x.id===id;})[0];
   if(!it){showToast('Sendung nicht gefunden');return;}
   if(!it.p){showToast('Schon übernommen – der Inhalt steht im Tagebuch');return;}
   _openId=it.id;

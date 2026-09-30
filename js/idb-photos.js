@@ -19,6 +19,8 @@
         var t=db.transaction(STORE,mode),s=t.objectStore(STORE),out=fn(s);
         t.oncomplete=function(){res(out&&out.result!==undefined?out.result:undefined);};
         t.onerror=function(){rej(t.error);};
+        // Quota-Abbruch feuert nur abort, nicht error — sonst bliebe das Promise offen (#235).
+        t.onabort=function(){rej(t.error||new Error('IndexedDB-Transaktion abgebrochen'));};
       });
     });
   }

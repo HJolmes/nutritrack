@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.270"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.275"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.270"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.275"></script>
 <script>
   (function(){
     if(typeof ZXingWASM==='undefined'){console.warn('zxing-wasm load failed, ZXing-JS fallback aktiv');return;}
@@ -1211,7 +1211,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.270</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.275</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -3345,11 +3345,11 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.270"></script>
-<script src="js/fooddb.js?v=0.270"></script>
-<script src="js/fooddb-usda.js?v=0.270"></script>
-<script src="js/idb-photos.js?v=0.270"></script>
-<script src="js/changelog.js?v=0.270"></script>
+<script src="js/actions.js?v=0.275"></script>
+<script src="js/fooddb.js?v=0.275"></script>
+<script src="js/fooddb-usda.js?v=0.275"></script>
+<script src="js/idb-photos.js?v=0.275"></script>
+<script src="js/changelog.js?v=0.275"></script>
 <script>
 // ════════════════════════════════════════
 // SECTION: DATABASE
@@ -3368,7 +3368,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.270';
+var APP_VERSION='0.275';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -3390,6 +3390,9 @@ function fetchT(url,opts,ms){
 }
 // HTML-Escaping für alle Namen/Freitexte aus untrusted Quellen (Import-Payloads,
 // OpenFoodFacts, KI-Antworten), die per innerHTML eingefügt werden — schützt vor XSS.
+// Symbol aus fremder Quelle (Share-Link, Partner, Plan-Sync): kurz halten und
+// ohne HTML-Zeichen — die Anzeige escaped zusaetzlich (#236).
+function safeEmoji(s,fb){s=String(s==null?'':s).replace(/[&<>"'`=\\/]/g,'').slice(0,16);return s||fb||'';}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function _sha256hex(str){
   return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
@@ -3397,7 +3400,58 @@ function _sha256hex(str){
   });
 }
 function getProxySecret(){return localStorage.getItem('nt_proxy_pw')||'';}
-function setProxySecret(pw){return _sha256hex(pw).then(function(h){localStorage.setItem('nt_proxy_pw',h);_aiKeyEncRefresh();_aiKeyEncTryDecrypt();return h;});}
+// Ein neues Passwort wird erst gespeichert, NACHDEM der Worker es geprueft
+// hat — vorher ueberschrieb ein Tippfehler das funktionierende Passwort und
+// verschluesselte die Backup-Kopien der KI-Keys damit neu (#242).
+// Ergebnis: 'ok' | 'wrong' | 'offline-saved' | 'offline-kept'.
+// Offline ohne bisheriges Passwort: ungeprueft merken (nt_proxy_pw_unverified),
+// beim naechsten Start mit Netz prueft recheckProxySecret nach. Offline MIT
+// bisherigem (geprueftem) Passwort: das alte bleibt.
+function trySetProxySecret(pw){
+  return _sha256hex(pw).then(function(h){
+    return verifyProxySecret(h).then(function(ok){
+      if(ok===true){_storeProxySecret(h,false);return 'ok';}
+      if(ok===false)return 'wrong';
+      if(getProxySecret()&&!localStorage.getItem('nt_proxy_pw_unverified'))return 'offline-kept';
+      _storeProxySecret(h,true);return 'offline-saved';
+    });
+  });
+}
+function _storeProxySecret(h,unverified){
+  localStorage.setItem('nt_proxy_pw',h);
+  if(unverified)localStorage.setItem('nt_proxy_pw_unverified','1');
+  else{localStorage.removeItem('nt_proxy_pw_unverified');_aiKeyEncRefresh();}
+  // Entschluesseln ist gefahrlos: mit falschem Passwort schlaegt es nur fehl.
+  _aiKeyEncTryDecrypt();
+}
+// Offline gemerktes Passwort nachpruefen (Start, Rueckkehr ins Netz).
+function recheckProxySecret(){
+  if(!localStorage.getItem('nt_proxy_pw_unverified')||!getProxySecret()||!isOnline)return Promise.resolve(null);
+  var h=getProxySecret();
+  return verifyProxySecret(h).then(function(ok){
+    // Waehrend der Pruefung neu gesetzt oder schon geprueft: das Ergebnis
+    // gehoert zu einem anderen Passwort und darf es weder freigeben noch loeschen.
+    if(getProxySecret()!==h||!localStorage.getItem('nt_proxy_pw_unverified'))return ok;
+    if(ok===true){
+      localStorage.removeItem('nt_proxy_pw_unverified');
+      _aiKeyEncRefresh();
+    }else if(ok===false){
+      localStorage.removeItem('nt_proxy_pw');localStorage.removeItem('nt_proxy_pw_unverified');
+      localStorage.removeItem('nt_gate_skipped');
+      showToast('❌ KI-Passwort vom Server abgelehnt – bitte neu eingeben',4000);
+      checkProxyPwGate();
+    }
+    _renderProxyPwStatus();
+    return ok;
+  });
+}
+function _renderProxyPwStatus(){
+  var el=document.getElementById('aiProxyStatus');if(!el)return;
+  el.style.color='var(--g1)';// Grundfarbe aus dem Markup; '' loeschte sie dauerhaft
+  el.textContent=!getProxySecret()?'Noch kein Passwort – KI nicht verfügbar'
+    :localStorage.getItem('nt_proxy_pw_unverified')?'Gespeichert – wird geprüft, sobald Internet da ist'
+    :'Passwort gesetzt ✓';
+}
 
 // ── Konfigurierbarer KI-Anbieter ──────────────────────────────────────────
 // Standard = Anthropic über den eingebauten Proxy (kein eigener Key nötig).
@@ -3475,6 +3529,9 @@ function _aiKeyEncRefreshSlot(plain,encStore){
   });
 }
 function _aiKeyEncRefresh(){
+  // Ungepruefte Passwoerter verschluesseln keine Backup-Kopien — gilt fuer
+  // jeden Aufrufer (Start, Key speichern), nicht nur _storeProxySecret (#242).
+  if(localStorage.getItem('nt_proxy_pw_unverified'))return Promise.resolve([]);
   return Promise.all([
     _aiKeyEncRefreshSlot(getAiProviderKey(),'nt_ai_key_enc'),
     _aiKeyEncRefreshSlot(getAiVisionKey(),'nt_ai_vision_key_enc')
@@ -3615,7 +3672,9 @@ function _freeQuota(step){
     // Alt-Autosaves (vor v0.268 in localStorage, seither IndexedDB) – grösstes verzichtbares Objekt.
     try{localStorage.removeItem('nt_autosaves');}catch(e){}
   }else if(step===2){
-    _pruneFoodCache(FOODCACHE_MAX);_pruneBarcodeCache(BARCODECACHE_MAX);
+    // Auf die Haelfte: auf FOODCACHE_MAX kuerzt saveX ohnehin bei jedem
+    // Speichern — das gaebe hier keinen Platz frei (#235).
+    _pruneFoodCache(Math.floor(FOODCACHE_MAX/2));_pruneBarcodeCache(Math.floor(BARCODECACHE_MAX/2));
     saveX();saveBarcodeCache();
   }
 }
@@ -3685,14 +3744,10 @@ window.addEventListener('DOMContentLoaded',function(){
   var _params=new URLSearchParams(window.location.search);
   var _odCode=_params.get('code');
   var _odState=_params.get('state');
-  if(_odCode&&_odState){
-    loadS();loadX();loadBarcodeCache();
-    var hadLegacyApiKey=!!S.apiKey;
-    NTDrive.handleCallback(_odCode,_odState);
-    clearLegacyApiKey();
-    if(S.setupDone||hadLegacyApiKey||S.name!=='Du')showMain();
-    return;
-  }
+  // Kein vorzeitiges return: der normale Start (heutiges Datum, Tageswechsel,
+  // online/offline, Service Worker) muss auch nach der Rueckleitung laufen (#228).
+  // handleCallback bereinigt die URL synchron und holt den Token asynchron.
+  if(_odCode&&_odState)NTDrive.handleCallback(_odCode,_odState);
   var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
   if(isIOS)setAppleTouchIconPNG();
   loadS();loadX();loadBarcodeCache();
@@ -3700,9 +3755,11 @@ window.addEventListener('DOMContentLoaded',function(){
   clearLegacyApiKey();
   S.currentDate=today();
   _appToday=S.currentDate;
-  window.addEventListener('online',function(){isOnline=true;updBadge();showToast('Online 🌐');});
+  window.addEventListener('online',function(){isOnline=true;updBadge();showToast('Online 🌐');recheckProxySecret();});
   window.addEventListener('offline',function(){isOnline=false;updBadge();showToast('Offline 📴');});
   updBadge();
+  // Offline gemerktes KI-Passwort nachpruefen (#242). No-op ohne Merker.
+  setTimeout(recheckProxySecret,1500);
   document.getElementById('setupBtn').addEventListener('click',doSetup);
   var _mainShown=(S.setupDone||hadLegacyApiKey||S.name!=='Du');
   if(_mainShown)showMain();
@@ -3877,11 +3934,20 @@ function skipProxyPwGate(){
   if(gate)gate.style.display='none';
   showToast('KI-Funktionen deaktiviert – Passwort jederzeit unter Mehr → 🤖 KI nachtragen');
 }
-// Prüft das gesetzte Passwort mit einem 1-Token-Ping gegen den Worker.
-// true = akzeptiert, false = 401/403 (falsch), null = offline/unklar.
-function verifyProxySecret(){
-  return fetchT(PROJECT_AI_PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json','x-app-proxy-secret':getProxySecret()},body:JSON.stringify({model:'claude-haiku-4-5',max_tokens:1,messages:[{role:'user',content:[{type:'text',text:'ping'}]}]})},10000)
-    .then(function(r){return r.status!==401&&r.status!==403;})
+// Prüft ein Passwort (Hash; ohne Argument das gespeicherte) mit einem
+// 1-Token-Ping gegen den Worker, OHNE es zu speichern.
+// true = akzeptiert, false = 401 (falsch), null = offline/unklar. 403 (Herkunft)
+// und 5xx (Worker nicht eingerichtet, Upstream) sagen nichts ueber das Passwort.
+function verifyProxySecret(h){
+  return fetchT(PROJECT_AI_PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json','x-app-proxy-secret':h||getProxySecret()},body:JSON.stringify({model:'claude-haiku-4-5',max_tokens:1,messages:[{role:'user',content:[{type:'text',text:'ping'}]}]})},10000)
+    .then(function(r){
+      // Der Worker reicht Anthropics Status durch: ein 401 kann auch ein
+      // abgelaufener Anthropic-Key des Workers sein. Falsch ist das Passwort
+      // nur bei der EIGENEN Ablehnung des Workers (error.code 'unauthorized').
+      if(r.status===401)return r.json().then(function(j){return (j&&j.error&&j.error.code==='unauthorized')?false:null;},function(){return null;});
+      if(r.status===403||r.status>=500)return null;
+      return true;
+    })
     .catch(function(){return null;});
 }
 function submitProxyPw(){
@@ -3892,12 +3958,10 @@ function submitProxyPw(){
     if(errEl){errEl.textContent='Bitte Passwort eingeben.';errEl.style.display='block';}
     return;
   }
-  setProxySecret(pw).then(function(){return verifyProxySecret();}).then(function(ok){
-    var aiStatus=document.getElementById('aiProxyStatus');
-    if(ok===false){
-      // Server lehnt ab → Gate offen lassen, klare Fehlermeldung statt späterem KI-Fehler.
-      if(errEl){errEl.textContent='❌ Passwort scheint falsch (Server lehnt ab).';errEl.style.display='block';}
-      if(aiStatus)aiStatus.textContent='❌ Passwort scheint falsch';
+  trySetProxySecret(pw).then(function(res){
+    if(res==='wrong'||res==='offline-kept'){
+      // Nichts gespeichert → Gate offen lassen, klare Meldung statt späterem KI-Fehler.
+      if(errEl){errEl.textContent=res==='wrong'?'❌ Passwort scheint falsch (Server lehnt ab).':'Offline – Passwort nicht geändert. Bitte mit Internet erneut eingeben.';errEl.style.display='block';}
       return;
     }
     localStorage.removeItem('nt_gate_skipped');
@@ -3905,7 +3969,9 @@ function submitProxyPw(){
     if(gate)gate.style.display='none';
     if(input)input.value='';
     if(errEl)errEl.style.display='none';
-    if(aiStatus)aiStatus.textContent=ok===true?'✓ Passwort geprüft':'Gespeichert (offline nicht prüfbar)';
+    _renderProxyPwStatus();
+    var aiStatus=document.getElementById('aiProxyStatus');
+    if(aiStatus&&res==='ok')aiStatus.textContent='✓ Passwort geprüft';
   });
 }
 // Ein Autospeicher an EINEM Ort: Mit OneDrive in die rotierenden Slots
@@ -3969,20 +4035,25 @@ function saveProxyPwFromSettings(){
   var input=document.getElementById('settProxyPwInput');
   var pw=(input?input.value:'').trim();
   if(!pw){showToast('Bitte Passwort eingeben');return;}
-  setProxySecret(pw).then(function(){
+  var aiStatus=document.getElementById('aiProxyStatus');
+  if(aiStatus){aiStatus.textContent='Prüfe Passwort …';aiStatus.style.color='var(--g1)';}
+  trySetProxySecret(pw).then(function(res){
+    if(res==='wrong'){
+      // Das bisherige Passwort bleibt unangetastet (#242).
+      if(aiStatus){aiStatus.textContent='❌ Passwort scheint falsch (Server lehnt ab) – bisheriges bleibt';aiStatus.style.color='var(--re)';}
+      showToast('❌ Passwort scheint falsch');
+      return;
+    }
+    if(res==='offline-kept'){
+      _renderProxyPwStatus();
+      showToast('Offline – Passwort nicht geändert. Bitte mit Internet erneut eingeben.',4000);
+      return;
+    }
     if(input)input.value='';
-    var aiStatus=document.getElementById('aiProxyStatus');
-    if(aiStatus){aiStatus.textContent='Prüfe Passwort …';aiStatus.style.color='';}
-    return verifyProxySecret().then(function(ok){
-      if(ok===false){
-        if(aiStatus){aiStatus.textContent='❌ Passwort scheint falsch (Server lehnt ab)';aiStatus.style.color='var(--re)';}
-        showToast('❌ Passwort scheint falsch');
-        return;
-      }
-      localStorage.removeItem('nt_gate_skipped');
-      if(aiStatus)aiStatus.textContent=ok===true?'✓ Passwort geprüft':'Gespeichert (offline nicht prüfbar)';
-      showToast('Proxy-Passwort gespeichert');
-    });
+    localStorage.removeItem('nt_gate_skipped');
+    _renderProxyPwStatus();
+    if(aiStatus&&res==='ok')aiStatus.textContent='✓ Passwort geprüft';
+    showToast(res==='ok'?'Proxy-Passwort gespeichert':'Gespeichert – wird geprüft, sobald Internet da ist');
   });
 }
 // ── KI-Anbieter-Einstellungen ──
@@ -4264,13 +4335,28 @@ function checkDayRollover(){
   if(window.NTBaby&&NTBaby.refresh)NTBaby.refresh();
   return true;
 }
+// Macht einen komprimierten Alt-Tag wieder bearbeitbar. Die archivierten
+// Summen bleiben als ein Eintrag im Snack erhalten; beim naechsten Start
+// komprimiert compressOldDays den Tag erneut — mit der neuen Gesamtsumme.
+// _reopened haelt wiederkehrende Mahlzeiten fern (recurring.js).
+function reopenArchivedDay(d){
+  if(!d||!d._compressed)return d;
+  var p={kcal:d.kcal||0,protein:d.protein||0,carbs:d.carbs||0,fat:d.fat||0,sugar:0,fiber:0,salt:0};
+  var snack=(p.kcal||p.protein||p.carbs||p.fat)
+    ?[Object.assign({name:'Archivierte Tageswerte',emoji:'📦',_archived:true,amount:100,per100:p},p)]:[];
+  ['_compressed','kcal','protein','carbs','fat'].forEach(function(k){delete d[k];});
+  d.meals={breakfast:[],lunch:[],dinner:[],snack:snack};
+  d.water=d.water||0;
+  d.exercise=[];
+  d._reopened=true;
+  return d;
+}
 function getDay(){
   var d=S.days[S.currentDate];
   if(!d){d={meals:{breakfast:[],lunch:[],dinner:[],snack:[]},water:0,exercise:[]};S.days[S.currentDate]=d;}
-  // Komprimierte Alt-Tage (siehe compressOldDays) haben kein meals-Objekt.
-  // Temporäres leeres Tages-Objekt zurückgeben, damit renderAll nicht crasht.
-  // Änderungen an diesem Objekt werden bewusst NICHT gespeichert (Tag ist archiviert).
-  if(d._compressed){return {meals:{breakfast:[],lunch:[],dinner:[],snack:[]},water:d.water||0,exercise:[],_compressed:true};}
+  // Komprimierte Alt-Tage (siehe compressOldDays) werden wieder aufgemacht,
+  // sonst gingen Eintraege dort still verloren (#232).
+  if(d._compressed)reopenArchivedDay(d);
   if(!d.meals)d.meals={breakfast:[],lunch:[],dinner:[],snack:[]};
   if(!d.exercise)d.exercise=[];
   return d;
@@ -4420,7 +4506,7 @@ function renderAll(){
           if(dworst)dot+=dietAmpelDot(dworst.ampel);
         }
         return'<div class="fe'+(isR?' is-recipe':'')+'" onclick="'+(isR?'openEntryMenu':'openEditEntry')+'(\''+m+'\','+i+')">'
-          +'<div class="fee">'+(e.emoji||'🍽')+'</div>'
+          +'<div class="fee">'+esc(e.emoji||'🍽')+'</div>'
           +'<div class="fei"><div class="fen">'+esc(e.name)+(e._recurId?' 🔁':'')+(e._alexaPending?' 🗣️':'')+'</div><div class="fem">'+sub+'</div></div>'
           +'<div class="fek">'+Math.round(e.kcal)+' kcal</div>'
           +'<div style="display:flex;align-items:center;">'+dot+'<div class="fe-ic">✏️</div></div>'
@@ -4859,7 +4945,7 @@ function renderEditBody(e){
       var nid='edit-n-'+i;
       return'<div class="ing-wrap">'
         +'<div class="ing-item">'
-        +'<div class="ing-e" onclick="ingToggle(event,\''+nid+'\')">'+(ing.emoji||'🍽')+'</div>'
+        +'<div class="ing-e" onclick="ingToggle(event,\''+nid+'\')">'+esc(ing.emoji||'🍽')+'</div>'
         +'<div class="ing-n" onclick="ingToggle(event,\''+nid+'\')">'+esc(ing.name)+ampelDot+'</div>'
         +'<input type="number" class="ing-amt" value="'+amtVal+'" min="1" placeholder="g?" style="'+bStyle+'" onchange="editIngAmt('+i+',this.value)">'
         +'<div class="ing-u">g</div>'+warn
@@ -4965,8 +5051,8 @@ function editSaveAsRecipe(){
 
 function deleteEntry(){
   var _e=getDay().meals[editMeal][editIdx];
-  if(_e&&_e.mealPhotoId&&window.NTPhotos&&NTPhotos.ok())NTPhotos.del(_e.mealPhotoId).catch(function(){});
   getDay().meals[editMeal].splice(editIdx,1);
+  if(_e)delPhotoIfUnused(_e.mealPhotoId);// erst nach dem Entfernen pruefen (#234)
   saveS();renderAll();closeOv('editOv');
 }
 
@@ -5000,10 +5086,6 @@ function moveEntry(mode){
   if(!/^\d{4}-\d{2}-\d{2}$/.test(key)||MEALS.indexOf(targetMeal)<0){showToast('Tag und Mahlzeit wählen');return;}
   var sameDay=key===S.currentDate;
   if(!copy&&sameDay&&targetMeal===editMeal){showToast('Eintrag ist schon dort');return;}
-  // Komprimierte Alt-Tage (>90 Tage, compressOldDays) haben nur noch Summen –
-  // ein Eintrag dort wuerde die Summen nicht aendern und nie angezeigt.
-  var tgt=(S.days||{})[key];
-  if(tgt&&tgt._compressed){showToast('Dieser Tag ist archiviert');return;}
   var day=getDay(),src=day.meals[editMeal];
   var entry=src[editIdx];if(!entry)return;
   var td=sameDay?day:_ensureDayForImport(key);
@@ -5013,17 +5095,7 @@ function moveEntry(mode){
     // Kopie ist ein eigener Eintrag: keine Herkunfts-Marken, die Dedup
     // (Alexa), Wiederholungs-Badge oder Plan-Abgleich auf sie beziehen.
     delete c._recurId;delete c._alexaId;delete c._alexaPending;delete c._fromPlan;
-    // Foto teilen hiesse: Loeschen des einen nimmt dem anderen das Bild.
-    if(c.mealPhotoId){
-      var oldPid=c.mealPhotoId;delete c.mealPhotoId;
-      if(window.NTPhotos&&NTPhotos.ok()){
-        var pid='ph'+Date.now()+Math.random().toString(36).slice(2,8);
-        NTPhotos.get(oldPid).then(function(d){
-          if(!d)return;
-          return NTPhotos.put(pid,d).then(function(){c.mealPhotoId=pid;saveS();});
-        }).catch(function(){});
-      }
-    }
+    // mealPhotoId bleibt geteilt – delPhotoIfUnused loescht erst beim letzten.
     td.meals[targetMeal].push(c);
     showToast('⧉ Nach '+label+' kopiert');
   } else {
@@ -5092,7 +5164,7 @@ function recEditRenderIng(ings){
     var nid='reced-n-'+i;
     return'<div class="ing-wrap">'
       +'<div class="ing-item">'
-      +'<div class="ing-e" onclick="ingToggle(event,\''+nid+'\')">'+(ing.emoji||'🍽')+'</div>'
+      +'<div class="ing-e" onclick="ingToggle(event,\''+nid+'\')">'+esc(ing.emoji||'🍽')+'</div>'
       +'<div class="ing-n" onclick="ingToggle(event,\''+nid+'\')">'+esc(ing.name)+'</div>'
       +'<input type="number" class="ing-amt" value="'+amtVal+'" min="1" placeholder="g?" style="'+bStyle+'" onchange="recEditIngAmt('+i+',this.value)">'
       +'<div class="ing-u">g</div>'
@@ -5126,7 +5198,7 @@ function recEditSearch(){
   if(!results.length){el.innerHTML='<div class="nr" style="padding:8px;">Kein Ergebnis</div>';return;}
   el.innerHTML=results.map(function(p,i){
     return'<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1.5px solid var(--br);border-radius:10px;cursor:pointer;margin-bottom:4px;background:white;" onclick="recEditAddFood('+i+')">'
-      +'<div style="font-size:18px;">'+(p.emoji||'🍽')+'</div>'
+      +'<div style="font-size:18px;">'+esc(p.emoji||'🍽')+'</div>'
       +'<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:13px;">'+esc(p.name)+'</div>'
       +'<div style="font-size:11px;color:var(--mu);">'+Math.round(p.per100.kcal)+' kcal pro 100g</div></div>'
       +'<div style="font-size:18px;color:var(--g2);font-weight:900;">＋</div></div>';
@@ -5510,11 +5582,11 @@ var _pendingImport=null;
 var _pendingImportMeta=null;
 
 function _materializeRecipe(d){
-  var ings=(d.i||[]).map(function(x){return{name:x.n,emoji:x.em||x.e,amount:x.a||100,per100:{kcal:x.p.k||0,protein:x.p.pr||0,carbs:x.p.c||0,fat:x.p.f||0,sugar:0,fiber:0,salt:0}};});
-  return{id:Date.now().toString(),name:d.n||'Importiertes Rezept',emoji:d.em||d.e||'📋',ingredients:ings,instructions:d.ins||''};
+  var ings=(d.i||[]).map(function(x){return{name:x.n,emoji:safeEmoji(x.em||x.e,'🍽'),amount:x.a||100,per100:{kcal:x.p.k||0,protein:x.p.pr||0,carbs:x.p.c||0,fat:x.p.f||0,sugar:0,fiber:0,salt:0}};});
+  return{id:Date.now().toString(),name:d.n||'Importiertes Rezept',emoji:safeEmoji(d.em||d.e,'📋'),ingredients:ings,instructions:d.ins||''};
 }
 function _materializeFood(d){
-  return{name:d.n||'Importiertes Lebensmittel',emoji:d.em||d.e||'🍽',per100:{kcal:d.p.k||0,protein:d.p.pr||0,carbs:d.p.c||0,fat:d.p.f||0,sugar:0,fiber:0,salt:0}};
+  return{name:d.n||'Importiertes Lebensmittel',emoji:safeEmoji(d.em||d.e,'🍽'),per100:{kcal:d.p.k||0,protein:d.p.pr||0,carbs:d.p.c||0,fat:d.p.f||0,sugar:0,fiber:0,salt:0}};
 }
 function _materializeMealEntries(d){
   return _materializeEntryList(d.e||[]);
@@ -5522,13 +5594,13 @@ function _materializeMealEntries(d){
 function _materializeEntryList(arr){
   return(arr||[]).map(function(x){
     if(x.t==='r'){
-      var ings=(x.i||[]).map(function(ing){return{name:ing.n,emoji:ing.em,amount:ing.a||100,per100:{kcal:ing.p.k||0,protein:ing.p.pr||0,carbs:ing.p.c||0,fat:ing.p.f||0,sugar:0,fiber:0,salt:0}};});
+      var ings=(x.i||[]).map(function(ing){return{name:ing.n,emoji:safeEmoji(ing.em,'🍽'),amount:ing.a||100,per100:{kcal:ing.p.k||0,protein:ing.p.pr||0,carbs:ing.p.c||0,fat:ing.p.f||0,sugar:0,fiber:0,salt:0}};});
       var t=ingTotal(ings);
-      return Object.assign({name:x.n,emoji:x.em,isRecipe:true,recipeId:null,portions:x.p||1,ingredients:ings},scaleNutrients(t,x.p||1));
+      return Object.assign({name:x.n,emoji:safeEmoji(x.em,'📋'),isRecipe:true,recipeId:null,portions:x.p||1,ingredients:ings},scaleNutrients(t,x.p||1));
     }
     var per100={kcal:x.p.k||0,protein:x.p.pr||0,carbs:x.p.c||0,fat:x.p.f||0,sugar:0,fiber:0,salt:0};
     var r=(x.a||100)/100;
-    return Object.assign({name:x.n,emoji:x.em,amount:x.a||100,per100:per100},scaleNutrients(per100,r));
+    return Object.assign({name:x.n,emoji:safeEmoji(x.em,'🍽'),amount:x.a||100,per100:per100},scaleNutrients(per100,r));
   });
 }
 
@@ -5539,7 +5611,7 @@ function _ensureDayForImport(key){
   S.days=S.days||{};
   var d=S.days[key];
   if(!d){d={meals:{breakfast:[],lunch:[],dinner:[],snack:[]},water:0,exercise:[]};S.days[key]=d;}
-  if(d._compressed)delete d._compressed;
+  if(d._compressed)reopenArchivedDay(d);// Summen behalten (#232)
   if(!d.meals)d.meals={breakfast:[],lunch:[],dinner:[],snack:[]};
   ['breakfast','lunch','dinner','snack'].forEach(function(m){if(!Array.isArray(d.meals[m]))d.meals[m]=[];});
   if(!d.exercise)d.exercise=[];
@@ -6028,7 +6100,7 @@ function openSettings(tab){
   renderSavedDietFreeList();
   document.getElementById('cacheInfo').textContent=customFoods.length+' eigene Lebensmittel · '+recipes.length+' Rezepte · '+Object.keys(foodCache).length+' gespeichert';
   var aiStatus=document.getElementById('aiProxyStatus');
-  if(aiStatus)aiStatus.textContent=getProxySecret()?'Passwort gesetzt ✓':'Noch kein Passwort – KI nicht verfügbar';
+  if(aiStatus)_renderProxyPwStatus();
   var settPwInput=document.getElementById('settProxyPwInput');
   if(settPwInput)settPwInput.value='';
   renderAiProviderSettings();
@@ -6601,8 +6673,10 @@ function dietAmpelDot(ampel){
 function copyMealFromYesterday(meal){
   var yesterday=addDays(S.currentDate,-1);
   var yd=S.days[yesterday];
-  if(!yd||!(yd.meals[meal]||[]).length){showToast('Gestern kein Eintrag für diese Mahlzeit');return;}
-  var copies=JSON.parse(JSON.stringify(yd.meals[meal]));
+  // Archiv-Tage haben keine Einzeleintraege; die Summe gehoert nicht kopiert (#232).
+  var src=(yd&&yd.meals&&yd.meals[meal]||[]).filter(function(e){return !e._archived;});
+  if(!src.length){showToast('Gestern kein Eintrag für diese Mahlzeit');return;}
+  var copies=JSON.parse(JSON.stringify(src));
   var day=getDay();
   day.meals[meal]=day.meals[meal].concat(copies);
   saveS();renderAll();
@@ -6628,8 +6702,10 @@ function getRecentFoods(){
   var dates=Object.keys(S.days).sort().reverse().slice(0,14);
   dates.forEach(function(d){
     var day=S.days[d];
+    if(!day||!day.meals)return;// komprimierter Alt-Tag (#232)
     MEALS.forEach(function(m){
       (day.meals[m]||[]).forEach(function(e){
+        if(e._archived)return;
         if(e.isRecipe||(e.ingredients&&e.ingredients.length)){
           var k=(e.name||'').toLowerCase();
           if(!seen[k]&&e.name){seen[k]=true;list.push({name:e.name,emoji:e.emoji,kcal:e.kcal,amount:e.amount,per100:e.per100,isRecipe:e.isRecipe,recipeId:e.recipeId,ingredients:e.ingredients,portions:e.portions});}
@@ -6649,7 +6725,7 @@ function renderRecentList(){
   if(!items.length){el.innerHTML='<div style="text-align:center;color:var(--mu);padding:20px;font-size:13px;">Noch keine Einträge</div>';return;}
   el.innerHTML=items.map(function(item,i){
     return'<div class="ri" onclick="pickerAddRecent('+i+')">'
-      +'<div class="ri-e">'+(item.emoji||'🍽')+'</div>'
+      +'<div class="ri-e">'+esc(item.emoji||'🍽')+'</div>'
       +'<div style="flex:1;min-width:0;"><div class="ri-n">'+esc(item.name)+'</div>'
       +(item.per100?'<div class="ri-d">'+Math.round(item.per100.kcal)+' kcal/100g</div>':'<div class="ri-d">'+(item.kcal?Math.round(item.kcal)+' kcal':'')+'</div>')
       +'</div>'
@@ -6752,6 +6828,23 @@ function handleEditMealPhoto(e){
 // Fotos wandern nach IndexedDB (window.NTPhotos), am Eintrag bleibt nur die
 // mealPhotoId. Ohne IndexedDB (Private-Mode-Edge-Fälle) Fallback auf das alte
 // Base64-Feld mealPhoto im localStorage-State.
+// Vorlagen und wiederkehrende Mahlzeiten kopieren Eintraege samt mealPhotoId —
+// dasselbe Foto kann also an mehreren Stellen haengen. Geloescht wird es erst,
+// wenn keine davon mehr darauf zeigt (#234).
+function photoInUse(pid){
+  var hit=function(list){return (list||[]).some(function(e){return e&&e.mealPhotoId===pid;});};
+  var days=S.days||{};
+  for(var k in days){
+    var m=days[k]&&days[k].meals;if(!m)continue;
+    for(var meal in m)if(hit(m[meal]))return true;
+  }
+  if((S.mealTemplates||[]).some(function(t){return hit(t.entries);}))return true;
+  return (S.recurringMeals||[]).some(function(r){return hit(r.entries);});
+}
+function delPhotoIfUnused(pid){
+  if(!pid||!window.NTPhotos||!NTPhotos.ok()||photoInUse(pid))return;
+  NTPhotos.del(pid).catch(function(){});
+}
 function saveMealPhoto(meal,idx,b64){
   var day=getDay();
   var entry=day.meals[meal]&&day.meals[meal][idx];
@@ -6761,7 +6854,7 @@ function saveMealPhoto(meal,idx,b64){
     var old=entry.mealPhotoId;
     NTPhotos.put(pid,b64).then(function(){
       entry.mealPhotoId=pid;delete entry.mealPhoto;
-      if(old)NTPhotos.del(old).catch(function(){});
+      delPhotoIfUnused(old);
       saveS();
       showToast('📷 Foto gespeichert');
     }).catch(function(){entry.mealPhoto=b64;saveS();showToast('📷 Foto gespeichert');});
@@ -6833,9 +6926,10 @@ function compressOldDays(){
       var day=S.days[d];
       var all=day.meals.breakfast.concat(day.meals.lunch,day.meals.dinner,day.meals.snack);
       var t=calcM(all);
-      if(window.NTPhotos&&NTPhotos.ok())all.forEach(function(e){if(e&&e.mealPhotoId)NTPhotos.del(e.mealPhotoId).catch(function(){});});
-      // Nur Summen behalten, Details + Fotos löschen
+      // Nur Summen behalten, Details + Fotos löschen — Fotos erst nach dem
+      // Ersetzen, und nur wenn keine Vorlage/Kopie sie noch nutzt (#234).
       S.days[d]={_compressed:true,kcal:Math.round(t.kcal),protein:Math.round(t.protein),carbs:Math.round(t.carbs),fat:Math.round(t.fat),water:day.water||0};
+      all.forEach(function(e){if(e)delPhotoIfUnused(e.mealPhotoId);});
       changed=true;
     }
   });
@@ -6886,7 +6980,7 @@ function renderShoppingItems(recipeId){
   el.innerHTML=rec.ingredients.map(function(ing){
     var amt=Math.round((ing.amount||100)*p);
     return'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--br);">'
-      +'<div style="font-size:13px;">'+(ing.emoji||'🍽')+' '+esc(ing.name)+'</div>'
+      +'<div style="font-size:13px;">'+esc(ing.emoji||'🍽')+' '+esc(ing.name)+'</div>'
       +'<div style="font-size:13px;font-weight:700;color:var(--g1);">'+amt+'g</div>'
       +'</div>';
   }).join('');
@@ -6959,7 +7053,7 @@ function renderExercisePresets(){
     var isLib=!EXERCISE_PRESETS.find(function(x){return x.name===p.name;});
     var safeName=(p.name||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     var delBtn=isLib?('<span onclick="event.stopPropagation();deleteExerciseFromLibrary(\''+esc(safeName)+'\');void(0)" style="font-size:10px;color:var(--re);cursor:pointer;margin-left:4px;">✕</span>'):'';
-    return'<div style="display:inline-flex;align-items:center;background:var(--gl);border:1.5px solid var(--g3);border-radius:20px;padding:5px 10px;font-size:12px;font-weight:700;color:var(--g1);margin:2px;cursor:pointer;" onclick="selectExercisePreset(\''+esc(safeName)+'\')">'      +(p.emoji||'🏃')+' '+esc(p.name)+delBtn+'</div>';
+    return'<div style="display:inline-flex;align-items:center;background:var(--gl);border:1.5px solid var(--g3);border-radius:20px;padding:5px 10px;font-size:12px;font-weight:700;color:var(--g1);margin:2px;cursor:pointer;" onclick="selectExercisePreset(\''+esc(safeName)+'\')">'      +esc(p.emoji||'🏃')+' '+esc(p.name)+delBtn+'</div>';
   }).join('');
 }
 
@@ -7068,7 +7162,7 @@ function renderExercise(){
       srcBadge=' · <span style="background:var(--gl);border-radius:6px;padding:1px 5px;font-size:10px;font-weight:700;color:var(--g1);">'+label+'</span>';
     }
     return'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--br);">'
-      +'<div style="font-size:20px;">'+(e.emoji||'🏃')+'</div>'
+      +'<div style="font-size:20px;">'+esc(e.emoji||'🏃')+'</div>'
       +'<div style="flex:1;">'
         +'<div style="font-size:13px;font-weight:700;">'+esc(e.name)+(e._alexaPending?' ⚠️':'')+'</div>'
         +'<div style="font-size:11px;color:var(--mu);">'+(e.duration?e.duration+' Min. · ':'')+intLabel+srcBadge+'</div>'
@@ -7213,7 +7307,7 @@ function renderLibrary(){
   } else {
     // Custom foods + DB
     var allFoods=[];
-    customFoods.forEach(function(f){allFoods.push({name:f.name,emoji:f.emoji,per100:f.per100,isCustom:true});});
+    customFoods.forEach(function(f,ci){allFoods.push({name:f.name,emoji:f.emoji,per100:f.per100,isCustom:true,ci:ci});});
     DB.forEach(function(f){allFoods.push({name:f.n,emoji:f.e,per100:dbPer100(f),isCustom:false});});
     var filtered=allFoods.filter(function(f){return !ql||f.name.toLowerCase().includes(ql);});
     filtered=filtered.slice(0,30);
@@ -7222,7 +7316,7 @@ function renderLibrary(){
     } else {
       window._libFoods=filtered;
     filtered.forEach(function(f,i){
-      var editBtn=f.isCustom?('<button type="button" onclick="openOwnFoodEdit('+i+')" style="background:none;border:none;font-size:16px;color:var(--g2);padding:4px;">&#9998;</button>'):'';
+      var editBtn=f.isCustom?('<button type="button" onclick="openOwnFoodEdit('+f.ci+')" style="background:none;border:none;font-size:16px;color:var(--g2);padding:4px;">&#9998;</button>'):'';
       var shareBtn='<button type="button" onclick="shareLibFood('+i+')" style="background:none;border:none;font-size:16px;color:var(--mu);padding:4px;" title="Teilen">📤</button>';
       html+='<div style="background:white;border-radius:12px;padding:10px 14px;box-shadow:var(--sh);display:flex;align-items:center;gap:10px;">'
         +'<div style="font-size:22px;">'+esc(f.emoji||'&#127374;')+'</div>'
@@ -7365,7 +7459,7 @@ function renderMealDetail(meal){
       var isR=!!e.isRecipe;
       var sub=isR?(e.portions||1)+'× Portion · '+Math.round(e.kcal)+' kcal':e.amount+'g · '+Math.round(e.protein)+'g P · '+Math.round(e.carbs)+'g C · '+Math.round(e.fat)+'g F';
       return'<div class="fe" onclick="'+(isR?'openEntryMenu':'openEditEntry')+'(\''+meal+'\','+i+')">'
-        +'<div class="fee" style="background:var(--gl);width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;">'+(e.emoji||'🍽')+'</div>'
+        +'<div class="fee" style="background:var(--gl);width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;">'+esc(e.emoji||'🍽')+'</div>'
         +'<div class="fei"><div class="fen">'+esc(e.name)+(e._recurId?' 🔁':'')+(e._alexaPending?' 🗣️':'')+'</div><div class="fem">'+sub+'</div></div>'
         +'<div class="fek">'+Math.round(e.kcal)+'</div>'
         +'</div>';
@@ -7439,11 +7533,12 @@ function renderHistory(){
     var day=S.days[k]||{};var meals=day.meals||{};
     var kcal=0,count=0;
     Object.keys(meals).forEach(function(m){(meals[m]||[]).forEach(function(e){kcal+=e.kcal||0;count++;});});
+    if(day._compressed)kcal=day.kcal||0;// Archiv-Tag: nur die Summe ist erhalten (#232)
     var d=new Date(k+'T00:00:00');
     var dayLabel=days[d.getDay()]+', '+d.getDate()+'. '+months[d.getMonth()];
     return'<div class="list-row" onclick="goToDay(\''+k+'\')">'
       +'<div class="lr-ic">📅</div>'
-      +'<div class="lr-body"><div class="lr-name">'+dayLabel+'</div><div class="lr-sub">'+count+' Posten</div></div>'
+      +'<div class="lr-body"><div class="lr-name">'+dayLabel+'</div><div class="lr-sub">'+(day._compressed?'Archiviert':count+' Posten')+'</div></div>'
       +'<div class="lr-val">'+Math.round(kcal)+'<small style="font-family:Inter;font-size:11px;color:var(--mu);font-weight:500;"> kcal</small></div>'
       +(count?'<button type="button" title="Diesen Tag teilen" onclick="event.stopPropagation();shareDay(\''+k+'\')" style="background:none;border:none;font-size:16px;color:var(--mu);padding:4px 2px 4px 8px;cursor:pointer;">📤</button>':'')
       +'</div>';
@@ -7916,29 +8011,29 @@ function axTestSync(){
 }
 
 </script>
-<script src="picker.js?v=0.270"></script>
-<script src="js/health-sync.js?v=0.270"></script>
-<script src="js/sync-core.js?v=0.270"></script>
-<script src="js/baby.js?v=0.270"></script>
-<script src="js/baby-meds.js?v=0.270"></script>
-<script src="js/baby-growth-data.js?v=0.270"></script>
-<script src="js/baby-growth.js?v=0.270"></script>
-<script src="js/baby-week.js?v=0.270"></script>
-<script src="js/baby-milestones.js?v=0.270"></script>
-<script src="js/baby-midwife.js?v=0.270"></script>
-<script src="js/shopping.js?v=0.270"></script>
-<script src="js/partner.js?v=0.270"></script>
-<script src="js/alexa-sync.js?v=0.270"></script>
-<script src="js/dashboard.js?v=0.270"></script>
-<script src="js/features.js?v=0.270"></script>
-<script src="js/mealplan.js?v=0.270"></script>
-<script src="js/onedrive.js?v=0.270"></script>
-<script src="js/autosave.js?v=0.270"></script>
-<script src="js/recurring.js?v=0.270"></script>
-<script src="js/stats.js?v=0.270"></script>
-<script src="js/reminders.js?v=0.270"></script>
-<script src="js/templates.js?v=0.270"></script>
-<script src="js/offline-queue.js?v=0.270"></script>
+<script src="picker.js?v=0.275"></script>
+<script src="js/health-sync.js?v=0.275"></script>
+<script src="js/sync-core.js?v=0.275"></script>
+<script src="js/baby.js?v=0.275"></script>
+<script src="js/baby-meds.js?v=0.275"></script>
+<script src="js/baby-growth-data.js?v=0.275"></script>
+<script src="js/baby-growth.js?v=0.275"></script>
+<script src="js/baby-week.js?v=0.275"></script>
+<script src="js/baby-milestones.js?v=0.275"></script>
+<script src="js/baby-midwife.js?v=0.275"></script>
+<script src="js/shopping.js?v=0.275"></script>
+<script src="js/partner.js?v=0.275"></script>
+<script src="js/alexa-sync.js?v=0.275"></script>
+<script src="js/dashboard.js?v=0.275"></script>
+<script src="js/features.js?v=0.275"></script>
+<script src="js/mealplan.js?v=0.275"></script>
+<script src="js/onedrive.js?v=0.275"></script>
+<script src="js/autosave.js?v=0.275"></script>
+<script src="js/recurring.js?v=0.275"></script>
+<script src="js/stats.js?v=0.275"></script>
+<script src="js/reminders.js?v=0.275"></script>
+<script src="js/templates.js?v=0.275"></script>
+<script src="js/offline-queue.js?v=0.275"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

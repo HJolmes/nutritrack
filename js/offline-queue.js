@@ -50,23 +50,41 @@ function renderOfflineQueuePanel(){
 function processOfflineQueue(){
   if(!isOnline){showToast('Kein Internet');return;}
   if(!_offlineQueue.length){showToast('Keine ausstehenden Fotos');return;}
-  var item=_offlineQueue.shift();
-  saveOfflineQueue();
+  // Das Foto bleibt in der Warteschlange (und in IndexedDB), bis die KI
+  // geantwortet hat — schlaegt die Analyse fehl, ist es nicht verloren (#233).
+  var item=_offlineQueue[0];
   var start=function(b64){
-    renderOfflineQueuePanel();
-    if(!b64){showToast('Foto nicht mehr vorhanden');return;}
-    window._pickerPhotoB64=b64;
-    pickerMeal=item.meal;
+    if(!b64){
+      _offlineQueue.shift();saveOfflineQueue();renderOfflineQueuePanel();
+      showToast('Foto nicht mehr vorhanden');return;
+    }
+    // Sichtbar statt still: Tag des Fotos zeigen und den Picker mit dem Foto oeffnen.
     S.currentDate=item.date;
+    renderAll();
+    openPicker(item.meal,'foto');
+    pickerResetPhoto();
+    window._pickerPhotoB64=b64;
+    document.getElementById('pickerPrev').src='data:image/jpeg;base64,'+b64;
+    document.getElementById('pickerPrevWrap').classList.remove('hidden');
+    document.getElementById('pickerPhotoPickArea').style.display='none';
+    document.getElementById('pickerAnalyzeBtn').disabled=false;
+    window._pickerQueueItem=item;
     pickerAnalyze();
   };
   if(item.phid&&window.NTPhotos&&NTPhotos.ok()){
-    // Blob aus IDB holen; löschen ist ok — schlägt die Analyse fehl, re-queued
-    // der Fehlerpfad das Foto ohnehin neu (addToOfflineQueue).
-    NTPhotos.get(item.phid).then(function(b64){NTPhotos.del(item.phid).catch(function(){});start(b64);}).catch(function(){start(null);});
+    NTPhotos.get(item.phid).then(start).catch(function(){start(null);});
   }else{
     start(item.b64);
   }
+}
+
+// Von pickerAnalyze gerufen, sobald die KI geantwortet hat: erst jetzt
+// verlaesst das Foto die Warteschlange.
+function offlineQueueDone(item){
+  var i=_offlineQueue.indexOf(item);if(i<0)return;
+  _offlineQueue.splice(i,1);
+  saveOfflineQueue();renderOfflineQueuePanel();
+  if(item.phid&&window.NTPhotos&&NTPhotos.ok())NTPhotos.del(item.phid).catch(function(){});
 }
 
 // Nach aussen nur, was index.html und das generierte HTML wirklich rufen.
@@ -74,6 +92,7 @@ function processOfflineQueue(){
 window.NTQueue={
   add:addToOfflineQueue,
   process:processOfflineQueue,
+  done:offlineQueueDone,
   renderPanel:renderOfflineQueuePanel
 };
 })();

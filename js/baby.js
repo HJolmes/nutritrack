@@ -927,20 +927,20 @@ function renderDiary(){
       var feeding=(e.t==='breast'&&e.run);
       // Laufender Schlaf/laufendes Stillen: ein Tipp beendet es, statt den Dialog zu öffnen.
       var right=running
-        ?'<button type="button" onclick="event.stopPropagation();NTBaby.endSleep(\''+e.id+'\')" style="background:var(--g2);border:none;border-radius:999px;color:#fff;font-size:11px;font-weight:700;padding:5px 10px;cursor:pointer;flex-shrink:0;">Wach jetzt</button>'
+        ?'<button type="button" data-act="NTBaby.endSleep" data-args="'+esc(JSON.stringify([e.id]))+'" style="background:var(--g2);border:none;border-radius:999px;color:#fff;font-size:11px;font-weight:700;padding:5px 10px;cursor:pointer;flex-shrink:0;">Wach jetzt</button>'
         :feeding
-        ?'<button type="button" onclick="event.stopPropagation();NTBaby.stopFeed()" style="background:var(--g2);border:none;border-radius:999px;color:#fff;font-size:11px;font-weight:700;padding:5px 10px;cursor:pointer;flex-shrink:0;">■ Stopp</button>'
+        ?'<button type="button" data-act="NTBaby.stopFeed" style="background:var(--g2);border:none;border-radius:999px;color:#fff;font-size:11px;font-weight:700;padding:5px 10px;cursor:pointer;flex-shrink:0;">■ Stopp</button>'
         :'<div class="fe-ic">✏️</div>';
       var bits=[(e.t==='appt'&&!e.time)?'ganztägig':hhmm(r.ts)];
       if(feeding)bits.push('läuft seit '+fmtDur(Math.max(0,Math.floor((Date.now()-e.ts)/60000))));
       if(e.t==='growth'&&window.NTGrowth){var pc=NTGrowth.pctText(e);if(pc)bits.push(pc);}
-      if(e.t==='med'&&e.every)bits.push('Abstand '+e.every+' h');
+      if(e.t==='med'&&e.every)bits.push('Abstand '+esc(e.every)+' h');
       if(seg&&seg.cont)bits.push('Fortsetzung von gestern');
       if(seg&&seg.spill)bits.push('geht weiter am Folgetag');
       if(running)bits.push('läuft seit '+fmtDur(seg.totalMin));
       else if(seg&&seg.min)bits.push(fmtDur(seg.min));
       if(e.note)bits.push(esc(e.note));
-      return '<div class="fe" onclick="NTBaby.editEntry(\''+e.id+'\')">'
+      return '<div class="fe" data-act="NTBaby.editEntry" data-args="'+esc(JSON.stringify([e.id]))+'">'
         +'<div class="fee">'+ic+'</div>'
         +'<div class="fei"><div class="fen"'+(fever?' style="color:#c62828;"':'')+'>'+esc(rowTitle(r))+(fever?' 🔴':'')+'</div>'
         +'<div class="fem">'+bits.join(' · ')+'</div></div>'

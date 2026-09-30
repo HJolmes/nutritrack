@@ -426,12 +426,33 @@ const EXPECTED_NAMESPACES = [
   if (!deadFeatActs.length) console.log('  ok  Alle Aktionen im Funktions-Register sind aufloesbar.');
   else deadFeatActs.forEach((m) => console.log('  x   Aktion zeigt ins Leere: ' + m));
 
+  // 7. Das ✕ einer Erinnerung (#249): data-act ohne onclick, und ein Klick
+  //    entfernt genau einen Eintrag – den eigenen. Bis v0.277 loeschte ein
+  //    onclick nach Listenposition.
+  const remind = await page.evaluate(() => {
+    const keep = S.reminders;
+    const realSave = window.saveS;
+    window.saveS = function () {};
+    try {
+      S.reminders = [{ time: '07:00', label: 'A', active: false }, { time: '08:00', label: 'B', active: false }, { time: '09:00', label: 'C', active: false }];
+      NTRemind.render();
+      const btns = [...document.querySelectorAll('#reminderList [data-act="NTRemind.del"]')];
+      const withOnclick = document.querySelectorAll('#reminderList [onclick]').length;
+      if (btns.length !== 3) return { err: btns.length + ' Knoepfe statt 3' };
+      btns[1].click();
+      return { withOnclick: withOnclick, left: S.reminders.map((r) => r.label) };
+    } finally { S.reminders = keep; window.saveS = realSave; NTRemind.render(); }
+  });
+  const remindFail = (remind.err || remind.withOnclick || JSON.stringify(remind.left) !== '["A","C"]') ? 1 : 0;
+  if (remindFail) console.log('  x   Erinnerung loeschen: ' + JSON.stringify(remind));
+  else console.log('  ok  Das ✕ einer Erinnerung ist data-act ohne onclick und entfernt genau die eigene.');
+
   await browser.close();
 
-  if (errors.length || nsFail || badExports.length || deadHandlers.length || delegationFail || stack.length || deadFeatActs.length) {
+  if (errors.length || nsFail || badExports.length || deadHandlers.length || delegationFail || stack.length || deadFeatActs.length || remindFail) {
     console.error('\nFEHLER:');
     [...new Set(errors)].forEach((e) => console.error('  x   ' + e));
-    console.error(`\n${errors.length + nsFail + badExports.length + deadHandlers.length + delegationFail + stack.length + deadFeatActs.length} Problem(e).`);
+    console.error(`\n${errors.length + nsFail + badExports.length + deadHandlers.length + delegationFail + stack.length + deadFeatActs.length + remindFail} Problem(e).`);
     process.exit(1);
   }
   console.log('\nRauchtest bestanden.');

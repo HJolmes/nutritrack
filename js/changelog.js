@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.279',items:[
+    {icon:'⏰',text:'<b>Fastenende und Erinnerungen</b>: Die Meldung zum Fastenende geht nach einem Neuladen der App oder im Geräteschlaf nicht mehr verloren, solange NutriTrack geöffnet ist. Erinnerungen tragen einen neutralen Titel („⏰ NutriTrack – Name“). Kann der Browser keine Meldungen zeigen oder sind sie blockiert, sagt das ein Hinweis beim Speichern bzw. beim Fastenstart. Eine in einem anderen Fenster gelöschte Erinnerung meldet sich nicht mehr.',where:'Mehr → Erinnerungen'}
+  ]},
   {v:'0.277',items:[
     {icon:'⏰',text:'<b>Erinnerungen repariert</b>: Jede Erinnerung meldet sich jetzt höchstens einmal am Tag. Vorher kamen bei mehreren Erinnerungen von Tag zu Tag mehr Meldungen, und gelöschte meldeten sich weiter. Auf Android erscheinen Erinnerungen und das Fastenende jetzt überhaupt, und ein Tippen auf die Meldung öffnet die App. Nach einem Backup-Import, „Aus OneDrive laden“ oder dem Laden eines Autospeichers gelten die geladenen Erinnerungen sofort, nicht erst nach einem Neustart. Eine Erinnerung, die mehr als 15 Minuten zu spät käme (App im Hintergrund, Handy im Standby), wird übersprungen – beim Öffnen kommen also keine alten Meldungen auf einmal.',where:'Mehr → Erinnerungen'}
   ]},

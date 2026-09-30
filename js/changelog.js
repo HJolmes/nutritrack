@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.277',items:[
+    {icon:'⏰',text:'<b>Erinnerungen repariert</b>: Jede Erinnerung meldet sich jetzt höchstens einmal am Tag. Vorher kamen bei mehreren Erinnerungen von Tag zu Tag mehr Meldungen, und gelöschte meldeten sich weiter. Auf Android erscheinen Erinnerungen und das Fastenende jetzt überhaupt, und ein Tippen auf die Meldung öffnet die App. Nach einem Backup-Import, „Aus OneDrive laden“ oder dem Laden eines Autospeichers gelten die geladenen Erinnerungen sofort, nicht erst nach einem Neustart. Eine Erinnerung, die mehr als 15 Minuten zu spät käme (App im Hintergrund, Handy im Standby), wird übersprungen – beim Öffnen kommen also keine alten Meldungen auf einmal.',where:'Mehr → Erinnerungen'}
+  ]},
   {v:'0.276',items:[
     {icon:'\u2195',text:'<b>Einträge auf einen anderen Tag verschieben oder kopieren</b>: Im Bearbeiten-Dialog Tag und Mahlzeit wählen, dann „Verschieben“ oder „Kopieren“.',where:'Eintrag antippen (Rezept: → ✏️ Eintrag bearbeiten) → „↕ Verschieben / Kopieren“'}
   ]},

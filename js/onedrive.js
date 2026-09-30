@@ -208,7 +208,7 @@ function oneDriveSyncDown(){
       if(backup.barcodeCache)barcodeCache=backup.barcodeCache;
       _importAiFields(backup);_migratePhotosAfterImport();_dropEmptyNutrientEntries();
       saveS();saveX();saveBarcodeCache();
-      renderAll();
+      renderAll();NTRemind.schedule();NTRemind.render();
       showToast('☁️ Daten aus OneDrive geladen ✓');
     });
   }).catch(function(e){
@@ -275,7 +275,7 @@ function _odSlotLoad(idx){
       if(d.recipes)recipes=d.recipes;
       if(d.barcodeCache)Object.assign(barcodeCache,d.barcodeCache);
       _importAiFields(d);_migratePhotosAfterImport();
-      saveS();saveX();saveBarcodeCache();renderAll();closeOv('autoSavesOv');
+      saveS();saveX();saveBarcodeCache();renderAll();NTRemind.schedule();NTRemind.render();closeOv('autoSavesOv');
       showToast('Stand geladen ✓');
     });
   }).catch(function(){showToast('Laden fehlgeschlagen');});

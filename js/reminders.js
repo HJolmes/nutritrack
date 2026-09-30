@@ -1,4 +1,4 @@
-// NutriTrack – Erinnerungen (v0.250)
+// NutriTrack – Erinnerungen (v0.250, Timer und Anzeige v0.277)
 // Klassisches Script, kein Modul. Exportiert window.NTRemind und greift direkt auf
 // die globalen Helfer aus index.html zu (S, saveS, esc, showToast).
 //
@@ -13,23 +13,153 @@
 (function(){
 'use strict';
 
+// ── Genau ein Timer je Erinnerung (#244) ──
+// Bis v0.276 wurde der Rueckgabewert von setTimeout verworfen, und jedes
+// Ausloesen plante ALLE Erinnerungen neu. Bei zwei Erinnerungen wuchs die Zahl
+// der Meldungen je Tag wie die Fibonacci-Reihe (gemessen an Tag 4: 21 um 8 Uhr,
+// 34 um 12 Uhr), und eine geloeschte feuerte weiter. Jetzt haelt _timers je
+// Erinnerungs-Objekt genau einen Eintrag {t: Timer, at: Termin in ms};
+// schedule() bricht zuerst alle ab und darf deshalb beliebig oft laufen.
+var _timers=new Map();
+// „HH:MM" aus <input type="time">. Eine ungueltige Zeit aus einem Import ergab
+// frueher setTimeout(NaN) = sofort, und weil der Timer sich neu plant: eine
+// Endlosschleife von Meldungen; eine fehlende warf in showMain() und brach den
+// Rest des App-Starts ab. Solche Eintraege werden uebersprungen.
+var TIME_RE=/^([01]?\d|2[0-3]):([0-5]\d)/;
+// Spaeter als das wird eine Erinnerung nicht mehr gezeigt, sondern still auf den
+// Folgetag gelegt (ENTSCHEIDUNG 2026-09-30). Android friert die App im
+// Hintergrund ein; beim Oeffnen kamen sonst alle verpassten auf einmal.
+var LATE_MS=15*60000;
+
+function cancel(r){
+  var e=_timers.get(r);
+  if(e){clearTimeout(e.t);_timers.delete(r);}
+}
+function cancelAll(){
+  _timers.forEach(function(e){clearTimeout(e.t);});
+  _timers.clear();
+}
+function canNotify(){
+  return 'Notification' in window&&Notification.permission==='granted';
+}
+function ymd(d){
+  return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
+}
+// Naechster Termin zur Uhrzeit `time` STRENG nach `after` (ms). Die Uhrzeit wird
+// nach jedem Tagessprung neu gesetzt: Am Tag der Sommerzeit-Umstellung gibt es
+// 02:30 nicht (setHours liefert 03:30), und setDate allein truege diese 03:30 in
+// den Folgetag weiter.
+function nextAt(time,after){
+  var m=TIME_RE.exec(typeof time==='string'?time:'');
+  if(!m)return null;
+  var h=parseInt(m[1],10),mi=parseInt(m[2],10);
+  var t=new Date(after);
+  t.setHours(h,mi,0,0);
+  while(t.getTime()<=after){t.setDate(t.getDate()+1);t.setHours(h,mi,0,0);}
+  return t;
+}
+
+// Plant die Erinnerung r fuer ihren naechsten Termin nach `after` (Vorgabe:
+// jetzt).
+function planOne(r,after){
+  cancel(r);
+  if(!r||!r.active||!canNotify())return;
+  var at=nextAt(r.time,Math.max(Date.now(),after||0));
+  if(at)arm(r,at.getTime());
+}
+// Stellt den Timer von r auf den Termin `at` (ms) – der eine Ort, an dem ein
+// Erinnerungs-Timer entsteht.
+function arm(r,at){
+  var e=_timers.get(r);
+  if(e)clearTimeout(e.t);
+  _timers.set(r,{at:at,tz:new Date(at).getTimezoneOffset(),t:setTimeout(function(){fire(r,at);},Math.max(0,at-Date.now()))});
+}
+// Beim Ausloesen wird ZUERST der Folgetag geplant und DANN angezeigt – scheitert
+// die Anzeige, laeuft die Kette trotzdem weiter. Der Folgetermin rechnet vom
+// ausgeloesten Termin aus, nicht von der Uhr: ein Timer, der eine Millisekunde
+// zu frueh kommt, landet sonst noch einmal auf demselben Tag.
+function fire(r,at){
+  _timers.delete(r);
+  // Geloescht oder durch einen Import ersetzt: nicht mehr melden.
+  if((S.reminders||[]).indexOf(r)<0||!r.active)return;
+  // Tagelang eingefroren: es zaehlt der juengste Termin bis jetzt, nicht der
+  // gespeicherte – sonst fiele der von heute (vielleicht erst Minuten alt) mit weg.
+  var n;
+  while((n=nextAt(r.time,at))&&n.getTime()<=Date.now())at=n.getTime();
+  planOne(r,at);
+  if(Date.now()-at>LATE_MS)return;
+  notify('🍽 NutriTrack – '+(r.label||'Mahlzeit eintragen'),{
+    body:r.body||'Zeit zum Eintragen!',
+    // Je Erinnerung (Uhrzeit + Name) und Tag: zwei offene Tabs ergeben eine
+    // Meldung statt zwei; zur selben Uhrzeit ersetzen sich nur Erinnerungen mit
+    // gleichem Namen (gleicher Inhalt, eine Meldung), und die vom Vortag wird
+    // nicht still ersetzt.
+    tag:'nt-rem-'+r.time+'-'+(r.label||'')+'-'+ymd(new Date(at))
+  });
+}
+
 // ── Mahlzeit-Erinnerungen ──
 function scheduleReminders(){
-  if(!('Notification' in window)||Notification.permission!=='granted')return;
-  var reminders=S.reminders||[];
-  reminders.forEach(function(r){
-    if(!r.active)return;
-    var now=new Date();
-    var target=new Date();
-    var parts=r.time.split(':');
-    target.setHours(parseInt(parts[0]),parseInt(parts[1]),0,0);
-    if(target<=now)target.setDate(target.getDate()+1);
-    var delay=target-now;
-    setTimeout(function(){
-      new Notification('🍽 NutriTrack – '+r.label,{body:r.body||'Zeit zum Eintragen!',icon:'/nutritrack/icon.svg'});
-      scheduleReminders(); // nächsten Tag planen
-    },delay);
+  cancelAll();
+  if(!canNotify())return;
+  (S.reminders||[]).forEach(function(r){planOne(r);});
+}
+
+// App wieder vorn: die Timer neu stellen. Timer laufen auf einer Uhr, die im
+// Geraeteschlaf steht – ein um 22 Uhr fuer 8 Uhr gestellter Timer kaeme nach
+// acht Stunden Schlaf sonst erst am Nachmittag.
+// - Ein Termin, der schon vorbei ist, feuert sofort mit seinem gespeicherten
+//   Wert, und fire() entscheidet ueber die Verspaetung. Nicht schedule(): das
+//   plante vom jetzigen Moment aus und verloere eine Erinnerung, die erst
+//   Sekunden ueberfaellig ist.
+// - Ein kuenftiger behaelt seinen Termin, nur mit frischer Wartezeit. Neu
+//   gerechnet wird er nur, wenn die Zeitzone gewechselt hat (der Termin hat
+//   jetzt einen anderen Offset als beim Stellen) – dann gilt 08:00 der neuen
+//   Zone statt 02:00 nachts. Immer ab jetzt zu rechnen stellte nach einer
+//   zurueckgestellten Uhr den gerade gezeigten Termin ein zweites Mal.
+// - Eine Erinnerung ohne Timer (Kette ohne Berechtigung abgerissen, Berechtigung
+//   erst spaeter erteilt) wird wieder aufgenommen.
+function rearm(){
+  var list=[],now=Date.now();
+  _timers.forEach(function(e,r){list.push([r,e.at,e.tz]);});
+  list.forEach(function(x){
+    if(x[1]>now&&new Date(x[1]).getTimezoneOffset()!==x[2])planOne(x[0]);
+    else arm(x[0],x[1]);
   });
+  if(canNotify())(S.reminders||[]).forEach(function(r){if(r&&r.active&&!_timers.has(r))planOne(r);});
+}
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='visible')rearm();
+});
+// Geraeteschlaf OHNE Sichtbarkeitswechsel (Desktop: das Fenster bleibt ueber das
+// Zuklappen „sichtbar"): steht ein Timer noch aus, obwohl sein Termin vorbei ist,
+// wird neu gestellt. Nach dem Aufwachen laeuft dieser Takt spaetestens nach einer
+// Minute wieder – deutlich unter LATE_MS.
+setInterval(function(){
+  var due=false,now=Date.now()-1000;
+  _timers.forEach(function(e){if(e.at<=now)due=true;});
+  if(due)rearm();
+},60000);
+
+// ── Anzeige (#244) ──
+// Ueber den Service Worker, wo es ihn gibt: Chrome auf Android lehnt
+// new Notification() grundsaetzlich ab („Illegal constructor", seit Chrome 42),
+// iOS-Home-Screen-Apps zeigen nur Meldungen aus dem Service Worker. Ohne
+// Registrierung (Tab ausserhalb von /nutritrack/, tools/smoke.js) bleibt der
+// alte Weg. getRegistration() statt ready: ready wartet ewig, wenn es keinen
+// Worker gibt. Das Tippen auf die Meldung behandelt sw.js (notificationclick).
+function notify(title,opts){
+  if(!canNotify())return;
+  opts=Object.assign({icon:'/nutritrack/icon.svg'},opts||{});
+  function direct(){
+    try{new Notification(title,opts);}catch(e){console.warn('Notification:',e);}
+  }
+  var sw=navigator.serviceWorker;
+  if(!sw||!sw.getRegistration){direct();return;}
+  sw.getRegistration().then(function(reg){
+    if(reg&&reg.active&&reg.showNotification)return reg.showNotification(title,opts);
+    direct();
+  }).catch(function(e){console.warn('showNotification:',e);direct();});
 }
 
 // ── Erinnerungen in Einstellungen ──
@@ -38,6 +168,7 @@ function renderReminders(){
   var reminders=S.reminders||[];
   if(!reminders.length){el.innerHTML='<div style="font-size:12px;color:var(--mu);">Keine Erinnerungen</div>';return;}
   el.innerHTML=reminders.map(function(r,i){
+    if(!r)return'';
     return'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--br);">'
       +'<div style="flex:1;font-size:13px;font-weight:600;">'+esc(r.time)+' – '+esc(r.label)+'</div>'
       +'<button type="button" onclick="NTRemind.del('+i+')" style="background:none;border:none;color:var(--re);font-size:16px;cursor:pointer;">✕</button>'
@@ -50,7 +181,8 @@ function addReminder(){
   var label=document.getElementById('reminderLabel').value.trim()||'Mahlzeit eintragen';
   if(!time){showToast('Bitte Uhrzeit auswählen');return;}
   if(!S.reminders)S.reminders=[];
-  S.reminders.push({time:time,label:label,active:true});
+  var r={time:time,label:label,active:true};
+  S.reminders.push(r);
   saveS();
   document.getElementById('reminderTime').value='';
   document.getElementById('reminderLabel').value='';
@@ -59,13 +191,18 @@ function addReminder(){
   if('Notification' in window&&Notification.permission==='default'){
     Notification.requestPermission().then(function(p){if(p==='granted')scheduleReminders();});
   } else {
+    // Alle, nicht nur die neue: Wurde die Berechtigung erst nach dem Start
+    // erteilt, sind die bestehenden noch nicht geplant. schedule() bricht
+    // vorher alle ab, es entsteht kein Timer doppelt.
     scheduleReminders();
   }
   showToast('⏰ Erinnerung gespeichert');
 }
 
 function deleteReminder(i){
-  S.reminders.splice(i,1);saveS();renderReminders();
+  var list=S.reminders||[];
+  cancel(list[i]);
+  list.splice(i,1);saveS();renderReminders();
 }
 
 // Nach aussen nur, was index.html und das generierte HTML wirklich rufen.
@@ -73,6 +210,7 @@ window.NTRemind={
   schedule:scheduleReminders,
   render:renderReminders,
   add:addReminder,
-  del:deleteReminder
+  del:deleteReminder,
+  notify:notify
 };
 })();

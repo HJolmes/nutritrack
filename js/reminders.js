@@ -72,7 +72,7 @@ function planOne(r,after){
 function arm(r,at){
   var e=_timers.get(r);
   if(e)clearTimeout(e.t);
-  _timers.set(r,{at:at,t:setTimeout(function(){fire(r,at);},Math.max(0,at-Date.now()))});
+  _timers.set(r,{at:at,tz:new Date(at).getTimezoneOffset(),t:setTimeout(function(){fire(r,at);},Math.max(0,at-Date.now()))});
 }
 // Beim Ausloesen wird ZUERST der Folgetag geplant und DANN angezeigt – scheitert
 // die Anzeige, laeuft die Kette trotzdem weiter. Der Folgetermin rechnet vom
@@ -112,14 +112,20 @@ function scheduleReminders(){
 //   Wert, und fire() entscheidet ueber die Verspaetung. Nicht schedule(): das
 //   plante vom jetzigen Moment aus und verloere eine Erinnerung, die erst
 //   Sekunden ueberfaellig ist.
-// - Ein kuenftiger wird neu gerechnet (gleicher Wert, ausser die Zeitzone hat
-//   gewechselt – dann gilt 08:00 der neuen Zone statt 02:00 nachts).
+// - Ein kuenftiger behaelt seinen Termin, nur mit frischer Wartezeit. Neu
+//   gerechnet wird er nur, wenn die Zeitzone gewechselt hat (der Termin hat
+//   jetzt einen anderen Offset als beim Stellen) – dann gilt 08:00 der neuen
+//   Zone statt 02:00 nachts. Immer ab jetzt zu rechnen stellte nach einer
+//   zurueckgestellten Uhr den gerade gezeigten Termin ein zweites Mal.
 // - Eine Erinnerung ohne Timer (Kette ohne Berechtigung abgerissen, Berechtigung
 //   erst spaeter erteilt) wird wieder aufgenommen.
 function rearm(){
   var list=[],now=Date.now();
-  _timers.forEach(function(e,r){list.push([r,e.at]);});
-  list.forEach(function(x){if(x[1]>now)planOne(x[0]);else arm(x[0],x[1]);});
+  _timers.forEach(function(e,r){list.push([r,e.at,e.tz]);});
+  list.forEach(function(x){
+    if(x[1]>now&&new Date(x[1]).getTimezoneOffset()!==x[2])planOne(x[0]);
+    else arm(x[0],x[1]);
+  });
   if(canNotify())(S.reminders||[]).forEach(function(r){if(r&&r.active&&!_timers.has(r))planOne(r);});
 }
 document.addEventListener('visibilitychange',function(){

@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.287',items:[
+    {icon:'🤱',text:'<b>Stillzeit-Ampel nach festen Regeln</b>: Die Ampel bewertet sofort und auch offline (Alkohol, Koffein, quecksilberreicher Fisch, Leber, Kräutertees). Stillzeit-Hinweise stehen jetzt auch im Mahlzeit-Detail. Bei Rezepten aus der Bibliothek bewertet die Ampel die einzelnen Zutaten statt nur den Rezeptnamen. Kommen mehrere Ampel-Hinweise gleichzeitig, zeigt das Banner alle.'}
+  ]},
   {v:'0.286',items:[
     {icon:'📊',text:'<b>Wochenbericht ohne KI</b>: Der Bericht erscheint sofort und auch offline. Er wertet die letzten 7 abgeschlossenen Tage inklusive Sport aus: Tage im Plan, bester und schwächster Tag, Makros gegen deine Ziele, Gewichtsänderung und eine Empfehlung. Ausformulieren durch die KI gibt es auf Wunsch über „✨ Ausformulieren“. Außerdem erscheint die Karte mit offline aufgenommenen Fotos wieder.',where:'Trends → Wochenbericht'}
   ]},

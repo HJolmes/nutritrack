@@ -305,9 +305,14 @@ function pickerConfirmAdd(){
   animateAdd(pickerMeal);
   rememberPortion(f.name,amt);
   checkDataQuality(f);
-  checkPregWarn([f],pickerMeal,_idx);
-  checkNursWarn([f],pickerMeal,_idx);
-  checkDietWarn([f],pickerMeal,_idx);
+  // Rezept aus der Bibliothek: die Zutaten des Eintrags bewerten, nicht den
+  // Rezeptnamen (#205) – sonst stand die Warnung unter „Spaghetti Tonnato“ statt
+  // unter „Thunfisch“ und fehlte im Mahlzeit-Detail. Der Eintrag hat seine
+  // eigene Kopie der Zutaten, das Bibliotheksrezept bleibt ohne Ampelfelder.
+  var _ampIn=(f.isRecipe&&entry.ingredients&&entry.ingredients.length)?entry.ingredients:[f];
+  checkPregWarn(_ampIn,pickerMeal,_idx);
+  checkNursWarn(_ampIn,pickerMeal,_idx);
+  checkDietWarn(_ampIn,pickerMeal,_idx);
   showToast((f.emoji||'🍽')+' '+f.name+' hinzugefügt');
 }
 
@@ -1369,6 +1374,10 @@ function _pickerAdd(emoji,nameId,portionsId,defaultName,saveAsRecipe,hasEditMode
       if(typeof renderLibrary==='function')renderLibrary();
       return createdRec;
     }
+    // Eigene Kopie fuer den Eintrag: Die Ampel schreibt ihre Ergebnisse an die
+    // Zutaten, und mit demselben Array landeten sie im Bibliotheksrezept – und
+    // von dort als alter Stand in jeden spaeteren Eintrag daraus (#205).
+    ings=JSON.parse(JSON.stringify(ings));
     getDay().meals[pickerMeal].push(Object.assign({name:name,emoji:emoji,isRecipe:true,recipeId:createdRec.id,portions:portions,ingredients:ings},scaled));
     showToast(emoji+' '+name+' als Rezept gespeichert');
   } else {

@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.286"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.287"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.286"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.287"></script>
 <script>
   (function(){
     if(typeof ZXingWASM==='undefined'){console.warn('zxing-wasm load failed, ZXing-JS fallback aktiv');return;}
@@ -1218,7 +1218,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.286</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.287</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -3353,11 +3353,11 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.286"></script>
-<script src="js/fooddb.js?v=0.286"></script>
-<script src="js/fooddb-usda.js?v=0.286"></script>
-<script src="js/idb-photos.js?v=0.286"></script>
-<script src="js/changelog.js?v=0.286"></script>
+<script src="js/actions.js?v=0.287"></script>
+<script src="js/fooddb.js?v=0.287"></script>
+<script src="js/fooddb-usda.js?v=0.287"></script>
+<script src="js/idb-photos.js?v=0.287"></script>
+<script src="js/changelog.js?v=0.287"></script>
 <script>
 // ════════════════════════════════════════
 // SECTION: DATABASE
@@ -3376,7 +3376,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.286';
+var APP_VERSION='0.287';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -4924,6 +4924,12 @@ function openEditEntry(meal,idx){
       if(e.pregAmpel[key])ing.pregAmpel=e.pregAmpel[key];
     });
   }
+  if(S.nursWarn&&e.nursAmpel&&e.ingredients){
+    e.ingredients.forEach(function(ing){
+      var key=ing.name.toLowerCase();
+      if(e.nursAmpel[key])ing.nursAmpel=e.nursAmpel[key];
+    });
+  }
   if(S.dietWarn&&e.dietAmpel&&e.ingredients){
     e.ingredients.forEach(function(ing){
       var key=ing.name.toLowerCase();
@@ -6415,9 +6421,19 @@ function calcGoal(){
 // ════════════════════════════════════════
 // SECTION: PREGNANCY WARNING AMPEL
 // ════════════════════════════════════════
-function _checkAmpelWarn(ingredients,meal,entryIdx,guardOk,promptPrefix,ampelField,onResults){
-  if(!guardOk||!canUseAi())return;
-  var names=ingredients.map(function(i){return i.name;}).filter(Boolean);
+// rateFn (optional, #205): name -> {name,ampel,grund} | null. Was die Tabelle
+// beantwortet, wird sofort und ohne Netz gesetzt; nur der Rest geht an die KI –
+// und auch das nur mit promptPrefix. Die Stillzeit uebergibt keinen Prompt:
+// Ihre Tabelle (js/ampel.js) bewertet jeden Namen.
+function _checkAmpelWarn(ingredients,meal,entryIdx,guardOk,promptPrefix,ampelField,onResults,rateFn){
+  if(!guardOk)return;
+  // Doppelte Namen (dieselbe Zutat zweimal) nur einmal bewerten lassen.
+  var seen={},names=[];
+  ingredients.forEach(function(i){
+    var n=i&&i.name;if(!n)return;
+    var k=String(n).toLowerCase();if(seen[k])return;
+    seen[k]=1;names.push(n);
+  });
   if(!names.length)return;
   // Den Eintrag JETZT festhalten, nicht erst im Rueckruf (#247): Die Antwort
   // kommt bis zu 25 s spaeter, und bis dahin kann der Nutzer den Tag gewechselt
@@ -6427,21 +6443,45 @@ function _checkAmpelWarn(ingredients,meal,entryIdx,guardOk,promptPrefix,ampelFie
   // geloescht oder S per Restore ersetzt, landet die Ampel in einem verwaisten
   // Objekt und geht verloren – gewollt.
   var entry=(meal!==undefined&&entryIdx!==undefined)?((getDay().meals[meal]||[])[entryIdx]||null):null;
-  callClaude('claude-haiku-4-5',[{type:'text',text:promptPrefix+names.join(', ')}],300,
+  var rest=names;
+  if(rateFn){
+    var ruled=[];rest=[];
+    names.forEach(function(n){var r=rateFn(n);if(r)ruled.push(r);else rest.push(n);});
+    if(ruled.length)_applyAmpelResults(entry,ingredients,ampelField,ruled,onResults);
+  }
+  if(!rest.length||!promptPrefix||!canUseAi())return;
+  // Je Name ein JSON-Objekt mit Begruendung (~30 Tokens): Fest 300 schnitt die
+  // Antwort ab etwa acht Zutaten ab, JSON.parse scheiterte, und das ganze
+  // Ergebnis ging still verloren.
+  var maxTok=Math.min(1500,Math.max(300,80+40*rest.length));
+  callClaude('claude-haiku-4-5',[{type:'text',text:promptPrefix+rest.join(', ')}],maxTok,
     function(text){
       try{
         var results=JSON.parse(text.replace(/```json|```/g,'').trim());
-        if(!Array.isArray(results)||!results.length)return;
-        var map={};
-        results.forEach(function(r){map[r.name.toLowerCase()]=r;});
-        if(entry){entry[ampelField]=map;saveS();}
-        ingredients.forEach(function(ing){var r=map[ing.name.toLowerCase()];if(r)ing[ampelField]=r;});
-        renderAll();
-        onResults(results);
+        if(!Array.isArray(results))return;
+        // Ein Objekt ohne Namen darf nicht die ganze Antwort mitreissen.
+        results=results.filter(function(r){return r&&typeof r.name==='string'&&r.name;});
+        if(!results.length)return;
+        _applyAmpelResults(entry,ingredients,ampelField,results,onResults);
       }catch(e){}
     },
     function(){}
   );
+}
+// Ergebnisse an Zutaten und Eintrag schreiben. Die Karte am Eintrag wird
+// ergaenzt statt ersetzt (Tabelle und KI koennen nacheinander schreiben), und
+// saveS() laeuft erst, wenn auch die Zutaten ihr Ergebnis tragen – sonst wurde
+// ing[ampelField] erst beim naechsten fremden saveS() dauerhaft.
+function _applyAmpelResults(entry,ingredients,ampelField,results,onResults){
+  var map={};
+  results.forEach(function(r){map[r.name.toLowerCase()]=r;});
+  ingredients.forEach(function(ing){
+    if(!ing||!ing.name)return;
+    var r=map[String(ing.name).toLowerCase()];if(r)ing[ampelField]=r;
+  });
+  if(entry){entry[ampelField]=Object.assign({},entry[ampelField]||{},map);saveS();}
+  renderAll();
+  onResults(results);
 }
 function checkPregWarn(ingredients,meal,entryIdx){
   var isPreg=S.pregnant&&S.pregnant!=='0';
@@ -6453,21 +6493,16 @@ function checkPregWarn(ingredients,meal,entryIdx){
     'pregAmpel',showPregAmpelModal);
 }
 
-// Eigener Prompt statt Wiederverwendung des Schwangerschafts-Prompts: In der
-// Stillzeit sind Rohmilchkäse, Sushi, rohes Fleisch und Salami unbedenklich –
-// der SS-Prompt würde sie fälschlich rot markieren. Warnungen vor „blähenden"
-// Lebensmitteln sind ausdrücklich unerwünscht (keine Evidenz, schränken
-// Stillende unnötig ein).
+// Stillzeit ohne KI (#205): Die Regeln standen vollstaendig im Prompt, die KI
+// hat nur Namen zugeordnet. Die Tabelle in js/ampel.js ist woertlich aus diesem
+// Prompt uebernommen (dort zitiert) und bewertet jeden Namen – was in keiner
+// Regel vorkommt, ist gruen, wie im Prompt („Relevant sind nur …"). Damit
+// laeuft die Stillzeit-Ampel offline, sofort und bei jedem Namen gleich.
+// Schwangerschaft und Ernaehrung bleiben KI.
 function checkNursWarn(ingredients,meal,entryIdx){
   _checkAmpelWarn(ingredients,meal,entryIdx,S.nursWarn&&isNursing(),
-    'Bewerte diese Lebensmittel für STILLENDE (nicht Schwangere) wissenschaftlich. Antworte NUR mit gültigem JSON ohne Erklärung:\n'
-    +'[{"name":"Lebensmittelname","ampel":"gruen|gelb|rot|grau","grund":"kurze Begründung max 8 Wörter"}]\n'
-    +'gruen=unbedenklich, gelb=in Maßen ok, rot=meiden, grau=keine Empfehlung möglich.\n'
-    +'WICHTIG: In der Stillzeit gelten NICHT die Schwangerschaftsregeln. Rohmilchkäse, Sushi, rohes/kurzgebratenes Fleisch, Salami und rohe Eier sind beim Stillen gruen.\n'
-    +'Relevant sind nur: Alkohol (rot), Koffein über ca. 300 mg/Tag (gelb), quecksilberreiche Fische wie Thunfisch, Schwertfisch, Hai, Königsmakrele (gelb), Leber wegen Vitamin A (gelb), Salbei/Pfefferminze/Petersilie in Heilmengen (gelb, milchhemmend).\n'
-    +'Warne NICHT vor blähenden Lebensmitteln (Kohl, Zwiebeln, Hülsenfrüchte) – dafür gibt es keine Evidenz.\n'
-    +'Nur wissenschaftlich fundierte Empfehlungen. Lebensmittel: ',
-    'nursAmpel',showNursAmpelModal);
+    null,'nursAmpel',showNursAmpelModal,
+    function(n){return window.NTAmpel?NTAmpel.rate('nurs',n):null;});
 }
 
 function ampelDot(ampel,color){
@@ -6484,6 +6519,10 @@ function showPregAmpelModal(results){showAmpelModal(results,'🚦 Schwangerschaf
 function showNursAmpelModal(results){showAmpelModal(results,'🤱 Stillzeit-Hinweise','');}
 function showDietAmpelModal(results,prefs){showAmpelModal(results,'🥗 Ernährungs-Hinweise',(prefs||[]).join(', '));}
 
+// Ein Banner fuer alle drei Ampeln (#205): Je Titel ein Abschnitt. Ein neues
+// Ergebnis mit demselben Titel ersetzt seinen Abschnitt, andere Titel bleiben
+// stehen – bis v0.277 verdraengte die Ernaehrungs-Antwort eine Stillzeit-
+// Warnung, die eine Sekunde vorher kam. Abschnitte aelter als 5 s fallen weg.
 function showAmpelModal(results,title,subtitle){
   var colors={gruen:'#2d7d52',gelb:'#f07700',rot:'#c62828',grau:'#9e9e9e'};
   var icons={gruen:'🟢',gelb:'🟡',rot:'🔴',grau:'⚫'};
@@ -6498,8 +6537,11 @@ function showAmpelModal(results,title,subtitle){
       +'background:white;box-shadow:0 4px 20px rgba(0,0,0,0.18);padding:12px 16px 10px;';
     document.body.appendChild(el);
   }
-  var html='<div style="font-weight:800;font-size:13px;margin-bottom:6px;">'+title+'</div>';
-  if(subtitle)html+='<div style="font-size:11px;color:var(--mu);margin-bottom:6px;">'+subtitle+'</div>';
+  var now=Date.now();
+  var sec=(el.style.display!=='none'&&el._sec)||{};
+  Object.keys(sec).forEach(function(k){if(now-sec[k].ts>=5000)delete sec[k];});
+  var html='<div style="font-weight:800;font-size:13px;margin-bottom:6px;">'+esc(title)+'</div>';
+  if(subtitle)html+='<div style="font-size:11px;color:var(--mu);margin-bottom:6px;">'+esc(subtitle)+'</div>';
   warn.forEach(function(r){
     html+='<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:5px;padding:5px 8px;'
       +'background:'+{rot:'#fff3f3',gelb:'#fffbe6'}[r.ampel]+';border-left:3px solid '+colors[r.ampel]+';border-radius:6px;">'
@@ -6508,13 +6550,23 @@ function showAmpelModal(results,title,subtitle){
       +' <span style="font-size:12px;color:#555;">– '+esc(r.grund)+'</span></div>'
       +'</div>';
   });
-  html+='<div style="text-align:right;margin-top:4px;">'
-    +'<button onclick="document.getElementById(\'ampelBanner\').style.display=\'none\'" '
+  sec[title]={html:html,ts:now};
+  el._sec=sec;
+  el.innerHTML=Object.keys(sec).map(function(k,i){
+      return '<div style="'+(i?'margin-top:8px;':'')+'">'+sec[k].html+'</div>';
+    }).join('')
+    +'<div style="text-align:right;margin-top:4px;">'
+    +'<button type="button" data-act="closeAmpelBanner" '
     +'style="background:none;border:none;font-size:11px;color:var(--mu);cursor:pointer;">Schließen ✕</button></div>';
-  el.innerHTML=html;
   el.style.display='block';
   clearTimeout(el._t);
-  el._t=setTimeout(function(){el.style.display='none';},5000);
+  el._t=setTimeout(closeAmpelBanner,5000);
+}
+function closeAmpelBanner(){
+  var el=document.getElementById('ampelBanner');if(!el)return;
+  clearTimeout(el._t);
+  el.style.display='none';
+  el._sec={};
 }
 
 function renderAmpelInfo(e){
@@ -6527,17 +6579,25 @@ function renderAmpelInfo(e){
     if(S.pregWarn&&ing.pregAmpel&&(ing.pregAmpel.ampel==='rot'||ing.pregAmpel.ampel==='gelb')){
       warnItems.push({type:'preg',ampel:ing.pregAmpel.ampel,name:ing.name,grund:ing.pregAmpel.grund});
     }
+    if(S.nursWarn&&ing.nursAmpel&&(ing.nursAmpel.ampel==='rot'||ing.nursAmpel.ampel==='gelb')){
+      warnItems.push({type:'nurs',ampel:ing.nursAmpel.ampel,name:ing.name,grund:ing.nursAmpel.grund});
+    }
     if(S.dietWarn&&ing.dietAmpel&&(ing.dietAmpel.ampel==='rot'||ing.dietAmpel.ampel==='gelb')){
       warnItems.push({type:'diet',ampel:ing.dietAmpel.ampel,name:ing.name,grund:ing.dietAmpel.grund});
     }
   });
-  // Für einzelne Lebensmittel: pregAmpel/dietAmpel am Eintrag
+  // Für einzelne Lebensmittel: pregAmpel/nursAmpel/dietAmpel am Eintrag
   if(!ingredients.length){
     var key=(e.name||'').toLowerCase();
     if(S.pregWarn&&e.pregAmpel){
       var pv=e.pregAmpel[key]||Object.values(e.pregAmpel)[0];
       if(pv&&(pv.ampel==='rot'||pv.ampel==='gelb'))
         warnItems.push({type:'preg',ampel:pv.ampel,name:e.name,grund:pv.grund});
+    }
+    if(S.nursWarn&&e.nursAmpel){
+      var nv=e.nursAmpel[key]||Object.values(e.nursAmpel)[0];
+      if(nv&&(nv.ampel==='rot'||nv.ampel==='gelb'))
+        warnItems.push({type:'nurs',ampel:nv.ampel,name:e.name,grund:nv.grund});
     }
     if(S.dietWarn&&e.dietAmpel){
       var dv=e.dietAmpel[key]||Object.values(e.dietAmpel)[0];
@@ -6551,7 +6611,7 @@ function renderAmpelInfo(e){
   var bg={rot:'#fff3f3',gelb:'#fffbe6'};
   html='<div style="margin:8px 0;">';
   warnItems.forEach(function(w){
-    var badge=w.type==='preg'?'🤰 Schwangerschaft':'🥗 Ernährung';
+    var badge=w.type==='preg'?'🤰 Schwangerschaft':w.type==='nurs'?'🤱 Stillzeit':'🥗 Ernährung';
     html+='<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 10px;'
       +'background:'+bg[w.ampel]+';border-left:3px solid '+colors[w.ampel]+';border-radius:8px;margin-bottom:5px;">'
       +'<span style="font-size:15px;">'+icons[w.ampel]+'</span>'
@@ -8054,29 +8114,30 @@ function axTestSync(){
 }
 
 </script>
-<script src="picker.js?v=0.286"></script>
-<script src="js/health-sync.js?v=0.286"></script>
-<script src="js/sync-core.js?v=0.286"></script>
-<script src="js/baby.js?v=0.286"></script>
-<script src="js/baby-meds.js?v=0.286"></script>
-<script src="js/baby-growth-data.js?v=0.286"></script>
-<script src="js/baby-growth.js?v=0.286"></script>
-<script src="js/baby-week.js?v=0.286"></script>
-<script src="js/baby-milestones.js?v=0.286"></script>
-<script src="js/baby-midwife.js?v=0.286"></script>
-<script src="js/shopping.js?v=0.286"></script>
-<script src="js/partner.js?v=0.286"></script>
-<script src="js/alexa-sync.js?v=0.286"></script>
-<script src="js/dashboard.js?v=0.286"></script>
-<script src="js/features.js?v=0.286"></script>
-<script src="js/mealplan.js?v=0.286"></script>
-<script src="js/onedrive.js?v=0.286"></script>
-<script src="js/autosave.js?v=0.286"></script>
-<script src="js/recurring.js?v=0.286"></script>
-<script src="js/stats.js?v=0.286"></script>
-<script src="js/reminders.js?v=0.286"></script>
-<script src="js/templates.js?v=0.286"></script>
-<script src="js/offline-queue.js?v=0.286"></script>
+<script src="js/ampel.js?v=0.287"></script>
+<script src="picker.js?v=0.287"></script>
+<script src="js/health-sync.js?v=0.287"></script>
+<script src="js/sync-core.js?v=0.287"></script>
+<script src="js/baby.js?v=0.287"></script>
+<script src="js/baby-meds.js?v=0.287"></script>
+<script src="js/baby-growth-data.js?v=0.287"></script>
+<script src="js/baby-growth.js?v=0.287"></script>
+<script src="js/baby-week.js?v=0.287"></script>
+<script src="js/baby-milestones.js?v=0.287"></script>
+<script src="js/baby-midwife.js?v=0.287"></script>
+<script src="js/shopping.js?v=0.287"></script>
+<script src="js/partner.js?v=0.287"></script>
+<script src="js/alexa-sync.js?v=0.287"></script>
+<script src="js/dashboard.js?v=0.287"></script>
+<script src="js/features.js?v=0.287"></script>
+<script src="js/mealplan.js?v=0.287"></script>
+<script src="js/onedrive.js?v=0.287"></script>
+<script src="js/autosave.js?v=0.287"></script>
+<script src="js/recurring.js?v=0.287"></script>
+<script src="js/stats.js?v=0.287"></script>
+<script src="js/reminders.js?v=0.287"></script>
+<script src="js/templates.js?v=0.287"></script>
+<script src="js/offline-queue.js?v=0.287"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

@@ -3427,8 +3427,11 @@ function _storeProxySecret(h,unverified){
 // Offline gemerktes Passwort nachpruefen (Start, Rueckkehr ins Netz).
 function recheckProxySecret(){
   if(!localStorage.getItem('nt_proxy_pw_unverified')||!getProxySecret()||!isOnline)return Promise.resolve(null);
-  return verifyProxySecret().then(function(ok){
-    if(!localStorage.getItem('nt_proxy_pw_unverified'))return ok;// inzwischen neu gesetzt
+  var h=getProxySecret();
+  return verifyProxySecret(h).then(function(ok){
+    // Waehrend der Pruefung neu gesetzt oder schon geprueft: das Ergebnis
+    // gehoert zu einem anderen Passwort und darf es weder freigeben noch loeschen.
+    if(getProxySecret()!==h||!localStorage.getItem('nt_proxy_pw_unverified'))return ok;
     if(ok===true){
       localStorage.removeItem('nt_proxy_pw_unverified');
       _aiKeyEncRefresh();
@@ -3444,7 +3447,7 @@ function recheckProxySecret(){
 }
 function _renderProxyPwStatus(){
   var el=document.getElementById('aiProxyStatus');if(!el)return;
-  el.style.color='';
+  el.style.color='var(--g1)';// Grundfarbe aus dem Markup; '' loeschte sie dauerhaft
   el.textContent=!getProxySecret()?'Noch kein Passwort – KI nicht verfügbar'
     :localStorage.getItem('nt_proxy_pw_unverified')?'Gespeichert – wird geprüft, sobald Internet da ist'
     :'Passwort gesetzt ✓';
@@ -3526,6 +3529,9 @@ function _aiKeyEncRefreshSlot(plain,encStore){
   });
 }
 function _aiKeyEncRefresh(){
+  // Ungepruefte Passwoerter verschluesseln keine Backup-Kopien — gilt fuer
+  // jeden Aufrufer (Start, Key speichern), nicht nur _storeProxySecret (#242).
+  if(localStorage.getItem('nt_proxy_pw_unverified'))return Promise.resolve([]);
   return Promise.all([
     _aiKeyEncRefreshSlot(getAiProviderKey(),'nt_ai_key_enc'),
     _aiKeyEncRefreshSlot(getAiVisionKey(),'nt_ai_vision_key_enc')
@@ -3934,7 +3940,14 @@ function skipProxyPwGate(){
 // und 5xx (Worker nicht eingerichtet, Upstream) sagen nichts ueber das Passwort.
 function verifyProxySecret(h){
   return fetchT(PROJECT_AI_PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json','x-app-proxy-secret':h||getProxySecret()},body:JSON.stringify({model:'claude-haiku-4-5',max_tokens:1,messages:[{role:'user',content:[{type:'text',text:'ping'}]}]})},10000)
-    .then(function(r){if(r.status===401)return false;if(r.status===403||r.status>=500)return null;return true;})
+    .then(function(r){
+      // Der Worker reicht Anthropics Status durch: ein 401 kann auch ein
+      // abgelaufener Anthropic-Key des Workers sein. Falsch ist das Passwort
+      // nur bei der EIGENEN Ablehnung des Workers (error.code 'unauthorized').
+      if(r.status===401)return r.json().then(function(j){return (j&&j.error&&j.error.code==='unauthorized')?false:null;},function(){return null;});
+      if(r.status===403||r.status>=500)return null;
+      return true;
+    })
     .catch(function(){return null;});
 }
 function submitProxyPw(){
@@ -4023,7 +4036,7 @@ function saveProxyPwFromSettings(){
   var pw=(input?input.value:'').trim();
   if(!pw){showToast('Bitte Passwort eingeben');return;}
   var aiStatus=document.getElementById('aiProxyStatus');
-  if(aiStatus){aiStatus.textContent='Prüfe Passwort …';aiStatus.style.color='';}
+  if(aiStatus){aiStatus.textContent='Prüfe Passwort …';aiStatus.style.color='var(--g1)';}
   trySetProxySecret(pw).then(function(res){
     if(res==='wrong'){
       // Das bisherige Passwort bleibt unangetastet (#242).

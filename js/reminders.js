@@ -18,20 +18,25 @@
 // Ausloesen plante ALLE Erinnerungen neu. Bei zwei Erinnerungen wuchs die Zahl
 // der Meldungen je Tag wie die Fibonacci-Reihe (gemessen an Tag 4: 21 um 8 Uhr,
 // 34 um 12 Uhr), und eine geloeschte feuerte weiter. Jetzt haelt _timers je
-// Erinnerungs-Objekt einen Timer; schedule() bricht zuerst alle ab und darf
-// deshalb beliebig oft laufen.
+// Erinnerungs-Objekt genau einen Eintrag {t: Timer, at: Termin in ms};
+// schedule() bricht zuerst alle ab und darf deshalb beliebig oft laufen.
 var _timers=new Map();
 // „HH:MM" aus <input type="time">. Eine ungueltige Zeit aus einem Import ergab
 // frueher setTimeout(NaN) = sofort, und weil der Timer sich neu plant: eine
 // Endlosschleife von Meldungen; eine fehlende warf in showMain() und brach den
 // Rest des App-Starts ab. Solche Eintraege werden uebersprungen.
 var TIME_RE=/^([01]?\d|2[0-3]):([0-5]\d)/;
+// Spaeter als das wird eine Erinnerung nicht mehr gezeigt, sondern still auf den
+// Folgetag gelegt (ENTSCHEIDUNG 2026-09-30). Android friert die App im
+// Hintergrund ein; beim Oeffnen kamen sonst alle verpassten auf einmal.
+var LATE_MS=15*60000;
 
 function cancel(r){
-  if(_timers.has(r)){clearTimeout(_timers.get(r));_timers.delete(r);}
+  var e=_timers.get(r);
+  if(e){clearTimeout(e.t);_timers.delete(r);}
 }
 function cancelAll(){
-  _timers.forEach(function(t){clearTimeout(t);});
+  _timers.forEach(function(e){clearTimeout(e.t);});
   _timers.clear();
 }
 function canNotify(){
@@ -55,28 +60,37 @@ function nextAt(time,after){
 }
 
 // Plant die Erinnerung r fuer ihren naechsten Termin nach `after` (Vorgabe:
-// jetzt). Beim Ausloesen wird ZUERST der Folgetag geplant und DANN angezeigt –
-// scheitert die Anzeige, laeuft die Kette trotzdem weiter. Der Folgetermin
-// rechnet vom ausgeloesten Termin aus, nicht von der Uhr: ein Timer, der eine
-// Millisekunde zu frueh kommt, landet sonst noch einmal auf demselben Tag.
+// jetzt).
 function planOne(r,after){
   cancel(r);
   if(!r||!r.active||!canNotify())return;
   var at=nextAt(r.time,Math.max(Date.now(),after||0));
-  if(!at)return;
-  _timers.set(r,setTimeout(function(){
-    _timers.delete(r);
-    // Geloescht oder durch einen Import ersetzt: nicht mehr melden.
-    if((S.reminders||[]).indexOf(r)<0||!r.active)return;
-    planOne(r,at.getTime());
-    notify('🍽 NutriTrack – '+(r.label||'Mahlzeit eintragen'),{
-      body:r.body||'Zeit zum Eintragen!',
-      // Je Erinnerung (Uhrzeit + Name) und Tag: zwei offene Tabs ergeben eine
-      // Meldung statt zwei; zwei Erinnerungen zur selben Uhrzeit ersetzen sich
-      // nicht, und die vom Vortag wird nicht still ersetzt.
-      tag:'nt-rem-'+r.time+'-'+(r.label||'')+'-'+ymd(at)
-    });
-  },at.getTime()-Date.now()));
+  if(at)arm(r,at.getTime());
+}
+// Stellt den Timer von r auf den Termin `at` (ms) – der eine Ort, an dem ein
+// Erinnerungs-Timer entsteht.
+function arm(r,at){
+  var e=_timers.get(r);
+  if(e)clearTimeout(e.t);
+  _timers.set(r,{at:at,t:setTimeout(function(){fire(r,at);},Math.max(0,at-Date.now()))});
+}
+// Beim Ausloesen wird ZUERST der Folgetag geplant und DANN angezeigt – scheitert
+// die Anzeige, laeuft die Kette trotzdem weiter. Der Folgetermin rechnet vom
+// ausgeloesten Termin aus, nicht von der Uhr: ein Timer, der eine Millisekunde
+// zu frueh kommt, landet sonst noch einmal auf demselben Tag.
+function fire(r,at){
+  _timers.delete(r);
+  // Geloescht oder durch einen Import ersetzt: nicht mehr melden.
+  if((S.reminders||[]).indexOf(r)<0||!r.active)return;
+  planOne(r,at);
+  if(Date.now()-at>LATE_MS)return;
+  notify('🍽 NutriTrack – '+(r.label||'Mahlzeit eintragen'),{
+    body:r.body||'Zeit zum Eintragen!',
+    // Je Erinnerung (Uhrzeit + Name) und Tag: zwei offene Tabs ergeben eine
+    // Meldung statt zwei; zwei Erinnerungen zur selben Uhrzeit ersetzen sich
+    // nicht, und die vom Vortag wird nicht still ersetzt.
+    tag:'nt-rem-'+r.time+'-'+(r.label||'')+'-'+ymd(new Date(at))
+  });
 }
 
 // ── Mahlzeit-Erinnerungen ──
@@ -85,6 +99,21 @@ function scheduleReminders(){
   if(!canNotify())return;
   (S.reminders||[]).forEach(function(r){planOne(r);});
 }
+
+// App wieder vorn: jeden Timer mit seinem Termin neu stellen. Timer laufen auf
+// einer Uhr, die im Geraeteschlaf steht – ein um 22 Uhr fuer 8 Uhr gestellter
+// Timer kaeme nach acht Stunden Schlaf sonst erst am Nachmittag. Ein Termin, der
+// schon vorbei ist, feuert sofort, und fire() entscheidet ueber die Verspaetung.
+// Nicht schedule(): das plante vom jetzigen Moment aus und verloere eine
+// Erinnerung, die erst Sekunden ueberfaellig ist.
+function rearm(){
+  var list=[];
+  _timers.forEach(function(e,r){list.push([r,e.at]);});
+  list.forEach(function(x){arm(x[0],x[1]);});
+}
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='visible')rearm();
+});
 
 // ── Anzeige (#244) ──
 // Ueber den Service Worker, wo es ihn gibt: Chrome auf Android lehnt

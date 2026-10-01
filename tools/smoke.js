@@ -13,9 +13,11 @@
 //
 //   node tools/smoke.js          (braucht ein lokales http-server auf :8099)
 'use strict';
-// Playwright liegt je nach Maschine lokal, global oder gar nicht vor. Kein
-// Eintrag in package.json, weil dieses Projekt bewusst keine hat — der Test ist
-// ein Werkzeug, keine Abhaengigkeit der App.
+// Playwright liegt je nach Maschine lokal, global oder gar nicht vor. Seit #252
+// steht es als devDependency in package.json (`npm ci`) — ueberholt ist damit
+// die fruehere Begruendung „kein Eintrag, weil dieses Projekt bewusst keine
+// hat“. Es bleibt ein Werkzeug, keine Abhaengigkeit der App; der globale Pfad
+// bleibt als Rueckfall fuer Maschinen ohne `npm ci`.
 function loadPlaywright() {
   const tries = ['playwright', '/opt/node22/lib/node_modules/playwright',
                  process.env.PLAYWRIGHT_PATH].filter(Boolean);

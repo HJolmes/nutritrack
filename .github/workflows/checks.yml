@@ -89,14 +89,17 @@ jobs:
           node-version: "22"
 
       - name: Playwright + Chromium
-        # Kein Eintrag in package.json — dieses Projekt hat bewusst keine.
-        # Der Browser ist ein Werkzeug des Tests, keine Abhaengigkeit der App.
+        # Werkzeuge stehen als devDependencies in package.json, Versionen aus
+        # package-lock.json (#252). Der Browser ist ein Werkzeug des Tests,
+        # keine Abhaengigkeit der App — tools/check.js wacht darueber.
         run: |
-          npm install --no-save playwright@1.56.1
+          npm ci
           npx playwright install --with-deps chromium
 
       - name: App lokal ausliefern
-        run: npx --yes http-server -p 8099 -s . &
+        # Version fest: ohne sie konnte sich der Server zwischen zwei Laeufen
+        # aendern, ohne dass jemand etwas committed hatte.
+        run: npx --yes http-server@14.1.1 -p 8099 -s . &
 
       - name: Warten bis die Seite antwortet
         run: |

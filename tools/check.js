@@ -10,7 +10,9 @@
 // (Nutzer bekommen alte Stände), (c) bricht den Offline-Betrieb der PWA.
 //
 // Bewusst ohne npm/Abhaengigkeiten: laeuft mit blossem `node tools/check.js`
-// lokal genauso wie in der GitHub Action.
+// lokal genauso wie in der GitHub Action — auch dort, wo vorher kein `npm ci`
+// lief (preview.yml, Bump). Seit #252 gibt es ein package.json, aber nur fuer
+// Werkzeuge (devDependencies); diese Datei braucht keines davon.
 //
 // Exit-Code 0 = alles gut, 1 = mindestens ein Fehler.
 
@@ -67,6 +69,29 @@ if (appVersion) {
   } else {
     ok(`${literals.length} hartkodierte(r) "Beta v"-Text stimmt mit APP_VERSION ueberein.`);
   }
+}
+
+// ── 1b. Auslieferung ohne Abhaengigkeiten (#252) ─────────────────────────
+// Ausgeliefert wird der Quelltext, wie er im Repository steht. Werkzeuge
+// (Pruefungen, Tests, Playwright) duerfen npm nutzen — als devDependencies.
+// Eine Laufzeit-Abhaengigkeit oder ein Build-Schritt wuerde die Auslieferung
+// still vom Repository loesen: GitHub Pages fuehrt keinen Build aus.
+{
+  let pkgFail = 0;
+  if (fs.existsSync(path.join(ROOT, 'package.json'))) {
+    let pkg = null;
+    try { pkg = JSON.parse(read('package.json')); } catch (e) { fail('package.json ist kein gueltiges JSON: ' + e.message); pkgFail++; }
+    if (pkg) {
+      const deps = pkg.dependencies && Object.keys(pkg.dependencies);
+      if (deps && deps.length) { fail(`package.json fuehrt dependencies (${deps.join(', ')}) — die App hat keine Laufzeit-Abhaengigkeit; Werkzeuge gehoeren nach devDependencies.`); pkgFail++; }
+      for (const k of ['build', 'prebuild', 'prepare', 'preinstall', 'install', 'postinstall']) {
+        if (pkg.scripts && pkg.scripts[k]) { fail(`package.json traegt das Skript '${k}' — kein Build- oder Installationsschritt neben der Auslieferung.`); pkgFail++; }
+      }
+    }
+  }
+  const viaPkg = [...indexHtml.matchAll(/<script[^>]*\bsrc="([^"]+)"/g)].map((x) => x[1]).filter((s) => /^(\.\/)?(node_modules|dist)\//.test(s));
+  viaPkg.forEach((s) => { fail(`index.html bindet '${s}' ein — ausgeliefert wird nur Quelltext, nichts aus node_modules/ oder dist/.`); pkgFail++; });
+  if (!pkgFail) ok('Auslieferung ohne Abhaengigkeiten: package.json nur mit devDependencies, kein Build-Skript, kein Script aus node_modules/ oder dist/.');
 }
 
 // ── 2. JS-Syntax ──────────────────────────────────────────────────────────

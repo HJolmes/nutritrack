@@ -29,11 +29,12 @@ Reine Doku-Änderungen (`UEBERGABE.md`, `CLAUDE.md`, `AGENTS.md`, README) dürfe
 ## Prüfen vor jedem Commit (PFLICHT)
 
 ```bash
-node tools/check.js    # Versionen, Syntax, CORE_ASSETS, onclick/data-act auflösbar
-node tools/smoke.js    # App in Chromium laden (braucht: npx http-server -p 8099 -s . &)
+npm ci                 # Werkzeuge (Playwright) aus package-lock.json
+node tools/check.js    # Versionen, Syntax, CORE_ASSETS, onclick/data-act auflösbar, IDs eindeutig, keine dependencies
+node tools/smoke.js    # App in Chromium laden (braucht: npx http-server@14.1.1 -p 8099 -s . &)
 ```
 
-Beide laufen auch in `.github/workflows/checks.yml`. Sie ersetzen kein Build-Tool — sie fangen genau die Fehlerklassen ab, die ohne eines still bleiben: Syntaxfehler im Inline-JS, vergessener Versions-Bump, ein Modul, das nicht in `sw.js` `CORE_ASSETS` steht, und ein `onclick`/`data-act`, das nach einer Verschiebung ins Leere zeigt.
+Beide laufen auch in `.github/workflows/checks.yml`. Es gibt keinen Build-Schritt (siehe Architektur) — die Prüfungen fangen genau die Fehlerklassen ab, die ohne ihn still bleiben: Syntaxfehler im Inline-JS, vergessener Versions-Bump, ein Modul, das nicht in `sw.js` `CORE_ASSETS` steht, und ein `onclick`/`data-act`, das nach einer Verschiebung ins Leere zeigt.
 
 **Wer einen Fehler einbaut, um eine Prüfung zu prüfen, misst zuerst, dass der Fehler ankommt.** Ein grüner Durchgang beweist sonst nicht, dass die Prüfung blind ist, sondern nur, dass nichts passiert ist — beides sieht in der Ausgabe gleich aus.
 
@@ -61,7 +62,9 @@ Die verbliebenen `onclick` (14 statisch, 114 in generiertem HTML) laufen unverä
 - Bei neuen JS-Modulen sicherstellen, dass sie über den Service-Worker erreichbar sind (Cache-First-Pfad in `sw.js`) — sonst funktioniert die PWA offline nicht.
 - `sw.js` – Service Worker, Versions-Bump nötig
 - `worker/` – Cloudflare Worker AI-Proxy, separat deployen
-- Keine npm/React/Build-Tools – statische GitHub Pages App
+- Statische GitHub Pages App, kein React. Regel seit 2026-10-01 (#252), wortgleich in `AGENTS.md`:
+
+> Die Auslieferung ist der Quelltext: `index.html`, `tab.html`, `sw.js`, `picker.js`, `js/`, `manifest.json` werden unverändert von GitHub Pages ausgeliefert. Es gibt keinen Build-Schritt, kein `dist/`, keine ES-Module, keinen Bundler, keine Laufzeit-Abhängigkeit aus npm. **Werkzeuge** (Prüfungen, Tests, Typprüfung, Playwright, wrangler) dürfen npm nutzen; sie stehen als `devDependencies` in `package.json` mit `package-lock.json` und laufen mit `npm ci`. `dependencies` bleibt leer — `tools/check.js` wacht darüber.
 
 ## Git-Workflow
 

@@ -9,8 +9,8 @@
 //
 // Bewusst ohne npm: nur Node 22 (fetch, Request, Response, ReadableStream,
 // AbortSignal.timeout sind dort eingebaut). Das Worker-Modul wird per
-// data:-URL importiert, weil es ES-Modul-Syntax traegt und das Repo kein
-// package.json hat.
+// data:-URL importiert, weil es ES-Modul-Syntax traegt und das package.json
+// im Repo (seit #252, nur Werkzeuge) kein "type": "module" setzt.
 //
 // NICHTS geht nach aussen: globalThis.fetch ist durch einen Ersatz ersetzt,
 // der nur die im jeweiligen Test hinterlegte Antwort liefert und sonst wirft.

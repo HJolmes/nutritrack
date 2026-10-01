@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.291',items:[
+    {icon:'🔗',text:'<b>Quelle beim Rezept-Link wieder sichtbar</b>: Nach dem Laden eines Rezept-Links steht über den erkannten Zutaten wieder, woher die Mengen stammen (Rezeptdaten der Seite oder KI) und für wie viele Portionen die Seite sie nennt.',where:'＋ → 🔗 Link'}
+  ]},
   {v:'0.290',items:[
     {icon:'🏃',text:'<b>Sport-Werte auf dem Stand von 2024</b>: Die MET-Werte der rund 120 Sportarten stammen jetzt aus dem aktuellen 2024 Adult Compendium of Physical Activities statt aus der Fassung von 2011. Etwa die Hälfte der Aktivitäten rechnet dadurch leicht anders, deutlich etwa Trampolin, Stand-up-Paddling, Rudergerät und Bergsteigen. Die Quelle steht jetzt unten im Dialog „Sport eintragen“.'}
   ]},

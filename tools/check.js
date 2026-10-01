@@ -192,6 +192,30 @@ if (!mCore) {
   }
 }
 
+// ── 4. IDs im statischen Markup eindeutig ─────────────────────────────────
+// getElementById liefert bei doppelter ID still das ERSTE Element. So schrieb
+// der Link-Import seinen Quellenhinweis in ein verstecktes Feld im Chat-Panel,
+// weil beide `pickerLinkSrcHint` hiessen (#263). Gelesen wird nur das Markup
+// ausserhalb von <script> und Kommentaren; IDs in generiertem HTML entstehen zur
+// Laufzeit und sind hier nicht sichtbar.
+{
+  const markup = indexHtml
+    .replace(/<script[\s\S]*?<\/script>/g, (s) => s.replace(/[^\n]/g, ' '))
+    .replace(/<!--[\s\S]*?-->/g, (s) => s.replace(/[^\n]/g, ' '));
+  const seenId = new Map();
+  let dupIds = 0;
+  for (const mId of markup.matchAll(/<[a-zA-Z][^>]*?\sid="([^"]+)"/g)) {
+    const line = markup.slice(0, mId.index).split('\n').length;
+    if (seenId.has(mId[1])) {
+      fail(`index.html:${line}: id="${mId[1]}" steht schon in Zeile ${seenId.get(mId[1])} — getElementById trifft nur das erste.`);
+      dupIds++;
+    } else {
+      seenId.set(mId[1], line);
+    }
+  }
+  if (!dupIds) ok(`Alle ${seenId.size} IDs im statischen Markup sind eindeutig.`);
+}
+
 // ── 5. onclick-Ziele in generiertem HTML ──────────────────────────────────
 // Der Rauchtest (tools/smoke.js) prueft nur, was zur Pruefzeit im DOM steht.
 // Der weitaus groessere Teil der Knoepfe entsteht aber erst zur Laufzeit aus

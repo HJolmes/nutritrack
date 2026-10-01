@@ -156,12 +156,16 @@ function compressOldDays(){
   Object.keys(S.days).forEach(function(d){
     if(d<cutoff&&S.days[d]&&!S.days[d]._compressed){
       var day=S.days[d];
-      var all=day.meals.breakfast.concat(day.meals.lunch,day.meals.dinner,day.meals.snack);
+      // Fehlende meals, Slots oder leere Eintraege zaehlen als leer (wie
+      // dayTotals in js/stats.js). Ein Wurf hier stoppte die Verdichtung bei
+      // jedem Start, und der Speicher wuchs weiter (#281).
+      var m=day.meals||{};
+      var all=[].concat(m.breakfast||[],m.lunch||[],m.dinner||[],m.snack||[]).filter(Boolean);
       var t=calcM(all);
       // Nur Summen behalten, Details + Fotos löschen — Fotos erst nach dem
       // Ersetzen, und nur wenn keine Vorlage/Kopie sie noch nutzt (#234).
       S.days[d]={_compressed:true,kcal:Math.round(t.kcal),protein:Math.round(t.protein),carbs:Math.round(t.carbs),fat:Math.round(t.fat),water:day.water||0};
-      all.forEach(function(e){if(e)delPhotoIfUnused(e.mealPhotoId);});
+      all.forEach(function(e){delPhotoIfUnused(e.mealPhotoId);});
       changed=true;
     }
   });

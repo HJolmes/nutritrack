@@ -236,15 +236,31 @@ test('compressOldDays: ein zweiter Lauf aendert nichts und speichert nicht', () 
   assert.equal(C.saved, 1);
 });
 
-test('compressOldDays: ein alter Tag OHNE meals wirft (heutiger Stand)', () => {
+test('compressOldDays: alter Tag ohne meals, ohne Slot oder mit leerem Eintrag wird verdichtet (#281)', () => {
   // Alle bekannten Wege legen Tage mit meals an; ein solcher Tag kaeme nur aus
-  // einem fremden oder beschaedigten Stand. Der Aufruf laeuft per setTimeout
-  // nach dem Start, ein Wurf stoppt also nur die Verdichtung, nicht die App.
+  // einem fremden oder beschaedigten Stand. Bis #281 warf er einen TypeError,
+  // und die Verdichtung blieb bei jedem Start fuer ALLE Tage aus.
   const S = { days: {} };
   const C = load(S);
-  S.days[C.addDays(C.today(), -100)] = { water: 2 };
-  // Der Fehler stammt aus dem vm-Kontext (eigenes TypeError), daher ueber den Namen.
-  assert.throws(() => C.compressOldDays(), (e) => e.name === 'TypeError');
+  const noMeals = C.addDays(C.today(), -100);
+  const noSlot = C.addDays(C.today(), -101);
+  const nullEntry = C.addDays(C.today(), -102);
+  const normal = C.addDays(C.today(), -103);
+  S.days[noMeals] = { water: 2 };
+  S.days[noSlot] = { meals: { lunch: [{ kcal: 300, protein: 10, carbs: 40, fat: 8 }] }, water: 1 };
+  S.days[nullEntry] = { meals: { breakfast: [null, { kcal: 200, protein: 5, carbs: 30, fat: 4, mealPhotoId: 'p2' }], lunch: [], dinner: [], snack: [] } };
+  S.days[normal] = emptyDay();
+  S.days[normal].meals.dinner.push({ kcal: 700, protein: 30, carbs: 70, fat: 25 });
+  C.compressOldDays();
+  assert.deepEqual(plain(S.days[noMeals]), { _compressed: true, kcal: 0, protein: 0, carbs: 0, fat: 0, water: 2 });
+  assert.deepEqual(plain(S.days[noSlot]), { _compressed: true, kcal: 300, protein: 10, carbs: 40, fat: 8, water: 1 });
+  assert.deepEqual(plain(S.days[nullEntry]), { _compressed: true, kcal: 200, protein: 5, carbs: 30, fat: 4, water: 0 });
+  // der kaputte Tag haelt die anderen nicht mehr auf
+  assert.deepEqual(plain(S.days[normal]), { _compressed: true, kcal: 700, protein: 30, carbs: 70, fat: 25, water: 0 });
+  assert.equal(C.saved, 1);
+  // je echtem Eintrag ein Aufruf, der leere Eintrag faellt weg
+  assert.equal(C.delPhotos.length, 3);
+  assert.ok(C.delPhotos.includes('p2'));
 });
 
 test('getDay: oeffnet einen verdichteten Tag wieder, Summen als Snack-Eintrag', () => {

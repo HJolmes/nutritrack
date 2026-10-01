@@ -98,6 +98,25 @@ jobs:
       - name: Typpruefung
         run: npm run typecheck
 
+  test:
+    name: Logik-Tests (node --test)
+    # Der Rechenkern js/calc.js laeuft hier ohne Browser (#255): Datum,
+    # Summen, Ziele, Ampel, Verdichtung alter Tage, Sport, Portionen. Ein
+    # falscher Kalorienwert bricht nichts Sichtbares – nur ein Test sieht ihn.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Tests
+        # Ohne npm ci: node --test und node:assert sind eingebaut.
+        run: npm test
+
   smoke:
     name: Rauchtest im Browser
     runs-on: ubuntu-latest

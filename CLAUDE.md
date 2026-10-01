@@ -32,8 +32,11 @@ Reine Doku-Änderungen (`UEBERGABE.md`, `CLAUDE.md`, `AGENTS.md`, README) dürfe
 npm ci                 # Werkzeuge (Playwright, TypeScript) aus package-lock.json
 node tools/check.js    # Versionen, Syntax, CORE_ASSETS, onclick/data-act auflösbar, IDs eindeutig, keine dependencies
 npm run typecheck      # tsc --noEmit über alle Dateien mit // @ts-check, Zeilen = Zeilen in index.html
+npm test               # node --test: Rechenkern js/calc.js ohne Browser
 node tools/smoke.js    # App in Chromium laden (braucht: npx http-server@14.1.1 -p 8099 -s . &)
 ```
+
+**Reine Rechenfunktionen entstehen in `js/calc.js`, nicht in `index.html`. Wer eine Funktion dort ändert, ändert oder ergänzt ihren Test in `tools/test/calc.test.js` im selben PR.** `tools/check.js` hält den Rechenkern rein (kein `document.`, `localStorage`, `fetch(`, Toast, Overlay, Timer).
 
 **Jedes neue Modul unter `js/` beginnt mit `// @ts-check`** (`tools/check.js` prüft es). Die Module, die das noch nicht tragen, stehen in `TS_PENDING` in `tools/check.js`; die Liste wird nur kürzer.
 

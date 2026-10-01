@@ -450,6 +450,17 @@ if (!mCore) {
   if (!tsFail) ok(`${tsOn} Module unter js/ mit // @ts-check, ${TS_PENDING.size} noch ausstehend (Stufe 1 von #254).`);
 }
 
+// ── 5c. Der Rechenkern bleibt rein (#255) ─────────────────────────────────
+// js/calc.js laeuft in Node-Tests ohne Browser. Ein document., localStorage,
+// fetch(, ein Toast, ein Overlay oder ein Timer darin wuerde dort brechen –
+// oder, schlimmer, im Test unbemerkt nichts tun.
+if (fs.existsSync(path.join(ROOT, 'js/calc.js'))) {
+  const calc = read('js/calc.js').replace(/^\s*\/\/.*$/gm, '');
+  const bad = ['document.', 'localStorage', 'fetch(', 'showToast', 'openOv', 'setTimeout'].filter((t) => calc.includes(t));
+  if (bad.length) bad.forEach((t) => fail(`js/calc.js enthaelt '${t}' — der Rechenkern bleibt ohne Oberflaeche, Speicher, Netz und Timer.`));
+  else ok('js/calc.js ist rein (kein document., localStorage, fetch(, showToast, openOv, setTimeout).');
+}
+
 // ── 5b. UEBERGABE.md bleibt knapp (#258) ──────────────────────────────────
 // Jede Session liest diese Datei vor der ersten Handlung. Die Regel „knapp
 // halten, ueberschreiben statt anhaengen“ stand darin und wurde trotzdem nicht

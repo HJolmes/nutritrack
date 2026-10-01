@@ -6,6 +6,7 @@
     "check": "node tools/check.js",
     "smoke": "node tools/smoke.js",
     "typecheck": "node tools/typecheck.js",
+    "test": "node --test \"tools/test/*.test.js\"",
     "bump": "node tools/bump.js"
   },
   "devDependencies": {

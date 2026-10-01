@@ -71,7 +71,7 @@ Avoid adding new external CDNs or APIs unless necessary. If adding one, document
 
 ## Checks Before PR
 
-There is no npm build; npm is used for tools only (see the rule above). Before opening or merging a PR, run `npm ci && npm run check && npm run typecheck && npm run smoke` (every new module under `js/` starts with `// @ts-check`; the smoke test needs `npx http-server@14.1.1 -p 8099 -s .` running) and `node tools/worker-test.js` when `worker/` changed. Then perform focused manual checks:
+There is no npm build; npm is used for tools only (see the rule above). Before opening or merging a PR, run `npm ci && npm run check && npm run typecheck && npm test && npm run smoke` (every new module under `js/` starts with `// @ts-check`; pure calculations live in `js/calc.js` and a change there changes its test in `tools/test/calc.test.js` in the same PR; the smoke test needs `npx http-server@14.1.1 -p 8099 -s .` running) and `node tools/worker-test.js` when `worker/` changed. Then perform focused manual checks:
 
 - Open `index.html` through a local server, not by double-clicking the file.
 - Verify the changed flow on a mobile-width viewport.

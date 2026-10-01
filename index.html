@@ -6986,6 +6986,8 @@ function openLibrary(){renderLibrary();openOv('libraryOv');}
 // ════════════════════════════════════════
 
 function openExerciseOv(){
+  var cleaned=cleanExerciseLibrary(S.exerciseLibrary);
+  if(JSON.stringify(cleaned)!==JSON.stringify(S.exerciseLibrary||[])){S.exerciseLibrary=cleaned;saveS();}
   document.getElementById('exName').value='';
   document.getElementById('exDuration').value='';
   document.getElementById('exIntensity').value='medium';
@@ -7049,8 +7051,9 @@ function renderExercisePresets(){
 
 function selectExercisePreset(name){
   document.getElementById('exName').value=name;
+  moveExerciseDuration();
   var st=exerciseFormState();
-  var met=getExerciseMet(name,st.intensity);
+  var met=getExerciseMet(st.name,st.intensity);
   if(met){
     showExerciseResult(Math.round(met*(S.weight||75)*(st.dur/60)),st);
   } else {
@@ -7104,13 +7107,27 @@ function saveToExerciseLibrary(name,emoji,met){
 
 // Eingaben des Formulars; leere Dauer = 30 Min. (damit wird auch gerechnet
 // und gespeichert).
+// Eine Dauer im Namen ("Bouldern 20 min") zählt als Dauer, wenn das Feld
+// Dauer leer ist, und gehört nicht zum Namen (splitExerciseDuration).
 function exerciseFormState(){
+  var sp=splitExerciseDuration(document.getElementById('exName').value);
   return{
-    name:document.getElementById('exName').value.trim(),
-    dur:parseFloat(document.getElementById('exDuration').value)||30,
+    name:sp.name,
+    dur:parseFloat(document.getElementById('exDuration').value)||sp.dur||30,
     intensity:document.getElementById('exIntensity').value
   };
 }
+// Beim Verlassen des Namensfelds die Dauer sichtbar ins Feld Dauer schieben.
+function moveExerciseDuration(){
+  var inp=document.getElementById('exName'),du=document.getElementById('exDuration');
+  var sp=splitExerciseDuration(inp.value);
+  if(!sp.dur)return;
+  inp.value=sp.name;
+  if(!parseFloat(du.value))du.value=sp.dur;
+}
+document.addEventListener('change',function(ev){
+  if(ev.target&&ev.target.id==='exName')moveExerciseDuration();
+},true);
 
 // Die Anzeige merkt sich, für welche Eingaben sie gerechnet wurde. Solange
 // Name, Dauer und Intensität gleich sind, gilt sie (auch ein KI-Wert).

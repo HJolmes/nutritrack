@@ -3,7 +3,8 @@
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
   {v:'0.298',items:[
-    {icon:'🏃',text:'<b>Sport-Vorschläge lesbar</b>: Beim Tippen im Feld „Aktivität“ erscheint unter dem Feld eine Liste passender Sportarten mit Namen. Bisher zeigte Android dort nur leere Kästchen über der Tastatur. ▼ im Feld öffnet die ganze Liste.',where:'🏃 Sport eintragen'}
+    {icon:'🏃',text:'<b>Sport-Vorschläge lesbar</b>: Beim Tippen im Feld „Aktivität“ erscheint unter dem Feld eine Liste passender Sportarten mit Namen. Bisher zeigte Android dort nur leere Kästchen über der Tastatur. ▼ im Feld öffnet die ganze Liste.',where:'🏃 Sport eintragen'},
+    {icon:'⏱️',text:'<b>Dauer im Namen</b>: Wer „Bouldern 20 min“ ins Feld Aktivität schreibt, bekommt „Bouldern“ mit 20 Minuten Dauer. Eigene Schnellauswahl-Einträge mit Dauer im Namen werden einmalig bereinigt.',where:'🏃 Sport eintragen'}
   ]},
   {v:'0.297',items:[
     {icon:'🔧',text:'<b>„Was ist neu“ ohne „undefined“</b>: Einträge ohne Ortsangabe zeigen keine leere 📍-Zeile mit „undefined“ mehr.'}

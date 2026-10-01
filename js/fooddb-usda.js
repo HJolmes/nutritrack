@@ -1,4 +1,4 @@
-// NutriTrack – erweiterte Lebensmittel-Datenbank (276 Eintraege).
+// NutriTrack – erweiterte Lebensmittel-Datenbank (275 Eintraege).
 //
 // ERZEUGT von tools/build-fooddb.js — nicht von Hand bearbeiten.
 // Gepflegt wird tools/fooddb-usda.map.json (deutscher Name, Emoji,
@@ -12,7 +12,7 @@
 // c Kohlenhydrate, f Fett, s Suchwoerter. Neu: g Zucker, b Ballaststoffe,
 // l Salz (aus Natrium x 2,5). u = USDA-Kennnummer (NDB_No) zum Nachschlagen.
 //
-// 105 Zuordnungen sind uebersprungen, weil js/fooddb.js den Namen
+// 106 Zuordnungen sind uebersprungen, weil js/fooddb.js den Namen
 // bereits fuehrt — dort steht die massgebliche Fassung.
 window.DB_USDA=[
   // Obst
@@ -117,7 +117,6 @@ window.DB_USDA=[
   {n:"Pommes frites (frittiert)",e:"🍟",k:312,p:3.4,c:41.4,f:14.7,g:0.3,b:3.8,l:0.53,s:"fritten frittiert pommes",u:"21138"},
   // Milchprodukte & Eier
   {n:"Vollmilch 3,5%",e:"🥛",k:61,p:3.2,c:4.8,f:3.3,g:5.1,b:0,l:0.11,s:"milch milk vollmilch",u:"01211"},
-  {n:"Milch 1,5%",e:"🥛",k:50,p:3.3,c:4.8,f:2,g:5.1,b:0,l:0.12,s:"fettarm milch",u:"01174"},
   {n:"Magermilch",e:"🥛",k:34,p:3.4,c:5,f:0.1,g:5.1,b:0,l:0.11,s:"entrahmt magermilch milch skim",u:"01151"},
   {n:"Buttermilch",e:"🥛",k:40,p:3.3,c:4.8,f:0.9,g:4.8,b:0,l:0.48,s:"buttermilch buttermilk",u:"01088"},
   {n:"Kondensmilch",e:"🥛",k:135,p:6.8,c:10,f:7.6,g:10,b:0,l:0.27,s:"evaporated kaffeesahne kondensmilch",u:"01214"},

@@ -216,6 +216,30 @@ if (!mCore) {
   if (!dupIds) ok(`Alle ${seenId.size} IDs im statischen Markup sind eindeutig.`);
 }
 
+// ── 4b. Standardtabelle der Lebensmittel-DB ───────────────────────────────
+// Ein Wert in DB_DEFAULT, der auf keinen Eintrag zeigt, faellt nirgends auf:
+// findInLocalDB() findet ihn nicht und meldet das Wort still als unbekannt
+// (#265). Geladen wird wie im Browser: Basis-DB, dann die USDA-Ergaenzung.
+{
+  const vm = require('vm');
+  const ctx = { window: {} };
+  vm.createContext(ctx);
+  try {
+    vm.runInContext(read('js/fooddb.js'), ctx);
+    vm.runInContext(read('js/fooddb-usda.js'), ctx);
+    const names = new Set((ctx.window.DB || []).map((f) => f.n));
+    const def = ctx.window.DB_DEFAULT || {};
+    let badDef = 0;
+    for (const [k, v] of Object.entries(def)) {
+      if (k !== k.toLowerCase().trim()) { fail(`js/fooddb.js DB_DEFAULT: Schluessel '${k}' muss klein und ohne Leerraum stehen.`); badDef++; }
+      if (!names.has(v)) { fail(`js/fooddb.js DB_DEFAULT['${k}'] = '${v}' — kein Eintrag dieses Namens in DB/DB_USDA.`); badDef++; }
+    }
+    if (!badDef) ok(`Alle ${Object.keys(def).length} Standardwerte der Lebensmittel-DB zeigen auf einen Eintrag.`);
+  } catch (e) {
+    fail('js/fooddb.js / js/fooddb-usda.js lassen sich nicht laden: ' + e.message);
+  }
+}
+
 // ── 5. onclick-Ziele in generiertem HTML ──────────────────────────────────
 // Der Rauchtest (tools/smoke.js) prueft nur, was zur Pruefzeit im DOM steht.
 // Der weitaus groessere Teil der Knoepfe entsteht aber erst zur Laufzeit aus

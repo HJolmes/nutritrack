@@ -14,7 +14,8 @@
 //   node tools/build-fooddb.js            # laedt die Quelle (Netz noetig)
 //   node tools/build-fooddb.js --check    # nur pruefen, nichts schreiben
 //
-// Eintraege, deren Name schon in js/fooddb.js steht, werden uebersprungen:
+// Eintraege, deren Name schon in js/fooddb.js steht (ohne Klammern und
+// Leerzeichen verglichen), werden uebersprungen:
 // die handgepflegte Basis-DB bleibt fuer diese Namen massgeblich, damit
 // findInLocalDB() nicht zwei Treffer fuer denselben Namen hat.
 
@@ -212,9 +213,12 @@ function render(rows, skipped) {
 (async function main() {
   var check = process.argv.indexOf('--check') !== -1;
   var map = JSON.parse(fs.readFileSync(MAP, 'utf8'));
+  // Verglichen wird ohne Klammern und Leerzeichen: „Milch 1,5%“ ist derselbe
+  // Eintrag wie „Milch (1,5%)“ und waere sonst ein zweiter Treffer (#265).
+  var normName = function(n) { return n.toLowerCase().replace(/[()\s]/g, ''); };
   var baseNames = {};
   (fs.readFileSync(BASE, 'utf8').match(/\{n:'([^']*)'/g) || []).forEach(function(m) {
-    baseNames[m.slice(4, -1).toLowerCase()] = 1;
+    baseNames[normName(m.slice(4, -1))] = 1;
   });
 
   var seen = {}, dupes = [];
@@ -227,7 +231,7 @@ function render(rows, skipped) {
     process.exit(1);
   }
 
-  var wanted = map.filter(function(it) { return !baseNames[it.n.toLowerCase()]; });
+  var wanted = map.filter(function(it) { return !baseNames[normName(it.n)]; });
   var skipped = map.length - wanted.length;
 
   var foods = parse(await loadSource());

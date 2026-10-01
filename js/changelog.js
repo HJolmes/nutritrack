@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.293',items:[
+    {icon:'🍚',text:'<b>Eindeutige Treffer in der Lebensmittel-Datenbank</b>: „Reis“, „Nudeln“ und „Kartoffeln“ zählen jetzt gekocht statt roh, „Kaffee“ als schwarzer Kaffee statt Latte Macchiato, „Schokolade“ als Vollmilchschokolade statt Keksen. Das gilt für Alexa, Rezept-Links, den Wochenplan und die KI-Erkennung in Chat und Foto. Wörter mit mehreren gleich passenden Einträgen wie „Salat“, „Bohnen“ oder „Hähnchen“ werden nicht mehr geraten, sondern online bzw. per KI nachgeschlagen. Der doppelte Eintrag „Milch 1,5%“ ist entfernt.'}
+  ]},
   {v:'0.292',items:[
     {icon:'📷',text:'<b>Kurze US-Barcodes (UPC-E) per Foto</b>: Achtstellige UPC-E-Codes, wie sie auf kleinen Packungen aus den USA stehen, werden bei der Erkennung über den Server nicht mehr als ungültig verworfen.',where:'＋ → 📷 Barcode'}
   ]},

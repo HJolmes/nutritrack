@@ -374,7 +374,7 @@
   }
 
   // kcal aus derselben MET-Suche wie der Sporteintrag der App
-  // (getExerciseMet: eigene Bibliothek → js/metdb.js, Compendium 2011).
+  // (getExerciseMet: eigene Bibliothek → js/metdb.js, Compendium 2024).
   // Ohne Treffer dieselben Rückfallwerte wie die App: 5 MET, 75 kg
   // (Schätzwerte). Wer genaue Werte will, nimmt den Sport-Sync aus
   // Apple/Samsung Health — der liefert echte Messwerte.

@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.292',items:[
+    {icon:'📷',text:'<b>Kurze US-Barcodes (UPC-E) per Foto</b>: Achtstellige UPC-E-Codes, wie sie auf kleinen Packungen aus den USA stehen, werden bei der Erkennung über den Server nicht mehr als ungültig verworfen.',where:'＋ → 📷 Barcode'}
+  ]},
   {v:'0.291',items:[
     {icon:'🔗',text:'<b>Quelle beim Rezept-Link wieder sichtbar</b>: Nach dem Laden eines Rezept-Links steht über den erkannten Zutaten wieder, woher die Mengen stammen (Rezeptdaten der Seite oder KI) und für wie viele Portionen die Seite sie nennt.',where:'＋ → 🔗 Link'}
   ]},

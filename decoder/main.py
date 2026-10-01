@@ -3,7 +3,8 @@
 Standalone HTTP service that takes a JPEG/PNG and returns a decoded
 EAN/UPC/Code-128 barcode using OpenCV (CNN-based BarcodeDetector) with
 pyzbar as a chained fallback. Deployed on Google Cloud Run, called by the
-NutriTrack Cloudflare Worker before any LLM-Vision fallback.
+NutriTrack Cloudflare Worker as its only decoder (no LLM-Vision fallback
+since v0.283).
 """
 
 from __future__ import annotations
@@ -33,6 +34,28 @@ DECODER_SECRET = os.environ.get("DECODER_SECRET")
 _DIGITS_RE = re.compile(r"^\d+$")
 
 
+def _upce_to_a(code: str) -> Optional[str]:
+    """UPC-E (8 digits, number system 0/1) -> UPC-A (12 digits).
+
+    Mirrors worker/src/index.js upcEToA and picker.js _pickerUpcEToA.
+    Returns None when the number system does not allow UPC-E.
+    """
+    ns = code[0]
+    if ns not in ("0", "1"):
+        return None
+    m = code[1:7]
+    last = m[5]
+    if last in ("0", "1", "2"):
+        body = m[0:2] + last + "0000" + m[2:5]
+    elif last == "3":
+        body = m[0:3] + "00000" + m[3:5]
+    elif last == "4":
+        body = m[0:4] + "00000" + m[4]
+    else:
+        body = m[0:5] + "0000" + last
+    return ns + body + code[7]
+
+
 def _valid_checksum(code: str) -> bool:
     """Mirrors worker/src/index.js isValidBarcodeChecksum exactly."""
     if not isinstance(code, str) or not _DIGITS_RE.match(code):
@@ -49,7 +72,12 @@ def _valid_checksum(code: str) -> bool:
     if len(code) == 8:
         s = sum(int(code[i]) * (3 if i % 2 == 0 else 1) for i in range(7))
         expected = (10 - (s % 10)) % 10
-        return expected == int(code[7])
+        if expected == int(code[7]):
+            return True
+        # Eight digits can also be a UPC-E: its check digit is that of its
+        # UPC-A expansion (#264).
+        upc_a = _upce_to_a(code)
+        return upc_a is not None and _valid_checksum(upc_a)
     return True
 
 

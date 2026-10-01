@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie beschreibt den **aktuellen** Stand, nicht seine Geschichte — die steht in Git und in `js/changelog.js`. Der Stand vor der Kürzung (#258, 132 KB): `git show 0d69ba2:UEBERGABE.md`. Grenzen siehe „Pflege“, `tools/check.js` prüft sie.
 
-**Stand:** v0.298 (2026-10-01) — PR #284 (gemergt): Sport-Namensfeld mit eigener Vorschlagsliste statt `<datalist>` (Android zeigte leere Kästchen über der Tastatur). Dauer im Namen („Bouldern 20 min“) wandert ins Feld Dauer, Bibliothek wird beim Öffnen bereinigt. v0.297 (#283) und PR #280 (v0.291–v0.296) sind gemergt. UPC-E (v0.292) und USDA-Daten bleiben (Entscheidung 2026-10-01). Geparkt: #165 Sport-Sync v2 (Android-Gerätetest), #262 Ampel Schwangerschaft/Ernährung (Quelle fehlt), #260 KV-Kontingent (Entscheidung offen).
+**Stand:** v0.298 (2026-10-01) — PR #284 (gemergt, auf Android-PWA abgenommen): Sport-Namensfeld mit eigener Vorschlagsliste statt `<datalist>` (Android zeigte leere Kästchen über der Tastatur). Dauer im Namen („Bouldern 20 min“) wandert ins Feld Dauer, Bibliothek wird beim Öffnen bereinigt. v0.297 (#283) und PR #280 (v0.291–v0.296) sind gemergt. UPC-E (v0.292) und USDA-Daten bleiben (Entscheidung 2026-10-01). Geparkt: #165 Sport-Sync v2 (Android-Gerätetest), #262 Ampel Schwangerschaft/Ernährung (Quelle fehlt), #260 KV-Kontingent (Entscheidung offen).
 
 ## URLs
 
@@ -66,7 +66,6 @@
 - **v0.291 Link-Quelle:** ＋ → 🔗 Link → Chefkoch-Link laden → über den Zutaten steht „Quelle: Rezeptdaten der Seite · Seite nennt … Portionen“.
 - **v0.293 Lebensmittel-DB:** Alexa „ich habe 150 Gramm Reis gegessen“ → Reis gekocht (≈ 195 kcal, nicht ≈ 550); Chat-KI mit „Kaffee“ → schwarzer Kaffee; Rezept-Link mit „Salat“ oder „Bohnen“ → online/KI statt geratenem DB-Eintrag. Suche „Milch“ zeigt „Milch (1,5%)“ nur einmal.
 - **v0.294 Ein Fenster** (Desktop-Browser mit zwei Tabs; Android PWA + Chrome-Tab): zweiter Tab zeigt „NutriTrack ist in einem anderen Fenster geöffnet“, „Hier weiterarbeiten“ → App dort, erster Tab zeigt den Hinweis; ersten Tab schließen, zweiter wartet → startet von selbst. Geteilten Link öffnen, während die App offen ist → nach „Hier weiterarbeiten“ kommt die Import-Vorschau. OneDrive verbinden, während ein zweiter Tab wartet → Verbindung gelingt.
-- **v0.298 Sport-Vorschläge** (Android-PWA): 🏃 Sport eintragen → „jog“ tippen → Liste unter dem Feld mit „Joggen“, antippen setzt Namen und kcal; ▼ zeigt alle 120; Tippen außerhalb schließt. Über der Tastatur keine leeren Kästchen mehr. „Yoga 45 min“ tippen → Name „Yoga“, Dauer 45; alter Chip „Bouldern 20 min“ heißt danach „Bouldern“.
 
 ## Versions-Historie (letzte 5)
 

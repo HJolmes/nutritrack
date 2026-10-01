@@ -1,3 +1,4 @@
+// @ts-check
 // NutriTrack – MET-Tabelle fuer den Sporteintrag (120 Aktivitaeten).
 //
 // ERZEUGT von tools/build-met.js — nicht von Hand bearbeiten.

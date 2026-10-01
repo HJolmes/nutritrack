@@ -1,5 +1,6 @@
+// @ts-check
 // NutriTrack – eingebaute Lebensmittel-Datenbank + DE→EN-Wörterbuch.
-// Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.DB/window.DE_EN.
+// Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.DB/window.DB_DEFAULT/window.DE_EN.
 window.DB=[
   {n:'Apfel',e:'🍎',k:52,p:0.3,c:14,f:0.2,s:'apple äpfel'},{n:'Birne',e:'🍐',k:57,p:0.4,c:15,f:0.1,s:'pear birnen'},
   {n:'Banane',e:'🍌',k:89,p:1.1,c:23,f:0.3,s:'banana'},{n:'Orange',e:'🍊',k:47,p:0.9,c:12,f:0.1,s:'orangen mandarine'},
@@ -85,5 +86,34 @@ window.DB=[
   {n:'Wurst',e:'🌭',k:280,p:14,c:2,f:24,s:'aufschnitt wurstwaren'},
   {n:'Aufschnitt',e:'🌭',k:200,p:15,c:1,f:15,s:'wurst aufschnitt'},
 ];
+
+// Mehrdeutige Woerter (#265): Haengt ein Wort als Synonym an mehreren
+// Eintraegen (z. B. „Reis“ an roh und gekocht), loest findInLocalDB() es NUR
+// ueber diese Tabelle auf. Was hier fehlt und mehrdeutig ist, ergibt keinen
+// DB-Treffer – dann gelten Open Food Facts bzw. KI wie fuer ein unbekanntes Wort.
+// Regel: gekocht/zubereitet, wo das der Alltag ist; sonst der Eintrag, der dem
+// Wort am naechsten kommt. Schluessel klein, Wert = exakter Name in DB oder
+// DB_USDA (tools/check.js prueft, dass es ihn gibt).
+window.DB_DEFAULT={
+  'reis':'Reis weiß (gekocht)','rice':'Reis weiß (gekocht)',
+  'nudeln':'Nudeln (gekocht)','spaghetti':'Nudeln (gekocht)','pasta':'Nudeln (gekocht)',
+  'kartoffeln':'Kartoffeln (gekocht)','potato':'Kartoffel',
+  'kaffee':'Kaffee (schwarz)','coffee':'Kaffee (schwarz)',
+  'milch':'Milch (1,5%)','vollmilch':'Milch (3,5%)',
+  'joghurt':'Naturjoghurt','yogurt':'Naturjoghurt',
+  'schokolade':'Vollmilchschokolade','eis':'Vanilleeis','pudding':'Pudding (Vanille)',
+  'hähnchenbrust':'Hühnerbrust','haehnchenbrust':'Hühnerbrust','huehnerbrust':'Hühnerbrust',
+  'hackfleisch':'Rinderhack','pute':'Putenbrust','turkey':'Putenbrust','schnitzel':'Schweineschnitzel',
+  'eier':'Ei','egg':'Ei','salmon':'Lachs','thunfisch':'Thunfisch (Dose)','tuna':'Thunfisch (Dose)',
+  'kirsche':'Kirschen','cherry':'Kirschen','karotte':'Möhre','carrot':'Möhre','broccoli':'Brokkoli',
+  'melone':'Wassermelone','pizza':'Pizza Margherita','pommes':'Pommes Frites',
+  'tortilla':'Tortilla (Weizen)','wrap':'Tortilla (Weizen)',
+  'paprika':'Paprika rot','linsen':'Linsen (gekocht)','johannisbeeren':'Johannisbeeren rot',
+  // Englisch: Zutaten aus Rezept-Links englischsprachiger Seiten
+  'oats':'Haferflocken','apple':'Apfel','tea':'Tee','water':'Wasser','sugar':'Zucker','milk':'Milch (3,5%)',
+  'cream':'Sahne','oil':'Olivenöl','cottage':'Hüttenkäse','chickpeas':'Kichererbsen','shrimp':'Garnelen',
+  'cod':'Kabeljau','ham':'Schinken','bacon':'Speck','peas':'Erbsen','mushroom':'Pilze','pumpkin':'Kürbis',
+  'porridge':'Haferbrei','granola':'Müsli','roll':'Brötchen'
+};
 
 window.DE_EN={apfel:'apple',birne:'pear',banane:'banana',orange:'orange',erdbeere:'strawberry',blaubeere:'blueberry',himbeere:'raspberry',kirsche:'cherry',trauben:'grapes',kiwi:'kiwi',mango:'mango',avocado:'avocado',wassermelone:'watermelon',pfirsich:'peach',tomate:'tomato',gurke:'cucumber','möhre':'carrot',karotte:'carrot',brokkoli:'broccoli',spinat:'spinach',paprika:'bell pepper',zucchini:'zucchini',blumenkohl:'cauliflower',zwiebel:'onion',knoblauch:'garlic',pilze:'mushroom',kartoffel:'potato',mais:'corn',erbsen:'peas','hähnchen':'chicken','hühnerbrust':'chicken breast',putenbrust:'turkey',rinderhack:'ground beef',lachs:'salmon',thunfisch:'tuna',garnelen:'shrimp',ei:'egg',eier:'eggs',milch:'milk','käse':'cheese',joghurt:'yogurt',butter:'butter',brot:'bread',haferflocken:'oats','müsli':'muesli',reis:'rice',nudeln:'pasta',quinoa:'quinoa',mandeln:'almonds','walnüsse':'walnuts',linsen:'lentils',kichererbsen:'chickpeas',tofu:'tofu',schokolade:'chocolate',honig:'honey','olivenöl':'olive oil',kaffee:'coffee',tee:'tea'};

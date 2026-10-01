@@ -1,3 +1,4 @@
+// @ts-check
 // NutriTrack – Dashboard-Kacheln anordnen & ausblenden (v0.243)
 // Klassisches Script, kein Modul. Exportiert window.NTDash und greift direkt auf
 // die globalen Helfer aus index.html zu (S, saveS, openOv, closeOv, esc, showToast).

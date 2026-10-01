@@ -9,8 +9,8 @@
 //
 // Bewusst ohne npm: nur Node 22 (fetch, Request, Response, ReadableStream,
 // AbortSignal.timeout sind dort eingebaut). Das Worker-Modul wird per
-// data:-URL importiert, weil es ES-Modul-Syntax traegt und das Repo kein
-// package.json hat.
+// data:-URL importiert, weil es ES-Modul-Syntax traegt und das package.json
+// im Repo (seit #252, nur Werkzeuge) kein "type": "module" setzt.
 //
 // NICHTS geht nach aussen: globalThis.fetch ist durch einen Ersatz ersetzt,
 // der nur die im jeweiligen Test hinterlegte Antwort liefert und sonst wirft.
@@ -239,7 +239,7 @@ async function main() {
   section('/health');
   {
     const r = await call('GET', '/health');
-    check('codeVersion ist v0.283-no-vision', r.json && r.json.data && r.json.data.codeVersion === 'v0.283-no-vision', r.json && r.json.data && r.json.data.codeVersion);
+    check('codeVersion ist v0.292-upce', r.json && r.json.data && r.json.data.codeVersion === 'v0.292-upce', r.json && r.json.data && r.json.data.codeVersion);
   }
 
   // ── (a) Body null / kein Objekt → 400 mit CORS, keine Ausnahme ──
@@ -618,6 +618,22 @@ async function main() {
         check('ohne DECODER_URL → 500 worker_not_configured, kein Abruf', r.status === 500 && r.json.error.code === 'worker_not_configured' && outbound.length === 0, show(r) + ', Abrufe ' + outbound.length);
       } finally {
         env.DECODER_URL = oldUrl;
+      }
+
+      // UPC-E (#264): achtstellig, aber keine gueltige EAN-8. 04252614 ist die
+      // Kurzform von 042100005264; vorher verwarf der Worker den Treffer.
+      for (const [code, want, what] of [
+        ['04252614', true, 'UPC-E 04252614 (→ UPC-A 042100005264)'],
+        ['04252615', false, 'UPC-E mit falscher Pruefziffer 04252615'],
+        ['96385074', true, 'EAN-8 96385074 (wie bisher)'],
+        ['96385075', false, 'EAN-8 mit falscher Pruefziffer 96385075'],
+      ]) {
+        upstream = async (url) => {
+          if (url === 'https://decoder.test/decode') return new Response(JSON.stringify({ found: true, code }), { status: 200 });
+          throw new Error('unerwartet ' + url);
+        };
+        r = await call('POST', '/decode-barcode', jpeg);
+        check(what + (want ? ' → found:true' : ' → found:false'), r.status === 200 && r.json.data.found === want && (want ? r.json.data.code === code : r.json.data.code === null), show(r));
       }
 
       r = await call('GET', '/health');

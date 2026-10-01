@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.290"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.296"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,8 +22,9 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.290"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.296"></script>
 <script>
+  // @ts-check
   (function(){
     if(typeof ZXingWASM==='undefined'){console.warn('zxing-wasm load failed, ZXing-JS fallback aktiv');return;}
     // .wasm lokal laden statt vom CDN – sonst hängt der erste Scan am Netz.
@@ -1218,7 +1219,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.290</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.296</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1344,7 +1345,6 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
         </div>
         <div id="pickerChatResult" class="hidden" style="margin-bottom:10px;">
           <div style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:6px;">Erkannte Zutaten</div>
-          <div id="pickerLinkSrcHint"></div>
           <div style="margin-bottom:6px;">
             <input type="text" class="finp" id="pickerChatRecipeName" placeholder="Rezeptname (optional)">
           </div>
@@ -3355,12 +3355,14 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.290"></script>
-<script src="js/fooddb.js?v=0.290"></script>
-<script src="js/fooddb-usda.js?v=0.290"></script>
-<script src="js/metdb.js?v=0.290"></script>
-<script src="js/idb-photos.js?v=0.290"></script>
-<script src="js/changelog.js?v=0.290"></script>
+<script src="js/actions.js?v=0.296"></script>
+<script src="js/single-tab.js?v=0.296"></script>
+<script src="js/fooddb.js?v=0.296"></script>
+<script src="js/fooddb-usda.js?v=0.296"></script>
+<script src="js/metdb.js?v=0.296"></script>
+<script src="js/idb-photos.js?v=0.296"></script>
+<script src="js/changelog.js?v=0.296"></script>
+<script src="js/calc.js?v=0.296"></script>
 <script>
 // ════════════════════════════════════════
 // SECTION: DATABASE
@@ -3379,7 +3381,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.290';
+var APP_VERSION='0.296';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -3650,10 +3652,6 @@ var isOnline=navigator.onLine;
 // ════════════════════════════════════════
 // SECTION: DATE
 // ════════════════════════════════════════
-function today(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
-function pad(n){return n<10?'0'+n:String(n);}
-function addDays(s,d){var p=s.split('-');var dt=new Date(+p[0],+p[1]-1,+p[2]);dt.setDate(dt.getDate()+d);return dt.getFullYear()+'-'+pad(dt.getMonth()+1)+'-'+pad(dt.getDate());}
-function fmtDate(s){var t=today();if(s===t)return'Heute';if(s===addDays(t,-1))return'Gestern';var p=s.split('-');return new Date(+p[0],+p[1]-1,+p[2]).toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'});}
 function mealByTime(){var h=new Date().getHours();if(h>=5&&h<11)return'breakfast';if(h>=11&&h<14)return'lunch';if(h>=14&&h<18)return'snack';return'dinner';}
 
 // ════════════════════════════════════════
@@ -3690,6 +3688,9 @@ function _freeQuota(step){
   }
 }
 function saveS(){
+  // Vor dem Start traegt S nur Vorgaben, nach einer Uebernahme gehoert nt_v6
+  // einem anderen Fenster (#261) — beides darf den Bestand nicht ueberschreiben.
+  if(window.NTTab&&!NTTab.canWrite())return;
   var data=JSON.stringify(S);
   if(_lsSet('nt_v6',data)){
     // Warnung wenn >3MB (60% des Limits)
@@ -3707,10 +3708,10 @@ function saveS(){
   if(_lsSet('nt_v6',data))return;
   showToast('⚠️ Speicher voll! Bitte Backup erstellen und alte Daten löschen.');
 }
-function loadS(){try{var d=localStorage.getItem('nt_v6');if(d){Object.assign(S,JSON.parse(d));return true;}}catch(e){}return false;}
-function saveX(){_pruneFoodCache(FOODCACHE_MAX);try{localStorage.setItem('nt_x',JSON.stringify({fc:foodCache,cf:customFoods,rc:recipes}));}catch(e){}}
+function loadS(){try{var d=localStorage.getItem('nt_v6');if(d){mergeState(S,JSON.parse(d));return true;}}catch(e){}return false;}
+function saveX(){if(window.NTTab&&!NTTab.canWrite())return;_pruneFoodCache(FOODCACHE_MAX);try{localStorage.setItem('nt_x',JSON.stringify({fc:foodCache,cf:customFoods,rc:recipes}));}catch(e){}}
 function loadX(){try{var d=localStorage.getItem('nt_x');if(d){var x=JSON.parse(d);foodCache=x.fc||{};customFoods=x.cf||[];recipes=x.rc||[];}}catch(e){}}
-function saveBarcodeCache(){_pruneBarcodeCache(BARCODECACHE_MAX);try{localStorage.setItem('nt_bc',JSON.stringify(barcodeCache));}catch(e){}}
+function saveBarcodeCache(){if(window.NTTab&&!NTTab.canWrite())return;_pruneBarcodeCache(BARCODECACHE_MAX);try{localStorage.setItem('nt_bc',JSON.stringify(barcodeCache));}catch(e){}}
 function loadBarcodeCache(){try{var d=localStorage.getItem('nt_bc');if(d)barcodeCache=JSON.parse(d);}catch(e){}_dropEmptyNutrientEntries();}
 // Ein Treffer ohne jeden Naehrwert ist keine Information, sondern eine Luecke
 // in der Quelle (#167). Er wird nicht gespeichert – sonst taucht er spaeter als
@@ -3748,7 +3749,13 @@ function setAppleTouchIconPNG(){
     img.src='/nutritrack/icon.svg';
   }catch(e){}
 }
+// Nur ein Fenster arbeitet (#261): js/single-tab.js entscheidet per Web Lock,
+// ob dieses Fenster die App startet oder auf tab.html wechselt. Ohne Web Locks
+// startet sie sofort wie bisher.
 window.addEventListener('DOMContentLoaded',function(){
+  if(window.NTTab)NTTab.start(_bootApp);else _bootApp();
+});
+function _bootApp(){
   var _vt=document.getElementById('appVersionTag');if(_vt)_vt.textContent='v'+APP_VERSION;
   _aiKeyEncRefresh();_aiKeyEncTryDecrypt();
   // Handle OneDrive OAuth callback
@@ -3902,7 +3909,7 @@ window.addEventListener('DOMContentLoaded',function(){
       window.visualViewport.addEventListener('scroll',_fixViewportChromeDebounced);
     }
   }
-});
+}
 function updBadge(){var b=document.getElementById('offBadge');if(b)b.classList.toggle('hidden',isOnline);}
 
 // Listen for SW update messages → show toast and reload
@@ -4358,35 +4365,6 @@ function checkDayRollover(){
   if(window.NTBaby&&NTBaby.refresh)NTBaby.refresh();
   return true;
 }
-// Macht einen komprimierten Alt-Tag wieder bearbeitbar. Die archivierten
-// Summen bleiben als ein Eintrag im Snack erhalten; beim naechsten Start
-// komprimiert compressOldDays den Tag erneut — mit der neuen Gesamtsumme.
-// _reopened haelt wiederkehrende Mahlzeiten fern (recurring.js).
-function reopenArchivedDay(d){
-  if(!d||!d._compressed)return d;
-  var p={kcal:d.kcal||0,protein:d.protein||0,carbs:d.carbs||0,fat:d.fat||0,sugar:0,fiber:0,salt:0};
-  var snack=(p.kcal||p.protein||p.carbs||p.fat)
-    ?[Object.assign({name:'Archivierte Tageswerte',emoji:'📦',_archived:true,amount:100,per100:p},p)]:[];
-  ['_compressed','kcal','protein','carbs','fat'].forEach(function(k){delete d[k];});
-  d.meals={breakfast:[],lunch:[],dinner:[],snack:snack};
-  d.water=d.water||0;
-  d.exercise=[];
-  d._reopened=true;
-  return d;
-}
-function getDay(){
-  var d=S.days[S.currentDate];
-  if(!d){d={meals:{breakfast:[],lunch:[],dinner:[],snack:[]},water:0,exercise:[]};S.days[S.currentDate]=d;}
-  // Komprimierte Alt-Tage (siehe compressOldDays) werden wieder aufgemacht,
-  // sonst gingen Eintraege dort still verloren (#232).
-  if(d._compressed)reopenArchivedDay(d);
-  if(!d.meals)d.meals={breakfast:[],lunch:[],dinner:[],snack:[]};
-  if(!d.exercise)d.exercise=[];
-  return d;
-}
-function calcM(arr){return arr.reduce(function(a,e){return{kcal:a.kcal+(e.kcal||0),protein:a.protein+(e.protein||0),carbs:a.carbs+(e.carbs||0),fat:a.fat+(e.fat||0),sugar:a.sugar+(e.sugar||0),fiber:a.fiber+(e.fiber||0),salt:a.salt+(e.salt||0)};},{kcal:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0,salt:0});}
-function ingTotal(ings){return(ings||[]).reduce(function(a,g){var r=(g.amount||0)/100;return{kcal:a.kcal+(g.per100.kcal||0)*r,protein:a.protein+(g.per100.protein||0)*r,carbs:a.carbs+(g.per100.carbs||0)*r,fat:a.fat+(g.per100.fat||0)*r,sugar:a.sugar+(g.per100.sugar||0)*r,fiber:a.fiber+(g.per100.fiber||0)*r,salt:a.salt+(g.per100.salt||0)*r};},{kcal:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0,salt:0});}
-function scaleNutrients(t,factor){return{kcal:t.kcal*factor,protein:t.protein*factor,carbs:t.carbs*factor,fat:t.fat*factor,sugar:(t.sugar||0)*factor,fiber:(t.fiber||0)*factor,salt:(t.salt||0)*factor};}
 
 function ingNutrHtml(ing){
   var p=ing.per100||{};
@@ -4418,27 +4396,6 @@ function totalStr(t){return Math.round(t.kcal)+' kcal · P'+Math.round(t.protein
 // ════════════════════════════════════════
 // SECTION: RENDER
 // ════════════════════════════════════════
-function _kcalAmpel(goal,eaten,S){
-  // Liefert {state:'balanced'|'over'|'under', text}.
-  // ±10 % Toleranz = grün. Außerhalb: Bewertung anhand Diät-Ziel
-  // (lose/gain/maintain), abgeleitet aus S.goalWeight vs S.weight.
-  var diff=goal-eaten;
-  var pct=goal?Math.round(Math.abs(diff)/goal*100):0;
-  if(pct<=10)return {state:'balanced',text:'✓ im Plan ('+pct+' %)'};
-  var dir='maintain';
-  if(S&&S.goalWeight&&S.weight){
-    if(S.goalWeight<S.weight-0.5)dir='lose';
-    else if(S.goalWeight>S.weight+0.5)dir='gain';
-  }
-  if(diff<0){
-    // über dem Kalorienziel
-    if(dir==='gain')return {state:'balanced',text:'⬈ '+pct+' % über Ziel · super, baut auf'};
-    return {state:'over',text:'⬈ '+pct+' % über Ziel · ein paar Schritte gehen?'};
-  }
-  // unter dem Kalorienziel
-  if(dir==='lose')return {state:'balanced',text:'⬊ '+pct+' % unter Ziel · gut für dein Defizit'};
-  return {state:'over',text:'⬊ '+pct+' % unter Ziel · noch etwas essen!'};
-}
 
 function renderAll(){
   document.getElementById('dateLabel').textContent=fmtDate(S.currentDate);
@@ -4665,45 +4622,31 @@ function renderFasting(){
   _fastInterval=setInterval(tick,1000);
 }
 // ════════════════════════════════════════
-// SECTION: EMOJI
-// ════════════════════════════════════════
-function emo(n){
-  var nl=(n||'').toLowerCase();
-  var m=[[/banane/,'🍌'],[/apfel|äpfel/,'🍎'],[/birne/,'🍐'],[/orange|mandarine/,'🍊'],[/erdbeere/,'🍓'],[/blaubeer|heidelbeer/,'🫐'],[/himbeere/,'🫐'],[/kirsch/,'🍒'],[/trauben/,'🍇'],[/kiwi/,'🥝'],[/mango/,'🥭'],[/avocado/,'🥑'],[/melone/,'🍉'],[/pfirsich|nektarine/,'🍑'],[/tomate/,'🍅'],[/gurke/,'🥒'],[/karott|möhre/,'🥕'],[/brokkoli/,'🥦'],[/blumenkohl/,'🥦'],[/spinat/,'🥬'],[/salat|rucola|kohl/,'🥬'],[/paprika/,'🫑'],[/pilz|champignon/,'🍄'],[/kartoffel/,'🥔'],[/süßkartoffel/,'🍠'],[/mais/,'🌽'],[/hähnchen|huhn|chicken|hühnerbrust/,'🍗'],[/rind|beef|hack/,'🥩'],[/pute|turkey/,'🦃'],[/lachs|salmon/,'🐟'],[/thunfisch|tuna/,'🐠'],[/garnele|shrimp/,'🦐'],[/\bei\b|eier|egg/,'🥚'],[/milch|milk/,'🥛'],[/käse|cheese/,'🧀'],[/joghurt|yogurt/,'🥣'],[/quark/,'🥄'],[/butter/,'🧈'],[/brot|bread/,'🍞'],[/brötchen/,'🥖'],[/haferflocken|oat/,'🌾'],[/müsli|granola/,'🥣'],[/reis|rice/,'🍚'],[/pasta|nudel|spaghetti/,'🍝'],[/mandel|cashew|erdnuss|walnuss|nuss/,'🥜'],[/chiasamen|sesam/,'🌱'],[/öl|oil/,'🫙'],[/linsen|bohne|kichererbse/,'🫘'],[/tofu|tempeh/,'🧆'],[/schokolade|chocolate|nutella/,'🍫'],[/chips/,'🥔'],[/honig|honey/,'🍯'],[/protein|whey/,'💪'],[/pizza/,'🍕'],[/burger|hamburger/,'🍔'],[/pommes/,'🍟'],[/sushi/,'🍣'],[/döner/,'🥙'],[/kaffee|coffee|espresso/,'☕'],[/tee|tea/,'🍵'],[/saft|juice/,'🧃'],[/cola/,'🥤'],[/bier|beer/,'🍺'],[/wein|wine/,'🍷'],[/salami|speck|schinken|wurst|fleischsalat/,'🍖'],[/skyr/,'🥛'],[/marmelade/,'🍓']];
-  for(var i=0;i<m.length;i++)if(m[i][0].test(nl))return m[i][1];
-  return'🍽';
-}
-
-// ════════════════════════════════════════
 // SECTION: SEARCH (fuzzy + local)
 // ════════════════════════════════════════
-function fuzzy(item,q){
-  var ql=(q||'').toLowerCase().trim();if(!ql)return 1;
-  var n=item.n.toLowerCase(),s=(item.s||'').toLowerCase();
-  if(n===ql)return 5;if(n.startsWith(ql))return 4;
-  var w=n.split(/\s+/);for(var i=0;i<w.length;i++)if(w[i].startsWith(ql))return 3;
-  if(n.includes(ql))return 2;if(s.includes(ql))return 2;
-  if(ql.length>=4&&(n.includes(ql.slice(0,-1))||s.includes(ql.slice(0,-1))))return 1;
-  return 0;
-}
-function dbPer100(f){
-  // Die Basis-DB (js/fooddb.js) fuehrt nur k/p/c/f, die erzeugte USDA-Ergaenzung
-  // (js/fooddb-usda.js) zusaetzlich g Zucker, b Ballaststoffe, l Salz. Fehlende
-  // Felder bleiben 0 — so lesen beide Quellen ueber denselben Weg.
-  return{kcal:f.k,protein:f.p,carbs:f.c,fat:f.f,sugar:f.g||0,fiber:f.b||0,salt:f.l||0};
-}
+// Nur eindeutige Treffer (#265). Ein mehrdeutiges Wort („Reis“: roh oder
+// gekocht) trifft ausschliesslich ueber window.DB_DEFAULT (js/fooddb.js); fehlt
+// es dort, gilt es als unbekannt. Vorher entschied die Namenslaenge, und
+// „Kaffee“ wurde Latte Macchiato, „Reis“ roher Reis.
 function findInLocalDB(name){
   var nl=name.toLowerCase().trim();
   if(!nl)return null;
-  // Pass 1: exact name match (highest priority)
-  for(var i=0;i<DB.length;i++){if(DB[i].n.toLowerCase()===nl)return DB[i];}
-  // Pass 2: exact synonym match — skip synonyms ≤2 chars (too ambiguous)
+  var i,j;
+  // Pass 1: exakter Name
+  for(i=0;i<DB.length;i++){if(DB[i].n.toLowerCase()===nl)return DB[i];}
+  // Pass 2: festgelegter Standard fuer ein Alltagswort
+  var def=window.DB_DEFAULT&&window.DB_DEFAULT[nl];
+  if(def){for(i=0;i<DB.length;i++){if(DB[i].n===def)return DB[i];}}
+  // Pass 3: exaktes Synonym, nur wenn genau EIN Eintrag es fuehrt (Synonyme ≤2 Zeichen zaehlen nicht)
   var synHits=[];
-  for(var i=0;i<DB.length;i++){var syns=(DB[i].s||'').toLowerCase().split(' ');for(var j=0;j<syns.length;j++){if(syns[j].length>2&&syns[j]===nl){synHits.push(DB[i]);break;}}}
-  if(synHits.length===1)return synHits[0];
-  if(synHits.length>1){synHits.sort(function(a,b){return Math.abs(a.n.length-nl.length)-Math.abs(b.n.length-nl.length);});return synHits[0];}
-  // Pass 3: prefix match (only for queries ≥5 chars)
-  if(nl.length>=5){for(var i=0;i<DB.length;i++){if(DB[i].n.toLowerCase().startsWith(nl))return DB[i];}}
+  for(i=0;i<DB.length;i++){var syns=(DB[i].s||'').toLowerCase().split(' ');for(j=0;j<syns.length;j++){if(syns[j].length>2&&syns[j]===nl){synHits.push(DB[i]);break;}}}
+  if(synHits.length)return synHits.length===1?synHits[0]:null;
+  // Pass 4: Namensanfang (ab 5 Zeichen), nur wenn genau EIN Name so beginnt
+  if(nl.length>=5){
+    var pre=null;
+    for(i=0;i<DB.length;i++){if(DB[i].n.toLowerCase().startsWith(nl)){if(pre)return null;pre=DB[i];}}
+    return pre;
+  }
   return null;
 }
 function searchLocal(q){
@@ -5493,23 +5436,6 @@ function _encDayMeals(key){
   });
   return any?mm:null;
 }
-// Menge aus dem Share-Format — so gerechnet wie beim Sender, damit Vorschau,
-// Senderzusammenfassung und Import dieselben kcal zeigen (#246):
-// Rezeptzutat ohne Menge (fehlt/null/0) = 0 g, denn ingTotal() rechnet (amount||0);
-// Lebensmittel-Eintrag (t:'f') ohne Menge = 100 g, denn _encEntry schreibt bei
-// Alteinträgen ohne per100 die Gesamtwerte als p, und der Editor nimmt (amount||100).
-function _shIngA(a){return parseFloat(a)||0;}
-function _shFoodA(a){return parseFloat(a)||100;}
-function _mmKcal(mm){
-  var k=0;
-  Object.keys(mm||{}).forEach(function(m){
-    (mm[m]||[]).forEach(function(x){
-      if(x.t==='r')k+=(x.i||[]).reduce(function(s,i){return s+(i.p.k||0)*_shIngA(i.a)/100;},0)*(x.p||1);
-      else k+=(x.p.k||0)*_shFoodA(x.a)/100;
-    });
-  });
-  return k;
-}
 function _mmCount(mm){
   var n=0;Object.keys(mm||{}).forEach(function(m){n+=(mm[m]||[]).length;});return n;
 }
@@ -6243,11 +6169,6 @@ function showETInfo(etVal){
   info.textContent='Aktuelle SSW: '+ssw+' · '+tri+'. Trimester · +'+add+' kcal/Tag';
 }
 
-function calcSSW(etVal){
-  var et=new Date(etVal);
-  var lmp=new Date(et.getTime()-280*24*3600000);
-  return Math.floor((new Date()-lmp)/(7*24*3600000));
-}
 
 // Kalorien-Zuschlag Stillzeit (DGE/D-A-CH-Referenzwerte, EFSA):
 // ausschließliches Stillen = Mehrbedarf ~635 kcal abzgl. ~130 kcal aus den
@@ -6261,15 +6182,6 @@ var NURSING_MIN_KCAL=1800;
 function isNursing(){return S.nursing==='excl'||S.nursing==='part';}
 function getNursAddFromState(){return NURSING_ADD[S.nursing]||0;}
 
-function getPregAddFromState(){
-  var mode=S.pregnant;
-  if(mode==='et'&&S.pregnantET){
-    var ssw=calcSSW(S.pregnantET);
-    var tri=ssw<=12?1:ssw<=27?2:3;
-    return [0,0,300,500][tri];
-  }
-  return [0,0,300,500][parseInt(mode)]||0;
-}
 
 function updateGoalFromET(){
   // Manuell gesetztes Ziel nie still überschreiben (#178)
@@ -6733,16 +6645,6 @@ function updateSavePickerPhotosToggle(){
   }
 }
 
-function dietMacroTargets(kcal){
-  var prefs=S.dietPrefs||[];
-  if(prefs.indexOf('Keto')>=0)
-    return{protein:Math.round(kcal*0.25/4),carbs:Math.round(kcal*0.05/4),fat:Math.round(kcal*0.70/9)};
-  if(prefs.indexOf('Low Carb')>=0)
-    return{protein:Math.round(kcal*0.30/4),carbs:Math.round(kcal*0.20/4),fat:Math.round(kcal*0.50/9)};
-  if(prefs.indexOf('High Protein')>=0)
-    return{protein:Math.round(kcal*0.35/4),carbs:Math.round(kcal*0.40/4),fat:Math.round(kcal*0.25/9)};
-  return calcMacroTargets(kcal);
-}
 
 // ════════════════════════════════════════
 // SECTION: KI-EINSCHÄTZUNG MAHLZEITEN
@@ -6789,18 +6691,6 @@ function copyMealFromYesterday(meal){
   showToast('✓ '+copies.length+' Eintrag(e) kopiert');
 }
 
-// ── Portionsgedächtnis ──
-function rememberPortion(name,amount){
-  if(!name||!amount)return;
-  if(!S.portionMemory)S.portionMemory={};
-  S.portionMemory[name.toLowerCase()]=amount;
-  saveS();
-}
-
-function recallPortion(name){
-  if(!S.portionMemory)return null;
-  return S.portionMemory[(name||'').toLowerCase()]||null;
-}
 
 // ── Zuletzt gegessen / Favoriten ──
 function getRecentFoods(){
@@ -6868,12 +6758,6 @@ function setMacroMode(mode){
 }
 
 // ── Individuelle Makro-Ziele ──
-function getMacroTargets(){
-  if(S.macroGoalMode==='gram'&&S.macroGoalG&&S.macroGoalG.protein){
-    return{protein:S.macroGoalG.protein,carbs:S.macroGoalG.carbs,fat:S.macroGoalG.fat};
-  }
-  return dietMacroTargets(S.goal);
-}
 
 // ── Nährstoff-Detail-Box ──
 function renderNutrientDetail(t,portions){
@@ -7023,24 +6907,6 @@ function checkGramPlausibility(ings){
   if(warnings.length)showToast('⚠️ Prüfe Mengen: '+warnings[0],4000);
 }
 
-// ── localStorage Komprimierung (alte Tage) ──
-function compressOldDays(){
-  var cutoff=addDays(today(),-90);// Tage älter als 90 Tage komprimieren
-  var changed=false;
-  Object.keys(S.days).forEach(function(d){
-    if(d<cutoff&&S.days[d]&&!S.days[d]._compressed){
-      var day=S.days[d];
-      var all=day.meals.breakfast.concat(day.meals.lunch,day.meals.dinner,day.meals.snack);
-      var t=calcM(all);
-      // Nur Summen behalten, Details + Fotos löschen — Fotos erst nach dem
-      // Ersetzen, und nur wenn keine Vorlage/Kopie sie noch nutzt (#234).
-      S.days[d]={_compressed:true,kcal:Math.round(t.kcal),protein:Math.round(t.protein),carbs:Math.round(t.carbs),fat:Math.round(t.fat),water:day.water||0};
-      all.forEach(function(e){if(e)delPhotoIfUnused(e.mealPhotoId);});
-      changed=true;
-    }
-  });
-  if(changed){saveS();console.log('[NutriTrack] Alte Tage komprimiert');}
-}
 
 // ════════════════════════════════════════
 // SECTION: REZEPTE: ZUTATENLISTE & BIBLIOTHEK
@@ -7115,58 +6981,6 @@ function openLibrary(){renderLibrary();openOv('libraryOv');}
 // ════════════════════════════════════════
 // SECTION: SPORT & AKTIVITÄT
 // ════════════════════════════════════════
-// MET-Werte: js/metdb.js (window.MET_DB, NTMet.lookup), erzeugt von
-// tools/build-met.js aus dem 2024 Adult Compendium of Physical Activities.
-// Rangfolge der Suche: eigener Bibliothekseintrag MIT MET (z.B. ein KI-Wert)
-// → Tabelle → null (dann KI oder Offline-Rückfall). Einträge mit met:null
-// (nur Name/Emoji) zählen nicht als Treffer. Fehlt metdb.js, bleibt nur die
-// Bibliothek, der Rest läuft über KI/Rückfall wie vor der Tabelle.
-// Rückfall ohne Treffer: 5 MET, Gewicht S.weight||75 — beides Schätzwerte.
-var EXERCISE_FALLBACK_MET=5;
-
-function findExercise(name){
-  var nl=String(name||'').trim().toLowerCase();
-  if(!nl)return null;
-  var le=(S.exerciseLibrary||[]).find(function(e){return e&&e.name&&e.met&&e.name.toLowerCase()===nl;});
-  if(le)return{name:le.name,emoji:le.emoji||'🏃',met:le.met,src:'lib'};
-  var t=window.NTMet&&NTMet.lookup(name);
-  if(t)return{name:t.n,emoji:t.e,met:t.met,src:'table'};
-  return null;
-}
-
-// Chip-Leiste: Schnellauswahl (NTMet.top) plus eigene Bibliothek. Ein eigener
-// Eintrag gleichen Namens ersetzt den Tabellen-Chip (mit ✕ zum Löschen).
-function getAllExercises(){
-  var byName={};
-  (S.exerciseLibrary||[]).forEach(function(le){
-    if(le&&le.name)byName[le.name.toLowerCase()]=le;
-  });
-  var all=[],used={};
-  var top=(window.NTMet&&NTMet.top)||[];
-  top.forEach(function(n){
-    var key=n.toLowerCase();
-    if(used[key])return;
-    used[key]=1;
-    var le=byName[key];
-    if(le){all.push({name:le.name,emoji:le.emoji,met:le.met,isLib:true});return;}
-    var t=NTMet.lookup(n);
-    if(t)all.push({name:t.n,emoji:t.e,met:t.met,isLib:false});
-  });
-  (S.exerciseLibrary||[]).forEach(function(le){
-    if(!le||!le.name)return;
-    var key=le.name.toLowerCase();
-    if(used[key])return;
-    used[key]=1;
-    all.push({name:le.name,emoji:le.emoji,met:le.met,isLib:true});
-  });
-  return all;
-}
-
-function getExerciseMet(name,intensity){
-  var found=findExercise(name);
-  if(found&&found.met)return found.met[intensity]||found.met.medium||EXERCISE_FALLBACK_MET;
-  return null;
-}
 
 function openExerciseOv(){
   document.getElementById('exName').value='';
@@ -7372,14 +7186,6 @@ function renderExercise(){
 }
 
 // ── Backup-Erinnerung: nur alle 7 Tage ──
-function calcMacroTargets(kcal){
-  // Standard: 25% Protein, 45% Kohlenhydrate, 30% Fett
-  return{
-    protein:Math.round(kcal*0.25/4),
-    carbs:Math.round(kcal*0.45/4),
-    fat:Math.round(kcal*0.30/9)
-  };
-}
 
 var _ownFoodEditIdx=null;
 
@@ -7593,12 +7399,6 @@ function formatGreetSub(dateStr){
     var months=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
     return days[d.getDay()]+' · '+d.getDate()+'. '+months[d.getMonth()]+' · KW '+isoWeek(d);
   }catch(e){return '';}
-}
-function isoWeek(d){
-  var t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
-  t.setUTCDate(t.getUTCDate()+4-(t.getUTCDay()||7));
-  var y=new Date(Date.UTC(t.getUTCFullYear(),0,1));
-  return Math.ceil((((t-y)/86400000)+1)/7);
 }
 
 // ── MEAL DETAIL SUBSCREEN ──
@@ -8211,30 +8011,30 @@ function axTestSync(){
 }
 
 </script>
-<script src="js/ampel.js?v=0.290"></script>
-<script src="picker.js?v=0.290"></script>
-<script src="js/health-sync.js?v=0.290"></script>
-<script src="js/sync-core.js?v=0.290"></script>
-<script src="js/baby.js?v=0.290"></script>
-<script src="js/baby-meds.js?v=0.290"></script>
-<script src="js/baby-growth-data.js?v=0.290"></script>
-<script src="js/baby-growth.js?v=0.290"></script>
-<script src="js/baby-week.js?v=0.290"></script>
-<script src="js/baby-milestones.js?v=0.290"></script>
-<script src="js/baby-midwife.js?v=0.290"></script>
-<script src="js/shopping.js?v=0.290"></script>
-<script src="js/partner.js?v=0.290"></script>
-<script src="js/alexa-sync.js?v=0.290"></script>
-<script src="js/dashboard.js?v=0.290"></script>
-<script src="js/features.js?v=0.290"></script>
-<script src="js/mealplan.js?v=0.290"></script>
-<script src="js/onedrive.js?v=0.290"></script>
-<script src="js/autosave.js?v=0.290"></script>
-<script src="js/recurring.js?v=0.290"></script>
-<script src="js/stats.js?v=0.290"></script>
-<script src="js/reminders.js?v=0.290"></script>
-<script src="js/templates.js?v=0.290"></script>
-<script src="js/offline-queue.js?v=0.290"></script>
+<script src="js/ampel.js?v=0.296"></script>
+<script src="picker.js?v=0.296"></script>
+<script src="js/health-sync.js?v=0.296"></script>
+<script src="js/sync-core.js?v=0.296"></script>
+<script src="js/baby.js?v=0.296"></script>
+<script src="js/baby-meds.js?v=0.296"></script>
+<script src="js/baby-growth-data.js?v=0.296"></script>
+<script src="js/baby-growth.js?v=0.296"></script>
+<script src="js/baby-week.js?v=0.296"></script>
+<script src="js/baby-milestones.js?v=0.296"></script>
+<script src="js/baby-midwife.js?v=0.296"></script>
+<script src="js/shopping.js?v=0.296"></script>
+<script src="js/partner.js?v=0.296"></script>
+<script src="js/alexa-sync.js?v=0.296"></script>
+<script src="js/dashboard.js?v=0.296"></script>
+<script src="js/features.js?v=0.296"></script>
+<script src="js/mealplan.js?v=0.296"></script>
+<script src="js/onedrive.js?v=0.296"></script>
+<script src="js/autosave.js?v=0.296"></script>
+<script src="js/recurring.js?v=0.296"></script>
+<script src="js/stats.js?v=0.296"></script>
+<script src="js/reminders.js?v=0.296"></script>
+<script src="js/templates.js?v=0.296"></script>
+<script src="js/offline-queue.js?v=0.296"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

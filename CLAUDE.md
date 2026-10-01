@@ -4,7 +4,7 @@
 
 Bei Abschluss einer funktionalen Iteration (vor dem Merge) `UEBERGABE.md` aktualisieren: Versionsstand, Architektur (aktueller Live-Zustand), Live-Test-Status, Versions-Historie.
 
-**`UEBERGABE.md` muss knapp bleiben — so viel wie nötig, so wenig wie möglich.** Beim Update: Architektur-Sektion **überschreiben statt anhängen** (sie beschreibt nur den aktuellen Stand, keine pro-Version-Chronik), erledigte Live-Tests streichen, Versions-Historie auf die letzten 5 Einträge kürzen, keine Inhalte aus `CLAUDE.md`/`AGENTS.md` duplizieren (Versioning-Workflow, Git-Workflow, Datenschutz, Cross-Platform-Regel). Details siehe Sektion „Pflege" in `UEBERGABE.md`.
+**`UEBERGABE.md` muss knapp bleiben — so viel wie nötig, so wenig wie möglich.** `tools/check.js` prüft die Grenzen (≤ 30 KB, Architektur ≤ 15 KB ohne Versionsnummern, ≤ 12 offene Live-Tests); ein Live-Test, der älter als fünf Versionen ist, wird GitHub-Issue (Label `live-test` + `topic:*`) oder gestrichen. Beim Update: Architektur-Sektion **überschreiben statt anhängen** (sie beschreibt nur den aktuellen Stand, keine pro-Version-Chronik), erledigte Live-Tests streichen, Versions-Historie auf die letzten 5 Einträge kürzen, keine Inhalte aus `CLAUDE.md`/`AGENTS.md` duplizieren (Versioning-Workflow, Git-Workflow, Datenschutz, Cross-Platform-Regel). Details siehe Sektion „Pflege" in `UEBERGABE.md`.
 
 **Bug- und Wunsch-Workflow:** Bugs werden gemäß `issues.md` abgearbeitet, Wünsche gemäß `wuensche.md`. Beide Dateien enthalten nur Regeln — die eigentlichen Issues leben in GitHub (`label:bug` / `label:enhancement`, automatisch erzeugt vom Feedback-FAB). Pflicht vor jeder Arbeit am Issue: Themen-Label `topic:<bereich>` triagieren (passendes Label finden oder neu anlegen). Pro Iteration **genau ein Topic** — zusammengehörige Issues desselben Topics gemeinsam erledigen.
 
@@ -29,11 +29,18 @@ Reine Doku-Änderungen (`UEBERGABE.md`, `CLAUDE.md`, `AGENTS.md`, README) dürfe
 ## Prüfen vor jedem Commit (PFLICHT)
 
 ```bash
-node tools/check.js    # Versionen, Syntax, CORE_ASSETS, onclick/data-act auflösbar
-node tools/smoke.js    # App in Chromium laden (braucht: npx http-server -p 8099 -s . &)
+npm ci                 # Werkzeuge (Playwright, TypeScript) aus package-lock.json
+node tools/check.js    # Versionen, Syntax, CORE_ASSETS, onclick/data-act auflösbar, IDs eindeutig, keine dependencies
+npm run typecheck      # tsc --noEmit über alle Dateien mit // @ts-check, Zeilen = Zeilen in index.html
+npm test               # node --test: Rechenkern js/calc.js ohne Browser
+node tools/smoke.js    # App in Chromium laden (braucht: npx http-server@14.1.1 -p 8099 -s . &)
 ```
 
-Beide laufen auch in `.github/workflows/checks.yml`. Sie ersetzen kein Build-Tool — sie fangen genau die Fehlerklassen ab, die ohne eines still bleiben: Syntaxfehler im Inline-JS, vergessener Versions-Bump, ein Modul, das nicht in `sw.js` `CORE_ASSETS` steht, und ein `onclick`/`data-act`, das nach einer Verschiebung ins Leere zeigt.
+**Reine Rechenfunktionen entstehen in `js/calc.js`, nicht in `index.html`. Wer eine Funktion dort ändert, ändert oder ergänzt ihren Test in `tools/test/calc.test.js` im selben PR.** `tools/check.js` hält den Rechenkern rein (kein `document.`, `localStorage`, `fetch(`, Toast, Overlay, Timer).
+
+**Jedes neue Modul unter `js/` beginnt mit `// @ts-check`** (`tools/check.js` prüft es). Die Module, die das noch nicht tragen, stehen in `TS_PENDING` in `tools/check.js`; die Liste wird nur kürzer.
+
+Alle laufen auch in `.github/workflows/checks.yml`. Es gibt keinen Build-Schritt (siehe Architektur) — die Prüfungen fangen genau die Fehlerklassen ab, die ohne ihn still bleiben: Syntaxfehler im Inline-JS, vergessener Versions-Bump, ein Modul, das nicht in `sw.js` `CORE_ASSETS` steht, und ein `onclick`/`data-act`, das nach einer Verschiebung ins Leere zeigt.
 
 **Wer einen Fehler einbaut, um eine Prüfung zu prüfen, misst zuerst, dass der Fehler ankommt.** Ein grüner Durchgang beweist sonst nicht, dass die Prüfung blind ist, sondern nur, dass nichts passiert ist — beides sieht in der Ausgabe gleich aus.
 
@@ -61,7 +68,9 @@ Die verbliebenen `onclick` (14 statisch, 114 in generiertem HTML) laufen unverä
 - Bei neuen JS-Modulen sicherstellen, dass sie über den Service-Worker erreichbar sind (Cache-First-Pfad in `sw.js`) — sonst funktioniert die PWA offline nicht.
 - `sw.js` – Service Worker, Versions-Bump nötig
 - `worker/` – Cloudflare Worker AI-Proxy, separat deployen
-- Keine npm/React/Build-Tools – statische GitHub Pages App
+- Statische GitHub Pages App, kein React. Regel seit 2026-10-01 (#252), wortgleich in `AGENTS.md`:
+
+> Die Auslieferung ist der Quelltext: `index.html`, `tab.html`, `sw.js`, `picker.js`, `js/`, `manifest.json` werden unverändert von GitHub Pages ausgeliefert. Es gibt keinen Build-Schritt, kein `dist/`, keine ES-Module, keinen Bundler, keine Laufzeit-Abhängigkeit aus npm. **Werkzeuge** (Prüfungen, Tests, Typprüfung, Playwright, wrangler) dürfen npm nutzen; sie stehen als `devDependencies` in `package.json` mit `package-lock.json` und laufen mit `npm ci`. `dependencies` bleibt leer — `tools/check.js` wacht darüber.
 
 ## Git-Workflow
 

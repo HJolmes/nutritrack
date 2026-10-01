@@ -1,3 +1,4 @@
+// @ts-check
 // NutriTrack – Foto-Speicher in IndexedDB (window.NTPhotos)
 // Mahlzeit-Fotos (Base64-JPEGs, mehrere 100 KB) liegen hier statt im
 // localStorage-State nt_v6 (~5 MB Limit). put(id,dataUrl) / get(id)→Promise /

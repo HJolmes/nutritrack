@@ -1,0 +1,16 @@
+{
+  "name": "nutritrack",
+  "private": true,
+  "description": "Werkzeuge. Die App selbst hat keine npm-Abhaengigkeit - siehe AGENTS.md.",
+  "scripts": {
+    "check": "node tools/check.js",
+    "smoke": "node tools/smoke.js",
+    "typecheck": "node tools/typecheck.js",
+    "test": "node --test \"tools/test/*.test.js\"",
+    "bump": "node tools/bump.js"
+  },
+  "devDependencies": {
+    "playwright": "1.56.1",
+    "typescript": "5.9.3"
+  }
+}

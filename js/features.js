@@ -1,3 +1,4 @@
+// @ts-check
 // NutriTrack – Funktionen als Kacheln (v0.253)
 // Klassisches Script, kein Modul. Exportiert window.NTFeat und greift direkt auf
 // die globalen Helfer aus index.html zu (S, saveS, openOv, closeOv, esc,

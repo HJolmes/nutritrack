@@ -1,3 +1,4 @@
+// @ts-check
 // NutriTrack — Health Sync Module
 // Pulls workouts that an Apple Health (iOS Shortcut) or Samsung Health
 // (Android HTTP Request Shortcut / Tasker) automation has POSTed to the

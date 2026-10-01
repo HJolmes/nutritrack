@@ -10,7 +10,9 @@
 // (Nutzer bekommen alte Stände), (c) bricht den Offline-Betrieb der PWA.
 //
 // Bewusst ohne npm/Abhaengigkeiten: laeuft mit blossem `node tools/check.js`
-// lokal genauso wie in der GitHub Action.
+// lokal genauso wie in der GitHub Action — auch dort, wo vorher kein `npm ci`
+// lief (preview.yml, Bump). Seit #252 gibt es ein package.json, aber nur fuer
+// Werkzeuge (devDependencies); diese Datei braucht keines davon.
 //
 // Exit-Code 0 = alles gut, 1 = mindestens ein Fehler.
 
@@ -67,6 +69,29 @@ if (appVersion) {
   } else {
     ok(`${literals.length} hartkodierte(r) "Beta v"-Text stimmt mit APP_VERSION ueberein.`);
   }
+}
+
+// ── 1b. Auslieferung ohne Abhaengigkeiten (#252) ─────────────────────────
+// Ausgeliefert wird der Quelltext, wie er im Repository steht. Werkzeuge
+// (Pruefungen, Tests, Playwright) duerfen npm nutzen — als devDependencies.
+// Eine Laufzeit-Abhaengigkeit oder ein Build-Schritt wuerde die Auslieferung
+// still vom Repository loesen: GitHub Pages fuehrt keinen Build aus.
+{
+  let pkgFail = 0;
+  if (fs.existsSync(path.join(ROOT, 'package.json'))) {
+    let pkg = null;
+    try { pkg = JSON.parse(read('package.json')); } catch (e) { fail('package.json ist kein gueltiges JSON: ' + e.message); pkgFail++; }
+    if (pkg) {
+      const deps = pkg.dependencies && Object.keys(pkg.dependencies);
+      if (deps && deps.length) { fail(`package.json fuehrt dependencies (${deps.join(', ')}) — die App hat keine Laufzeit-Abhaengigkeit; Werkzeuge gehoeren nach devDependencies.`); pkgFail++; }
+      for (const k of ['build', 'prebuild', 'prepare', 'preinstall', 'install', 'postinstall']) {
+        if (pkg.scripts && pkg.scripts[k]) { fail(`package.json traegt das Skript '${k}' — kein Build- oder Installationsschritt neben der Auslieferung.`); pkgFail++; }
+      }
+    }
+  }
+  const viaPkg = [...indexHtml.matchAll(/<script[^>]*\bsrc="([^"]+)"/g)].map((x) => x[1]).filter((s) => /^(\.\/)?(node_modules|dist)\//.test(s));
+  viaPkg.forEach((s) => { fail(`index.html bindet '${s}' ein — ausgeliefert wird nur Quelltext, nichts aus node_modules/ oder dist/.`); pkgFail++; });
+  if (!pkgFail) ok('Auslieferung ohne Abhaengigkeiten: package.json nur mit devDependencies, kein Build-Skript, kein Script aus node_modules/ oder dist/.');
 }
 
 // ── 2. JS-Syntax ──────────────────────────────────────────────────────────
@@ -146,6 +171,19 @@ while ((m = scriptRe.exec(indexHtml)) !== null) {
   if (syntaxCheck(`index.html (inline <script> ab Zeile ${line})`, body, isModule)) inlineOk++;
 }
 ok(`${inlineOk}/${inlineCount} Inline-<script>-Bloecke syntaktisch in Ordnung.`);
+// tab.html (#261) traegt ein eigenes kleines Inline-Script. Bricht es, bleibt
+// ein zweites Fenster ohne Ausweg auf der Seite stehen.
+if (fs.existsSync(path.join(ROOT, 'tab.html'))) {
+  const tabHtml = read('tab.html');
+  const tabRe = /<script(?![^>]*\bsrc=)([^>]*)>([\s\S]*?)<\/script>/g;
+  let mt, tabCount = 0, tabOk = 0;
+  while ((mt = tabRe.exec(tabHtml)) !== null) {
+    if (!mt[2].trim()) continue;
+    tabCount++;
+    if (syntaxCheck(`tab.html (inline <script> ab Zeile ${tabHtml.slice(0, mt.index).split('\n').length})`, mt[2], false)) tabOk++;
+  }
+  ok(`tab.html: ${tabOk}/${tabCount} Inline-<script>-Bloecke syntaktisch in Ordnung.`);
+}
 
 // ── 3. Service-Worker-Abdeckung ───────────────────────────────────────────
 // Jedes lokal eingebundene Script muss in CORE_ASSETS stehen, sonst laeuft die
@@ -189,6 +227,54 @@ if (!mCore) {
     if (!fs.existsSync(path.join(ROOT, a))) {
       fail(`sw.js CORE_ASSETS nennt '${a}', aber die Datei existiert nicht — der Install-Schritt schlaegt dafuer fehl.`);
     }
+  }
+}
+
+// ── 4. IDs im statischen Markup eindeutig ─────────────────────────────────
+// getElementById liefert bei doppelter ID still das ERSTE Element. So schrieb
+// der Link-Import seinen Quellenhinweis in ein verstecktes Feld im Chat-Panel,
+// weil beide `pickerLinkSrcHint` hiessen (#263). Gelesen wird nur das Markup
+// ausserhalb von <script> und Kommentaren; IDs in generiertem HTML entstehen zur
+// Laufzeit und sind hier nicht sichtbar.
+{
+  const markup = indexHtml
+    .replace(/<script[\s\S]*?<\/script>/g, (s) => s.replace(/[^\n]/g, ' '))
+    .replace(/<!--[\s\S]*?-->/g, (s) => s.replace(/[^\n]/g, ' '));
+  const seenId = new Map();
+  let dupIds = 0;
+  for (const mId of markup.matchAll(/<[a-zA-Z][^>]*?\sid="([^"]+)"/g)) {
+    const line = markup.slice(0, mId.index).split('\n').length;
+    if (seenId.has(mId[1])) {
+      fail(`index.html:${line}: id="${mId[1]}" steht schon in Zeile ${seenId.get(mId[1])} — getElementById trifft nur das erste.`);
+      dupIds++;
+    } else {
+      seenId.set(mId[1], line);
+    }
+  }
+  if (!dupIds) ok(`Alle ${seenId.size} IDs im statischen Markup sind eindeutig.`);
+}
+
+// ── 4b. Standardtabelle der Lebensmittel-DB ───────────────────────────────
+// Ein Wert in DB_DEFAULT, der auf keinen Eintrag zeigt, faellt nirgends auf:
+// findInLocalDB() findet ihn nicht und meldet das Wort still als unbekannt
+// (#265). Geladen wird wie im Browser: Basis-DB, dann die USDA-Ergaenzung.
+{
+  const vm = require('vm');
+  const ctx = { window: {} };
+  vm.createContext(ctx);
+  try {
+    vm.runInContext(read('js/fooddb.js'), ctx);
+    vm.runInContext(read('js/fooddb-usda.js'), ctx);
+    const names = new Set((ctx.window.DB || []).map((f) => f.n));
+    const def = ctx.window.DB_DEFAULT || {};
+    let badDef = 0;
+    for (const [k, v] of Object.entries(def)) {
+      if (k !== k.toLowerCase().trim()) { fail(`js/fooddb.js DB_DEFAULT: Schluessel '${k}' muss klein und ohne Leerraum stehen.`); badDef++; }
+      if (!names.has(v)) { fail(`js/fooddb.js DB_DEFAULT['${k}'] = '${v}' — kein Eintrag dieses Namens in DB/DB_USDA.`); badDef++; }
+    }
+    if (!badDef) ok(`Alle ${Object.keys(def).length} Standardwerte der Lebensmittel-DB zeigen auf einen Eintrag.`);
+  } catch (e) {
+    fail('js/fooddb.js / js/fooddb-usda.js lassen sich nicht laden: ' + e.message);
   }
 }
 
@@ -340,6 +426,72 @@ if (!mCore) {
     }
   }
   if (!late) ok(`Keines der ${lateChecked} zur Laufzeit gesetzten onclick trifft ein data-act-Element.`);
+}
+
+// ── 5a. Jedes Modul unter js/ ist in der Typpruefung (#254) ──────────────
+// tsc prueft nur Dateien mit `// @ts-check` in Zeile 1 (tsconfig: checkJs
+// false). Ein neues Modul ohne die Zeile waere still ungeprueft. Die Liste
+// darunter sind die Module, die bei Stufe 0 noch Befunde hatten — sie wird nur
+// kuerzer: Wer ein Modul fehlerfrei bekommt, setzt die Zeile UND streicht es hier.
+{
+  const TS_PENDING = new Set(['alexa-sync.js', 'baby.js', 'baby-midwife.js', 'baby-milestones.js', 'baby-week.js',
+    'mealplan.js', 'onedrive.js', 'shopping.js', 'stats.js', 'sync-core.js']);
+  let tsFail = 0, tsOn = 0;
+  for (const f of fs.readdirSync(path.join(ROOT, 'js'))) {
+    if (!f.endsWith('.js')) continue;
+    const has = /^\/\/\s*@ts-check\b/.test(read(path.join('js', f)));
+    if (has) tsOn++;
+    if (TS_PENDING.has(f)) {
+      if (has) { fail(`js/${f} traegt // @ts-check — dann aus TS_PENDING in tools/check.js streichen.`); tsFail++; }
+    } else if (!has) {
+      fail(`js/${f} beginnt nicht mit // @ts-check — jedes Modul ist in der Typpruefung (npm run typecheck).`); tsFail++;
+    }
+  }
+  if (!tsFail) ok(`${tsOn} Module unter js/ mit // @ts-check, ${TS_PENDING.size} noch ausstehend (Stufe 1 von #254).`);
+}
+
+// ── 5c. Der Rechenkern bleibt rein (#255) ─────────────────────────────────
+// js/calc.js laeuft in Node-Tests ohne Browser. Ein document., localStorage,
+// fetch(, ein Toast, ein Overlay oder ein Timer darin wuerde dort brechen –
+// oder, schlimmer, im Test unbemerkt nichts tun.
+if (fs.existsSync(path.join(ROOT, 'js/calc.js'))) {
+  const calc = read('js/calc.js').replace(/^\s*\/\/.*$/gm, '');
+  const bad = ['document.', 'localStorage', 'fetch(', 'showToast', 'openOv', 'setTimeout'].filter((t) => calc.includes(t));
+  if (bad.length) bad.forEach((t) => fail(`js/calc.js enthaelt '${t}' — der Rechenkern bleibt ohne Oberflaeche, Speicher, Netz und Timer.`));
+  else ok('js/calc.js ist rein (kein document., localStorage, fetch(, showToast, openOv, setTimeout).');
+}
+
+// ── 5b. UEBERGABE.md bleibt knapp (#258) ──────────────────────────────────
+// Jede Session liest diese Datei vor der ersten Handlung. Die Regel „knapp
+// halten, ueberschreiben statt anhaengen“ stand darin und wurde trotzdem nicht
+// eingehalten — die Datei wuchs von 44 auf 132 KB, weil nichts sie mass.
+{
+  const UE = 'UEBERGABE.md';
+  if (fs.existsSync(path.join(ROOT, UE))) {
+    const ue = read(UE);
+    const bytes = Buffer.byteLength(ue, 'utf8');
+    const section = (title) => {
+      const i = ue.indexOf('\n## ' + title);
+      if (i < 0) return null;
+      const rest = ue.slice(i + 1);
+      const j = rest.indexOf('\n## ', 3);
+      return j < 0 ? rest : rest.slice(0, j);
+    };
+    let ueFail = 0;
+    if (bytes > 30720) { fail(`${UE}: ${bytes} Byte, erlaubt sind 30 720 — Architektur ueberschreiben, alte Live-Tests als Issue oder streichen.`); ueFail++; }
+    const arch = section('Architektur');
+    if (!arch) { fail(`${UE}: Abschnitt „## Architektur“ fehlt.`); ueFail++; }
+    else {
+      const ab = Buffer.byteLength(arch, 'utf8');
+      if (ab > 15360) { fail(`${UE}: Architektur ${ab} Byte, erlaubt sind 15 360.`); ueFail++; }
+      const vs = arch.match(/\bv0\.\d+/g) || [];
+      if (vs.length) { fail(`${UE}: Architektur nennt ${vs.length} Versionsnummer(n) (${[...new Set(vs)].slice(0, 5).join(', ')}) — die gehoeren in „Stand“ und die Historie.`); ueFail++; }
+    }
+    const lt = section('Live-Test offen');
+    const ltCount = lt ? (lt.match(/^- /gm) || []).length : 0;
+    if (ltCount > 12) { fail(`${UE}: ${ltCount} offene Live-Tests, erlaubt sind 12 — aeltere als fuenf Versionen werden Issue (Label live-test) oder gestrichen.`); ueFail++; }
+    if (!ueFail) ok(`${UE}: ${bytes} Byte (≤ 30 720), Architektur ${arch ? Buffer.byteLength(arch, 'utf8') : 0} Byte ohne Versionsnummern, ${ltCount} offene Live-Tests.`);
+  }
 }
 
 // ── 6. Ausgabe ────────────────────────────────────────────────────────────

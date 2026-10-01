@@ -328,6 +328,24 @@ test('getAllExercises: Schnellauswahl, eigener Eintrag ersetzt den Tabellen-Chip
   assert.deepEqual(all[all.length - 1], { name: 'Bouldern', met: null, isLib: true });
 });
 
+test('suggestExercises: Anfang vor Wortanfang/Synonym vor enthalten, eigene zuerst, Limit', () => {
+  const C = load({ exerciseLibrary: [{ name: 'Bouldern 20 min', emoji: '🧗', met: null }, { name: 'laufen', met: null }] }, { met: true });
+  const names = (q, n) => plain(C.suggestExercises(q, n)).map((x) => x.name);
+  const all = names('', 0);
+  assert.equal(all[0], 'Bouldern 20 min');
+  assert.equal(all[1], 'laufen');               // eigener Eintrag ersetzt „Laufen“ der Tabelle
+  assert.equal(all.filter((n) => n.toLowerCase() === 'laufen').length, 1);
+  assert.equal(all.length, 120 + 1);            // 120 Tabelle + Bouldern
+  assert.equal(names('', 3).length, 3);
+  const rad = names('rad');                     // Name beginnt mit der Eingabe, gleicher Rang alphabetisch
+  assert.ok(rad.slice(0, 2).every((n) => n.startsWith('Rad')));
+  assert.ok(rad.includes('Radfahren'));
+  assert.ok(names('fahrrad').includes('Radfahren')); // Synonym
+  assert.ok(names('jogg').length > 0);          // Synonym „joggen“ o. ä.
+  assert.deepEqual(names('xyzq'), []);
+  assert.equal(plain(C.suggestExercises('boul', 1))[0].emoji, '🧗');
+});
+
 // ── Lebensmittel-DB, Suche, Emoji ───────────────────────────────────────
 test('dbPer100: Basis- und USDA-Eintrag ergeben dasselbe Schema', () => {
   const C = load({});

@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie beschreibt den **aktuellen** Stand, nicht seine Geschichte — die steht in Git und in `js/changelog.js`. Der Stand vor der Kürzung (#258, 132 KB): `git show 0d69ba2:UEBERGABE.md`. Grenzen siehe „Pflege“, `tools/check.js` prüft sie.
 
-**Stand:** v0.298 (2026-10-01) — PR #284 (gemergt, auf Android-PWA abgenommen): Sport-Namensfeld mit eigener Vorschlagsliste statt `<datalist>` (Android zeigte leere Kästchen über der Tastatur). Dauer im Namen („Bouldern 20 min“) wandert ins Feld Dauer, Bibliothek wird beim Öffnen bereinigt. v0.297 (#283) und PR #280 (v0.291–v0.296) sind gemergt. UPC-E (v0.292) und USDA-Daten bleiben (Entscheidung 2026-10-01). Geparkt: #165 Sport-Sync v2 (Android-Gerätetest), #262 Ampel Schwangerschaft/Ernährung (Quelle fehlt), #260 KV-Kontingent (Entscheidung offen).
+**Stand:** v0.299 (2026-10-01) — Branch `ccr-c19d7a53-2rrxoh`: #281 `compressOldDays` behandelt fehlende `meals`, Slots und leere Einträge als leer (wie `dayTotals`), ein beschädigter Alt-Tag stoppt die Verdichtung nicht mehr; Live-Tests v0.291–v0.293 → Issues #286–#288. v0.298 (#284) ist gemergt und auf Android-PWA abgenommen. UPC-E (v0.292) und USDA-Daten bleiben (Entscheidung 2026-10-01). Geparkt: #165 Sport-Sync v2 (Android-Gerätetest), #262 Ampel Schwangerschaft/Ernährung (Quelle fehlt), #260 KV-Kontingent (Entscheidung offen).
 
 ## URLs
 
@@ -62,20 +62,17 @@
 
 ## Live-Test offen
 
-- **Deploy (v0.292):** Nach dem Merge `GET /health` → `codeVersion:"v0.292-upce"`. Gegenprobe am Gerät: Share-Link, Zettel-Sync auf zwei Handys, Alexa-Einwurf, Rezept-Link mit Weiterleitung, Feedback mit Screenshot, KI-Foto und Chat. Ein UPC-E-Code (achtstellig, US-Ware) per 📸 Foto-Scan wird erkannt.
-- **v0.291 Link-Quelle:** ＋ → 🔗 Link → Chefkoch-Link laden → über den Zutaten steht „Quelle: Rezeptdaten der Seite · Seite nennt … Portionen“.
-- **v0.293 Lebensmittel-DB:** Alexa „ich habe 150 Gramm Reis gegessen“ → Reis gekocht (≈ 195 kcal, nicht ≈ 550); Chat-KI mit „Kaffee“ → schwarzer Kaffee; Rezept-Link mit „Salat“ oder „Bohnen“ → online/KI statt geratenem DB-Eintrag. Suche „Milch“ zeigt „Milch (1,5%)“ nur einmal.
 - **v0.294 Ein Fenster** (Desktop-Browser mit zwei Tabs; Android PWA + Chrome-Tab): zweiter Tab zeigt „NutriTrack ist in einem anderen Fenster geöffnet“, „Hier weiterarbeiten“ → App dort, erster Tab zeigt den Hinweis; ersten Tab schließen, zweiter wartet → startet von selbst. Geteilten Link öffnen, während die App offen ist → nach „Hier weiterarbeiten“ kommt die Import-Vorschau. OneDrive verbinden, während ein zweiter Tab wartet → Verbindung gelingt.
 
 ## Versions-Historie (letzte 5)
 
 | Version | PR | Was |
 |---|---|---|
-| v0.294 | #280 | #261 nur ein Fenster (`NTTab`, `tab.html`); ohne Bump: #252 Werkzeuge per npm, #258 Übergabe ≤ 30 KB. |
 | v0.295 | #280 | #254 Stufe 0: `tsc --noEmit` ohne Build, 20 Module + erster Inline-Block geprüft, CI-Job `typecheck`. |
 | v0.296 | #280 | #255: 28 Funktionen unverändert nach `js/calc.js`, 38 Tests mit `node --test`, CI-Job `test`; Befund #281. |
 | v0.297 | #283 | „📍 undefined“ im Changelog-Dialog behoben; Marktregel nur Deutschland. |
 | v0.298 | #284 | Sport-Namensfeld: eigene Vorschlagsliste statt `<datalist>`, `suggestExercises` + Test; Dauer aus dem Namen (`splitExerciseDuration`, `cleanExerciseLibrary`). |
+| v0.299 | – | #281 `compressOldDays` robust gegen Tage ohne `meals`/Slots und leere Einträge; Test umgestellt. |
 
 ---
 

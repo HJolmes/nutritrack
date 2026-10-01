@@ -61,7 +61,10 @@ const EXPECTED_NAMESPACES = [
   // nicht die laxere.
   const EIGEN=/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/)/;
   let fremd=0;
-  await page.route('**/*', (route) => {
+  // Am KONTEXT, nicht an der Seite: Sonst laedt jedes weitere Fenster (Schritt 8,
+  // zweites Fenster) das fremde Modul doch – in der CI mit Netz warf es dort
+  // genau das „n is not a function“, lokal ohne Zugang zu esm.sh nie.
+  await ctx.route('**/*', (route) => {
     const u = route.request().url();
     if (EIGEN.test(u) || u.startsWith('data:') || u.startsWith('blob:')) return route.continue();
     fremd++;

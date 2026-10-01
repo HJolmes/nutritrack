@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie beschreibt den **aktuellen** Stand, nicht seine Geschichte — die steht in Git und in `js/changelog.js`. Der Stand vor der Kürzung (#258, 132 KB): `git show 0d69ba2:UEBERGABE.md`. Grenzen siehe „Pflege“, `tools/check.js` prüft sie.
 
-**Stand:** v0.296 (2026-10-01) — PR #280 (Branch `ccr-ea4165e9-yt7zbx`), nicht gemergt: #263 Picker-Quellenhinweis (v0.291), #264 Teil 2 UPC-E in Worker und Decoder (v0.292, Worker `codeVersion` `v0.292-upce`), #265 Lebensmittel-DB eindeutig (v0.293), #261 nur ein Fenster (v0.294), #252 Werkzeuge per npm, #258 diese Kürzung, #254 Stufe 0 Typprüfung (v0.295), #255 Rechenkern `js/calc.js` mit Tests (v0.296). Befund daraus: #281. Worker und Decoder deployen beim Merge automatisch. Geparkt: #165 Sport-Sync v2 (Android-Gerätetest), #262 Ampel Schwangerschaft/Ernährung (Quelle fehlt), #260 KV-Kontingent (Entscheidung offen).
+**Stand:** v0.297 (2026-10-01) — Branch `ccr-345ef1bc-7iiimi`: „Was ist neu“ zeigte bei Einträgen ohne `where` „📍 undefined“ (v0.293/v0.294); Marktregel „nur Deutschland“ in `CLAUDE.md`/`AGENTS.md`. PR #280 (v0.291–v0.296) ist gemergt. Offen: Rückbau UPC-E (v0.292) – Entscheidung des Eigentümers. Geparkt: #165 Sport-Sync v2 (Android-Gerätetest), #262 Ampel Schwangerschaft/Ernährung (Quelle fehlt), #260 KV-Kontingent (Entscheidung offen).
 
 ## URLs
 
@@ -71,11 +71,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.292 | #280 | #264 Teil 2: UPC-E in Worker und Decoder. |
 | v0.293 | #280 | #265 `findInLocalDB` ohne Längen-Tiebreak, `DB_DEFAULT`, Doppel „Milch 1,5%“ entfernt. |
 | v0.294 | #280 | #261 nur ein Fenster (`NTTab`, `tab.html`); ohne Bump: #252 Werkzeuge per npm, #258 Übergabe ≤ 30 KB. |
 | v0.295 | #280 | #254 Stufe 0: `tsc --noEmit` ohne Build, 20 Module + erster Inline-Block geprüft, CI-Job `typecheck`. |
 | v0.296 | #280 | #255: 28 Funktionen unverändert nach `js/calc.js`, 38 Tests mit `node --test`, CI-Job `test`; Befund #281. |
+| v0.297 | – | „📍 undefined“ im Changelog-Dialog behoben; Marktregel nur Deutschland. |
 
 ---
 

@@ -10,6 +10,10 @@ Bei Abschluss einer funktionalen Iteration (vor dem Merge) `UEBERGABE.md` aktual
 
 Befolge ausserdem immer die vollständigen Regeln in `AGENTS.md`. Die wichtigsten Punkte zusammengefasst:
 
+## Markt: nur Deutschland (Entscheidung 2026-10-01)
+
+Die App wird in Deutschland genutzt. **Keine US-spezifischen (oder sonst nicht-deutschen) Funktionen bauen, reparieren oder als Issue anlegen** – z. B. US-Barcodeformate (UPC-A/UPC-E), US-Einheiten (oz, lb, cups, °F), US-Kennzeichnungen –, außer der Mensch im Chat verlangt es ausdrücklich. Ein Folgepunkt, der nur außerhalb Deutschlands zählt, wird verworfen, nicht als Issue angelegt.
+
 ## Versioning (PFLICHT bei jeder deployablen Änderung)
 
 **Versions-Bump (Punkte 1–3) bei JEDER Änderung an deployten Dateien** (`index.html`, `sw.js`, `worker/`, `manifest.json`) — auch bei reinen Refactorings, internen Verbesserungen oder Bugfixes, von denen der Nutzer nichts mitbekommt. Damit greifen Service-Worker-Cache-Invalidierung und Versions-Trail zuverlässig.

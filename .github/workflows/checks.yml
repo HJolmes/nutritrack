@@ -51,7 +51,7 @@ jobs:
           BASE="origin/${{ github.base_ref }}"
           git fetch --no-tags --depth=1 origin "${{ github.base_ref }}" || true
 
-          CHANGED=$(git diff --name-only "$BASE"...HEAD -- index.html sw.js manifest.json picker.js js worker || true)
+          CHANGED=$(git diff --name-only "$BASE"...HEAD -- index.html tab.html sw.js manifest.json picker.js js worker || true)
           if [ -z "$CHANGED" ]; then
             echo "::notice::Keine ausgelieferte Datei geaendert — Bump nicht noetig."
             exit 0
@@ -76,6 +76,47 @@ jobs:
             exit 1
           fi
 
+  typecheck:
+    name: Typpruefung (tsc --noEmit)
+    # Ohne Build: tsc liest picker.js, js/*.js und die Inline-Scripts aus
+    # index.html und schreibt nichts. Geprueft wird jede Datei mit // @ts-check
+    # in Zeile 1 (#254). Eine verschobene oder umbenannte Funktion faellt damit
+    # vor dem Deploy auf statt beim Klick eines Nutzers.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Werkzeuge
+        run: npm ci
+
+      - name: Typpruefung
+        run: npm run typecheck
+
+  test:
+    name: Logik-Tests (node --test)
+    # Der Rechenkern js/calc.js laeuft hier ohne Browser (#255): Datum,
+    # Summen, Ziele, Ampel, Verdichtung alter Tage, Sport, Portionen. Ein
+    # falscher Kalorienwert bricht nichts Sichtbares – nur ein Test sieht ihn.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Tests
+        # Ohne npm ci: node --test und node:assert sind eingebaut.
+        run: npm test
+
   smoke:
     name: Rauchtest im Browser
     runs-on: ubuntu-latest
@@ -89,14 +130,17 @@ jobs:
           node-version: "22"
 
       - name: Playwright + Chromium
-        # Kein Eintrag in package.json — dieses Projekt hat bewusst keine.
-        # Der Browser ist ein Werkzeug des Tests, keine Abhaengigkeit der App.
+        # Werkzeuge stehen als devDependencies in package.json, Versionen aus
+        # package-lock.json (#252). Der Browser ist ein Werkzeug des Tests,
+        # keine Abhaengigkeit der App — tools/check.js wacht darueber.
         run: |
-          npm install --no-save playwright@1.56.1
+          npm ci
           npx playwright install --with-deps chromium
 
       - name: App lokal ausliefern
-        run: npx --yes http-server -p 8099 -s . &
+        # Version fest: ohne sie konnte sich der Server zwischen zwei Laeufen
+        # aendern, ohne dass jemand etwas committed hatte.
+        run: npx --yes http-server@14.1.1 -p 8099 -s . &
 
       - name: Warten bis die Seite antwortet
         run: |

@@ -8,13 +8,17 @@ NutriTrack is a static mobile-first PWA for nutrition tracking. Extend existing 
 
 Most app logic currently lives in `index.html`; some self-contained features are factored out into classic-script modules (`picker.js`, `js/health-sync.js`). Before changing behavior, search the existing sections in `index.html` *and* the relevant module file, then update the existing flow in place. Keep shared logic centralized for storage, import/export, OneDrive sync, food lookup, barcode scanning, AI parsing, recipe handling, meal editing, and health/workout sync.
 
+**Market: Germany only.** NutriTrack is used in Germany. Do not build, fix, or file issues for US-specific (or other non-German-market) features — e.g. US barcode formats (UPC-A/UPC-E handling), US units (oz, lb, cups, °F), US labels or US-only data sources — unless the human in the active chat explicitly asks for it. A follow-up found in code review that only matters outside Germany is dropped, not filed. (Owner decision 2026-10-01.)
+
 Do not add special-case UI for one food, diet, meal, or import source if the existing picker, recipe, settings, or meal-entry flow can support it.
 
 Protect user data. Nutrition logs, photos, API keys, OneDrive tokens, backups, and personal body/health data are private. Do not log raw backups, meal photos, API keys, OAuth tokens, or extracted personal data.
 
 ## Architecture Notes
 
-This repository is a static GitHub Pages app, not a bundled npm/React project.
+This repository is a static GitHub Pages app, not a bundled npm/React project. Rule as decided on 2026-10-01 (#252), word for word the same in `CLAUDE.md`:
+
+> Die Auslieferung ist der Quelltext: `index.html`, `tab.html`, `sw.js`, `picker.js`, `js/`, `manifest.json` werden unverändert von GitHub Pages ausgeliefert. Es gibt keinen Build-Schritt, kein `dist/`, keine ES-Module, keinen Bundler, keine Laufzeit-Abhängigkeit aus npm. **Werkzeuge** (Prüfungen, Tests, Typprüfung, Playwright, wrangler) dürfen npm nutzen; sie stehen als `devDependencies` in `package.json` mit `package-lock.json` und laufen mit `npm ci`. `dependencies` bleibt leer — `tools/check.js` wacht darüber.
 
 - `index.html` contains HTML, CSS, app state, rendering, event handlers, storage, AI proxy calls, OpenFoodFacts calls, OneDrive sync, backup/import/export, and most UI flows.
 - `picker.js` (root) is the universal ingredient picker, loaded as a classic script after `index.html`'s inline block.
@@ -69,7 +73,7 @@ Avoid adding new external CDNs or APIs unless necessary. If adding one, document
 
 ## Checks Before PR
 
-There is currently no npm build or automated test suite. Before opening or merging a PR, perform focused manual/static checks:
+There is no npm build; npm is used for tools only (see the rule above). Before opening or merging a PR, run `npm ci && npm run check && npm run typecheck && npm test && npm run smoke` (every new module under `js/` starts with `// @ts-check`; pure calculations live in `js/calc.js` and a change there changes its test in `tools/test/calc.test.js` in the same PR; the smoke test needs `npx http-server@14.1.1 -p 8099 -s .` running) and `node tools/worker-test.js` when `worker/` changed. Then perform focused manual checks:
 
 - Open `index.html` through a local server, not by double-clicking the file.
 - Verify the changed flow on a mobile-width viewport.

@@ -159,6 +159,21 @@ async function readJsonLimited(request, max) {
 // Validates EAN-13 / EAN-8 / UPC-A check digit (last digit).
 // Returns true for codes with a correct check digit, false otherwise.
 // Filter against misreads of the OSS-Decoder.
+// UPC-E (8 Ziffern: Zahlensystem 0/1, sechs Nutzziffern, Pruefziffer) → UPC-A
+// (12 Ziffern). null, wenn das Zahlensystem kein UPC-E erlaubt.
+function upcEToA(code) {
+  const ns = code.charAt(0);
+  if (ns !== "0" && ns !== "1") return null;
+  const m = code.slice(1, 7);
+  const last = m.charAt(5);
+  let body;
+  if (last === "0" || last === "1" || last === "2") body = m.slice(0, 2) + last + "0000" + m.slice(2, 5);
+  else if (last === "3") body = m.slice(0, 3) + "00000" + m.slice(3, 5);
+  else if (last === "4") body = m.slice(0, 4) + "00000" + m.charAt(4);
+  else body = m.slice(0, 5) + "0000" + last;
+  return ns + body + code.charAt(7);
+}
+
 function isValidBarcodeChecksum(code) {
   if (typeof code !== "string" || !/^\d+$/.test(code)) return false;
   if (code.length !== 13 && code.length !== 12 && code.length !== 8) {
@@ -187,7 +202,12 @@ function isValidBarcodeChecksum(code) {
       sum += i % 2 === 0 ? d * 3 : d;
     }
     const expected = (10 - (sum % 10)) % 10;
-    return expected === code.charCodeAt(7) - 48;
+    if (expected === code.charCodeAt(7) - 48) return true;
+    // Achtstellig kann auch ein UPC-E sein: dessen Pruefziffer ist die seiner
+    // UPC-A-Erweiterung (#264). Dieselbe Regel wie _pickerUpcEToA (picker.js)
+    // und _upce_to_a (decoder/main.py).
+    const upcA = upcEToA(code);
+    return upcA !== null && isValidBarcodeChecksum(upcA);
   }
   return true;
 }
@@ -1817,7 +1837,7 @@ async function route(request, env) {
       alexaInboxConfigured: Boolean(env.SHARE_KV),
       planSyncConfigured: Boolean(env.SHARE_KV),
       decoderSecretConfigured: Boolean(env.DECODER_SECRET),
-      codeVersion: "v0.283-no-vision",
+      codeVersion: "v0.292-upce",
     });
   }
 

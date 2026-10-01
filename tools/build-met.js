@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 // Erzeugt js/metdb.js (MET-Tabelle fuer den Sporteintrag) aus dem
-// Compendium of Physical Activities 2011.
+// 2024 Adult Compendium of Physical Activities.
 //
-// Quelle: Ainsworth BE et al., 2011 Compendium of Physical Activities
-// (Arizona State University). Bezogen als MySQL-Dump aus dem GitHub-Spiegel
-//   github.com/tfardella/compendium_of_physical_activiy_mysql_format
-//   Commit 6d473d08d876374d01f54fd0fec06922ee7c7a91 (2015-10-18),
-//   Datei compendium_of_physical_activities.sql, sha256 unten fest,
-// weil die offiziellen Seiten (pacompendium.com, sites.google.com/…) nicht
-// aus jeder Umgebung erreichbar sind.
+// Quelle: Herrmann SD et al. 2024 Adult Compendium of Physical Activities:
+// A third update of the energy costs of human activities. J Sport Health Sci
+// 2024;13(1):6-12. Offizielle Tabelle als PDF von pacompendium.com (URL und
+// sha256 unten fest), gelesen mit pdftotext (poppler-utils).
 //
-// LIZENZ: Der Spiegel hat keine LICENSE-Datei; sein README verweist fuer die
-// Nutzungsbedingungen auf die Compendium-Website. Nutzungsbedingungen vor
-// Merge pruefen.
+// NUTZUNG (pacompendium.com, "Using the Compendium", gelesen 2026-10-01):
+// "The Adult, Older Adult, and Wheelchair Compendia are free to use for
+// commercial purposes." — "Please do not change MET values or combine
+// activities with different MET levels." — "Please cite the Compendium
+// website or publication(s)." Deshalb: Werte nur aus der Quelle, je
+// Intensitaet genau ein Code, Quellenangabe sichtbar in der App (Sport-Dialog).
 //
 // Gepflegt wird NUR tools/met.map.json: deutscher Name n, Emoji e,
 // Synonyme s und je Intensitaet ein Compendium-Code c.low/c.medium/c.high
@@ -20,13 +20,14 @@
 // da). "top": true markiert die Chips der Schnellauswahl. Die MET-Zahlen
 // kommen ausschliesslich aus der Quelldatei — sie werden nie von Hand gesetzt.
 //
-//   node tools/build-met.js            # laedt die Quelle (Netz + git noetig)
+//   node tools/build-met.js            # laedt die Quelle (Netz + pdftotext noetig)
 //   node tools/build-met.js --check    # nur pruefen, nichts schreiben
 //
-// Abbruch (Exit 1), wenn die Quelldatei nicht passt (sha256, Zahl der Codes),
-// ein Code aus der Map fehlt, ein Code met<=0 hat (19018 "Skating, ice
-// dancing" steht in der Quelle mit 0) oder ein Name/Synonym nach der
-// Normalisierung doppelt vorkommt. Laeuft nicht in der CI (braucht Netz).
+// Abbruch (Exit 1), wenn die Quelldatei nicht passt (sha256, Zahl der Codes,
+// unbekannte Hauptgruppe), ein Code aus der Map fehlt, ein Code met<=0 hat,
+// die Intensitaeten absteigen (leicht > mittel oder mittel > intensiv) oder ein
+// Name/Synonym nach der Normalisierung doppelt vorkommt. Laeuft nicht in der
+// CI (braucht Netz).
 
 'use strict';
 var fs = require('fs');
@@ -39,48 +40,42 @@ var ROOT = path.join(__dirname, '..');
 var MAP = path.join(__dirname, 'met.map.json');
 var OUT = path.join(ROOT, 'js', 'metdb.js');
 
-var REPO = 'https://github.com/tfardella/compendium_of_physical_activiy_mysql_format';
-var COMMIT = '6d473d08d876374d01f54fd0fec06922ee7c7a91';
-var FILE = 'compendium_of_physical_activities.sql';
-var SHA256 = '179bf301223be15b99644f53c48485a81ad705e604fac4384df76480ae48685a';
-var CODES = 821;
-var CACHE = path.join(os.tmpdir(), 'nt-compendium-' + COMMIT.slice(0, 8));
+var URL = 'https://pacompendium.com/wp-content/uploads/2025/02/1_2024-adult-compendium_1_2024.pdf';
+var SHA256 = 'ac30234b8f8f813837e282773cfcb3e0fe062334777c2f7b3213429c4fbc251c';
+var CODES = 1111;
+var CACHE = path.join(os.tmpdir(), 'nt-compendium-2024-' + SHA256.slice(0, 8) + '.pdf');
+var HEADINGS = ['Bicycling', 'Conditioning Exercise', 'Dancing', 'Fishing & Hunting', 'Home Activities',
+  'Home Repair', 'Inactivity', 'Lawn & Garden', 'Miscellaneous', 'Music Playing', 'Occupation',
+  'Religious Activities', 'Running', 'Self Care', 'Sexual Activity', 'Sports', 'Transportation',
+  'Video Games', 'Volunteer Activities', 'Walking', 'Water Activities', 'Winter Activities'];
 
 // ─── Bezug der Quelldatei ────────────────────────────────────────────────────
 
-// git statt codeload: codeload.github.com liefert aus manchen Umgebungen statt
-// des Tarballs eine JSON-Fehlermeldung, git ueber denselben Proxy geht.
 function loadSource() {
-  var file = path.join(CACHE, FILE);
-  if (!fs.existsSync(file)) {
-    process.stderr.write('lade ' + REPO + ' @ ' + COMMIT.slice(0, 8) + ' …\n');
-    fs.mkdirSync(CACHE, { recursive: true });
-    var git = function(args) { execFileSync('git', args, { cwd: CACHE, stdio: ['ignore', 'ignore', 'inherit'] }); };
-    git(['init', '-q']);
-    git(['fetch', '-q', '--depth', '1', REPO, COMMIT]);
-    git(['checkout', '-q', 'FETCH_HEAD']);
+  if (!fs.existsSync(CACHE)) {
+    process.stderr.write('lade ' + URL + ' …\n');
+    execFileSync('curl', ['-sSfL', '-m', '120', '-o', CACHE, URL], { stdio: ['ignore', 'ignore', 'inherit'] });
   }
-  var buf = fs.readFileSync(file);
-  var sum = crypto.createHash('sha256').update(buf).digest('hex');
-  if (sum !== SHA256) throw new Error(FILE + ': sha256 ' + sum + ' statt ' + SHA256 + ' (Cache ' + CACHE + ' loeschen?)');
-  return buf.toString('utf8');
+  var sum = crypto.createHash('sha256').update(fs.readFileSync(CACHE)).digest('hex');
+  if (sum !== SHA256) throw new Error('PDF: sha256 ' + sum + ' statt ' + SHA256 + ' (Cache ' + CACHE + ' loeschen?)');
+  return execFileSync('pdftotext', ['-layout', CACHE, '-'], { encoding: 'utf8', maxBuffer: 16 << 20 });
 }
 
 // ─── Parsen ──────────────────────────────────────────────────────────────────
 
-// INSERT INTO `mets` VALUES ('01003',14.00,1,'Bicycling, …'),(…);
-// Die Beschreibung kann Klammern und ein maskiertes \' enthalten, deshalb
-// wird der Text in Anfuehrungszeichen als Ganzes gelesen.
-function parse(sql) {
-  var i = sql.indexOf('INSERT INTO `mets` VALUES');
-  if (i < 0) throw new Error('INSERT INTO `mets` nicht gefunden');
-  var line = sql.slice(i, sql.indexOf(';\n', i));
-  var rx = /\('(\d{5})',\s*([\d.]+),\s*(\d+),\s*'((?:[^'\\]|\\.)*)'\)/g, m, rows = {}, n = 0;
-  while ((m = rx.exec(line))) {
+// Je Code eine Zeile "Hauptgruppe  Code  MET  Beschreibung". Lange
+// Beschreibungen umbricht pdftotext auf die Zeilen davor und danach — sie
+// werden nicht gebraucht, gelesen wird nur Code und MET.
+function parse(txt) {
+  var rows = {}, n = 0;
+  txt.split('\n').forEach(function(line) {
+    var m = line.match(/^\s*(\S.*?)\s+(\d{5})\s+(\d+(?:\.\d+)?)(?:\s|$)/);
+    if (!m) return;
+    if (HEADINGS.indexOf(m[1]) < 0) throw new Error('unbekannte Hauptgruppe "' + m[1] + '" bei Code ' + m[2]);
     n++;
-    if (rows[m[1]]) throw new Error('Code ' + m[1] + ' doppelt in der Quelle');
-    rows[m[1]] = { met: parseFloat(m[2]), desc: m[4].replace(/\\'/g, "'") };
-  }
+    if (rows[m[2]]) throw new Error('Code ' + m[2] + ' doppelt in der Quelle');
+    rows[m[2]] = { met: parseFloat(m[3]) };
+  });
   if (n !== CODES) throw new Error(n + ' Codes gelesen, erwartet ' + CODES);
   return rows;
 }
@@ -179,6 +174,8 @@ function resolve(map, rows) {
       if (!(row.met > 0)) { problems.push(label + ': Code ' + code + ' hat met=' + row.met + ' (nicht verwendbar)'); return; }
       met[l] = row.met;
     });
+    if (met.low > met.medium || met.medium > met.high)
+      problems.push(label + ': MET steigt nicht an (' + met.low + ' / ' + met.medium + ' / ' + met.high + ')');
     out.push({ it: it, met: met });
   });
   return { rows: out, problems: problems };
@@ -188,18 +185,19 @@ function resolve(map, rows) {
 
 function render(res) {
   var o = [];
+  o.push('// @ts-check');
   o.push('// NutriTrack – MET-Tabelle fuer den Sporteintrag (' + res.length + ' Aktivitaeten).');
   o.push('//');
   o.push('// ERZEUGT von tools/build-met.js — nicht von Hand bearbeiten.');
   o.push('// Gepflegt wird tools/met.map.json (deutscher Name, Emoji, Synonyme,');
   o.push('// je Intensitaet ein Compendium-Code); alle MET-Werte stammen unveraendert aus:');
   o.push('//');
-  o.push('//   Ainsworth BE et al. 2011 Compendium of Physical Activities.');
-  o.push('//   Bezogen aus github.com/tfardella/compendium_of_physical_activiy_mysql_format,');
-  o.push('//   Commit ' + COMMIT + ',');
-  o.push('//   ' + FILE + ' (sha256 ' + SHA256 + ').');
-  o.push('//   Lizenz: im Spiegel nicht angegeben (Verweis auf die Compendium-Website).');
-  o.push('//   Nutzungsbedingungen vor Merge pruefen.');
+  o.push('//   Herrmann SD et al. 2024 Adult Compendium of Physical Activities.');
+  o.push('//   J Sport Health Sci 2024;13(1):6-12. https://pacompendium.com/');
+  o.push('//   ' + URL);
+  o.push('//   (sha256 ' + SHA256 + ').');
+  o.push('//   Nutzung: laut pacompendium.com frei, auch kommerziell; Werte nicht');
+  o.push('//   aendern, Quelle nennen (steht im Sport-Dialog).');
   o.push('//');
   o.push('// Felder: n Name, e Emoji, s Synonyme, met {low,medium,high} MET-Werte,');
   o.push('// c {low,medium,high} Compendium-Codes zum Nachschlagen.');
@@ -244,7 +242,7 @@ function main() {
       console.error('✗ js/metdb.js ist nicht auf dem Stand der Map — node tools/build-met.js');
       process.exit(1);
     }
-    console.log('✓ js/metdb.js passt zur Map (' + res.rows.length + ' Aktivitaeten, Quelle ' + CODES + ' Codes, sha256 ok)');
+    console.log('✓ js/metdb.js passt zur Map (' + res.rows.length + ' Aktivitaeten, Quelle ' + CODES + ' Codes 2024, sha256 ok)');
     return;
   }
   fs.writeFileSync(OUT, js);

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#e96e3c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="NutriTrack">
+<link rel="manifest" href="/nutritrack/manifest.json">
+<link rel="apple-touch-icon" href="/nutritrack/icon.svg">
+<title>NutriTrack – anderes Fenster</title>
+<!-- Nur ein Fenster arbeitet (#261). Hierher wechselt ein Fenster, das den
+     Web Lock nicht bekommt oder ihn an ein anderes Fenster verloren hat
+     (js/single-tab.js). Diese Seite liest und schreibt keine App-Daten. -->
+<style>
+  html,body{margin:0;height:100%;background:#faf6f1;color:#2b2420;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,sans-serif;}
+  main{min-height:100%;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;text-align:center;padding:24px 16px calc(24px + env(safe-area-inset-bottom));}
+  .ic{font-size:44px;margin-bottom:12px;}
+  h1{font-size:20px;line-height:1.3;margin:0 0 10px;max-width:340px;}
+  p{font-size:15px;line-height:1.5;color:#6f625a;margin:0 0 20px;max-width:340px;}
+  button{background:#e96e3c;color:#fff;border:none;border-radius:14px;padding:14px 28px;
+    font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;}
+  .sm{font-size:13px;margin-top:16px;}
+</style>
+</head>
+<body>
+<main>
+  <div class="ic">🪟</div>
+  <h1>NutriTrack ist in einem anderen Fenster geöffnet</h1>
+  <p>Damit sich zwei Fenster nicht gegenseitig Einträge überschreiben, arbeitet NutriTrack immer nur in einem.</p>
+  <button type="button" id="goBtn">Hier weiterarbeiten</button>
+  <p class="sm">Das andere Fenster pausiert dann. Was dort noch nicht gespeichert war, etwa ein offener Dialog, geht verloren.</p>
+</main>
+<script>
+(function(){
+  var LOCK='nutritrack-main';
+  function back(){
+    var b='';
+    try{b=sessionStorage.getItem('nt_tab_back')||'';sessionStorage.removeItem('nt_tab_back');}catch(e){}
+    location.replace('./'+b);
+  }
+  // Uebernehmen: js/single-tab.js holt sich den Lock dann mit `steal`.
+  document.getElementById('goBtn').addEventListener('click',function(){
+    try{sessionStorage.setItem('nt_tab_take','1');}catch(e){}
+    back();
+  });
+  // Ist das andere Fenster inzwischen zu, geht es hier ohne Tippen weiter.
+  function checkFree(){
+    if(!(navigator.locks&&navigator.locks.query))return;
+    navigator.locks.query().then(function(st){
+      var held=(st.held||[]).some(function(l){return l.name===LOCK;});
+      if(!held)back();
+    }).catch(function(){});
+  }
+  setInterval(checkFree,2000);
+  document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')checkFree();});
+})();
+</script>
+</body>
+</html>

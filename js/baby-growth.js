@@ -1,3 +1,4 @@
+// @ts-check
 // NutriTrack – Baby: Wachstum mit WHO-Perzentilen (Reiter im Baby-Tagebuch, v0.263).
 // Klassisches Script, exportiert window.NTGrowth. Nutzt NTBaby (js/baby.js),
 // die Tabellen aus js/baby-growth-data.js (window.NT_WHO_GROWTH) und die

@@ -1,3 +1,4 @@
+// @ts-check
 // NutriTrack – Partner-Postfach (v0.236)
 // Klassisches Script, kein Modul. Exportiert window.NTPartner und greift direkt
 // auf die globalen Helfer aus index.html zu (S, saveS, openOv, closeOv, esc,

@@ -1,3 +1,4 @@
+// @ts-check
 // NutriTrack – Erinnerungen (v0.250, Timer und Anzeige v0.277)
 // Klassisches Script, kein Modul. Exportiert window.NTRemind und greift direkt auf
 // die globalen Helfer aus index.html zu (S, saveS, esc, showToast).

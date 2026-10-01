@@ -1,6 +1,29 @@
+// @ts-check
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.298',items:[
+    {icon:'🏃',text:'<b>Sport-Vorschläge lesbar</b>: Beim Tippen im Feld „Aktivität“ erscheint unter dem Feld eine Liste passender Sportarten mit Namen. Bisher zeigte Android dort nur leere Kästchen über der Tastatur. ▼ im Feld öffnet die ganze Liste.',where:'🏃 Sport eintragen'},
+    {icon:'⏱️',text:'<b>Dauer im Namen</b>: Wer „Bouldern 20 min“ ins Feld Aktivität schreibt, bekommt „Bouldern“ mit 20 Minuten Dauer. Eigene Schnellauswahl-Einträge mit Dauer im Namen werden einmalig bereinigt.',where:'🏃 Sport eintragen'}
+  ]},
+  {v:'0.297',items:[
+    {icon:'🔧',text:'<b>„Was ist neu“ ohne „undefined“</b>: Einträge ohne Ortsangabe zeigen keine leere 📍-Zeile mit „undefined“ mehr.'}
+  ]},
+  {v:'0.294',items:[
+    {icon:'🪟',text:'<b>Nur noch ein Fenster gleichzeitig</b>: Ist NutriTrack schon in einem anderen Tab oder Fenster offen, zeigt ein weiteres Fenster einen Hinweis statt der App. Mit „Hier weiterarbeiten“ geht es dort weiter, und das andere Fenster pausiert. Bisher konnte das zuletzt speichernde Fenster Einträge des anderen überschreiben. Wird das andere Fenster geschlossen, startet die App im wartenden Fenster von selbst.',where:'zweiter Tab / zweites Fenster'}
+  ]},
+  {v:'0.293',items:[
+    {icon:'🍚',text:'<b>Eindeutige Treffer in der Lebensmittel-Datenbank</b>: „Reis“, „Nudeln“ und „Kartoffeln“ zählen jetzt gekocht statt roh, „Kaffee“ als schwarzer Kaffee statt Latte Macchiato, „Schokolade“ als Vollmilchschokolade statt Keksen. Das gilt für Alexa, Rezept-Links, den Wochenplan und die KI-Erkennung in Chat und Foto. Wörter mit mehreren gleich passenden Einträgen wie „Salat“, „Bohnen“ oder „Hähnchen“ werden nicht mehr geraten, sondern online bzw. per KI nachgeschlagen. Der doppelte Eintrag „Milch 1,5%“ ist entfernt.',where:'＋ → Suche · 💬 Chat · Alexa'}
+  ]},
+  {v:'0.292',items:[
+    {icon:'📷',text:'<b>Kurze US-Barcodes (UPC-E) per Foto</b>: Achtstellige UPC-E-Codes, wie sie auf kleinen Packungen aus den USA stehen, werden bei der Erkennung über den Server nicht mehr als ungültig verworfen.',where:'＋ → 📷 Barcode'}
+  ]},
+  {v:'0.291',items:[
+    {icon:'🔗',text:'<b>Quelle beim Rezept-Link wieder sichtbar</b>: Nach dem Laden eines Rezept-Links steht über den erkannten Zutaten wieder, woher die Mengen stammen (Rezeptdaten der Seite oder KI) und für wie viele Portionen die Seite sie nennt.',where:'＋ → 🔗 Link'}
+  ]},
+  {v:'0.290',items:[
+    {icon:'🏃',text:'<b>Sport-Werte auf dem Stand von 2024</b>: Die MET-Werte der rund 120 Sportarten stammen jetzt aus dem aktuellen 2024 Adult Compendium of Physical Activities statt aus der Fassung von 2011. Etwa die Hälfte der Aktivitäten rechnet dadurch leicht anders, deutlich etwa Trampolin, Stand-up-Paddling, Rudergerät und Bergsteigen. Die Quelle steht jetzt unten im Dialog „Sport eintragen“.'}
+  ]},
   {v:'0.289',items:[
     {icon:'🔧',text:'<b>Nachbesserungen</b>: Lange Hinweise (fehlende Meldungs-Berechtigung, Prüfziffer, Produkt ohne Nährwerte) brechen jetzt um und sind auf dem Handy ganz lesbar. Die Stillzeit-Ampel bewertet auch Rezepte aus der Chat-Karte und aus „Zuletzt“ sowie Zutaten, die man an einen Eintrag anhängt. Im Wochenbericht geht die Durchschnittszeile auch an Tagen mit viel Sport auf. „Brot,2 Eier“ wird wieder als zwei Posten erkannt.'}
   ]},

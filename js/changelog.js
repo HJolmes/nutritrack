@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.294',items:[
+    {icon:'🪟',text:'<b>Nur noch ein Fenster gleichzeitig</b>: Ist NutriTrack schon in einem anderen Tab oder Fenster offen, zeigt ein weiteres Fenster einen Hinweis statt der App. Mit „Hier weiterarbeiten“ geht es dort weiter, und das andere Fenster pausiert. Bisher konnte das zuletzt speichernde Fenster Einträge des anderen überschreiben. Wird das andere Fenster geschlossen, startet die App im wartenden Fenster von selbst.'}
+  ]},
   {v:'0.293',items:[
     {icon:'🍚',text:'<b>Eindeutige Treffer in der Lebensmittel-Datenbank</b>: „Reis“, „Nudeln“ und „Kartoffeln“ zählen jetzt gekocht statt roh, „Kaffee“ als schwarzer Kaffee statt Latte Macchiato, „Schokolade“ als Vollmilchschokolade statt Keksen. Das gilt für Alexa, Rezept-Links, den Wochenplan und die KI-Erkennung in Chat und Foto. Wörter mit mehreren gleich passenden Einträgen wie „Salat“, „Bohnen“ oder „Hähnchen“ werden nicht mehr geraten, sondern online bzw. per KI nachgeschlagen. Der doppelte Eintrag „Milch 1,5%“ ist entfernt.'}
   ]},

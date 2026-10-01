@@ -51,7 +51,7 @@ jobs:
           BASE="origin/${{ github.base_ref }}"
           git fetch --no-tags --depth=1 origin "${{ github.base_ref }}" || true
 
-          CHANGED=$(git diff --name-only "$BASE"...HEAD -- index.html sw.js manifest.json picker.js js worker || true)
+          CHANGED=$(git diff --name-only "$BASE"...HEAD -- index.html tab.html sw.js manifest.json picker.js js worker || true)
           if [ -z "$CHANGED" ]; then
             echo "::notice::Keine ausgelieferte Datei geaendert — Bump nicht noetig."
             exit 0

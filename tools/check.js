@@ -146,6 +146,19 @@ while ((m = scriptRe.exec(indexHtml)) !== null) {
   if (syntaxCheck(`index.html (inline <script> ab Zeile ${line})`, body, isModule)) inlineOk++;
 }
 ok(`${inlineOk}/${inlineCount} Inline-<script>-Bloecke syntaktisch in Ordnung.`);
+// tab.html (#261) traegt ein eigenes kleines Inline-Script. Bricht es, bleibt
+// ein zweites Fenster ohne Ausweg auf der Seite stehen.
+if (fs.existsSync(path.join(ROOT, 'tab.html'))) {
+  const tabHtml = read('tab.html');
+  const tabRe = /<script(?![^>]*\bsrc=)([^>]*)>([\s\S]*?)<\/script>/g;
+  let mt, tabCount = 0, tabOk = 0;
+  while ((mt = tabRe.exec(tabHtml)) !== null) {
+    if (!mt[2].trim()) continue;
+    tabCount++;
+    if (syntaxCheck(`tab.html (inline <script> ab Zeile ${tabHtml.slice(0, mt.index).split('\n').length})`, mt[2], false)) tabOk++;
+  }
+  ok(`tab.html: ${tabOk}/${tabCount} Inline-<script>-Bloecke syntaktisch in Ordnung.`);
+}
 
 // ── 3. Service-Worker-Abdeckung ───────────────────────────────────────────
 // Jedes lokal eingebundene Script muss in CORE_ASSETS stehen, sonst laeuft die

@@ -40,7 +40,7 @@ const BASE = process.env.SMOKE_URL || 'http://127.0.0.1:8099/index.html';
 const EXPECTED_NAMESPACES = [
   'NTSync', 'NTBaby', 'NTShop', 'NTPartner', 'NTPlan', 'NTDash',
   'NTHealth', 'NTAlexa', 'NTPhotos', 'NTDrive',
-  'NTRecur', 'NTStats', 'NTRemind', 'NTTpl', 'NTQueue', 'NTFeat', 'NTAmpel', 'NTMet',
+  'NTRecur', 'NTStats', 'NTRemind', 'NTTpl', 'NTQueue', 'NTFeat', 'NTAmpel', 'NTMet', 'NTTab',
 ];
 
 (async () => {
@@ -461,12 +461,38 @@ const EXPECTED_NAMESPACES = [
   if (remindFail) console.log('  x   Erinnerung loeschen: ' + JSON.stringify(remind));
   else console.log('  ok  Das ✕ einer Erinnerung ist data-act ohne onclick und entfernt genau die eigene.');
 
+  // 8. Zweites Fenster (#261): Es darf die App nicht starten und nichts
+  //    schreiben, sondern landet auf tab.html. „Hier weiterarbeiten“ uebernimmt,
+  //    und das erste Fenster pausiert. Vorher ueberschrieb der letzte Schreiber
+  //    das Tagebuch des anderen Fensters.
+  let tabFail = 0;
+  {
+    const before = await page.evaluate(() => { S.name = 'Fenster eins'; saveS(); return localStorage.getItem('nt_v6'); });
+    const second = await ctx.newPage();
+    second.on('pageerror', (e) => record('pageerror (2. Fenster)', e.message));
+    await second.goto(BASE, { waitUntil: 'load' });
+    await second.waitForTimeout(800);
+    const p2 = new URL(second.url()).pathname;
+    const after = await page.evaluate(() => localStorage.getItem('nt_v6'));
+    if (!p2.endsWith('/tab.html')) { console.log('  x   Zweites Fenster startete die App (' + p2 + ') statt tab.html.'); tabFail++; }
+    else if (after !== before) { console.log('  x   Zweites Fenster hat nt_v6 veraendert.'); tabFail++; }
+    else {
+      await second.click('#goBtn');
+      await second.waitForTimeout(1200);
+      const took = await second.evaluate(() => !!(window.NTTab && NTTab.canWrite() && window.S && S.name === 'Fenster eins'));
+      const p1 = new URL(page.url()).pathname;
+      if (!took || !p1.endsWith('/tab.html')) { console.log('  x   Uebernahme: zweites Fenster schreibt=' + took + ', erstes auf ' + p1); tabFail++; }
+      else console.log('  ok  Zweites Fenster landet auf tab.html ohne zu schreiben; „Hier weiterarbeiten“ uebernimmt, das erste pausiert.');
+    }
+    await second.close();
+  }
+
   await browser.close();
 
-  if (errors.length || nsFail || badExports.length || deadHandlers.length || delegationFail || stack.length || deadFeatActs.length || remindFail) {
+  if (errors.length || nsFail || badExports.length || deadHandlers.length || delegationFail || stack.length || deadFeatActs.length || remindFail || tabFail) {
     console.error('\nFEHLER:');
     [...new Set(errors)].forEach((e) => console.error('  x   ' + e));
-    console.error(`\n${errors.length + nsFail + badExports.length + deadHandlers.length + delegationFail + stack.length + deadFeatActs.length + remindFail} Problem(e).`);
+    console.error(`\n${errors.length + nsFail + badExports.length + deadHandlers.length + delegationFail + stack.length + deadFeatActs.length + remindFail + tabFail} Problem(e).`);
     process.exit(1);
   }
   console.log('\nRauchtest bestanden.');

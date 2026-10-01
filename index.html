@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.293"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.294"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.293"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.294"></script>
 <script>
   (function(){
     if(typeof ZXingWASM==='undefined'){console.warn('zxing-wasm load failed, ZXing-JS fallback aktiv');return;}
@@ -1218,7 +1218,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.293</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.294</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -3354,12 +3354,13 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.293"></script>
-<script src="js/fooddb.js?v=0.293"></script>
-<script src="js/fooddb-usda.js?v=0.293"></script>
-<script src="js/metdb.js?v=0.293"></script>
-<script src="js/idb-photos.js?v=0.293"></script>
-<script src="js/changelog.js?v=0.293"></script>
+<script src="js/actions.js?v=0.294"></script>
+<script src="js/single-tab.js?v=0.294"></script>
+<script src="js/fooddb.js?v=0.294"></script>
+<script src="js/fooddb-usda.js?v=0.294"></script>
+<script src="js/metdb.js?v=0.294"></script>
+<script src="js/idb-photos.js?v=0.294"></script>
+<script src="js/changelog.js?v=0.294"></script>
 <script>
 // ════════════════════════════════════════
 // SECTION: DATABASE
@@ -3378,7 +3379,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.293';
+var APP_VERSION='0.294';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -3689,6 +3690,9 @@ function _freeQuota(step){
   }
 }
 function saveS(){
+  // Vor dem Start traegt S nur Vorgaben, nach einer Uebernahme gehoert nt_v6
+  // einem anderen Fenster (#261) — beides darf den Bestand nicht ueberschreiben.
+  if(window.NTTab&&!NTTab.canWrite())return;
   var data=JSON.stringify(S);
   if(_lsSet('nt_v6',data)){
     // Warnung wenn >3MB (60% des Limits)
@@ -3707,9 +3711,9 @@ function saveS(){
   showToast('⚠️ Speicher voll! Bitte Backup erstellen und alte Daten löschen.');
 }
 function loadS(){try{var d=localStorage.getItem('nt_v6');if(d){Object.assign(S,JSON.parse(d));return true;}}catch(e){}return false;}
-function saveX(){_pruneFoodCache(FOODCACHE_MAX);try{localStorage.setItem('nt_x',JSON.stringify({fc:foodCache,cf:customFoods,rc:recipes}));}catch(e){}}
+function saveX(){if(window.NTTab&&!NTTab.canWrite())return;_pruneFoodCache(FOODCACHE_MAX);try{localStorage.setItem('nt_x',JSON.stringify({fc:foodCache,cf:customFoods,rc:recipes}));}catch(e){}}
 function loadX(){try{var d=localStorage.getItem('nt_x');if(d){var x=JSON.parse(d);foodCache=x.fc||{};customFoods=x.cf||[];recipes=x.rc||[];}}catch(e){}}
-function saveBarcodeCache(){_pruneBarcodeCache(BARCODECACHE_MAX);try{localStorage.setItem('nt_bc',JSON.stringify(barcodeCache));}catch(e){}}
+function saveBarcodeCache(){if(window.NTTab&&!NTTab.canWrite())return;_pruneBarcodeCache(BARCODECACHE_MAX);try{localStorage.setItem('nt_bc',JSON.stringify(barcodeCache));}catch(e){}}
 function loadBarcodeCache(){try{var d=localStorage.getItem('nt_bc');if(d)barcodeCache=JSON.parse(d);}catch(e){}_dropEmptyNutrientEntries();}
 // Ein Treffer ohne jeden Naehrwert ist keine Information, sondern eine Luecke
 // in der Quelle (#167). Er wird nicht gespeichert – sonst taucht er spaeter als
@@ -3747,7 +3751,13 @@ function setAppleTouchIconPNG(){
     img.src='/nutritrack/icon.svg';
   }catch(e){}
 }
+// Nur ein Fenster arbeitet (#261): js/single-tab.js entscheidet per Web Lock,
+// ob dieses Fenster die App startet oder auf tab.html wechselt. Ohne Web Locks
+// startet sie sofort wie bisher.
 window.addEventListener('DOMContentLoaded',function(){
+  if(window.NTTab)NTTab.start(_bootApp);else _bootApp();
+});
+function _bootApp(){
   var _vt=document.getElementById('appVersionTag');if(_vt)_vt.textContent='v'+APP_VERSION;
   _aiKeyEncRefresh();_aiKeyEncTryDecrypt();
   // Handle OneDrive OAuth callback
@@ -3901,7 +3911,7 @@ window.addEventListener('DOMContentLoaded',function(){
       window.visualViewport.addEventListener('scroll',_fixViewportChromeDebounced);
     }
   }
-});
+}
 function updBadge(){var b=document.getElementById('offBadge');if(b)b.classList.toggle('hidden',isOnline);}
 
 // Listen for SW update messages → show toast and reload
@@ -8221,30 +8231,30 @@ function axTestSync(){
 }
 
 </script>
-<script src="js/ampel.js?v=0.293"></script>
-<script src="picker.js?v=0.293"></script>
-<script src="js/health-sync.js?v=0.293"></script>
-<script src="js/sync-core.js?v=0.293"></script>
-<script src="js/baby.js?v=0.293"></script>
-<script src="js/baby-meds.js?v=0.293"></script>
-<script src="js/baby-growth-data.js?v=0.293"></script>
-<script src="js/baby-growth.js?v=0.293"></script>
-<script src="js/baby-week.js?v=0.293"></script>
-<script src="js/baby-milestones.js?v=0.293"></script>
-<script src="js/baby-midwife.js?v=0.293"></script>
-<script src="js/shopping.js?v=0.293"></script>
-<script src="js/partner.js?v=0.293"></script>
-<script src="js/alexa-sync.js?v=0.293"></script>
-<script src="js/dashboard.js?v=0.293"></script>
-<script src="js/features.js?v=0.293"></script>
-<script src="js/mealplan.js?v=0.293"></script>
-<script src="js/onedrive.js?v=0.293"></script>
-<script src="js/autosave.js?v=0.293"></script>
-<script src="js/recurring.js?v=0.293"></script>
-<script src="js/stats.js?v=0.293"></script>
-<script src="js/reminders.js?v=0.293"></script>
-<script src="js/templates.js?v=0.293"></script>
-<script src="js/offline-queue.js?v=0.293"></script>
+<script src="js/ampel.js?v=0.294"></script>
+<script src="picker.js?v=0.294"></script>
+<script src="js/health-sync.js?v=0.294"></script>
+<script src="js/sync-core.js?v=0.294"></script>
+<script src="js/baby.js?v=0.294"></script>
+<script src="js/baby-meds.js?v=0.294"></script>
+<script src="js/baby-growth-data.js?v=0.294"></script>
+<script src="js/baby-growth.js?v=0.294"></script>
+<script src="js/baby-week.js?v=0.294"></script>
+<script src="js/baby-milestones.js?v=0.294"></script>
+<script src="js/baby-midwife.js?v=0.294"></script>
+<script src="js/shopping.js?v=0.294"></script>
+<script src="js/partner.js?v=0.294"></script>
+<script src="js/alexa-sync.js?v=0.294"></script>
+<script src="js/dashboard.js?v=0.294"></script>
+<script src="js/features.js?v=0.294"></script>
+<script src="js/mealplan.js?v=0.294"></script>
+<script src="js/onedrive.js?v=0.294"></script>
+<script src="js/autosave.js?v=0.294"></script>
+<script src="js/recurring.js?v=0.294"></script>
+<script src="js/stats.js?v=0.294"></script>
+<script src="js/reminders.js?v=0.294"></script>
+<script src="js/templates.js?v=0.294"></script>
+<script src="js/offline-queue.js?v=0.294"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

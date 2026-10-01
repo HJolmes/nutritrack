@@ -1,6 +1,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.290',items:[
+    {icon:'🏃',text:'<b>Sport-Werte auf dem Stand von 2024</b>: Die MET-Werte der rund 120 Sportarten stammen jetzt aus dem aktuellen 2024 Adult Compendium of Physical Activities statt aus der Fassung von 2011. Etwa die Hälfte der Aktivitäten rechnet dadurch leicht anders, deutlich etwa Trampolin, Stand-up-Paddling, Rudergerät und Bergsteigen. Die Quelle steht jetzt unten im Dialog „Sport eintragen“.'}
+  ]},
   {v:'0.289',items:[
     {icon:'🔧',text:'<b>Nachbesserungen</b>: Lange Hinweise (fehlende Meldungs-Berechtigung, Prüfziffer, Produkt ohne Nährwerte) brechen jetzt um und sind auf dem Handy ganz lesbar. Die Stillzeit-Ampel bewertet auch Rezepte aus der Chat-Karte und aus „Zuletzt“ sowie Zutaten, die man an einen Eintrag anhängt. Im Wochenbericht geht die Durchschnittszeile auch an Tagen mit viel Sport auf. „Brot,2 Eier“ wird wieder als zwei Posten erkannt.'}
   ]},

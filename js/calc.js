@@ -267,3 +267,86 @@ function getExerciseMet(name,intensity){
   return null;
 }
 
+// Dauer im Aktivitätsnamen ("Bouldern 20 min", "45min Laufen", "Radfahren
+// 1,5 Std") herauslösen: {name, dur} mit dur in Minuten, 0 = keine Angabe.
+// Nur Zahl + Einheit (min/Minute(n)/Std/Stunde(n)/h) als eigenes Wort; eine
+// Zahl ohne Einheit bleibt im Namen. Bleibt ohne Dauer kein Name übrig, bleibt
+// der Name unverändert.
+function splitExerciseDuration(name){
+  var raw=String(name||'');
+  var re=/(^|\s)(\d+(?:[.,]\d+)?)\s*(minuten|minute|min\.?|stunden|stunde|std\.?|h)(?=\s|[,;-]|$)/i;
+  var m=raw.match(re);
+  if(!m)return{name:raw.trim(),dur:0};
+  var n=parseFloat(m[2].replace(',','.'));
+  var unit=m[3].toLowerCase();
+  var dur=Math.round(/^(std|stunde|h)/.test(unit)?n*60:n);
+  var rest=(raw.slice(0,m.index)+' '+raw.slice(m.index+m[0].length))
+    .replace(/\s+/g,' ').replace(/^[\s,;-]+|[\s,;-]+$/g,'');
+  if(!rest||!dur)return{name:raw.trim(),dur:0};
+  return{name:rest,dur:dur};
+}
+
+// Eigene Bibliothek ohne Dauer im Namen (Altbestand aus Eingaben wie
+// "Bouldern 20 min"): Name bereinigt, gleicher Name danach nur einmal (der
+// erste gewinnt, ein Eintrag MIT MET schlägt einen ohne). Gibt die neue Liste
+// zurück, verändert die alte nicht.
+function cleanExerciseLibrary(lib){
+  var out=[],at={};
+  (lib||[]).forEach(function(le){
+    if(!le||!le.name)return;
+    var e=Object.assign({},le,{name:splitExerciseDuration(le.name).name});
+    var k=e.name.toLowerCase();
+    if(at[k]===undefined){at[k]=out.length;out.push(e);}
+    else if(!out[at[k]].met&&e.met)out[at[k]]=e;
+  });
+  return out;
+}
+
+// Vorschlagsliste am Namensfeld (ersetzt das <datalist>, das Chrome/Android nur
+// als leere Kästchen über der Tastatur zeigt). Kandidaten: eigene Bibliothek,
+// dann Tabelle (MET_DB). Leere Suche: Bibliothek, dann Tabelle alphabetisch.
+// Sonst Rang 3 Name beginnt mit der Eingabe, 2 ein Wort von Name/Synonym
+// beginnt damit, 1 irgendwo enthalten; gleicher Rang alphabetisch. Gleicher
+// Name (ohne Groß-/Kleinschreibung) nur einmal, der eigene Eintrag gewinnt.
+// limit 0 = alle.
+function suggestExercises(query,limit){
+  var norm=(window.NTMet&&NTMet.norm)||function(x){return String(x||'').toLowerCase().trim();};
+  var q=norm(query);
+  var cands=[],seen={};
+  (S.exerciseLibrary||[]).forEach(function(le){
+    if(!le||!le.name)return;
+    var k=le.name.toLowerCase();
+    if(seen[k])return;
+    seen[k]=1;
+    cands.push({name:le.name,emoji:le.emoji||'🏃',keys:[norm(le.name)],lib:true});
+  });
+  (window.MET_DB||[]).forEach(function(it){
+    var k=it.n.toLowerCase();
+    if(seen[k])return;
+    seen[k]=1;
+    cands.push({name:it.n,emoji:it.e||'🏃',keys:[norm(it.n)].concat((it.s||[]).map(norm)),lib:false});
+  });
+  var byName=function(a,b){return a.name.localeCompare(b.name,'de');};
+  var out;
+  if(!q){
+    out=cands.filter(function(c){return c.lib;}).concat(cands.filter(function(c){return !c.lib;}).sort(byName));
+  } else {
+    var scored=[];
+    cands.forEach(function(c){
+      var sc=0;
+      c.keys.forEach(function(k,i){
+        var s=0;
+        if(i===0&&k.indexOf(q)===0)s=3;
+        else if((' '+k).indexOf(' '+q)!==-1)s=2;
+        else if(k.indexOf(q)!==-1)s=1;
+        if(s>sc)sc=s;
+      });
+      if(sc)scored.push({c:c,s:sc});
+    });
+    scored.sort(function(a,b){return (b.s-a.s)||byName(a.c,b.c);});
+    out=scored.map(function(x){return x.c;});
+  }
+  if(limit)out=out.slice(0,limit);
+  return out.map(function(c){return{name:c.name,emoji:c.emoji};});
+}
+

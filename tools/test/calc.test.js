@@ -328,6 +328,48 @@ test('getAllExercises: Schnellauswahl, eigener Eintrag ersetzt den Tabellen-Chip
   assert.deepEqual(all[all.length - 1], { name: 'Bouldern', met: null, isLib: true });
 });
 
+test('suggestExercises: Anfang vor Wortanfang/Synonym vor enthalten, eigene zuerst, Limit', () => {
+  const C = load({ exerciseLibrary: [{ name: 'Bouldern 20 min', emoji: '🧗', met: null }, { name: 'laufen', met: null }] }, { met: true });
+  const names = (q, n) => plain(C.suggestExercises(q, n)).map((x) => x.name);
+  const all = names('', 0);
+  assert.equal(all[0], 'Bouldern 20 min');
+  assert.equal(all[1], 'laufen');               // eigener Eintrag ersetzt „Laufen“ der Tabelle
+  assert.equal(all.filter((n) => n.toLowerCase() === 'laufen').length, 1);
+  assert.equal(all.length, 120 + 1);            // 120 Tabelle + Bouldern
+  assert.equal(names('', 3).length, 3);
+  const rad = names('rad');                     // Name beginnt mit der Eingabe, gleicher Rang alphabetisch
+  assert.ok(rad.slice(0, 2).every((n) => n.startsWith('Rad')));
+  assert.ok(rad.includes('Radfahren'));
+  assert.ok(names('fahrrad').includes('Radfahren')); // Synonym
+  assert.ok(names('jogg').length > 0);          // Synonym „joggen“ o. ä.
+  assert.deepEqual(names('xyzq'), []);
+  assert.equal(plain(C.suggestExercises('boul', 1))[0].emoji, '🧗');
+});
+
+test('splitExerciseDuration: Dauer aus dem Namen, Stunden in Minuten', () => {
+  const C = load({});
+  const sp = (x) => plain(C.splitExerciseDuration(x));
+  assert.deepEqual(sp('Bouldern 20 min'), { name: 'Bouldern', dur: 20 });
+  assert.deepEqual(sp('45min Laufen'), { name: 'Laufen', dur: 45 });
+  assert.deepEqual(sp('Radfahren 1,5 Std'), { name: 'Radfahren', dur: 90 });
+  assert.deepEqual(sp('Wandern 2 Stunden'), { name: 'Wandern', dur: 120 });
+  assert.deepEqual(sp('Yoga - 30 Minuten'), { name: 'Yoga', dur: 30 });
+  assert.deepEqual(sp('Schwimmen 1h'), { name: 'Schwimmen', dur: 60 });
+  assert.deepEqual(sp('Laufen 10 km'), { name: 'Laufen 10 km', dur: 0 }); // keine Zeiteinheit
+  assert.deepEqual(sp('Hochzeit'), { name: 'Hochzeit', dur: 0 });          // "h" nur nach Zahl
+  assert.deepEqual(sp('20 min'), { name: '20 min', dur: 0 });              // ohne Rest kein Schnitt
+  assert.deepEqual(sp(''), { name: '', dur: 0 });
+});
+
+test('cleanExerciseLibrary: Dauer raus, Doppel zusammen, MET gewinnt, Eingabe unveraendert', () => {
+  const C = load({});
+  const lib = [{ name: 'Bouldern 20 min', emoji: '🧗', met: null }, { name: 'bouldern', emoji: '🧗', met: { medium: 6 } }, { name: 'Yoga' }];
+  const out = plain(C.cleanExerciseLibrary(lib));
+  assert.deepEqual(out, [{ name: 'bouldern', emoji: '🧗', met: { medium: 6 } }, { name: 'Yoga' }]);
+  assert.equal(lib[0].name, 'Bouldern 20 min');
+  assert.deepEqual(plain(C.cleanExerciseLibrary(undefined)), []);
+});
+
 // ── Lebensmittel-DB, Suche, Emoji ───────────────────────────────────────
 test('dbPer100: Basis- und USDA-Eintrag ergeben dasselbe Schema', () => {
   const C = load({});

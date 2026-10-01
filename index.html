@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.297"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.298"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.297"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.298"></script>
 <script>
   // @ts-check
   (function(){
@@ -1219,7 +1219,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.297</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.298</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -2052,8 +2052,11 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     <div class="mbd">
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;" id="exercisePresets"></div>
       <div class="sf"><label class="lbl">Aktivität</label>
-        <input type="text" class="sinp" id="exName" list="exNameList" autocomplete="off" placeholder="z.B. Laufen, Radfahren, Schwimmen...">
-        <datalist id="exNameList"></datalist>
+        <div style="position:relative;">
+          <input type="text" class="sinp" id="exName" autocomplete="off" placeholder="z.B. Laufen, Radfahren, Schwimmen..." style="padding-right:44px;">
+          <button type="button" id="exSuggBtn" data-act="toggleExerciseSugg" aria-label="Alle Aktivitäten zeigen" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);width:38px;height:38px;border:none;background:none;font-size:14px;color:var(--mu);cursor:pointer;">▼</button>
+        </div>
+        <div id="exSugg" style="display:none;border:2px solid var(--br);border-radius:11px;margin-top:4px;max-height:220px;overflow-y:auto;background:var(--card);"></div>
       </div>
       <div class="srow">
         <div class="sf"><label class="lbl">Dauer (Min.)</label>
@@ -3355,14 +3358,14 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.297"></script>
-<script src="js/single-tab.js?v=0.297"></script>
-<script src="js/fooddb.js?v=0.297"></script>
-<script src="js/fooddb-usda.js?v=0.297"></script>
-<script src="js/metdb.js?v=0.297"></script>
-<script src="js/idb-photos.js?v=0.297"></script>
-<script src="js/changelog.js?v=0.297"></script>
-<script src="js/calc.js?v=0.297"></script>
+<script src="js/actions.js?v=0.298"></script>
+<script src="js/single-tab.js?v=0.298"></script>
+<script src="js/fooddb.js?v=0.298"></script>
+<script src="js/fooddb-usda.js?v=0.298"></script>
+<script src="js/metdb.js?v=0.298"></script>
+<script src="js/idb-photos.js?v=0.298"></script>
+<script src="js/changelog.js?v=0.298"></script>
+<script src="js/calc.js?v=0.298"></script>
 <script>
 // ════════════════════════════════════════
 // SECTION: DATABASE
@@ -3381,7 +3384,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.297';
+var APP_VERSION='0.298';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -6983,24 +6986,57 @@ function openLibrary(){renderLibrary();openOv('libraryOv');}
 // ════════════════════════════════════════
 
 function openExerciseOv(){
+  var cleaned=cleanExerciseLibrary(S.exerciseLibrary);
+  if(JSON.stringify(cleaned)!==JSON.stringify(S.exerciseLibrary||[])){S.exerciseLibrary=cleaned;saveS();}
   document.getElementById('exName').value='';
   document.getElementById('exDuration').value='';
   document.getElementById('exIntensity').value='medium';
   hideExerciseResult();
+  hideExerciseSugg();
   renderExercisePresets();
-  fillExerciseNameList();
   openOv('exerciseOv');
 }
 
-// Vorschläge an der Namenseingabe: nur die kanonischen Namen der Tabelle,
-// Synonyme wirken nur in der Suche.
-function fillExerciseNameList(){
-  var dl=document.getElementById('exNameList');
-  if(!dl||dl.options.length||!window.MET_DB)return;
-  dl.innerHTML=window.MET_DB.map(function(it){return it.n;})
-    .sort(function(a,b){return a.localeCompare(b,'de');})
-    .map(function(n){return '<option value="'+esc(n)+'"></option>';}).join('');
+// Vorschläge an der Namenseingabe: eigene Liste statt <datalist> — Chrome auf
+// Android zeigt ein datalist nur als Leiste leerer Kästchen über der Tastatur.
+// Beim Tippen bis 8 Treffer (Synonyme wirken mit, angezeigt wird der
+// kanonische Name), ▼ zeigt alle. Rangfolge: suggestExercises() in js/calc.js.
+var EX_SUGG_LIMIT=8;
+function renderExerciseSugg(all){
+  var box=document.getElementById('exSugg');if(!box)return;
+  var list=all?suggestExercises('',0):suggestExercises(document.getElementById('exName').value,EX_SUGG_LIMIT);
+  if(!list.length){hideExerciseSugg();return;}
+  box.innerHTML=list.map(function(it){
+    return '<div data-act="pickExerciseSugg" data-args=\''+esc(JSON.stringify([it.name]))+'\' style="padding:10px 13px;font-size:14px;border-bottom:1px solid var(--br);cursor:pointer;">'+esc(it.emoji)+' '+esc(it.name)+'</div>';
+  }).join('');
+  box.style.display='block';
+  box.dataset.all=all?'1':'';
 }
+function hideExerciseSugg(){
+  var box=document.getElementById('exSugg');
+  if(box){box.style.display='none';box.innerHTML='';box.dataset.all='';}
+}
+function toggleExerciseSugg(){
+  var box=document.getElementById('exSugg');
+  if(box&&box.style.display==='block'&&box.dataset.all)hideExerciseSugg();
+  else renderExerciseSugg(true);
+}
+function pickExerciseSugg(name){
+  hideExerciseSugg();
+  selectExercisePreset(name);
+  var inp=document.getElementById('exName');if(inp)inp.blur();
+}
+document.addEventListener('input',function(ev){
+  if(ev.target&&ev.target.id==='exName'){
+    if(ev.target.value.trim())renderExerciseSugg(false);else hideExerciseSugg();
+  }
+});
+// Antippen außerhalb von Feld, ▼ und Liste schließt die Liste.
+document.addEventListener('click',function(ev){
+  var t=ev.target;
+  if(!t||!t.closest||t.closest('#exSugg,#exSuggBtn,#exName'))return;
+  hideExerciseSugg();
+});
 
 function renderExercisePresets(){
   var el=document.getElementById('exercisePresets');if(!el)return;
@@ -7015,8 +7051,9 @@ function renderExercisePresets(){
 
 function selectExercisePreset(name){
   document.getElementById('exName').value=name;
+  moveExerciseDuration();
   var st=exerciseFormState();
-  var met=getExerciseMet(name,st.intensity);
+  var met=getExerciseMet(st.name,st.intensity);
   if(met){
     showExerciseResult(Math.round(met*(S.weight||75)*(st.dur/60)),st);
   } else {
@@ -7070,13 +7107,27 @@ function saveToExerciseLibrary(name,emoji,met){
 
 // Eingaben des Formulars; leere Dauer = 30 Min. (damit wird auch gerechnet
 // und gespeichert).
+// Eine Dauer im Namen ("Bouldern 20 min") zählt als Dauer, wenn das Feld
+// Dauer leer ist, und gehört nicht zum Namen (splitExerciseDuration).
 function exerciseFormState(){
+  var sp=splitExerciseDuration(document.getElementById('exName').value);
   return{
-    name:document.getElementById('exName').value.trim(),
-    dur:parseFloat(document.getElementById('exDuration').value)||30,
+    name:sp.name,
+    dur:parseFloat(document.getElementById('exDuration').value)||sp.dur||30,
     intensity:document.getElementById('exIntensity').value
   };
 }
+// Beim Verlassen des Namensfelds die Dauer sichtbar ins Feld Dauer schieben.
+function moveExerciseDuration(){
+  var inp=document.getElementById('exName'),du=document.getElementById('exDuration');
+  var sp=splitExerciseDuration(inp.value);
+  if(!sp.dur)return;
+  inp.value=sp.name;
+  if(!parseFloat(du.value))du.value=sp.dur;
+}
+document.addEventListener('change',function(ev){
+  if(ev.target&&ev.target.id==='exName')moveExerciseDuration();
+},true);
 
 // Die Anzeige merkt sich, für welche Eingaben sie gerechnet wurde. Solange
 // Name, Dauer und Intensität gleich sind, gilt sie (auch ein KI-Wert).
@@ -8011,30 +8062,30 @@ function axTestSync(){
 }
 
 </script>
-<script src="js/ampel.js?v=0.297"></script>
-<script src="picker.js?v=0.297"></script>
-<script src="js/health-sync.js?v=0.297"></script>
-<script src="js/sync-core.js?v=0.297"></script>
-<script src="js/baby.js?v=0.297"></script>
-<script src="js/baby-meds.js?v=0.297"></script>
-<script src="js/baby-growth-data.js?v=0.297"></script>
-<script src="js/baby-growth.js?v=0.297"></script>
-<script src="js/baby-week.js?v=0.297"></script>
-<script src="js/baby-milestones.js?v=0.297"></script>
-<script src="js/baby-midwife.js?v=0.297"></script>
-<script src="js/shopping.js?v=0.297"></script>
-<script src="js/partner.js?v=0.297"></script>
-<script src="js/alexa-sync.js?v=0.297"></script>
-<script src="js/dashboard.js?v=0.297"></script>
-<script src="js/features.js?v=0.297"></script>
-<script src="js/mealplan.js?v=0.297"></script>
-<script src="js/onedrive.js?v=0.297"></script>
-<script src="js/autosave.js?v=0.297"></script>
-<script src="js/recurring.js?v=0.297"></script>
-<script src="js/stats.js?v=0.297"></script>
-<script src="js/reminders.js?v=0.297"></script>
-<script src="js/templates.js?v=0.297"></script>
-<script src="js/offline-queue.js?v=0.297"></script>
+<script src="js/ampel.js?v=0.298"></script>
+<script src="picker.js?v=0.298"></script>
+<script src="js/health-sync.js?v=0.298"></script>
+<script src="js/sync-core.js?v=0.298"></script>
+<script src="js/baby.js?v=0.298"></script>
+<script src="js/baby-meds.js?v=0.298"></script>
+<script src="js/baby-growth-data.js?v=0.298"></script>
+<script src="js/baby-growth.js?v=0.298"></script>
+<script src="js/baby-week.js?v=0.298"></script>
+<script src="js/baby-milestones.js?v=0.298"></script>
+<script src="js/baby-midwife.js?v=0.298"></script>
+<script src="js/shopping.js?v=0.298"></script>
+<script src="js/partner.js?v=0.298"></script>
+<script src="js/alexa-sync.js?v=0.298"></script>
+<script src="js/dashboard.js?v=0.298"></script>
+<script src="js/features.js?v=0.298"></script>
+<script src="js/mealplan.js?v=0.298"></script>
+<script src="js/onedrive.js?v=0.298"></script>
+<script src="js/autosave.js?v=0.298"></script>
+<script src="js/recurring.js?v=0.298"></script>
+<script src="js/stats.js?v=0.298"></script>
+<script src="js/reminders.js?v=0.298"></script>
+<script src="js/templates.js?v=0.298"></script>
+<script src="js/offline-queue.js?v=0.298"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

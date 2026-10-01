@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie beschreibt den **aktuellen** Stand, nicht seine Geschichte — die steht in Git und in `js/changelog.js`. Der Stand vor der Kürzung (#258, 132 KB): `git show 0d69ba2:UEBERGABE.md`. Grenzen siehe „Pflege“, `tools/check.js` prüft sie.
 
-**Stand:** v0.297 (2026-10-01) — Branch `ccr-345ef1bc-7iiimi`: „Was ist neu“ zeigte bei Einträgen ohne `where` „📍 undefined“ (v0.293/v0.294); Marktregel „nur Deutschland“ in `CLAUDE.md`/`AGENTS.md`. PR #280 (v0.291–v0.296) ist gemergt. Offen: Rückbau UPC-E (v0.292) – Entscheidung des Eigentümers. Geparkt: #165 Sport-Sync v2 (Android-Gerätetest), #262 Ampel Schwangerschaft/Ernährung (Quelle fehlt), #260 KV-Kontingent (Entscheidung offen).
+**Stand:** v0.297 (2026-10-01) — Branch `ccr-345ef1bc-7iiimi`: „Was ist neu“ zeigte bei Einträgen ohne `where` „📍 undefined“ (v0.293/v0.294); Marktregel „nur Deutschland“ in `CLAUDE.md`/`AGENTS.md`. PR #280 (v0.291–v0.296) ist gemergt. UPC-E (v0.292) und USDA-Daten bleiben (Entscheidung 2026-10-01). Geparkt: #165 Sport-Sync v2 (Android-Gerätetest), #262 Ampel Schwangerschaft/Ernährung (Quelle fehlt), #260 KV-Kontingent (Entscheidung offen).
 
 ## URLs
 

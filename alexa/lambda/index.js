@@ -1,4 +1,4 @@
-// NutriTrack — Alexa Skill (Alexa-hosted Lambda, Node.js 18+)
+// NutriTrack — Alexa Skill (Alexa-hosted Lambda, Node.js 16+)
 //
 // Der Skill ist ein reiner Briefträger: Er nimmt entgegen, was gesprochen
 // wurde, und schickt es an `POST /alexa/inbox` des NutriTrack-Workers. Er liest
@@ -161,7 +161,11 @@ function postJson(urlStr, headers, bodyStr) {
       }
     );
     req.on('error', (e) => reject(new Error('network: ' + (e && e.message))));
-    req.setTimeout(8000, () => { req.destroy(new Error('timeout')); });
+    // 5 s, nicht mehr: Alexa wartet selbst nur 8 s auf die Antwort des Skills.
+    // Ein Timeout ab 8 s lief in diese Grenze hinein — statt "Ich erreiche den
+    // Server nicht" hörte man dann nur Alexas "Bei der Antwort … ist ein
+    // Problem aufgetreten", und die Ursache blieb unsichtbar.
+    req.setTimeout(5000, () => { req.destroy(new Error('timeout')); });
     req.write(bodyStr);
     req.end();
   });

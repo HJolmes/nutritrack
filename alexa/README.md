@@ -53,6 +53,12 @@ einfügen → „Save Model" → **„Build Model"** (dauert 1–2 Minuten).
 
 Code → `index.js` durch [`lambda/index.js`](lambda/index.js) ersetzen → „Deploy".
 
+**Vor dem Deploy die Zeilenzahl mit der Repo-Datei vergleichen** (Editor unten rechts).
+Beim Einfügen ging einmal der mittlere Teil der Datei verloren: Der Skill lief an,
+stürzte aber bei jedem Satz ab (CloudWatch: `ReferenceError: slot is not defined`).
+Die Datei muss mit `};` enden und `function slot`, `function postJson` und
+`function failed` enthalten.
+
 ### 5. Token hinterlegen
 
 Im Code-Reiter die beiden Umgebungsvariablen setzen:
@@ -215,6 +221,7 @@ Der Skill nennt die Ursache in der Sprachantwort, statt pauschal zu scheitern:
 | „Der NutriTrack-Server ist nicht vollständig eingerichtet" | HTTP 503 — dem Worker fehlt der KV-Namespace | `GET /health` prüfen, `alexaInboxConfigured` muss `true` sein |
 | „Ich erreiche den NutriTrack-Server gerade nicht" | Zeitüberschreitung oder Netzfehler | Worker-URL im Browser aufrufen |
 | „Der Server hat mit Fehler NNN geantwortet" | unerwarteter HTTP-Code | `GET /health` und CloudWatch Logs ansehen |
+| „Bei der Antwort des angeforderten Skills ist ein Problem aufgetreten" | Die Lambda hat gar nicht geantwortet: Absturz (meist unvollständig eingefügter Code → `ReferenceError: slot is not defined`) oder länger als 8 s gebraucht | Code → Logs (CloudWatch) lesen: bei `ReferenceError` die `index.js` komplett neu einfügen (Schritt 4) und deployen; bei `Task timed out` Worker-URL im Browser prüfen |
 
 Mehr Details stehen in den CloudWatch Logs (Code-Reiter → „CloudWatch Logs").
 

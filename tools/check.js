@@ -428,6 +428,39 @@ if (!mCore) {
   if (!late) ok(`Keines der ${lateChecked} zur Laufzeit gesetzten onclick trifft ein data-act-Element.`);
 }
 
+// ── 5b. UEBERGABE.md bleibt knapp (#258) ──────────────────────────────────
+// Jede Session liest diese Datei vor der ersten Handlung. Die Regel „knapp
+// halten, ueberschreiben statt anhaengen“ stand darin und wurde trotzdem nicht
+// eingehalten — die Datei wuchs von 44 auf 132 KB, weil nichts sie mass.
+{
+  const UE = 'UEBERGABE.md';
+  if (fs.existsSync(path.join(ROOT, UE))) {
+    const ue = read(UE);
+    const bytes = Buffer.byteLength(ue, 'utf8');
+    const section = (title) => {
+      const i = ue.indexOf('\n## ' + title);
+      if (i < 0) return null;
+      const rest = ue.slice(i + 1);
+      const j = rest.indexOf('\n## ', 3);
+      return j < 0 ? rest : rest.slice(0, j);
+    };
+    let ueFail = 0;
+    if (bytes > 30720) { fail(`${UE}: ${bytes} Byte, erlaubt sind 30 720 — Architektur ueberschreiben, alte Live-Tests als Issue oder streichen.`); ueFail++; }
+    const arch = section('Architektur');
+    if (!arch) { fail(`${UE}: Abschnitt „## Architektur“ fehlt.`); ueFail++; }
+    else {
+      const ab = Buffer.byteLength(arch, 'utf8');
+      if (ab > 15360) { fail(`${UE}: Architektur ${ab} Byte, erlaubt sind 15 360.`); ueFail++; }
+      const vs = arch.match(/\bv0\.\d+/g) || [];
+      if (vs.length) { fail(`${UE}: Architektur nennt ${vs.length} Versionsnummer(n) (${[...new Set(vs)].slice(0, 5).join(', ')}) — die gehoeren in „Stand“ und die Historie.`); ueFail++; }
+    }
+    const lt = section('Live-Test offen');
+    const ltCount = lt ? (lt.match(/^- /gm) || []).length : 0;
+    if (ltCount > 12) { fail(`${UE}: ${ltCount} offene Live-Tests, erlaubt sind 12 — aeltere als fuenf Versionen werden Issue (Label live-test) oder gestrichen.`); ueFail++; }
+    if (!ueFail) ok(`${UE}: ${bytes} Byte (≤ 30 720), Architektur ${arch ? Buffer.byteLength(arch, 'utf8') : 0} Byte ohne Versionsnummern, ${ltCount} offene Live-Tests.`);
+  }
+}
+
 // ── 6. Ausgabe ────────────────────────────────────────────────────────────
 notes.forEach((n) => console.log('  ok  ' + n));
 warnings.forEach((w) => console.log('  !   ' + w));

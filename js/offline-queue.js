@@ -1,3 +1,4 @@
+// @ts-check
 // NutriTrack – Warteschlange fuer Fotos ohne Netz (v0.250)
 // Klassisches Script, kein Modul. Exportiert window.NTQueue und greift direkt auf
 // die globalen Helfer aus index.html zu (S, saveS, esc, showToast, today,

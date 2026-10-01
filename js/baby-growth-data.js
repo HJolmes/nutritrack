@@ -1,3 +1,4 @@
+// @ts-check
 // NutriTrack – WHO-Wachstumsstandards (2006), ERZEUGT von tools/build-who-growth.js.
 // Nicht von Hand bearbeiten. Quelle: github.com/WorldHealthOrganization/anthro,
 // data-raw/growthstandards (weianthro, lenanthro, hcanthro).

@@ -162,6 +162,7 @@ function render(rows, skipped) {
   var byCat = {};
   rows.forEach(function(r) { (byCat[r.it.cat] = byCat[r.it.cat] || []).push(r); });
   var out = [];
+  out.push('// @ts-check');
   out.push('// NutriTrack – erweiterte Lebensmittel-Datenbank (' + rows.length + ' Eintraege).');
   out.push('//');
   out.push('// ERZEUGT von tools/build-fooddb.js — nicht von Hand bearbeiten.');

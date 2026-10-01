@@ -76,6 +76,28 @@ jobs:
             exit 1
           fi
 
+  typecheck:
+    name: Typpruefung (tsc --noEmit)
+    # Ohne Build: tsc liest picker.js, js/*.js und die Inline-Scripts aus
+    # index.html und schreibt nichts. Geprueft wird jede Datei mit // @ts-check
+    # in Zeile 1 (#254). Eine verschobene oder umbenannte Funktion faellt damit
+    # vor dem Deploy auf statt beim Klick eines Nutzers.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Werkzeuge
+        run: npm ci
+
+      - name: Typpruefung
+        run: npm run typecheck
+
   smoke:
     name: Rauchtest im Browser
     runs-on: ubuntu-latest

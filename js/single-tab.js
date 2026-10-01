@@ -1,3 +1,4 @@
+// @ts-check
 // NutriTrack – nur ein Fenster arbeitet (#261). Klassisches Script, exportiert window.NTTab.
 //
 // Jedes Fenster haelt sein eigenes S und schreibt bei saveS() das GANZE Objekt

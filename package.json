@@ -5,9 +5,11 @@
   "scripts": {
     "check": "node tools/check.js",
     "smoke": "node tools/smoke.js",
+    "typecheck": "node tools/typecheck.js",
     "bump": "node tools/bump.js"
   },
   "devDependencies": {
-    "playwright": "1.56.1"
+    "playwright": "1.56.1",
+    "typescript": "5.9.3"
   }
 }

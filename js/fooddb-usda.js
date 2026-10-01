@@ -1,3 +1,4 @@
+// @ts-check
 // NutriTrack – erweiterte Lebensmittel-Datenbank (275 Eintraege).
 //
 // ERZEUGT von tools/build-fooddb.js — nicht von Hand bearbeiten.

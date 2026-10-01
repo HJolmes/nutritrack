@@ -1,3 +1,4 @@
+// @ts-check
 // NutriTrack – lokaler Autospeicher in IndexedDB (window.NTAutoSave)
 // Klassisches Script, kein Modul. Greift auf die globalen Helfer aus index.html
 // zu (S, customFoods, recipes, backupState, _backupAiFields, _importAiFields,

@@ -29,12 +29,15 @@ Reine Doku-Änderungen (`UEBERGABE.md`, `CLAUDE.md`, `AGENTS.md`, README) dürfe
 ## Prüfen vor jedem Commit (PFLICHT)
 
 ```bash
-npm ci                 # Werkzeuge (Playwright) aus package-lock.json
+npm ci                 # Werkzeuge (Playwright, TypeScript) aus package-lock.json
 node tools/check.js    # Versionen, Syntax, CORE_ASSETS, onclick/data-act auflösbar, IDs eindeutig, keine dependencies
+npm run typecheck      # tsc --noEmit über alle Dateien mit // @ts-check, Zeilen = Zeilen in index.html
 node tools/smoke.js    # App in Chromium laden (braucht: npx http-server@14.1.1 -p 8099 -s . &)
 ```
 
-Beide laufen auch in `.github/workflows/checks.yml`. Es gibt keinen Build-Schritt (siehe Architektur) — die Prüfungen fangen genau die Fehlerklassen ab, die ohne ihn still bleiben: Syntaxfehler im Inline-JS, vergessener Versions-Bump, ein Modul, das nicht in `sw.js` `CORE_ASSETS` steht, und ein `onclick`/`data-act`, das nach einer Verschiebung ins Leere zeigt.
+**Jedes neue Modul unter `js/` beginnt mit `// @ts-check`** (`tools/check.js` prüft es). Die Module, die das noch nicht tragen, stehen in `TS_PENDING` in `tools/check.js`; die Liste wird nur kürzer.
+
+Alle laufen auch in `.github/workflows/checks.yml`. Es gibt keinen Build-Schritt (siehe Architektur) — die Prüfungen fangen genau die Fehlerklassen ab, die ohne ihn still bleiben: Syntaxfehler im Inline-JS, vergessener Versions-Bump, ein Modul, das nicht in `sw.js` `CORE_ASSETS` steht, und ein `onclick`/`data-act`, das nach einer Verschiebung ins Leere zeigt.
 
 **Wer einen Fehler einbaut, um eine Prüfung zu prüfen, misst zuerst, dass der Fehler ankommt.** Ein grüner Durchgang beweist sonst nicht, dass die Prüfung blind ist, sondern nur, dass nichts passiert ist — beides sieht in der Ausgabe gleich aus.
 

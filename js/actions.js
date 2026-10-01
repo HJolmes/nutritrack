@@ -1,3 +1,4 @@
+// @ts-check
 // NutriTrack – Zentrale Klick-Behandlung (v0.251)
 // Klassisches Script, kein Modul. Exportiert window.NTActions.
 //

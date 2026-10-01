@@ -2,3 +2,4 @@
 worker/.dev.vars
 *.local
 node_modules/
+.typecheck/

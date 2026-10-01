@@ -428,6 +428,28 @@ if (!mCore) {
   if (!late) ok(`Keines der ${lateChecked} zur Laufzeit gesetzten onclick trifft ein data-act-Element.`);
 }
 
+// ── 5a. Jedes Modul unter js/ ist in der Typpruefung (#254) ──────────────
+// tsc prueft nur Dateien mit `// @ts-check` in Zeile 1 (tsconfig: checkJs
+// false). Ein neues Modul ohne die Zeile waere still ungeprueft. Die Liste
+// darunter sind die Module, die bei Stufe 0 noch Befunde hatten — sie wird nur
+// kuerzer: Wer ein Modul fehlerfrei bekommt, setzt die Zeile UND streicht es hier.
+{
+  const TS_PENDING = new Set(['alexa-sync.js', 'baby.js', 'baby-midwife.js', 'baby-milestones.js', 'baby-week.js',
+    'mealplan.js', 'onedrive.js', 'shopping.js', 'stats.js', 'sync-core.js']);
+  let tsFail = 0, tsOn = 0;
+  for (const f of fs.readdirSync(path.join(ROOT, 'js'))) {
+    if (!f.endsWith('.js')) continue;
+    const has = /^\/\/\s*@ts-check\b/.test(read(path.join('js', f)));
+    if (has) tsOn++;
+    if (TS_PENDING.has(f)) {
+      if (has) { fail(`js/${f} traegt // @ts-check — dann aus TS_PENDING in tools/check.js streichen.`); tsFail++; }
+    } else if (!has) {
+      fail(`js/${f} beginnt nicht mit // @ts-check — jedes Modul ist in der Typpruefung (npm run typecheck).`); tsFail++;
+    }
+  }
+  if (!tsFail) ok(`${tsOn} Module unter js/ mit // @ts-check, ${TS_PENDING.size} noch ausstehend (Stufe 1 von #254).`);
+}
+
 // ── 5b. UEBERGABE.md bleibt knapp (#258) ──────────────────────────────────
 // Jede Session liest diese Datei vor der ersten Handlung. Die Regel „knapp
 // halten, ueberschreiben statt anhaengen“ stand darin und wurde trotzdem nicht

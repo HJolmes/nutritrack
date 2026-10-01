@@ -185,6 +185,7 @@ function resolve(map, rows) {
 
 function render(res) {
   var o = [];
+  o.push('// @ts-check');
   o.push('// NutriTrack – MET-Tabelle fuer den Sporteintrag (' + res.length + ' Aktivitaeten).');
   o.push('//');
   o.push('// ERZEUGT von tools/build-met.js — nicht von Hand bearbeiten.');

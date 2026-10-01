@@ -1,3 +1,4 @@
+// @ts-check
 // NutriTrack – Baby: Medikamente und tägliche Gaben (v0.263).
 // Klassisches Script, exportiert window.NTBabyMed. Nutzt NTBaby (js/baby.js)
 // und die globalen Helfer aus index.html (S, saveS, esc, openOv, closeOv, showToast).

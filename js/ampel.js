@@ -1,3 +1,4 @@
+// @ts-check
 // NutriTrack – Stillzeit-Ampel als Tabelle (#205)
 // Klassisches Script, kein Modul. Exportiert window.NTAmpel; greift auf nichts
 // Globales zu und laeuft deshalb auch unter node (tools/ampel-test.js).

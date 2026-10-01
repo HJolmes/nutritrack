@@ -45,7 +45,7 @@ for (const [k, f] of Object.entries(FILES)) {
   }
 }
 
-const body = '// NutriTrack – WHO-Wachstumsstandards (2006), ERZEUGT von tools/build-who-growth.js.\n'
+const body = '// @ts-check\n// NutriTrack – WHO-Wachstumsstandards (2006), ERZEUGT von tools/build-who-growth.js.\n'
   + '// Nicht von Hand bearbeiten. Quelle: github.com/WorldHealthOrganization/anthro,\n'
   + '// data-raw/growthstandards (weianthro, lenanthro, hcanthro).\n'
   + '// Je Groesse (w=Gewicht kg, l=Laenge/Groesse cm, h=Kopfumfang cm) und Geschlecht\n'

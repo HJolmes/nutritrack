@@ -1,3 +1,4 @@
+// @ts-check
 // NutriTrack – Wiederkehrende Mahlzeiten (v0.250)
 // Klassisches Script, kein Modul. Exportiert window.NTRecur und greift direkt auf
 // die globalen Helfer aus index.html zu (S, saveS, renderAll, openOv, closeOv,

@@ -1,3 +1,4 @@
+// @ts-check
 // NutriTrack – Mahlzeit-Vorlagen (v0.250)
 // Klassisches Script, kein Modul. Exportiert window.NTTpl und greift direkt auf
 // die globalen Helfer aus index.html zu (S, saveS, renderAll, openOv, closeOv,

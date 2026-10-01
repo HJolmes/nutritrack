@@ -1,3 +1,4 @@
+// @ts-check
 // NutriTrack – eingebaute Lebensmittel-Datenbank + DE→EN-Wörterbuch.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.DB/window.DB_DEFAULT/window.DE_EN.
 window.DB=[

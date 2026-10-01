@@ -7,18 +7,38 @@ This Worker proxies NutriTrack AI requests to Anthropic so the real Anthropic AP
 - `GET  /health` – status JSON, no auth.
 - `POST /v1/messages` – generic Anthropic Messages proxy (used by KI-Foto/Chat features). Body is JSON forwarded to `api.anthropic.com/v1/messages`.
 - `POST /ai/messages` – configurable third-party AI provider proxy. Same Anthropic-style JSON body as `/v1/messages`, plus headers `x-ai-provider` (`openai`|`gemini`|`openrouter`|`mistral`|`deepseek`) and `x-ai-key` (the user's own provider key, supplied per request, never stored or logged). The Worker translates the request to the provider's format (OpenAI Chat Completions or Gemini `generateContent`) and returns the answer back in Anthropic schema (`{content:[{type:"text",text}]}`) so the client is unchanged. On provider error/limit (or image sent to a non-vision provider → `415`) the client transparently falls back to `/v1/messages` (Anthropic).
-- `POST /decode-barcode` – live barcode decoder. Body is a raw JPEG (max 200 KB). Returns `{ ok: true, data: { code, found, source, ... } }`. Used by the Barcode-Tab to decode each frame on iPhones where local WASM decoders fail.
-- `POST /share` – speichert einen Share-Code (Rezept / Mahlzeit / Lebensmittel) in KV und gibt eine 7-Zeichen-Kurz-ID zurück. Body: `{"code":"<base64>"}` (max 8 KB). Antwort: `{ok:true,data:{id,short}}`. TTL: 1 Jahr. CORS auf PWA-Origin beschränkt, kein Token erforderlich.
+- `POST /decode-barcode` – live barcode decoder. Body is a raw JPEG (max 200 KB). Returns `{ ok: true, data: { code, found, source, ... } }`. Used by the Barcode-Tab (live frames on browsers without `BarcodeDetector`, and the 📸 photo button) in addition to the local WASM decoders.
+- `POST /share` – speichert einen Share-Code (Rezept / Mahlzeit / Lebensmittel) in KV und gibt eine 7-Zeichen-Kurz-ID zurück. Body: `{"code":"<base64>"}` (max 256 KB Body, Code max 204.800 Zeichen). Antwort: `{ok:true,data:{id,short}}`. TTL: 1 Jahr. Kein Secret und kein Token erforderlich; ein Browser-Aufruf von fremder Origin wird abgelehnt.
 - `POST /baby/sync` · `GET /baby/sync?since=<srev>` – Abgleich des Baby-Tagebuchs zwischen zwei Geräten einer Familie. Header `X-Baby-Room` trägt einen 32-stelligen Zufallsstring, den die PWA erzeugt; gespeichert wird unter `bd:<room>:<entryId>` (TTL 400 Tage). **Der Worker sieht nur `{id, rev, iv, ct}`** – `ct` ist AES-GCM-Chiffrat, dessen Schlüssel ausschließlich im Kopplungs-Code der beiden Geräte steckt und nie übertragen wird. Weder Einträge noch Tageszuordnung sind serverseitig lesbar, und Ernährungsdaten werden hier grundsätzlich nicht übertragen. Ein Push mit älterer `rev` als der gespeicherte Stand wird verworfen (`outdated`), sonst könnte ein nachzügelndes Gerät die neuere Fassung des anderen überschreiben. Der Cursor `srev` kommt von der Worker-Uhr, nicht vom Client – bei Uhrzeit-Versatz zwischen zwei Handys gingen sonst Einträge verloren. Kein Proxy-Token nötig, CORS auf die PWA-Origins beschränkt.
 - `POST /shop/sync` · `GET /shop/sync?since=<srev>` – Abgleich des Einkaufszettels zwischen zwei Geräten. **Identische Mechanik wie `/baby/sync`** (gemeinsame Handler `handleSyncPush`/`handleSyncPull`), aber eigener Header `X-Shop-Room` und eigener KV-Präfix `sl:` — ein Zettel-Code gibt damit nicht das Baby-Tagebuch frei. Eigenes PBKDF2-Salt im Client (`nutritrack-shop|<room>`), also auch bei identischem Code verschiedene Schlüssel.
 - `GET  /s/<id>` – schlägt die Kurz-ID in KV nach und antwortet mit einer Mini-HTML-Seite, die per `location.replace()` zu `https://hjolmes.github.io/nutritrack/#x=<code>` weiterleitet (Fragment-Redirect via Location-Header ist nicht zuverlässig in allen Browsern).
 
-  **Decode pipeline (since v0.137):**
-  1. **Primary path:** posts the JPEG to the OSS-Decoder microservice at `DECODER_URL` (OpenCV `BarcodeDetector` + pyzbar — see `decoder/`). Hit returns immediately with `source: "opencv"`. Free, ~30–150 ms warm.
-  2. **Fallback (only when `ENABLE_VISION_FALLBACK=true`):** sends the frame to Claude Haiku 4.5 Vision. Returns `source: "anthropic"` on hit. Costs money — leave disabled in production unless OSS-Decoder hit rate is unacceptable.
-  3. **Otherwise:** returns `{ found: false, source: "opencv-miss" }` so the client can fall back to local decoders / manual entry.
+  **Decode pipeline (OSS only, no AI since #209):**
+  1. Posts the JPEG to the OSS-Decoder microservice at `DECODER_URL` (OpenCV `BarcodeDetector` + pyzbar — see `decoder/`). A hit with a valid check digit returns immediately; `source` is passed through from the decoder (`opencv`/`pyzbar`, `opencv` if the decoder sends none). Free, ~30–150 ms warm.
+  2. Otherwise returns `{ found: false, source: "opencv-miss" }` so the client can fall back to local decoders / manual entry.
+  3. Without `DECODER_URL` the endpoint answers `500 worker_not_configured`. There is no Vision fallback any more (the former `ENABLE_VISION_FALLBACK` flag is gone and ignored if still set in the dashboard).
 
-All POST endpoints require the `x-app-proxy-secret` header to match `NUTRITRACK_PROXY_TOKEN`.
+Weitere Endpunkte mit derselben Briefkasten-Mechanik wie `/shop/sync`: `POST|GET /partner/sync` (`X-Partner-Room`, Präfix `pm:`) und `POST|GET /plan/sync` (`X-Plan-Room`, Präfix `mp:`). Dazu `POST /workout` + `GET /workouts` (Apple-/Samsung-Health über Kurzbefehl/Tasker, `X-User-Token`), `POST /alexa/inbox` + `GET /alexa/inbox` + `POST /alexa/ack` (Alexa-Skill, `X-User-Token`), `POST /feedback` (legt ein GitHub-Issue an), `GET /fetch?u=` (Rezept-Import), `GET /off?u=` (OpenFoodFacts) und `GET /share/<id>`.
+
+### Wer was braucht
+
+Nur diese Endpunkte verlangen den Header `x-app-proxy-secret` (= `NUTRITRACK_PROXY_TOKEN`): `POST /v1/messages`, `POST /ai/messages`, `POST /decode-barcode`, `POST /feedback`, `GET /fetch`.
+
+Ohne Secret laufen:
+- `POST /share`, `GET /share/<id>`, `GET /s/<id>`, `GET /off`, `GET /health` – ohne jede Kennung.
+- `/baby/sync`, `/shop/sync`, `/partner/sync`, `/plan/sync` – nur mit dem Raum-Header (24–64 Zeichen, von der PWA erzeugt).
+- `/workout`, `/workouts`, `/alexa/*` – nur mit `X-User-Token` (24–64 Zeichen, von der PWA erzeugt). Kurzbefehl, Tasker und die Alexa-Lambda senden **keinen** `Origin`-Header; eine Origin-Pflicht würde sie brechen.
+
+Der Worker prüft Raum und Token nur auf ihr Format, nicht gegen eine Nutzerliste. Die Origin-Prüfung (`ALLOWED_ORIGINS`) greift nur, wenn der Header mitkommt: Sie hält Aufrufe **fremder Webseiten im Browser** ab (Browser senden bei jedem Cross-Origin-POST `Origin`), aber keine Skripte – `curl` setzt jeden Origin. Sie ist kein Schutz des KV-Kontingents.
+
+### Grenzen und Fehlerantworten
+
+- Jede Body-Grenze gilt für die tatsächlich gelesenen Bytes, nicht nur für `Content-Length`: Ein chunked Upload ohne Längenangabe wird beim Überschreiten abgebrochen (`413`). Grenzen: `/v1` und `/ai` 4 MB, `/feedback` 1,5 MB, Sync-Push 512 KB, `/share` 256 KB, `/decode-barcode` 200 KB, `/alexa/*` 8 KB, `/workout` 4 KB.
+- Ein JSON-Body, der kein Objekt ist (`null`, Array, Zahl), ergibt `400 invalid_json`.
+- Jede unbehandelte Ausnahme (z. B. KV wirft, weil das Tageskontingent erschöpft ist) wird zu `500 internal_error` als JSON **mit** CORS-Headern, damit die App eine Meldung statt „Server nicht erreichbar" sieht.
+- `/fetch` verfolgt Weiterleitungen selbst (höchstens 5) und prüft jedes Ziel: nur `http(s)`, keine Adress-Literale aus privaten, Loopback-, Link-local-, CGNAT- (100.64/10) oder Multicast-Netzen, bei IPv6 nur Global Unicast (2000::/3, ohne 6to4 und Teredo), keine Namen `localhost`, `*.localhost`, `*.local`, `*.internal` (auch mit Punkt am Ende). Namen, die per DNS auf private Adressen zeigen, erkennt der Worker nicht. Die Seite wird höchstens bis 2 MB gelesen.
+- `/feedback` nimmt als Screenshot nur JPEG (Base64 beginnt mit `/9j/`); schlägt der Upload fehl, steht im öffentlichen Issue nur „upload threw", die echte Meldung im Worker-Log.
+- Bekannte offene Grenze: Auch ein Abruf (`GET`) mit frei gewähltem Raum/Token kostet beim ersten Mal ein `list` und einen Schreibzugriff (Änderungsmarke). Das KV-Schreibkontingent (1.000/Tag im Gratis-Tarif, für das ganze Konto) ist damit ohne Anmeldung erschöpfbar.
 
 ## Cloudflare Setup
 
@@ -100,6 +120,12 @@ PowerShell:
 ```
 
 ## Smoke Tests
+
+Before deployment (runs in `.github/workflows/checks.yml`, Node 22, no npm, nothing leaves the machine):
+
+```bash
+node tools/worker-test.js
+```
 
 After deployment:
 

@@ -40,7 +40,7 @@ const BASE = process.env.SMOKE_URL || 'http://127.0.0.1:8099/index.html';
 const EXPECTED_NAMESPACES = [
   'NTSync', 'NTBaby', 'NTShop', 'NTPartner', 'NTPlan', 'NTDash',
   'NTHealth', 'NTAlexa', 'NTPhotos', 'NTDrive',
-  'NTRecur', 'NTStats', 'NTRemind', 'NTTpl', 'NTQueue', 'NTFeat',
+  'NTRecur', 'NTStats', 'NTRemind', 'NTTpl', 'NTQueue', 'NTFeat', 'NTAmpel', 'NTMet',
 ];
 
 (async () => {
@@ -356,6 +356,20 @@ const EXPECTED_NAMESPACES = [
   }
   console.log(`  ok  ${clicked} sichtbare data-act-Elemente angeklickt, ohne neuen Fehler.`);
 
+  // 4b. Jeden Reiter der unteren Leiste einmal oeffnen (#253): renderStatsPanel
+  // warf seit v0.250 bei jedem Oeffnen des Trends-Tabs einen ReferenceError –
+  // eine Funktion war ins Modul gewandert, die alte Aufrufstelle blieb. Keiner
+  // der Klickschritte oben oeffnete den Tab. Fehler landen ueber den
+  // pageerror-Listener in `errors`.
+  const tabErrBefore = errors.length;
+  for (const tab of ['trends', 'history', 'more', 'main']) {
+    await page.evaluate((t) => { try { switchTab(t); } catch (e) { throw e; } }, tab).catch((e) => record('switchTab ' + tab, e.message));
+    await page.waitForTimeout(250);
+  }
+  const reportOk = await page.evaluate(() => { const el = document.getElementById('weekReportText'); return !!(el && el.innerHTML.trim()); });
+  if (!reportOk) record('trends', 'Wochenbericht nach switchTab(\'trends\') leer');
+  if (errors.length === tabErrBefore) console.log('  ok  Alle Reiter geoeffnet (Trends mit Wochenbericht), ohne neuen Fehler.');
+
   // 5. Liegt ein geoeffnetes Menue wirklich OBEN?
   // Alle `.ov` teilen `z-index:300` — oben liegt das, was in der DOM-Reihenfolge
   // zuletzt steht. `featSheetOv`/`featCatOv` stehen fast am Ende, also verdeckten
@@ -426,12 +440,33 @@ const EXPECTED_NAMESPACES = [
   if (!deadFeatActs.length) console.log('  ok  Alle Aktionen im Funktions-Register sind aufloesbar.');
   else deadFeatActs.forEach((m) => console.log('  x   Aktion zeigt ins Leere: ' + m));
 
+  // 7. Das ✕ einer Erinnerung (#249): data-act ohne onclick, und ein Klick
+  //    entfernt genau einen Eintrag – den eigenen. Bis v0.277 loeschte ein
+  //    onclick nach Listenposition.
+  const remind = await page.evaluate(() => {
+    const keep = S.reminders;
+    const realSave = window.saveS;
+    window.saveS = function () {};
+    try {
+      S.reminders = [{ time: '07:00', label: 'A', active: false }, { time: '08:00', label: 'B', active: false }, { time: '09:00', label: 'C', active: false }];
+      NTRemind.render();
+      const btns = [...document.querySelectorAll('#reminderList [data-act="NTRemind.del"]')];
+      const withOnclick = document.querySelectorAll('#reminderList [onclick]').length;
+      if (btns.length !== 3) return { err: btns.length + ' Knoepfe statt 3' };
+      btns[1].click();
+      return { withOnclick: withOnclick, left: S.reminders.map((r) => r.label) };
+    } finally { S.reminders = keep; window.saveS = realSave; NTRemind.render(); }
+  });
+  const remindFail = (remind.err || remind.withOnclick || JSON.stringify(remind.left) !== '["A","C"]') ? 1 : 0;
+  if (remindFail) console.log('  x   Erinnerung loeschen: ' + JSON.stringify(remind));
+  else console.log('  ok  Das ✕ einer Erinnerung ist data-act ohne onclick und entfernt genau die eigene.');
+
   await browser.close();
 
-  if (errors.length || nsFail || badExports.length || deadHandlers.length || delegationFail || stack.length || deadFeatActs.length) {
+  if (errors.length || nsFail || badExports.length || deadHandlers.length || delegationFail || stack.length || deadFeatActs.length || remindFail) {
     console.error('\nFEHLER:');
     [...new Set(errors)].forEach((e) => console.error('  x   ' + e));
-    console.error(`\n${errors.length + nsFail + badExports.length + deadHandlers.length + delegationFail + stack.length + deadFeatActs.length} Problem(e).`);
+    console.error(`\n${errors.length + nsFail + badExports.length + deadHandlers.length + delegationFail + stack.length + deadFeatActs.length + remindFail} Problem(e).`);
     process.exit(1);
   }
   console.log('\nRauchtest bestanden.');

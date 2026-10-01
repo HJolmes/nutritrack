@@ -19,6 +19,11 @@
 //   sync({force})         — holt neue Einwürfe, trägt sie ein, quittiert
 //   endpointInfo()        — {url, token, familyToken} für die Skill-Einrichtung
 //   onMutation(cb)        — Callback „es kam etwas an"
+//   parseAmount(text)     — „150 g Reis" → {grams,name}, „zwei Eier" → {count,name}
+//   splitItems(text)      — „2 Eier und ein Brötchen, Kaffee" → drei Teile
+//   pieceGrams(name)      — Gewicht EINES Stücks (Teilstring-Treffer, wie Alexa rechnet)
+//   pieceGramsStrict(name)— dasselbe, aber nur an Wortgrenzen („Apfelschorle" → null)
+//   Die vier Mengenhelfer nutzt auch der Chat im Picker (#210).
 //
 // ZWEI BRIEFKÄSTEN (v0.244): Essen, Sport und Wasser sind persönlich und liegen
 // unter dem persönlichen Token — pro Person eines, im Skill über das
@@ -143,11 +148,17 @@
     }
     return {name:t};
   }
-  // „zwei Eier und ein Brötchen, dazu Kaffee" → drei Teile
+  // „zwei Eier und ein Brötchen, dazu Kaffee" → drei Teile. Ein Komma
+  // ZWISCHEN zwei Ziffern ist ein Dezimalkomma („0,5 l Bier") und trennt
+  // nicht (#210); „Brot,2 Eier" trennt weiter. Bewusst ohne Lookbehind: den
+  // kennt Safari erst ab 16.4, und ein Parsefehler legte die ganze Datei lahm.
+  // Deshalb wird das Dezimalkomma vorher durch \u0000 ersetzt und danach
+  // zurückgesetzt.
   function splitItems(text){
     return String(text||'')
+      .replace(/(\d),(?=\d)/g,'$1\u0000')
       .split(/\s*(?:,|;|\bund\b|\bsowie\b|\bdazu\b|\bplus\b)\s*/i)
-      .map(function(s){return s.trim();})
+      .map(function(s){return s.replace(/\u0000/g,',').trim();})
       .filter(function(s){return s.length>0;});
   }
 
@@ -159,9 +170,9 @@
   // Schätzung als eine falsche Konstante.
   var PIECE_G=[
     [/(brötchen|broetchen|semmel|schrippe|weck)/,50],
-    [/(toast|scheibe brot|brotscheibe|knäckebrot)/,40],
-    [/(scheibe käse|käsescheibe)/,30],
-    [/(scheibe wurst|wurstscheibe|salami|aufschnitt)/,15],
+    [/(toast|scheiben? brot|brotscheiben?|knäckebrot)/,40],
+    [/(scheiben? käse|käsescheiben?)/,30],
+    [/(scheiben? wurst|wurstscheiben?|salami|aufschnitt)/,15],
     [/(^| )ei(er)?($| )/,60],
     [/(apfel|äpfel)/,150],
     [/(banane)/,120],
@@ -186,13 +197,28 @@
     [/(kugel eis|eiskugel)/,50],
     [/(würstchen|wiener|bratwurst)/,100],
     [/(schnitzel|steak|kotelett)/,150],
-    [/(scheibe pizza|pizzastück)/,125]
+    [/(scheiben? pizza|pizzastück)/,125]
   ];
   // Liefert das Gewicht EINES Stücks oder null, wenn nichts passt.
   function pieceGrams(name){
     var n=String(name||'').toLowerCase();
     for(var i=0;i<PIECE_G.length;i++){
       if(PIECE_G[i][0].test(n))return PIECE_G[i][1];
+    }
+    return null;
+  }
+  // Wie pieceGrams, aber ein Treffer zählt nur, wenn danach höchstens eine
+  // Pluralendung und dann ein Wortende folgt. Sonst träfe „apfel" schon in
+  // „Apfelschorle" und schlüge in „Glas Apfelsaft" das Glas (#210).
+  function pieceGramsStrict(name){
+    var n=String(name||'').toLowerCase();
+    for(var i=0;i<PIECE_G.length;i++){
+      var re=new RegExp(PIECE_G[i][0].source,'g'),m;
+      while((m=re.exec(n))){
+        var rest=n.slice(m.index+m[0].length);
+        if(/\s$/.test(m[0])||/^(n|en|e|er|s)?(\s|$)/.test(rest))return PIECE_G[i][1];
+        if(!m[0].length)re.lastIndex++;
+      }
     }
     return null;
   }
@@ -347,19 +373,19 @@
     return true;
   }
 
-  // Grobe MET-Schätzung. Bewusst simpel: Wer genaue Werte will, nimmt den
-  // Sport-Sync aus Apple/Samsung Health — der liefert echte Messwerte.
-  var MET={lauf:9.8,jogg:8.0,renn:11,geh:3.5,spazier:3.0,wander:6.0,rad:7.5,fahrrad:7.5,velo:7.5,
-    schwimm:8.0,yoga:2.5,pilates:3.0,kraft:5.0,gewicht:5.0,gym:5.0,fitness:5.0,rudern:7.0,
-    tanz:5.0,fußball:7.0,fussball:7.0,tennis:7.3,boxen:9.0,seilspring:11,crosstrainer:6.0,hiit:9.0};
+  // kcal aus derselben MET-Suche wie der Sporteintrag der App
+  // (getExerciseMet: eigene Bibliothek → js/metdb.js, Compendium 2011).
+  // Ohne Treffer dieselben Rückfallwerte wie die App: 5 MET, 75 kg
+  // (Schätzwerte). Wer genaue Werte will, nimmt den Sport-Sync aus
+  // Apple/Samsung Health — der liefert echte Messwerte.
   function estimateKcal(name,mins){
-    var nl=(name||'').toLowerCase();
-    var met=4.0;
-    for(var k in MET){if(nl.indexOf(k)!==-1){met=MET[k];break;}}
-    var kg=(window.S&&S.weight)||70;
+    var met=(typeof window.getExerciseMet==='function'&&window.getExerciseMet(name,'medium'))||5;
+    var kg=(window.S&&S.weight)||75;
     return met*kg*(mins/60);
   }
   function exEmoji(name){
+    var hit=window.NTMet&&window.NTMet.lookup(name);
+    if(hit&&hit.e)return hit.e;
     var t=(name||'').toLowerCase();
     if(/lauf|jogg|renn/.test(t))return '🏃';
     if(/geh|spazier|wander/.test(t))return '🚶';
@@ -583,5 +609,6 @@
     getFamilyToken:getFamilyToken,setFamilyToken:setFamilyToken,clearFamilyToken:clearFamilyToken,
     getWorkerBase:getWorkerBase,setWorkerBase:setWorkerBase,
     sync:sync,onMutation:onMutation,endpointInfo:endpointInfo,
+    parseAmount:parseAmount,splitItems:splitItems,pieceGrams:pieceGrams,pieceGramsStrict:pieceGramsStrict,
   };
 })();

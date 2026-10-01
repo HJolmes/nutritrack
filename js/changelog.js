@@ -1,6 +1,39 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.289',items:[
+    {icon:'🔧',text:'<b>Nachbesserungen</b>: Lange Hinweise (fehlende Meldungs-Berechtigung, Prüfziffer, Produkt ohne Nährwerte) brechen jetzt um und sind auf dem Handy ganz lesbar. Die Stillzeit-Ampel bewertet auch Rezepte aus der Chat-Karte und aus „Zuletzt“ sowie Zutaten, die man an einen Eintrag anhängt. Im Wochenbericht geht die Durchschnittszeile auch an Tagen mit viel Sport auf. „Brot,2 Eier“ wird wieder als zwei Posten erkannt.'}
+  ]},
+  {v:'0.288',items:[
+    {icon:'🏃',text:'<b>Rund 120 Sportarten ohne KI</b>: Aktivitäten werden auch in Formen wie „Joggen“, „Rad fahren“ oder „geschwommen“ erkannt, und das Namensfeld schlägt sie beim Tippen vor. Die Werte stammen aus dem Compendium of Physical Activities. Die kcal rechnen sich beim Ändern von Aktivität, Dauer oder Intensität neu. Alexa-Einträge rechnen genauso wie die App. Die Werte der bisherigen Schnellauswahl ändern sich dadurch teils, etwa bei Laufen, Radfahren und Wandern.'}
+  ]},
+  {v:'0.287',items:[
+    {icon:'🤱',text:'<b>Stillzeit-Ampel nach festen Regeln</b>: Die Ampel bewertet sofort und auch offline (Alkohol, Koffein, quecksilberreicher Fisch, Leber, Kräutertees). Stillzeit-Hinweise stehen jetzt auch im Mahlzeit-Detail. Bei Rezepten aus der Bibliothek bewertet die Ampel die einzelnen Zutaten statt nur den Rezeptnamen. Kommen mehrere Ampel-Hinweise gleichzeitig, zeigt das Banner alle.'}
+  ]},
+  {v:'0.286',items:[
+    {icon:'📊',text:'<b>Wochenbericht ohne KI</b>: Der Bericht erscheint sofort und auch offline. Er wertet die letzten 7 abgeschlossenen Tage inklusive Sport aus: Tage im Plan, bester und schwächster Tag, Makros gegen deine Ziele, Gewichtsänderung und eine Empfehlung. Ausformulieren durch die KI gibt es auf Wunsch über „✨ Ausformulieren“. Außerdem erscheint die Karte mit offline aufgenommenen Fotos wieder.',where:'Trends → Wochenbericht'}
+  ]},
+  {v:'0.285',items:[
+    {icon:'⌨️',text:'<b>Tastatur verdeckt die Eingabe nicht mehr</b>: Im Chat bleibt das Eingabefeld beim Tippen über der Tastatur, neue Antworten und erkannte Zutaten erscheinen direkt darüber. Dialoge und Hinweise weichen der Tastatur zuverlässiger aus.',where:'＋ → 💬 Chat'}
+  ]},
+  {v:'0.284',items:[
+    {icon:'💬',text:'<b>Chat ohne KI für einfache Eingaben</b>: „150 g Rosenkohl“, „0,5 l Bier“ oder „Banane und Apfel“ erkennt der Chat selbst und zeigt sie mit der richtigen Menge als Zutatenliste – auch offline. Bei mehrdeutigen Treffern (z. B. Reis roh oder gekocht) stehen alle zur Wahl, und die genannte Menge wird übernommen („2 Bier“ sind nicht mehr 100 g). Über „🤖 Stattdessen KI fragen“ geht es weiter zur KI. Alexa rechnet „zwei Scheiben Brot“ jetzt mit Scheibengewicht.',where:'＋ → 💬 Chat'}
+  ]},
+  {v:'0.283',items:[
+    {icon:'📷',text:'<b>Barcode ohne KI</b>: Der Foto-Tab erkennt Barcodes direkt auf dem Gerät, ohne das Foto an eine KI zu schicken. Der Barcode-Scanner übernimmt einen Server-Treffer sofort statt erst beim zweiten Bild, und QR-Codes auf der Verpackung werden nicht mehr als Barcode gelesen. Bei manueller Code-Eingabe warnt die App vor einer falschen Prüfziffer; ein zweites „Suchen“ sucht trotzdem. Behoben: „KI-Analyse starten“ blieb nach einer Barcode-Rückfrage unsichtbar, im Foto-Tab erschien bei Produkten ohne Nährwerte „Produkt-Abruf fehlgeschlagen“, zwei Scanner-Texte waren verstümmelt.',where:'＋ → 📷 Foto / Barcode'}
+  ]},
+  {v:'0.282',items:[
+    {icon:'👶',text:'<b>Baby-Tagebuch</b>: Der Temperatur-Schnellknopf öffnet den Eintrags-Dialog, statt 0,0 °C einzutragen. Per Alexa eingetragene Temperaturen erscheinen mit ihrem Wert und der Fieberwarnung. Einträge ohne Messwert stehen als „Temperatur (ohne Wert)“ in der Zeitleiste und nicht mehr in Kachel und Arzt-Bericht. Außerdem stimmen jetzt das Alter nach der Zeitumstellung, die U-Stufe am Monatsende, der Stopp-Knopf alter Stoppuhren und bei den Medikamenten der Tag der nächsten und der letzten Gabe.',where:'👶 Baby-Tagebuch'}
+  ]},
+  {v:'0.281',items:[
+    {icon:'🔗',text:'<b>Link-Import und Zutaten</b>: Brüche wie „1/2 TL“, „3/4 l“ oder „1 1/2–2 EL“ werden richtig in Gramm umgerechnet. Mit „＋ Zutat hinzufügen“ wird ein Rezept eine Zutat in Gramm mit seinen echten Nährwerten statt einer Zutat mit 1 g und 0 kcal. Chat, „Zuletzt“ und „Eigenes“ hängen die Zutat an den offenen Eintrag an, statt einen zweiten Eintrag zu buchen. Eine veraltete Online-Suche überschreibt keine neueren Treffer mehr. Beim Import geteilter Rezepte, Mahlzeiten und Tage zeigen Vorschau und Import dieselben kcal; Zutaten ohne Grammangabe kommen mit 0 g und ⚠️ an.',where:'＋ → 🔗 Link · Eintrag → ＋ Zutat hinzufügen'}
+  ]},
+  {v:'0.280',items:[
+    {icon:'🔧',text:'<b>Kleinere Korrekturen</b>: Pausierte wiederkehrende Mahlzeiten werden für die Pausentage nicht mehr nachträglich eingetragen. Der Glückwunsch zum Zielgewicht kommt auch bei Zunahmezielen erst, wenn das Ziel erreicht ist, und nach einem neuen Ziel wieder. Im Wochenplan lassen sich Tage leeren, auf denen nur Notizen stehen, und Rezepte mit 0 kcal lassen sich ins Tagebuch übernehmen. Die Wochentage in der Statistik stimmen jetzt auch außerhalb Europas, und die Hilfe nennt den richtigen Alexa-Pfad.'}
+  ]},
+  {v:'0.279',items:[
+    {icon:'⏰',text:'<b>Fastenende und Erinnerungen</b>: Die Meldung zum Fastenende geht nach einem Neuladen der App oder im Geräteschlaf nicht mehr verloren, solange NutriTrack geöffnet ist. Erinnerungen tragen einen neutralen Titel („⏰ NutriTrack – Name“). Kann der Browser keine Meldungen zeigen oder sind sie blockiert, sagt das ein Hinweis beim Speichern bzw. beim Fastenstart. Eine in einem anderen Fenster gelöschte Erinnerung meldet sich nicht mehr.',where:'Mehr → Erinnerungen'}
+  ]},
   {v:'0.277',items:[
     {icon:'⏰',text:'<b>Erinnerungen repariert</b>: Jede Erinnerung meldet sich jetzt höchstens einmal am Tag. Vorher kamen bei mehreren Erinnerungen von Tag zu Tag mehr Meldungen, und gelöschte meldeten sich weiter. Auf Android erscheinen Erinnerungen und das Fastenende jetzt überhaupt, und ein Tippen auf die Meldung öffnet die App. Nach einem Backup-Import, „Aus OneDrive laden“ oder dem Laden eines Autospeichers gelten die geladenen Erinnerungen sofort, nicht erst nach einem Neustart. Eine Erinnerung, die mehr als 15 Minuten zu spät käme (App im Hintergrund, Handy im Standby), wird übersprungen – beim Öffnen kommen also keine alten Meldungen auf einmal.',where:'Mehr → Erinnerungen'}
   ]},

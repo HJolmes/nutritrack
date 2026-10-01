@@ -63,6 +63,9 @@ function openPicker(meal, defaultTab){
   document.getElementById('pickerPhotoStatus').classList.add('hidden');
   document.getElementById('pickerAnalyzeBtn').disabled=true;
   document.getElementById('pickerAnalyzeBtn').textContent='📷 KI-Analyse starten';
+  // pickerShowBcConfirm blendet den Knopf aus – jeder neue Anlauf zeigt ihn wieder (#209).
+  document.getElementById('pickerAnalyzeBtn').style.display='';
+  window._pickerPhotoSeq=(window._pickerPhotoSeq||0)+1;// verspätete Barcode-Treffer eines alten Fotos verwerfen
   document.getElementById('pickerPhotoResult').classList.add('hidden');
   document.getElementById('pickerChatMsgs').innerHTML='<div class="cm h">Beschreibe was du gegessen hast, z.B.:<br>„Körnerbrötchen mit Marmelade und Skyr"</div>';
   document.getElementById('pickerChatResult').classList.add('hidden');
@@ -163,14 +166,25 @@ function pickerSearch(){
   if(q&&isOnline)pickerFetchOnline(q);
 }
 
+// Laufende Nummer der Online-Suche: Nur die jüngste Antwort darf die Liste
+// ersetzen, und nur, solange das Suchfeld noch dieselbe Anfrage zeigt — sonst
+// überschriebe eine späte „apfel"-Antwort die Treffer für „banane" (#246).
+var _pickerOnlineSeq=0;
 function pickerFetchOnline(q){
+  var mine=++_pickerOnlineSeq;
   var btn=document.getElementById('pickerSearchBtn');
   btn.innerHTML='<span class="spin"></span>';btn.disabled=true;
   var ql=q.toLowerCase(),eng=DE_EN[ql]||null;
   var base='https://world.openfoodfacts.org/cgi/search.pl?search_simple=1&action=process&json=1&page_size=20&fields=product_name,product_name_de,nutriments,image_front_thumb_url';
   var terms=[q];if(eng)terms.push(eng);
   var fetches=terms.map(function(t){return fetchT(offProxyUrl(base+'&search_terms='+encodeURIComponent(t)),{},6000).then(function(r){return r.json();}).catch(function(){return{products:[]};});});
+  function stale(){
+    if(mine!==_pickerOnlineSeq)return true;// eine neuere Anfrage setzt Knopf und Liste selbst
+    btn.innerHTML='Suchen';btn.disabled=false;
+    return document.getElementById('pickerSearchQ').value.trim()!==q;// weitergetippt: Live-Treffer bleiben
+  }
   Promise.all(fetches).then(function(res){
+    if(stale())return;
     var local=searchLocal(q);
     var seen={};local.forEach(function(p){seen[p.name.toLowerCase()]=true;});
     var online=[];
@@ -187,10 +201,9 @@ function pickerFetchOnline(q){
     });
     online.sort(function(a,b){return b.score-a.score;});
     var all=local.concat(online.slice(0,8));
-    btn.innerHTML='Suchen';btn.disabled=false;
     document.getElementById('pickerSearchHint').textContent='Lokal + Online';
     pickerRenderResults(all,false);
-  }).catch(function(){btn.innerHTML='Suchen';btn.disabled=false;});
+  }).catch(function(){if(mine===_pickerOnlineSeq){btn.innerHTML='Suchen';btn.disabled=false;}});
 }
 
 function pickerRenderResults(products,loading){
@@ -221,22 +234,69 @@ function pickerSelResult(i){
   document.getElementById('pickerAddSec').classList.remove('hidden');
 }
 
+// ─── ZUTAT-MODUS („+ Zutat hinzufügen" im Bearbeiten-Dialog) ───
+// Ein Rezept wird dort EINE Zutat in Gramm: Menge = Gramm der Rezeptzutaten ×
+// Portionen, per100 = Nährwerte der Zutaten auf 100 g. Rezepte sind je Portion
+// gespeichert, ingTotal() liefert also eine Portion. Zutaten ohne Grammangabe
+// (amount 0) zählen weder kcal noch Gramm, der Quotient bleibt stimmig.
+// null, wenn keine Zutat Gramm hat — sonst entstünde eine 0-kcal-Zeile (#246).
+function _pickerIngsAsOne(name,emoji,ings,factor){
+  var g=(ings||[]).reduce(function(s,i){return s+(parseFloat(i.amount)||0);},0);
+  if(!(g>0)||!(factor>0))return null;
+  return {name:name,emoji:emoji,amount:Math.max(1,Math.round(g*factor)),per100:scaleNutrients(ingTotal(ings),100/g)};
+}
+var _PICKER_NO_GRAMS='Rezept ohne Grammangaben – als Zutat nicht möglich';
+// Ampeln fuer einen gerade gebuchten Eintrag (#205): Rezepte ueber ihre Zutaten,
+// ein Einzel-Lebensmittel ueber eine Kopie seines Namens – nie das Eintrags-
+// objekt selbst, sonst schriebe die Ampel ihr Ergebnis und ihre Karte ins selbe
+// Feld. `ings` (optional) bewertet nur diese Zutaten (Zutat-Modus).
+function _pickerRateEntry(meal,idx,ings){
+  var e=(getDay().meals[meal]||[])[idx];if(!e)return;
+  var list=ings||((e.ingredients&&e.ingredients.length)?e.ingredients:[{name:e.name}]);
+  checkPregWarn(list,meal,idx);checkNursWarn(list,meal,idx);checkDietWarn(list,meal,idx);
+}
+// Hängt Zutaten an den offenen Eintrag und rechnet seine Summen neu (sonst
+// stünden nach „Schließen ohne Speichern" die alten kcal im Tag). Gibt immer
+// true zurück: Der Zutat-Modus hat den Klick verbraucht — auch wenn der
+// Eintrag inzwischen fehlt; dann ein Toast statt einer stillen Neubuchung.
+// Wer vorher etwas ablehnt (Rezept ohne Gramm), ruft das hier gar nicht erst
+// auf, damit der Modus aktiv bleibt.
+function _pickerAppendToEditEntry(items,beforeClose){
+  window._editEntryMode=false;
+  var meal=window._editEntryMeal,idx=window._editEntryIdx;
+  var list=getDay().meals[meal];
+  var e=list&&list[idx];
+  if(!e||(!e.ingredients&&!e.isRecipe)){closePicker();showToast('Eintrag nicht mehr vorhanden');return true;}
+  if(!e.ingredients)e.ingredients=[];
+  items.forEach(function(it){e.ingredients.push(it);});
+  Object.assign(e,scaleNutrients(ingTotal(e.ingredients),e.portions||1));
+  saveS();renderAll();
+  // Nur die neuen Zutaten bewerten; die Ampel ergaenzt die Karte am Eintrag (#205).
+  _pickerRateEntry(meal,idx,items);
+  if(beforeClose)beforeClose();
+  closePicker();
+  openEditEntry(meal,idx);
+  showToast(items.length===1?((items[0].emoji||'🍽')+' '+items[0].name+' hinzugefügt'):(items.length+' Zutat(en) hinzugefügt'));
+  return true;
+}
+
 function pickerConfirmAdd(){
   if(!pickerSelFood)return;
   var amt=parseFloat(document.getElementById('pickerAmt').value)||1;
   var f=pickerSelFood;
-  // Check if we're adding to an existing diary entry's ingredient list
+  // Zutat-Modus: an den offenen Eintrag anhängen statt neu zu buchen.
   if(window._editEntryMode){
-    window._editEntryMode=false;
-    var e=getDay().meals[window._editEntryMeal][window._editEntryIdx];
-    if(e&&e.ingredients){
-      var per100=f.per100||{kcal:0,protein:0,carbs:0,fat:0};
-      e.ingredients.push({name:f.name,emoji:f.emoji,amount:amt,per100:per100});
-      saveS();closePicker();
-      openEditEntry(window._editEntryMeal,window._editEntryIdx);
-      showToast((f.emoji||'🍽')+' '+f.name+' hinzugefügt');
-      return;
+    var item;
+    if(f.isRecipe){
+      var erec=recipes.find(function(r){return r.id===f.recipeId;});
+      if(!erec){showToast('Rezept nicht gefunden');return;}
+      item=_pickerIngsAsOne(erec.name,erec.emoji||'📋',erec.ingredients,amt);
+      if(!item){showToast(_PICKER_NO_GRAMS);return;}
+    } else {
+      item={name:f.name,emoji:f.emoji,amount:amt,per100:f.per100||{kcal:0,protein:0,carbs:0,fat:0}};
     }
+    _pickerAppendToEditEntry([item]);
+    return;
   }
   // Normal: add to meal
   if(f.isRecipe){
@@ -256,15 +316,23 @@ function pickerConfirmAdd(){
   animateAdd(pickerMeal);
   rememberPortion(f.name,amt);
   checkDataQuality(f);
-  checkPregWarn([f],pickerMeal,_idx);
-  checkNursWarn([f],pickerMeal,_idx);
-  checkDietWarn([f],pickerMeal,_idx);
+  // Rezept aus der Bibliothek: die Zutaten des Eintrags bewerten, nicht den
+  // Rezeptnamen (#205) – sonst stand die Warnung unter „Spaghetti Tonnato“ statt
+  // unter „Thunfisch“ und fehlte im Mahlzeit-Detail. Der Eintrag hat seine
+  // eigene Kopie der Zutaten, das Bibliotheksrezept bleibt ohne Ampelfelder.
+  var _ampIn=(f.isRecipe&&entry.ingredients&&entry.ingredients.length)?entry.ingredients:[f];
+  checkPregWarn(_ampIn,pickerMeal,_idx);
+  checkNursWarn(_ampIn,pickerMeal,_idx);
+  checkDietWarn(_ampIn,pickerMeal,_idx);
   showToast((f.emoji||'🍽')+' '+f.name+' hinzugefügt');
 }
 
 // ─── PICKER: FOTO TAB ───
 function pickerHandlePhoto(e){
   var file=e.target.files[0];if(!file)return;
+  // Marke dieses Fotos: ein Barcode-Treffer, der erst nach „Ändern" oder einem
+  // neuen Foto eintrifft, darf keine Rückfrage mehr öffnen (#209).
+  var seq=window._pickerPhotoSeq=(window._pickerPhotoSeq||0)+1;
   // Input sofort zurücksetzen damit iOS erneutes Auswählen erlaubt
   e.target.value='';
   var reader=new FileReader();
@@ -284,9 +352,11 @@ function pickerHandlePhoto(e){
       document.getElementById('pickerPrevWrap').classList.remove('hidden');
       document.getElementById('pickerPhotoPickArea').style.display='none';
       document.getElementById('pickerAnalyzeBtn').disabled=false;
+      document.getElementById('pickerAnalyzeBtn').style.display='';
+      document.getElementById('pickerBcConfirm').classList.add('hidden');
       _pickerRefreshPhotoSaveHint();
       // Barcode-Scan verzögert damit UI sofort reagiert
-      setTimeout(function(){pickerTryBarcode(c);},100);
+      setTimeout(function(){pickerTryBarcode(c,seq);},100);
     };
     img.onerror=function(){showToast('Foto konnte nicht geladen werden');};
     img.src=ev.target.result;
@@ -297,9 +367,12 @@ function pickerHandlePhoto(e){
 
 function pickerResetPhoto(){
   window._pickerPhotoB64=null;
+  window._pickerPhotoSeq=(window._pickerPhotoSeq||0)+1;
+  pickerBcFound=null;
   document.getElementById('pickerPrevWrap').classList.add('hidden');
   document.getElementById('pickerPhotoPickArea').style.display='block';
   document.getElementById('pickerAnalyzeBtn').disabled=true;
+  document.getElementById('pickerAnalyzeBtn').style.display='';
   document.getElementById('pickerBcConfirm').classList.add('hidden');
   document.getElementById('pickerPhotoResult').classList.add('hidden');
   document.getElementById('pickerPhotoStatus').classList.add('hidden');
@@ -352,30 +425,75 @@ function _pickerRefreshPhotoSaveHint(show){
   el.classList.remove('hidden');
 }
 
-function pickerTryBarcode(canvas){
-  var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
-  if(typeof ZXing!=='undefined'){
-    var hints=new Map();
-    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39]);
-    hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
-    try{
-      var r=new ZXing.BrowserMultiFormatReader(hints).decodeFromCanvas(canvas);
-      if(r&&r.getText()){pickerFetchBarcodeForConfirm(r.getText());return;}
-    }catch(e){}
+// Die Formate, die ZXing (WASM wie JS) lesen soll. ZBar kennt keine solche
+// Einschränkung und liest auch QR-Codes – die filtert _pickerZbarText.
+var _PICKER_ZXW_FORMATS=['EAN-13','EAN-8','UPC-A','UPC-E','Code128','Code39'];
+function _pickerZxingJsHints(){
+  var hints=new Map();
+  hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39]);
+  hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
+  return hints;
+}
+
+// Erster verwertbarer Text aus den ZBar-Symbolen. QR-Symbole werden
+// übersprungen: Ein QR-Code auf der Verpackung (meist eine URL) ist kein
+// Produktcode, und OpenFoodFacts bekäme sonst einen kaputten Pfad (#209).
+// Fehlt typeName, wird das Symbol wie bisher genommen.
+function _pickerZbarText(symbols){
+  if(!symbols||!symbols.length)return null;
+  for(var i=0;i<symbols.length;i++){
+    var sym=symbols[i];if(!sym)continue;
+    if(sym.typeName&&String(sym.typeName).toUpperCase().indexOf('QR')>=0)continue;
+    var t=sym.decode?sym.decode():(sym.data||'');
+    if(t)return String(t);
   }
-  // iOS: Claude Haiku als Fallback für Barcode-Erkennung
-  if(!isIOS)return;
-  if(!canUseAi())return;
-  var b64=canvas.toDataURL('image/jpeg',0.85).split(',')[1];
-  callClaude('claude-haiku-4-5',[
-    {type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},
-    {type:'text',text:'Is there a barcode in this image? If yes, reply with ONLY the digits. If no barcode, reply exactly "NONE".'}
-  ],20,
-  function(text){
-    var code=(text||'').trim().replace(/\s/g,'');
-    if(code!=='NONE'&&/^\d{8,14}$/.test(code))pickerFetchBarcodeForConfirm(code);
-  },
-  function(){});
+  return null;
+}
+
+// Lokale Decoder-Kette für ein Standbild (Foto-Tab und 📸 Foto-Scan im
+// Barcode-Tab): 1. ZXing-WASM, 2. ZBar-WASM (andere Algorithmen), 3. ZXing-JS.
+// Liefert ein Promise auf den ersten Treffer oder null – nie eine Ablehnung.
+// Filter (Graustufen/Kontrast) legt der Aufrufer vorher auf den Canvas.
+function _pickerDecodeCanvasLocal(canvas){
+  var p=Promise.resolve(null);
+  if(window.ZXingWasm&&window.ZXingWasm.readBarcodes){
+    try{
+      p=window.ZXingWasm.readBarcodes(canvas,{
+        formats:_PICKER_ZXW_FORMATS,
+        tryHarder:true,tryRotate:true,tryInvert:true,maxNumberOfSymbols:1
+      }).then(function(rs){return rs&&rs.length&&rs[0].text?String(rs[0].text):null;}).catch(function(){return null;});
+    }catch(e){p=Promise.resolve(null);}
+  }
+  return p.then(function(code){
+    if(code)return code;
+    if(!window.ZBarWasm||!window.ZBarWasm.scanImageData)return null;
+    try{
+      var imgData=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height);
+      return window.ZBarWasm.scanImageData(imgData).then(_pickerZbarText).catch(function(){return null;});
+    }catch(e){return null;}
+  }).then(function(code){
+    if(code)return code;
+    if(typeof ZXing==='undefined')return null;
+    try{
+      var r=new ZXing.BrowserMultiFormatReader(_pickerZxingJsHints()).decodeFromCanvas(canvas);
+      if(r&&r.getText())return String(r.getText());
+    }catch(e){}
+    return null;
+  });
+}
+
+// Foto-Tab: sucht im geladenen Foto einen Barcode – nur lokal, ohne KI und
+// ohne Server (#209): Das Foto verlässt das Gerät erst, wenn die Nutzerin
+// „KI-Analyse starten" antippt. Nur GTIN-artige Treffer (8–14 Ziffern) gehen
+// an OpenFoodFacts; seq ist die Marke des Fotos aus pickerHandlePhoto.
+function pickerTryBarcode(canvas,seq){
+  _pickerDecodeCanvasLocal(canvas).then(function(code){
+    if(!code)return;
+    code=String(code).replace(/\s/g,'');
+    if(!/^\d{8,14}$/.test(code))return;
+    if(seq!==undefined&&seq!==window._pickerPhotoSeq)return;
+    pickerFetchBarcodeForConfirm(code,seq);
+  });
 }
 
 function pickerToggleTorch(){
@@ -466,48 +584,80 @@ function _pickerFrameLoop(videoEl,canvas,ctx,detect,label){
 }
 
 // Server-Decode-Loop: streamt parallel zum lokalen Decoder ~1.4 fps gecropte
-// JPEG-Frames an den Cloudflare-Worker (POST /decode-barcode), der per Claude
-// Haiku Vision die Ziffern liest. Lokaler Decoder läuft weiter – wer zuerst
-// trifft, gewinnt. Auf iOS ist der Worker-Pfad meist der einzige, der trifft.
+// JPEG-Frames an den Cloudflare-Worker (POST /decode-barcode), der sie an den
+// OSS-Decoder (OpenCV + pyzbar auf Cloud Run) weiterreicht – keine KI. Lokaler
+// Decoder läuft weiter – wer zuerst trifft, gewinnt.
 function _pickerServerDecodeUrl(){
   if(typeof PROJECT_AI_PROXY_URL!=='string'||!PROJECT_AI_PROXY_URL)return null;
   return PROJECT_AI_PROXY_URL.replace(/\/v1\/messages\/?$/,'/decode-barcode');
+}
+// Grenze des Workers für /decode-barcode (MAX_BARCODE_BODY_BYTES = 1024 * 200).
+// Größer wird mit 413 abgelehnt – dann lieber gar nicht erst senden.
+var _PICKER_SERVER_MAX_BYTES=200*1024;
+// JPEG für den Foto-Serverschritt: erst 0.85; ist es zu groß, EINMAL neu
+// kodieren (lange Kante ≤ 1280 px, Qualität 0.6). Passt auch das nicht, kommt
+// null zurück (#209).
+function _pickerServerJpeg(canvas,cb){
+  canvas.toBlob(function(blob){
+    if(blob&&blob.size<=_PICKER_SERVER_MAX_BYTES){cb(blob);return;}
+    var src=canvas;
+    var scale=Math.min(1,1280/Math.max(canvas.width,canvas.height));
+    if(scale<1){
+      src=document.createElement('canvas');
+      src.width=Math.max(1,Math.round(canvas.width*scale));
+      src.height=Math.max(1,Math.round(canvas.height*scale));
+      src.getContext('2d').drawImage(canvas,0,0,src.width,src.height);
+    }
+    src.toBlob(function(b2){
+      cb(b2&&b2.size<=_PICKER_SERVER_MAX_BYTES?b2:null);
+    },'image/jpeg',0.6);
+  },'image/jpeg',0.85);
 }
 function _pickerStartServerDecodeLoop(canvas){
   if(typeof canUseAi!=='function'||!canUseAi())return false;
   var url=_pickerServerDecodeUrl();if(!url)return false;
   pickerBcServerActive=true;
+  // Sitzungsmarke: Nach Stopp und Neustart des Scanners stehen die globalen
+  // Flags wieder auf true – eine noch laufende Anfrage (und der Takt) der alten
+  // Sitzung darf dann weder einen Lookup auslösen noch weiterlaufen.
+  var sess=window._pickerBcSess=(window._pickerBcSess||0)+1;
+  function alive(){return pickerBcActive&&pickerBcServerActive&&sess===window._pickerBcSess;}
   var inFlight=0;var nextAt=Date.now()+500;var reqCount=0;
-  // Mehrfrachen-Bestätigung: erst nach 2 identischen gültigen Codes wird der Lookup gestartet.
-  // Schützt gegen seltene Halluzinationen mit zufällig gültiger Prüfziffer.
+  // Der OSS-Decoder liefert nur Codes mit gültiger Prüfziffer – der erste
+  // Treffer wird übernommen wie bei den lokalen Decodern (#209). Nur ein alter
+  // Worker mit Vision-Fallback (source 'anthropic') braucht noch zwei gleiche
+  // Codes, als Schutz gegen erfundene Ziffern mit zufällig gültiger Prüfziffer.
   var lastCode=null;
   function setStatus(s){var el=document.getElementById('bcDbgServer');if(el)el.textContent='Server: '+s;}
   setStatus('warte');
   function tick(){
-    if(!pickerBcActive||!pickerBcServerActive)return;
+    if(!alive())return;
     var now=Date.now();
     if(inFlight>=1||now<nextAt||!canvas.width||canvas.width<16){setTimeout(tick,120);return;}
     nextAt=now+700;inFlight++;reqCount++;
     setStatus('scan… ('+reqCount+')');
     canvas.toBlob(function(blob){
-      if(!pickerBcActive||!pickerBcServerActive||!blob){inFlight--;setTimeout(tick,120);return;}
+      if(!alive()||!blob){inFlight--;setTimeout(tick,120);return;}
       fetch(url,{
         method:'POST',
         headers:{'Content-Type':'image/jpeg','x-app-proxy-secret':getProxySecret()},
         body:blob
       }).then(function(r){
-        if(!pickerBcActive||!pickerBcServerActive)return null;
+        if(!alive())return null;
         if(!r.ok){setStatus('Fehler '+r.status+' ('+reqCount+')');return null;}
         return r.json();
       }).then(function(d){
-        if(!pickerBcActive||!pickerBcServerActive||!d)return;
+        if(!alive()||!d)return;
         var data=d.data||{};
         var raw=data.raw?String(data.raw):'';
         var code=data.code?String(data.code):'';
         var candidate=data.candidate?String(data.candidate):'';
         var checksumOk=Boolean(data.checksumValid);
         if(code){
-          if(lastCode===code){
+          if(String(data.source||'')!=='anthropic'){
+            setStatus('✓ '+code);
+            pickerStopScan();pickerLookupBarcode(code);
+          }else if(lastCode===code){
             setStatus('✓✓ '+code);
             pickerStopScan();pickerLookupBarcode(code);
           }else{
@@ -535,7 +685,7 @@ function pickerStartScan(){
   wrap.classList.remove('hidden');
   document.getElementById('pickerBcStartBtn').style.display='none';
   document.getElementById('pickerBcStopBtn').style.display='block';
-  document.getElementById('pickerBarcodeResult').innerHTML='<div style="font-size:13px;color:var(--g1);padding:10px;text-align:center;"><span class="spin" style="display:inline-block;width:14px;height:14px;border:2px solid var(--g2);border-top-color:transparent;border-radius:50%;vertical-align:middle;margin-right:6px;"></span>Kamera startetâ¦</div>';
+  document.getElementById('pickerBarcodeResult').innerHTML='<div style="font-size:13px;color:var(--g1);padding:10px;text-align:center;"><span class="spin" style="display:inline-block;width:14px;height:14px;border:2px solid var(--g2);border-top-color:transparent;border-radius:50%;vertical-align:middle;margin-right:6px;"></span>Kamera startet…</div>';
   pickerBcActive=true;
   var videoEl=document.getElementById('pickerBarcodeVideo');
   videoEl.setAttribute('playsinline','');
@@ -595,15 +745,7 @@ function pickerStartScan(){
         if(!window.ZBarWasm||!window.ZBarWasm.scanImageData)return Promise.resolve(null);
         try{
           var imageData=ctx.getImageData(0,0,c.width,c.height);
-          return window.ZBarWasm.scanImageData(imageData).then(function(symbols){
-            if(symbols&&symbols.length){
-              for(var i=0;i<symbols.length;i++){
-                var t=symbols[i].decode?symbols[i].decode():(symbols[i].data||'');
-                if(t)return String(t);
-              }
-            }
-            return null;
-          }).catch(function(){return null;});
+          return window.ZBarWasm.scanImageData(imageData).then(_pickerZbarText).catch(function(){return null;});
         }catch(e){return Promise.resolve(null);}
       }
       function startZXingWasm(){
@@ -701,7 +843,7 @@ function pickerStartScan(){
       // 1. BarcodeDetector (Chrome/Edge: GPU-nativ, sehr schnell)
       // 2. zxing-wasm (iOS Safari & alle Browser ohne BarcodeDetector – C++/WASM, robust)
       // 3. ZXing-JS (Fallback falls WASM-Modul nicht laden konnte)
-      // PARALLEL: Server-Decode über Cloudflare-Worker (Claude Haiku Vision).
+      // PARALLEL: Server-Decode über den Worker (OSS-Decoder OpenCV + pyzbar, Cloud Run).
       // Nur auf Plattformen ohne BarcodeDetector aktivieren – auf Chrome/Android
       // trifft der lokale Decoder ohnehin in <100ms, da brauchen wir keinen Roundtrip.
       if(!('BarcodeDetector' in window)){
@@ -740,7 +882,7 @@ function pickerStartScan(){
     else{videoEl.oncanplay=function(){videoEl.oncanplay=null;startScanWhenReady();};}
   }).catch(function(err){
     var msg=err.name==='NotAllowedError'
-      ?'Kamerazugriff verweigert â in Einstellungen → Safari → Kamera erlauben.'
+      ?'Kamerazugriff verweigert – in Einstellungen → Safari → Kamera erlauben.'
       :'Kamera nicht verfügbar: '+err.message;
     document.getElementById('pickerBarcodeResult').innerHTML='<div style="font-size:13px;color:var(--re);padding:10px;text-align:center;">❌ '+msg+'</div>';
     document.getElementById('pickerBcPhotoBtn').style.display='block';
@@ -774,14 +916,15 @@ function pickerStopScan(){
   pickerTorchOn=false;
 }
 
-// Decodet ein hochauflösendes Foto mit allen verfügbaren Decodern + Server.
+// Decodet ein hochauflösendes Foto mit den lokalen Decodern, danach über den
+// OSS-Decoder des Workers (kein KI-Aufruf).
 // Foto-Pfad ist robuster als Live-Stream, weil iOS hier Hardware-Auto-Focus,
 // Stabilisierung und volle Sensor-Auflösung nutzt (~4032×3024 statt 1080×1920).
 function pickerScanFromPhoto(event){
   var file=event.target.files&&event.target.files[0];
   if(!file)return;
   var el=document.getElementById('pickerBarcodeResult');
-  el.innerHTML='<div style="font-size:13px;color:var(--g1);padding:8px;text-align:center;"><span class="spin" style="display:inline-block;width:14px;height:14px;border:2px solid var(--g2);border-top-color:transparent;border-radius:50%;vertical-align:middle;margin-right:6px;"></span>Foto wird analysiert (alle Decoder + KI)…</div>';
+  el.innerHTML='<div style="font-size:13px;color:var(--g1);padding:8px;text-align:center;"><span class="spin" style="display:inline-block;width:14px;height:14px;border:2px solid var(--g2);border-top-color:transparent;border-radius:50%;vertical-align:middle;margin-right:6px;"></span>Foto wird analysiert…</div>';
   var img=new Image();
   var url=URL.createObjectURL(file);
   img.onload=function(){
@@ -812,49 +955,15 @@ function pickerScanFromPhoto(event){
         +'</div>';
       var inp=document.getElementById('pickerBcPhoto');if(inp)inp.value='';
     }
-    // 1. ZXing-WASM (modern, schnell)
-    var p1=Promise.resolve(null);
-    if(window.ZXingWasm&&window.ZXingWasm.readBarcodes){
-      p1=window.ZXingWasm.readBarcodes(canvas,{
-        formats:['EAN-13','EAN-8','UPC-A','UPC-E','Code128','Code39'],
-        tryHarder:true,tryRotate:true,tryInvert:true,maxNumberOfSymbols:1
-      }).then(function(rs){return rs&&rs.length&&rs[0].text?rs[0].text:null;}).catch(function(){return null;});
-    }
-    p1.then(function(c){
-      if(c){hit(c,'wasm');return;}
-      // 2. ZBar-WASM (andere Algorithmen)
-      if(window.ZBarWasm&&window.ZBarWasm.scanImageData){
-        try{
-          var imgData=ctx.getImageData(0,0,w,h);
-          return window.ZBarWasm.scanImageData(imgData).then(function(syms){
-            if(syms&&syms.length){
-              for(var i=0;i<syms.length;i++){
-                var t=syms[i].decode?syms[i].decode():(syms[i].data||'');
-                if(t){hit(String(t),'zbar');return null;}
-              }
-            }
-            return null;
-          }).catch(function(){return null;});
-        }catch(e){}
-      }
-      return null;
-    }).then(function(){
+    // 1.–3. lokal: ZXing-WASM → ZBar-WASM → ZXing-JS (gemeinsame Kette mit dem Foto-Tab)
+    _pickerDecodeCanvasLocal(canvas).then(function(c){
       if(done)return;
-      // 3. ZXing-JS (Fallback)
-      if(typeof ZXing!=='undefined'){
-        try{
-          var hints=new Map();
-          hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39]);
-          hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
-          var r=new ZXing.BrowserMultiFormatReader(hints).decodeFromCanvas(canvas);
-          if(r&&r.getText()){hit(r.getText(),'zxingjs');return;}
-        }catch(e){}
-      }
-      // 4. Server (Claude Vision) als letzter Ausweg
+      if(c){hit(c,'local');return;}
+      // 4. Server: OSS-Decoder (OpenCV + pyzbar auf Cloud Run) über den Worker
       if(typeof canUseAi==='function'&&canUseAi()){
         var serverUrl=_pickerServerDecodeUrl&&_pickerServerDecodeUrl();
         if(serverUrl){
-          canvas.toBlob(function(blob){
+          _pickerServerJpeg(canvas,function(blob){
             if(!blob){fail();return;}
             fetch(serverUrl,{
               method:'POST',
@@ -864,7 +973,7 @@ function pickerScanFromPhoto(event){
               if(d&&d.ok&&d.data&&d.data.code){hit(d.data.code,'server');}
               else{fail();}
             }).catch(fail);
-          },'image/jpeg',0.85);
+          });
           return;
         }
       }
@@ -896,22 +1005,30 @@ function _pickerCachedBarcode(code){
   return null;
 }
 
-function pickerFetchBarcodeForConfirm(code){
+// Foto-Tab: Produkt zum erkannten Barcode holen und die Rückfrage zeigen.
+// seq (optional) ist die Marke des Fotos – wurde es inzwischen ersetzt oder
+// zurückgesetzt, bleibt die späte Antwort still (#209).
+function pickerFetchBarcodeForConfirm(code,seq){
+  function stale(){return seq!==undefined&&seq!==window._pickerPhotoSeq;}
   var cached=_pickerCachedBarcode(code);
   if(cached){pickerShowBcConfirm(cached);return;}
   if(!isOnline)return;
   fetchT(offProxyUrl('https://world.openfoodfacts.org/api/v0/product/'+code+'.json'),{},6000)
     .then(function(r){return r.json();})
     .then(function(data){
+      if(stale())return;
       if(data.status!==1||!data.product){showToast('Barcode '+code+' nicht gefunden – bitte manuell eintragen');return;}
       var p=data.product,nm=p.nutriments||{};
       var name=p.product_name_de||p.product_name||'Unbekannt';
       var per100=_pickerOffPer100(nm);
-      if(!_hasNutrients(per100)){showToast('⚠️ Keine Nährwerte verfügbar für „'+name+'" – bitte manuell eintragen');pickerOpenManualBarcode();document.getElementById('bcManualName').value=name;return;}
+      // Nur Hinweis: Die Nutzerin bleibt im Foto-Tab, „KI-Analyse starten" ist
+      // dort weiter sichtbar. (Vorher lief hier ein Zugriff auf #bcManualName,
+      // das es nur nach pickerShowBarcodeNotFound gibt → TypeError, #209.)
+      if(!_hasNutrients(per100)){showToast('⚠️ „'+name+'“ hat in der Datenbank keine Nährwerte – KI-Analyse starten oder unter „Eigenes“ eintragen',4000);return;}
       var food={name:name,emoji:emo(name),barcode:code,per100:per100};
       barcodeCache[code]=food;saveBarcodeCache();cacheFood(food);
       pickerShowBcConfirm(food);
-    }).catch(function(){showToast('Produkt-Abruf fehlgeschlagen – bist du online?');});
+    }).catch(function(){if(!stale())showToast('Produkt-Abruf fehlgeschlagen – bist du online?');});
 }
 
 function pickerShowBcConfirm(food){
@@ -934,6 +1051,8 @@ function pickerBcYes(){
 function pickerBcNo(){
   document.getElementById('pickerBcConfirm').classList.add('hidden');
   pickerBcFound=null;
+  // Knopf wieder zeigen: scheitert die KI, bleibt „Erneut analysieren" erreichbar (#209).
+  document.getElementById('pickerAnalyzeBtn').style.display='';
   pickerAnalyze();
 }
 
@@ -942,21 +1061,62 @@ function pickerBcNo(){
 // die EAN-Klartextziffern unter dem Strichcode extrem zuverlässig liest.
 function pickerOpenManualBarcode(){
   pickerStopScan();
+  _pickerManualWarn=null;// jede neu geöffnete Eingabe warnt wieder bei falscher Prüfziffer
   var el=document.getElementById('pickerBarcodeResult');
   if(!el)return;
   el.innerHTML='<div style="background:var(--gl);border:1.5px solid var(--br);border-radius:12px;padding:12px;">'
     +'<div style="font-size:12px;color:var(--mu);margin-bottom:6px;">Tippe die 13 Ziffern unter dem Strichcode ein.</div>'
     +'<div style="font-size:11px;color:var(--mu);margin-bottom:10px;line-height:1.4;">📱 <strong>iPhone-Tipp:</strong> Halte das Eingabefeld lang gedrückt → „Text scannen" → mit Kamera die Ziffern lesen lassen (Apples Live Text).</div>'
-    +'<input type="text" id="bcDirectInput" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="z.B. 4011200296898" style="width:100%;box-sizing:border-box;border:2px solid var(--br);border-radius:9px;padding:10px;font-size:16px;font-family:ui-monospace,Menlo,monospace;letter-spacing:1px;outline:none;margin-bottom:10px;" maxlength="14">'
-    +'<button type="button" onclick="pickerSubmitManualBarcode()" style="width:100%;background:linear-gradient(135deg,var(--g1),var(--g2));color:white;border:none;border-radius:10px;padding:11px;font-weight:800;font-size:14px;">Suchen ✓</button>'
+    +'<input type="text" id="bcDirectInput" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="z.B. 4006381333931" style="width:100%;box-sizing:border-box;border:2px solid var(--br);border-radius:9px;padding:10px;font-size:16px;font-family:ui-monospace,Menlo,monospace;letter-spacing:1px;outline:none;margin-bottom:10px;" maxlength="14">'
+    +'<button type="button" data-act="pickerSubmitManualBarcode" style="width:100%;background:linear-gradient(135deg,var(--g1),var(--g2));color:white;border:none;border-radius:10px;padding:11px;font-weight:800;font-size:14px;">Suchen ✓</button>'
     +'</div>';
   setTimeout(function(){var i=document.getElementById('bcDirectInput');if(i)i.focus();},50);
 }
+// Prüfziffer einer GTIN (EAN-8, UPC-A, EAN-13, GTIN-14): Mod 10, Gewichte
+// 3/1 von rechts ohne die Prüfziffer. Achtstellig kann auch ein UPC-E sein –
+// dann gilt die Prüfziffer seiner Erweiterung auf UPC-A. Andere Längen oder
+// Nicht-Ziffern (Code 128/39) lassen sich nicht prüfen und gelten als ok.
+function _pickerGtinMod10(d){
+  var sum=0;
+  for(var i=d.length-2,w=3;i>=0;i--,w=(w===3?1:3))sum+=(d.charCodeAt(i)-48)*w;
+  return (10-(sum%10))%10===d.charCodeAt(d.length-1)-48;
+}
+function _pickerUpcEToA(e){
+  // e: 8 Ziffern = Zahlensystem (0/1) + 6 Nutzziffern + Prüfziffer
+  if(e.charAt(0)!=='0'&&e.charAt(0)!=='1')return null;
+  var m=e.substr(1,6),last=m.charAt(5),body;
+  if(last==='0'||last==='1'||last==='2')body=m.substr(0,2)+last+'0000'+m.substr(2,3);
+  else if(last==='3')body=m.substr(0,3)+'00000'+m.substr(3,2);
+  else if(last==='4')body=m.substr(0,4)+'00000'+m.charAt(4);
+  else body=m.substr(0,5)+'0000'+last;
+  return e.charAt(0)+body+e.charAt(7);
+}
+function _pickerGtinOk(code){
+  var c=String(code==null?'':code);
+  if(!/^\d+$/.test(c))return true;
+  var n=c.length;
+  if(n!==8&&n!==12&&n!==13&&n!==14)return true;
+  if(_pickerGtinMod10(c))return true;
+  if(n===8){var a=_pickerUpcEToA(c);return !!(a&&_pickerGtinMod10(a));}
+  return false;
+}
+
+// Zweites Antippen mit demselben Code sucht trotz falscher Prüfziffer.
+var _pickerManualWarn=null;
 function pickerSubmitManualBarcode(){
   var i=document.getElementById('bcDirectInput');
   if(!i)return;
   var code=(i.value||'').replace(/\D/g,'');
   if(code.length<8){showToast('Mindestens 8 Ziffern eingeben');return;}
+  // Hinweis statt Sperre (#209): Ein Tippfehler fällt auf, bevor unter dem
+  // falschen Code eigene Werte im Barcode-Cache landen; ein Code, der trotzdem
+  // in der Datenbank steht, bleibt mit einem zweiten Antippen erreichbar.
+  if(!_pickerGtinOk(code)&&_pickerManualWarn!==code){
+    _pickerManualWarn=code;
+    showToast('⚠️ Prüfziffer passt nicht – Tippfehler? Nochmal „Suchen“ tippen, um trotzdem zu suchen.',4000);
+    return;
+  }
+  _pickerManualWarn=null;
   pickerLookupBarcode(code);
 }
 
@@ -1042,17 +1202,7 @@ function pickerBarcodeAdd(){
   var food=window._pickerBarcodeFood;if(!food)return;
   var amt=parseFloat(document.getElementById('pickerBcAmt').value)||100;
   var r=amt/100;
-  if(window._editEntryMode){
-    window._editEntryMode=false;
-    var e=getDay().meals[window._editEntryMeal][window._editEntryIdx];
-    if(e&&e.ingredients){
-      e.ingredients.push({name:food.name,emoji:food.emoji,amount:amt,per100:food.per100});
-      saveS();closePicker();
-      openEditEntry(window._editEntryMeal,window._editEntryIdx);
-      showToast((food.emoji||'🍽')+' '+food.name+' hinzugefügt');
-      return;
-    }
-  }
+  if(window._editEntryMode){_pickerAppendToEditEntry([{name:food.name,emoji:food.emoji,amount:amt,per100:food.per100}]);return;}
   getDay().meals[pickerMeal].push(Object.assign({name:food.name,emoji:food.emoji,amount:amt,per100:food.per100},scaleNutrients(food.per100,r)));
   var _bidx=getDay().meals[pickerMeal].length-1;
   saveS();renderAll();closePicker();
@@ -1144,7 +1294,7 @@ function pickerShowPhotoResult(rezept){
   if(rezept&&!document.getElementById('pickerRecipeName').value)
     document.getElementById('pickerRecipeName').value=rezept;
   pickerRenderIngList('pickerPhotoIngList',pickerIngredients,
-    function(i,v){pickerIngredients[i].amount=parseFloat(v)||0;pickerUpdatePhotoTotal();},
+    function(i,v){pickerIngredients[i].amount=parseFloat(v)||0;pickerIngredients[i].missingGrams=false;pickerUpdatePhotoTotal();},
     function(i){pickerIngredients.splice(i,1);pickerShowPhotoResult(rezept);}
   );
   pickerUpdatePhotoTotal();
@@ -1212,15 +1362,7 @@ function _pickerAdd(emoji,nameId,portionsId,defaultName,saveAsRecipe,hasEditMode
   if(!pickerIngredients.length){showToast('Keine Zutaten');return;}
   var ings=JSON.parse(JSON.stringify(pickerIngredients));
   pickerIngredients.forEach(function(f){cacheFood(f);});
-  if(hasEditMode&&window._editEntryMode){
-    window._editEntryMode=false;
-    var e=getDay().meals[window._editEntryMeal][window._editEntryIdx];
-    if(e&&e.ingredients){
-      ings.forEach(function(ing){e.ingredients.push(ing);});
-      saveS();_pickerSavePhotoIfWanted();closePicker();openEditEntry(window._editEntryMeal,window._editEntryIdx);
-      showToast(ings.length+' Zutat(en) hinzugefügt');return;
-    }
-  }
+  if(hasEditMode&&window._editEntryMode){_pickerAppendToEditEntry(ings,_pickerSavePhotoIfWanted);return;}
   var name=document.getElementById(nameId).value.trim()||defaultName;
   var portions=parseFloat(document.getElementById(portionsId).value)||1;
   var t=ingTotal(ings);
@@ -1243,6 +1385,10 @@ function _pickerAdd(emoji,nameId,portionsId,defaultName,saveAsRecipe,hasEditMode
       if(typeof renderLibrary==='function')renderLibrary();
       return createdRec;
     }
+    // Eigene Kopie fuer den Eintrag: Die Ampel schreibt ihre Ergebnisse an die
+    // Zutaten, und mit demselben Array landeten sie im Bibliotheksrezept – und
+    // von dort als alter Stand in jeden spaeteren Eintrag daraus (#205).
+    ings=JSON.parse(JSON.stringify(ings));
     getDay().meals[pickerMeal].push(Object.assign({name:name,emoji:emoji,isRecipe:true,recipeId:createdRec.id,portions:portions,ingredients:ings},scaled));
     showToast(emoji+' '+name+' als Rezept gespeichert');
   } else {
@@ -1261,7 +1407,7 @@ function pickerPhotoAdd(saveAsRecipe){_pickerAdd('📸','pickerRecipeName','pick
 // Bind ingredient list to pickerIngredients with a delete that re-renders the DOM (#112).
 function _pickerChatRebind(){
   pickerRenderIngList('pickerChatIngList',pickerIngredients,
-    function(i,v){pickerIngredients[i].amount=parseFloat(v)||0;pickerUpdateChatTotal();},
+    function(i,v){pickerIngredients[i].amount=parseFloat(v)||0;pickerIngredients[i].missingGrams=false;pickerUpdateChatTotal();},
     function(i){pickerIngredients.splice(i,1);_pickerChatRebind();pickerUpdateChatTotal();}
   );
 }
@@ -1336,6 +1482,123 @@ function _pickerDbHit(q){
   if(stripped&&stripped!==dbQ)return findInLocalDB(stripped);
   return null;
 }
+// Alle gleichwertigen DB-Treffer eines Namens: der exakte Name, sonst JEDES
+// exakte Synonym (Regel wie findInLocalDB Pass 2, Synonyme ≤2 Zeichen zählen
+// nicht) — aber ohne dessen Tiebreak nach Namenslänge. Der macht aus „Reis"
+// „Reis weiß (roh)" und aus „Kaffee" „Latte Macchiato" (#210).
+function _pickerDbExact(name){
+  var db=window.DB||[];
+  var nl=(name||'').toLowerCase().trim();if(!nl)return [];
+  var i,j,hits=[];
+  for(i=0;i<db.length;i++){if(db[i].n.toLowerCase()===nl)return [db[i]];}
+  for(i=0;i<db.length;i++){
+    var syns=(db[i].s||'').toLowerCase().split(' ');
+    for(j=0;j<syns.length;j++){if(syns[j].length>2&&syns[j]===nl){hits.push(db[i]);break;}}
+  }
+  return hits;
+}
+// DB-Treffer für die Karten: mehrdeutige Synonyme ALLE (die Nutzerin wählt),
+// sonst wie bisher _pickerDbHit (inkl. Präfix — die Karte ist ja eine Auswahl).
+function _pickerDbHits(q){
+  var dbQ=(q||'').trim();if(!dbQ)return [];
+  var hits=_pickerDbExact(dbQ);
+  if(!hits.length){var st=_pickerStripQty(dbQ);if(st&&st!==dbQ)hits=_pickerDbExact(st);}
+  if(hits.length)return hits;
+  var hit=_pickerDbHit(dbQ);
+  return hit?[hit]:[];
+}
+function _pickerDbItem(d){
+  return {name:d.n,emoji:d.e,per100:(typeof dbPer100==='function')?dbPer100(d):{kcal:d.k,protein:d.p,carbs:d.c,fat:d.f,sugar:0,fiber:0,salt:0},badge:'📦'};
+}
+
+// ─── CHAT: MENGE LOKAL LESEN (#210) ───
+// Ein Teil der Chat-Eingabe → {grams,count,name,lookupName,pieceG,unsure}.
+// Die Syntax liest NTAlexa.parseAmount (dieselbe wie beim Alexa-Einwurf);
+// fehlt der Export, gilt null und damit der Weg von vorher.
+//   grams      — „150 g", „0,5 l", „Haferflocken 50g" (ml ≈ g wie bei Alexa)
+//   count      — „2", „zwei", „eine halbe" (0,5)
+//   lookupName — der Name ohne Behälter-/Maßwort („Scheibe Brot" → „Brot")
+//   pieceG     — Gewicht EINES Stücks aus PIECE_G, nur an Wortgrenzen
+//   unsure     — vorn steht ein Maßwort ohne Stückgewicht (EL, cl, Dose,
+//                Portion …): die Anzahl wird dann mit NICHTS multipliziert.
+var _PICKER_CONTAINER=/^(scheiben?|gl(?:a|ä)s(?:er)?|tassen?|becher|kugeln?)\s+/i;
+var _PICKER_UNSURE=/^(el|tl|cl|dl|prisen?|msp\.?|messerspitzen?|handvoll|dosen?|packung(?:en)?|pck\.?|päckchen|stück|stueck|stk\.?|portion(?:en)?|flaschen?)(\s+|$)/i;
+function _pickerChatQty(part){
+  if(!(window.NTAlexa&&NTAlexa.parseAmount))return null;
+  var t=String(part||'').trim();if(!t)return null;
+  var a=NTAlexa.parseAmount(t);
+  if(a&&a.grams===undefined&&a.count===undefined){
+    // Nachgestellte Menge: „Haferflocken 50g" → „50 g Haferflocken"
+    var tm=t.match(/^(.*\S)\s+(\d+(?:[.,]\d+)?)\s*(g|gr|gramm|ml|milliliter|l|liter|kg|kilo|kilogramm)\.?$/i);
+    if(tm)a=NTAlexa.parseAmount(tm[2]+' '+tm[3]+' '+tm[1]);
+  }
+  if(!a)return null;
+  var name=(a.name||'').trim(),count=a.count,grams=a.grams;
+  // „eine halbe Banane": das zweite Zahlwort halbiert
+  var hm=name.match(/^halbe[nrs]?\s+(.*)$/i);
+  if(hm&&count>0){count=count*0.5;name=hm[1].trim();}
+  var lookup=name,unsure=false,um=name.match(_PICKER_UNSURE);
+  if(um){lookup=name.slice(um[0].length).trim();unsure=!(grams>0);}
+  else{var cm=name.match(_PICKER_CONTAINER);if(cm)lookup=name.slice(cm[0].length).trim();}
+  if(!lookup)return null;
+  var pg=(NTAlexa.pieceGramsStrict&&!unsure)?NTAlexa.pieceGramsStrict(name):null;
+  return {grams:grams>0?grams:0,count:count>0?count:0,name:name,lookupName:lookup,pieceG:pg||0,unsure:unsure};
+}
+// Gramm aus einer erkannten Menge: Gramm direkt, sonst Anzahl × Stückgewicht,
+// sonst Anzahl × Portionsgedächtnis. 0 = unbekannt (dann „g?").
+function _pickerQtyGrams(q,foodName){
+  if(!q)return 0;
+  if(q.grams>0)return Math.round(q.grams);
+  if(q.count>0&&!q.unsure){
+    var per=q.pieceG||((typeof recallPortion==='function')?recallPortion(foodName):0)||0;
+    if(per>0)return Math.max(1,Math.round(q.count*per));
+  }
+  return 0;
+}
+// Strenger, eindeutiger Treffer für den Direkteintrag — anders als
+// findInLocalDB ohne Tiebreak und ohne Präfix. Reihenfolge: eigenes
+// Lebensmittel, zuletzt Getracktes (kein Rezept), eingebaute DB.
+function _pickerSureHit(name){
+  var f=_pickerFold(name).trim();if(!f)return null;
+  var i,own=(typeof customFoods!=='undefined'?customFoods:[]).filter(function(c){return c&&c.per100&&_pickerFold(c.name).trim()===f;});
+  if(own.length===1)return {name:own[0].name,emoji:own[0].emoji||emo(own[0].name),per100:own[0].per100};
+  if(own.length>1)return null;
+  var rec=(typeof getRecentFoods==='function'?getRecentFoods():[]).filter(function(r){return !r.isRecipe&&!r.ingredients&&r.per100&&_pickerFold(r.name).trim()===f;});
+  if(rec.length)return {name:rec[0].name,emoji:rec[0].emoji||emo(rec[0].name),per100:rec[0].per100};
+  var db=_pickerDbExact(name);
+  if(db.length!==1)return null;
+  var it=_pickerDbItem(db[0]);
+  return {name:it.name,emoji:it.emoji,per100:it.per100};
+}
+// Vorab-Leser der Chat-Nachricht: Trägt NUR ein, wenn jeder Teil eine Menge
+// und einen strengen, eindeutigen Treffer hat — sonst null, und es gilt der
+// Weg von vorher (Karten, dann KI). Ein Rezept oder eigenes Lebensmittel, das
+// auch passt, geht vor: dann entscheidet die Nutzerin an der Karte.
+function _pickerChatPreParse(msg){
+  if(window._pickerPhotoB64)return null;
+  if(!(window.NTAlexa&&NTAlexa.parseAmount&&NTAlexa.splitItems))return null;
+  if(/\bmit\b/i.test(msg))return null;
+  var parts=NTAlexa.splitItems(msg);
+  if(!parts.length)return null;
+  var items=[],anyQty=false;
+  for(var i=0;i<parts.length;i++){
+    var q=_pickerChatQty(parts[i]);
+    if(!q||q.unsure)return null;
+    var own=pickerChatLocalSearch(q.lookupName).filter(function(r){return r.isRecipe||r.badge==='⭐';});
+    var hit=_pickerSureHit(q.lookupName);
+    if(!hit)return null;
+    // Jedes Rezept und jedes eigene Lebensmittel außer dem Treffer selbst
+    // (dasselbe per100-Objekt) ist ein Konkurrent — auch ein gleichnamiges:
+    // Ein eigenes „Roggenbrot" darf nicht vom DB-Roggenbrot für „Brot" verdrängt werden.
+    if(own.some(function(r){return r.isRecipe||r.per100!==hit.per100;}))return null;
+    if(q.grams>0||q.count>0)anyQty=true;
+    var amt=_pickerQtyGrams(q.grams>0||q.count>0?q:{count:1,pieceG:q.pieceG},hit.name);
+    if(!(amt>0))return null;
+    items.push({name:hit.name,emoji:hit.emoji,amount:amt,per100:hit.per100});
+  }
+  if(!anyQty&&items.length<2)return null;
+  return items;
+}
 function pickerChatLocalSearch(q){
   var qFull=_pickerFold(q).trim();
   var qTokens=_pickerTok(q);
@@ -1359,12 +1622,19 @@ function pickerChatLocalSearch(q){
   });
   // Einzelne Standard-Lebensmittel wie „Weißwein" direkt aus der eingebauten DB abfangen,
   // statt sie an die KI weiterzureichen (die bei Alkohol gern nichts Parsebares liefert, #135).
-  var dbHit=_pickerDbHit(q);
-  if(dbHit)add({name:dbHit.n,emoji:dbHit.e,per100:{kcal:dbHit.k,protein:dbHit.p,carbs:dbHit.c,fat:dbHit.f,sugar:0,fiber:0,salt:0},badge:'📦'},9);
+  // Mehrdeutige Synonyme („Reis": roh UND gekocht) stehen alle zur Wahl (#210).
+  _pickerDbHits(q).forEach(function(d){add(_pickerDbItem(d),9);});
   results.sort(function(a,b){return b.score-a.score;});
   return results.slice(0,6).map(function(x){return x.item;});
 }
 
+// Portionen eines Rezepts aus der Nachricht: „2 Chili" → 2. Eine Grammangabe
+// gilt bei Rezepten nicht (sie sind je Portion gespeichert).
+function _pickerQtyPortions(q){
+  if(!q||!(q.count>0))return 0;
+  if(q.unsure&&!/^portion/i.test(q.name))return 0;
+  return q.count;
+}
 function pickerChatAddLocal(i){
   var p=(window._pickerLocalResults||[])[i];if(!p)return;
   var cards=document.getElementById('pickerLocalCards');if(cards)cards.remove();
@@ -1372,29 +1642,41 @@ function pickerChatAddLocal(i){
   if(p.isRecipe){
     // Rezept als Ganzes in die Mahlzeit übernehmen (analog pickerAddRecent).
     var rec=recipes.find(function(r){return r.id===p.recipeId;});
-    if(!rec){msgs.innerHTML+='<div class="cm a">❌ Rezept nicht mehr vorhanden.</div>';return;}
+    if(!rec){msgs.innerHTML+='<div class="cm a">❌ Rezept nicht mehr vorhanden.</div>';_pickerChatScrollEnd();return;}
+    if(window._editEntryMode){
+      var one=_pickerIngsAsOne(rec.name,rec.emoji||'📋',rec.ingredients,_pickerQtyPortions(p.qty)||1);
+      if(!one){msgs.innerHTML+='<div class="cm a">❌ '+_esc(_PICKER_NO_GRAMS)+'.</div>';_pickerChatScrollEnd();showToast(_PICKER_NO_GRAMS);return;}
+      _pickerAppendToEditEntry([one]);
+      return;
+    }
     var t=ingTotal(rec.ingredients||[]);
-    var portions=rec.portions||1;
+    var portions=_pickerQtyPortions(p.qty)||rec.portions||1;
     getDay().meals[pickerMeal].push(Object.assign({name:rec.name,emoji:rec.emoji||'📋',isRecipe:true,recipeId:rec.id,portions:portions,ingredients:JSON.parse(JSON.stringify(rec.ingredients||[]))},scaleNutrients(t,portions)));
     saveS();renderAll();closePicker();
+    _pickerRateEntry(pickerMeal,getDay().meals[pickerMeal].length-1);
     showToast('📋 '+rec.name+' eingetragen');
     return;
   }
-  pickerIngredients=[{name:p.name,emoji:p.emoji,g:100,amount:100,per100:p.per100}];
+  // Menge aus der Nachricht (#210): „2 Bier" ist nicht 100 g. Ohne Stückgewicht
+  // und ohne Portionsgedächtnis bleibt das Feld leer („g?") statt geraten.
+  var ing={name:p.name,emoji:p.emoji,g:100,amount:100,per100:p.per100};
+  if(p.qty){var ga=_pickerQtyGrams(p.qty,p.name);ing.g=ga||null;ing.amount=ga;if(!ga)ing.missingGrams=true;}
+  pickerIngredients=[ing];
   if(!document.getElementById('pickerChatRecipeName').value)
     document.getElementById('pickerChatRecipeName').value=p.name.slice(0,50);
   msgs.innerHTML+='<div class="cm a">✓ '+_esc(p.name)+' übernommen.</div>';
   _pickerChatRebind();
   pickerUpdateChatTotal();
   document.getElementById('pickerChatResult').classList.remove('hidden');
+  _pickerChatScrollEnd();
 }
 
 function pickerChatKiFallback(msg){
   var msgs=document.getElementById('pickerChatMsgs');
   var cards=document.getElementById('pickerLocalCards');if(cards)cards.remove();
-  if(!isOnline){msgs.innerHTML+='<div class="cm a">📵 KI benötigt eine Internet-Verbindung.</div>';document.getElementById('pickerChatSend').disabled=false;return;}
+  if(!isOnline){msgs.innerHTML+='<div class="cm a">📵 KI benötigt eine Internet-Verbindung.</div>';_pickerChatScrollEnd();document.getElementById('pickerChatSend').disabled=false;return;}
   msgs.innerHTML+='<div class="cm a">🤖 KI schätzt Nährwerte...</div>';
-  msgs.scrollTop=msgs.scrollHeight;
+  _pickerChatScrollEnd();
   document.getElementById('pickerChatSend').disabled=true;
   var hasPhoto=!!window._pickerPhotoB64;
   var content=hasPhoto
@@ -1409,13 +1691,14 @@ function pickerChatKiFallback(msg){
         // Die Eingabe selbst als ein Lebensmittel an die Nährwert-Suche geben (DB → OpenFoodFacts →
         // KI-Nährwerte → Schätzung). Nur bei kurzer Eingabe (sieht nach einem Einzel-Lebensmittel
         // aus); echte Mehr-Zutaten-Sätze brauchen die KI-Zerlegung und bleiben beim Hinweis (#135).
-        var clean=_pickerStripQty(msg)||(msg||'').trim();
-        if(clean&&clean.split(/\s+/).length<=4){raw=[{name:clean,g:null}];}
-        else{msgs.innerHTML+='<div class="cm a">❌ Konnte nicht parsen. Genauer beschreiben.</div>';document.getElementById('pickerChatSend').disabled=false;return;}
+        var nq=_pickerChatQty(msg);// „150 g Bier" → Bier, 150 g (#210)
+        var clean=(nq&&nq.lookupName)||_pickerStripQty(msg)||(msg||'').trim();
+        if(clean&&clean.split(/\s+/).length<=4){raw=[{name:clean,g:_pickerQtyGrams(nq,clean)||null}];}
+        else{msgs.innerHTML+='<div class="cm a">❌ Konnte nicht parsen. Genauer beschreiben.</div>';_pickerChatScrollEnd();document.getElementById('pickerChatSend').disabled=false;return;}
       }
       var _src=(typeof aiSourceBadgeHtml==='function')?aiSourceBadgeHtml():'';
       msgs.innerHTML+='<div class="cm a">✨ '+raw.length+' Zutaten erkannt'+_src+'. Suche Nährwerte...</div>';
-      msgs.scrollTop=msgs.scrollHeight;
+      _pickerChatScrollEnd();
       lookupNutrients(raw,function(resolved){
         pickerIngredients=resolved;
         if(!document.getElementById('pickerChatRecipeName').value)
@@ -1423,10 +1706,11 @@ function pickerChatKiFallback(msg){
         _pickerChatRebind();
         pickerUpdateChatTotal();
         document.getElementById('pickerChatResult').classList.remove('hidden');
+        _pickerChatScrollEnd();
         document.getElementById('pickerChatSend').disabled=false;
       });
     },
-    function(err){msgs.innerHTML+='<div class="cm a">❌ '+pickerFriendlyAiError(err)+'</div>';document.getElementById('pickerChatSend').disabled=false;}
+    function(err){msgs.innerHTML+='<div class="cm a">❌ '+pickerFriendlyAiError(err)+'</div>';_pickerChatScrollEnd();document.getElementById('pickerChatSend').disabled=false;}
   );
 }
 
@@ -1438,16 +1722,40 @@ function pickerSendChat(){
   _pickerChatShrink();
   document.getElementById('pickerChatSend').disabled=true;
   document.getElementById('pickerChatResult').classList.add('hidden');
-  msgs.scrollTop=msgs.scrollHeight;
+  _pickerChatScrollEnd();
   window._pickerChatLastMsg=msg;
+  // Eindeutig lokal Erkanntes direkt als Zutatenliste, ohne KI (#210).
+  var pre=_pickerChatPreParse(msg);
+  if(pre){
+    pickerIngredients=pre;
+    if(!document.getElementById('pickerChatRecipeName').value)
+      document.getElementById('pickerChatRecipeName').value=msg.slice(0,50);
+    msgs.innerHTML+='<div class="cm a">📦 Lokal erkannt (ohne KI): '+pre.length+' Zutat'+(pre.length===1?'':'en')+'.'
+      +'<div style="padding-top:2px;"><button type="button" data-act="pickerChatKiFallback" data-args="'+esc(JSON.stringify([msg]))+'" style="background:none;border:none;color:var(--mu);font-size:12px;cursor:pointer;padding:4px 0;text-decoration:underline;">🤖 Stattdessen KI fragen</button></div></div>';
+    _pickerChatRebind();
+    pickerUpdateChatTotal();
+    document.getElementById('pickerChatResult').classList.remove('hidden');
+    _pickerChatScrollEnd();
+    document.getElementById('pickerChatSend').disabled=false;
+    return;
+  }
   // Lokale Suche zuerst (#113): Rezepte, Custom Foods, Cache, DB. KI nur als Fallback.
-  var results=pickerChatLocalSearch(msg);
+  // Eine erkannte Menge wird abgetrennt und in jede Karte gelegt (#210).
+  var cq=(window.NTAlexa&&NTAlexa.splitItems&&NTAlexa.splitItems(msg).length===1)?_pickerChatQty(msg):null;
+  if(cq&&!(cq.grams>0||cq.count>0))cq=null;
+  var results=pickerChatLocalSearch(cq?cq.lookupName:msg);
   if(results.length){
+    results.forEach(function(p){if(cq)p.qty=cq;});
     window._pickerLocalResults=results;
     var html='<div id="pickerLocalCards" style="display:flex;flex-direction:column;gap:6px;margin-top:4px;">';
     html+='<div class="cm a">📚 '+results.length+' Treffer in deinem Bestand:</div>';
     results.forEach(function(p,i){
       var sub=p.isRecipe?'Rezept':(p.per100?Math.round(p.per100.kcal)+' kcal · P'+(p.per100.protein||0).toFixed(1)+'g · K'+(p.per100.carbs||0).toFixed(1)+'g · F'+(p.per100.fat||0).toFixed(1)+'g /100g':'');
+      if(p.qty){
+        var qp=p.isRecipe?_pickerQtyPortions(p.qty):0,qg=p.isRecipe?0:_pickerQtyGrams(p.qty,p.name);
+        var qs=p.isRecipe?(qp?qp+' Portion'+(qp===1?'':'en'):''):(qg?qg+' g':'Menge g?');
+        if(qs)sub=qs+(sub?' · '+sub:'');
+      }
       var badge=p.badge||'';
       html+='<div style="background:var(--gl);border:1px solid var(--br);border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:8px;">'
         +'<div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:13px;">'+esc(p.emoji||'🍽')+' '+_esc(p.name)+(badge?' <span style="font-size:11px;color:var(--mu);">'+_esc(badge)+'</span>':'')+'</div>'
@@ -1458,11 +1766,11 @@ function pickerSendChat(){
     html+='<div style="text-align:center;padding-top:2px;"><button type="button" onclick="pickerChatKiFallback(window._pickerChatLastMsg)" style="background:none;border:none;color:var(--mu);font-size:12px;cursor:pointer;padding:4px 8px;text-decoration:underline;">🤖 Stattdessen KI fragen</button></div>';
     html+='</div>';
     msgs.innerHTML+=html;
-    msgs.scrollTop=msgs.scrollHeight;
+    _pickerChatScrollEnd();
     document.getElementById('pickerChatSend').disabled=false;
     return;
   }
-  if(!isOnline){msgs.innerHTML+='<div class="cm a">📵 Offline und nichts im Bestand gefunden. Verbinde dich oder lege es als „Eigenes Lebensmittel" an.</div>';document.getElementById('pickerChatSend').disabled=false;return;}
+  if(!isOnline){msgs.innerHTML+='<div class="cm a">📵 Offline und nichts im Bestand gefunden. Verbinde dich oder lege es als „Eigenes Lebensmittel" an.</div>';_pickerChatScrollEnd();document.getElementById('pickerChatSend').disabled=false;return;}
   pickerChatKiFallback(msg);
 }
 
@@ -1518,7 +1826,7 @@ function _pickerVoiceStart(hold){
     if(ev.error==='not-allowed'||ev.error==='service-not-allowed'||ev.error==='audio-capture'){
       var msgs=document.getElementById('pickerChatMsgs');
       msgs.innerHTML+='<div class="cm a">🎙️ Kein Mikrofon-Zugriff. Bitte erlaube das Mikrofon für diese App in den Browser-/System-Einstellungen.</div>';
-      msgs.scrollTop=msgs.scrollHeight;
+      _pickerChatScrollEnd();
     }
     // 'no-speech'/'aborted' bewusst still — Button-Zustand ist schon zurückgesetzt.
   };
@@ -1562,6 +1870,13 @@ function _pickerChatGrow(){
   inp.style.height=Math.min(inp.scrollHeight+4,120)+'px';
 }
 function _pickerChatShrink(){var inp=document.getElementById('pickerChatInp');if(inp)inp.style.height='';}
+// Neueste Nachricht direkt über die feste Eingabe holen (#181). Gescrollt wird
+// das Modal: #pickerChatMsgs hat kein eigenes overflow. Aufruf NACH dem Einblenden.
+// Nur im Chat-Tab: eine späte KI-Antwort darf einen anderen Tab nicht ans Ende werfen.
+function _pickerChatScrollEnd(){
+  var pn=document.getElementById('ppanel-chat');if(!pn||!pn.classList.contains('act'))return;
+  var m=document.querySelector('#pickerOv .mod');if(m)m.scrollTop=m.scrollHeight;
+}
 (function(){
   var inp=document.getElementById('pickerChatInp');
   if(inp)inp.addEventListener('input',_pickerChatGrow);
@@ -1642,8 +1957,9 @@ function _ingNormU(s){
 function _ingNum(tok){
   tok=String(tok||'').trim();
   if(_ING_FRAC[tok]!==undefined)return _ING_FRAC[tok];
-  var m=tok.match(/^(\d+)\s*\/\s*(\d+)$/);
-  if(m)return parseFloat(m[1])/parseFloat(m[2]);
+  // „1/2" und „1⁄2" (U+2044, Bruchstrich). Nenner 0 → keine Menge statt Infinity.
+  var m=tok.match(/^(\d+)\s*[\/⁄]\s*(\d+)$/);
+  if(m){var d=parseFloat(m[2]);return d?parseFloat(m[1])/d:null;}
   var v=parseFloat(tok.replace(',','.'));
   return isFinite(v)?v:null;
 }
@@ -1676,22 +1992,27 @@ function _stripBrackets(s){
   return out;
 }
 
-// „250 g Mehl", „2 EL Olivenöl", „1 Zwiebel", „1 ½ TL Salz", „2-3 Tomaten",
+// „250 g Mehl", „2 EL Olivenöl", „1 Zwiebel", „1 ½ TL Salz", „1/2 TL Salz", „2-3 Tomaten",
 // „Salz und Pfeffer" → {name, g, raw} – Menge immer in Gramm.
 function _parseIngLine(raw){
   var s=_stripTags(raw).replace(/ /g,' ').trim();
   if(!s)return null;
   var rest=_stripVague(s),v=null,unit='';
-  // Menge: Dezimal, Bruch, Unicode-Bruch, Bereich („2-3" → die kleinere Zahl,
-  // damit nichts zu großzügig gerechnet wird), optional gemischt („1 ½").
-  var m=rest.match(/^(\d+(?:[.,]\d+)?|[½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]|\d+\s*\/\s*\d+)\s*/);
+  // Menge: Bruch („1/2"), Dezimal („1,5"), Unicode-Bruch („½"), optional
+  // gemischt („1 1/2", „1 ½"), dann Bereich („2-3", „1 1/2-2" → die untere
+  // Grenze, damit nichts zu großzügig gerechnet wird). Der Bruch steht vorn,
+  // sonst griffe „\d+" schon bei „1/2" und ließe „/2 TL Salz" als Namen stehen.
+  // Der gemischte Bruch kommt VOR dem Bereich, sonst bliebe bei „1 1/2-2 EL"
+  // der Rest „-2 EL" stehen.
+  var m=rest.match(/^(\d+\s*[\/⁄]\s*\d+|\d+(?:[.,]\d+)?|[½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞])\s*/);
   if(m){
     v=_ingNum(m[1]);
     rest=rest.slice(m[0].length);
-    var r=rest.match(/^[-–bis]+\s*\d+(?:[.,]\d+)?\s*/i);
-    if(r)rest=rest.slice(r[0].length);// Bereich: obere Grenze verwerfen
-    var f=rest.match(/^([½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]|\d+\s*\/\s*\d+)\s*/);
-    if(f&&v!==null){var fv=_ingNum(f[1]);if(fv!==null){v+=fv;rest=rest.slice(f[0].length);}}
+    var f=rest.match(/^([½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]|\d+\s*[\/⁄]\s*\d+)\s*/);
+    if(f&&v!==null){var fv=_ingNum(f[1]);rest=rest.slice(f[0].length);v=fv!==null?v+fv:null;}
+    // Bereich: obere Grenze als vollständige Mengenangabe verwerfen
+    var r=rest.match(/^[-–bis]+\s*(?:\d+\s*[\/⁄]\s*\d+|\d+(?:[.,]\d+)?(?:\s*(?:\d+\s*[\/⁄]\s*\d+|[½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]))?|[½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞])\s*/i);
+    if(r)rest=rest.slice(r[0].length);
   }
   // Einheit: nur übernehmen, wenn danach noch ein Name steht — sonst ist
   // „1 Dose" der Artikel selbst.
@@ -1956,7 +2277,7 @@ function _pickerLinkFill(rec,btn){
     }
     function rebindLink(){
       pickerRenderIngList('pickerLinkIngList',pickerIngredients,
-        function(i,v){pickerIngredients[i].amount=parseFloat(v)||0;pickerUpdateLinkTotal();},
+        function(i,v){pickerIngredients[i].amount=parseFloat(v)||0;pickerIngredients[i].missingGrams=false;pickerUpdateLinkTotal();},
         function(i){pickerIngredients.splice(i,1);rebindLink();pickerUpdateLinkTotal();}
       );
     }
@@ -2027,6 +2348,7 @@ function pickerSaveOwn(){
   if(onceEl&&onceEl.checked){
     // Einmalig eintragen: Werte gelten als Gesamtwerte der Portion (nicht pro 100 g).
     if(!kcal){showToast('Kalorien eingeben');return;}
+    if(window._editEntryMode){_pickerAppendToEditEntry([{name:name,emoji:emoji,amount:100,per100:{kcal:kcal,protein:p,carbs:c,fat:f,sugar:0,fiber:0,salt:0}}]);return;}
     getDay().meals[pickerMeal].push({name:name,emoji:emoji,amount:100,per100:{kcal:kcal,protein:p,carbs:c,fat:f,sugar:0,fiber:0,salt:0},kcal:kcal,protein:p,carbs:c,fat:f,sugar:0,fiber:0,salt:0});
     saveS();renderAll();closePicker();
     showToast(emoji+' '+name+' eingetragen');
@@ -2069,6 +2391,18 @@ function pickerIngDel(elId,i){var cb=window['_pickerIngCb_'+elId];if(cb)cb.onDel
 
 function pickerAddRecent(i){
   var item=(window._recentItems||[])[i];if(!item)return;
+  if(window._editEntryMode){
+    var it;
+    if(item.isRecipe||item.ingredients){
+      // Auch Chat-/Foto-Einträge ohne Rezept: die Zutaten des Eintrags zählen.
+      it=_pickerIngsAsOne(item.name,item.emoji||'📋',item.ingredients,item.portions||1);
+      if(!it){showToast(_PICKER_NO_GRAMS);return;}
+    } else {
+      it={name:item.name,emoji:item.emoji,amount:recallPortion(item.name)||item.amount||100,per100:item.per100};
+    }
+    _pickerAppendToEditEntry([it]);
+    return;
+  }
   if(item.isRecipe||item.ingredients){
     var t=ingTotal(item.ingredients||[]);
     var portions=item.portions||1;
@@ -2079,5 +2413,6 @@ function pickerAddRecent(i){
     getDay().meals[pickerMeal].push({name:item.name,emoji:item.emoji,amount:recalled,per100:item.per100,kcal:(item.per100.kcal||0)*r,protein:(item.per100.protein||0)*r,carbs:(item.per100.carbs||0)*r,fat:(item.per100.fat||0)*r,sugar:(item.per100.sugar||0)*r,fiber:(item.per100.fiber||0)*r,salt:(item.per100.salt||0)*r});
   }
   saveS();renderAll();closePicker();
+  _pickerRateEntry(pickerMeal,getDay().meals[pickerMeal].length-1);
   showToast((item.emoji||'🍽')+' '+item.name+' hinzugefügt');
 }

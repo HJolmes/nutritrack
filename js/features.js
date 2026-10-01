@@ -73,7 +73,7 @@ var FEATURES=[
    sub:'Gläser und Schnell-Knöpfe',
    actions:[
      {ic:'🎯', label:'Wasserziel',  hint:'Gläser pro Tag und Glasgröße', act:'NTFeat.openWaterGoal'},
-     {ic:'⏰', label:'Erinnerung',  hint:'Ans Trinken erinnern lassen', act:'openSettings', args:['erinnerungen']}
+     {ic:'⏰', label:'Erinnerung',  hint:'Zu festen Uhrzeiten, z. B. „Wasser trinken“', act:'openSettings', args:['erinnerungen']}
    ]},
 
   {id:'fast', ic:'🌙', label:'Fasten', card:'fastCard',

@@ -113,6 +113,13 @@ function dayCount(date){
   var n=0;SLOTS.forEach(function(s){n+=(p[s.id]||[]).length;});return n;
 }
 function isEmptyPlan(date){return dayCount(date)===0;}
+// Gibt es etwas, das toDiary() eintragen wuerde? Das ist jedes aufloesbare
+// Rezept – auch eines mit 0 kcal (Zutaten ohne Naehrwerte) –, aber keine Notiz
+// und kein geloeschtes Rezept (#247). Die kcal-Summe taugt dafuer nicht.
+function hasDiaryItems(date){
+  var p=planFor(date,false);if(!p)return false;
+  return SLOTS.some(function(s){return (p[s.id]||[]).some(function(it){return !isNote(it)&&!!resolve(it);});});
+}
 
 // ── Freitext statt Rezept (v0.260) ────────────────────────────────
 // Ein Planeintrag muss kein Rezept sein. „Pizza bestellen“, „Reste“, „bei Oma
@@ -272,8 +279,8 @@ function render(){
         +'</div></div>';
     });
     html+='<div class="plan-dact">'
-      +'<button type="button" class="plan-act" onclick="NTPlan.toDiary(\''+ds+'\')"'+(kc?'':' disabled')+'>'+(applied?'✓ im Tagebuch':'→ ins Tagebuch')+'</button>'
-      +'<button type="button" class="plan-act" onclick="NTPlan.clearDay(\''+ds+'\')"'+(kc?'':' disabled')+'>🗑 Tag leeren</button>'
+      +'<button type="button" class="plan-act" onclick="NTPlan.toDiary(\''+ds+'\')"'+(hasDiaryItems(ds)?'':' disabled')+'>'+(applied?'✓ im Tagebuch':'→ ins Tagebuch')+'</button>'
+      +'<button type="button" class="plan-act" onclick="NTPlan.clearDay(\''+ds+'\')"'+(isEmptyPlan(ds)?' disabled':'')+'>🗑 Tag leeren</button>'
       +'</div>'
       +'</div>';
   }

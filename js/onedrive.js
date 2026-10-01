@@ -201,7 +201,7 @@ function oneDriveSyncDown(){
       return r.json();
     }).then(function(backup){
       if(!backup)return;
-      if(backup.state){delete backup.state.apiKey;S=Object.assign(S,backup.state);S.apiKey='';S.setupDone=true;}
+      if(backup.state){delete backup.state.apiKey;if(!('goalStart' in backup.state))S.goalStart=null;S=Object.assign(S,backup.state);S.apiKey='';S.setupDone=true;}
       if(backup.foodCache)foodCache=backup.foodCache;
       if(backup.customFoods)customFoods=backup.customFoods;
       if(backup.recipes)recipes=backup.recipes;
@@ -270,7 +270,7 @@ function _odSlotLoad(idx){
       return r.json();
     }).then(function(d){
       if(!d)return;
-      if(d.state){delete d.state.apiKey;Object.assign(S,d.state);S.apiKey='';S.setupDone=true;}
+      if(d.state){delete d.state.apiKey;if(!('goalStart' in d.state))S.goalStart=null;Object.assign(S,d.state);S.apiKey='';S.setupDone=true;}
       if(d.customFoods)customFoods=d.customFoods;
       if(d.recipes)recipes=d.recipes;
       if(d.barcodeCache)Object.assign(barcodeCache,d.barcodeCache);

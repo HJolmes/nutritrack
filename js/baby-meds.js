@@ -20,12 +20,24 @@ function list(){return all().filter(function(m){return !m.del;});}
 function byId(id){return list().find(function(m){return m.id===id;})||null;}
 function pad(n){return n<10?'0'+n:''+n;}
 function hhmm(ts){var d=new Date(ts);return pad(d.getHours())+':'+pad(d.getMinutes());}
+// Tag vor der Uhrzeit: heute nichts, sonst gestern/morgen, sonst Wochentag und
+// Datum (wie die Termine in js/baby-milestones.js).
+var WD=['So','Mo','Di','Mi','Do','Fr','Sa'];
+function dayWord(ts){
+  var d=new Date(ts);
+  var dk=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  var t=NTBaby.today();
+  if(dk===t)return '';
+  if(dk===NTBaby.addDayKey(t,-1))return 'gestern ';
+  if(dk===NTBaby.addDayKey(t,1))return 'morgen ';
+  return WD[d.getDay()]+' '+pad(d.getDate())+'.'+pad(d.getMonth()+1)+'. ';
+}
 
 // Letzte Gabe zu einem Listeneintrag (über id, sonst gleicher Name) in den
-// letzten drei Tagen.
+// letzten vier Kalendertagen – deckt den größten Abstand im Formular (72 h) ab.
 function lastGiven(m){
   var t=NTBaby.today(),best=null,now=Date.now();
-  for(var i=0;i<3;i++){
+  for(var i=0;i<4;i++){
     NTBaby.logRO(NTBaby.addDayKey(t,-i)).forEach(function(e){
       if(e.t!=='med'||!e.ts||e.ts>now)return;
       var same=m.id?(e.mid===m.id||(!e.mid&&sameName(e.name,m.name))):sameName(e.name,m.name);
@@ -45,7 +57,7 @@ function givenToday(m){
 // eingetragene ohne Listeneintrag. Je Name nur die jüngste.
 function waits(){
   var t=NTBaby.today(),now=Date.now(),latest={};
-  for(var i=0;i<3;i++){
+  for(var i=0;i<4;i++){
     NTBaby.logRO(NTBaby.addDayKey(t,-i)).forEach(function(e){
       if(e.t!=='med'||!e.every||!e.ts||e.ts>now)return;
       var k=(e.name||'').trim().toLowerCase();
@@ -68,12 +80,9 @@ function cardHtml(){
     h+='<div class="bby-hint"><span>💊 '+esc(m.name)+' heute noch offen</span>'
       +'<button type="button" class="bby-pill on" data-act="NTBabyMed.give" data-args=\''+JSON.stringify([m.id]).replace(/'/g,'&#39;')+'\'>Gegeben ✓</button></div>';
   });
-  var today=NTBaby.today();
   waits().forEach(function(w){
-    var d=new Date(w.until);
-    var dk=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
     h+='<div class="bby-hint"><span>⏳ '+esc(w.e.name)+': nächste Gabe frühestens '
-      +(dk===today?'':'morgen ')+hhmm(w.until)+'</span></div>';
+      +dayWord(w.until)+hhmm(w.until)+'</span></div>';
   });
   return h;
 }
@@ -87,7 +96,7 @@ function give(id){
   // Frist der letzten Gabe noch nicht um: nachfragen statt still eintragen.
   var last=lastGiven(m);
   if(m.every&&last&&Date.now()<last.ts+m.every*3600000){
-    if(!confirm(m.name+' wurde um '+hhmm(last.ts)+' gegeben. Der eingetragene Mindestabstand von '
+    if(!confirm(m.name+' wurde '+(dayWord(last.ts)||'heute ')+'um '+hhmm(last.ts)+' gegeben. Der eingetragene Mindestabstand von '
       +String(m.every).replace('.',',')+' h ist noch nicht um. Trotzdem eintragen?'))return;
   }
   NTBaby.add(e,NTBaby.today());
@@ -112,7 +121,7 @@ function render(){
     if(m.dose)sub.push(esc(m.dose));
     if(m.daily)sub.push('täglich');
     if(m.every)sub.push('Abstand '+esc(String(m.every).replace('.',','))+' h');
-    sub.push(last?('zuletzt '+(last.ts>=tsToday()?'heute ':'')+hhmm(last.ts)):'noch nie gegeben');
+    sub.push(last?('zuletzt '+(dayWord(last.ts)||'heute ')+hhmm(last.ts)):'noch nie gegeben');
     var args=JSON.stringify([m.id]).replace(/'/g,'&#39;');
     return '<div class="fe" style="cursor:default;">'
       +'<div class="fee">💊</div>'
@@ -122,7 +131,6 @@ function render(){
       +'</div>';
   }).join('');
 }
-function tsToday(){var d=new Date();d.setHours(0,0,0,0);return d.getTime();}
 function fillForm(m){
   document.getElementById('bmName').value=(m&&m.name)||'';
   document.getElementById('bmDose').value=(m&&m.dose)||'';

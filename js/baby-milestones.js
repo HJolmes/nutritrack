@@ -156,12 +156,18 @@ function ageMonths(){
   var b=birthDate();if(!b)return null;
   var now=new Date();
   var m=(now.getFullYear()-b.getFullYear())*12+(now.getMonth()-b.getMonth());
-  if(now.getDate()<b.getDate())m--;
+  // Monatsende wie plus(): Wer am 31. geboren ist, wird am Monatsletzten einen
+  // Monat älter (28.02. statt erst 01.03.) – sonst stünde der U-Termin schon auf
+  // „jetzt fällig“, die Meilensteine aber noch bei der Stufe davor.
+  var last=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+  if(now.getDate()<Math.min(b.getDate(),last))m--;
   return m<0?null:m;
 }
 function ageDays(){
   var b=birthDate();if(!b)return null;
-  var d=Math.floor((new Date()-b)/86400000);
+  // Kalendertage (Sommerzeit-fest, wie js/baby-growth.js).
+  var n=new Date();
+  var d=Math.round((Date.UTC(n.getFullYear(),n.getMonth(),n.getDate())-Date.UTC(b.getFullYear(),b.getMonth(),b.getDate()))/86400000);
   return d<0?null:d;
 }
 function reached(st,months,days){

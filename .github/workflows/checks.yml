@@ -29,6 +29,18 @@ jobs:
       - name: Konsistenzpruefung
         run: node tools/check.js
 
+      - name: Worker-Pruefung
+        # Fuehrt worker/src/index.js mit nachgebautem KV und ersetztem fetch aus
+        # (nichts geht nach aussen): Body-Grenzen auch ohne Content-Length,
+        # SSRF-Filter samt Weiterleitungen, Fehler immer als JSON mit CORS, und
+        # dass App, Kurzbefehl/Tasker und Alexa-Lambda weiter durchkommen.
+        run: node tools/worker-test.js
+
+      - name: Stillzeit-Tabelle
+        # js/ampel.js gegen alle DB-Namen und feste Positiv-/Negativlisten
+        # (Weintrauben duerfen nicht rot werden, Sekt nicht gruen).
+        run: node tools/ampel-test.js
+
       - name: Versions-Bump bei deployten Dateien
         # Greift nur im PR: Wurde eine ausgelieferte Datei geaendert, muss
         # APP_VERSION gegenueber dem Zielbranch gestiegen sein. Sonst liefert der

@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.277"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.289"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.277"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.289"></script>
 <script>
   (function(){
     if(typeof ZXingWASM==='undefined'){console.warn('zxing-wasm load failed, ZXing-JS fallback aktiv');return;}
@@ -302,6 +302,8 @@ body:has(#setupScreen.active) .fb-fab{display:none;}
 .cm.a{background:var(--gl);color:var(--tx);align-self:flex-start;border-bottom-left-radius:4px;border:1px solid var(--g3);}
 .cm.h{background:var(--bg);color:var(--mu);align-self:center;font-style:italic;font-size:12px;text-align:center;border:none;padding:6px;}
 .chat-row{display:flex;gap:8px;align-items:flex-end;}
+/* Chat-Eingabe im Picker fest am unteren Dialogrand (#181), Muster wie #pickerAddSec */
+#ppanel-chat .chat-row{position:sticky;bottom:0;background:#fff;z-index:2;padding:6px 0 calc(6px + env(safe-area-inset-bottom,0px));}
 .chat-inp{flex:1;border:2px solid var(--br);border-radius:11px;padding:10px 13px;font-size:15px;outline:none;resize:none;line-height:1.4;max-height:120px;overflow-y:auto;}
 .chat-inp:focus{border-color:var(--g2);}
 .chat-send{background:var(--g2);color:white;border:none;border-radius:11px;padding:10px 14px;font-size:18px;flex-shrink:0;}
@@ -385,7 +387,7 @@ body:has(#setupScreen.active) .fb-fab{display:none;}
 .mdfi{height:100%;border-radius:4px;transition:width .5s;}
 .mdv{font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;}
 
-.tst{position:fixed;bottom:92px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--tx);color:white;border-radius:11px;padding:9px 16px;font-size:13px;font-weight:600;opacity:0;transition:all .25s;z-index:500;white-space:nowrap;pointer-events:none;}
+.tst{position:fixed;bottom:92px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--tx);color:white;border-radius:11px;padding:9px 16px;font-size:13px;font-weight:600;opacity:0;transition:all .25s;z-index:500;white-space:normal;width:max-content;max-width:calc(100vw - 32px);box-sizing:border-box;text-align:center;pointer-events:none;}
 .tst.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
 /* ═══════════════════════════════════════════════════════════════
@@ -500,8 +502,12 @@ button,input,select,textarea{font-family:var(--fs-body);}
 }
 /* Tastatur offen (#181): Nav ausblenden, bottom-fixe Overlays über die Tastatur heben */
 body.kb-open .bnav{display:none;}
-body.kb-open .ov .mod{bottom:var(--kbh,0px);max-height:calc(88vh - var(--kbh,0px));}
+body.kb-open .ov .mod{bottom:var(--kbh,0px);max-height:min(calc(88vh - var(--kbh,0px)), calc(var(--vvh,100vh) - 8px));}
 body.kb-open #feedbackFab{display:none;}
+body.kb-open .tst{bottom:calc(var(--kbh,0px) + 12px);}
+/* Über der Tastatur liegt kein Home-Indikator: Safe-Area-Polster weglassen */
+body.kb-open #ppanel-chat .chat-row{padding-bottom:6px;}
+body.kb-open #pickerAddSec{padding-bottom:10px;}
 /* Solange ein Overlay offen ist, gehoert die Flaeche dem Overlay. Der FAB hat
    z-index 400, die Overlays 300 — er lag also ueber jedem Dialog und verdeckte
    dessen rechte untere Ecke (im Funktions-Katalog einen Schalter).
@@ -1053,10 +1059,11 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
         <div id="weightChartEmpty" style="text-align:center;color:var(--mu);font-size:13px;padding:20px 0;">Noch keine Gewichtsdaten</div>
       </div>
       <div class="trend-card">
-        <div class="head"><h4>KI-Bericht ✨</h4>
-          <button type="button" data-act="NTStats.weekReport" id="weekReportBtn" style="font-size:12px;background:var(--g1);border:none;border-radius:999px;padding:6px 12px;color:white;font-weight:600;cursor:pointer;">Erstellen</button>
+        <div class="head"><h4>Wochenbericht</h4>
+          <button type="button" data-act="NTStats.weekReport" id="weekReportBtn" style="font-size:12px;background:var(--g1);border:none;border-radius:999px;padding:6px 12px;color:white;font-weight:600;cursor:pointer;">✨ Ausformulieren</button>
         </div>
         <div id="weekReportText" style="font-size:13px;color:var(--mu);line-height:1.6;margin-top:8px;"></div>
+        <div id="weekReportAi" style="font-size:13px;color:var(--tx);line-height:1.6;margin-top:8px;white-space:pre-line;"></div>
         <div id="weekReportSource" style="margin-top:6px;"></div>
       </div>
       <div class="trend-card" id="offlineQueueWrap" style="display:none;">
@@ -1169,7 +1176,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="list-row" data-act="openSettings" data-args='["erinnerungen"]'>
       <div class="lr-ic">⏰</div>
-      <div class="lr-body"><div class="lr-name">Erinnerungen</div><div class="lr-sub">Mahlzeiten &amp; Wasser</div></div>
+      <div class="lr-body"><div class="lr-name">Erinnerungen</div><div class="lr-sub">Zu festen Uhrzeiten</div></div>
       <div class="lr-val">›</div>
     </div>
     <div class="list-row" data-act="openSettings" data-args='["ki"]'>
@@ -1211,7 +1218,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.277</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.289</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1326,7 +1333,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
         <div id="pickerBarcodeResult"></div>
         <button type="button" id="pickerBcStartBtn" class="abt" data-act="pickerStartScan">▶ Scanner starten</button>
         <button type="button" id="pickerBcStopBtn" class="abt" style="display:none;background:linear-gradient(135deg,#555,#777);" data-act="pickerStopScan">■ Scanner stoppen</button>
-        <label id="pickerBcPhotoBtn" for="pickerBcPhoto" style="margin-top:8px;display:block;width:100%;box-sizing:border-box;background:rgba(0,0,0,.06);border:1.5px solid var(--br);border-radius:10px;padding:10px;font-size:14px;font-weight:700;color:var(--g1);text-align:center;cursor:pointer;">📸 Foto aufnehmen (alle Decoder + KI)</label>
+        <label id="pickerBcPhotoBtn" for="pickerBcPhoto" style="margin-top:8px;display:block;width:100%;box-sizing:border-box;background:rgba(0,0,0,.06);border:1.5px solid var(--br);border-radius:10px;padding:10px;font-size:14px;font-weight:700;color:var(--g1);text-align:center;cursor:pointer;">📸 Foto aufnehmen (alle Decoder)</label>
         <button type="button" id="pickerBcManualBtn" data-act="pickerOpenManualBarcode" style="margin-top:8px;width:100%;background:rgba(0,0,0,.04);border:1.5px solid var(--br);border-radius:10px;padding:10px;font-size:14px;font-weight:600;color:var(--mu);">📝 Code manuell eingeben</button>
       </div>
 
@@ -1512,16 +1519,16 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
       <details open><summary>🏠 Heute-Tab</summary><div class="hb">Der Startbildschirm zeigt dein Tagesziel, die verbleibenden Kalorien und die drei Makro-Karten (Protein, Kohlenhydrate, Fett). Darunter liegen die vier Mahlzeiten-Karten — antippen öffnet die Detail-Ansicht. Mit den Pfeilen <strong>‹ ›</strong> blätterst du zwischen Tagen. Oben rechts liegen <strong>?</strong> (Hilfe), <strong>📬</strong> (Partner-Postfach, sobald ihr gekoppelt seid — mit Flagge für ungelesene Sendungen) und <strong>📤</strong> (den angezeigten Tag teilen). „▶ Nährwert-Details" klappt die Ampel-Kacheln (Zucker, Ballaststoffe, Salz …) auf. Wasser trackst du über die Gläser-Reihe, Sport über „+ Aktivität" — verbrannte Kalorien werden vom Ziel abgezogen.</div></details>
       <details><summary>➕ Mahlzeit erfassen</summary><div class="hb">Der <strong>＋</strong>-Knopf in der Mitte der unteren Leiste öffnet den Picker, standardmäßig im <strong>Chat</strong>: Einfach tippen oder per 🎙️ diktieren, was du gegessen hast („Brot mit Käse und Schinken") — die App zerlegt es in Zutaten und schätzt Nährwerte. Weitere Wege:<ul><li><strong>Suche</strong> — lokale Treffer sofort beim Tippen, Enter lädt Online-Ergebnisse</li><li><strong>Zuletzt</strong> — kürzlich verwendete Einträge</li><li><strong>Foto</strong> — Teller fotografieren, KI erkennt die Komponenten</li><li><strong>Barcode</strong> — Verpackung scannen</li><li><strong>Eigenes</strong> — Nährwerte selbst eintragen; mit Häkchen „Nur einmal eintragen" wird nichts dauerhaft gespeichert</li><li><strong>Link</strong> — ein Feld für beides: Rezept-Link von nahezu jeder Rezept-Seite oder jedem Food-Blog (Chefkoch, Lecker, Kochbar, Essen &amp; Trinken, AllRecipes …) <em>oder</em> eine geteilte NutriTrack-Sendung (Mahlzeit, Rezept, ganzer Tag, Zeitraum) als Link oder Code. Die App erkennt selbst, was du eingefügt hast; ein passender Inhalt aus der Zwischenablage wird beim Öffnen gleich angeboten. Die App liest zuerst die Rezeptdaten der Seite selbst und fragt die KI nur, wenn die Seite keine hat. Danach wählst du unter „Wohin damit?", ob das Rezept eingetragen, als Rezept gespeichert und/oder auf den Einkaufszettel gelegt wird</li></ul></div></details>
       <details><summary>🍽 Mahlzeit-Detail</summary><div class="hb">Die Karte einer Mahlzeit öffnet die Detail-Ansicht mit allen Posten. Unten findest du: <strong>📋 Vorlage</strong> (Mahlzeit als Vorlage laden/speichern), <strong>🔁 Wiederholen</strong> (an festen Wochentagen automatisch eintragen) und <strong>💾 Als Rezept</strong> (alle Einträge als Rezept in die Bibliothek übernehmen). Einzelne Einträge antippen zum Bearbeiten, Verschieben oder Löschen.</div></details>
-      <details><summary>🛒 Einkaufszettel</summary><div class="hb">Über die Kachel <strong>🛒 Einkaufszettel</strong> auf „Heute" (oder Mehr → Funktionen, wenn der Zettel leer ist) führst du eine Einkaufsliste: oben eintippen („2 Liter Milch" erkennt Menge und Kategorie von selbst) oder über „🧺 Artikel wählen" aus den Kacheln antippen. Ein Tipp auf einen Artikel hakt ihn ab, ✏️ ändert Name, Menge, Symbol und Kategorie. Über „🔄 Teilen" koppelst du ein zweites Gerät mit einem Code — beide Geräte sehen denselben Zettel in Echtzeit, verschlüsselt und getrennt vom Baby-Tagebuch. Per Alexa Angesagtes erreicht ebenfalls beide, sofern beide Handys dasselbe Familien-Token tragen (Mehr → 🗣️ Alexa-Einwurf). Rezepte übernimmst du in der Bibliothek über 🛒 → „Auf den Einkaufszettel".</div></details>
+      <details><summary>🛒 Einkaufszettel</summary><div class="hb">Über die Kachel <strong>🛒 Einkaufszettel</strong> auf „Heute" (oder Mehr → Funktionen, wenn der Zettel leer ist) führst du eine Einkaufsliste: oben eintippen („2 Liter Milch" erkennt Menge und Kategorie von selbst) oder über „🧺 Artikel wählen" aus den Kacheln antippen. Ein Tipp auf einen Artikel hakt ihn ab, ✏️ ändert Name, Menge, Symbol und Kategorie. Über „🔄 Teilen" koppelst du ein zweites Gerät mit einem Code — beide Geräte sehen denselben Zettel in Echtzeit, verschlüsselt und getrennt vom Baby-Tagebuch. Per Alexa Angesagtes erreicht ebenfalls beide, sofern beide Handys dasselbe Familien-Token tragen (Mehr → 🔗 Verbindungen → 🗣️ Alexa). Rezepte übernimmst du in der Bibliothek über 🛒 → „Auf den Einkaufszettel".</div></details>
       <details><summary>📚 Rezeptbibliothek</summary><div class="hb">Unter <strong>Mehr → 📚 Rezeptbibliothek</strong> liegen deine Rezepte und eigenen Lebensmittel. Rezepte kannst du bearbeiten, duplizieren, teilen, als Einkaufsliste anzeigen und direkt in eine Mahlzeit übernehmen. Der 🔗-Knopf öffnet das Link-Feld: Dort kannst du sowohl ein Rezept per URL importieren als auch einen geteilten NutriTrack-Code/Link einlösen — die App erkennt selbst, was es ist.<br><br>Beim Anlegen, Umbenennen und Importieren eines Rezepts prüft die App, ob schon etwas Ähnliches drinsteht — gleicher oder ähnlicher Name, oder fast dieselben Zutaten — und fragt nach, bevor ein zweites daraus wird.</div></details>
       <details><summary>📅 Wochenplan</summary><div class="hb">Unter <strong>Mehr → 📅 Wochenplan</strong> (oder über die Kachel auf „Heute“) verteilst du Rezepte auf die Woche. Das ＋ an einer Mahlzeit öffnet die Auswahl: Tipp ein, was du suchst — du kannst einen <strong>Rezept-Treffer</strong> nehmen oder den Text direkt <strong>als Notiz</strong> einplanen („Pizza bestellen“, „Reste“, „bei Oma essen“). Eine Notiz zählt mit 0 kcal, steht nicht auf dem Einkaufszettel und wandert nicht ins Tagebuch; tipp sie an und wähle „📋 Rezept hinterlegen“, sobald du weißt, was es gibt. Oben sagt der Plan, wie viele Einträge noch offen sind.<br><br><strong>🎲 Füllen</strong> plant die leeren Mahlzeiten so, dass <strong>jeder Tag dein Kalorienziel trifft</strong>: Frühstück, Mittag, Abend und Snack teilen sich das Ziel, danach werden die Portionen nachgezogen. Jeder Tag zeigt seine Summe gegen das Ziel. Die Vorschläge kommen zuerst aus deinen Rezepten, dazu aus ganzen Mahlzeiten deines Tagebuchs („Burger mit Pommes“) — einzelne Lebensmittel bleiben draußen, und was du zum Frühstück gegessen hast, wird nicht als Abendessen vorgeschlagen. Von Hand Geplantes wird nie angefasst.<br><br><strong>＋ Neues Rezept</strong> legt das Rezept in der <strong>Bibliothek</strong> ab — nicht als Mahlzeit im Tagebuch. Wurde es aus dem ＋ eines Tages heraus angelegt, steht es danach gleich in diesem Slot.</div></details>
       <details><summary>📤 Teilen &amp; Import</summary><div class="hb">Rezepte, Lebensmittel, einzelne Mahlzeiten, <strong>ganze Tage</strong> und <strong>Zeiträume</strong> lassen sich teilen (📤-Symbole; der Tages-Knopf liegt auf „Heute" oben rechts in der Kopfzeile und im Verlauf bei jedem Tag, der Zeitraum hinter 🗓 im Verlauf).<ul><li><strong>Mit Partner-Kopplung (empfohlen):</strong> Einmalig unter <strong>Mehr → 🔗 Verbindungen → 📬 Partner-Postfach</strong> verbinden — danach steht im Teilen-Dialog oben „An … senden" und die Sendung landet direkt im Postfach des anderen. Kein Link, kein Messenger.</li><li><strong>Ohne Kopplung:</strong> weiterhin als Link. Der Empfänger öffnet ihn — auf dem iPhone ggf. in der installierten App über <strong>＋ → 🔗 Link</strong> einfügen (das Feld erkennt selbst, ob ein Rezept-Link oder eine NutriTrack-Sendung drinsteht, und bietet einen passenden Link aus der Zwischenablage gleich an). Für ganze Tage und Zeiträume braucht der Link-Weg eine Internetverbindung, weil die Daten sonst nicht in eine URL passen.</li></ul></div></details>
       <details><summary>👫 Partner</summary><div class="hb">Unter <strong>Mehr → 🔗 Verbindungen → 📬 Partner-Postfach</strong> verbindest du dein Gerät mit dem deines Partners: auf einem Gerät „Kopplung starten", den Code auf dem anderen einfügen. Trag dort auch deinen Namen ein — der steht beim Empfänger an jeder Sendung.<br><br><strong>Es wird nichts automatisch übertragen.</strong> Nur was du ausdrücklich sendest, geht raus und landet im <strong>Postfach</strong> des anderen. Das sitzt auf „Heute" oben rechts (📬) und trägt eine Flagge mit der Zahl der ungelesenen Sendungen; bei etwas Neuem erscheint zusätzlich eine Kachel im Tagesüberblick. Eine Sendung, die zu einer bestimmten Mahlzeit gehört, zeigt ihr 📬 außerdem <strong>an genau dieser Mahlzeit</strong> — an der Kachel auf „Heute" und in der geöffneten Mahlzeit. Ein Tipp darauf öffnet die Übernahme direkt, mit der richtigen Mahlzeit schon ausgewählt. Dort wird jede Sendung einzeln angesehen und übernommen — bei einem ganzen Tag wählst du, welche Mahlzeiten du willst, auf welchen Tag sie sollen und ob Vorhandenes ergänzt oder ersetzt wird; bei einem Zeitraum hakst du einzelne Tage ab. Eure Tagebücher bleiben also getrennt.<br><br>Die Sendungen werden auf dem Gerät verschlüsselt; der Schlüssel steckt nur im Kopplungs-Code und wird nie übertragen. Der Code gilt <strong>nur</strong> fürs Partner-Postfach — Einkaufszettel und Baby-Tagebuch haben eigene Codes und bleiben unberührt. Neue Sendungen holt die App beim Start, beim Zurückkehren in die App und solange das Postfach offen ist; das kann bis zu einer Minute dauern.</div></details>
       <details><summary>💾 Backup</summary><div class="hb">Alle Sicherungswege liegen unter <strong>Mehr → 💾 Backup &amp; Daten</strong>: „Jetzt sichern"-Knopf, Datei-Export/-Import (JSON), OneDrive-Sync mit täglichem Autospeicher sowie lokale Autospeicher-Stände. Tipp: Vor einem Gerätewechsel einmal exportieren. Hinweis: Mahlzeit-Fotos sind gerätelokal und nicht Teil der Backup-Datei.</div></details>
       <details><summary>🏃 Sport-Sync</summary><div class="hb">Unter <strong>Mehr → 🧩 Funktionen → 🏃 Sport &amp; Aktivität → Sport-Sync</strong> erzeugst du ein Token und verbindest eine iOS-Kurzbefehl-Automation („Wenn Training endet") oder einen Android-HTTP-Shortcut. Abgeschlossene Workouts erscheinen dann automatisch mit Apple-/Samsung-Badge und reduzieren dein Tagesziel.</div></details>
-      <details><summary>🤖 KI</summary><div class="hb">Foto-Erkennung, Chat und Wochenbericht laufen über einen geschützten KI-Zugang — dafür brauchst du das Proxy-Passwort (Mehr → 🤖 KI). Optional kannst du dort einen eigenen KI-Anbieter (DeepSeek, OpenAI, Gemini, …) mit eigenem API-Key hinterlegen. Ohne Passwort funktioniert alles außer den KI-Funktionen.</div></details>
+      <details><summary>🤖 KI</summary><div class="hb">Foto-Erkennung, Chat und das Ausformulieren des Wochenberichts laufen über einen geschützten KI-Zugang — dafür brauchst du das Proxy-Passwort (Mehr → 🤖 KI). Optional kannst du dort einen eigenen KI-Anbieter (DeepSeek, OpenAI, Gemini, …) mit eigenem API-Key hinterlegen. Ohne Passwort funktioniert alles außer den KI-Funktionen — der Wochenbericht selbst wird ohne KI berechnet.</div></details>
       <details><summary>🤰 Schwangerschaft &amp; 🤱 Stillzeit</summary><div class="hb">Unter <strong>Mehr → Profil</strong> kannst du Schwangerschaft (Trimester oder errechneter Termin) oder Stillzeit angeben — beides schließt sich gegenseitig aus. Zuschläge auf den Kalorienbedarf: 2. Trimester +300, 3. Trimester +500, ausschließliches Stillen +500, Teilstillen mit Beikost +250 kcal/Tag (Richtwerte nach DGE). Der Zuschlag greift, sobald du „🧮 Kalorienbedarf berechnen" antippst. Beim Abnehmen in der Stillzeit deckelt die App das Defizit auf 500 kcal/Tag und geht nie unter 1800 kcal — darunter leiden Milchmenge und Nährstoffdichte. Zusätzlich kannst du die <strong>Lebensmittel-Ampel</strong> einschalten: Sie bewertet eingetragene Lebensmittel und meldet sich bei gelben und roten Treffern. Die Stillzeit-Ampel ist bewusst liberaler als die Schwangerschafts-Ampel — Rohmilchkäse, Sushi und Salami sind beim Stillen unbedenklich. Die Ampel ersetzt keine Beratung durch Hebamme, Ärztin oder Arzt.</div></details>
-      <details><summary>👶 Baby-Tagebuch</summary><div class="hb">Einschalten unter <strong>Mehr → 🧩 Funktionen</strong> — unabhängig von Schwangerschaft und Stillzeit, damit auch Partner, Väter und Betreuende es führen können. Danach erscheint eine Kachel auf „Heute"; alles Weitere steht unter <strong>Mehr → 🧩 Funktionen → 👶 Baby-Tagebuch</strong>. Festhalten lassen sich: <ul><li><strong>Stillen</strong> — welche Brust und wie lange; die App schlägt vor, welche Seite als Nächstes dran ist. Bei „Beide" lässt sich die <strong>Hauptseite</strong> angeben (die, an der mehr getrunken wurde) — daraus ergibt sich der Vorschlag für das nächste Mal</li><li><strong>Flasche</strong> — Menge in ml und Art (Muttermilch, Pre, Folgemilch)</li><li><strong>Windel</strong> — Pipi, Stuhl oder beides, bei Stuhl zusätzlich Farbe und Konsistenz</li><li><strong>Temperatur</strong> — mit Messort; ab 38,0 °C wird der Eintrag rot markiert</li><li><strong>Schlaf</strong> — von/bis, wobei eines von beiden genügt: Trag „schläft seit 13:00" ein, während es noch schläft, und tippe später in der Liste auf <strong>Wach jetzt</strong>. Ein Schnell-Knopf vom Typ Schlaf schaltet mit einem Tipp zwischen einschlafen und aufwachen um.</li><li><strong>Notiz</strong> — Freitext, z. B. „Vitamin D gegeben"</li></ul>Die Schnell-Knöpfe tragen mit einem Tipp und der aktuellen Uhrzeit ein — jeder Eintrag lässt sich danach antippen und in Zeit und Details korrigieren. Über <strong>⚙️ Schnell-Knöpfe</strong> stellst du sie frei ein: eigene Knöpfe anlegen (z. B. „Fläschchen 120 ml" oder „Vitamin D gegeben"), Symbol und Beschriftung wählen, sortieren, löschen oder alles zurücksetzen. Ein Knopf vom Typ Temperatur öffnet den Dialog, weil dort ein Messwert gebraucht wird; ein Schlaf-Knopf schaltet direkt zwischen einschlafen und aufwachen um.<br><br><strong>🔄 Zu zweit führen:</strong> Über „🔄 Sync" im Tagebuch koppelst du ein zweites Gerät — auf dem ersten „Kopplung starten", den Code auf dem zweiten Gerät einfügen. Danach gleichen sich die Einträge automatisch ab: nach jeder Änderung, beim Öffnen des Tagebuchs und beim Zurückkehren in die App. Ein Abgleich kann bis zu einer Minute brauchen; ohne Netz wird alles gesammelt und später nachgeholt. Ändern beide Geräte denselben Eintrag, gewinnt die spätere Änderung. <strong>Übertragen wird ausschließlich das Baby-Tagebuch</strong> — Mahlzeiten, Kalorien, Gewicht und Profil bleiben auf deinem Gerät. Die Einträge werden vor dem Senden auf dem Gerät verschlüsselt; der Schlüssel steckt nur im Kopplungs-Code. Deshalb: Den Code nur direkt an die Person weitergeben, die mitlesen soll — und wer ihn verliert, koppelt einfach neu. Sagt ihr Einträge per Alexa an, kommen sie bei <b>beiden</b> an, sobald einer von euch die App öffnet — dafür tragen beide Handys dasselbe Familien-Token (Mehr → 🗣️ Alexa-Einwurf). Die Einträge gehören immer zum Tag, der oben auf „Heute" ausgewählt ist, und wandern in jedes Backup mit. Das Tagebuch ist eine Gedächtnisstütze, keine medizinische Überwachung und stellt keine Diagnose.</div></details>
+      <details><summary>👶 Baby-Tagebuch</summary><div class="hb">Einschalten unter <strong>Mehr → 🧩 Funktionen</strong> — unabhängig von Schwangerschaft und Stillzeit, damit auch Partner, Väter und Betreuende es führen können. Danach erscheint eine Kachel auf „Heute"; alles Weitere steht unter <strong>Mehr → 🧩 Funktionen → 👶 Baby-Tagebuch</strong>. Festhalten lassen sich: <ul><li><strong>Stillen</strong> — welche Brust und wie lange; die App schlägt vor, welche Seite als Nächstes dran ist. Bei „Beide" lässt sich die <strong>Hauptseite</strong> angeben (die, an der mehr getrunken wurde) — daraus ergibt sich der Vorschlag für das nächste Mal</li><li><strong>Flasche</strong> — Menge in ml und Art (Muttermilch, Pre, Folgemilch)</li><li><strong>Windel</strong> — Pipi, Stuhl oder beides, bei Stuhl zusätzlich Farbe und Konsistenz</li><li><strong>Temperatur</strong> — mit Messort; ab 38,0 °C wird der Eintrag rot markiert</li><li><strong>Schlaf</strong> — von/bis, wobei eines von beiden genügt: Trag „schläft seit 13:00" ein, während es noch schläft, und tippe später in der Liste auf <strong>Wach jetzt</strong>. Ein Schnell-Knopf vom Typ Schlaf schaltet mit einem Tipp zwischen einschlafen und aufwachen um.</li><li><strong>Notiz</strong> — Freitext, z. B. „Vitamin D gegeben"</li></ul>Die Schnell-Knöpfe tragen mit einem Tipp und der aktuellen Uhrzeit ein — jeder Eintrag lässt sich danach antippen und in Zeit und Details korrigieren. Über <strong>⚙️ Schnell-Knöpfe</strong> stellst du sie frei ein: eigene Knöpfe anlegen (z. B. „Fläschchen 120 ml" oder „Vitamin D gegeben"), Symbol und Beschriftung wählen, sortieren, löschen oder alles zurücksetzen. Ein Knopf vom Typ Temperatur öffnet den Dialog, weil dort ein Messwert gebraucht wird; ein Schlaf-Knopf schaltet direkt zwischen einschlafen und aufwachen um.<br><br><strong>🔄 Zu zweit führen:</strong> Über „🔄 Sync" im Tagebuch koppelst du ein zweites Gerät — auf dem ersten „Kopplung starten", den Code auf dem zweiten Gerät einfügen. Danach gleichen sich die Einträge automatisch ab: nach jeder Änderung, beim Öffnen des Tagebuchs und beim Zurückkehren in die App. Ein Abgleich kann bis zu einer Minute brauchen; ohne Netz wird alles gesammelt und später nachgeholt. Ändern beide Geräte denselben Eintrag, gewinnt die spätere Änderung. <strong>Übertragen wird ausschließlich das Baby-Tagebuch</strong> — Mahlzeiten, Kalorien, Gewicht und Profil bleiben auf deinem Gerät. Die Einträge werden vor dem Senden auf dem Gerät verschlüsselt; der Schlüssel steckt nur im Kopplungs-Code. Deshalb: Den Code nur direkt an die Person weitergeben, die mitlesen soll — und wer ihn verliert, koppelt einfach neu. Sagt ihr Einträge per Alexa an, kommen sie bei <b>beiden</b> an, sobald einer von euch die App öffnet — dafür tragen beide Handys dasselbe Familien-Token (Mehr → 🔗 Verbindungen → 🗣️ Alexa). Die Einträge gehören immer zum Tag, der oben auf „Heute" ausgewählt ist, und wandern in jedes Backup mit. Das Tagebuch ist eine Gedächtnisstütze, keine medizinische Überwachung und stellt keine Diagnose.</div></details>
       <details><summary>❓ FAQ</summary><div class="hb"><strong>Warum stimmt eine Schätzung nicht?</strong> KI-Werte sind Näherungen — Menge und Zutaten lassen sich jederzeit anpassen.<br><strong>Funktioniert die App offline?</strong> Ja, Tagebuch, Suche (lokale Datenbank) und Bibliothek laufen offline; KI und Online-Suche brauchen Netz.<br><strong>Erinnerungen kommen nicht?</strong> Technisch bedingt erscheinen sie nur, solange die App geöffnet ist.<br><strong>Daten weg?</strong> Mehr → Backup &amp; Daten → Autospeicher anzeigen — dort liegen die letzten Stände.</div></details>
       <div style="text-align:center;margin:14px 0 6px;"><a href="nutritrack_anleitung.pdf" target="_blank" style="font-size:13px;color:var(--g2);font-weight:700;">📄 Anleitung als PDF öffnen</a></div>
     </div>
@@ -2045,7 +2052,8 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     <div class="mbd">
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;" id="exercisePresets"></div>
       <div class="sf"><label class="lbl">Aktivität</label>
-        <input type="text" class="sinp" id="exName" placeholder="z.B. Laufen, Radfahren, Schwimmen...">
+        <input type="text" class="sinp" id="exName" list="exNameList" autocomplete="off" placeholder="z.B. Laufen, Radfahren, Schwimmen...">
+        <datalist id="exNameList"></datalist>
       </div>
       <div class="srow">
         <div class="sf"><label class="lbl">Dauer (Min.)</label>
@@ -2063,7 +2071,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
         <div style="font-size:22px;font-weight:900;color:var(--g1);" id="exKcal">0</div>
         <div style="font-size:12px;color:var(--mu);">kcal verbrannt (Schätzung)</div>
       </div>
-      <button type="button" id="exEstimateBtn" class="seb" style="margin-bottom:8px;" data-act="estimateExercise">🤖 KI-Schätzung</button>
+      <button type="button" id="exEstimateBtn" class="seb" style="margin-bottom:8px;" data-act="estimateExercise">🧮 Berechnen</button>
       <button type="button" class="svb" data-act="saveExercise">Speichern ✓</button>
     </div>
   </div>
@@ -2344,7 +2352,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 
 <!-- ══ EINKAUFSZETTEL: ARTIKEL BEARBEITEN ══ -->
 <div class="ov" id="shopItemOv" data-bg-close="shopItemOv">
-  <div class="mod" style="height:auto;max-height:88vh;">
+  <div class="mod" style="height:auto;">
     <div class="mhan"></div>
     <div class="mhd">
       <button type="button" class="mcl" data-act="closeOv" data-args='["shopItemOv"]'>✕</button>
@@ -3266,7 +3274,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
         <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px;">
           <div style="display:flex;gap:6px;">
             <input type="time" class="sinp" id="reminderTime" style="flex:0 0 110px;">
-            <input type="text" class="sinp" id="reminderLabel" placeholder="z.B. Mittagessen" style="flex:1;">
+            <input type="text" class="sinp" id="reminderLabel" placeholder="z.B. Mittagessen oder Wasser trinken" style="flex:1;">
           </div>
           <button type="button" class="svb" style="margin-top:0;" data-act="NTRemind.add">⏰ Erinnerung hinzufügen</button>
         </div>
@@ -3275,7 +3283,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
       <!-- TAB: KI -->
       <div id="spanel-ki" style="display:none;">
         <div class="sf" style="margin-bottom:0;"><label class="lbl">🔑 Proxy-Passwort</label>
-          <div style="font-size:12px;color:var(--mu);line-height:1.5;margin-bottom:8px;">Passwort sichert den KI-Zugang (Foto-Erkennung, Chat, Wochenbericht). Es wird als SHA-256 Hash gespeichert – nie im Klartext.</div>
+          <div style="font-size:12px;color:var(--mu);line-height:1.5;margin-bottom:8px;">Passwort sichert den KI-Zugang (Foto-Erkennung, Chat, Ausformulieren des Wochenberichts). Es wird als SHA-256 Hash gespeichert – nie im Klartext.</div>
           <div id="aiProxyStatus" style="font-size:12px;color:var(--g1);font-weight:700;margin-bottom:10px;"></div>
           <input type="password" id="settProxyPwInput" placeholder="Neues Passwort eingeben" autocomplete="new-password"
             style="width:100%;box-sizing:border-box;padding:10px 12px;border:2px solid var(--br);border-radius:10px;font-size:14px;outline:none;margin-bottom:8px;"
@@ -3284,7 +3292,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
         </div>
         <div style="padding-top:12px;border-top:1px solid var(--br);margin-top:12px;">
           <label class="lbl" style="margin-bottom:8px;">🤖 KI-Anbieter (Chat &amp; Text)</label>
-          <div style="font-size:12px;color:var(--mu);line-height:1.5;margin-bottom:8px;">Wähle, an welchen KI-Anbieter die Text-Schätzungen (Chat, Wochenbericht) gehen. Fotos steuerst du separat unter „📷 Foto-KI". Mit eigenem API-Key wird dieser <b>zuerst</b> genutzt; ist das Kontingent aufgebraucht oder kommt kein Ergebnis, fällt NutriTrack automatisch auf Anthropic (Standard) zurück. Der Key wird nur auf diesem Gerät gespeichert.</div>
+          <div style="font-size:12px;color:var(--mu);line-height:1.5;margin-bottom:8px;">Wähle, an welchen KI-Anbieter die Text-Schätzungen (Chat, Ausformulieren des Wochenberichts) gehen. Fotos steuerst du separat unter „📷 Foto-KI". Mit eigenem API-Key wird dieser <b>zuerst</b> genutzt; ist das Kontingent aufgebraucht oder kommt kein Ergebnis, fällt NutriTrack automatisch auf Anthropic (Standard) zurück. Der Key wird nur auf diesem Gerät gespeichert.</div>
           <select id="aiProviderSelect" onchange="onAiProviderChange()"
             style="width:100%;box-sizing:border-box;padding:10px 12px;border:2px solid var(--br);border-radius:10px;font-size:14px;outline:none;margin-bottom:8px;background:#fff;"></select>
           <div id="aiProviderKeyWrap" style="display:none;">
@@ -3346,11 +3354,12 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.277"></script>
-<script src="js/fooddb.js?v=0.277"></script>
-<script src="js/fooddb-usda.js?v=0.277"></script>
-<script src="js/idb-photos.js?v=0.277"></script>
-<script src="js/changelog.js?v=0.277"></script>
+<script src="js/actions.js?v=0.289"></script>
+<script src="js/fooddb.js?v=0.289"></script>
+<script src="js/fooddb-usda.js?v=0.289"></script>
+<script src="js/metdb.js?v=0.289"></script>
+<script src="js/idb-photos.js?v=0.289"></script>
+<script src="js/changelog.js?v=0.289"></script>
 <script>
 // ════════════════════════════════════════
 // SECTION: DATABASE
@@ -3363,13 +3372,13 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 // ════════════════════════════════════════
 // SECTION: STATE
 // ════════════════════════════════════════
-var S={apiKey:'',name:'Du',goal:2000,goalManual:false,weight:0,height:0,age:0,gender:'',activity:'',pregnant:0,pregnantET:'',pregWarn:false,nursing:0,nursWarn:false,babyOn:false,baby:{name:'',birth:''},babyLog:{},babyTomb:{},babyMiles:{},babyQs:[],babyQuick:null,babySync:null,shopList:[],shopTomb:{},shopSync:null,shopRecent:[],shopCats:[],shopCatMem:{},links:[],linksMigrated:0,planTomb:{},goalWeight:0,goalDate:'',goalAchievedShown:'',dietPrefs:[],dietFree:'',savedDietFree:[],dietWarn:false,macroTargets:{protein:0,carbs:0,fat:0},macroGoalMode:'percent',macroGoalG:{protein:0,carbs:0,fat:0},reminders:[],weightLog:{},portionMemory:{},waterGoal:8,waterUnit:250,mealTemplates:[],recurringMeals:[],exerciseLibrary:[],dashOrder:null,dashHidden:null,mealPlan:{},planApplied:{},currentDate:'',days:{}};
+var S={apiKey:'',name:'Du',goal:2000,goalManual:false,weight:0,height:0,age:0,gender:'',activity:'',pregnant:0,pregnantET:'',pregWarn:false,nursing:0,nursWarn:false,babyOn:false,baby:{name:'',birth:''},babyLog:{},babyTomb:{},babyMiles:{},babyQs:[],babyQuick:null,babySync:null,shopList:[],shopTomb:{},shopSync:null,shopRecent:[],shopCats:[],shopCatMem:{},links:[],linksMigrated:0,planTomb:{},goalWeight:0,goalDate:'',goalAchievedShown:'',goalStart:null,dietPrefs:[],dietFree:'',savedDietFree:[],dietWarn:false,macroTargets:{protein:0,carbs:0,fat:0},macroGoalMode:'percent',macroGoalG:{protein:0,carbs:0,fat:0},reminders:[],weightLog:{},portionMemory:{},waterGoal:8,waterUnit:250,mealTemplates:[],recurringMeals:[],exerciseLibrary:[],dashOrder:null,dashHidden:null,mealPlan:{},planApplied:{},currentDate:'',days:{}};
 // Tracking für Settings-Session: manuelle Eingabe vs. „Kalorienbedarf berechnen"
 var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.277';
+var APP_VERSION='0.289';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -3826,17 +3835,20 @@ window.addEventListener('DOMContentLoaded',function(){
   // `kb-open` nur mit echtem Beleg: der visualViewport ist tatsächlich geschrumpft
   // UND ein Textfeld hat Fokus. Touch-Fähigkeit allein reicht nicht — Tablets am
   // Magic Keyboard und Touch-Notebooks öffnen keine Bildschirmtastatur.
-  var _kbH=0;
+  // _kbVis = Erkennung (Viewport geschrumpft), _kbH = Versatz der Unterkante
+  // (Tastaturüberdeckung abzüglich offsetTop). Getrennt, weil iOS den Visual
+  // Viewport verschiebt: dann sinkt _kbH unter die Schwelle, obwohl die Tastatur offen ist.
+  var _kbH=0,_kbVis=false;
   function _setKbOpen(on){
     if(document.body)document.body.classList.toggle('kb-open',!!on);
   }
   function _syncKbState(){
-    _setKbOpen(_kbH>0&&_isTextEntry(document.activeElement));
+    _setKbOpen(_kbVis&&_isTextEntry(document.activeElement));
   }
   // Fokussiertes Feld nach vorn holen (auch in scrollenden Overlays)
   function _revealFocused(){
     var t=document.activeElement;
-    if(_kbH<=0||!_isTextEntry(t))return;
+    if(!_kbVis||!_isTextEntry(t))return;
     try{t.scrollIntoView({block:'center'});}catch(_e){}
   }
   document.addEventListener('focusin',function(e){
@@ -3851,15 +3863,22 @@ window.addEventListener('DOMContentLoaded',function(){
   },true);
   if(window.visualViewport){
     // Tastaturhöhe als --kbh: bottom-fixe Overlays weichen nach oben aus (#181)
+    // --vvh = sichtbare Höhe: das Modal wird bei offener Tastatur nie höher als sie
+    var _kbCss={};
+    var _setKbVar=function(k,v){
+      if(_kbCss[k]===v)return;// nur bei Änderung neu setzen (kein Relayout je Viewport-Scroll)
+      _kbCss[k]=v;document.documentElement.style.setProperty(k,v);
+    };
     var _syncKbMetrics=function(){
       var vv=window.visualViewport;
-      var kb=Math.max(0,Math.round(window.innerHeight-vv.height-vv.offsetTop));
-      var was=_kbH>0;
-      _kbH=kb>120?kb:0;
-      document.documentElement.style.setProperty('--kbh',_kbH+'px');
+      var wasVis=_kbVis;
+      _kbVis=(window.innerHeight-vv.height)>120;
+      _kbH=_kbVis?Math.max(0,Math.round(window.innerHeight-vv.height-vv.offsetTop)):0;
+      _setKbVar('--kbh',_kbH+'px');
+      _setKbVar('--vvh',Math.round(vv.height)+'px');
       _syncKbState();
       // Nur beim Aufgehen nachziehen, nicht bei jedem Viewport-Scroll
-      if(_kbH>0&&!was)_revealFocused();
+      if(_kbVis&&!wasVis)_revealFocused();
     };
     window.visualViewport.addEventListener('resize',_syncKbMetrics);
     window.visualViewport.addEventListener('scroll',_syncKbMetrics);
@@ -4166,6 +4185,8 @@ function showMain(){
   checkWhatsNew();
   if(!localStorage.getItem('nt_install_dismissed'))checkFullscreen();
   NTRemind.schedule();
+  // Laufendes Fasten nach Neuladen/Kaltstart wieder planen (#249)
+  NTRemind.planFast();
   setTimeout(compressOldDays,5000);
   setTimeout(_migratePhotosToIdb,2000);
   checkProxyPwGate();
@@ -4583,31 +4604,24 @@ function startFastCustom(){
 }
 function stopFast(){
   saveFast(null);
+  // nt_fast ist leer: bricht den Timer zum Ende nur ab (#249)
+  NTRemind.planFast();
   if(_fastInterval){clearInterval(_fastInterval);_fastInterval=null;}
   renderFasting();
   showToast('Fasten beendet');
 }
+// Der Timer zum Ende liegt in js/reminders.js (NTRemind.planFast): genau einer,
+// neu geplant beim Start, bei Sichtbarkeit und im 60-s-Takt (#249). Hier bleibt
+// nur die Berechtigung – und der Hinweis, wenn keine Meldung kommen kann.
 function requestFastNotification(f){
-  if(!('Notification' in window))return;
-  var send=function(){
-    var end=f.start+f.hours*3600000;
-    var delay=end-Date.now();
-    if(delay<=0)return;
-    setTimeout(function(){
-      // Abgebrochen oder neu gestartet (auch in einem anderen Tab): nicht melden.
-      // Bis v0.276 kam die Meldung trotzdem – auf Android blieb das nur
-      // unsichtbar, weil new Notification() dort warf.
-      var cur=loadFast();
-      if(!cur||cur.start!==f.start)return;
-      // Ueber den Service Worker – new Notification() wirft auf Android (#244)
-      NTRemind.notify('🌙 NutriTrack – Fasten beendet!',{body:'Du kannst wieder essen! ('+f.hours+'h geschafft)',tag:'nt-fast-'+f.start});
-    },delay);
-  };
-  if(Notification.permission==='granted'){send();}
+  var hint=function(){var h=NTRemind.hint();if(h)showToast('🌙 Fasten gestartet – '+h,5000);};
+  if(!('Notification' in window)){hint();return;}
+  if(Notification.permission==='granted'){NTRemind.planFast();}
   else if(Notification.permission!=='denied'){
     // Erteilt: auch die Mahlzeit-Erinnerungen planen, die beim Start ohne Berechtigung liegen blieben
-    Notification.requestPermission().then(function(p){if(p==='granted'){send();NTRemind.schedule();}});
+    Notification.requestPermission().then(function(p){if(p==='granted'){NTRemind.planFast();NTRemind.schedule();}else hint();});
   }
+  else hint();
 }
 function renderFasting(){
   var f=loadFast();
@@ -4912,6 +4926,12 @@ function openEditEntry(meal,idx){
       if(e.pregAmpel[key])ing.pregAmpel=e.pregAmpel[key];
     });
   }
+  if(S.nursWarn&&e.nursAmpel&&e.ingredients){
+    e.ingredients.forEach(function(ing){
+      var key=ing.name.toLowerCase();
+      if(e.nursAmpel[key])ing.nursAmpel=e.nursAmpel[key];
+    });
+  }
   if(S.dietWarn&&e.dietAmpel&&e.ingredients){
     e.ingredients.forEach(function(ing){
       var key=ing.name.toLowerCase();
@@ -5006,7 +5026,8 @@ function editUpdateTotal(pVal){
 
 function editIngAmt(i,v){
   var e=getDay().meals[editMeal][editIdx];
-  if(e.ingredients&&e.ingredients[i]){e.ingredients[i].amount=parseFloat(v)||0;editUpdateTotal(document.getElementById('editPortions').value);}
+  // Gramm eingetragen: das ⚠️ „ohne Grammangabe" hat sich erledigt (wie im Wochenplan).
+  if(e.ingredients&&e.ingredients[i]){e.ingredients[i].amount=parseFloat(v)||0;if(e.ingredients[i].amount>0)e.ingredients[i].missingGrams=false;editUpdateTotal(document.getElementById('editPortions').value);}
 }
 
 function editIngDel(i){
@@ -5185,7 +5206,7 @@ function recEditRenderIng(ings){
 
 function recEditIngAmt(i,v){
   var rec=recipes.find(function(r){return r.id===recEditId;});
-  if(rec&&rec.ingredients[i]){rec.ingredients[i].amount=parseFloat(v)||0;var t=ingTotal(rec.ingredients);document.getElementById('recEditTotal').textContent='Gesamt: '+totalStr(t);}
+  if(rec&&rec.ingredients[i]){rec.ingredients[i].amount=parseFloat(v)||0;if(rec.ingredients[i].amount>0)rec.ingredients[i].missingGrams=false;var t=ingTotal(rec.ingredients);document.getElementById('recEditTotal').textContent='Gesamt: '+totalStr(t);}
 }
 
 function recEditIngDel(i){
@@ -5471,12 +5492,19 @@ function _encDayMeals(key){
   });
   return any?mm:null;
 }
+// Menge aus dem Share-Format — so gerechnet wie beim Sender, damit Vorschau,
+// Senderzusammenfassung und Import dieselben kcal zeigen (#246):
+// Rezeptzutat ohne Menge (fehlt/null/0) = 0 g, denn ingTotal() rechnet (amount||0);
+// Lebensmittel-Eintrag (t:'f') ohne Menge = 100 g, denn _encEntry schreibt bei
+// Alteinträgen ohne per100 die Gesamtwerte als p, und der Editor nimmt (amount||100).
+function _shIngA(a){return parseFloat(a)||0;}
+function _shFoodA(a){return parseFloat(a)||100;}
 function _mmKcal(mm){
   var k=0;
   Object.keys(mm||{}).forEach(function(m){
     (mm[m]||[]).forEach(function(x){
-      if(x.t==='r')k+=(x.i||[]).reduce(function(s,i){return s+(i.p.k||0)*(i.a||0)/100;},0)*(x.p||1);
-      else k+=(x.p.k||0)*(x.a||0)/100;
+      if(x.t==='r')k+=(x.i||[]).reduce(function(s,i){return s+(i.p.k||0)*_shIngA(i.a)/100;},0)*(x.p||1);
+      else k+=(x.p.k||0)*_shFoodA(x.a)/100;
     });
   });
   return k;
@@ -5588,8 +5616,16 @@ var _pendingImport=null;
 // Woher kam die Vorschau? {from,packetId} bei Partner-Sendungen, sonst null.
 var _pendingImportMeta=null;
 
+// Rezeptzutat aus dem Share-Format. Ohne Menge: 0 g und ⚠️ wie beim Sender,
+// statt stiller 100 g (#246).
+function _materializeIng(x,em){
+  var a=_shIngA(x.a);
+  var ing={name:x.n,emoji:safeEmoji(em,'🍽'),amount:a,per100:{kcal:x.p.k||0,protein:x.p.pr||0,carbs:x.p.c||0,fat:x.p.f||0,sugar:0,fiber:0,salt:0}};
+  if(!(a>0))ing.missingGrams=true;
+  return ing;
+}
 function _materializeRecipe(d){
-  var ings=(d.i||[]).map(function(x){return{name:x.n,emoji:safeEmoji(x.em||x.e,'🍽'),amount:x.a||100,per100:{kcal:x.p.k||0,protein:x.p.pr||0,carbs:x.p.c||0,fat:x.p.f||0,sugar:0,fiber:0,salt:0}};});
+  var ings=(d.i||[]).map(function(x){return _materializeIng(x,x.em||x.e);});
   return{id:Date.now().toString(),name:d.n||'Importiertes Rezept',emoji:safeEmoji(d.em||d.e,'📋'),ingredients:ings,instructions:d.ins||''};
 }
 function _materializeFood(d){
@@ -5601,13 +5637,13 @@ function _materializeMealEntries(d){
 function _materializeEntryList(arr){
   return(arr||[]).map(function(x){
     if(x.t==='r'){
-      var ings=(x.i||[]).map(function(ing){return{name:ing.n,emoji:safeEmoji(ing.em,'🍽'),amount:ing.a||100,per100:{kcal:ing.p.k||0,protein:ing.p.pr||0,carbs:ing.p.c||0,fat:ing.p.f||0,sugar:0,fiber:0,salt:0}};});
+      var ings=(x.i||[]).map(function(ing){return _materializeIng(ing,ing.em);});
       var t=ingTotal(ings);
       return Object.assign({name:x.n,emoji:safeEmoji(x.em,'📋'),isRecipe:true,recipeId:null,portions:x.p||1,ingredients:ings},scaleNutrients(t,x.p||1));
     }
     var per100={kcal:x.p.k||0,protein:x.p.pr||0,carbs:x.p.c||0,fat:x.p.f||0,sugar:0,fiber:0,salt:0};
-    var r=(x.a||100)/100;
-    return Object.assign({name:x.n,emoji:safeEmoji(x.em,'🍽'),amount:x.a||100,per100:per100},scaleNutrients(per100,r));
+    var fa=_shFoodA(x.a);
+    return Object.assign({name:x.n,emoji:safeEmoji(x.em,'🍽'),amount:fa,per100:per100},scaleNutrients(per100,fa/100));
   });
 }
 
@@ -5655,12 +5691,12 @@ function _previewImport(d,meta){
 
   if(d.t==='r'){
     var ings=d.i||[];
-    var totalK=ings.reduce(function(a,g){var r=(g.a||0)/100;return a+(g.p.k||0)*r;},0);
+    var totalK=ings.reduce(function(a,g){var r=_shIngA(g.a)/100;return a+(g.p.k||0)*r;},0);
     titleEl.textContent='📥 Rezept importieren?';
     subEl.textContent=viaPartner?('Von '+fromWho+' gesendet'):'Du hast einen Rezept-Link geöffnet';
     nameEl.textContent=(d.em||'📋')+' '+d.n;
     summaryEl.textContent=ings.length+' Zutat'+(ings.length===1?'':'en')+' · '+Math.round(totalK)+' kcal';
-    detailEl.innerHTML=ings.map(function(i){return esc(i.em||'🍽')+' '+esc(i.n)+' <span style="color:var(--mu);">('+esc(i.a||0)+'g)</span>';}).join(' · ');
+    detailEl.innerHTML=ings.map(function(i){return esc(i.em||'🍽')+' '+esc(i.n)+' <span style="color:var(--mu);">('+esc(_shIngA(i.a))+'g'+(_shIngA(i.a)>0?'':' ⚠️')+')</span>';}).join(' · ');
     if(d.ins){insEl.style.display='block';insEl.textContent=d.ins.length>240?d.ins.substring(0,240)+'…':d.ins;}
     btn.textContent='✅ In Bibliothek speichern';
   } else if(d.t==='f'){
@@ -5674,10 +5710,10 @@ function _previewImport(d,meta){
     var entries=d.e||[];
     var totalKcal=entries.reduce(function(a,e){
       if(e.t==='r'){
-        var ek=(e.i||[]).reduce(function(s,i){return s+(i.p.k||0)*(i.a||0)/100;},0);
+        var ek=(e.i||[]).reduce(function(s,i){return s+(i.p.k||0)*_shIngA(i.a)/100;},0);
         return a+ek*(e.p||1);
       }
-      return a+(e.p.k||0)*(e.a||0)/100;
+      return a+(e.p.k||0)*_shFoodA(e.a)/100;
     },0);
     titleEl.textContent='📥 Mahlzeit importieren?';
     subEl.textContent=viaPartner?('Von '+fromWho+' gesendet'):'Du hast einen Mahlzeit-Link geöffnet';
@@ -6301,8 +6337,11 @@ function saveSettings(){
   // mitgelesen, uebernaehme ein Speichern der Einstellungen einen nie
   // bestaetigten Zwischenstand aus jenem Dialog.
   S.baby=S.baby||{name:'',birth:''};
+  var _gw0=S.goalWeight,_gd0=S.goalDate;
   S.goalWeight=parseFloat(document.getElementById('sgoalweight').value)||0;
   S.goalDate=document.getElementById('sgoaldate').value||'';
+  // Neues Ziel: Startgewicht fuer die Zielrichtung merken, Glueckwunsch wieder offen (#247)
+  if((S.goalWeight!==_gw0||S.goalDate!==_gd0)&&window.NTStats)NTStats.setGoalStart();
   // Kalorienziel: aus Eingabefeld (manuell überschreibbar)
   S.goal=parseInt(document.getElementById('sg').value)||2000;
   // #178: Manuelle Eingabe schützen; „Berechnen" gibt Auto-Update wieder frei
@@ -6384,28 +6423,67 @@ function calcGoal(){
 // ════════════════════════════════════════
 // SECTION: PREGNANCY WARNING AMPEL
 // ════════════════════════════════════════
-function _checkAmpelWarn(ingredients,meal,entryIdx,guardOk,promptPrefix,ampelField,onResults){
-  if(!guardOk||!canUseAi())return;
-  var names=ingredients.map(function(i){return i.name;}).filter(Boolean);
+// rateFn (optional, #205): name -> {name,ampel,grund} | null. Was die Tabelle
+// beantwortet, wird sofort und ohne Netz gesetzt; nur der Rest geht an die KI –
+// und auch das nur mit promptPrefix. Die Stillzeit uebergibt keinen Prompt:
+// Ihre Tabelle (js/ampel.js) bewertet jeden Namen.
+function _checkAmpelWarn(ingredients,meal,entryIdx,guardOk,promptPrefix,ampelField,onResults,rateFn){
+  if(!guardOk)return;
+  // Doppelte Namen (dieselbe Zutat zweimal) nur einmal bewerten lassen.
+  var seen={},names=[];
+  ingredients.forEach(function(i){
+    var n=i&&i.name;if(!n)return;
+    var k=String(n).toLowerCase();if(seen[k])return;
+    seen[k]=1;names.push(n);
+  });
   if(!names.length)return;
-  callClaude('claude-haiku-4-5',[{type:'text',text:promptPrefix+names.join(', ')}],300,
+  // Den Eintrag JETZT festhalten, nicht erst im Rueckruf (#247): Die Antwort
+  // kommt bis zu 25 s spaeter, und bis dahin kann der Nutzer den Tag gewechselt
+  // oder einen Eintrag davor geloescht haben – derselbe Index zeigte dann auf
+  // einen fremden Eintrag. Die Objekt-Referenz bleibt dagegen stabil (Einfuegen,
+  // Loeschen und Verschieben bewegen dasselbe Objekt). Ist der Eintrag inzwischen
+  // geloescht oder S per Restore ersetzt, landet die Ampel in einem verwaisten
+  // Objekt und geht verloren – gewollt.
+  var entry=(meal!==undefined&&entryIdx!==undefined)?((getDay().meals[meal]||[])[entryIdx]||null):null;
+  var rest=names;
+  if(rateFn){
+    var ruled=[];rest=[];
+    names.forEach(function(n){var r=rateFn(n);if(r)ruled.push(r);else rest.push(n);});
+    if(ruled.length)_applyAmpelResults(entry,ingredients,ampelField,ruled,onResults);
+  }
+  if(!rest.length||!promptPrefix||!canUseAi())return;
+  // Je Name ein JSON-Objekt mit Begruendung (~30 Tokens): Fest 300 schnitt die
+  // Antwort ab etwa acht Zutaten ab, JSON.parse scheiterte, und das ganze
+  // Ergebnis ging still verloren.
+  var maxTok=Math.min(1500,Math.max(300,80+40*rest.length));
+  callClaude('claude-haiku-4-5',[{type:'text',text:promptPrefix+rest.join(', ')}],maxTok,
     function(text){
       try{
         var results=JSON.parse(text.replace(/```json|```/g,'').trim());
-        if(!Array.isArray(results)||!results.length)return;
-        var map={};
-        results.forEach(function(r){map[r.name.toLowerCase()]=r;});
-        if(meal!==undefined&&entryIdx!==undefined){
-          var entry=getDay().meals[meal]&&getDay().meals[meal][entryIdx];
-          if(entry){entry[ampelField]=map;saveS();}
-        }
-        ingredients.forEach(function(ing){var r=map[ing.name.toLowerCase()];if(r)ing[ampelField]=r;});
-        renderAll();
-        onResults(results);
+        if(!Array.isArray(results))return;
+        // Ein Objekt ohne Namen darf nicht die ganze Antwort mitreissen.
+        results=results.filter(function(r){return r&&typeof r.name==='string'&&r.name;});
+        if(!results.length)return;
+        _applyAmpelResults(entry,ingredients,ampelField,results,onResults);
       }catch(e){}
     },
     function(){}
   );
+}
+// Ergebnisse an Zutaten und Eintrag schreiben. Die Karte am Eintrag wird
+// ergaenzt statt ersetzt (Tabelle und KI koennen nacheinander schreiben), und
+// saveS() laeuft erst, wenn auch die Zutaten ihr Ergebnis tragen – sonst wurde
+// ing[ampelField] erst beim naechsten fremden saveS() dauerhaft.
+function _applyAmpelResults(entry,ingredients,ampelField,results,onResults){
+  var map={};
+  results.forEach(function(r){map[r.name.toLowerCase()]=r;});
+  ingredients.forEach(function(ing){
+    if(!ing||!ing.name)return;
+    var r=map[String(ing.name).toLowerCase()];if(r)ing[ampelField]=r;
+  });
+  if(entry){entry[ampelField]=Object.assign({},entry[ampelField]||{},map);saveS();}
+  renderAll();
+  onResults(results);
 }
 function checkPregWarn(ingredients,meal,entryIdx){
   var isPreg=S.pregnant&&S.pregnant!=='0';
@@ -6417,21 +6495,16 @@ function checkPregWarn(ingredients,meal,entryIdx){
     'pregAmpel',showPregAmpelModal);
 }
 
-// Eigener Prompt statt Wiederverwendung des Schwangerschafts-Prompts: In der
-// Stillzeit sind Rohmilchkäse, Sushi, rohes Fleisch und Salami unbedenklich –
-// der SS-Prompt würde sie fälschlich rot markieren. Warnungen vor „blähenden"
-// Lebensmitteln sind ausdrücklich unerwünscht (keine Evidenz, schränken
-// Stillende unnötig ein).
+// Stillzeit ohne KI (#205): Die Regeln standen vollstaendig im Prompt, die KI
+// hat nur Namen zugeordnet. Die Tabelle in js/ampel.js ist woertlich aus diesem
+// Prompt uebernommen (dort zitiert) und bewertet jeden Namen – was in keiner
+// Regel vorkommt, ist gruen, wie im Prompt („Relevant sind nur …"). Damit
+// laeuft die Stillzeit-Ampel offline, sofort und bei jedem Namen gleich.
+// Schwangerschaft und Ernaehrung bleiben KI.
 function checkNursWarn(ingredients,meal,entryIdx){
   _checkAmpelWarn(ingredients,meal,entryIdx,S.nursWarn&&isNursing(),
-    'Bewerte diese Lebensmittel für STILLENDE (nicht Schwangere) wissenschaftlich. Antworte NUR mit gültigem JSON ohne Erklärung:\n'
-    +'[{"name":"Lebensmittelname","ampel":"gruen|gelb|rot|grau","grund":"kurze Begründung max 8 Wörter"}]\n'
-    +'gruen=unbedenklich, gelb=in Maßen ok, rot=meiden, grau=keine Empfehlung möglich.\n'
-    +'WICHTIG: In der Stillzeit gelten NICHT die Schwangerschaftsregeln. Rohmilchkäse, Sushi, rohes/kurzgebratenes Fleisch, Salami und rohe Eier sind beim Stillen gruen.\n'
-    +'Relevant sind nur: Alkohol (rot), Koffein über ca. 300 mg/Tag (gelb), quecksilberreiche Fische wie Thunfisch, Schwertfisch, Hai, Königsmakrele (gelb), Leber wegen Vitamin A (gelb), Salbei/Pfefferminze/Petersilie in Heilmengen (gelb, milchhemmend).\n'
-    +'Warne NICHT vor blähenden Lebensmitteln (Kohl, Zwiebeln, Hülsenfrüchte) – dafür gibt es keine Evidenz.\n'
-    +'Nur wissenschaftlich fundierte Empfehlungen. Lebensmittel: ',
-    'nursAmpel',showNursAmpelModal);
+    null,'nursAmpel',showNursAmpelModal,
+    function(n){return window.NTAmpel?NTAmpel.rate('nurs',n):null;});
 }
 
 function ampelDot(ampel,color){
@@ -6448,6 +6521,10 @@ function showPregAmpelModal(results){showAmpelModal(results,'🚦 Schwangerschaf
 function showNursAmpelModal(results){showAmpelModal(results,'🤱 Stillzeit-Hinweise','');}
 function showDietAmpelModal(results,prefs){showAmpelModal(results,'🥗 Ernährungs-Hinweise',(prefs||[]).join(', '));}
 
+// Ein Banner fuer alle drei Ampeln (#205): Je Titel ein Abschnitt. Ein neues
+// Ergebnis mit demselben Titel ersetzt seinen Abschnitt, andere Titel bleiben
+// stehen – bis v0.277 verdraengte die Ernaehrungs-Antwort eine Stillzeit-
+// Warnung, die eine Sekunde vorher kam. Abschnitte aelter als 5 s fallen weg.
 function showAmpelModal(results,title,subtitle){
   var colors={gruen:'#2d7d52',gelb:'#f07700',rot:'#c62828',grau:'#9e9e9e'};
   var icons={gruen:'🟢',gelb:'🟡',rot:'🔴',grau:'⚫'};
@@ -6462,8 +6539,11 @@ function showAmpelModal(results,title,subtitle){
       +'background:white;box-shadow:0 4px 20px rgba(0,0,0,0.18);padding:12px 16px 10px;';
     document.body.appendChild(el);
   }
-  var html='<div style="font-weight:800;font-size:13px;margin-bottom:6px;">'+title+'</div>';
-  if(subtitle)html+='<div style="font-size:11px;color:var(--mu);margin-bottom:6px;">'+subtitle+'</div>';
+  var now=Date.now();
+  var sec=(el.style.display!=='none'&&el._sec)||{};
+  Object.keys(sec).forEach(function(k){if(now-sec[k].ts>=5000)delete sec[k];});
+  var html='<div style="font-weight:800;font-size:13px;margin-bottom:6px;">'+esc(title)+'</div>';
+  if(subtitle)html+='<div style="font-size:11px;color:var(--mu);margin-bottom:6px;">'+esc(subtitle)+'</div>';
   warn.forEach(function(r){
     html+='<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:5px;padding:5px 8px;'
       +'background:'+{rot:'#fff3f3',gelb:'#fffbe6'}[r.ampel]+';border-left:3px solid '+colors[r.ampel]+';border-radius:6px;">'
@@ -6472,13 +6552,23 @@ function showAmpelModal(results,title,subtitle){
       +' <span style="font-size:12px;color:#555;">– '+esc(r.grund)+'</span></div>'
       +'</div>';
   });
-  html+='<div style="text-align:right;margin-top:4px;">'
-    +'<button onclick="document.getElementById(\'ampelBanner\').style.display=\'none\'" '
+  sec[title]={html:html,ts:now};
+  el._sec=sec;
+  el.innerHTML=Object.keys(sec).map(function(k,i){
+      return '<div style="'+(i?'margin-top:8px;':'')+'">'+sec[k].html+'</div>';
+    }).join('')
+    +'<div style="text-align:right;margin-top:4px;">'
+    +'<button type="button" data-act="closeAmpelBanner" '
     +'style="background:none;border:none;font-size:11px;color:var(--mu);cursor:pointer;">Schließen ✕</button></div>';
-  el.innerHTML=html;
   el.style.display='block';
   clearTimeout(el._t);
-  el._t=setTimeout(function(){el.style.display='none';},5000);
+  el._t=setTimeout(closeAmpelBanner,5000);
+}
+function closeAmpelBanner(){
+  var el=document.getElementById('ampelBanner');if(!el)return;
+  clearTimeout(el._t);
+  el.style.display='none';
+  el._sec={};
 }
 
 function renderAmpelInfo(e){
@@ -6491,17 +6581,25 @@ function renderAmpelInfo(e){
     if(S.pregWarn&&ing.pregAmpel&&(ing.pregAmpel.ampel==='rot'||ing.pregAmpel.ampel==='gelb')){
       warnItems.push({type:'preg',ampel:ing.pregAmpel.ampel,name:ing.name,grund:ing.pregAmpel.grund});
     }
+    if(S.nursWarn&&ing.nursAmpel&&(ing.nursAmpel.ampel==='rot'||ing.nursAmpel.ampel==='gelb')){
+      warnItems.push({type:'nurs',ampel:ing.nursAmpel.ampel,name:ing.name,grund:ing.nursAmpel.grund});
+    }
     if(S.dietWarn&&ing.dietAmpel&&(ing.dietAmpel.ampel==='rot'||ing.dietAmpel.ampel==='gelb')){
       warnItems.push({type:'diet',ampel:ing.dietAmpel.ampel,name:ing.name,grund:ing.dietAmpel.grund});
     }
   });
-  // Für einzelne Lebensmittel: pregAmpel/dietAmpel am Eintrag
+  // Für einzelne Lebensmittel: pregAmpel/nursAmpel/dietAmpel am Eintrag
   if(!ingredients.length){
     var key=(e.name||'').toLowerCase();
     if(S.pregWarn&&e.pregAmpel){
       var pv=e.pregAmpel[key]||Object.values(e.pregAmpel)[0];
       if(pv&&(pv.ampel==='rot'||pv.ampel==='gelb'))
         warnItems.push({type:'preg',ampel:pv.ampel,name:e.name,grund:pv.grund});
+    }
+    if(S.nursWarn&&e.nursAmpel){
+      var nv=e.nursAmpel[key]||Object.values(e.nursAmpel)[0];
+      if(nv&&(nv.ampel==='rot'||nv.ampel==='gelb'))
+        warnItems.push({type:'nurs',ampel:nv.ampel,name:e.name,grund:nv.grund});
     }
     if(S.dietWarn&&e.dietAmpel){
       var dv=e.dietAmpel[key]||Object.values(e.dietAmpel)[0];
@@ -6515,7 +6613,7 @@ function renderAmpelInfo(e){
   var bg={rot:'#fff3f3',gelb:'#fffbe6'};
   html='<div style="margin:8px 0;">';
   warnItems.forEach(function(w){
-    var badge=w.type==='preg'?'🤰 Schwangerschaft':'🥗 Ernährung';
+    var badge=w.type==='preg'?'🤰 Schwangerschaft':w.type==='nurs'?'🤱 Stillzeit':'🥗 Ernährung';
     html+='<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 10px;'
       +'background:'+bg[w.ampel]+';border-left:3px solid '+colors[w.ampel]+';border-radius:8px;margin-bottom:5px;">'
       +'<span style="font-size:15px;">'+icons[w.ampel]+'</span>'
@@ -7016,31 +7114,56 @@ function openLibrary(){renderLibrary();openOv('libraryOv');}
 // ════════════════════════════════════════
 // SECTION: SPORT & AKTIVITÄT
 // ════════════════════════════════════════
-var EXERCISE_PRESETS=[
-  {name:'Laufen',emoji:'🏃',met:{low:6,medium:8,high:11}},
-  {name:'Radfahren',emoji:'🚴',met:{low:4,medium:6,high:10}},
-  {name:'Schwimmen',emoji:'🏊',met:{low:5,medium:7,high:10}},
-  {name:'Krafttraining',emoji:'🏋️',met:{low:3,medium:5,high:6}},
-  {name:'Yoga',emoji:'🧘',met:{low:2.5,medium:3,high:4}},
-  {name:'Wandern',emoji:'🥾',met:{low:3,medium:4,high:6}},
-  {name:'Spazieren',emoji:'🚶',met:{low:2.5,medium:3.5,high:4.5}},
-  {name:'Fußball',emoji:'⚽',met:{low:6,medium:8,high:10}},
-];
+// MET-Werte: js/metdb.js (window.MET_DB, NTMet.lookup), erzeugt von
+// tools/build-met.js aus dem Compendium of Physical Activities 2011.
+// Rangfolge der Suche: eigener Bibliothekseintrag MIT MET (z.B. ein KI-Wert)
+// → Tabelle → null (dann KI oder Offline-Rückfall). Einträge mit met:null
+// (nur Name/Emoji) zählen nicht als Treffer. Fehlt metdb.js, bleibt nur die
+// Bibliothek, der Rest läuft über KI/Rückfall wie vor der Tabelle.
+// Rückfall ohne Treffer: 5 MET, Gewicht S.weight||75 — beides Schätzwerte.
+var EXERCISE_FALLBACK_MET=5;
 
+function findExercise(name){
+  var nl=String(name||'').trim().toLowerCase();
+  if(!nl)return null;
+  var le=(S.exerciseLibrary||[]).find(function(e){return e&&e.name&&e.met&&e.name.toLowerCase()===nl;});
+  if(le)return{name:le.name,emoji:le.emoji||'🏃',met:le.met,src:'lib'};
+  var t=window.NTMet&&NTMet.lookup(name);
+  if(t)return{name:t.n,emoji:t.e,met:t.met,src:'table'};
+  return null;
+}
+
+// Chip-Leiste: Schnellauswahl (NTMet.top) plus eigene Bibliothek. Ein eigener
+// Eintrag gleichen Namens ersetzt den Tabellen-Chip (mit ✕ zum Löschen).
 function getAllExercises(){
-  var lib=S.exerciseLibrary||[];
-  var all=EXERCISE_PRESETS.slice();
-  lib.forEach(function(le){
-    if(!all.find(function(p){return p.name.toLowerCase()===le.name.toLowerCase();}))
-      all.push(le);
+  var byName={};
+  (S.exerciseLibrary||[]).forEach(function(le){
+    if(le&&le.name)byName[le.name.toLowerCase()]=le;
+  });
+  var all=[],used={};
+  var top=(window.NTMet&&NTMet.top)||[];
+  top.forEach(function(n){
+    var key=n.toLowerCase();
+    if(used[key])return;
+    used[key]=1;
+    var le=byName[key];
+    if(le){all.push({name:le.name,emoji:le.emoji,met:le.met,isLib:true});return;}
+    var t=NTMet.lookup(n);
+    if(t)all.push({name:t.n,emoji:t.e,met:t.met,isLib:false});
+  });
+  (S.exerciseLibrary||[]).forEach(function(le){
+    if(!le||!le.name)return;
+    var key=le.name.toLowerCase();
+    if(used[key])return;
+    used[key]=1;
+    all.push({name:le.name,emoji:le.emoji,met:le.met,isLib:true});
   });
   return all;
 }
 
 function getExerciseMet(name,intensity){
-  var all=getAllExercises();
-  var found=all.find(function(p){return p.name.toLowerCase()===name.toLowerCase();});
-  if(found&&found.met)return found.met[intensity]||found.met.medium||5;
+  var found=findExercise(name);
+  if(found&&found.met)return found.met[intensity]||found.met.medium||EXERCISE_FALLBACK_MET;
   return null;
 }
 
@@ -7048,16 +7171,27 @@ function openExerciseOv(){
   document.getElementById('exName').value='';
   document.getElementById('exDuration').value='';
   document.getElementById('exIntensity').value='medium';
-  document.getElementById('exResult').style.display='none';
+  hideExerciseResult();
   renderExercisePresets();
+  fillExerciseNameList();
   openOv('exerciseOv');
+}
+
+// Vorschläge an der Namenseingabe: nur die kanonischen Namen der Tabelle,
+// Synonyme wirken nur in der Suche.
+function fillExerciseNameList(){
+  var dl=document.getElementById('exNameList');
+  if(!dl||dl.options.length||!window.MET_DB)return;
+  dl.innerHTML=window.MET_DB.map(function(it){return it.n;})
+    .sort(function(a,b){return a.localeCompare(b,'de');})
+    .map(function(n){return '<option value="'+esc(n)+'"></option>';}).join('');
 }
 
 function renderExercisePresets(){
   var el=document.getElementById('exercisePresets');if(!el)return;
   var all=getAllExercises();
   el.innerHTML=all.map(function(p){
-    var isLib=!EXERCISE_PRESETS.find(function(x){return x.name===p.name;});
+    var isLib=p.isLib;
     var safeName=(p.name||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     var delBtn=isLib?('<span onclick="event.stopPropagation();deleteExerciseFromLibrary(\''+esc(safeName)+'\');void(0)" style="font-size:10px;color:var(--re);cursor:pointer;margin-left:4px;">✕</span>'):'';
     return'<div style="display:inline-flex;align-items:center;background:var(--gl);border:1.5px solid var(--g3);border-radius:20px;padding:5px 10px;font-size:12px;font-weight:700;color:var(--g1);margin:2px;cursor:pointer;" onclick="selectExercisePreset(\''+esc(safeName)+'\')">'      +esc(p.emoji||'🏃')+' '+esc(p.name)+delBtn+'</div>';
@@ -7066,25 +7200,23 @@ function renderExercisePresets(){
 
 function selectExercisePreset(name){
   document.getElementById('exName').value=name;
-  var dur=parseFloat(document.getElementById('exDuration').value)||30;
-  var intensity=document.getElementById('exIntensity').value;
-  var met=getExerciseMet(name,intensity);
+  var st=exerciseFormState();
+  var met=getExerciseMet(name,st.intensity);
   if(met){
-    showExerciseResult(Math.round(met*(S.weight||75)*(dur/60)));
+    showExerciseResult(Math.round(met*(S.weight||75)*(st.dur/60)),st);
   } else {
     estimateExercise();
   }
 }
 
 function estimateExercise(){
-  var name=document.getElementById('exName').value.trim();
-  var dur=parseFloat(document.getElementById('exDuration').value)||30;
-  var intensity=document.getElementById('exIntensity').value;
+  var st=exerciseFormState();
+  var name=st.name,dur=st.dur,intensity=st.intensity;
   if(!name)return;
   var weight=S.weight||75;
   var met=getExerciseMet(name,intensity);
-  if(met){showExerciseResult(Math.round(met*weight*(dur/60)));return;}
-  if(!canUseAi()){showExerciseResult(Math.round(5*weight*(dur/60)));return;}
+  if(met){showExerciseResult(Math.round(met*weight*(dur/60)),st);return;}
+  if(!canUseAi()){showExerciseResult(Math.round(EXERCISE_FALLBACK_MET*weight*(dur/60)),st);return;}
   var btn=document.getElementById('exEstimateBtn');
   if(btn){btn.disabled=true;btn.textContent='⏳ Schätze...';}
   callClaude('claude-haiku-4-5',[{type:'text',text:
@@ -7095,20 +7227,20 @@ function estimateExercise(){
       try{
         var a=text.indexOf('{'),z=text.lastIndexOf('}');
         var d=JSON.parse(text.slice(a,z+1));
-        var kcal=parseInt(d.kcal)||Math.round(5*weight*(dur/60));
-        showExerciseResult(kcal);
+        var kcal=parseInt(d.kcal)||Math.round(EXERCISE_FALLBACK_MET*weight*(dur/60));
+        showExerciseResult(kcal,st);
         saveToExerciseLibrary(name,d.emoji||'🏃',{
           low:parseFloat(d.met_low)||3,
           medium:parseFloat(d.met_medium)||5,
           high:parseFloat(d.met_high)||8
         });
         renderExercisePresets();
-      }catch(e){showExerciseResult(Math.round(5*weight*(dur/60)));}
-      if(btn){btn.disabled=false;btn.textContent='🤖 KI-Schätzung';}
+      }catch(e){showExerciseResult(Math.round(EXERCISE_FALLBACK_MET*weight*(dur/60)),st);}
+      if(btn){btn.disabled=false;btn.textContent='🧮 Berechnen';}
     },
     function(){
-      showExerciseResult(Math.round(5*weight*(dur/60)));
-      if(btn){btn.disabled=false;btn.textContent='🤖 KI-Schätzung';}
+      showExerciseResult(Math.round(EXERCISE_FALLBACK_MET*weight*(dur/60)),st);
+      if(btn){btn.disabled=false;btn.textContent='🧮 Berechnen';}
     }
   );
 }
@@ -7121,23 +7253,81 @@ function saveToExerciseLibrary(name,emoji,met){
   saveS();
 }
 
-function showExerciseResult(kcal){
-  document.getElementById('exKcal').textContent=kcal;
+// Eingaben des Formulars; leere Dauer = 30 Min. (damit wird auch gerechnet
+// und gespeichert).
+function exerciseFormState(){
+  return{
+    name:document.getElementById('exName').value.trim(),
+    dur:parseFloat(document.getElementById('exDuration').value)||30,
+    intensity:document.getElementById('exIntensity').value
+  };
+}
+
+// Die Anzeige merkt sich, für welche Eingaben sie gerechnet wurde. Solange
+// Name, Dauer und Intensität gleich sind, gilt sie (auch ein KI-Wert).
+function showExerciseResult(kcal,st){
+  var el=document.getElementById('exKcal');
+  el.textContent=kcal;
+  if(st){
+    el.dataset.name=st.name;el.dataset.dur=st.dur;el.dataset.int=st.intensity;
+    el.dataset.rate=st.dur?(kcal/st.dur):'';
+  }
   document.getElementById('exResult').style.display='block';
 }
 
+function hideExerciseResult(){
+  var el=document.getElementById('exKcal');
+  el.textContent='0';
+  el.dataset.name='';el.dataset.dur='';el.dataset.int='';el.dataset.rate='';
+  document.getElementById('exResult').style.display='none';
+}
+
+// kcal für die aktuellen Eingaben: die Anzeige, wenn sie für genau diese
+// Eingaben gilt; sonst neu aus dem MET; sonst (Rückfall/KI ohne MET, nur
+// Dauer oder Intensität geändert) anteilig zur Dauer. 0 = neu berechnen nötig.
+function computeExerciseKcal(st){
+  var d=document.getElementById('exKcal').dataset;
+  var shown=parseInt(document.getElementById('exKcal').textContent)||0;
+  if(shown&&d.name===st.name&&parseFloat(d.dur)===st.dur&&d.int===st.intensity)return shown;
+  var met=getExerciseMet(st.name,st.intensity);
+  if(met)return Math.round(met*(S.weight||75)*(st.dur/60));
+  if(d.name===st.name&&parseFloat(d.rate))return Math.round(parseFloat(d.rate)*st.dur);
+  return 0;
+}
+
+// Neu rechnen, sobald Dauer, Intensität oder Name sich ändern — nur lokal,
+// die KI läuft weiter nur über „Berechnen".
+function recalcExerciseForm(ev){
+  var st=exerciseFormState();
+  if(!st.name){hideExerciseResult();return;}
+  var kcal=computeExerciseKcal(st);
+  if(kcal)showExerciseResult(kcal,st);
+  else if(!ev||ev.type!=='input'||ev.target.id!=='exName')hideExerciseResult();
+}
+['input','change'].forEach(function(type){
+  document.addEventListener(type,function(ev){
+    var id=ev.target&&ev.target.id;
+    if(id==='exName'||id==='exDuration'||id==='exIntensity')recalcExerciseForm(ev);
+  });
+});
+
 function saveExercise(){
-  var name=document.getElementById('exName').value.trim();
+  var st=exerciseFormState();
+  var name=st.name;
   if(!name){showToast('Bitte Aktivität eingeben');return;}
-  var dur=parseFloat(document.getElementById('exDuration').value)||0;
-  var intensity=document.getElementById('exIntensity').value;
-  var kcalEl=document.getElementById('exKcal');
-  var kcal=parseInt(kcalEl&&kcalEl.textContent)||0;
+  var dur=st.dur;
+  var intensity=st.intensity;
+  var kcal=computeExerciseKcal(st);
   if(!kcal){estimateExercise();showToast('Bitte zuerst Kalorien schätzen');return;}
-  var all=getAllExercises();
-  var found=all.find(function(p){return p.name.toLowerCase()===name.toLowerCase();});
-  var emoji=found?found.emoji:'🏃';
-  if(!found)saveToExerciseLibrary(name,emoji,null);
+  var found=findExercise(name);
+  var emoji=found?found.emoji:null;
+  if(!found){
+    var nl=name.toLowerCase();
+    var le=(S.exerciseLibrary||[]).find(function(e){return e&&e.name&&e.name.toLowerCase()===nl;});
+    if(le)emoji=le.emoji;
+    else saveToExerciseLibrary(name,'🏃',null);
+  }
+  emoji=emoji||'🏃';
   getDay().exercise.push({name:name,emoji:emoji,duration:dur,intensity:intensity,kcal:kcal,ts:Date.now()});
   saveS();renderAll();closeOv('exerciseOv');
   showToast(emoji+' '+name+': −'+kcal+' kcal');
@@ -7248,7 +7438,9 @@ function importData(e){
   reader.onload=function(ev){
     try{
       var d=JSON.parse(ev.target.result);
-      if(d.state){delete d.state.apiKey;Object.assign(S,d.state);S.apiKey='';S.setupDone=true;}
+      // Stand von vor v0.280 ohne goalStart: das Startgewicht DIESES Geraets gehoert
+      // zu einem anderen Ziel und wuerde den Glueckwunsch neu freigeben (#247).
+      if(d.state){delete d.state.apiKey;if(!('goalStart' in d.state))S.goalStart=null;Object.assign(S,d.state);S.apiKey='';S.setupDone=true;}
       if(d.foodCache)Object.assign(foodCache,d.foodCache);
       if(d.customFoods)customFoods=d.customFoods;
       if(d.recipes)recipes=d.recipes;
@@ -8018,29 +8210,30 @@ function axTestSync(){
 }
 
 </script>
-<script src="picker.js?v=0.277"></script>
-<script src="js/health-sync.js?v=0.277"></script>
-<script src="js/sync-core.js?v=0.277"></script>
-<script src="js/baby.js?v=0.277"></script>
-<script src="js/baby-meds.js?v=0.277"></script>
-<script src="js/baby-growth-data.js?v=0.277"></script>
-<script src="js/baby-growth.js?v=0.277"></script>
-<script src="js/baby-week.js?v=0.277"></script>
-<script src="js/baby-milestones.js?v=0.277"></script>
-<script src="js/baby-midwife.js?v=0.277"></script>
-<script src="js/shopping.js?v=0.277"></script>
-<script src="js/partner.js?v=0.277"></script>
-<script src="js/alexa-sync.js?v=0.277"></script>
-<script src="js/dashboard.js?v=0.277"></script>
-<script src="js/features.js?v=0.277"></script>
-<script src="js/mealplan.js?v=0.277"></script>
-<script src="js/onedrive.js?v=0.277"></script>
-<script src="js/autosave.js?v=0.277"></script>
-<script src="js/recurring.js?v=0.277"></script>
-<script src="js/stats.js?v=0.277"></script>
-<script src="js/reminders.js?v=0.277"></script>
-<script src="js/templates.js?v=0.277"></script>
-<script src="js/offline-queue.js?v=0.277"></script>
+<script src="js/ampel.js?v=0.289"></script>
+<script src="picker.js?v=0.289"></script>
+<script src="js/health-sync.js?v=0.289"></script>
+<script src="js/sync-core.js?v=0.289"></script>
+<script src="js/baby.js?v=0.289"></script>
+<script src="js/baby-meds.js?v=0.289"></script>
+<script src="js/baby-growth-data.js?v=0.289"></script>
+<script src="js/baby-growth.js?v=0.289"></script>
+<script src="js/baby-week.js?v=0.289"></script>
+<script src="js/baby-milestones.js?v=0.289"></script>
+<script src="js/baby-midwife.js?v=0.289"></script>
+<script src="js/shopping.js?v=0.289"></script>
+<script src="js/partner.js?v=0.289"></script>
+<script src="js/alexa-sync.js?v=0.289"></script>
+<script src="js/dashboard.js?v=0.289"></script>
+<script src="js/features.js?v=0.289"></script>
+<script src="js/mealplan.js?v=0.289"></script>
+<script src="js/onedrive.js?v=0.289"></script>
+<script src="js/autosave.js?v=0.289"></script>
+<script src="js/recurring.js?v=0.289"></script>
+<script src="js/stats.js?v=0.289"></script>
+<script src="js/reminders.js?v=0.289"></script>
+<script src="js/templates.js?v=0.289"></script>
+<script src="js/offline-queue.js?v=0.289"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

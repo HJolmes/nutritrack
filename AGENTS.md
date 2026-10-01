@@ -8,6 +8,8 @@ NutriTrack is a static mobile-first PWA for nutrition tracking. Extend existing 
 
 Most app logic currently lives in `index.html`; some self-contained features are factored out into classic-script modules (`picker.js`, `js/health-sync.js`). Before changing behavior, search the existing sections in `index.html` *and* the relevant module file, then update the existing flow in place. Keep shared logic centralized for storage, import/export, OneDrive sync, food lookup, barcode scanning, AI parsing, recipe handling, meal editing, and health/workout sync.
 
+**Market: Germany only.** NutriTrack is used in Germany. Do not build, fix, or file issues for US-specific (or other non-German-market) features — e.g. US barcode formats (UPC-A/UPC-E handling), US units (oz, lb, cups, °F), US labels or US-only data sources — unless the human in the active chat explicitly asks for it. A follow-up found in code review that only matters outside Germany is dropped, not filed. (Owner decision 2026-10-01.)
+
 Do not add special-case UI for one food, diet, meal, or import source if the existing picker, recipe, settings, or meal-entry flow can support it.
 
 Protect user data. Nutrition logs, photos, API keys, OneDrive tokens, backups, and personal body/health data are private. Do not log raw backups, meal photos, API keys, OAuth tokens, or extracted personal data.

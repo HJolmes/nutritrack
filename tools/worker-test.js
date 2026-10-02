@@ -239,7 +239,7 @@ async function main() {
   section('/health');
   {
     const r = await call('GET', '/health');
-    check('codeVersion ist v0.292-upce', r.json && r.json.data && r.json.data.codeVersion === 'v0.292-upce', r.json && r.json.data && r.json.data.codeVersion);
+    check('codeVersion ist v0.301-mark-empty', r.json && r.json.data && r.json.data.codeVersion === 'v0.301-mark-empty', r.json && r.json.data && r.json.data.codeVersion);
   }
 
   // ── (a) Body null / kein Objekt → 400 mit CORS, keine Ausnahme ──
@@ -644,12 +644,90 @@ async function main() {
     }
   }
 
-  // ── Bekannte Grenze (Folge-Issue): unauthentifizierte Abrufe kosten KV ──
-  section('Bekannte Grenze: GET mit frei gewaehltem Raum kostet 1 list + 1 put');
+  // ── (j) Aenderungsmarke: ein leerer Briefkasten bekommt keine Marke (#260) ──
+  // Vorher kostete jeder GET mit frei erfundenem Raum oder Token 1 list + 1 put,
+  // weil backfillMark auch fuer einen leeren Briefkasten eine Marke (v: 0)
+  // schrieb. Jetzt nur noch, wenn das list Schluessel gefunden hat.
+  section('(j) Aenderungsmarke: kein put bei leerem Briefkasten, Nachtrag nur mit Schluesseln (#260)');
   {
-    KV.reset();
-    const r = await call('GET', '/shop/sync?since=0', { headers: { 'X-Shop-Room': 'Fremd' + ROOM }, origin: '' });
-    check('GET /shop/sync mit fremdem Raum: 200, 1 list, 1 put (Stand wie v0.277, nicht geaendert)', r.status === 200 && KV.counts.list === 1 && KV.counts.put === 1, show(r) + ', list ' + KV.counts.list + ', put ' + KV.counts.put);
+    const realNow = Date.now;
+    const later = (ms, fn) => async () => {
+      Date.now = () => realNow.call(Date) + ms;
+      try { return await fn(); } finally { Date.now = realNow; }
+    };
+    const HOT_PLUS = 3 * 60 * 1000; // > MARK_HOT_MS (2 min)
+    const FREMD = 'Fremd' + ROOM;
+    const pulls = [
+      ['/baby/sync', { 'X-Baby-Room': FREMD }, 'bd:#' + FREMD],
+      ['/shop/sync', { 'X-Shop-Room': FREMD }, 'sl:#' + FREMD],
+      ['/partner/sync', { 'X-Partner-Room': FREMD }, 'pm:#' + FREMD],
+      ['/plan/sync', { 'X-Plan-Room': FREMD }, 'mp:#' + FREMD],
+      ['/workouts', { 'X-User-Token': 'Fremd' + TOKEN }, 'wo:#Fremd' + TOKEN],
+      ['/alexa/inbox', { 'X-User-Token': 'Fremd' + TOKEN }, 'ai:#Fremd' + TOKEN],
+    ];
+    for (const [p, h, markKey] of pulls) {
+      KV.reset();
+      const r = await call('GET', p + '?since=0', { headers: h, origin: '' });
+      check('GET ' + p + ' mit fremdem Raum/Token: 200, 1 list, 0 put, keine Marke', r.status === 200 && KV.counts.list === 1 && KV.counts.put === 0 && !KV.store.has(markKey),
+        show(r) + ', list ' + KV.counts.list + ', put ' + KV.counts.put);
+      const r2 = await later(HOT_PLUS, () => call('GET', p + '?since=0', { headers: h, origin: '' }))();
+      check('  zweiter Abruf nach dem Heiss-Fenster: wieder 1 list, weiter 0 put (Preis des Fixes)', r2.status === 200 && KV.counts.list === 2 && KV.counts.put === 0,
+        show(r2) + ', list ' + KV.counts.list + ', put ' + KV.counts.put);
+    }
+
+    // Briefkasten MIT Schluesseln, aber ohne Marke (Altbestand, Marke verloren):
+    // genau ein Nachtrag, danach (nach dem Heiss-Fenster) Abruf ohne list.
+    const filled = [
+      ['/shop/sync', 'POST', '/shop/sync', { 'X-Shop-Room': ROOM }, syncBody, 'sl:#' + ROOM, (d) => d.records.length],
+      ['/workouts', 'POST', '/workout', { 'X-User-Token': TOKEN }, workoutBody, 'wo:#' + TOKEN, (d) => d.workouts.length],
+      ['/alexa/inbox', 'POST', '/alexa/inbox', { 'X-User-Token': TOKEN }, alexaBody, 'ai:#' + TOKEN, (d) => d.items.length],
+    ];
+    for (const [getPath, , postPath, h, body, markKey, countOf] of filled) {
+      KV.reset();
+      await call('POST', postPath, { headers: Object.assign({ 'Content-Type': 'application/json' }, h), body, origin: '' });
+      const v = KV.store.has(markKey) && JSON.parse(KV.store.get(markKey).value).v;
+      KV.store.delete(markKey);
+      KV.counts = { get: 0, put: 0, delete: 0, list: 0 };
+      // since = v: der Client kennt schon alles, candidateKeys ist leer — der
+      // Nachtrag muss trotzdem kommen (gezaehlt wird VOR dem since-Filter).
+      const r1 = await call('GET', getPath + '?since=' + v, { headers: h, origin: '' });
+      const mark = KV.store.has(markKey) && JSON.parse(KV.store.get(markKey).value);
+      check('GET ' + getPath + ' (Schluessel da, Marke fehlt, since = neuester Stand): 1 list, genau 1 put, Marke = ' + 'srev', r1.status === 200 && countOf(r1.json.data) === 0 && KV.counts.list === 1 && KV.counts.put === 1 && mark && mark.v === v,
+        show(r1) + ', list ' + KV.counts.list + ', put ' + KV.counts.put + ', Marke ' + JSON.stringify(mark) + ', v ' + v);
+      KV.counts = { get: 0, put: 0, delete: 0, list: 0 };
+      const r2 = await later(HOT_PLUS, () => call('GET', getPath + '?since=' + v, { headers: h, origin: '' }))();
+      check('  zweiter Abruf nach dem Heiss-Fenster: 0 list, 0 put', r2.status === 200 && KV.counts.list === 0 && KV.counts.put === 0,
+        show(r2) + ', list ' + KV.counts.list + ', put ' + KV.counts.put);
+    }
+
+    // Alexa nach der Quittung: Der Worker loescht die Schluessel, die Marke
+    // bleibt stehen (handleAlexaAck fasst sie nicht an) — kein list, kein put.
+    {
+      KV.reset();
+      const h = { 'X-User-Token': TOKEN };
+      await call('POST', '/alexa/inbox', { headers: Object.assign({ 'Content-Type': 'application/json' }, h), body: alexaBody, origin: '' });
+      const v = JSON.parse(KV.store.get('ai:#' + TOKEN).value).v;
+      await call('POST', '/alexa/ack', { headers: Object.assign({ 'Content-Type': 'application/json' }, h), body: { ids: [alexaBody.id] } });
+      KV.counts = { get: 0, put: 0, delete: 0, list: 0 };
+      const r = await later(HOT_PLUS, () => call('GET', '/alexa/inbox?since=' + v, { headers: h }))();
+      check('Alexa nach /alexa/ack: Marke bleibt, Abruf mit since = Marke → 0 list, 0 put', r.status === 200 && KV.store.has('ai:#' + TOKEN) && KV.counts.list === 0 && KV.counts.put === 0,
+        show(r) + ', list ' + KV.counts.list + ', put ' + KV.counts.put);
+      // Marke abgelaufen, Briefkasten leer (alles quittiert): listet, schreibt nichts.
+      KV.store.delete('ai:#' + TOKEN);
+      KV.counts = { get: 0, put: 0, delete: 0, list: 0 };
+      const r2 = await call('GET', '/alexa/inbox?since=' + v, { headers: h });
+      check('Alexa leer und ohne Marke: 1 list, 0 put', r2.status === 200 && KV.counts.list === 1 && KV.counts.put === 0,
+        show(r2) + ', list ' + KV.counts.list + ', put ' + KV.counts.put);
+    }
+
+    // Schluessel ohne Cursor-Metadatum (metaGap): wie bisher kein Nachtrag.
+    {
+      KV.reset();
+      KV.store.set('sl:' + ROOM + ':alt', { value: JSON.stringify({ id: 'alt', rev: 1, iv: 'aXY=', ct: 'Y3Q=' }), metadata: null });
+      const r = await call('GET', '/shop/sync?since=0', { headers: { 'X-Shop-Room': ROOM } });
+      check('Schluessel ohne srev-Metadatum: 1 list, 0 put (metaGap, wie bisher)', r.status === 200 && KV.counts.list === 1 && KV.counts.put === 0 && r.json.data.records.length === 1,
+        show(r) + ', list ' + KV.counts.list + ', put ' + KV.counts.put);
+    }
   }
 
   const bad = allOutbound.filter((u) => !/^https:\/\/(example\.(com|org)|www\.chefkoch\.de|decoder\.test|api\.github\.com|api\.anthropic\.com|api\.openai\.com)\//.test(u) && !/^http:\/\/(example\.com|100\.128\.0\.1|172\.32\.0\.1|\[2a00:)/.test(u));

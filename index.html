@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.301"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.302"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.301"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.302"></script>
 <script>
   // @ts-check
   (function(){
@@ -1219,7 +1219,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.301</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.302</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -3358,14 +3358,14 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.301"></script>
-<script src="js/single-tab.js?v=0.301"></script>
-<script src="js/fooddb.js?v=0.301"></script>
-<script src="js/fooddb-usda.js?v=0.301"></script>
-<script src="js/metdb.js?v=0.301"></script>
-<script src="js/idb-photos.js?v=0.301"></script>
-<script src="js/changelog.js?v=0.301"></script>
-<script src="js/calc.js?v=0.301"></script>
+<script src="js/actions.js?v=0.302"></script>
+<script src="js/single-tab.js?v=0.302"></script>
+<script src="js/fooddb.js?v=0.302"></script>
+<script src="js/fooddb-usda.js?v=0.302"></script>
+<script src="js/metdb.js?v=0.302"></script>
+<script src="js/idb-photos.js?v=0.302"></script>
+<script src="js/changelog.js?v=0.302"></script>
+<script src="js/calc.js?v=0.302"></script>
 <script>
 // ════════════════════════════════════════
 // SECTION: DATABASE
@@ -3384,7 +3384,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.301';
+var APP_VERSION='0.302';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -6348,10 +6348,16 @@ function calcGoal(){
 // ════════════════════════════════════════
 // SECTION: PREGNANCY WARNING AMPEL
 // ════════════════════════════════════════
-// rateFn (optional, #205): name -> {name,ampel,grund} | null. Was die Tabelle
-// beantwortet, wird sofort und ohne Netz gesetzt; nur der Rest geht an die KI –
-// und auch das nur mit promptPrefix. Die Stillzeit uebergibt keinen Prompt:
-// Ihre Tabelle (js/ampel.js) bewertet jeden Namen.
+// rateFn (optional, #205): (name, Zutat) -> {name,ampel,grund} | null. Was die
+// Tabelle beantwortet, wird sofort und ohne Netz gesetzt; nur der Rest geht an
+// die KI – und auch das nur mit promptPrefix. Die Stillzeit uebergibt keinen
+// Prompt: Ihre Tabelle (js/ampel.js) bewertet jeden Namen.
+// Teilergebnis (Ernaehrung, #262): {…, open:[Praeferenzen]} – lokal entschieden
+// ist nur ein Teil. Gelb/Rot steht sofort, Gruen erst mit der KI (sonst
+// zeigte offline ein „passt“, obwohl z. B. Glutenfrei ungeprueft ist). Die KI
+// bekommt nur die offenen Praeferenzen (promptPrefix darf dafuer eine Funktion
+// sein) und ihr Ergebnis wird mit dem lokalen zusammengefuehrt (NTAmpel.combine):
+// Ein lokales Rot ueberschreibt sie nie. ampel null ohne open: kein Punkt.
 function _checkAmpelWarn(ingredients,meal,entryIdx,guardOk,promptPrefix,ampelField,onResults,rateFn){
   if(!guardOk)return;
   // Doppelte Namen (dieselbe Zutat zweimal) nur einmal bewerten lassen.
@@ -6359,7 +6365,7 @@ function _checkAmpelWarn(ingredients,meal,entryIdx,guardOk,promptPrefix,ampelFie
   ingredients.forEach(function(i){
     var n=i&&i.name;if(!n)return;
     var k=String(n).toLowerCase();if(seen[k])return;
-    seen[k]=1;names.push(n);
+    seen[k]=i;names.push(n);
   });
   if(!names.length)return;
   // Den Eintrag JETZT festhalten, nicht erst im Rueckruf (#247): Die Antwort
@@ -6370,18 +6376,25 @@ function _checkAmpelWarn(ingredients,meal,entryIdx,guardOk,promptPrefix,ampelFie
   // geloescht oder S per Restore ersetzt, landet die Ampel in einem verwaisten
   // Objekt und geht verloren – gewollt.
   var entry=(meal!==undefined&&entryIdx!==undefined)?((getDay().meals[meal]||[])[entryIdx]||null):null;
-  var rest=names;
+  var rest=names,ruled=[],local={},open={};
   if(rateFn){
-    var ruled=[];rest=[];
-    names.forEach(function(n){var r=rateFn(n);if(r)ruled.push(r);else rest.push(n);});
+    rest=[];
+    names.forEach(function(n){
+      var r=rateFn(n,seen[String(n).toLowerCase()]);
+      if(!r){rest.push(n);return;}
+      var o=r.open||[];
+      if(r.ampel&&(!o.length||r.ampel==='gelb'||r.ampel==='rot'))ruled.push(r);
+      if(o.length){rest.push(n);local[String(n).toLowerCase()]=r;o.forEach(function(p){open[p]=1;});}
+    });
     if(ruled.length)_applyAmpelResults(entry,ingredients,ampelField,ruled,onResults);
   }
   if(!rest.length||!promptPrefix||!canUseAi())return;
+  var prefix=typeof promptPrefix==='function'?promptPrefix(Object.keys(open)):promptPrefix;
   // Je Name ein JSON-Objekt mit Begruendung (~30 Tokens): Fest 300 schnitt die
   // Antwort ab etwa acht Zutaten ab, JSON.parse scheiterte, und das ganze
   // Ergebnis ging still verloren.
   var maxTok=Math.min(1500,Math.max(300,80+40*rest.length));
-  callClaude('claude-haiku-4-5',[{type:'text',text:promptPrefix+rest.join(', ')}],maxTok,
+  callClaude('claude-haiku-4-5',[{type:'text',text:prefix+rest.join(', ')}],maxTok,
     function(text){
       try{
         var results=JSON.parse(text.replace(/```json|```/g,'').trim());
@@ -6389,7 +6402,15 @@ function _checkAmpelWarn(ingredients,meal,entryIdx,guardOk,promptPrefix,ampelFie
         // Ein Objekt ohne Namen darf nicht die ganze Antwort mitreissen.
         results=results.filter(function(r){return r&&typeof r.name==='string'&&r.name;});
         if(!results.length)return;
-        _applyAmpelResults(entry,ingredients,ampelField,results,onResults);
+        results=results.map(function(r){
+          var l=local[r.name.toLowerCase()];
+          return l&&window.NTAmpel?NTAmpel.combine(l,r):r;
+        });
+        // Das Banner ersetzt seinen Abschnitt: lokal entschiedene Namen, die
+        // die KI nicht bewertet hat, muessen darin stehen bleiben.
+        var got={};results.forEach(function(r){got[r.name.toLowerCase()]=1;});
+        var shown=ruled.filter(function(r){return !got[r.name.toLowerCase()];}).concat(results);
+        _applyAmpelResults(entry,ingredients,ampelField,results,function(){onResults(shown);});
       }catch(e){}
     },
     function(){}
@@ -6421,11 +6442,11 @@ function checkPregWarn(ingredients,meal,entryIdx){
 }
 
 // Stillzeit ohne KI (#205): Die Regeln standen vollstaendig im Prompt, die KI
-// hat nur Namen zugeordnet. Die Tabelle in js/ampel.js ist woertlich aus diesem
-// Prompt uebernommen (dort zitiert) und bewertet jeden Namen – was in keiner
-// Regel vorkommt, ist gruen, wie im Prompt („Relevant sind nur …"). Damit
-// laeuft die Stillzeit-Ampel offline, sofort und bei jedem Namen gleich.
-// Schwangerschaft und Ernaehrung bleiben KI.
+// hat nur Namen zugeordnet. Die Tabelle in js/ampel.js stammt aus diesem Prompt
+// (dort zitiert) plus zwei Entscheidungen aus #262 und bewertet jeden Namen –
+// was in keiner Regel vorkommt, ist gruen, wie im Prompt („Relevant sind
+// nur …"). Damit laeuft die Stillzeit-Ampel offline, sofort und bei jedem Namen
+// gleich. Die Schwangerschaft bleibt KI (keine erreichbare Quelle, #262).
 function checkNursWarn(ingredients,meal,entryIdx){
   _checkAmpelWarn(ingredients,meal,entryIdx,S.nursWarn&&isNursing(),
     null,'nursAmpel',showNursAmpelModal,
@@ -6664,15 +6685,24 @@ function updateSavePickerPhotosToggle(){
 // ════════════════════════════════════════
 // SECTION: ERNÄHRUNGS-AMPEL
 // ════════════════════════════════════════
+// Ernaehrung (#262): Vegetarisch, Vegan, Low Carb, Keto und High Protein
+// entscheidet js/ampel.js lokal (Regeln am 2026-10-02 freigegeben); die KI
+// bewertet nur, was offen bleibt – Glutenfrei, Laktosefrei, Freitext, ein
+// Name ohne Veg-Treffer oder ein Lebensmittel ohne Naehrwerte.
 function checkDietWarn(ingredients,meal,entryIdx){
   var allPrefs=(S.dietPrefs||[]).concat(S.dietFree?[S.dietFree]:[]);
   _checkAmpelWarn(ingredients,meal,entryIdx,S.dietWarn&&allPrefs.length>0,
-    'Bewerte diese Lebensmittel für folgende Ernährungspräferenzen: '+allPrefs.join(', ')+'.\n'
-    +'Antworte NUR mit gültigem JSON ohne Erklärung:\n'
-    +'[{"name":"Lebensmittelname","ampel":"gruen|gelb|rot|grau","grund":"kurze Begründung max 8 Wörter"}]\n'
-    +'gruen=passt gut, gelb=bedingt geeignet, rot=nicht geeignet, grau=keine Einschätzung möglich.\n'
-    +'Nur wissenschaftlich fundierte Empfehlungen. Lebensmittel: ',
-    'dietAmpel',function(results){showDietAmpelModal(results,allPrefs);});
+    function(openPrefs){
+      return 'Bewerte diese Lebensmittel für folgende Ernährungspräferenzen: '+(openPrefs.length?openPrefs:allPrefs).join(', ')+'.\n'
+      +'Antworte NUR mit gültigem JSON ohne Erklärung, den Namen genau wie angegeben:\n'
+      +'[{"name":"Lebensmittelname","ampel":"gruen|gelb|rot|grau","grund":"kurze Begründung max 8 Wörter"}]\n'
+      +'gruen=passt gut, gelb=bedingt geeignet, rot=nicht geeignet, grau=keine Einschätzung möglich.\n'
+      +'Nur wissenschaftlich fundierte Empfehlungen. Lebensmittel: ';
+    },
+    'dietAmpel',function(results){showDietAmpelModal(results,allPrefs);},
+    function(n,ing){
+      return window.NTAmpel?NTAmpel.rate('diet',n,{prefs:allPrefs,per100:ing&&ing.per100,amount:ing&&ing.amount}):null;
+    });
 }
 
 function dietAmpelDot(ampel){
@@ -8084,30 +8114,30 @@ function axTestSync(){
 }
 
 </script>
-<script src="js/ampel.js?v=0.301"></script>
-<script src="picker.js?v=0.301"></script>
-<script src="js/health-sync.js?v=0.301"></script>
-<script src="js/sync-core.js?v=0.301"></script>
-<script src="js/baby.js?v=0.301"></script>
-<script src="js/baby-meds.js?v=0.301"></script>
-<script src="js/baby-growth-data.js?v=0.301"></script>
-<script src="js/baby-growth.js?v=0.301"></script>
-<script src="js/baby-week.js?v=0.301"></script>
-<script src="js/baby-milestones.js?v=0.301"></script>
-<script src="js/baby-midwife.js?v=0.301"></script>
-<script src="js/shopping.js?v=0.301"></script>
-<script src="js/partner.js?v=0.301"></script>
-<script src="js/alexa-sync.js?v=0.301"></script>
-<script src="js/dashboard.js?v=0.301"></script>
-<script src="js/features.js?v=0.301"></script>
-<script src="js/mealplan.js?v=0.301"></script>
-<script src="js/onedrive.js?v=0.301"></script>
-<script src="js/autosave.js?v=0.301"></script>
-<script src="js/recurring.js?v=0.301"></script>
-<script src="js/stats.js?v=0.301"></script>
-<script src="js/reminders.js?v=0.301"></script>
-<script src="js/templates.js?v=0.301"></script>
-<script src="js/offline-queue.js?v=0.301"></script>
+<script src="js/ampel.js?v=0.302"></script>
+<script src="picker.js?v=0.302"></script>
+<script src="js/health-sync.js?v=0.302"></script>
+<script src="js/sync-core.js?v=0.302"></script>
+<script src="js/baby.js?v=0.302"></script>
+<script src="js/baby-meds.js?v=0.302"></script>
+<script src="js/baby-growth-data.js?v=0.302"></script>
+<script src="js/baby-growth.js?v=0.302"></script>
+<script src="js/baby-week.js?v=0.302"></script>
+<script src="js/baby-milestones.js?v=0.302"></script>
+<script src="js/baby-midwife.js?v=0.302"></script>
+<script src="js/shopping.js?v=0.302"></script>
+<script src="js/partner.js?v=0.302"></script>
+<script src="js/alexa-sync.js?v=0.302"></script>
+<script src="js/dashboard.js?v=0.302"></script>
+<script src="js/features.js?v=0.302"></script>
+<script src="js/mealplan.js?v=0.302"></script>
+<script src="js/onedrive.js?v=0.302"></script>
+<script src="js/autosave.js?v=0.302"></script>
+<script src="js/recurring.js?v=0.302"></script>
+<script src="js/stats.js?v=0.302"></script>
+<script src="js/reminders.js?v=0.302"></script>
+<script src="js/templates.js?v=0.302"></script>
+<script src="js/offline-queue.js?v=0.302"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

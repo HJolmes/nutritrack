@@ -51,9 +51,10 @@
 // (c) oder eine Wortfolge (ph). Einfache Teilstrings wuerden „Schweineschnitzel"
 // (wein), „Rumpsteak" (rum), „Aubergine" (gin), „Rucola" (cola), „Tomate"
 // (mate) oder „Teewurst" (tee) treffen. „not" nimmt ein Wort, das einen der
-// Teile enthaelt, fuer diese Regel aus; „skip" (Wortanfang) und „skipPh"
-// (Wortfolge) nehmen den ganzen Namen aus („alkoholfreies Bier",
-// „Bier ohne Alkohol", „Kaffee entkoffeiniert").
+// Teile enthaelt, fuer diese Regel aus, „notPre" ein Wort, das mit einem der
+// Teile beginnt und laenger ist („Hafermilch“, „Tofuwurst“); „skip" (Wortanfang),
+// „skipPh" (Wortfolge) und „skipEnd" (Wortende) nehmen den ganzen Namen aus
+// („alkoholfreies Bier", „Bier ohne Alkohol", „Grog-Torte").
 (function(){
 'use strict';
 
@@ -61,21 +62,31 @@
 var PLANT=['soja','tofu','seitan','lupine','gemuese','linsen','bohnen','erbsen','kichererbsen','pilz','champignon',
   'portobello','sellerie','blumenkohl','kohlrabi','zucchini','aubergine','jackfruit','gruenkern','falafel','halloumi',
   'nuss','erdnuss','kakao','shea','mandel','cashew','haselnuss','sesam','sonnenblumen','kokos','hafer','reis','dinkel',
-  'hanf','pflanzen','quinoa','hirse','kartoffel','kuerbis','spinat','spargel','bete','vegan','veggie'];
+  'hanf','pflanzen','quinoa','hirse','kartoffel','kuerbis','spinat','spargel','bete','vegan','veggie','avocado',
+  'mercimek','peanut','pistazie','macadamia','kuerbiskern'];
 var SKIP_VEG=['vegan','vegetar','veggie','fleischlos','fleischfrei','fleischersatz','pflanzlich'];
 var SKIP_VEGAN=['vegan','pflanzlich'];
 // Milchwoerter, die mit pflanzlichem Wort davor keine Milch sind („Hafer Milch“).
 var DAIRY=['milch','sahne','joghurt','jogurt','quark','kaese','butter','pudding','creme'];
+var EGG=['ei','eier','ruehrei','omelett','omelette','eiweiss'];
+// Kopfwoerter, die ein vorangehendes Wort nur naeher bestimmen („Austern-Pilze“,
+// „Burger Brötchen“, „Joghurt-Alternative“): beide werden ein Wort, damit die
+// not-Eintraege der Zeilen (austernpilz, burgerbroetchen, alternativ) greifen.
+var NEUTRAL=['pilz','seitling','nudel','tee','kraut','kraeuter','beere','gewuerz','sauce','sosse','senf','pfeffer',
+  'marinade','dip','bun','broetchen','brot','alternativ','ersatz','platte','blaett','melone','pomelo','tomate'];
 // Gerichtwoerter: ohne pflanzliches Bestimmungswort meist Fleisch.
 var DISH={w:['braten','burger','hack','schnitzel','steak','wurst','gulasch','bolognese','frikassee','geschnetzeltes',
-    'aufschnitt','nuggets','filet','roulade','gyros','doener','kebab','kebap','hotdog'],
+    'aufschnitt','nuggets','filet','roulade','gyros','doener','kebab','kebap','hotdog','koefte','kofte','souvlaki',
+    'stroganoff','tatar'],
   e:['braten','burger','burgern','hack','schnitzel','steak','steaks','wurst','gulasch','bolognese','frikassee',
     'geschnetzeltes','aufschnitt','filet','filets','roulade','rouladen','nuggets','gyros','doener','kebab','kebap'],
   c:['wurst','wuerst','gulasch','bolognese','geschnetzelte','frikassee','frikadelle','bulette','boulette','klops',
-    'koettbullar','hackbraten','hackfleisch','hackbaellchen','fleischbaellchen','fleischpflanzerl']};
+    'koettbullar','hackbraten','hackfleisch','hackbaellchen','fleischbaellchen','fleischpflanzerl','schaschlik',
+    'cevapcici','cevapi']};
 
 /** @typedef {{cat:string, ampel:string, grund:string, w?:string[], p?:string[], e?:string[], c?:string[],
- *   ph?:string[], not?:string[], skip?:string[], skipPh?:string[], skipName?:string[], tea?:string[]}} AmpelRule */
+ *   ph?:string[], not?:string[], notPre?:string[], skip?:string[], skipPh?:string[], skipName?:string[],
+ *   skipEnd?:string[], tea?:string[], inFood?:{w:string[], c:string[], end:string[]}}} AmpelRule */
 /** @type {{nurs:AmpelRule[], veg:AmpelRule[], vegan:AmpelRule[]}} */
 var RULES={
   nurs:[
@@ -84,19 +95,30 @@ var RULES={
          'weinbrand','grappa','ouzo','aperol','campari','cidre','cider','sherry','alkohol','doppelkorn',
          'kornbrand','weinschorle','federweisser','spritz','sangria','pils','koelsch','amaretto',
          'pilsner','pilsener','hefeweizen','kristallweizen','alster','alsterwasser','martini','wermut',
-         'mojito','caipirinha','hugo','baileys','jaegermeister','absinth','lillet','limoncello',
-         'grog','punsch'],
+         'mojito','caipirinha','hugo','baileys','jaegermeister','absinth','lillet','limoncello'],
       p:['rotwein','weisswein','rosewein'],
       e:['wein','bier','bowle'],
-      c:['likoer','schnaps','radler','kirschwasser','rumpunsch'],
+      c:['likoer','schnaps','radler'],
       not:['schwein','essig','malzbier'],
       skip:['alkoholfrei','alkfrei'],skipPh:['ohne alkohol']},
+    // Entscheidung #262: Getraenke, die bis v0.301 gruen waren – als Getraenk rot,
+    // in einer Speise („Kirschwassertorte“, „Grog-Kuchen“) gelb (Zeile darunter).
+    {cat:'alkohol_getraenk',ampel:'rot',grund:'alkoholisches Getränk – in der Stillzeit meiden',
+      w:['grog','punsch'],
+      c:['kirschwasser','rumpunsch'],
+      not:['kinderpunsch','fruechtepunsch'],
+      skip:['alkoholfrei','alkfrei'],skipPh:['ohne alkohol','kinder punsch','fruechte punsch'],
+      skipEnd:['torte','kuchen','creme','sauce','sosse','eis','praline','pralinen','pudding','suppe','braten','kugel','kugeln']},
     // Entscheidung #262: Alkohol in Speisen gelb statt gruen.
     {cat:'alkohol_speise',ampel:'gelb',grund:'kann Alkohol enthalten – in Maßen',
       c:['tiramis','rumkugel','rumtopf','rumrosine','weincreme','weinschaum','zabaione','sabaione','sabayon',
          'weinbrandbohne','biersuppe','bierbraten','biersosse','biersauce','cognacsosse','cognacsauce',
-         'schwarzwaelderkirsch','savarin'],
-      ph:['coq au vin','mon cheri','baba au rhum','schwarzwaelder kirschtorte','schwarzwaelder torte'],
+         'schwarzwaelderkirsch','savarin','kirschwassertorte','kirschwasserkuchen','grogtorte','punschtorte',
+         'punschkuchen','punschkrapfen'],
+      ph:['coq au vin','mon cheri','baba au rhum','schwarzwaelder kirschtorte','schwarzwaelder kirsch','schwarzwaelder torte'],
+      // „Grog-Torte“, „Punsch Kuchen“: Getraenkewort und Speise als getrennte Woerter
+      inFood:{w:['grog','punsch'],c:['kirschwasser','rumpunsch'],
+        end:['torte','kuchen','creme','sauce','sosse','eis','praline','pralinen','pudding','suppe','braten','kugel','kugeln']},
       skip:['alkoholfrei','alkfrei'],skipPh:['ohne alkohol']},
     {cat:'koffein',ampel:'gelb',grund:'Menge im Blick behalten (ca. 300 mg Koffein pro Tag)',
       w:['kaffee','caffe','americano','mokka','lungo','ristretto','cola','pepsi','spezi','energydrink',
@@ -128,23 +150,25 @@ var RULES={
   veg:[
     {cat:'fleisch',ampel:'rot',grund:'enthält Fleisch',
       w:['ente','gans','reh','ham','beef','mett','speck','rind','wild','pork','ribs','rib','tatar','boeuf','sucuk',
-         'lahmacun','presskopf','pinkel','cabanossi','kabanossi','lyoner','koefte','kofte','souvlaki','bifteki','stroganoff'],
+         'lahmacun','presskopf','pinkel','cabanossi','kabanossi','lyoner','bifteki'],
       p:['lamm','pute','puter','enten','gaense','ochsen','zunge','mett'],
       e:['lamm','ente','gans','huhn','beef','rind','mett','pork','ribs'],
       c:['fleisch','rinder','rindfleisch','rinds','schwein','kalb','haehnchen','huehnchen','huehner','hendl','chicken',
          'truthahn','hirsch','kaninchen','wachtel','fasan','strauss','pferdefleisch','ziegenfleisch','zicklein','hammel',
          'schaffleisch','hasenbraten','hasenkeule','hasenruecken','rehkeule','rehbraten','rehgulasch','rehragout',
          'wildgulasch','wildbraten','wildfond','wildragout','gefluegel','entrecote','ribeye','vitello','saumagen',
-         'cevapcici','cevapi','pljeskavica','krainer','salami','schinken','speck','bacon','prosciutto','serrano',
+         'pljeskavica','krainer','salami','schinken','speck','bacon','prosciutto','serrano',
          'pancetta','guanciale','chorizo','pastrami','mortadella','cervelat','kabanos','landjaeger','leber','nieren',
          'kutteln','innereien','blutwurst','corned','roastbeef','kassler','kasseler','eisbein','haxe','hachse',
-         'kotelett','tafelspitz','saltimbocca','ossobuco','schaschlik','carbonara','labskaus'],
+         'kotelett','tafelspitz','saltimbocca','ossobuco','carbonara','labskaus'],
       ph:['cordon bleu','con carne','foie gras','pulled pork','spare ribs','strammer max','toast hawaii','pizza hawaii'],
       not:['fleischtomate','fruchtfleisch','kokosfleisch','kokosnussfleisch','schweineohr','schweinsohr','gluecksschwein',
            'marzipanschwein','ochsenherz','gebraten','huehnerei','wachtelei','blutorange','nierenbohne','schokosalami',
            'schokoladensalami','gaensebluemchen','leberbluemchen','dente','hirschhorn','wachtelbohne','kleber',
-           'serranochili','serranoschote','straussenei'],
-      skip:SKIP_VEG,skipPh:['serrano chili','serrano schote']},
+           'serranochili','serranoschote','straussenei','nierentee','element','ferment','kraeuterstrauss',
+           'kuerbisfleisch','gewuerz','marinade','blasentee'],
+      notPre:PLANT,
+      skip:SKIP_VEG,skipPh:['serrano chili','serrano schote','nieren und blasentee']},
     {cat:'fisch',ampel:'rot',grund:'enthält Fisch oder Meeresfrüchte',
       w:['hai','aal','tuna','tonno','pulpo','skrei','stoer','dashi','nigiri'],
       p:['wels'],
@@ -155,7 +179,9 @@ var RULES={
          'langustine','muschel','auster','tintenfisch','kalmar','calamar','oktopus','krake','sepia','meeresfruechte',
          'rollmops','worcester','gambas','sashimi','steinbutt','seeteufel','schillerlocke','flunder','bouillabaisse','bonito'],
       ph:['frutti di mare'],
-      not:['austernpilz','muschelnudel','auberginenkaviar','linsenkaviar','tomatenkaviar','welsch'],
+      not:['austernpilz','austernseitling','muschelnudel','auberginenkaviar','linsenkaviar','tomatenkaviar','welsch',
+           'gewuerz','marinade'],
+      notPre:PLANT,
       skip:SKIP_VEG},
     {cat:'gelatine',ampel:'rot',grund:'enthält Gelatine oder tierisches Fett',
       c:['gelatine','gummibaer','marshmallow','aspik','suelze','schmalz','grieben','talg'],
@@ -167,7 +193,8 @@ var RULES={
       w:DISH.w,e:DISH.e,c:DISH.c,
       not:PLANT.concat(['burgerbroetchen','burgerbrot','burgersauce','burgersosse','biskuitroulade','schokoroulade',
         'sahneroulade','erdbeerroulade','obstroulade','zitronenroulade','orangenfilet','mandarinenfilet',
-        'grapefruitfilet','bratapfel','gebraten','limburger','kaese']),
+        'grapefruitfilet','bratapfel','gebraten','limburger','kaese','sauce','sosse','senf','gewuerz','pfeffer',
+        'marinade','dip','buns','burgerbroetchen','hamburgerbroetchen','burgerbun','doenerbrot','hotdogbroetchen']),
       skip:SKIP_VEG},
     // VSMK 2016: Lab ist ein Verarbeitungshilfsstoff; „Parmesan“ ist nach EuGH
     // C-132/05 Parmigiano Reggiano, Gorgonzola g.U. wird mit Kaelberlab gemacht.
@@ -203,7 +230,9 @@ var RULES={
            'haselnussbutter','sesambutter','pflanzenbutter','butternuss','butterbohne','butterpilz','buttersalat',
            'butterkopf','butterbirne','sojasahne','hafersahne','kokossahne','pflanzensahne','sojajoghurt','haferjoghurt',
            'kokosjoghurt','mandeljoghurt','lupinenjoghurt','sojaquark','cashewkaese','pflanzenkaese','hefeschmelz',
-           'wasserkefir','kokosrahm','sojapudding','milchsaeure','milchsauer'],
+           'wasserkefir','kokosrahm','sojapudding','milchsaeure','milchsauer','butternut','peanutbutter','apfelbutter',
+           'lasagneplatte','lasagneblaett','lasagnenudel','alternativ','ersatz'],
+      notPre:PLANT,
       skip:SKIP_VEGAN},
     {cat:'milchgetraenk',ampel:'rot',grund:'Kaffee- oder Kakaogetränk mit Milch',
       w:['latte','cappuccino','macchiato','milchkaffee','eiskaffee','kakaogetraenk'],
@@ -220,7 +249,8 @@ var RULES={
          'mayonnaise','remoulade','aioli','hollandaise','bearnaise','baiser','meringue','omelett','eierlikoer','eiernudel',
          'eierkuchen','pfannkuchen','spaetzle','carbonara','tiramisu','biskuit','kaiserschmarrn','frittata','shakshuka',
          'zabaione','windbeutel'],
-      not:['eierschwammerl','eierschwamm','eiertomate','eierfrucht','eierpflaume','eiersatz'],
+      not:['eierschwammerl','eierschwamm','eiertomate','eierfrucht','eierpflaume','eiersatz','ersatz'],
+      notPre:PLANT,
       skip:SKIP_VEGAN},
     {cat:'honig',ampel:'rot',grund:'enthält Honig',
       w:['honey','propolis','met'],
@@ -284,8 +314,15 @@ function _wordHits(t,r){
 function _ruleHits(rule,toks,line){
   if(_has(rule.skip,function(s){return _has(toks,function(t){return t.indexOf(s)===0;});}))return false;
   if(_has(rule.skipPh,function(ph){return line.indexOf(' '+ph+' ')>=0;}))return false;
+  if(_has(rule.skipEnd,function(s){return _has(toks,function(t){return t.length>=s.length&&t.slice(-s.length)===s;});}))return false;
   if(_has(rule.ph,function(ph){return line.indexOf(' '+ph+' ')>=0;}))return true;
-  var ok=toks.filter(function(t){return !_has(rule.not,function(n){return t.indexOf(n)>=0;});});
+  var f=rule.inFood;
+  if(f&&_has(toks,function(t){return _wordHits(t,f);})
+    &&_has(toks,function(t){return _has(f.end,function(e){return t.length>=e.length&&t.slice(-e.length)===e;});}))return true;
+  var ok=toks.filter(function(t){
+    return !_has(rule.not,function(n){return t.indexOf(n)>=0;})
+      &&!_has(rule.notPre,function(n){return t.length>n.length&&t.indexOf(n)===0;});
+  });
   if(rule.tea){
     var anyTea=_has(toks,_isTea);
     return _has(ok,function(t){
@@ -323,21 +360,39 @@ var DIET_LOCAL=['Vegetarisch','Vegan','Low Carb','Keto','High Protein'];
 var MACRO={'Keto':{gruen:5,gelb:10,portion:1},'Low Carb':{gruen:10,gelb:20,portion:2}};
 var HP={share:0.2,min:10};
 
-// Getraenk am Namen: ganze Woerter und Wortenden; „Thunfisch in Wasser“,
-// „Kakao (Pulver)“ und Milchschokolade sind keine Getraenke.
+// Getraenk am Namen: Gezaehlt wird nur der erste Teil („Kaffee mit Milch“ ja,
+// „Birnen in Rotwein“, „Thunfisch (Dose, Wasser)“ nein); ein Speise-Wortende
+// (Sauce, Torte, Eis, Pulver …) schliesst aus. Marken ohne Gattungswort (Pils,
+// Fanta, Ice Tea) stehen als ganze Woerter in LIQ_W.
 var LIQ_W=['wasser','tee','kaffee','espresso','cappuccino','latte','macchiato','kakao','mate','cola','limo','limonade',
-  'spezi','radler','bier','wein','sekt','prosecco','cidre','smoothie','kefir','ayran','lassi','kombucha','saft','milch',
-  'drink','shake','schorle','nektar','brause','fassbrause'];
+  'spezi','radler','bier','wein','sekt','prosecco','cidre','cider','smoothie','kefir','ayran','lassi','kombucha','saft',
+  'milch','drink','shake','schorle','nektar','brause','fassbrause','pils','pilsener','pilsner','helles','koelsch',
+  'hefeweizen','weissbier','fanta','sprite','pepsi','mirinda','almdudler','bionade','capri','tea','energy','bull',
+  'punsch','grog','likoer','schnaps','wodka','vodka','whisky','whiskey','gin','rum','champagner','actimel','baileys',
+  'valensina','mezzo','glühwein'];
 var LIQ_E=['wasser','tee','kaffee','cola','limo','limonade','saft','milch','drink','shake','schorle','nektar','brause',
-  'bier','wein','smoothie'];
-var LIQ_NOT=['schwein','rucola','kondensmilch','trockenmilch','milchpulver','milchreis','milchschokolade','milchbroetchen','pulver'];
+  'bier','wein','smoothie','punsch','likoer','schnaps'];
+var LIQ_PH=['heisse schokolade','red bull','hohes c'];
+var LIQ_NOT=['schwein','rucola','kondensmilch','trockenmilch','milchpulver','milchreis','milchschokolade','milchbroetchen'];
+var FOOD_END=['sauce','sosse','suppe','braten','kuchen','torte','creme','eis','pudding','brei','gelee','schokolade',
+  'pulver','praline','pralinen','reis','kugel','kugeln','konfituere','marmelade','dressing','salat','topf','pfanne',
+  'auflauf','gulasch','ragout'];
 function isLiquid(name){
-  var toks=tokens(name);
+  var first=normalize(name).split(/\(|,|\s+mit\s+|\s+und\s+|\s+in\s+/)[0]||'';
+  var toks=first.split(/[^a-z]+/).filter(Boolean);
+  if(!toks.length)return false;
   var line=' '+toks.join(' ')+' ';
-  if(line.indexOf(' in wasser ')>=0||line.indexOf(' eigenen saft ')>=0||line.indexOf(' in oel ')>=0)return false;
-  if(_has(toks,function(t){return _has(LIQ_NOT,function(n){return t.indexOf(n)>=0;});}))return false;
+  if(_has(LIQ_PH,function(ph){return line.indexOf(' '+ph+' ')>=0;}))return true;
+  // Ausschluss ueber den ganzen Namen („Kakao (Pulver)“)
+  var all=tokens(name);
+  if(_has(all,function(t){
+    return t.indexOf('trink')!==0&&_has(FOOD_END,function(f){return t.length>=f.length&&t.slice(-f.length)===f;});
+  }))return false;
+  if(_has(all,function(t){return _has(LIQ_NOT,function(n){return t.indexOf(n)>=0;});}))return false;
   return _has(toks,function(t){
-    return _has(LIQ_W,function(k){return t===k;})||_has(LIQ_E,function(k){return t.length>k.length&&t.slice(-k.length)===k;});
+    return (t.indexOf('trink')===0&&t.length>5)
+      ||_has(LIQ_W,function(k){return t===k;})
+      ||_has(LIQ_E,function(k){return t.length>k.length&&t.slice(-k.length)===k;});
   });
 }
 
@@ -369,21 +424,46 @@ function rateMacro(pref,name,per100,amount){
   return {p:pref,ampel:a,grund:_fmt(c)+' g KH je 100 '+unit};
 }
 
-// Name in Abschnitte: „ohne X“ und „…frei“ zaehlen nicht, „mit“/„und“/Komma
-// trennen Bestandteile (sonst nimmt „veganem Dressing“ dem „Hähnchen“ das
-// Rot). Steht ein Gerichtwort am Ende und direkt davor ein pflanzliches Wort
-// („Tofu Burger“, „Gemüse-Frikadelle“, „Hafer Milch“), werden beide ein Wort.
+// Name in Abschnitte (#262): „ohne Fleisch“/„fleischfrei“ werden zum Skip-Wort
+// „fleischlos“; sonst zaehlen „ohne A und B“ und „…frei“ nicht. „mit“, „und“,
+// „in“ und Komma trennen Bestandteile (sonst nimmt „veganem Dressing“ dem
+// „Hähnchen“ das Rot); ein Abschnitt nur aus „vegan“, „vegetarisch“ …
+// („Bratwurst, vegan“) gilt fuer alle. Danach werden Kopfwoerter mit dem Wort
+// davor eins: neutrale Kopfwoerter („Austern-Pilze“, „Burger Brötchen“) und
+// Gericht-, Milch- und Ei-Woerter nach einem pflanzlichen Wort („Tofu Burger“,
+// „Hafer Milch“, „Tofu-Rührei“) – dann greifen not und notPre der Zeilen.
+var SKIP_ONLY=['vegan','vegetar','veggie','fleischlos','pflanzlich','bio'];
+function _endsWord(t,w){
+  for(var k=0;k<=2;k++){var end=t.length-k;if(end-w.length>=0&&t.slice(end-w.length,end)===w)return true;}
+  return false;
+}
+function _isNeutralHead(t){return _has(NEUTRAL,function(w){return t.indexOf(w)===0||_endsWord(t,w);});}
 function _dietSections(name){
-  var s=normalize(name).replace(/\bohne\s+[a-z]+/g,' ').replace(/[a-z]*frei(e|er|es|en|em)?\b/g,' ');
-  return s.split(/\s+mit\s+|\s+und\s+|[,;&+]/).map(function(sec){
-    var toks=sec.split(/[^a-z]+/).filter(Boolean);
+  var s=normalize(name)
+    .replace(/\bohne\s+fleisch\b/g,' fleischlos ').replace(/\bfleischfrei[a-z]*/g,' fleischlos ')
+    .replace(/\bohne\s+[a-z]+(?:\s*(?:,|\bund\b|\boder\b)\s*[a-z]+)*/g,' ')
+    .replace(/[a-z]*frei(e|er|es|en|em)?\b/g,' ')
+    .replace(/-\s+(und|oder)\s+/g,' $1_ ');// Ergaenzungsstrich: „Nieren- und Blasentee“ bleibt ein Abschnitt
+  var secs=s.split(/\s+mit\s+|\s+und\s+|\s+in\s+|[,;&+]/).map(function(sec){
+    return sec.split(/[^a-z]+/).filter(Boolean);
+  }).filter(function(t){return t.length;});
+  var global=[];
+  secs=secs.filter(function(toks){
+    var only=toks.every(function(t){return _has(SKIP_ONLY,function(k){return t.indexOf(k)===0;});});
+    if(only)global=global.concat(toks);
+    return !only;
+  });
+  return secs.map(function(toks){
     var n=toks.length;
-    var last=n?toks[n-1]:'';
-    if(n>=2&&(_wordHits(last,DISH)||DAIRY.indexOf(last)>=0)&&_has(PLANT,function(p){return toks[n-2].indexOf(p)>=0;})){
-      toks.splice(n-2,2,toks[n-2]+toks[n-1]);
+    while(n>=2){
+      var head=toks[n-1],prev=toks[n-2];
+      var plantHead=_has(PLANT,function(p){return prev.indexOf(p)>=0;})
+        &&(_wordHits(head,DISH)||_has(DAIRY,function(d){return head.indexOf(d)===0;})||EGG.indexOf(head)>=0);
+      if(!plantHead&&!_isNeutralHead(head))break;
+      toks.splice(n-2,2,prev+head);n--;
     }
-    return toks.join(' ');
-  }).filter(Boolean);
+    return toks.concat(global).join(' ');
+  });
 }
 // Strengste Zeile ueber alle Abschnitte, oder null (kein Treffer → offen).
 function rateVeg(kind,name){
@@ -435,12 +515,13 @@ function rateDiet(name,opts){
 
 // Lokales Teilergebnis und KI-Antwort fuer denselben Namen: die strengere
 // Stufe gewinnt (grau ueber gruen); bei Gleichstand beide Gruende.
+// Ohne gueltige KI-Stufe bleibt ein lokales Gelb/Rot stehen; ein lokales Gruen
+// ist dann nicht bestaetigt (offene Praeferenzen ungeprueft) → null.
 function combine(local,ai){
   if(!local||!local.ampel)return ai;
-  if(!ai||!ai.ampel)return local;
-  var rl=CRANK[local.ampel],ra=CRANK[ai.ampel];
+  var rl=CRANK[local.ampel],ra=ai?CRANK[ai.ampel]:undefined;
   if(rl===undefined)return ai;
-  if(ra===undefined)return local;
+  if(ra===undefined)return local.ampel==='gruen'?null:local;
   var w=ra>rl?ai:local;
   var grund=ra===rl&&local.grund!==ai.grund?[local.grund,ai.grund].filter(Boolean).join(' · '):w.grund;
   return {name:ai.name||local.name,ampel:w.ampel,grund:grund,src:'rule+ai'};

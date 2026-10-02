@@ -38,7 +38,8 @@ const expect = {
          'Leberkäse', 'Leberkäs', 'Leberkässemmel', 'Leberkaas', 'Tiramisu', 'Erdbeertiramisu', 'Tiramisù', 'Rumkugeln',
          'Schokorumkugeln', 'Rumtopf', 'Rumrosinen', 'Weincreme', 'Weinschaumcreme', 'Zabaione', 'Sabayon', 'Coq au Vin',
          'Mon Chéri', 'Weinbrandbohnen', 'Schwarzwälder Kirschtorte', 'Biersuppe', 'Bierbraten',
-         'Schweinebraten in Biersoße', 'Cognacsoße', 'Baba au Rhum', 'Savarin'],
+         'Schweinebraten in Biersoße', 'Cognacsoße', 'Baba au Rhum', 'Savarin', 'Schwarzwälder Kirsch-Torte',
+         'Schwarzwälder Kirsch', 'Kirschwassertorte', 'Grog-Torte', 'Punsch Kuchen'],
   gruen: ['Weintrauben', 'Schweineschnitzel', 'Schweinebraten', 'Schweineschmalz', 'Wildschwein',
           'Teewurst', 'Tomate', 'Tomatensauce', 'Passierte Tomaten', 'Bierschinken', 'Rucola',
           'Schokolade (70%)', 'Schokoladenkuchen', 'Aubergine', 'Ingwer', 'Paniermehl',
@@ -50,7 +51,7 @@ const expect = {
           'Buchweizen', 'Weizenmehl', 'Cocktailtomaten', 'Hefeweizen alkoholfrei',
           // #262: bewusst ohne Koffein-Hinweis; ohne Alkohol; kein Fehltreffer
           'Tee', 'Eistee', 'Chai', 'Kakao', 'Fleischkäse', 'Tiramisu alkoholfrei', 'Rumkugeln alkoholfrei',
-          'Bier ohne Alkohol', 'Kinderpunsch', 'Krumme Gurke'],
+          'Bier ohne Alkohol', 'Kinderpunsch', 'Kinder-Punsch', 'Kinder Punsch', 'Früchte-Punsch', 'Krumme Gurke'],
 };
 
 let fail = 0;
@@ -66,7 +67,7 @@ for (const [ampel, names] of Object.entries(expect)) {
 const grunds = A.RULES.nurs.map((r) => r.grund);
 if (new Set(grunds).size !== grunds.length) { fail++; console.log('  x   RULES.nurs: grund nicht eindeutig'); }
 const expectCat = { 'Leberkäse': 'leberkaese', 'Rinderleber': 'leber', 'Tiramisu': 'alkohol_speise', 'Rumkugeln': 'alkohol_speise',
-  'Rotweinsauce': 'alkohol', 'Eierlikör-Kuchen': 'alkohol', 'Kirschwasser': 'alkohol' };
+  'Rotweinsauce': 'alkohol', 'Eierlikör-Kuchen': 'alkohol', 'Kirschwasser': 'alkohol_getraenk', 'Kirschwassertorte': 'alkohol_speise' };
 for (const [n, cat] of Object.entries(expectCat)) {
   const r = A.rate('nurs', n), row = A.RULES.nurs.find((x) => x.grund === (r && r.grund));
   if (!row || row.cat !== cat) { fail++; console.log(`  x   ${n}: Zeile ${cat} erwartet, bekommen ${row ? row.cat : 'keine'} (${A.match('nurs', n).map((x) => x.cat).join(', ')})`); }
@@ -109,6 +110,20 @@ const VEG = [
   ['Butternusskürbis', '-', '-'], ['Honigmelone', '-', '-'], ['Eierschwammerl', '-', '-'], ['Eiertomaten', '-', '-'],
   ['Milchsäure', '-', '-'], ['Weintrauben', '-', '-'], ['Reis', '-', '-'], ['Weizenmehl', '-', '-'], ['Eisbergsalat', '-', '-'],
   ['Preiselbeeren', '-', '-'], ['Granatapfel', '-', '-'], ['Mais', '-', '-'], ['Apfel', '-', '-'],
+  // Review v0.302: ausdruecklich fleischfrei, Kopfwoerter, pflanzliche Alternativen
+  ['Burger ohne Fleisch', '-', '-'], ['Fleischfreie Bratwurst', '-', '-'], ['Bolognese fleischfrei', '-', '-'],
+  ['fleischfreie Salami', '-', '-'], ['Bratwurst, vegan', '-', '-'], ['Hähnchen mit Salat ohne Fleisch', 'rot', 'rot'],
+  ['Nudeln ohne Ei und Milch', '-', '-'], ['Burger Brötchen', '-', '-'], ['Burger Sauce', '-', '-'],
+  ['Döner Sauce', '-', '-'], ['Currywurst Sauce', '-', '-'], ['Weißwurstsenf', '-', '-'], ['Hähnchen Gewürz', '-', '-'],
+  ['Fisch Gewürz', '-', '-'], ['Bratwurst Brötchen', 'rot', 'rot'], ['Schinken Brötchen', 'rot', 'rot'],
+  ['Fisch Sauce', 'rot', 'rot'], ['Austernsauce', 'rot', 'rot'], ['Austernseitlinge', '-', '-'], ['Austern-Pilze', '-', '-'],
+  ['Muschel Nudeln', '-', '-'], ['Nierentee', '-', '-'], ['Nieren- und Blasentee', '-', '-'], ['Linsen-Köfte', '-', '-'],
+  ['Pilz-Stroganoff', '-', '-'], ['Gemüse-Schaschlik', '-', '-'], ['Avocado-Tatar', '-', '-'], ['Köfte', 'rot', 'rot'],
+  ['Rindertatar', 'rot', 'rot'], ['Wild-Preiselbeeren', '-', '-'], ['Spurenelemente', '-', '-'], ['Kräuterstrauß', '-', '-'],
+  ['Kürbisfleisch', '-', '-'], ['Butternut Kürbis', '-', '-'], ['Peanut Butter', '-', '-'], ['Soja-Joghurtalternative', '-', '-'],
+  ['Frischkäse-Alternative', '-', '-'], ['Lasagneplatten', '-', '-'], ['Honig-Melone', '-', '-'], ['Cashew Joghurt', '-', '-'],
+  ['Tofu-Rührei', '-', '-'], ['Tofu Rührei', '-', '-'], ['Ei-Ersatz', '-', '-'], ['Soja-Eiweiß', '-', '-'],
+  ['Joghurt', '-', 'rot'], ['Frischkäse', '-', 'rot'], ['Rührei', '-', 'rot'], ['Rührei mit Speck', 'rot', 'rot'],
 ];
 const dietPick = (r, p) => { const b = r && r.by.find((x) => x.p === p); return b ? b.ampel : (r && r.open.includes(p) ? '-' : '?'); };
 let dietFail = 0;
@@ -136,6 +151,10 @@ const MAC = [
   ['Magerquark', P(67, 12, 4, 0.2), 250, 'High Protein', 'gruen'], ['Linsen (gekocht)', P(116, 9, 20, 0.4), 150, 'High Protein', '-'],
   ['Spinat', P(23, 2.9, 3.6, 0.4), 100, 'High Protein', '-'], ['Mandeln', P(579, 21, 22, 50), 30, 'High Protein', '-'],
   ['Thunfisch (Dose)', P(116, 26, 0, 1), 80, 'High Protein', 'gruen'],
+  // Getraenke ohne Gattungswort (Review v0.302): halbe Schwellen
+  ['Krombacher Pils', P(42, 0.5, 3.1, 0), 500, 'Keto', 'gelb'], ['Fanta Orange', P(32, 0, 7.6, 0), 330, 'Low Carb', 'gelb'],
+  ['Pepsi', P(44, 0, 11, 0), 330, 'Low Carb', 'rot'], ['Lipton Ice Tea', P(19, 0, 4.3, 0), 500, 'Keto', 'gelb'],
+  ['Birnen in Rotwein', P(90, 0.4, 18, 0.1), 150, 'Low Carb', 'gelb'],
 ];
 MAC.forEach(([n, per100, amount, p, want]) => {
   const r = A.rate('diet', n, { prefs: [p], per100, amount });
@@ -148,6 +167,12 @@ MAC.forEach(([n, per100, amount, p, want]) => {
   const r = A.rate('diet', 'Unbekannt', { prefs: ['Keto', 'Low Carb', 'High Protein'], per100 });
   if (!r || !r.open.includes('Keto') || !r.open.includes('Low Carb') || r.open.includes('High Protein') || r.ampel) { dietFail++; console.log(`  x   unplausible Werte (${i}): ${JSON.stringify(r)}`); }
 });
+// Getraenk am Namen
+const LIQ = [['Kaffee mit Milch', true], ['Hohes C Orange', true], ['Heiße Schokolade', true], ['Trinkschokolade', true],
+  ['Kinderpunsch', true], ['Wodka/Korn (40%)', true], ['Thunfisch (Dose, Wasser)', false], ['Rinderbraten in Rotwein', false],
+  ['Grießbrei mit Milch', false], ['Rotweinsauce', false], ['Rum-Rosinen-Eis', false], ['Kakao (Pulver)', false],
+  ['Wassermelone', false], ['Rucola', false], ['Milchreis', false]];
+LIQ.forEach(([n, want]) => { if (A.isLiquid(n) !== want) { dietFail++; console.log(`  x   isLiquid(${n}) soll ${want}`); } });
 // Gemischt: lokal entschieden + offen fuer die KI; strengste Stufe, Gruende zusammengefasst.
 {
   const r = A.rate('diet', 'Schweinebraten', { prefs: ['Vegetarisch', 'Vegan', 'Keto', 'Glutenfrei', 'histaminarm'], per100: P(300, 13, 2, 27), amount: 100 });
@@ -160,6 +185,8 @@ MAC.forEach(([n, per100, amount, p, want]) => {
   const L = (ampel, grund) => ({ name: 'X', ampel, grund });
   const c1 = A.combine(L('rot', 'a'), L('gruen', 'b')), c2 = A.combine(L('gruen', 'a'), L('grau', 'b')), c3 = A.combine(L('gelb', 'a'), L('gelb', 'b'));
   if (c1.ampel !== 'rot' || c1.grund !== 'a' || c2.ampel !== 'grau' || c3.grund !== 'a · b' || c3.src !== 'rule+ai' || A.combine(null, L('gelb', 'b')).ampel !== 'gelb') { dietFail++; console.log('  x   combine'); }
+  // KI ohne gueltige Stufe: lokales Rot bleibt, lokales Gruen ist unbestaetigt (null)
+  if (A.combine(L('rot', 'a'), L('green', 'b')).ampel !== 'rot' || A.combine(L('gruen', 'a'), { name: 'X' }) !== null) { dietFail++; console.log('  x   combine ohne gueltige KI-Stufe'); }
 }
 fail += dietFail;
 

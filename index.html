@@ -6355,17 +6355,24 @@ function calcGoal(){
 // Teilergebnis (Ernaehrung, #262): {…, open:[Praeferenzen]} – lokal entschieden
 // ist nur ein Teil. Gelb/Rot steht sofort, Gruen erst mit der KI (sonst
 // zeigte offline ein „passt“, obwohl z. B. Glutenfrei ungeprueft ist). Die KI
-// bekommt nur die offenen Praeferenzen (promptPrefix darf dafuer eine Funktion
-// sein) und ihr Ergebnis wird mit dem lokalen zusammengefuehrt (NTAmpel.combine):
-// Ein lokales Rot ueberschreibt sie nie. ampel null ohne open: kein Punkt.
+// bekommt je Name nur dessen offene Praeferenzen in eckigen Klammern
+// (promptPrefix darf dafuer eine Funktion sein), und ihr Ergebnis wird mit dem
+// lokalen zusammengefuehrt (NTAmpel.combine): Ein lokales Rot ueberschreibt sie
+// nie. ampel null ohne open: kein Punkt.
 function _checkAmpelWarn(ingredients,meal,entryIdx,guardOk,promptPrefix,ampelField,onResults,rateFn){
   if(!guardOk)return;
-  // Doppelte Namen (dieselbe Zutat zweimal) nur einmal bewerten lassen.
+  // Doppelte Namen (dieselbe Zutat zweimal) nur einmal bewerten lassen; die
+  // Tabelle bekommt eine Kopie mit der Summe der Mengen (Kleinmengen-Regel).
   var seen={},names=[];
   ingredients.forEach(function(i){
     var n=i&&i.name;if(!n)return;
-    var k=String(n).toLowerCase();if(seen[k])return;
-    seen[k]=i;names.push(n);
+    var k=String(n).toLowerCase();
+    if(seen[k]){
+      var a=seen[k].amount,b=i.amount;
+      seen[k].amount=(typeof a==='number'&&typeof b==='number')?a+b:undefined;
+      return;
+    }
+    seen[k]={name:n,per100:i.per100,amount:i.amount,source:i.source};names.push(n);
   });
   if(!names.length)return;
   // Den Eintrag JETZT festhalten, nicht erst im Rueckruf (#247): Die Antwort
@@ -6390,11 +6397,17 @@ function _checkAmpelWarn(ingredients,meal,entryIdx,guardOk,promptPrefix,ampelFie
   }
   if(!rest.length||!promptPrefix||!canUseAi())return;
   var prefix=typeof promptPrefix==='function'?promptPrefix(Object.keys(open)):promptPrefix;
+  // Mit Teilergebnissen: je Name nur seine offenen Praeferenzen, sonst koennte
+  // die KI ein lokal entschiedenes Keto-Gruen eines anderen Namens ueberstimmen.
+  var items=rest.map(function(n){
+    var l=local[String(n).toLowerCase()];
+    return l?n+' ['+l.open.join(', ')+']':n;
+  });
   // Je Name ein JSON-Objekt mit Begruendung (~30 Tokens): Fest 300 schnitt die
   // Antwort ab etwa acht Zutaten ab, JSON.parse scheiterte, und das ganze
   // Ergebnis ging still verloren.
   var maxTok=Math.min(1500,Math.max(300,80+40*rest.length));
-  callClaude('claude-haiku-4-5',[{type:'text',text:prefix+rest.join(', ')}],maxTok,
+  callClaude('claude-haiku-4-5',[{type:'text',text:prefix+items.join(', ')}],maxTok,
     function(text){
       try{
         var results=JSON.parse(text.replace(/```json|```/g,'').trim());
@@ -6403,9 +6416,12 @@ function _checkAmpelWarn(ingredients,meal,entryIdx,guardOk,promptPrefix,ampelFie
         results=results.filter(function(r){return r&&typeof r.name==='string'&&r.name;});
         if(!results.length)return;
         results=results.map(function(r){
+          // Gibt die KI die Klammer mit zurueck, gehoert sie nicht zum Namen.
+          r.name=r.name.replace(/\s*\[[^\]]*\]\s*$/,'');
           var l=local[r.name.toLowerCase()];
           return l&&window.NTAmpel?NTAmpel.combine(l,r):r;
-        });
+        }).filter(Boolean);
+        if(!results.length)return;
         // Das Banner ersetzt seinen Abschnitt: lokal entschiedene Namen, die
         // die KI nicht bewertet hat, muessen darin stehen bleiben.
         var got={};results.forEach(function(r){got[r.name.toLowerCase()]=1;});
@@ -6420,6 +6436,9 @@ function _checkAmpelWarn(ingredients,meal,entryIdx,guardOk,promptPrefix,ampelFie
 // ergaenzt statt ersetzt (Tabelle und KI koennen nacheinander schreiben), und
 // saveS() laeuft erst, wenn auch die Zutaten ihr Ergebnis tragen – sonst wurde
 // ing[ampelField] erst beim naechsten fremden saveS() dauerhaft.
+// Am Eintrag gewinnt je Name die strengere Stufe (#262): Wer im Zutat-Modus
+// 1 g Zucker nachtraegt, macht das Rot von 50 g Zucker nicht gruen.
+var _AMPEL_RANK={gruen:0,grau:1,gelb:2,rot:3};
 function _applyAmpelResults(entry,ingredients,ampelField,results,onResults){
   var map={};
   results.forEach(function(r){map[r.name.toLowerCase()]=r;});
@@ -6427,7 +6446,14 @@ function _applyAmpelResults(entry,ingredients,ampelField,results,onResults){
     if(!ing||!ing.name)return;
     var r=map[String(ing.name).toLowerCase()];if(r)ing[ampelField]=r;
   });
-  if(entry){entry[ampelField]=Object.assign({},entry[ampelField]||{},map);saveS();}
+  if(entry){
+    var cur=Object.assign({},entry[ampelField]||{});
+    Object.keys(map).forEach(function(k){
+      var old=cur[k],nw=map[k];
+      if(!old||!(_AMPEL_RANK[old.ampel]>_AMPEL_RANK[nw.ampel]))cur[k]=nw;
+    });
+    entry[ampelField]=cur;saveS();
+  }
   renderAll();
   onResults(results);
 }
@@ -6693,15 +6719,19 @@ function checkDietWarn(ingredients,meal,entryIdx){
   var allPrefs=(S.dietPrefs||[]).concat(S.dietFree?[S.dietFree]:[]);
   _checkAmpelWarn(ingredients,meal,entryIdx,S.dietWarn&&allPrefs.length>0,
     function(openPrefs){
-      return 'Bewerte diese Lebensmittel für folgende Ernährungspräferenzen: '+(openPrefs.length?openPrefs:allPrefs).join(', ')+'.\n'
-      +'Antworte NUR mit gültigem JSON ohne Erklärung, den Namen genau wie angegeben:\n'
+      return (openPrefs.length
+        ?'Bewerte jedes Lebensmittel nur nach den Ernährungspräferenzen in eckigen Klammern dahinter ('+openPrefs.join(', ')+').\n'
+        :'Bewerte diese Lebensmittel für folgende Ernährungspräferenzen: '+allPrefs.join(', ')+'.\n')
+      +'Antworte NUR mit gültigem JSON ohne Erklärung, den Namen genau wie angegeben (ohne Klammer):\n'
       +'[{"name":"Lebensmittelname","ampel":"gruen|gelb|rot|grau","grund":"kurze Begründung max 8 Wörter"}]\n'
       +'gruen=passt gut, gelb=bedingt geeignet, rot=nicht geeignet, grau=keine Einschätzung möglich.\n'
       +'Nur wissenschaftlich fundierte Empfehlungen. Lebensmittel: ';
     },
     'dietAmpel',function(results){showDietAmpelModal(results,allPrefs);},
     function(n,ing){
-      return window.NTAmpel?NTAmpel.rate('diet',n,{prefs:allPrefs,per100:ing&&ing.per100,amount:ing&&ing.amount}):null;
+      // Pauschalwerte aus kiEstimate sind keine Grundlage fuer Keto/Low Carb.
+      var est=ing&&ing.source==='estimate';
+      return window.NTAmpel?NTAmpel.rate('diet',n,{prefs:allPrefs,per100:est?undefined:ing&&ing.per100,amount:ing&&ing.amount}):null;
     });
 }
 

@@ -26,6 +26,7 @@ function loadPlaywright() {
   process.exit(2);
 }
 const { chromium } = loadPlaywright();
+const { handlerCalls } = require('./js-scan');
 
 // Chromium ebenso: vorinstalliert unter /opt/pw-browsers oder von Playwright
 // selbst verwaltet (dann kein executablePath noetig).
@@ -123,34 +124,28 @@ const EXPECTED_NAMESPACES = [
   //    Monolithen zaehlt: eine Funktion, die ins Modul gewandert ist, aber im
   //    Markup noch unter ihrem alten globalen Namen steht. Bis v0.303 las sie
   //    nur onclick — ein totes `onkeydown="if(…)pickerSearch()"` blieb gruen.
-  //    Ein Name zaehlt nach ; { ( ) Leerraum ! = & | ? : , + wie in
-  //    tools/check.js (mit `)` fuer `if(…)name()`).
-  const handlerScan = await page.evaluate(() => {
-    const dead = [];
-    let attrs = 0;
-    const host = ['this', 'event', 'document', 'window', 'console', 'JSON', 'Math', 'Object', 'Array',
-      'String', 'Number', 'Date', 'Promise', 'location', 'history', 'navigator',
-      'localStorage', 'sessionStorage', 'alert', 'confirm', 'prompt', 'setTimeout',
-      'clearTimeout', 'setInterval', 'parseInt', 'parseFloat', 'encodeURIComponent', 'decodeURIComponent'];
+  //    Den Rumpf zerlegt handlerCalls() aus tools/js-scan.js wie in
+  //    tools/check.js (Text in Strings zaehlt nicht, `()=>name()` schon).
+  const handlerAttrs = await page.evaluate(() => {
+    const list = [];
     document.querySelectorAll('*').forEach((el) => {
       for (const at of Array.from(el.attributes)) {
-        if (!/^on[a-z]+$/.test(at.name)) continue;
-        attrs++;
-        for (const c of at.value.matchAll(/(?<=^|[;{()\s!=&|?:,+])([A-Za-z_$][\w$]*(?:\.[\w$]+)*)\s*\(/g)) {
-          const name = c[1];
-          // Schluesselwoerter und Operatoren sind keine Funktionen.
-          if (/^(if|for|while|return|typeof|new|function|void|delete|in|instanceof|else|do|switch|try|catch|throw|await)$/.test(name)) continue;
-          // `this` ist im Handler das Element selbst, `event` das Ereignis —
-          // beide sind zur Pruefzeit nicht aufloesbar und auch nie das Problem.
-          if (host.includes(name.split('.')[0])) continue;
-          let ref = window;
-          for (const part of name.split('.')) { ref = ref && ref[part]; }
-          if (typeof ref !== 'function') dead.push(at.name + ' ' + name + '  <- ' + (el.id ? '#' + el.id : (el.textContent || '').trim().slice(0, 24)));
-        }
+        if (/^on[a-z]+$/.test(at.name)) list.push({ attr: at.name, value: at.value, where: el.id ? '#' + el.id : (el.textContent || '').trim().slice(0, 24) });
       }
     });
-    return { dead: [...new Set(dead)], attrs };
+    return list;
   });
+  const handlerScan = await page.evaluate((list) => {
+    const dead = [];
+    for (const h of list) {
+      for (const name of h.names) {
+        let ref = window;
+        for (const part of name.split('.')) { ref = ref && ref[part]; }
+        if (typeof ref !== 'function') dead.push(h.attr + ' ' + name + '  <- ' + h.where);
+      }
+    }
+    return { dead: [...new Set(dead)], attrs: list.length };
+  }, handlerAttrs.map((h) => ({ ...h, names: handlerCalls(h.value) })));
   const deadHandlers = handlerScan.dead;
   if (deadHandlers.length) { deadHandlers.forEach((d) => console.log(`  x   toter Handler: ${d}`)); }
   else console.log(`  ok  Jeder der ${handlerScan.attrs} Event-Handler (on*) im Markup ist aufloesbar.`);

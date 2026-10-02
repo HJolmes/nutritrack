@@ -44,7 +44,7 @@ node tools/smoke.js    # App in Chromium laden (braucht: npx http-server@14.1.1 
 
 **Das App-JS ist in der Typprüfung** (`checkJs: true`; ausgenommen `sw.js`, `worker/`, `alexa/`, `tools/`): Jedes Modul unter `js/`, `picker.js` und jeder klassische Inline-Block von `index.html` und `tab.html` beginnt mit `// @ts-check`; jedes lokal eingebundene Script liegt unter `js/` oder ist `picker.js`. `@ts-ignore`/`@ts-nocheck` sind verboten, Ausnahme nur `// @ts-expect-error <Grund>` (`tools/check.js` prüft alles davon).
 
-**Module rufen aus `index.html` nur den Kern; was darüber hinausgeht, steht in `tools/coupling-allow.json`, und die Liste wird nur kürzer (Ausnahme: `Kopplung-Ausnahme: <Grund>` im PR-Text).** `tools/check.js` prüft die Liste gegen den Code (ein neuer Name ist rot, ein nicht mehr gerufener Eintrag auch), der CI-Schritt „Kopplung nur kuerzer“ gegen den Zielbranch (#257).
+**Module rufen aus `index.html` nur den Kern; was darüber hinausgeht, steht in `tools/coupling-allow.json`, und die Liste wird nur kürzer (Ausnahme: `Kopplung-Ausnahme: <Grund>` im PR-Text, nach dem Nachtragen den CI-Lauf neu starten).** `tools/check.js` prüft die Liste gegen den Code (ein neuer Name ist rot, ein nicht mehr gerufener Eintrag auch), der CI-Schritt „Kopplung nur kuerzer“ gegen den Zielbranch (#257).
 
 Alle laufen auch in `.github/workflows/checks.yml`. Es gibt keinen Build-Schritt (siehe Architektur) — die Prüfungen fangen genau die Fehlerklassen ab, die ohne ihn still bleiben: Syntaxfehler im Inline-JS, vergessener Versions-Bump, ein Modul, das nicht in `sw.js` `CORE_ASSETS` steht, und ein `on*`-Handler (`onclick`, `oninput`, `onkeydown`, …) oder `data-act`, der nach einer Verschiebung ins Leere zeigt.
 

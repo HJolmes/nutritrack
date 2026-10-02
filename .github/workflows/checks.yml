@@ -15,6 +15,10 @@ jobs:
   consistency:
     name: Konsistenz & Syntax
     runs-on: ubuntu-latest
+    # pull-requests: read fuer den PR-Text im Schritt „Kopplung nur kuerzer“.
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -84,13 +88,24 @@ jobs:
         # sie dort nicht rufen durfte (Kern oder ihre Liste), und der Kern darf
         # nicht wachsen. Ausnahme nur mit einer Zeile
         # `Kopplung-Ausnahme: <Begruendung>` im PR-Text — dann Hinweis statt
-        # Fehler. Der PR-Text kommt ueber env, nie in den Skripttext.
+        # Fehler. Der PR-Text kommt ueber env, nie in den Skripttext, und wird
+        # zur Laufzeit geholt: Das Ereignis enthaelt den Text vom Zeitpunkt des
+        # Pushs, ein erneuter Lauf nach dem Nachtragen der Zeile saehe ihn sonst
+        # nicht. Nach dem Nachtragen also „Re-run“ — ein neuer Push ist nicht noetig.
         if: github.event_name == 'pull_request'
         env:
-          PR_BODY: ${{ github.event.pull_request.body }}
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BODY_EVENT: ${{ github.event.pull_request.body }}
         run: |
           BASE="origin/${{ github.base_ref }}"
           git fetch --no-tags --depth=1 origin "${{ github.base_ref }}" || true
+
+          if ! PR_BODY=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq '.body // ""' 2>/dev/null); then
+            echo "::warning::PR-Text nicht abrufbar — nehme den Text aus dem Ereignis."
+            PR_BODY="$PR_BODY_EVENT"
+          fi
+          export PR_BODY
 
           if ! BASE_JSON=$(git show "$BASE:tools/coupling-allow.json" 2>/dev/null); then
             echo "::notice::tools/coupling-allow.json fehlt im Zielbranch — nichts zu vergleichen."

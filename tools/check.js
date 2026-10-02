@@ -278,16 +278,10 @@ if (!mCore) {
   }
 }
 
-// Kommentare in JS-Dateien ausblenden (Abschnitte 5 und 5d): Ein Doku-Kommentar,
-// der die Schreibweise erklaert ("<button data-act=… statt onclick=foo()"), ist
-// kein Aufruf. Die Handler-Pruefung ist genau daran zuerst rot geworden.
-// Nicht fuer index.html: Dort stuende `accept="image/*"` als Kommentaranfang.
-// Zeichen werden zu Leerzeichen, Zeilenumbrueche bleiben — die Zeilennummern
-// in den Meldungen stimmen so mit der Datei ueberein.
-const blankOut = (s) => s.replace(/[^\n]/g, ' ');
-const stripComments = (code) => code
-  .replace(/^\s*\/\/.*$/gm, blankOut)
-  .replace(/\/\*[\s\S]*?\*\//g, blankOut);
+// Kommentare ausblenden (Abschnitte 5 und 5d): Ein Doku-Kommentar, der die
+// Schreibweise erklaert ("<button data-act=… statt onclick=foo()"), ist kein
+// Aufruf. Der Lexer steht in tools/js-scan.js (auch fuer tools/smoke.js).
+const { blankOut, stripComments, handlerCalls } = require('./js-scan');
 
 // ── 5. Handler-Ziele (on*, data-act) in generiertem HTML ──────────────────
 // Der Rauchtest (tools/smoke.js) prueft nur, was zur Pruefzeit im DOM steht.
@@ -297,10 +291,24 @@ const stripComments = (code) => code
 // Pruefung liest die Strings im Quelltext und loest sie gegen das auf, was
 // global existiert.
 {
-  // In index.html nur HTML-Kommentare und ganze //-Zeilen ausblenden (Zeichen
-  // durch Leerzeichen, Zeilen bleiben): Der Kommentar ueber
-  // openPickerForOpenMeal() zitiert ein `onclick="openPicker('breakfast')"`.
-  const idxNoComments = indexHtml.replace(/<!--[\s\S]*?-->/g, blankOut).replace(/^[ \t]*\/\/.*$/gm, blankOut);
+  // In index.html HTML-Kommentare im Markup und JS-Kommentare in den
+  // Inline-Scripts ausblenden (Zeichen durch Leerzeichen, Zeilen bleiben): Der
+  // Kommentar ueber openPickerForOpenMeal() zitiert ein
+  // `onclick="openPicker('breakfast')"`. Die Script-Bereiche merken: Ein
+  // Handler dort steht in einem JS-String (Verkettung, \' als Anfuehrung),
+  // einer im Markup nicht.
+  const scriptRanges = [];
+  let idxNoComments = '';
+  {
+    let last = 0;
+    for (const mb of indexHtml.matchAll(/(<script(?![^>]*\bsrc=)[^>]*>)([\s\S]*?)<\/script>/g)) {
+      const from = mb.index + mb[1].length, to = from + mb[2].length;
+      idxNoComments += indexHtml.slice(last, from).replace(/<!--[\s\S]*?-->/g, blankOut) + stripComments(mb[2]);
+      scriptRanges.push([from, to]);
+      last = to;
+    }
+    idxNoComments += indexHtml.slice(last).replace(/<!--[\s\S]*?-->/g, blankOut);
+  }
   const sources = [['index.html', idxNoComments]];
   for (const f of jsFiles) { if (!f.includes('zxing')) sources.push([f, stripComments(read(f))]); }
 
@@ -329,39 +337,28 @@ const stripComments = (code) => code
     globals.add(ns);
     nsMembers[ns] = new Set([...code.slice(start, end).matchAll(/(?:^|[,{\s])([A-Za-z0-9_$]+)\s*:/gm)].map((x) => x[1]));
   }
-  const HOST = new Set(['this','event','document','window','console','JSON','Math','Object','Array','String',
-    'Number','Date','Promise','location','history','navigator','localStorage','sessionStorage','alert',
-    'confirm','prompt','setTimeout','clearTimeout','setInterval','parseInt','parseFloat','encodeURIComponent',
-    'decodeURIComponent','if','for','while','return','typeof','new','function','void','delete','in',
-    'instanceof','else','do','switch','try','catch','throw','await','navigator']);
-
   // Jedes on*-Attribut (onclick, oninput, onkeydown, onchange, onblur, …) im
   // Markup und in HTML-Strings: on…="…" bzw. on…=\"…\" (der Rueckstrich muss
   // dann auch vor dem schliessenden Zeichen stehen). Bis v0.303 las diese
   // Pruefung nur onclick und nur bis zum ersten ' oder " — von
   // `closeOv('libraryOv');openPicker(null,'link')` sah sie closeOv, von
   // `if(event.key==='Enter')pickerSearch()` gar nichts.
-  // Im Rumpf eines JS-Strings stehen Verkettungen: eine geschlossene
-  // ('+id+') wird zu 'X', eine offene (bis zum Ende des Rumpfs, etwa bei
-  // `p.replace(/'/g,"\\'")`) abgeschnitten; dahinter wird nichts geprueft.
-  // Ein Name zaehlt nach einem dieser Zeichen: ; { ( ) Leerraum ! = & | ? : , +
-  // — mit ) fuer `if(…)name()`, mit , und + fuer Argumente. Bekannte Grenze:
-  // ein zur Laufzeit zusammengesetzter Name ('+fn+'(…)) bleibt ungeprueft, ihn
-  // sieht nur der Rauchtest im DOM.
+  // Den Rumpf zerlegt handlerCalls() in tools/js-scan.js: Text in
+  // String-Literalen zaehlt nicht, im JS-String wird eine Verkettung ('+id+')
+  // zu 0 und eine offene abgeschnitten. Bekannte Grenze: ein zur Laufzeit
+  // zusammengesetzter Name ('+fn+'(…)) bleibt ungeprueft, ihn sieht nur der
+  // Rauchtest im DOM.
   const handlerRe = /\b(on[a-z]+)=(\\?)(["'])((?:(?!\2\3)(?:[^\\]|\\[\s\S]))*)\2\3/g;
-  const callRe = /(?<=^|[;{()\s!=&|?:,+])([A-Za-z_$][\w$]*(?:\.[\w$]+)*)\s*\(/g;
   let dead = 0, checked = 0, handlerAttrs = 0;
   const handlerKinds = {};
   for (const [file, code] of sources) {
     for (const h of code.matchAll(handlerRe)) {
       handlerAttrs++;
       handlerKinds[h[1]] = (handlerKinds[h[1]] || 0) + 1;
-      const body = h[4].replace(/(['"])\s*\+[\s\S]*?\+\s*\1/g, '$1X$1').replace(/['"]\s*\+[\s\S]*$/, '');
+      const inJsString = file !== 'index.html' || scriptRanges.some(([from, to]) => h.index >= from && h.index < to);
       const where = `${file}:${code.slice(0, h.index).split('\n').length}: ${h[1]}`;
-      for (const c of body.matchAll(callRe)) {
-        const name = c[1];
+      for (const name of handlerCalls(h[4], { inJsString })) {
         const parts = name.split('.');
-        if (HOST.has(parts[0])) continue;
         checked++;
         if (parts.length === 1) {
           if (!globals.has(parts[0])) { fail(`${where} ruft '${name}()' — weder globale Funktion noch Modul-Export.`); dead++; }

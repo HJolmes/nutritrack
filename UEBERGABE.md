@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie beschreibt den **aktuellen** Stand, nicht seine Geschichte — die steht in Git und in `js/changelog.js`. Der Stand vor der Kürzung (#258, 132 KB): `git show 0d69ba2:UEBERGABE.md`. Grenzen siehe „Pflege“, `tools/check.js` prüft sie.
 
-**Stand:** v0.307 (2026-10-02) — #301 Schritt 1: `cacheFood`, `getRecentFoods`, `searchLocal`, `urlProxyUrl` unverändert von `index.html` nach `picker.js` (privat), Kopplung `picker.js` 27 → 23 über dem Kern; Rest (`js/recipes.js`) offen. v0.306 (#303): #298 `parsePhotoResponse` mit eigenem `try` je Form, ein Array mit mehreren Zutaten erreicht den Rückfall (Test in `calc.test.js`). v0.305 (#300): #257 Teil B, `picker.js` gekapselt (IIFE, nach außen nur `window.NTPicker`, 41 Funktionen; 143 globale Namen → 1), `js/templates.js` mit eigenem `tplMeal`; Rest von #257 in #301. v0.304 (#299): #257 Teil A, Kopplungs-Ratsche (`tools/coupling-allow.json`, `check.js` 5d, CI „Kopplung nur kuerzer“), Kopplung 162 → 152. v0.303 (#295): #254 Stufe 1, `checkJs`. v0.302 (#294): #262 Ampel Stillzeit/Ernährung lokal. Entscheidungen 2026-10-01: #260 Workers Paid, #264 UPC-E-Bugteil zu, #165 geparkt; 2026-10-02: #262 Schwellen freigegeben, Schwangerschaft nicht gebaut (Quellen gesperrt).
+**Stand:** v0.308 (2026-10-02) — Teilen/Import: ein geteilter Eintrag reist mit Menge bzw. Portionen (Rezept bleibt Rezept, auch ohne `recipeId`; vorher gingen dessen Gesamtwerte als „pro 100 g“), Zucker/Ballaststoffe/Salz im Share-Format (`_shPer100Enc`/`_shPer100Dec` in `js/calc.js`); Import von Lebensmittel/Rezept mit drei Wegen (Mahlzeit, Wochenplan per `NTPlan.addSnapshot`, Bibliothek) und Rückfrage „zusätzlich in Bibliothek?“. v0.307: #301 Schritt 1, Kopplung `picker.js` 27 → 23. v0.306 (#303): #298 `parsePhotoResponse`. v0.305 (#300): #257 Teil B, `picker.js` gekapselt. Entscheidungen 2026-10-02: „Tagesplan“ = Wochenplan, geteiltes Lebensmittel wird eigenes Lebensmittel (kein Rezept).
 
 ## URLs
 
@@ -62,6 +62,7 @@
 
 ## Live-Test offen
 
+- **v0.308 Teilen mit Menge (Android-PWA und iPhone, zwei Geräte oder Partner-Postfach):** Rezept-Eintrag mit 2 Portionen und ein Lebensmittel mit 180 g über Eintrag → 📤 teilen. Empfänger: Vorschau zeigt 2 Portionen bzw. 180 g; „In Mahlzeit übernehmen“ → gleiche kcal wie beim Sender, Zucker/Salz nicht 0; Rückfrage „zusätzlich … speichern?“ erscheint. „In Wochenplan übernehmen“ → Eintrag im gewählten Tag/Slot. „In Bibliothek speichern“ → unter Eigenes bzw. Rezepte. „Was ist neu“ zeigt v0.308 einmal.
 - **v0.306 Foto-Analyse (#298):** ＋ → 📷 Foto mit einem Teller aus mehreren Zutaten → alle Zutaten erscheinen in der Liste, kein leeres Ergebnis. „Was ist neu“ zeigt v0.306 einmal.
 - **v0.305/v0.307 Picker gekapselt (#257, #301, Android-PWA und iPhone, nach Neustart der App):** je einmal über ＋ buchen: Chat („2 Bier“), Suche → Treffer → Hinzufügen, Zuletzt, Foto (Kamera und Galerie, „Ändern“), Barcode (Scanner starten/stoppen, „Taschenlampe ein/aus“, manuelle Eingabe), Link (Rezept-URL importieren, „Auf den Einkaufszettel“), Eigenes. Vorlage laden und löschen. Offline-Fotos: Foto im Flugmodus aufnehmen, online unter Trends „📷 Offline-Fotos“ → „Jetzt analysieren“. Kein Fehler-Toast, kein Knopf ohne Wirkung.
 - **v0.302 Ampel (#262, Android-PWA und iPhone, nach Neustart der App):** Stillzeit an: „Leberkäse“ aus der Suche → gelb „je nach Sorte mit Leber“, auch im Flugmodus; „Tiramisu“ über die Suche (nicht über den Chat, der zerlegt Gerichte) → gelb; „Bier ohne Alkohol“ ohne Hinweis. Ernährung Vegan + Keto: „Bratwurst“ → rot im Flugmodus; „Apfel“ → rot (Keto), Vegan offen; mit Glutenfrei online genau ein KI-Aufruf, ein lokales Rot bleibt rot. „Was ist neu“ zeigt v0.302 einmal.
@@ -73,11 +74,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.303 | #295 | #254 Stufe 1: `checkJs` an, `// @ts-check` überall, `TS_PENDING` weg; `check.js` verbietet `@ts-ignore`/`@ts-nocheck` überall, `@ts-expect-error` ohne Grund, ungeprüfte lokale Scripts und `exclude`/`files` in `tsconfig.json`; `tab.html` im Programm. |
 | v0.304 | #299 | #257 Teil A: Kopplungs-Ratsche (`tools/coupling-allow.json`, `check.js` 5d, CI „Kopplung nur kuerzer“, Ausnahme `Kopplung-Ausnahme: <Grund>`), Handler-Prüfung über alle `on*`-Attribute (`tools/js-scan.js`), Rauchtest „Picker“; SW cacht nur Seite der eigenen Version; `parseIngJSON`, `parsePhotoResponse`, `recipeImportExtractUrl`, `safeEmoji`, `totalStr` → `js/calc.js` (Tests), `animateAdd`, `checkDataQuality`, `checkGramPlausibility`, `renderRecentList` → `picker.js`; Kopplung 162 → 152. |
 | v0.305 | #300 | #257 Teil B: `picker.js` in IIFE, API `window.NTPicker` (41 Exporte), alle Aufrufer und `on*`/`data-act`-Strings auf `NTPicker.<name>`; `js/templates.js` `tplMeal`; Rauchtest prüft `NTPicker`, Chat-Ergebnis über den echten KI-Rückfall (KI/Nährwertsuche ersetzt). |
 | v0.306 | #303 | #298 `parsePhotoResponse`: Objekt- und Array-Versuch je mit eigenem `try`, protokolliert nur, wenn beide scheitern; Test schreibt das neue Verhalten fest. |
-| v0.307 | — | #301 Schritt 1: `cacheFood`, `getRecentFoods`, `searchLocal`, `urlProxyUrl` → `picker.js` (unverändert, nicht exportiert), `coupling-allow.json` `picker.js` 27 → 23. |
+| v0.307 | #304 | #301 Schritt 1: `cacheFood`, `getRecentFoods`, `searchLocal`, `urlProxyUrl` → `picker.js` (unverändert, nicht exportiert), `coupling-allow.json` `picker.js` 27 → 23. |
+| v0.308 | — | Teilen/Import: `shareEntryAsFood` über `_encEntry` (Menge/Portionen, Rezept bleibt Rezept), `_shPer100Enc`/`_shPer100Dec` (g/b/l) mit Test; Import-Dialog für `t:'f'`/`'r'`: Menge vorbelegt, `importConfirmTo('diary'|'plan'|'lib')`, `NTPlan.addSnapshot`. |
 
 ---
 

@@ -328,6 +328,19 @@ function renderPick(){
       +'<div style="font-size:18px;color:var(--g2);font-weight:900;">＋</div></div>';
   }).join('');
 }
+// Eine Sendung (Lebensmittel oder Rezept) als Abzug einplanen: kein Verweis,
+// keine neue Bibliothek — wie die Vorschlaege aus dem Tagebuch in autoFill().
+function addSnapshot(date,slot,name,emoji,ings,portions){
+  var p=planFor(date,true);
+  if(!Array.isArray(p[slot]))slot='snack';
+  p[slot].push({r:'',p:portions||1,s:{n:name,em:emoji,
+    i:(ings||[]).map(function(g){return {n:g.name,em:g.emoji,a:g.amount,p:g.per100};})}});
+  if(S.planApplied)delete S.planApplied[date];
+  touch(date);
+  saveS();Sync.schedule();
+  if(isPlanOpen())render();
+  refreshCard();
+}
 function addToSlot(recipeId){
   if(!_target)return;
   var t=_target,repl=_replaceIdx;
@@ -1200,7 +1213,7 @@ window.NTPlan={
   boot:boot,open:open,close:close,render:render,refreshCard:refreshCard,
   shiftWeek:shiftWeek,autoFill:autoFill,clearDay:clearDay,clearWeek:clearWeek,
   weekToShop:weekToShop,toDiary:toDiary,
-  pick:pick,renderPick:renderPick,addToSlot:addToSlot,
+  pick:pick,renderPick:renderPick,addToSlot:addToSlot,addSnapshot:addSnapshot,
   addNote:addNote,saveNote:saveNote,noteToRecipe:noteToRecipe,
   similarRecipe:similarRecipe,confirmNotDuplicate:confirmNotDuplicate,
   noteRecipeCreated:noteRecipeCreated,

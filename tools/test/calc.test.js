@@ -530,3 +530,12 @@ test('totalStr: kcal und Makros gerundet, Zucker usw. nicht genannt', () => {
   assert.equal(C.totalStr({ kcal: 123.5, protein: 10.49, carbs: 0.5, fat: 2.51 }), '124 kcal · P10g K1g F3g');
   assert.equal(C.totalStr({ kcal: 0, protein: 0, carbs: 0, fat: 0, sugar: 9 }), '0 kcal · P0g K0g F0g');
 });
+
+test('_shPer100Enc/_shPer100Dec: Zucker, Ballaststoffe, Salz reisen mit, alte Sendungen lesen 0', () => {
+  const C = load({});
+  const enc = C._shPer100Enc({kcal:250.4,protein:8.26,carbs:30,fat:10.04,sugar:4.44,fiber:0,salt:1.234});
+  assert.deepEqual(JSON.parse(JSON.stringify(enc)), {k:250,pr:8.3,c:30,f:10,g:4.4,l:1.23});
+  assert.deepEqual(JSON.parse(JSON.stringify(C._shPer100Dec(enc))), {kcal:250,protein:8.3,carbs:30,fat:10,sugar:4.4,fiber:0,salt:1.23});
+  assert.deepEqual(JSON.parse(JSON.stringify(C._shPer100Dec({k:100,pr:1,c:2,f:3}))), {kcal:100,protein:1,carbs:2,fat:3,sugar:0,fiber:0,salt:0});
+  assert.deepEqual(JSON.parse(JSON.stringify(C._shPer100Enc(null))), {k:0,pr:0,c:0,f:0});
+});

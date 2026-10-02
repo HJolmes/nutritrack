@@ -1,6 +1,6 @@
 // NutriTrack Service Worker
 // Version wird bei jedem Release hochgezählt - löst automatisches Update aus
-var VERSION = '0.303';
+var VERSION = '0.304';
 var CACHE = 'nt-' + VERSION;
 var SKIP = ['workers.dev','corsproxy.io','openfoodfacts.org','fonts.googleapis.com','fonts.gstatic.com','unpkg.com','esm.sh','jsdelivr.net','is.gd','v.gd'];
 // Kern-Assets, die für den Offline-Betrieb vorab gecacht werden. Relativ zur
@@ -69,13 +69,21 @@ self.addEventListener('fetch', function(e) {
       return;
     }
   }
-  // Network-first für HTML (index.html immer frisch laden)
+  // Network-first für HTML (index.html immer frisch laden). In den Cache kommt
+  // nur eine Seite DIESER Version (ihre Scripts tragen ?v=VERSION): Laeuft noch
+  // der alte Worker, waehrend der Server schon die neue Seite liefert, laege
+  // sonst die neue Seite neben den alten Modulen — und offline fehlten ihr die
+  // Funktionen, die mit dem Update in ein Modul gewandert sind (#257). Die neue
+  // Seite cacht der neue Worker bei seiner Installation.
   if (u.includes('index.html') || u.endsWith('/nutritrack/') || u.endsWith('/nutritrack')) {
     e.respondWith(
       fetch(e.request).then(function(r) {
         if (r.ok) {
-          var cl = r.clone();
-          caches.open(CACHE).then(function(c) { c.put(e.request, cl); });
+          var cl = r.clone(), probe = r.clone();
+          probe.text().then(function(t) {
+            if (t.indexOf('?v=' + VERSION + '"') < 0) return;
+            return caches.open(CACHE).then(function(c) { return c.put(e.request, cl); });
+          }).catch(function() {});
         }
         return r;
       }).catch(function() {

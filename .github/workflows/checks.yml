@@ -15,6 +15,10 @@ jobs:
   consistency:
     name: Konsistenz & Syntax
     runs-on: ubuntu-latest
+    # pull-requests: read fuer den PR-Text im Schritt „Kopplung nur kuerzer“.
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -75,6 +79,58 @@ jobs:
             echo "::error::Ausgelieferte Dateien geaendert, aber APP_VERSION nicht erhoeht ($OLD -> $NEW). Bitte APP_VERSION in index.html, VERSION in sw.js und den sichtbaren 'Beta vX.XXX'-Text hochzaehlen."
             exit 1
           fi
+
+      - name: Kopplung nur kuerzer
+        # #257: tools/coupling-allow.json nennt je Datei die index.html-
+        # Funktionen, die sie ueber den Kern hinaus ruft. tools/check.js prueft,
+        # dass die Liste zum Code passt; dieser Schritt prueft die Richtung:
+        # Gegenueber dem Zielbranch darf keine Datei einen Namen gewinnen, den
+        # sie dort nicht rufen durfte (Kern oder ihre Liste), und der Kern darf
+        # nicht wachsen. Ausnahme nur mit einer Zeile
+        # `Kopplung-Ausnahme: <Begruendung>` im PR-Text — dann Hinweis statt
+        # Fehler. Der PR-Text kommt ueber env, nie in den Skripttext, und wird
+        # zur Laufzeit geholt: Das Ereignis enthaelt den Text vom Zeitpunkt des
+        # Pushs, ein erneuter Lauf nach dem Nachtragen der Zeile saehe ihn sonst
+        # nicht. Nach dem Nachtragen also „Re-run“ — ein neuer Push ist nicht noetig.
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BODY_EVENT: ${{ github.event.pull_request.body }}
+        run: |
+          BASE="origin/${{ github.base_ref }}"
+          git fetch --no-tags --depth=1 origin "${{ github.base_ref }}" || true
+
+          if ! PR_BODY=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq '.body // ""' 2>/dev/null); then
+            echo "::warning::PR-Text nicht abrufbar — nehme den Text aus dem Ereignis."
+            PR_BODY="$PR_BODY_EVENT"
+          fi
+          export PR_BODY
+
+          if ! BASE_JSON=$(git show "$BASE:tools/coupling-allow.json" 2>/dev/null); then
+            echo "::notice::tools/coupling-allow.json fehlt im Zielbranch — nichts zu vergleichen."
+            exit 0
+          fi
+          export BASE_JSON
+          node -e '
+            const fs = require("fs");
+            const base = JSON.parse(process.env.BASE_JSON);
+            const now = JSON.parse(fs.readFileSync("tools/coupling-allow.json", "utf8"));
+            const baseCore = new Set(base.core || []);
+            const gains = [];
+            for (const n of now.core || []) if (!baseCore.has(n)) gains.push("Kern +" + n);
+            for (const [f, names] of Object.entries(now.allow || {})) {
+              const before = new Set((base.allow || {})[f] || []);
+              for (const n of names) if (!before.has(n) && !baseCore.has(n)) gains.push(f + " +" + n);
+            }
+            const sum = (j) => Object.values(j.allow || {}).reduce((a, l) => a + l.length, 0);
+            console.log("Kern " + baseCore.size + " -> " + (now.core || []).length + ", Liste " + sum(base) + " -> " + sum(now) + " Eintraege.");
+            if (!gains.length) { console.log("::notice::Kopplung nicht gewachsen."); process.exit(0); }
+            const why = (String(process.env.PR_BODY || "").match(/^[ \t]*Kopplung-Ausnahme:[ \t]*(\S.*)$/m) || [])[1];
+            if (why) { console.log("::notice::Kopplung waechst (" + gains.join(", ") + ") — Ausnahme im PR-Text: " + why.trim()); process.exit(0); }
+            console.log("::error::Kopplung waechst: " + gains.join(", ") + ". Die Liste in tools/coupling-allow.json wird nur kuerzer (#257): die Funktion ins Modul holen oder den Kern nutzen. Ausnahme nur mit der Zeile \"Kopplung-Ausnahme: <Begruendung>\" im PR-Text.");
+            process.exit(1);
+          '
 
   typecheck:
     name: Typpruefung (tsc --noEmit)

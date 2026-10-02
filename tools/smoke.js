@@ -26,6 +26,7 @@ function loadPlaywright() {
   process.exit(2);
 }
 const { chromium } = loadPlaywright();
+const { handlerCalls } = require('./js-scan');
 
 // Chromium ebenso: vorinstalliert unter /opt/pw-browsers oder von Playwright
 // selbst verwaltet (dann kein executablePath noetig).
@@ -118,35 +119,36 @@ const EXPECTED_NAMESPACES = [
   if (badExports.length) { badExports.forEach((b) => console.log(`  x   Export zeigt auf undefined: ${b}`)); }
   else console.log('  ok  Kein Export zeigt auf undefined.');
 
-  // 3. Jedes onclick im Markup muss aufloesbar sein. Das ist die Pruefung, die
-  //    beim Zerlegen des Monolithen zaehlt: eine Funktion, die ins Modul
-  //    gewandert ist, aber im Markup noch unter ihrem alten globalen Namen steht.
-  const deadHandlers = await page.evaluate(() => {
+  // 3. Jeder Event-Handler im Markup (onclick, oninput, onkeydown, onchange, …)
+  //    muss aufloesbar sein. Das ist die Pruefung, die beim Zerlegen des
+  //    Monolithen zaehlt: eine Funktion, die ins Modul gewandert ist, aber im
+  //    Markup noch unter ihrem alten globalen Namen steht. Bis v0.303 las sie
+  //    nur onclick — ein totes `onkeydown="if(…)pickerSearch()"` blieb gruen.
+  //    Den Rumpf zerlegt handlerCalls() aus tools/js-scan.js wie in
+  //    tools/check.js (Text in Strings zaehlt nicht, `()=>name()` schon).
+  const handlerAttrs = await page.evaluate(() => {
+    const list = [];
+    document.querySelectorAll('*').forEach((el) => {
+      for (const at of Array.from(el.attributes)) {
+        if (/^on[a-z]+$/.test(at.name)) list.push({ attr: at.name, value: at.value, where: el.id ? '#' + el.id : (el.textContent || '').trim().slice(0, 24) });
+      }
+    });
+    return list;
+  });
+  const handlerScan = await page.evaluate((list) => {
     const dead = [];
-    document.querySelectorAll('[onclick]').forEach((el) => {
-      const code = el.getAttribute('onclick');
-      // Erster Bezeichner bzw. Namespace.methode vor der Klammer
-      const calls = code.match(/(?:^|[;{(\s!])([A-Za-z_$][A-Za-z0-9_$]*(?:\.[A-Za-z0-9_$]+)*)\s*\(/g) || [];
-      calls.forEach((c) => {
-        const name = c.replace(/^[;{(\s!]/, '').replace(/\s*\($/, '');
-        // Schluesselwoerter und Operatoren sind keine Funktionen.
-        if (/^(if|for|while|return|typeof|new|function|void|delete|in|instanceof|else|do|switch|try|catch|throw|await)$/.test(name)) return;
-        const root = name.split('.')[0];
-        // `this` ist im onclick-Kontext das Element selbst, `event` das Ereignis —
-        // beide sind zur Pruefzeit nicht aufloesbar und auch nie das Problem.
-        if (['this', 'event', 'document', 'window', 'console', 'JSON', 'Math', 'Object', 'Array',
-             'String', 'Number', 'Date', 'Promise', 'location', 'history', 'navigator',
-             'localStorage', 'sessionStorage', 'alert', 'confirm', 'prompt', 'setTimeout',
-             'clearTimeout', 'setInterval', 'parseInt', 'parseFloat', 'encodeURIComponent'].includes(root)) return;
+    for (const h of list) {
+      for (const name of h.names) {
         let ref = window;
         for (const part of name.split('.')) { ref = ref && ref[part]; }
-        if (typeof ref !== 'function') dead.push(name + '  <- ' + (el.textContent || '').trim().slice(0, 24));
-      });
-    });
-    return [...new Set(dead)];
-  });
-  if (deadHandlers.length) { deadHandlers.forEach((d) => console.log(`  x   toter onclick-Handler: ${d}`)); }
-  else console.log('  ok  Jeder onclick-Handler im Markup ist aufloesbar.');
+        if (typeof ref !== 'function') dead.push(h.attr + ' ' + name + '  <- ' + h.where);
+      }
+    }
+    return { dead: [...new Set(dead)], attrs: list.length };
+  }, handlerAttrs.map((h) => ({ ...h, names: handlerCalls(h.value) })));
+  const deadHandlers = handlerScan.dead;
+  if (deadHandlers.length) { deadHandlers.forEach((d) => console.log(`  x   toter Handler: ${d}`)); }
+  else console.log(`  ok  Jeder der ${handlerScan.attrs} Event-Handler (on*) im Markup ist aufloesbar.`);
 
   // 3b. data-act geht denselben Weg wie onclick — die Delegation loest erst zur
   //     Klickzeit auf, ein Tippfehler faellt sonst erst dort auf, wo jemand
@@ -524,6 +526,59 @@ const EXPECTED_NAMESPACES = [
     else console.log('  ok  Ernaehrungs-Ampel (#262): Vegan lokal, je Name nur offene Praeferenzen an die KI, lokales Rot schlaegt KI-Gruen, Banner behaelt es, offline kein Gruen bei offener Praeferenz.');
   }
 
+  // 11. Picker (#257). picker.js ist das Modul mit den meisten Aufrufen nach
+  //     index.html, und einige davon sind mit #257 nach picker.js bzw.
+  //     js/calc.js gewandert (renderRecentList, animateAdd, totalStr, …). Kein
+  //     Schritt oben oeffnet den Picker: hier oeffnen (wie das ＋ im
+  //     Mahlzeit-Detail), jeden Tab aus dem Markup einmal schalten, in der
+  //     Suche tippen (oninput) und Enter druecken (onkeydown), schliessen. Muss
+  //     vor Schritt 8 stehen: danach ist dieses Fenster pausiert.
+  let pickFail = 0;
+  {
+    const errBefore = errors.length;
+    const tabs = await page.evaluate(() => [...document.querySelectorAll('#pickerOv .picker-tab')].map((b) => b.id.replace(/^ptab-/, '')));
+    const opened = await page.evaluate(async () => {
+      openMealDetail('breakfast');
+      openPickerForOpenMeal();
+      await new Promise((r) => setTimeout(r, 150));
+      return document.getElementById('pickerOv').classList.contains('open');
+    }).catch((e) => { record('Picker oeffnen', e.message); return false; });
+    if (!opened) { pickFail++; console.log('  x   Picker: openPickerForOpenMeal() oeffnet #pickerOv nicht.'); }
+    if (tabs.length < 7) { pickFail++; console.log(`  x   Picker: nur ${tabs.length} Tabs im Markup gefunden (${tabs.join(', ')}), erwartet 7.`); }
+    for (const t of tabs) {
+      const act = await page.evaluate((tab) => {
+        pickerSetTab(tab);
+        const p = document.getElementById('ppanel-' + tab);
+        return !!p && p.classList.contains('act');
+      }, t).catch((e) => { record('pickerSetTab ' + t, e.message); return false; });
+      // Der Barcode-Tab startet den Scanner erst nach 150 ms.
+      await page.waitForTimeout(t === 'barcode' ? 400 : 120);
+      if (!act) { pickFail++; console.log(`  x   Picker: Tab '${t}' ist nach pickerSetTab nicht aktiv.`); }
+    }
+    const hint = () => page.evaluate(() => document.getElementById('pickerSearchHint').textContent);
+    await page.evaluate(() => pickerSetTab('search'));
+    await page.type('#pickerSearchQ', 'Banane', { delay: 15 });
+    const live = await page.evaluate(() => ({ hint: document.getElementById('pickerSearchHint').textContent,
+      first: (document.querySelector('#pickerResults .ri-n') || {}).textContent || '' }));
+    await page.press('#pickerSearchQ', 'Enter');
+    await page.waitForTimeout(500);
+    const afterEnter = await hint();
+    const closed = await page.evaluate(() => {
+      closePicker();
+      if (typeof closeMealDetail === 'function') closeMealDetail();
+      return !document.getElementById('pickerOv').classList.contains('open');
+    }).catch((e) => { record('closePicker', e.message); return false; });
+    // oninput: Live-Treffer und der Hinweis fuer die Online-Suche. onkeydown
+    // (Enter): pickerSearch() setzt den Hinweis um — der Worker ist hier
+    // abgeschnitten, es bleibt bei den lokalen Treffern.
+    if (!/Enter für Online-Suche/.test(live.hint) || !/banane/i.test(live.first)) { pickFail++; console.log('  x   Picker: Tippen in #pickerSearchQ loeste die Live-Suche nicht aus: ' + JSON.stringify(live)); }
+    if (afterEnter === live.hint) { pickFail++; console.log('  x   Picker: Enter in #pickerSearchQ loeste pickerSearch() nicht aus (Hinweis unveraendert: ' + afterEnter + ').'); }
+    if (!closed) { pickFail++; console.log('  x   Picker: closePicker() schliesst #pickerOv nicht.'); }
+    const newErr = errors.length - errBefore;
+    if (newErr) { pickFail++; console.log(`  x   Picker: ${newErr} neue(r) Fehler, siehe unten.`); }
+    if (!pickFail) console.log(`  ok  Picker (#257): geoeffnet, ${tabs.length} Tabs (${tabs.join(', ')}) geschaltet, Suche per Tippen und Enter, geschlossen — ohne Fehler.`);
+  }
+
   // 8. Zweites Fenster (#261): Es darf die App nicht starten und nichts
   //    schreiben, sondern landet auf tab.html. „Hier weiterarbeiten“ uebernimmt,
   //    und das erste Fenster pausiert. Vorher ueberschrieb der letzte Schreiber
@@ -711,10 +766,10 @@ const EXPECTED_NAMESPACES = [
 
   await browser.close();
 
-  if (errors.length || nsFail || badExports.length || deadHandlers.length || delegationFail || stack.length || deadFeatActs.length || remindFail || tabFail || kbFail || dietFail) {
+  if (errors.length || nsFail || badExports.length || deadHandlers.length || delegationFail || stack.length || deadFeatActs.length || remindFail || tabFail || kbFail || dietFail || pickFail) {
     console.error('\nFEHLER:');
     [...new Set(errors)].forEach((e) => console.error('  x   ' + e));
-    console.error(`\n${errors.length + nsFail + badExports.length + deadHandlers.length + delegationFail + stack.length + deadFeatActs.length + remindFail + tabFail + kbFail + dietFail} Problem(e).`);
+    console.error(`\n${errors.length + nsFail + badExports.length + deadHandlers.length + delegationFail + stack.length + deadFeatActs.length + remindFail + tabFail + kbFail + dietFail + pickFail} Problem(e).`);
     process.exit(1);
   }
   console.log('\nRauchtest bestanden.');

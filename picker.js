@@ -2424,3 +2424,58 @@ function pickerAddRecent(i){
   _pickerRateEntry(pickerMeal,getDay().meals[pickerMeal].length-1);
   showToast((item.emoji||'🍽')+' '+item.name+' hinzugefügt');
 }
+
+// ════════════════════════════════════════
+// SECTION: AUS INDEX.HTML (#257)
+// ════════════════════════════════════════
+// Diese vier ruft nur der Picker; sie standen bis v0.303 unveraendert in
+// index.html. Global bleiben sie trotzdem (klassisches Script).
+
+// ── Animation beim Hinzufügen ──
+function animateAdd(meal){
+  var sub=document.getElementById('sub-'+meal);
+  if(sub){sub.style.animation='none';sub.offsetHeight;sub.style.animation='addPop .3s ease';}
+  var card=sub&&sub.closest('.mc');
+  if(card){card.style.boxShadow='0 0 0 3px var(--g2)';setTimeout(function(){card.style.boxShadow='';},600);}
+}
+
+// ── Datenqualitäts-Warnung ──
+function checkDataQuality(food){
+  if(!food||!food.per100)return;
+  var p=food.per100;
+  var missing=[];
+  if(!p.sugar&&p.sugar!==0)missing.push('Zucker');
+  if(!p.fiber&&p.fiber!==0)missing.push('Ballaststoffe');
+  if(!p.salt&&p.salt!==0)missing.push('Salz');
+  if(missing.length>=2){
+    showToast('⚠️ Unvollständige Daten: '+missing.join(', ')+' fehlen',3000);
+  }
+}
+
+// ── KI-Plausibilitäts-Check für Gramm-Schätzungen ──
+function checkGramPlausibility(ings){
+  var warnings=[];
+  ings.forEach(function(ing){
+    var g=ing.amount||ing.g||0;
+    if(g>1000)warnings.push(ing.name+': '+g+'g scheint viel');
+    if(g>0&&g<2)warnings.push(ing.name+': '+g+'g scheint wenig');
+  });
+  if(warnings.length)showToast('⚠️ Prüfe Mengen: '+warnings[0],4000);
+}
+
+// ── Tab „Zuletzt“ ──
+function renderRecentList(){
+  var el=document.getElementById('recentList');if(!el)return;
+  var items=getRecentFoods();
+  if(!items.length){el.innerHTML='<div style="text-align:center;color:var(--mu);padding:20px;font-size:13px;">Noch keine Einträge</div>';return;}
+  el.innerHTML=items.map(function(item,i){
+    return'<div class="ri" onclick="pickerAddRecent('+i+')">'
+      +'<div class="ri-e">'+esc(item.emoji||'🍽')+'</div>'
+      +'<div style="flex:1;min-width:0;"><div class="ri-n">'+esc(item.name)+'</div>'
+      +(item.per100?'<div class="ri-d">'+Math.round(item.per100.kcal)+' kcal/100g</div>':'<div class="ri-d">'+(item.kcal?Math.round(item.kcal)+' kcal':'')+'</div>')
+      +'</div>'
+      +'<div style="font-size:18px;color:var(--g2);font-weight:900;">＋</div>'
+      +'</div>';
+  }).join('');
+  window._recentItems=items;
+}

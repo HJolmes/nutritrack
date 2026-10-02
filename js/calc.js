@@ -66,6 +66,8 @@ function getDay(){
 function calcM(arr){return arr.reduce(function(a,e){return{kcal:a.kcal+(e.kcal||0),protein:a.protein+(e.protein||0),carbs:a.carbs+(e.carbs||0),fat:a.fat+(e.fat||0),sugar:a.sugar+(e.sugar||0),fiber:a.fiber+(e.fiber||0),salt:a.salt+(e.salt||0)};},{kcal:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0,salt:0});}
 function ingTotal(ings){return(ings||[]).reduce(function(a,g){var r=(g.amount||0)/100;return{kcal:a.kcal+(g.per100.kcal||0)*r,protein:a.protein+(g.per100.protein||0)*r,carbs:a.carbs+(g.per100.carbs||0)*r,fat:a.fat+(g.per100.fat||0)*r,sugar:a.sugar+(g.per100.sugar||0)*r,fiber:a.fiber+(g.per100.fiber||0)*r,salt:a.salt+(g.per100.salt||0)*r};},{kcal:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0,salt:0});}
 function scaleNutrients(t,factor){return{kcal:t.kcal*factor,protein:t.protein*factor,carbs:t.carbs*factor,fat:t.fat*factor,sugar:(t.sugar||0)*factor,fiber:(t.fiber||0)*factor,salt:(t.salt||0)*factor};}
+// Summe als Kurztext (Picker, Bearbeiten, Rezept-Editor, Wochenplan).
+function totalStr(t){return Math.round(t.kcal)+' kcal · P'+Math.round(t.protein)+'g K'+Math.round(t.carbs)+'g F'+Math.round(t.fat)+'g';}
 
 // ── Kalorien-Ampel ──
 function _kcalAmpel(goal,eaten,S){
@@ -180,6 +182,9 @@ function emo(n){
   for(var i=0;i<m.length;i++)if(m[i][0].test(nl))return m[i][1];
   return'🍽';
 }
+// Symbol aus fremder Quelle (Share-Link, Partner, Plan-Sync): kurz halten und
+// ohne HTML-Zeichen — die Anzeige escaped zusaetzlich (#236).
+function safeEmoji(s,fb){s=String(s==null?'':s).replace(/[&<>"'`=\\/]/g,'').slice(0,16);return s||fb||'';}
 
 // ── Suche ──
 function fuzzy(item,q){
@@ -354,3 +359,53 @@ function suggestExercises(query,limit){
   return out.map(function(c){return{name:c.name,emoji:c.emoji};});
 }
 
+
+// ── Rezept-Import per URL ──
+// Erste http(s)-Adresse im eingefuegten Text, ohne Satzzeichen am Ende; ohne
+// Link null. Rezept-Import per URL laeuft ausschliesslich ueber den
+// Picker-Link-Tab (picker.js).
+function recipeImportExtractUrl(text){
+  var m=text.match(/https?:\/\/[^\s"<>]+/);
+  return m?m[0].replace(/[.,;:!?)\]]+$/,''):null;
+}
+
+// ── KI-Antworten lesen ──
+// Zutatenlisten aus Chat- und Foto-Antworten der KI (picker.js). Die KI
+// liefert JSON, oft im ```json-Zaun und bei langen Antworten abgeschnitten;
+// eine ungueltige Grammzahl wird null (Menge fehlt, nicht 0 g).
+function parseIngJSON(text){
+  try{
+    var clean=text.replace(/`{3}json/gi,'').replace(/`{3}/g,'').trim();
+    var a=clean.indexOf('['),z=clean.lastIndexOf(']');
+    if(a===-1||z===-1||z<a){
+      if(a!==-1){var lb=clean.lastIndexOf('}');if(lb>a){clean=clean.slice(a,lb+1)+']';}else return[];}
+      else return[];
+    } else {clean=clean.slice(a,z+1);}
+    var foods=JSON.parse(clean);
+    if(!Array.isArray(foods))return[];
+    return foods.filter(function(f){return f&&f.name;}).map(function(f){
+      var g=parseFloat(f.g);
+      return{name:f.name,emoji:f.emoji||emo(f.name||''),g:isFinite(g)&&g>0?g:null};
+    });
+  }catch(e){return[];}
+}
+function parsePhotoResponse(text){
+  try{
+    var clean=text.replace(/`{3}json/gi,'').replace(/`{3}/g,'').trim();
+    // Try object format {rezept, zutaten}
+    var oa=clean.indexOf('{'),oz=clean.lastIndexOf('}');
+    if(oa!==-1&&oz>oa){
+      var obj=JSON.parse(clean.slice(oa,oz+1));
+      if(obj.zutaten&&Array.isArray(obj.zutaten)){
+        return{rezept:(obj.rezept||'').trim(),zutaten:obj.zutaten.filter(function(f){return f&&f.name;}).map(function(f){var g=parseFloat(f.g);return{name:f.name,emoji:f.emoji||emo(f.name||''),g:isFinite(g)&&g>0?g:null};})};
+      }
+    }
+    // Fallback: array
+    var aa=clean.indexOf('['),az=clean.lastIndexOf(']');
+    if(aa!==-1&&az>aa){
+      var arr=JSON.parse(clean.slice(aa,az+1));
+      if(Array.isArray(arr))return{rezept:'',zutaten:arr.filter(function(f){return f&&f.name;}).map(function(f){var g=parseFloat(f.g);return{name:f.name,emoji:f.emoji||emo(f.name||''),g:isFinite(g)&&g>0?g:null};})};
+    }
+  }catch(e){console.error('[NutriTrack parsePhotoResponse]',e);}
+  return{rezept:'',zutaten:[]};
+}

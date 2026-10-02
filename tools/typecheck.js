@@ -29,33 +29,38 @@ if (!fs.existsSync(TSC)) {
   process.exit(2);
 }
 
-const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT);
 
-const re = /<script(?![^>]*\bsrc=)([^>]*)>([\s\S]*?)<\/script>/g;
-let m, n = 0;
+// index.html → .typecheck/inline_<n>.js, tab.html → .typecheck/tab_<n>.js
+const PAGES = [['index.html', 'inline'], ['tab.html', 'tab']];
 const blocks = [];
-while ((m = re.exec(html)) !== null) {
-  const attrs = m[1] || '';
-  if (/type\s*=\s*["'](module|application\/(ld\+)?json)["']/.test(attrs)) continue;
-  if (!m[2].trim()) continue;
-  n++;
-  // Zeile des Inhalts-Beginns = Zeile des Zeichens direkt nach `<script…>`.
-  const start = m.index + m[0].indexOf('>') + 1;
-  const line = html.slice(0, start).split('\n').length;
-  const file = `inline_${n}.js`;
-  fs.writeFileSync(path.join(OUT, file), '\n'.repeat(line - 1) + m[2]);
-  blocks.push({ file, line });
+for (const [page, prefix] of PAGES) {
+  const html = fs.readFileSync(path.join(ROOT, page), 'utf8');
+  const re = /<script(?![^>]*\bsrc=)([^>]*)>([\s\S]*?)<\/script>/g;
+  let m, n = 0;
+  while ((m = re.exec(html)) !== null) {
+    const attrs = m[1] || '';
+    if (/type\s*=\s*["'](module|application\/(ld\+)?json)["']/.test(attrs)) continue;
+    if (!m[2].trim()) continue;
+    n++;
+    // Zeile des Inhalts-Beginns = Zeile des Zeichens direkt nach `<script…>`.
+    const start = m.index + m[0].indexOf('>') + 1;
+    const line = html.slice(0, start).split('\n').length;
+    const file = `${prefix}_${n}.js`;
+    fs.writeFileSync(path.join(OUT, file), '\n'.repeat(line - 1) + m[2]);
+    blocks.push({ file, line, page });
+  }
 }
 
 const t0 = Date.now();
 const r = spawnSync(process.execPath, [TSC, '-p', path.join(ROOT, 'tsconfig.json'), '--pretty', 'false'], { encoding: 'utf8', cwd: ROOT });
-const out = ((r.stdout || '') + (r.stderr || '')).replace(/\.typecheck[\\/]inline_\d+\.js/g, 'index.html');
+const out = ((r.stdout || '') + (r.stderr || ''))
+  .replace(/\.typecheck[\\/]inline_\d+\.js/g, 'index.html').replace(/\.typecheck[\\/]tab_\d+\.js/g, 'tab.html');
 if (out.trim()) process.stdout.write(out);
 const errors = (out.match(/error TS\d+/g) || []).length;
 let checkJs = false;
 try { checkJs = JSON.parse(fs.readFileSync(path.join(ROOT, 'tsconfig.json'), 'utf8')).compilerOptions.checkJs === true; } catch (e) { /* bleibt false */ }
-console.log(`typecheck: ${blocks.length} Inline-Bloecke (ohne Modul-Block), checkJs ${checkJs ? 'an' : 'AUS'}, ` +
+console.log(`typecheck: ${blocks.length} Inline-Bloecke aus index.html und tab.html (ohne Modul-Block), checkJs ${checkJs ? 'an' : 'AUS'}, ` +
   `${errors} Fehler, ${((Date.now() - t0) / 1000).toFixed(1)} s`);
 process.exit(r.status === 0 ? 0 : 1);

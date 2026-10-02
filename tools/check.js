@@ -428,10 +428,13 @@ if (!mCore) {
   if (!late) ok(`Keines der ${lateChecked} zur Laufzeit gesetzten onclick trifft ein data-act-Element.`);
 }
 
-// ── 5a. Alles eigene JS ist in der Typpruefung (#254) ───────────────────
+// ── 5a. Das App-JS ist in der Typpruefung (#254) ────────────────────────
 // tsconfig.json: checkJs true — tsc prueft jede Datei aus `include`, mit oder
-// ohne Markierung. Die Zeile `// @ts-check` bleibt trotzdem Pflicht in Zeile 1
-// jedes Moduls, von picker.js und jedes klassischen Inline-Blocks: Sie zeigt beim
+// ohne Markierung: picker.js, js/*.js (ohne js/zxing/) und die klassischen
+// Inline-Bloecke von index.html und tab.html. Ausgenommen: sw.js (Service-
+// Worker-Scope), worker/, alexa/, tools/. Die Zeile `// @ts-check` bleibt
+// trotzdem Pflicht in Zeile 1 jedes Moduls, von picker.js und jedes klassischen
+// Inline-Blocks: Sie zeigt beim
 // Lesen, dass die Datei geprueft wird, und haelt die Pruefung, falls checkJs je
 // zurueckgestellt wird. @ts-ignore und @ts-nocheck schalten still ab — ein
 // begruendetes `// @ts-expect-error <Grund>` meldet sich, sobald es nichts mehr
@@ -443,27 +446,37 @@ if (!mCore) {
   if (!(tsconf.compilerOptions && tsconf.compilerOptions.checkJs === true)) {
     fail('tsconfig.json: compilerOptions.checkJs muss true sein (#254 Stufe 1).'); tsFail++;
   }
+  // Das Programm selbst: kein exclude/files, include deckt alles ab (sonst nimmt
+  // eine Zeile in tsconfig.json still ein Modul aus der Pruefung).
+  const inc = tsconf.include || [];
+  const needInc = ['picker.js', 'js/*.js', '.typecheck/*.js'].filter((x) => !inc.includes(x));
+  if (needInc.length || tsconf.exclude || tsconf.files) {
+    fail(`tsconfig.json: include muss picker.js, js/*.js und .typecheck/*.js enthalten (fehlt: ${needInc.join(', ') || '–'}); exclude/files sind nicht erlaubt.`); tsFail++;
+  }
   const tsSrc = ['picker.js', ...fs.readdirSync(path.join(ROOT, 'js')).filter((f) => f.endsWith('.js')).map((f) => 'js/' + f)];
   const blocks = [];
-  const re = /<script(?![^>]*\bsrc=)([^>]*)>([\s\S]*?)<\/script>/g;
-  let mb;
-  while ((mb = re.exec(indexHtml)) !== null) {
-    if (/type\s*=\s*["'](module|application\/(ld\+)?json)["']/.test(mb[1] || '') || !mb[2].trim()) continue;
-    blocks.push([`index.html (Inline-Block ab Zeile ${indexHtml.slice(0, mb.index).split('\n').length})`, mb[2]]);
+  for (const [page, html] of [['index.html', indexHtml], ['tab.html', read('tab.html')]]) {
+    const re = /<script(?![^>]*\bsrc=)([^>]*)>([\s\S]*?)<\/script>/g;
+    let mb;
+    while ((mb = re.exec(html)) !== null) {
+      if (/type\s*=\s*["'](module|application\/(ld\+)?json)["']/.test(mb[1] || '') || !mb[2].trim()) continue;
+      blocks.push([`${page} (Inline-Block ab Zeile ${html.slice(0, mb.index).split('\n').length})`, mb[2]]);
+    }
   }
   for (const [name, code] of [...tsSrc.map((f) => [f, read(f)]), ...blocks]) {
     if (/^\s*\/\/\s*@ts-check\b/.test(code)) tsOn++;
-    else { fail(`${name} beginnt nicht mit // @ts-check — alles eigene JS ist in der Typpruefung (npm run typecheck).`); tsFail++; }
-    // In jeder Kommentarform: tsc wertet auch /* @ts-ignore */ als Direktive.
-    const bad = code.match(/(\/\/|\/\*)[\s*]*@ts-(ignore|nocheck)\b/);
-    if (bad) { fail(`${name} enthaelt @ts-${bad[2]} — stattdessen beheben, per JSDoc typisieren oder // @ts-expect-error <Grund>.`); tsFail++; }
+    else { fail(`${name} beginnt nicht mit // @ts-check — das App-JS ist in der Typpruefung (npm run typecheck).`); tsFail++; }
+    // Jedes Vorkommen: tsc wertet auch die letzte Zeile eines mehrzeiligen
+    // /* … */ als Direktive aus.
+    const bad = code.match(/@ts-(ignore|nocheck)\b/);
+    if (bad) { fail(`${name} enthaelt @ts-${bad[1]} — stattdessen beheben, per JSDoc typisieren oder // @ts-expect-error <Grund>.`); tsFail++; }
     if (/@ts-expect-error[ \t]*(\*\/)?[ \t]*$/m.test(code)) { fail(`${name}: // @ts-expect-error ohne Grund — der Grund gehoert in dieselbe Zeile.`); tsFail++; }
   }
   // Jedes lokal eingebundene Script ist eine gepruefte Datei (Fremdcode unter js/zxing/ ausgenommen).
   const checkedSet = new Set(tsSrc);
   [...indexHtml.matchAll(/<script[^>]*\bsrc="([^"]+)"/g)].map((x) => x[1].split('?')[0])
     .filter((src) => !/^https?:\/\//.test(src) && !src.startsWith('js/zxing/'))
-    .forEach((src) => { if (!checkedSet.has(src)) { fail(`${src} wird in index.html geladen, ist aber nicht in der Typpruefung (tsconfig include: picker.js, js/*.js).`); tsFail++; } });
+    .forEach((src) => { if (!checkedSet.has(src)) { fail(`${src} wird in index.html geladen, liegt aber nicht unter js/ und ist nicht picker.js – ausserhalb der Typpruefung.`); tsFail++; } });
   if (!tsFail) ok(`${tsOn} Dateien/Inline-Bloecke mit // @ts-check, checkJs an, kein @ts-ignore/@ts-nocheck.`);
 }
 

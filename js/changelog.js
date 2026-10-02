@@ -2,6 +2,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.306',items:[
+    {icon:'📷',text:'<b>Foto-Analyse verliert keine Zutaten mehr</b>: Antwortete die KI mit einer reinen Zutatenliste statt mit Gericht und Zutaten, kam bei mehr als einer Zutat eine leere Liste an. Jetzt erscheinen alle erkannten Zutaten.',where:'＋ → 📷 Foto'}
+  ]},
   {v:'0.302',items:[
     {icon:'🥗',text:'<b>Ernährungs-Ampel ohne KI</b>: Für Vegetarisch, Vegan, Low Carb, Keto und High Protein bewertet NutriTrack deine Einträge jetzt selbst – sofort und auch offline. Keto: grün bis 5 g, gelb bis 10 g Kohlenhydrate je 100 g; Low Carb: grün bis 10 g, gelb bis 20 g (Getränke jeweils die Hälfte, Kleinmengen wie Gewürze grün). High Protein zeigt Grün bei „proteinreich“. Vegetarisch und Vegan erkennen Fleisch, Fisch, Gelatine, Milch, Ei und Honig am Namen. Unklare Namen, Glutenfrei, Laktosefrei und eigene Präferenzen bewertet weiter die KI.',where:'Mehr → Ernährung'},
     {icon:'🤱',text:'<b>Stillzeit-Ampel genauer</b>: Leberkäse und Speisen mit Alkohol (z. B. Tiramisu, Rumkugeln, Weincreme, Mon Chéri) zeigen jetzt Gelb statt Grün. Kirschwasser, Grog und Punsch sind rot, „Bier ohne Alkohol“ ist grün.',where:'Stillzeit-Ampel am Eintrag'}

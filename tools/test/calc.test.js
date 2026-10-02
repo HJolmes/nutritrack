@@ -491,15 +491,17 @@ test('parsePhotoResponse: Array-Fallback, Muell ergibt leeres Ergebnis', () => {
   const logged = [];
   C.console = { log() {}, error: (...a) => logged.push(a.join(' ')) };
   assert.deepEqual(plain(C.parsePhotoResponse('Hier: [{"name":"Banane","g":120}]')), { rezept: '', zutaten: [{ name: 'Banane', emoji: '🍌', g: 120 }] });
-  // Heute: Ein Array mit MEHREREN Eintraegen erreicht den Fallback nie – der
-  // Objekt-Versuch nimmt vom ersten { bis zum letzten }, JSON.parse wirft, und
-  // das Ergebnis ist leer. Das Foto-Prompt verlangt die Objektform; eine
-  // Korrektur ist ein eigenes Issue, kein stilles Umschreiben.
-  assert.deepEqual(plain(C.parsePhotoResponse('[{"name":"Banane","g":120},{"name":"Apfel","g":80}]')), { rezept: '', zutaten: [] });
-  assert.equal(logged.length, 1);
+  // #298: Ein Array mit MEHREREN Eintraegen laesst den Objekt-Versuch ({ bis })
+  // scheitern; der Array-Rueckfall laeuft trotzdem, und nichts wird protokolliert.
+  assert.deepEqual(plain(C.parsePhotoResponse('[{"name":"Banane","g":120},{"name":"Apfel","g":80}]')), { rezept: '', zutaten: [{ name: 'Banane', emoji: '🍌', g: 120 }, { name: 'Apfel', emoji: '🍎', g: 80 }] });
+  assert.deepEqual(plain(C.parsePhotoResponse('```json\n[{"name":"Banane","g":120},\n{"name":"Apfel"}]\n```')).zutaten.length, 2);
+  assert.equal(logged.length, 0);
   assert.deepEqual(plain(C.parsePhotoResponse('keine Ahnung')), { rezept: '', zutaten: [] });
   assert.deepEqual(plain(C.parsePhotoResponse('{kaputt}')), { rezept: '', zutaten: [] });
-  assert.equal(logged.length, 2); // nur kaputtes JSON wird protokolliert
+  assert.equal(logged.length, 1); // nur kaputtes JSON wird protokolliert
+  // Objekt kaputt UND Array kaputt: ein Eintrag, leeres Ergebnis
+  assert.deepEqual(plain(C.parsePhotoResponse('[{"name":"A"},{kaputt}]')), { rezept: '', zutaten: [] });
+  assert.equal(logged.length, 2);
 });
 
 test('recipeImportExtractUrl: erster Link, Satzzeichen am Ende ab, ohne Link null', () => {

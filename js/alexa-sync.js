@@ -1,3 +1,4 @@
+// @ts-check
 // NutriTrack — Alexa-Einwurf (Sprachbefehle)
 // Klassisches Script, kein Modul. Exportiert window.NTAlexa und greift direkt
 // auf bestehende Globals (S, saveS, renderAll, lookupNutrients, NTShop, NTBaby).
@@ -168,6 +169,7 @@
   // Doppelte, und die Nutzerin müsste jeden Eintrag nachbessern.
   // Gewichte sind handelsübliche Mittelwerte, bewusst grob: besser eine gute
   // Schätzung als eine falsche Konstante.
+  /** @type {Array<[RegExp, number]>} */
   var PIECE_G=[
     [/(brötchen|broetchen|semmel|schrippe|weck)/,50],
     [/(toast|scheiben? brot|brotscheiben?|knäckebrot)/,40],
@@ -307,6 +309,7 @@
     }
     // Der Eintrag kann schon per Baby-Sync vom anderen Telefon da sein.
     if(eid&&babyHasId(eid))return false;
+    /** @type {Record<string, any>} Felder aus dem Briefkasten, Form erst unten geprueft */
     var e={t:item.babyType};
     var p=item.babyP||{};
     for(var k in p){if(Object.prototype.hasOwnProperty.call(p,k))e[k]=p[k];}

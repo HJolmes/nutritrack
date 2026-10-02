@@ -1,3 +1,4 @@
+// @ts-check
 // NutriTrack – Wochenplan & Rezeptquellen (v0.244)
 // Klassisches Script, kein Modul. Exportiert window.NTPlan und greift direkt auf
 // die globalen Helfer aus index.html/picker.js zu (S, saveS, saveX, recipes,
@@ -588,7 +589,7 @@ function rebalance(date,fresh,goal){
     var cur=dayKcal(date);
     var diff=goal-cur;
     if(Math.abs(diff)<=goal*0.05)return;
-    var bestIt=null,bestP=0,bestGain=0;
+    var bestIt=/** @type {{p?: number}|null} */ (null),bestP=0,bestGain=0;
     fresh.forEach(function(it){
       var per=itemKcal(it)/(it.p||1);
       if(!(per>0))return;
@@ -948,7 +949,7 @@ function handlePhoto(ev){
       var btn=document.getElementById('recPhotoBtn');if(btn)btn.disabled=false;
     };
     img.onerror=function(){showToast('Foto konnte nicht geladen werden');};
-    img.src=e.target.result;
+    img.src=/** @type {string} */ (e.target.result);
   };
   reader.onerror=function(){showToast('Fehler beim Lesen der Datei');};
   reader.readAsDataURL(file);

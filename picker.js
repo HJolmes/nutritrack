@@ -1,3 +1,4 @@
+// @ts-check
 // ════════════════════════════════════════
 // NutriTrack – Ingredient Picker
 // Ausgelagert aus index.html (v0.119)
@@ -304,10 +305,12 @@ function pickerConfirmAdd(){
     var rec=recipes.find(function(r){return r.id===f.recipeId;});
     if(!rec){showToast('Rezept nicht gefunden');return;}
     var t=ingTotal(rec.ingredients);
+    /** @type {Record<string, any>} */
     var entry=Object.assign({name:rec.name,emoji:rec.emoji||'📋',isRecipe:true,recipeId:rec.id,portions:amt,ingredients:JSON.parse(JSON.stringify(rec.ingredients))},scaleNutrients(t,amt));
     getDay().meals[pickerMeal].push(entry);
   } else {
     var r=amt/100;
+    /** @type {Record<string, any>} */
     var entry=Object.assign({name:f.name,emoji:f.emoji,amount:amt,per100:f.per100},scaleNutrients(f.per100,r));
     getDay().meals[pickerMeal].push(entry);
     cacheFood(f);
@@ -361,7 +364,7 @@ function pickerHandlePhoto(e){
       setTimeout(function(){pickerTryBarcode(c,seq);},100);
     };
     img.onerror=function(){showToast('Foto konnte nicht geladen werden');};
-    img.src=ev.target.result;
+    img.src=/** @type {string} */ (ev.target.result);
   };
   reader.onerror=function(){showToast('Fehler beim Lesen der Datei');};
   reader.readAsDataURL(file);
@@ -567,6 +570,7 @@ function _pickerFrameLoop(videoEl,canvas,ctx,detect,label){
     ctx.drawImage(videoEl,cropX,cropY,cropW,cropH,0,0,outW,outH);
     try{ctx.filter='none';}catch(e){}
     frameCount++;
+    // @ts-expect-error textContent wandelt die Zahl selbst in Text
     var fn=document.getElementById('bcDbgN');if(fn)fn.textContent=frameCount;
     // Zeigt: Stream-Auflösung → Decoder-Auflösung. Wichtig für Diagnose ob
     // iOS uns hochauflösenden Stream gibt.
@@ -689,7 +693,7 @@ function pickerStartScan(){
   document.getElementById('pickerBcStopBtn').style.display='block';
   document.getElementById('pickerBarcodeResult').innerHTML='<div style="font-size:13px;color:var(--g1);padding:10px;text-align:center;"><span class="spin" style="display:inline-block;width:14px;height:14px;border:2px solid var(--g2);border-top-color:transparent;border-radius:50%;vertical-align:middle;margin-right:6px;"></span>Kamera startet…</div>';
   pickerBcActive=true;
-  var videoEl=document.getElementById('pickerBarcodeVideo');
+  var videoEl=/** @type {HTMLVideoElement} */ (document.getElementById('pickerBarcodeVideo'));
   videoEl.setAttribute('playsinline','');
   videoEl.muted=true;
   // iOS Safari liefert mit dem reinen facingMode-Constraint manchmal nur 480×640
@@ -718,7 +722,7 @@ function pickerStartScan(){
     // continuous focus zuverlässig. Mit try/catch falls iOS Safari zickt.
     try{
       var track=stream.getVideoTracks()[0];if(track){
-        var caps=track.getCapabilities?track.getCapabilities():{};var adv={};
+        var caps=/** @type {MediaTrackCapabilities & {focusMode?: string[], zoom?: {min: number, max: number}}} */ (track.getCapabilities?track.getCapabilities():{});var adv=/** @type {MediaTrackConstraintSet & {focusMode?: string, zoom?: number}} */ ({});
         if(caps.focusMode&&caps.focusMode.includes('continuous'))adv.focusMode='continuous';
         if(!isIOS&&caps.zoom){var z=Math.min(2,caps.zoom.max);if(z>caps.zoom.min)adv.zoom=z;}
         if(Object.keys(adv).length)track.applyConstraints({advanced:[adv]}).catch(function(){});
@@ -905,7 +909,7 @@ function pickerStopScan(){
     try{if(pickerBcReader._stream)pickerBcReader._stream.getTracks().forEach(function(t){t.stop();});}catch(e){}
     pickerBcReader=null;
   }
-  var videoEl=document.getElementById('pickerBarcodeVideo');
+  var videoEl=/** @type {HTMLElement & {_iosKeepAlive?: EventListener|null}} */ (document.getElementById('pickerBarcodeVideo'));
   if(videoEl){
     if(videoEl._iosKeepAlive){document.removeEventListener('visibilitychange',videoEl._iosKeepAlive);videoEl._iosKeepAlive=null;}
     if(videoEl.srcObject){try{videoEl.srcObject.getTracks().forEach(function(t){t.stop();});}catch(e){}videoEl.srcObject=null;}
@@ -1370,7 +1374,7 @@ function _pickerAdd(emoji,nameId,portionsId,defaultName,saveAsRecipe,hasEditMode
   var portions=parseFloat(document.getElementById(portionsId).value)||1;
   var t=ingTotal(ings);
   var scaled=scaleNutrients(t,portions);
-  var createdRec=null;
+  var createdRec=/** @type {{id: string, name: string, emoji: string, ingredients: any[], instructions?: string}|null} */ (null);
   if(saveAsRecipe){
     // Ein zweites „Spaghetti Bolognese“ neben dem ersten faellt erst auf, wenn
     // die Bibliothek unuebersichtlich ist. Deshalb VOR dem Anlegen fragen.
@@ -1688,6 +1692,7 @@ function pickerChatKiFallback(msg){
   var model=hasPhoto?'claude-sonnet-4-6':'claude-haiku-4-5';
   callClaude(model,content,300,
     function(text){
+      /** @type {Array<{name: string, emoji?: string, g: number|null}>} */
       var raw=parseIngJSON(text);
       if(!raw.length){
         // KI lieferte kein verwertbares JSON (z.B. Ablehnung/Prosa bei Alkohol). Keine Sackgasse:
@@ -1791,7 +1796,7 @@ function _pickerSpeechCtor(){return window.SpeechRecognition||window.webkitSpeec
 function _pickerVoiceStart(hold){
   var Ctor=_pickerSpeechCtor();
   if(!Ctor)return;
-  var inp=document.getElementById('pickerChatInp');
+  var inp=/** @type {HTMLTextAreaElement} */ (document.getElementById('pickerChatInp'));
   _pickerRecBase=inp.value.trim();
   _pickerRecHold=!!hold;
   if(_pickerRecHold){_pickerHoldStart=_pickerRecBase;_pickerHoldDone='';}
@@ -1861,7 +1866,7 @@ function pickerVoiceStop(){
 function _pickerVoiceReset(){
   _pickerRecActive=false;_pickerRec=null;_pickerRecHold=false;
   _pickerHoldStart='';_pickerHoldDone='';
-  var mic=document.getElementById('pickerChatMic'),inp=document.getElementById('pickerChatInp');
+  var mic=document.getElementById('pickerChatMic'),inp=/** @type {HTMLTextAreaElement} */ (document.getElementById('pickerChatInp'));
   if(mic)mic.classList.remove('rec');
   if(inp)inp.placeholder='Was hast du gegessen?';
 }
@@ -2205,7 +2210,7 @@ function pickerLinkImport(){
   };
   // Nur Abruf-Fehler tragen eine fertige Klartext-Meldung (_toast); alles andere
   // fällt im catch auf die allgemeine Meldung zurück.
-  var netErr=function(msg){var e=new Error(msg);e._toast=msg;return e;};
+  var netErr=function(msg){var e=/** @type {Error & {_toast?: string}} */ (new Error(msg));e._toast=msg;return e;};
   // 15 s Client-Timeout – der Worker bricht selbst nach 12 s ab, und träge
   // Portale brauchen mehr als die alten 9 s.
   fetchT(urlProxyUrl(url),{headers:{'x-app-proxy-secret':getProxySecret()}},15000)

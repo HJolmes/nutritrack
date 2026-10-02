@@ -1,3 +1,4 @@
+// @ts-check
 // NutriTrack – Einkaufszettel (v0.233)
 // Klassisches Script, kein Modul. Exportiert window.NTShop und greift direkt auf
 // die globalen Helfer aus index.html zu (S, saveS, openOv, closeOv, esc,
@@ -830,7 +831,7 @@ function catSave(id){
   if(!c)return;
   var wrap=document.querySelector('.shopcat-row[data-cid="'+id+'"]');
   if(!wrap)return;
-  var ic=wrap.querySelector('.shopcat-ic'),nm=wrap.querySelector('.shopcat-nm');
+  var ic=/** @type {HTMLInputElement} */ (wrap.querySelector('.shopcat-ic')),nm=/** @type {HTMLInputElement} */ (wrap.querySelector('.shopcat-nm'));
   var label=((nm&&nm.value)||'').trim();
   if(!label){showToast('Name darf nicht leer sein');renderCats();return;}
   c.label=label;

@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.306"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.307"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.306"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.307"></script>
 <script>
   // @ts-check
   (function(){
@@ -1219,7 +1219,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.306</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.307</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -3358,14 +3358,14 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.306"></script>
-<script src="js/single-tab.js?v=0.306"></script>
-<script src="js/fooddb.js?v=0.306"></script>
-<script src="js/fooddb-usda.js?v=0.306"></script>
-<script src="js/metdb.js?v=0.306"></script>
-<script src="js/idb-photos.js?v=0.306"></script>
-<script src="js/changelog.js?v=0.306"></script>
-<script src="js/calc.js?v=0.306"></script>
+<script src="js/actions.js?v=0.307"></script>
+<script src="js/single-tab.js?v=0.307"></script>
+<script src="js/fooddb.js?v=0.307"></script>
+<script src="js/fooddb-usda.js?v=0.307"></script>
+<script src="js/metdb.js?v=0.307"></script>
+<script src="js/idb-photos.js?v=0.307"></script>
+<script src="js/changelog.js?v=0.307"></script>
+<script src="js/calc.js?v=0.307"></script>
 <script>
 // @ts-check
 // ════════════════════════════════════════
@@ -3385,7 +3385,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.306';
+var APP_VERSION='0.307';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -3395,7 +3395,6 @@ var PROJECT_AI_PROVIDER_URL=PROJECT_WORKER_BASE+'/ai/messages';
 // ausgefallenen Drittanbieter corsproxy.io. /off ist host-gesperrt auf OFF,
 // /fetch ist per Proxy-Secret abgesichert.
 function offProxyUrl(offUrl){return PROJECT_WORKER_BASE+'/off?u='+encodeURIComponent(offUrl);}
-function urlProxyUrl(u){return PROJECT_WORKER_BASE+'/fetch?u='+encodeURIComponent(u);}
 // fetch mit hartem Timeout → ein langsamer/ausgefallener Dienst friert die App
 // nicht mehr ein, sondern fällt schnell auf den jeweiligen Fallback zurück.
 function fetchT(url,opts,ms){
@@ -3718,7 +3717,6 @@ function loadBarcodeCache(){try{var d=localStorage.getItem('nt_bc');if(d)barcode
 // Ein Treffer ohne jeden Naehrwert ist keine Information, sondern eine Luecke
 // in der Quelle (#167). Er wird nicht gespeichert – sonst taucht er spaeter als
 // 0-kcal-Vorschlag in der lokalen Suche wieder auf.
-function cacheFood(f){if(!f||!f.name)return;if(!f.per100||!_hasNutrients(f.per100))return;var k=f.name.toLowerCase().trim();foodCache[k]={name:f.name,emoji:f.emoji,per100:f.per100,addedAt:Date.now()};saveX();}
 // Bestand aus aelteren Versionen: dort landeten Nulltreffer noch im Cache.
 function _dropEmptyNutrientEntries(){
   var n=0;
@@ -4645,35 +4643,6 @@ function findInLocalDB(name){
     return pre;
   }
   return null;
-}
-function searchLocal(q){
-  var ql=(q||'').toLowerCase().trim();
-  var results=[],seen={};
-  function add(item,score){var k=item.name.toLowerCase();if(!seen[k]){seen[k]=true;results.push({score:score,item:item});}}
-  // Recipes first
-  recipes.forEach(function(r){
-    var nl=r.name.toLowerCase();
-    var s=!ql?1:(nl===ql?5:nl.startsWith(ql)?4:nl.includes(ql)?2:0);
-    if(s>0)add({name:r.name,emoji:r.emoji||'📋',isRecipe:true,recipeId:r.id,per100:null,badge:'📋',bdgCls:''},s+20);
-  });
-  // Custom foods
-  customFoods.forEach(function(f){
-    var nl=f.name.toLowerCase();
-    var s=!ql?1:(nl===ql?5:nl.startsWith(ql)?4:nl.includes(ql)?2:0);
-    if(s>0)add({name:f.name,emoji:f.emoji,per100:f.per100,badge:'⭐',bdgCls:'own'},s+15);
-  });
-  // Saved cache
-  Object.values(foodCache).forEach(function(f){
-    var nl=f.name.toLowerCase();
-    var s=!ql?0:(nl===ql?5:nl.startsWith(ql)?4:nl.includes(ql)?2:0);
-    if(s>0)add({name:f.name,emoji:f.emoji,per100:f.per100,badge:'🕐',bdgCls:'saved'},s+5);
-  });
-  // Built-in DB
-  DB.forEach(function(f){var s=fuzzy(f,q);if(s>0||!ql)add({name:f.n,emoji:f.e,per100:dbPer100(f)},s);});
-  results.sort(function(a,b){return b.score-a.score;});
-  var out=[],seenOut={};
-  results.forEach(function(x){var k=x.item.name.toLowerCase();if(!seenOut[k]){seenOut[k]=true;out.push(x.item);}});
-  return out.slice(0,ql?15:12);
 }
 
 // ════════════════════════════════════════
@@ -6716,28 +6685,6 @@ function copyMealFromYesterday(meal){
 }
 
 
-// ── Zuletzt gegessen / Favoriten ──
-function getRecentFoods(){
-  var seen={};var list=[];
-  var dates=Object.keys(S.days).sort().reverse().slice(0,14);
-  dates.forEach(function(d){
-    var day=S.days[d];
-    if(!day||!day.meals)return;// komprimierter Alt-Tag (#232)
-    MEALS.forEach(function(m){
-      (day.meals[m]||[]).forEach(function(e){
-        if(e._archived)return;
-        if(e.isRecipe||(e.ingredients&&e.ingredients.length)){
-          var k=(e.name||'').toLowerCase();
-          if(!seen[k]&&e.name){seen[k]=true;list.push({name:e.name,emoji:e.emoji,kcal:e.kcal,amount:e.amount,per100:e.per100,isRecipe:e.isRecipe,recipeId:e.recipeId,ingredients:e.ingredients,portions:e.portions});}
-        } else {
-          var k=(e.name||'').toLowerCase();
-          if(!seen[k]&&e.name&&e.per100){seen[k]=true;list.push({name:e.name,emoji:e.emoji,amount:e.amount||100,per100:e.per100});}
-        }
-      });
-    });
-  });
-  return list.slice(0,15);
-}
 
 // ── Wassertracking mit Getränkegrößen ──
 function addWater(ml){
@@ -8060,30 +8007,30 @@ function axTestSync(){
 }
 
 </script>
-<script src="js/ampel.js?v=0.306"></script>
-<script src="picker.js?v=0.306"></script>
-<script src="js/health-sync.js?v=0.306"></script>
-<script src="js/sync-core.js?v=0.306"></script>
-<script src="js/baby.js?v=0.306"></script>
-<script src="js/baby-meds.js?v=0.306"></script>
-<script src="js/baby-growth-data.js?v=0.306"></script>
-<script src="js/baby-growth.js?v=0.306"></script>
-<script src="js/baby-week.js?v=0.306"></script>
-<script src="js/baby-milestones.js?v=0.306"></script>
-<script src="js/baby-midwife.js?v=0.306"></script>
-<script src="js/shopping.js?v=0.306"></script>
-<script src="js/partner.js?v=0.306"></script>
-<script src="js/alexa-sync.js?v=0.306"></script>
-<script src="js/dashboard.js?v=0.306"></script>
-<script src="js/features.js?v=0.306"></script>
-<script src="js/mealplan.js?v=0.306"></script>
-<script src="js/onedrive.js?v=0.306"></script>
-<script src="js/autosave.js?v=0.306"></script>
-<script src="js/recurring.js?v=0.306"></script>
-<script src="js/stats.js?v=0.306"></script>
-<script src="js/reminders.js?v=0.306"></script>
-<script src="js/templates.js?v=0.306"></script>
-<script src="js/offline-queue.js?v=0.306"></script>
+<script src="js/ampel.js?v=0.307"></script>
+<script src="picker.js?v=0.307"></script>
+<script src="js/health-sync.js?v=0.307"></script>
+<script src="js/sync-core.js?v=0.307"></script>
+<script src="js/baby.js?v=0.307"></script>
+<script src="js/baby-meds.js?v=0.307"></script>
+<script src="js/baby-growth-data.js?v=0.307"></script>
+<script src="js/baby-growth.js?v=0.307"></script>
+<script src="js/baby-week.js?v=0.307"></script>
+<script src="js/baby-milestones.js?v=0.307"></script>
+<script src="js/baby-midwife.js?v=0.307"></script>
+<script src="js/shopping.js?v=0.307"></script>
+<script src="js/partner.js?v=0.307"></script>
+<script src="js/alexa-sync.js?v=0.307"></script>
+<script src="js/dashboard.js?v=0.307"></script>
+<script src="js/features.js?v=0.307"></script>
+<script src="js/mealplan.js?v=0.307"></script>
+<script src="js/onedrive.js?v=0.307"></script>
+<script src="js/autosave.js?v=0.307"></script>
+<script src="js/recurring.js?v=0.307"></script>
+<script src="js/stats.js?v=0.307"></script>
+<script src="js/reminders.js?v=0.307"></script>
+<script src="js/templates.js?v=0.307"></script>
+<script src="js/offline-queue.js?v=0.307"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

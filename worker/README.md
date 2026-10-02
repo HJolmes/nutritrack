@@ -90,7 +90,7 @@ Tarif: Workers Paid (seit 2026-10-01, #260). Das KV-Kontingent ist damit eine Ko
 
 TTL pro Eintrag: 1 Jahr (`SHARE_TTL_SECONDS`). Löschung läuft automatisch.
 
-Derselbe Namespace trägt seit v0.225 auch den Baby-Tagebuch-Sync (`bd:`-Präfix, `babySyncConfigured`) und seit v0.227 den Einkaufszettel (`sl:`-Präfix, `shopSyncConfigured`). Jede Tagebuch-Änderung ist ein Write; ein Abruf ohne Änderung kostet dank Änderungsmarke nur ein Read.
+Derselbe Namespace trägt seit v0.225 auch den Baby-Tagebuch-Sync (`bd:`-Präfix, `babySyncConfigured`) und seit v0.227 den Einkaufszettel (`sl:`-Präfix, `shopSyncConfigured`). Ein Push kostet je Record einen Write plus einen für die Änderungsmarke. Ein Abruf ohne Änderung kostet ein Read – außer in den 2 min nach einem Push und bei einem Briefkasten ohne Schlüssel und ohne Marke (noch leer, oder geleert und Marke abgelaufen); dann kommt ein `list` dazu.
 
 ## GitHub Setup
 

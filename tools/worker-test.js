@@ -68,10 +68,15 @@ function makeKV() {
     store,
     counts: { get: 0, put: 0, delete: 0, list: 0 },
     failPut: null, // (key) => true laesst put werfen (z. B. Kontingent erschoepft)
+    // true: nach der letzten gefuellten Seite folgt noch eine leere Seite mit
+    // list_complete:true — Cloudflare KV darf Seiten mit weniger oder keinen
+    // Schluesseln liefern (z. B. bei abgelaufenen Schluesseln).
+    emptyTailPage: false,
     reset() {
       store.clear();
       kv.counts = { get: 0, put: 0, delete: 0, list: 0 };
       kv.failPut = null;
+      kv.emptyTailPage = false;
     },
     async get(key, opts) {
       kv.counts.get++;
@@ -99,10 +104,14 @@ function makeKV() {
       kv.counts.list++;
       const prefix = (opts && opts.prefix) || '';
       const limit = (opts && opts.limit) || 1000;
+      if (opts && opts.cursor === 'tail') return { keys: [], list_complete: true, cursor: undefined };
       const start = opts && opts.cursor ? Number(opts.cursor) : 0;
       const names = [...store.keys()].filter((k) => k.startsWith(prefix)).sort();
       const slice = names.slice(start, start + limit);
       const done = start + limit >= names.length;
+      if (done && kv.emptyTailPage && slice.length) {
+        return { keys: slice.map((name) => ({ name, metadata: store.get(name).metadata })), list_complete: false, cursor: 'tail' };
+      }
       return {
         keys: slice.map((name) => ({ name, metadata: store.get(name).metadata })),
         list_complete: done,
@@ -718,6 +727,21 @@ async function main() {
       const r2 = await call('GET', '/alexa/inbox?since=' + v, { headers: h });
       check('Alexa leer und ohne Marke: 1 list, 0 put', r2.status === 200 && KV.counts.list === 1 && KV.counts.put === 0,
         show(r2) + ', list ' + KV.counts.list + ', put ' + KV.counts.put);
+    }
+
+    // Leere Folgeseite: gezaehlt wird ueber ALLE Seiten, nicht nur die letzte.
+    for (const [getPath, , postPath, h, body, markKey] of filled) {
+      KV.reset();
+      await call('POST', postPath, { headers: Object.assign({ 'Content-Type': 'application/json' }, h), body, origin: '' });
+      const v = JSON.parse(KV.store.get(markKey).value).v;
+      KV.store.delete(markKey);
+      KV.emptyTailPage = true;
+      KV.counts = { get: 0, put: 0, delete: 0, list: 0 };
+      const r = await call('GET', getPath + '?since=' + v, { headers: h, origin: '' });
+      const mark = KV.store.has(markKey) && JSON.parse(KV.store.get(markKey).value);
+      KV.emptyTailPage = false;
+      check('GET ' + getPath + ' mit leerer Folgeseite: 2 list, genau 1 put, Marke nachgetragen', r.status === 200 && KV.counts.list === 2 && KV.counts.put === 1 && mark && mark.v === v,
+        show(r) + ', list ' + KV.counts.list + ', put ' + KV.counts.put + ', Marke ' + JSON.stringify(mark));
     }
 
     // Schluessel ohne Cursor-Metadatum (metaGap): wie bisher kein Nachtrag.

@@ -466,6 +466,64 @@ const EXPECTED_NAMESPACES = [
   if (remindFail) console.log('  x   Erinnerung loeschen: ' + JSON.stringify(remind));
   else console.log('  ok  Das ✕ einer Erinnerung ist data-act ohne onclick und entfernt genau die eigene.');
 
+  // 10. Ernaehrungs-Ampel (#262): Vegan entscheidet die Tabelle, Glutenfrei die
+  //     KI (hier ein Stub). Die KI bekommt je Name nur dessen offene
+  //     Praeferenzen, ein lokales Rot ueberlebt ein KI-Gruen, das Banner behaelt
+  //     es, obwohl die KI den Namen nicht nennt, und offline steht kein Gruen,
+  //     solange eine Praeferenz offen ist.
+  let dietFail = 0;
+  {
+    const d = await page.evaluate(async () => {
+      const keep = { prefs: S.dietPrefs, free: S.dietFree, warn: S.dietWarn, save: window.saveS, ai: window.canUseAi, cc: window.callClaude };
+      const day = getDay();
+      const before = (day.meals.snack || []).length;
+      let prompt = '';
+      try {
+        window.saveS = function () {};
+        window.canUseAi = function () { return true; };
+        let answer = [{ name: 'Schweinebraten', ampel: 'gruen', grund: 'glutenfrei' }, { name: 'Apfel', ampel: 'gruen', grund: 'glutenfrei' }];
+        window.callClaude = function (model, content, max, ok) { prompt = content[0].text; ok(JSON.stringify(answer)); };
+        S.dietPrefs = ['Vegan', 'Glutenfrei']; S.dietFree = ''; S.dietWarn = true;
+        const ings = [{ name: 'Schweinebraten', amount: 150, per100: { kcal: 250, protein: 25, carbs: 0, fat: 16 } },
+          { name: 'Apfel', amount: 150, per100: { kcal: 52, protein: 0.3, carbs: 14, fat: 0.2 } }];
+        day.meals.snack = (day.meals.snack || []).concat([{ name: 'Teller', ingredients: ings }]);
+        checkDietWarn(ings, 'snack', day.meals.snack.length - 1);
+        await new Promise((r) => setTimeout(r, 50));
+        const e = day.meals.snack[day.meals.snack.length - 1];
+        // Zweiter Lauf: Die KI nennt nur den Apfel (gelb). Der Banner-Abschnitt
+        // wird ersetzt und muss das lokale Rot des Schweinebratens behalten.
+        closeAmpelBanner();
+        answer = [{ name: 'Apfel [Glutenfrei, Vegan]', ampel: 'gelb', grund: 'Test' }];
+        const ings2 = ings.map((i) => ({ name: i.name, amount: i.amount, per100: i.per100 }));
+        day.meals.snack.push({ name: 'Teller 2', ingredients: ings2 });
+        checkDietWarn(ings2, 'snack', day.meals.snack.length - 1);
+        await new Promise((r) => setTimeout(r, 50));
+        const banner = (document.getElementById('ampelBanner') || {}).textContent || '';
+        const e2 = day.meals.snack[day.meals.snack.length - 1];
+        // Offline: Keto entscheidet die Gurke gruen, Glutenfrei bleibt offen → kein Punkt.
+        window.canUseAi = function () { return false; };
+        S.dietPrefs = ['Keto', 'Glutenfrei'];
+        const ings3 = [{ name: 'Gurke', amount: 100, per100: { kcal: 12, protein: 0.6, carbs: 2, fat: 0.1 } }];
+        day.meals.snack.push({ name: 'Teller 3', ingredients: ings3 });
+        checkDietWarn(ings3, 'snack', day.meals.snack.length - 1);
+        const e3 = day.meals.snack[day.meals.snack.length - 1];
+        return { prompt, map: e.dietAmpel, ing0: ings[0].dietAmpel, banner, apfel2: (e2.dietAmpel || {}).apfel, offline: e3.dietAmpel || null };
+      } finally {
+        day.meals.snack = day.meals.snack.slice(0, before);
+        S.dietPrefs = keep.prefs; S.dietFree = keep.free; S.dietWarn = keep.warn;
+        window.saveS = keep.save; window.canUseAi = keep.ai; window.callClaude = keep.cc;
+        closeAmpelBanner(); renderAll();
+      }
+    });
+    const m = d.map || {};
+    const ok = /in eckigen Klammern dahinter \(Glutenfrei, Vegan\)/.test(d.prompt) && /Schweinebraten \[Glutenfrei\], Apfel \[Glutenfrei, Vegan\]$/.test(d.prompt)
+      && m.schweinebraten && m.schweinebraten.ampel === 'rot' && m.apfel && m.apfel.ampel === 'gruen'
+      && d.ing0 && d.ing0.ampel === 'rot' && d.banner.includes('Schweinebraten') && d.banner.includes('Apfel')
+      && d.apfel2 && d.apfel2.ampel === 'gelb' && !d.offline;
+    if (!ok) { dietFail++; console.log('  x   Ernaehrungs-Ampel: ' + JSON.stringify(d)); }
+    else console.log('  ok  Ernaehrungs-Ampel (#262): Vegan lokal, je Name nur offene Praeferenzen an die KI, lokales Rot schlaegt KI-Gruen, Banner behaelt es, offline kein Gruen bei offener Praeferenz.');
+  }
+
   // 8. Zweites Fenster (#261): Es darf die App nicht starten und nichts
   //    schreiben, sondern landet auf tab.html. „Hier weiterarbeiten“ uebernimmt,
   //    und das erste Fenster pausiert. Vorher ueberschrieb der letzte Schreiber
@@ -653,10 +711,10 @@ const EXPECTED_NAMESPACES = [
 
   await browser.close();
 
-  if (errors.length || nsFail || badExports.length || deadHandlers.length || delegationFail || stack.length || deadFeatActs.length || remindFail || tabFail || kbFail) {
+  if (errors.length || nsFail || badExports.length || deadHandlers.length || delegationFail || stack.length || deadFeatActs.length || remindFail || tabFail || kbFail || dietFail) {
     console.error('\nFEHLER:');
     [...new Set(errors)].forEach((e) => console.error('  x   ' + e));
-    console.error(`\n${errors.length + nsFail + badExports.length + deadHandlers.length + delegationFail + stack.length + deadFeatActs.length + remindFail + tabFail + kbFail} Problem(e).`);
+    console.error(`\n${errors.length + nsFail + badExports.length + deadHandlers.length + delegationFail + stack.length + deadFeatActs.length + remindFail + tabFail + kbFail + dietFail} Problem(e).`);
     process.exit(1);
   }
   console.log('\nRauchtest bestanden.');

@@ -252,7 +252,8 @@ var _PICKER_NO_GRAMS='Rezept ohne Grammangaben – als Zutat nicht möglich';
 // Feld. `ings` (optional) bewertet nur diese Zutaten (Zutat-Modus).
 function _pickerRateEntry(meal,idx,ings){
   var e=(getDay().meals[meal]||[])[idx];if(!e)return;
-  var list=ings||((e.ingredients&&e.ingredients.length)?e.ingredients:[{name:e.name}]);
+  // Kopie mit Naehrwerten und Menge: Keto/Low Carb/High Protein rechnen damit (#262).
+  var list=ings||((e.ingredients&&e.ingredients.length)?e.ingredients:[{name:e.name,per100:e.per100,amount:e.amount}]);
   checkPregWarn(list,meal,idx);checkNursWarn(list,meal,idx);checkDietWarn(list,meal,idx);
 }
 // Hängt Zutaten an den offenen Eintrag und rechnet seine Summen neu (sonst
@@ -320,7 +321,8 @@ function pickerConfirmAdd(){
   // Rezeptnamen (#205) – sonst stand die Warnung unter „Spaghetti Tonnato“ statt
   // unter „Thunfisch“ und fehlte im Mahlzeit-Detail. Der Eintrag hat seine
   // eigene Kopie der Zutaten, das Bibliotheksrezept bleibt ohne Ampelfelder.
-  var _ampIn=(f.isRecipe&&entry.ingredients&&entry.ingredients.length)?entry.ingredients:[f];
+  // Sonst eine Kopie mit Naehrwerten und gebuchter Menge (#262), nicht f selbst.
+  var _ampIn=(f.isRecipe&&entry.ingredients&&entry.ingredients.length)?entry.ingredients:[{name:f.name,per100:f.per100,amount:f.isRecipe?undefined:amt}];
   checkPregWarn(_ampIn,pickerMeal,_idx);
   checkNursWarn(_ampIn,pickerMeal,_idx);
   checkDietWarn(_ampIn,pickerMeal,_idx);
@@ -1207,9 +1209,10 @@ function pickerBarcodeAdd(){
   var _bidx=getDay().meals[pickerMeal].length-1;
   saveS();renderAll();closePicker();
   animateAdd(pickerMeal);
-  checkPregWarn([food],pickerMeal,_bidx);
-  checkNursWarn([food],pickerMeal,_bidx);
-  checkDietWarn([food],pickerMeal,_bidx);
+  var _bAmp=[{name:food.name,per100:food.per100,amount:amt}];// Kopie mit Menge (#262)
+  checkPregWarn(_bAmp,pickerMeal,_bidx);
+  checkNursWarn(_bAmp,pickerMeal,_bidx);
+  checkDietWarn(_bAmp,pickerMeal,_bidx);
   showToast((food.emoji||'🍽')+' '+food.name+' hinzugefügt');
 }
 

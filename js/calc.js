@@ -390,9 +390,10 @@ function parseIngJSON(text){
   }catch(e){return[];}
 }
 function parsePhotoResponse(text){
+  var clean=String(text||'').replace(/`{3}json/gi,'').replace(/`{3}/g,'').trim(),err=null;
+  // Je Form ein eigenes try (#298): Ein Array mit mehreren Objekten laesst den
+  // Objekt-Versuch ({ bis }) scheitern und muss trotzdem den Array-Rueckfall erreichen.
   try{
-    var clean=text.replace(/`{3}json/gi,'').replace(/`{3}/g,'').trim();
-    // Try object format {rezept, zutaten}
     var oa=clean.indexOf('{'),oz=clean.lastIndexOf('}');
     if(oa!==-1&&oz>oa){
       var obj=JSON.parse(clean.slice(oa,oz+1));
@@ -400,12 +401,14 @@ function parsePhotoResponse(text){
         return{rezept:(obj.rezept||'').trim(),zutaten:obj.zutaten.filter(function(f){return f&&f.name;}).map(function(f){var g=parseFloat(f.g);return{name:f.name,emoji:f.emoji||emo(f.name||''),g:isFinite(g)&&g>0?g:null};})};
       }
     }
-    // Fallback: array
+  }catch(e){err=e;}
+  try{
     var aa=clean.indexOf('['),az=clean.lastIndexOf(']');
     if(aa!==-1&&az>aa){
       var arr=JSON.parse(clean.slice(aa,az+1));
       if(Array.isArray(arr))return{rezept:'',zutaten:arr.filter(function(f){return f&&f.name;}).map(function(f){var g=parseFloat(f.g);return{name:f.name,emoji:f.emoji||emo(f.name||''),g:isFinite(g)&&g>0?g:null};})};
     }
-  }catch(e){console.error('[NutriTrack parsePhotoResponse]',e);}
+  }catch(e){err=e;}
+  if(err)console.error('[NutriTrack parsePhotoResponse]',err);
   return{rezept:'',zutaten:[]};
 }

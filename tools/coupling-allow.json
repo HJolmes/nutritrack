@@ -1,0 +1,16 @@
+{
+  "$comment": "#257: index.html-Funktionen, die eine Datei ueber den Kern hinaus ruft. tools/check.js (5d) prueft den Stand, die CI (Kopplung nur kuerzer) die Richtung: die Liste wird nur kuerzer. Ausnahme nur mit der Zeile 'Kopplung-Ausnahme: <Grund>' im PR-Text.",
+  "core": ["saveS","showToast","esc","closeOv","openOv","renderAll","saveX","callClaude","canUseAi","lookupNutrients"],
+  "allow": {
+    "picker.js": ["_hasNutrients","aiSourceBadgeHtml","cacheFood","checkDietWarn","checkNursWarn","checkPregWarn","dietAmpelDot","fetchT","findInLocalDB","getChatPrompt","getFotoPrompt","getProxySecret","getRecentFoods","ingNutrHtml","ingToggle","kiNutrientLookup","mealByTime","nursAmpelDot","offProxyUrl","openEditEntry","pregAmpelDot","renderLibrary","saveBarcodeCache","searchLocal","shareInputKind","startShareImport","urlProxyUrl"],
+    "js/autosave.js": ["_backupAiFields","_importAiFields","_migratePhotosAfterImport","backupState","runAutosave"],
+    "js/calc.js": ["delPhotoIfUnused"],
+    "js/features.js": ["updateBabyUI"],
+    "js/mealplan.js": ["openLibrary","openRecipeEditor","renderLibrary"],
+    "js/onedrive.js": ["_backupAiFields","_dropEmptyNutrientEntries","_importAiFields","_migratePhotosAfterImport","backupState","saveBarcodeCache"],
+    "js/partner.js": ["_copyToClipboard","_previewImport"],
+    "js/reminders.js": ["loadFast"],
+    "js/stats.js": ["aiSourceBadgeHtml","showAiUnavailable"],
+    "js/sync-core.js": ["openAlexaSync"]
+  }
+}

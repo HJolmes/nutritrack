@@ -278,7 +278,18 @@ if (!mCore) {
   }
 }
 
-// ── 5. onclick-Ziele in generiertem HTML ──────────────────────────────────
+// Kommentare in JS-Dateien ausblenden (Abschnitte 5 und 5d): Ein Doku-Kommentar,
+// der die Schreibweise erklaert ("<button data-act=… statt onclick=foo()"), ist
+// kein Aufruf. Die Handler-Pruefung ist genau daran zuerst rot geworden.
+// Nicht fuer index.html: Dort stuende `accept="image/*"` als Kommentaranfang.
+// Zeichen werden zu Leerzeichen, Zeilenumbrueche bleiben — die Zeilennummern
+// in den Meldungen stimmen so mit der Datei ueberein.
+const blankOut = (s) => s.replace(/[^\n]/g, ' ');
+const stripComments = (code) => code
+  .replace(/^\s*\/\/.*$/gm, blankOut)
+  .replace(/\/\*[\s\S]*?\*\//g, blankOut);
+
+// ── 5. Handler-Ziele (on*, data-act) in generiertem HTML ──────────────────
 // Der Rauchtest (tools/smoke.js) prueft nur, was zur Pruefzeit im DOM steht.
 // Der weitaus groessere Teil der Knoepfe entsteht aber erst zur Laufzeit aus
 // innerHTML-Strings — ein onclick darin, der beim Zerlegen des Monolithen auf
@@ -286,13 +297,11 @@ if (!mCore) {
 // Pruefung liest die Strings im Quelltext und loest sie gegen das auf, was
 // global existiert.
 {
-  // Kommentare zuerst ausblenden: Ein Doku-Kommentar, der die Schreibweise
-  // erklaert ("<button data-act=… statt onclick=foo()"), ist kein Aufruf. Diese
-  // Pruefung ist genau daran zuerst rot geworden.
-  const stripComments = (code) => code
-    .replace(/^\s*\/\/.*$/gm, '')
-    .replace(/\/\*[\s\S]*?\*\//g, '');
-  const sources = [['index.html', indexHtml]];
+  // In index.html nur HTML-Kommentare und ganze //-Zeilen ausblenden (Zeichen
+  // durch Leerzeichen, Zeilen bleiben): Der Kommentar ueber
+  // openPickerForOpenMeal() zitiert ein `onclick="openPicker('breakfast')"`.
+  const idxNoComments = indexHtml.replace(/<!--[\s\S]*?-->/g, blankOut).replace(/^[ \t]*\/\/.*$/gm, blankOut);
+  const sources = [['index.html', idxNoComments]];
   for (const f of jsFiles) { if (!f.includes('zxing')) sources.push([f, stripComments(read(f))]); }
 
   // Global verfuegbar ist alles, was NICHT in einer IIFE gekapselt ist:
@@ -326,27 +335,46 @@ if (!mCore) {
     'decodeURIComponent','if','for','while','return','typeof','new','function','void','delete','in',
     'instanceof','else','do','switch','try','catch','throw','await','navigator']);
 
-  let dead = 0, checked = 0;
+  // Jedes on*-Attribut (onclick, oninput, onkeydown, onchange, onblur, …) im
+  // Markup und in HTML-Strings: on…="…" bzw. on…=\"…\" (der Rueckstrich muss
+  // dann auch vor dem schliessenden Zeichen stehen). Bis v0.303 las diese
+  // Pruefung nur onclick und nur bis zum ersten ' oder " — von
+  // `closeOv('libraryOv');openPicker(null,'link')` sah sie closeOv, von
+  // `if(event.key==='Enter')pickerSearch()` gar nichts.
+  // Im Rumpf eines JS-Strings stehen Verkettungen: eine geschlossene
+  // ('+id+') wird zu 'X', eine offene (bis zum Ende des Rumpfs, etwa bei
+  // `p.replace(/'/g,"\\'")`) abgeschnitten; dahinter wird nichts geprueft.
+  // Ein Name zaehlt nach einem dieser Zeichen: ; { ( ) Leerraum ! = & | ? : , +
+  // — mit ) fuer `if(…)name()`, mit , und + fuer Argumente. Bekannte Grenze:
+  // ein zur Laufzeit zusammengesetzter Name ('+fn+'(…)) bleibt ungeprueft, ihn
+  // sieht nur der Rauchtest im DOM.
+  const handlerRe = /\b(on[a-z]+)=(\\?)(["'])((?:(?!\2\3)(?:[^\\]|\\[\s\S]))*)\2\3/g;
+  const callRe = /(?<=^|[;{()\s!=&|?:,+])([A-Za-z_$][\w$]*(?:\.[\w$]+)*)\s*\(/g;
+  let dead = 0, checked = 0, handlerAttrs = 0;
+  const handlerKinds = {};
   for (const [file, code] of sources) {
-    // onclick="…" im Markup und onclick=\"…\" in JS-Strings
-    const attrs = [...code.matchAll(/onclick=\\?["']((?:[^"'\\]|\\.)*)["']/g)].map((x) => x[1]);
-    for (const a of attrs) {
-      for (const c of a.match(/(?:^|[;{(\s!=&|?:])([A-Za-z_$][A-Za-z0-9_$]*(?:\.[A-Za-z0-9_$]+)*)\s*\(/g) || []) {
-        const name = c.replace(/^[^A-Za-z_$]/, '').replace(/\s*\($/, '');
+    for (const h of code.matchAll(handlerRe)) {
+      handlerAttrs++;
+      handlerKinds[h[1]] = (handlerKinds[h[1]] || 0) + 1;
+      const body = h[4].replace(/(['"])\s*\+[\s\S]*?\+\s*\1/g, '$1X$1').replace(/['"]\s*\+[\s\S]*$/, '');
+      const where = `${file}:${code.slice(0, h.index).split('\n').length}: ${h[1]}`;
+      for (const c of body.matchAll(callRe)) {
+        const name = c[1];
         const parts = name.split('.');
         if (HOST.has(parts[0])) continue;
         checked++;
         if (parts.length === 1) {
-          if (!globals.has(parts[0])) { fail(`${file}: onclick ruft '${name}()' — weder globale Funktion noch Modul-Export.`); dead++; }
+          if (!globals.has(parts[0])) { fail(`${where} ruft '${name}()' — weder globale Funktion noch Modul-Export.`); dead++; }
         } else if (nsMembers[parts[0]]) {
-          if (!nsMembers[parts[0]].has(parts[1])) { fail(`${file}: onclick ruft '${name}()' — ${parts[0]} exportiert '${parts[1]}' nicht.`); dead++; }
+          if (!nsMembers[parts[0]].has(parts[1])) { fail(`${where} ruft '${name}()' — ${parts[0]} exportiert '${parts[1]}' nicht.`); dead++; }
         } else if (!globals.has(parts[0])) {
-          fail(`${file}: onclick ruft '${name}()' — '${parts[0]}' existiert nicht.`); dead++;
+          fail(`${where} ruft '${name}()' — '${parts[0]}' existiert nicht.`); dead++;
         }
       }
     }
   }
-  if (!dead) ok(`Alle ${checked} onclick-Ziele (auch in generiertem HTML) sind aufloesbar.`);
+  const kindsTxt = Object.entries(handlerKinds).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k} ${n}`).join(', ');
+  if (!dead) ok(`Alle ${checked} Ziele in ${handlerAttrs} on*-Attributen (${kindsTxt}; auch in generiertem HTML) sind aufloesbar.`);
 
   // data-act geht denselben Weg: Die Delegation loest zur Klickzeit auf, ein
   // Tippfehler faellt sonst erst dort auf, wo jemand den Knopf drueckt.
@@ -489,6 +517,82 @@ if (fs.existsSync(path.join(ROOT, 'js/calc.js'))) {
   const bad = ['document.', 'localStorage', 'fetch(', 'showToast', 'openOv', 'setTimeout'].filter((t) => calc.includes(t));
   if (bad.length) bad.forEach((t) => fail(`js/calc.js enthaelt '${t}' — der Rechenkern bleibt ohne Oberflaeche, Speicher, Netz und Timer.`));
   else ok('js/calc.js ist rein (kein document., localStorage, fetch(, showToast, openOv, setTimeout).');
+}
+
+// ── 5d. Kopplung (#257) ───────────────────────────────────────────────────
+// Module rufen aus index.html nur den Kern („core“ in tools/coupling-allow.json:
+// die Funktionen, die heute mindestens drei Module rufen). Was darueber
+// hinausgeht, steht dort je Datei unter „allow“, und die Liste wird nur kuerzer:
+// Diese Pruefung haelt den heutigen Stand fest, der CI-Schritt „Kopplung nur
+// kuerzer“ (checks.yml) die Richtung gegenueber dem Zielbranch. Rot ist
+//   (a) ein Name ausserhalb von core und allow der Datei,
+//   (b) ein allow-Eintrag, den die Datei nicht mehr ruft — sonst bliebe eine
+//       Erlaubnis stehen, und die Ratsche rastete nicht ein,
+//   (c) ein core-Name, der keine Funktion in index.html mehr ist.
+// Gezaehlt wird jede Top-Level-Funktion der klassischen Inline-Bloecke von
+// index.html, die eine Datei (picker.js, js/*.js ohne js/zxing/) ohne
+// Kommentare nennt: als Aufruf `N(` (nicht `x.N(`), `typeof N`, `window.N`
+// oder als Argument `(N)`/`, N,`; auch in on*-Strings, die laufen global. Eine
+// eigene `function N(` der Datei blendet den Namen aus. Am Stand v0.304 ergibt
+// das dieselben 152 Namen je Datei wie eine Messung mit dem TypeScript-Checker,
+// der jeden Bezeichner aufloest (#257).
+// Bekannte Grenzen, weil Text statt Bindung gelesen wird: Ein lokaler Schatten
+// (var/let/const oder Parameter namens N) und die Methoden-Kurzschreibweise
+// `{ N() {…} }` zaehlen als Aufruf (zu streng – faellt rot auf); ein Alias
+// (`var f = N`, `{k: N}`, `window['N']`) bleibt unsichtbar (zu lax).
+{
+  const CPL = 'tools/coupling-allow.json';
+  let cfg = null;
+  try { cfg = JSON.parse(read(CPL)); } catch (e) { fail(`${CPL} fehlt oder ist kein gueltiges JSON: ${e.message}`); }
+  if (cfg) {
+    let cplFail = 0;
+    const idxFns = new Set();
+    for (const mb of indexHtml.matchAll(/<script(?![^>]*\bsrc=)([^>]*)>([\s\S]*?)<\/script>/g)) {
+      if (/type\s*=\s*["'](module|application\/(ld\+)?json)["']/.test(mb[1] || '')) continue;
+      for (const x of mb[2].matchAll(/^(?:async\s+)?function\s+(\w+)\s*\(/gm)) idxFns.add(x[1]);
+    }
+    const core = new Set(cfg.core || []);
+    const allow = cfg.allow || {};
+    for (const n of core) {
+      if (!idxFns.has(n)) { fail(`${CPL}: Kern-Name '${n}' ist keine Funktion in index.html mehr — aus "core" streichen.`); cplFail++; }
+    }
+    // Schluessel in der Liste immer mit / (jsFiles kommt aus path.join).
+    const files = jsFiles.filter((f) => !f.includes('zxing')).map((f) => f.replace(/\\/g, '/'));
+    for (const f of Object.keys(allow)) {
+      if (!files.includes(f)) { fail(`${CPL}: "allow" nennt '${f}' — die Datei gibt es nicht (mehr).`); cplFail++; }
+    }
+    let sum = 0, sumAllow = 0;
+    const rows = [];
+    for (const f of files) {
+      const code = stripComments(read(f));
+      const own = new Set([...code.matchAll(/\bfunction\s+([\w$]+)\s*\(/g)].map((x) => x[1]));
+      const used = [...idxFns].filter((n) => {
+        if (own.has(n)) return false;
+        // n besteht nur aus \w (siehe oben) – kein Escapen noetig.
+        return new RegExp(`(?<![.\\w$])${n}\\s*\\(|typeof\\s+${n}\\b|window\\.${n}\\b|[(,]\\s*${n}\\s*[),]`).test(code);
+      });
+      const listed = allow[f] || [];
+      for (const n of used) {
+        if (!core.has(n) && !listed.includes(n)) {
+          fail(`${f} ruft '${n}' aus index.html — weder Kern noch in ${CPL}. Die Liste wird nur kuerzer (#257): die Funktion ins Modul holen oder ueber den Kern gehen.`);
+          cplFail++;
+        }
+      }
+      for (const n of listed) {
+        if (core.has(n)) { fail(`${CPL}: '${n}' steht fuer ${f} in "allow", ist aber Kern — Eintrag streichen.`); cplFail++; }
+        else if (!used.includes(n)) { fail(`${CPL}: '${n}' steht fuer ${f}, wird dort aber nicht mehr gerufen — Eintrag streichen, damit die Ratsche einrastet.`); cplFail++; }
+      }
+      sum += used.length;
+      const over = used.filter((n) => !core.has(n)).length;
+      sumAllow += over;
+      if (used.length) rows.push([f, used.length, over]);
+    }
+    if (!cplFail) {
+      rows.sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+      ok(`Kopplung (#257): ${sum} index.html-Funktionen in ${rows.length} Dateien, davon ${sumAllow} ueber den Kern (${core.size}) hinaus — genau die Liste in ${CPL}.`);
+      ok(`  je Datei gesamt/ueber Kern: ${rows.map(([f, n, o]) => `${f} ${n}/${o}`).join(', ')}`);
+    }
+  }
 }
 
 // ── 5b. UEBERGABE.md bleibt knapp (#258) ──────────────────────────────────

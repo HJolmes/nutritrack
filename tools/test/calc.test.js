@@ -458,3 +458,73 @@ test('mergeState: flach – ein altes Unterobjekt ersetzt die Vorgabe ganz', () 
   assert.deepEqual(S.macroGoalG, { protein: 120 }); // carbs/fat fehlen – so ist es heute
   assert.deepEqual(S.newField, []); // neues Feld der Vorgabe bleibt, wenn der Stand es nicht kennt
 });
+
+// ── Aus index.html verschoben (#257): KI-Antworten, Rezept-Link, Anzeige ──
+test('parseIngJSON: ```json-Zaun, Mengen als Zahl oder Text, Emoji sonst aus emo()', () => {
+  const C = load({});
+  const r = C.parseIngJSON('```json\n[{"name":"Apfel","g":150},{"name":"Brot","emoji":"🥖","g":"50"}]\n```');
+  assert.deepEqual(plain(r), [{ name: 'Apfel', emoji: '🍎', g: 150 }, { name: 'Brot', emoji: '🥖', g: 50 }]);
+});
+
+test('parseIngJSON: abgeschnittenes Array endet nach dem letzten vollstaendigen Eintrag', () => {
+  const C = load({});
+  assert.deepEqual(plain(C.parseIngJSON('[{"name":"Apfel","g":150},{"name":"Bro')), [{ name: 'Apfel', emoji: '🍎', g: 150 }]);
+});
+
+test('parseIngJSON: ungueltiges g wird null, Eintrag ohne Namen faellt weg, Muell ergibt []', () => {
+  const C = load({});
+  const r = C.parseIngJSON('[{"name":"Skyr","g":"viel"},{"name":"Ei","g":0},{"name":"Salz","g":-2},{"g":10},null]');
+  assert.deepEqual(plain(r).map((x) => [x.name, x.g]), [['Skyr', null], ['Ei', null], ['Salz', null]]);
+  assert.deepEqual(plain(C.parseIngJSON('keine Ahnung')), []);
+  assert.deepEqual(plain(C.parseIngJSON('{"name":"x"}')), []); // Objekt statt Array
+  assert.deepEqual(plain(C.parseIngJSON('[kaputt')), []);
+});
+
+test('parsePhotoResponse: Objektform {rezept, zutaten} im Zaun, Name getrimmt', () => {
+  const C = load({});
+  const r = C.parsePhotoResponse('```json\n{"rezept":" Linsensuppe ","zutaten":[{"name":"Linsen","g":200},{"name":"Karotte","g":"x"},{"g":5}]}\n```');
+  assert.deepEqual(plain(r), { rezept: 'Linsensuppe', zutaten: [{ name: 'Linsen', emoji: '🫘', g: 200 }, { name: 'Karotte', emoji: '🥕', g: null }] });
+});
+
+test('parsePhotoResponse: Array-Fallback, Muell ergibt leeres Ergebnis', () => {
+  const C = load({});
+  const logged = [];
+  C.console = { log() {}, error: (...a) => logged.push(a.join(' ')) };
+  assert.deepEqual(plain(C.parsePhotoResponse('Hier: [{"name":"Banane","g":120}]')), { rezept: '', zutaten: [{ name: 'Banane', emoji: '🍌', g: 120 }] });
+  // Heute: Ein Array mit MEHREREN Eintraegen erreicht den Fallback nie – der
+  // Objekt-Versuch nimmt vom ersten { bis zum letzten }, JSON.parse wirft, und
+  // das Ergebnis ist leer. Das Foto-Prompt verlangt die Objektform; eine
+  // Korrektur ist ein eigenes Issue, kein stilles Umschreiben.
+  assert.deepEqual(plain(C.parsePhotoResponse('[{"name":"Banane","g":120},{"name":"Apfel","g":80}]')), { rezept: '', zutaten: [] });
+  assert.equal(logged.length, 1);
+  assert.deepEqual(plain(C.parsePhotoResponse('keine Ahnung')), { rezept: '', zutaten: [] });
+  assert.deepEqual(plain(C.parsePhotoResponse('{kaputt}')), { rezept: '', zutaten: [] });
+  assert.equal(logged.length, 2); // nur kaputtes JSON wird protokolliert
+});
+
+test('recipeImportExtractUrl: erster Link, Satzzeichen am Ende ab, ohne Link null', () => {
+  const C = load({});
+  assert.equal(C.recipeImportExtractUrl('Schau mal: https://www.chefkoch.de/rezepte/123/Suppe.html.'), 'https://www.chefkoch.de/rezepte/123/Suppe.html');
+  assert.equal(C.recipeImportExtractUrl('(https://example.org/rezept?id=5)!'), 'https://example.org/rezept?id=5');
+  assert.equal(C.recipeImportExtractUrl('erst http://a.de/x, dann https://b.de'), 'http://a.de/x');
+  assert.equal(C.recipeImportExtractUrl('<a href="https://x.de/r">'), 'https://x.de/r');
+  assert.equal(C.recipeImportExtractUrl('kein Link hier'), null);
+  assert.equal(C.recipeImportExtractUrl('ftp://x.de'), null);
+});
+
+test('safeEmoji: HTML-Zeichen raus, hoechstens 16 Zeichen, sonst Ersatz', () => {
+  const C = load({});
+  assert.equal(C.safeEmoji('🍎', '🍽'), '🍎');
+  assert.equal(C.safeEmoji('<img src=x onerror=alert(1)>', '🍽'), 'img srcx onerror');
+  assert.equal(C.safeEmoji('\'"`=\\/&', '📋'), '📋'); // nur Sonderzeichen -> Ersatz
+  assert.equal(C.safeEmoji('', '📋'), '📋');
+  assert.equal(C.safeEmoji(null, '🍽'), '🍽');
+  assert.equal(C.safeEmoji(undefined), '');
+  assert.equal(C.safeEmoji(7, 'x'), '7');
+});
+
+test('totalStr: kcal und Makros gerundet, Zucker usw. nicht genannt', () => {
+  const C = load({});
+  assert.equal(C.totalStr({ kcal: 123.5, protein: 10.49, carbs: 0.5, fat: 2.51 }), '124 kcal · P10g K1g F3g');
+  assert.equal(C.totalStr({ kcal: 0, protein: 0, carbs: 0, fat: 0, sugar: 9 }), '0 kcal · P0g K0g F0g');
+});

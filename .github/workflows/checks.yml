@@ -76,6 +76,47 @@ jobs:
             exit 1
           fi
 
+      - name: Kopplung nur kuerzer
+        # #257: tools/coupling-allow.json nennt je Datei die index.html-
+        # Funktionen, die sie ueber den Kern hinaus ruft. tools/check.js prueft,
+        # dass die Liste zum Code passt; dieser Schritt prueft die Richtung:
+        # Gegenueber dem Zielbranch darf keine Datei einen Namen gewinnen, den
+        # sie dort nicht rufen durfte (Kern oder ihre Liste), und der Kern darf
+        # nicht wachsen. Ausnahme nur mit einer Zeile
+        # `Kopplung-Ausnahme: <Begruendung>` im PR-Text — dann Hinweis statt
+        # Fehler. Der PR-Text kommt ueber env, nie in den Skripttext.
+        if: github.event_name == 'pull_request'
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          BASE="origin/${{ github.base_ref }}"
+          git fetch --no-tags --depth=1 origin "${{ github.base_ref }}" || true
+
+          if ! BASE_JSON=$(git show "$BASE:tools/coupling-allow.json" 2>/dev/null); then
+            echo "::notice::tools/coupling-allow.json fehlt im Zielbranch — nichts zu vergleichen."
+            exit 0
+          fi
+          export BASE_JSON
+          node -e '
+            const fs = require("fs");
+            const base = JSON.parse(process.env.BASE_JSON);
+            const now = JSON.parse(fs.readFileSync("tools/coupling-allow.json", "utf8"));
+            const baseCore = new Set(base.core || []);
+            const gains = [];
+            for (const n of now.core || []) if (!baseCore.has(n)) gains.push("Kern +" + n);
+            for (const [f, names] of Object.entries(now.allow || {})) {
+              const before = new Set((base.allow || {})[f] || []);
+              for (const n of names) if (!before.has(n) && !baseCore.has(n)) gains.push(f + " +" + n);
+            }
+            const sum = (j) => Object.values(j.allow || {}).reduce((a, l) => a + l.length, 0);
+            console.log("Kern " + baseCore.size + " -> " + (now.core || []).length + ", Liste " + sum(base) + " -> " + sum(now) + " Eintraege.");
+            if (!gains.length) { console.log("::notice::Kopplung nicht gewachsen."); process.exit(0); }
+            const why = (String(process.env.PR_BODY || "").match(/^[ \t]*Kopplung-Ausnahme:[ \t]*(\S.*)$/m) || [])[1];
+            if (why) { console.log("::notice::Kopplung waechst (" + gains.join(", ") + ") — Ausnahme im PR-Text: " + why.trim()); process.exit(0); }
+            console.log("::error::Kopplung waechst: " + gains.join(", ") + ". Die Liste in tools/coupling-allow.json wird nur kuerzer (#257): die Funktion ins Modul holen oder den Kern nutzen. Ausnahme nur mit der Zeile \"Kopplung-Ausnahme: <Begruendung>\" im PR-Text.");
+            process.exit(1);
+          '
+
   typecheck:
     name: Typpruefung (tsc --noEmit)
     # Ohne Build: tsc liest picker.js, js/*.js und die Inline-Scripts aus

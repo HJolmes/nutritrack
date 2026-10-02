@@ -322,9 +322,9 @@ const { blankOut, stripComments, templateSpans, handlerCalls } = require('./js-s
     jsStringAt[f] = (at) => !inSpan(tpl, at);
   }
 
-  // Global verfuegbar ist alles, was NICHT in einer IIFE gekapselt ist:
-  // das Inline-Script von index.html und picker.js (das bewusst nie gekapselt
-  // wurde — seine 93 Funktionen haengen direkt an window).
+  // Global verfuegbar ist alles, was NICHT in einer IIFE gekapselt ist: das
+  // Inline-Script von index.html. Seit v0.305 ist auch picker.js gekapselt
+  // (window.NTPicker, #257) — davor hingen seine Funktionen direkt an window.
   const globals = new Set();
   for (const [file, code] of sources) {
     const encapsulated = /^\s*\(function\s*\(/m.test(code.split('\n').slice(0, 40).join('\n'));

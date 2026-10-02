@@ -62,15 +62,15 @@ function processOfflineQueue(){
     // Sichtbar statt still: Tag des Fotos zeigen und den Picker mit dem Foto oeffnen.
     S.currentDate=item.date;
     renderAll();
-    openPicker(item.meal,'foto');
-    pickerResetPhoto();
+    NTPicker.openPicker(item.meal,'foto');
+    NTPicker.pickerResetPhoto();
     window._pickerPhotoB64=b64;
     document.getElementById('pickerPrev').src='data:image/jpeg;base64,'+b64;
     document.getElementById('pickerPrevWrap').classList.remove('hidden');
     document.getElementById('pickerPhotoPickArea').style.display='none';
     document.getElementById('pickerAnalyzeBtn').disabled=false;
     window._pickerQueueItem=item;
-    pickerAnalyze();
+    NTPicker.pickerAnalyze();
   };
   if(item.phid&&window.NTPhotos&&NTPhotos.ok()){
     NTPhotos.get(item.phid).then(start).catch(function(){start(null);});

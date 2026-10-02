@@ -8,7 +8,7 @@ declare var NTActions: any; declare var NTAlexa: any; declare var NTAmpel: any; 
 declare var NTBaby: any; declare var NTBabyMed: any; declare var NTBabyWeek: any; declare var NTDash: any;
 declare var NTDrive: any; declare var NTFeat: any; declare var NTGrowth: any; declare var NTHealth: any;
 declare var NTMet: any; declare var NTMidwife: any; declare var NTMile: any; declare var NTPartner: any;
-declare var NTPhotos: any; declare var NTPlan: any; declare var NTQueue: any; declare var NTRecur: any;
+declare var NTPhotos: any; declare var NTPicker: any; declare var NTPlan: any; declare var NTQueue: any; declare var NTRecur: any;
 declare var NTRemind: any; declare var NTShop: any; declare var NTStats: any; declare var NTSync: any;
 declare var NTTab: any; declare var NTTpl: any;
 declare var ZXing: any; declare var ZXingWASM: any; declare var BarcodeDetector: any;

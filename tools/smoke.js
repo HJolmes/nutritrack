@@ -43,7 +43,7 @@ const BASE = process.env.SMOKE_URL || 'http://127.0.0.1:8099/index.html';
 const EXPECTED_NAMESPACES = [
   'NTSync', 'NTBaby', 'NTShop', 'NTPartner', 'NTPlan', 'NTDash',
   'NTHealth', 'NTAlexa', 'NTPhotos', 'NTDrive',
-  'NTRecur', 'NTStats', 'NTRemind', 'NTTpl', 'NTQueue', 'NTFeat', 'NTAmpel', 'NTMet', 'NTTab',
+  'NTRecur', 'NTStats', 'NTRemind', 'NTTpl', 'NTQueue', 'NTFeat', 'NTAmpel', 'NTMet', 'NTTab', 'NTPicker',
 ];
 
 (async () => {
@@ -311,20 +311,20 @@ const EXPECTED_NAMESPACES = [
   const mealPlus = await page.evaluate(async () => {
     const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     if (typeof window.openMealDetail !== 'function') return { err: 'openMealDetail fehlt' };
-    const real = window.openPicker;
+    const real = window.NTPicker.openPicker;
     const out = [];
     for (const meal of ['breakfast', 'lunch', 'dinner', 'snack']) {
       const calls = [];
-      window.openPicker = function (m) { calls.push(m === undefined ? '(leer)' : m); };
+      window.NTPicker.openPicker = function (m) { calls.push(m === undefined ? '(leer)' : m); };
       window.openMealDetail(meal);
       await sleep(30);
       const cb = document.getElementById('cbMealDetail');
-      if (!cb) { window.openPicker = real; return { err: 'cbMealDetail fehlt' }; }
+      if (!cb) { window.NTPicker.openPicker = real; return { err: 'cbMealDetail fehlt' }; }
       cb.click();
       await sleep(30);
       out.push({ meal: meal, calls: calls });
     }
-    window.openPicker = real;
+    window.NTPicker.openPicker = real;
     if (typeof window.closeMealDetail === 'function') window.closeMealDetail();
     return { rows: out };
   });
@@ -547,7 +547,7 @@ const EXPECTED_NAMESPACES = [
     if (tabs.length < 7) { pickFail++; console.log(`  x   Picker: nur ${tabs.length} Tabs im Markup gefunden (${tabs.join(', ')}), erwartet 7.`); }
     for (const t of tabs) {
       const act = await page.evaluate((tab) => {
-        pickerSetTab(tab);
+        NTPicker.pickerSetTab(tab);
         const p = document.getElementById('ppanel-' + tab);
         return !!p && p.classList.contains('act');
       }, t).catch((e) => { record('pickerSetTab ' + t, e.message); return false; });
@@ -556,7 +556,7 @@ const EXPECTED_NAMESPACES = [
       if (!act) { pickFail++; console.log(`  x   Picker: Tab '${t}' ist nach pickerSetTab nicht aktiv.`); }
     }
     const hint = () => page.evaluate(() => document.getElementById('pickerSearchHint').textContent);
-    await page.evaluate(() => pickerSetTab('search'));
+    await page.evaluate(() => NTPicker.pickerSetTab('search'));
     await page.type('#pickerSearchQ', 'Banane', { delay: 15 });
     const live = await page.evaluate(() => ({ hint: document.getElementById('pickerSearchHint').textContent,
       first: (document.querySelector('#pickerResults .ri-n') || {}).textContent || '' }));
@@ -564,7 +564,7 @@ const EXPECTED_NAMESPACES = [
     await page.waitForTimeout(500);
     const afterEnter = await hint();
     const closed = await page.evaluate(() => {
-      closePicker();
+      NTPicker.closePicker();
       if (typeof closeMealDetail === 'function') closeMealDetail();
       return !document.getElementById('pickerOv').classList.contains('open');
     }).catch((e) => { record('closePicker', e.message); return false; });
@@ -662,10 +662,15 @@ const EXPECTED_NAMESPACES = [
     });
     await kp.reload({ waitUntil: 'load' });
     await kp.waitForTimeout(1200);
-    const chatRes = "pickerIngredients=Array.from({length:6},function(_,i){return {name:'Zutat '+i,emoji:'🥕',amount:null,missingGrams:true,per100:{kcal:100,protein:1,carbs:1,fat:1}};});document.getElementById('pickerChatResult').classList.remove('hidden');_pickerChatRebind();_pickerChatScrollEnd();";
+    // Chat-Ergebnis ueber den echten Weg (KI-Rueckfall), nur KI und
+    // Naehrwertsuche ersetzt: seit #257 ist der Zustand des Pickers privat.
+    const chatRes = "var _cc=callClaude,_ln=lookupNutrients;"
+      + "callClaude=function(m,c,t,ok){ok(JSON.stringify(Array.from({length:6},function(_,i){return {name:'Zutat '+i,g:null};})));};"
+      + "lookupNutrients=function(raw,done){done(raw.map(function(r){return {name:r.name,emoji:'🥕',amount:null,missingGrams:true,per100:{kcal:100,protein:1,carbs:1,fat:1}};}));};"
+      + "try{NTPicker.pickerChatKiFallback('sechs Zutaten');}finally{callClaude=_cc;lookupNutrients=_ln;}";
     const cases = [
       ['Picker-Chat', "openMealDetail('breakfast');openPickerForOpenMeal();", '#pickerChatInp'],
-      ['Picker-Gramm', "openMealDetail('breakfast');openPickerForOpenMeal('search');pickerSearchQ.value='Banane';pickerSearchLocalLive();var b=document.querySelector('#pickerResults [onclick]');if(b)b.click();", '#pickerAmt'],
+      ['Picker-Gramm', "openMealDetail('breakfast');openPickerForOpenMeal('search');pickerSearchQ.value='Banane';NTPicker.pickerSearchLocalLive();var b=document.querySelector('#pickerResults [onclick]');if(b)b.click();", '#pickerAmt'],
       ['Chat-Ergebnis-Gramm', "openMealDetail('breakfast');openPickerForOpenMeal();" + chatRes, '#pickerChatIngList .ing-wrap:last-child .ing-amt'],
       ['editAmt', "openMealDetail('breakfast');openEditEntry('breakfast',0);", '#editAmt'],
       ['Rezept-Gramm', "openMealDetail('breakfast');openEditEntry('breakfast',1);", '#editIngList .ing-wrap:last-child .ing-amt'],

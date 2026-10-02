@@ -16,6 +16,10 @@
 'use strict';
 
 // ── Mahlzeit-Vorlagen ──
+// Mahlzeit, deren Vorlagen gerade offen sind (fuer das Neuzeichnen nach dem
+// Loeschen). Bis v0.304 lag das in der Picker-Variable pickerMeal; die ist seit
+// #257 privat (openPicker setzt sein Ziel ohnehin bei jedem Oeffnen neu).
+var tplMeal=null;
 function saveMealAsTemplate(meal){
   var day=getDay();
   var entries=day.meals[meal]||[];
@@ -40,7 +44,7 @@ function applyMealTemplate(id,meal){
 }
 
 function openTemplateOv(meal){
-  pickerMeal=meal;
+  tplMeal=meal;
   var templates=S.mealTemplates||[];
   var el=document.getElementById('templateList');
   if(!el)return;
@@ -59,7 +63,7 @@ function openTemplateOv(meal){
 
 function deleteTemplate(id){
   S.mealTemplates=(S.mealTemplates||[]).filter(function(t){return t.id!==id;});
-  saveS();openTemplateOv(pickerMeal);
+  saveS();openTemplateOv(tplMeal);
 }
 
 // Nach aussen nur, was index.html und das generierte HTML wirklich rufen.

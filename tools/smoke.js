@@ -498,10 +498,11 @@ const EXPECTED_NAMESPACES = [
   //    um das fokussierte Feld nach vorn zu holen. Chromium hat keine
   //    Bildschirmtastatur — window.visualViewport wird deshalb durch ein
   //    EventTarget ersetzt und die Tastatur per resize/scroll nachgestellt.
-  //    Ein Fall besteht, wenn kb-open gesetzt ist und das Feld im sichtbaren
-  //    Band [offsetTop, offsetTop + Hoehe], im Rechteck seines Dialogs und
-  //    unverdeckt liegt (elementFromPoint). v0.221 setzte bei jedem
-  //    Viewport-Ereignis window.scrollTo(0,0) und nahm das Verschieben zurueck.
+  //    Ein Fall besteht, wenn kb-open gesetzt ist, der Dialog im sichtbaren
+  //    Band [offsetTop, offsetTop + Hoehe] liegt und das Feld darin unverdeckt
+  //    (elementFromPoint). window.scrollTo verschiebt im Nachbau auch den
+  //    Visual Viewport, wie auf iOS: v0.221 setzte bei jedem Viewport-Ereignis
+  //    window.scrollTo(0,0) und nahm so das Verschieben durch iOS zurueck.
   //    Modell ohne iOS-26-Formularleiste: Ob iOS sie vom Visual Viewport
   //    abzieht, ist ein offener Live-Test, keine Annahme dieses Tests.
   let kbFail = 0;
@@ -524,12 +525,20 @@ const EXPECTED_NAMESPACES = [
       const fake = new FakeVV();
       Object.defineProperty(window, 'visualViewport', { configurable: true, get() { return fake; } });
       window.__kb = (h, top, type) => { st.height = h; st.offsetTop = top; fake.dispatchEvent(new Event(type)); };
+      const realScrollTo = window.scrollTo.bind(window);
+      window.scrollTo = function (x, y) {
+        realScrollTo.apply(null, arguments);
+        const top = x && typeof x === 'object' ? (x.top || 0) : (y || 0);
+        if (st.height == null) return;
+        const t = Math.max(0, Math.min(window.innerHeight - st.height, top));
+        if (t !== st.offsetTop) { st.offsetTop = t; fake.dispatchEvent(new Event('scroll')); }
+      };
     });
     const kp = await kctx.newPage();
     kp.on('pageerror', (e) => record('pageerror (Tastatur)', e.message));
     await kp.goto(BASE, { waitUntil: 'load' });
     await kp.evaluate(() => {
-      const key = new Date().toISOString().slice(0, 10);
+      const key = today(); // Ortsdatum wie die App, nicht UTC
       const ing = Array.from({ length: 9 }, (_, i) => ({ name: 'Zutat ' + i, emoji: '🥕', amount: 40, per100: { kcal: 100, protein: 3, carbs: 10, fat: 2 }, kcal: 40, protein: 1, carbs: 4, fat: 1 }));
       const days = {}; days[key] = { meals: { breakfast: [
         { name: 'Haferflocken', emoji: '🥣', amount: 60, per100: { kcal: 370, protein: 13, carbs: 59, fat: 7 }, kcal: 222, protein: 8, carbs: 35, fat: 4 },
@@ -551,8 +560,9 @@ const EXPECTED_NAMESPACES = [
     ];
     // Lage 0: iOS verschiebt nicht. Lage „reveal“: iOS schiebt den Visual
     // Viewport so weit, dass das Feld beim Aufgehen der Tastatur sichtbar wird.
+    // Lage „max“: ganz nach unten verschoben (offsetTop = innerHeight - Hoehe).
     for (const [label, open, sel] of cases) {
-      for (const pan of [0, 'reveal']) {
+      for (const pan of [0, 'reveal', 'max']) {
         const r = await kp.evaluate(async ({ open, sel, pan, VVH }) => {
           const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
           document.querySelectorAll('.ov.open').forEach((o) => o.classList.remove('open'));
@@ -567,17 +577,21 @@ const EXPECTED_NAMESPACES = [
           const b0 = el.getBoundingClientRect();
           await sleep(50);
           __kb(VVH, 0, 'resize'); // Tastatur geht auf
-          const off = pan === 'reveal' ? Math.max(0, Math.min(innerHeight - VVH, Math.round(b0.bottom + 12 - VVH))) : pan;
+          const off = pan === 'max' ? innerHeight - VVH
+            : pan === 'reveal' ? Math.max(0, Math.min(innerHeight - VVH, Math.round(b0.bottom + 12 - VVH))) : pan;
           await sleep(50);
           if (off) __kb(VVH, off, 'scroll');
           await sleep(700); // focusin-Zeitgeber laufen bei 250 und 550 ms
+          const now = visualViewport.offsetTop;
+          if (now !== off) return { err: 'Visual Viewport von ' + off + ' auf ' + now + ' zurueckgesetzt (window.scrollTo?)' };
           const rc = el.getBoundingClientRect();
           const mod = el.closest('.mod');
           const mr = mod ? mod.getBoundingClientRect() : { top: -1e9, bottom: 1e9 };
           const h = document.elementFromPoint(rc.left + rc.width / 2, rc.top + rc.height / 2);
           const inBand = rc.top >= off - 0.5 && rc.bottom <= off + VVH + 0.5;
           const inMod = rc.top >= mr.top - 0.5 && rc.bottom <= mr.bottom + 0.5;
-          const ok = inBand && inMod && (h === el || el.contains(h));
+          const modInBand = !mod || (mr.top >= off - 0.5 && mr.bottom <= off + VVH + 0.5);
+          const ok = inBand && inMod && modInBand && (h === el || el.contains(h));
           return { ok, field: [Math.round(rc.top), Math.round(rc.bottom)], band: [off, off + VVH], mod: [Math.round(mr.top), Math.round(mr.bottom)],
             hit: h === el ? 'Feld' : (h && (h.id || h.className || h.tagName)), kbOpen: document.body.classList.contains('kb-open') };
         }, { open, sel, pan, VVH });
@@ -594,26 +608,46 @@ const EXPECTED_NAMESPACES = [
       openMealDetail('breakfast'); openEditEntry('breakfast', 0);
       const el = document.getElementById('editAmt'); el.focus();
       __kb(VVH, 0, 'resize'); await sleep(700);
-      const diag = !!(window._kbDiag && window._kbDiag.vvh === VVH);
+      const nav = document.querySelector('#mealDetailScreen .bnav');
+      const fab = document.getElementById('feedbackFab');
+      const shown = (x) => !!x && getComputedStyle(x).display !== 'none';
+      const hidden = !shown(nav) && !shown(fab);
       showToast('Probe'); await sleep(400);
       const t = document.querySelector('.tst.show') || document.querySelector('.tst');
       const toastOk = !!t && t.getBoundingClientRect().bottom <= VVH + 0.5;
-      el.blur(); __kb(null, 0, 'resize'); document.querySelectorAll('.ov.open').forEach((o) => o.classList.remove('open'));
+      // Blur bei noch kleinem Viewport (iOS beim Schliessen) und Pinch-Zoom ohne
+      // Fokus duerfen die Messwerte der Tastatur nicht ueberschreiben.
+      el.blur(); __kb(VVH, 0, 'scroll'); __kb(541, 200, 'scroll');
+      const d = window._kbDiag;
+      const diagKept = !!d && d.vvh === VVH && d.el === 'editAmt';
+      __kb(null, 0, 'resize'); document.querySelectorAll('.ov.open').forEach((o) => o.classList.remove('open'));
       await sleep(400);
-      const nav = document.querySelector('#mealDetailScreen .bnav');
-      const fab = document.getElementById('feedbackFab');
-      const back = !document.body.classList.contains('kb-open') && !!nav && getComputedStyle(nav).display !== 'none' && (!fab || getComputedStyle(fab).display !== 'none');
+      const back = !document.body.classList.contains('kb-open') && shown(nav) && (!fab || shown(fab));
       openEditEntry('breakfast', 0); document.getElementById('editAmt').focus(); await sleep(700);
       const hw = !document.body.classList.contains('kb-open');
       if (document.activeElement) document.activeElement.blur();
       closeOv('editOv'); closeMealDetail();
-      return { toastOk, back, hw, diag };
+      // Der 🐛-Weg: Vorschau zeigt die Zeile, die Beschreibung traegt sie.
+      openFeedback();
+      const prev = (document.getElementById('feedbackCtxPreview') || {}).textContent || '';
+      const realFetch = window.fetch;
+      let sent = null;
+      window.fetch = (u, o) => { sent = JSON.parse(o.body); return Promise.resolve({ status: 500, json: () => Promise.resolve({ ok: false }) }); };
+      try {
+        document.getElementById('feedbackText').value = 'Probe';
+        submitFeedback(); await sleep(300);
+      } finally { window.fetch = realFetch; }
+      closeOv('feedbackOv');
+      const fb = prev.includes('Tastatur:   innerHeight') && !!sent && /^Probe\n\n— Tastatur zuletzt \(automatisch, #181\): innerHeight \d+, visualViewport 410 \(oben 0\), .*Feld editAmt/.test(sent.description);
+      return { toastOk, hidden, back, hw, diagKept, fb };
     }, { VVH });
     if (!after.toastOk) { kbFail++; console.log('  x   Tastatur: Toast liegt unter der Tastatur.'); }
+    if (!after.hidden) { kbFail++; console.log('  x   Tastatur: Nav oder 🐛 bleiben bei offener Tastatur sichtbar.'); }
     if (!after.back) { kbFail++; console.log('  x   Tastatur: nach dem Schliessen fehlen Nav oder 🐛, oder kb-open bleibt.'); }
     if (!after.hw) { kbFail++; console.log('  x   Tastatur: kb-open ohne geschrumpften Viewport (Hardware-Tastatur/Desktop).'); }
-    if (!after.diag) { kbFail++; console.log('  x   Tastatur: window._kbDiag (Messwerte fuers 🐛-Feedback) fehlt oder ist falsch.'); }
-    if (!kbFail) console.log(`  ok  Tastatur (#181): ${cases.length} Eingabefelder x 2 Lagen ueber der Tastatur und im Dialog, Toast darueber, Nav/🐛 danach zurueck, ohne Tastatur kein kb-open, Messwerte fuers Feedback.`);
+    if (!after.diagKept) { kbFail++; console.log('  x   Tastatur: window._kbDiag fehlt oder wurde nach dem Schliessen bzw. beim Zoom ueberschrieben.'); }
+    if (!after.fb) { kbFail++; console.log('  x   Tastatur: Messwerte fehlen in der 🐛-Vorschau oder in der gesendeten Beschreibung.'); }
+    if (!kbFail) console.log(`  ok  Tastatur (#181): ${cases.length} Eingabefelder x 3 Lagen, Dialog und Feld ueber der Tastatur, Toast darueber, Nav/🐛 weg und danach zurueck, ohne Tastatur kein kb-open, Messwerte im 🐛-Bericht.`);
     await kctx.close();
   }
 

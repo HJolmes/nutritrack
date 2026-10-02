@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie beschreibt den **aktuellen** Stand, nicht seine Geschichte — die steht in Git und in `js/changelog.js`. Der Stand vor der Kürzung (#258, 132 KB): `git show 0d69ba2:UEBERGABE.md`. Grenzen siehe „Pflege“, `tools/check.js` prüft sie.
 
-**Stand:** v0.300 (2026-10-02) — Branch `claude/nutritrack-fix-viewport`: #181 Ursache belegt (v0.221 setzte bei jedem `visualViewport`-Ereignis `window.scrollTo(0,0)`), heutiger Stand in Chromium-Simulation ohne Fehler; neu Rauchtest-Schritt „Tastatur“ und Tastatur-Messwerte im 🐛-Feedback, Abnahme am iPhone (iOS 26) offen. Entscheidungen 2026-10-01: #260 Workers Paid gebucht, #262 Schwellen freigegeben (Schwangerschaft nicht gebaut, Quelle gesperrt), #264 UPC-E-Bugteil zu, #165 geparkt.
+**Stand:** v0.300 (2026-10-02) — Branch `claude/nutritrack-fix-viewport`: #181 Ursache belegt (v0.221 setzte bei jedem `visualViewport`-Ereignis `window.scrollTo(0,0)`), heutiger Stand in Chromium-Simulation ohne Fehler; neu Rauchtest-Schritt „Tastatur“ und Tastatur-Messwerte im 🐛-Feedback, Abnahme am iPhone (iOS 26) offen. Live-Test v0.294 → Issue #291. Entscheidungen 2026-10-01: #260 Workers Paid gebucht, #264 UPC-E-Bugteil zu (UPC-E-Prüfziffer aus v0.292 und USDA-Daten bleiben), #165 geparkt; 2026-10-02: #262 Schwellen freigegeben, Schwangerschaft nicht gebaut (Quellen gesperrt).
 
 ## URLs
 
@@ -64,7 +64,6 @@
 
 - **v0.300 Tastatur am iPhone (#181, iOS 26, Home-Screen-App):** Mahlzeit-Detail → ＋ → Chat: Eingabezeile steht beim Tippen ganz über der Leiste ⌃ ⌄ ✓, auch nach Senden und bei 5 Zeilen. Suche → Treffer → Gramm, „Hinzufügen ✓“ sichtbar; Eintrag antippen → `editAmt`; Rezept bearbeiten → Gramm der letzten Zutat; Einkauf ✏️ → Menge. Liegt ein Feld unter der Leiste: Tastatur schließen, 🐛 senden → das Issue trägt die Zeile „Tastatur zuletzt“ (Messwerte). Gegenprobe Android/iPad mit Hardware-Tastatur: kein `kb-open`.
 - **Lambda neu einspielen** (Timeout 5 s; `alexa/` hat keine CI): `alexa/lambda/index.js` → Code → Deploy, Zeilenzahl vergleichen. Test-Tab: „sage mein tagebuch ich habe einen apfel gegessen“ → „einen Apfel. Ich habe es in NutriTrack notiert.“
-- **v0.294 Ein Fenster** (Desktop-Browser mit zwei Tabs; Android PWA + Chrome-Tab): zweiter Tab zeigt „NutriTrack ist in einem anderen Fenster geöffnet“, „Hier weiterarbeiten“ → App dort, erster Tab zeigt den Hinweis; ersten Tab schließen, zweiter wartet → startet von selbst. Geteilten Link öffnen, während die App offen ist → nach „Hier weiterarbeiten“ kommt die Import-Vorschau. OneDrive verbinden, während ein zweiter Tab wartet → Verbindung gelingt.
 
 ## Versions-Historie (letzte 5)
 
@@ -74,7 +73,7 @@
 | v0.297 | #283 | „📍 undefined“ im Changelog-Dialog behoben; Marktregel nur Deutschland. |
 | v0.298 | #284 | Sport-Namensfeld: eigene Vorschlagsliste statt `<datalist>`, `suggestExercises` + Test; Dauer aus dem Namen (`splitExerciseDuration`, `cleanExerciseLibrary`). |
 | v0.299 | #289 | #281 `compressOldDays` robust gegen Tage ohne `meals`/Slots und leere Einträge; Test umgestellt. |
-| v0.300 | – | #181 Rauchtest-Schritt „Tastatur“ (nachgebauter `visualViewport`, 6 Felder × 2 Lagen) und Tastatur-Messwerte im 🐛-Feedback; Ursache v0.221 belegt. |
+| v0.300 | – | #181 Rauchtest-Schritt „Tastatur“ (nachgebauter `visualViewport`, 6 Felder × 3 Lagen, `scrollTo` koppelt an den Viewport) und Tastatur-Messwerte im 🐛-Feedback; Ursache v0.221 belegt. |
 
 ---
 

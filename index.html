@@ -3889,10 +3889,12 @@ function _bootApp(){
       _setKbVar('--vvh',Math.round(vv.height)+'px');
       // Messwerte der letzten offenen Tastatur fürs 🐛-Feedback (#181): Der
       // Knopf ist bei offener Tastatur ausgeblendet, der Bericht kommt danach.
-      if(_kbVis){
-        var ae=document.activeElement;
-        window._kbDiag={ih:window.innerHeight,vvh:Math.round(vv.height),top:Math.round(vv.offsetTop),sh:screen.height,kbh:_kbH,
-          el:ae&&_isTextEntry(ae)?String(ae.id||ae.className||ae.tagName).slice(0,40):'',at:Date.now()};
+      // Nur mit fokussiertem Textfeld (wie kb-open): Pinch-Zoom schrumpft den
+      // Visual Viewport auch ohne Tastatur. Das 🐛-Textfeld selbst zählt nicht.
+      var ae=document.activeElement;
+      if(_kbVis&&_isTextEntry(ae)&&ae.id!=='feedbackText'){
+        window._kbDiag={ih:window.innerHeight,vvh:Math.round(vv.height),top:Math.round(vv.offsetTop),sc:Math.round((vv.scale||1)*100)/100,
+          sh:screen.height,kbh:_kbH,el:String(ae.id||ae.className||ae.tagName).slice(0,40),at:Date.now()};
       }
       _syncKbState();
       // Nur beim Aufgehen nachziehen, nicht bei jedem Viewport-Scroll
@@ -7679,8 +7681,8 @@ function _captureFeedbackContext(){
 function _kbDiagText(){
   var d=window._kbDiag;
   if(!d||Date.now()-d.at>10*60*1000)return '';
-  return 'innerHeight '+d.ih+', visualViewport '+d.vvh+' (oben '+d.top+'), screen '+d.sh+', --kbh '+d.kbh+
-    (d.el?', Feld '+d.el:'')+', vor '+Math.round((Date.now()-d.at)/1000)+' s';
+  return 'innerHeight '+d.ih+', visualViewport '+d.vvh+' (oben '+d.top+(d.sc&&d.sc!==1?', Zoom '+d.sc:'')+'), screen '+d.sh+', --kbh '+d.kbh+
+    ', Feld '+d.el+', vor '+Math.round((Date.now()-d.at)/1000)+' s';
 }
 
 function _setFeedbackType(t){

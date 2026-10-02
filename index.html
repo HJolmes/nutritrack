@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.307"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.308"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.307"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.308"></script>
 <script>
   // @ts-check
   (function(){
@@ -1219,7 +1219,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.307</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.308</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -2565,6 +2565,19 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
           <option value="snack">Snacks</option>
         </select>
       </div>
+      <div id="importConfirmAmtRow" style="display:none;margin-bottom:8px;">
+        <label class="lbl" id="importConfirmAmtLbl">Menge</label>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input type="number" inputmode="decimal" min="0" step="any" id="importConfirmAmt" class="sinp" style="flex:1;" oninput="importAmtPreview()">
+          <span id="importConfirmAmtUnit" style="color:var(--mu);font-size:14px;">g</span>
+        </div>
+        <div id="importConfirmAmtInfo" style="font-size:12px;color:var(--mu);margin-top:4px;"></div>
+      </div>
+      <div id="importConfirmActs" style="display:none;">
+        <button type="button" class="svb" data-act="importConfirmTo" data-args='["diary"]' style="margin-top:0;margin-bottom:8px;">🍽 In Mahlzeit übernehmen</button>
+        <button type="button" class="seb" data-act="importConfirmTo" data-args='["plan"]' style="margin-bottom:8px;">📅 In Wochenplan übernehmen</button>
+        <button type="button" class="seb" id="importConfirmLibBtn" data-act="importConfirmTo" data-args='["lib"]' style="margin-bottom:8px;">📚 In Bibliothek speichern</button>
+      </div>
       <button type="button" class="svb" id="importConfirmBtn" data-act="importConfirm" style="margin-top:0;margin-bottom:8px;">✅ Speichern</button>
       <button type="button" class="seb" data-act="importCancel">Abbrechen</button>
     </div>
@@ -3358,14 +3371,14 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.307"></script>
-<script src="js/single-tab.js?v=0.307"></script>
-<script src="js/fooddb.js?v=0.307"></script>
-<script src="js/fooddb-usda.js?v=0.307"></script>
-<script src="js/metdb.js?v=0.307"></script>
-<script src="js/idb-photos.js?v=0.307"></script>
-<script src="js/changelog.js?v=0.307"></script>
-<script src="js/calc.js?v=0.307"></script>
+<script src="js/actions.js?v=0.308"></script>
+<script src="js/single-tab.js?v=0.308"></script>
+<script src="js/fooddb.js?v=0.308"></script>
+<script src="js/fooddb-usda.js?v=0.308"></script>
+<script src="js/metdb.js?v=0.308"></script>
+<script src="js/idb-photos.js?v=0.308"></script>
+<script src="js/changelog.js?v=0.308"></script>
+<script src="js/calc.js?v=0.308"></script>
 <script>
 // @ts-check
 // ════════════════════════════════════════
@@ -3385,7 +3398,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.307';
+var APP_VERSION='0.308';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -5017,10 +5030,8 @@ function openEntryMenu(meal,idx){
   var rec=e.recipeId&&recipes.find(function(r){return r.id===e.recipeId;});
   var ins=(rec&&rec.instructions)||e.instructions||'';
   var body=document.getElementById('entryMenuBody');
-  var shareCall=rec
-    ?'shareRecipe(\''+rec.id+'\')'
-    :'shareEntryAsFood(\''+meal+'\','+idx+')';
-  var shareLabel=rec?'📤 Rezept teilen':'📤 Lebensmittel teilen';
+  var shareCall='shareEntryAsFood(\''+meal+'\','+idx+')';
+  var shareLabel=e.isRecipe?'📤 Rezept teilen':'📤 Lebensmittel teilen';
   body.innerHTML=
     '<button type="button" class="svb" style="margin-bottom:8px;" onclick="closeOv(\'entryMenuOv\');openEditEntry(\''+meal+'\','+idx+')">✏️ Eintrag bearbeiten</button>'
     +'<button type="button" class="seb" style="margin-bottom:8px;" onclick="closeOv(\'entryMenuOv\');'+shareCall+'">'+shareLabel+'</button>'
@@ -5338,7 +5349,7 @@ function shareRecipe(id){
   var rec=recipes.find(function(r){return r.id===id;});
   if(!rec){showToast('Rezept nicht gefunden');return;}
   var ings=rec.ingredients||[];
-  var payload={t:'r',n:rec.name,em:rec.emoji||'📋',i:ings.map(function(ing){return{n:ing.name,em:ing.emoji,a:ing.amount,p:{k:Math.round(ing.per100.kcal),pr:Math.round((ing.per100.protein||0)*10)/10,c:Math.round((ing.per100.carbs||0)*10)/10,f:Math.round((ing.per100.fat||0)*10)/10}};})};
+  var payload={t:'r',n:rec.name,em:rec.emoji||'📋',i:ings.map(_encIng)};
   if(rec.instructions)payload.ins=rec.instructions;
   var t=ingTotal(ings);
   var summary=ings.length+' Zutat'+(ings.length===1?'':'en')+' · '+Math.round(t.kcal)+' kcal';
@@ -5346,11 +5357,14 @@ function shareRecipe(id){
 }
 // Ein Tagebuch-Eintrag → Share-Format. Gemeinsame Quelle für Mahlzeit, Tag und
 // Zeitraum: Wer hier etwas ändert, ändert es für alle drei Wege gleichzeitig.
+function _encIng(ing){return{n:ing.name,em:ing.emoji,a:ing.amount,p:_shPer100Enc(ing.per100)};}
 function _encEntry(e){
   if(e.isRecipe){
-    return{t:'r',n:e.name,em:e.emoji,p:e.portions||1,i:(e.ingredients||[]).map(function(ing){return{n:ing.name,em:ing.emoji,a:ing.amount,p:{k:Math.round(ing.per100.kcal),pr:Math.round((ing.per100.protein||0)*10)/10,c:Math.round((ing.per100.carbs||0)*10)/10,f:Math.round((ing.per100.fat||0)*10)/10}};})};
+    return{t:'r',n:e.name,em:e.emoji,p:e.portions||1,i:(e.ingredients||[]).map(_encIng)};
   }
-  return{t:'f',n:e.name,em:e.emoji,a:e.amount,p:{k:Math.round(e.per100&&e.per100.kcal||e.kcal||0),pr:Math.round((e.per100&&e.per100.protein||e.protein||0)*10)/10,c:Math.round((e.per100&&e.per100.carbs||e.carbs||0)*10)/10,f:Math.round((e.per100&&e.per100.fat||e.fat||0)*10)/10}};
+  // Alteintrag ohne per100: Gesamtwerte als p, ohne Menge → Empfänger rechnet 100 g = Gesamt.
+  if(!e.per100)return{t:'f',n:e.name,em:e.emoji,p:_shPer100Enc(e)};
+  return{t:'f',n:e.name,em:e.emoji,a:e.amount,p:_shPer100Enc(e.per100)};
 }
 // Alle Mahlzeiten eines Tages im Share-Format; leere Mahlzeiten fallen raus.
 // Liest DIREKT aus S.days (nicht getDay()), damit auch andere Tage als der
@@ -5454,18 +5468,30 @@ function shareRangeGo(){
 function shareLibFood(filteredIdx){
   var f=(window._libFoods||[])[filteredIdx];
   if(!f){showToast('Lebensmittel nicht gefunden');return;}
-  var payload={t:'f',n:f.name,em:f.emoji||'🍽',p:{k:Math.round(f.per100.kcal||0),pr:Math.round((f.per100.protein||0)*10)/10,c:Math.round((f.per100.carbs||0)*10)/10,f:Math.round((f.per100.fat||0)*10)/10}};
+  var payload={t:'f',n:f.name,em:f.emoji||'🍽',p:_shPer100Enc(f.per100)};
+  var mem=recallPortion(f.name);if(mem)payload.a=mem;
   var summary=Math.round(f.per100.kcal||0)+' kcal · '+Math.round(f.per100.protein||0)+'g P · '+Math.round(f.per100.carbs||0)+'g KH · '+Math.round(f.per100.fat||0)+'g F (pro 100g)';
   _shareItem(payload,f.name,summary);
 }
+// Ein Tagebuch-Eintrag so, wie er gegessen wurde: Menge bzw. Portionen und
+// Zutaten reisen mit. Ein Rezept-Eintrag bleibt Rezept — auch ohne Verweis in
+// die Bibliothek (Import, Wochenplan); vorher gingen dessen Gesamtwerte als
+// „pro 100 g“ raus, und beim Empfänger standen 100 g = ganzes Gericht.
 function shareEntryAsFood(meal,idx){
   var e=getDay().meals[meal][idx];
   if(!e){showToast('Eintrag nicht gefunden');return;}
-  if(e.isRecipe&&e.recipeId){shareRecipe(e.recipeId);return;}
-  var per100=e.per100||{kcal:e.kcal||0,protein:e.protein||0,carbs:e.carbs||0,fat:e.fat||0};
-  var payload={t:'f',n:e.name,em:e.emoji||'🍽',p:{k:Math.round(per100.kcal||0),pr:Math.round((per100.protein||0)*10)/10,c:Math.round((per100.carbs||0)*10)/10,f:Math.round((per100.fat||0)*10)/10}};
-  var summary=Math.round(per100.kcal||0)+' kcal · '+Math.round(per100.protein||0)+'g P · '+Math.round(per100.carbs||0)+'g KH · '+Math.round(per100.fat||0)+'g F (pro 100g)';
-  _shareItem(payload,e.name,summary);
+  var payload=_encEntry(e);
+  payload.em=payload.em||(e.isRecipe?'📋':'🍽');
+  var tot=Math.round(e.kcal||0)+' kcal';
+  if(payload.t==='r'){
+    var rec=e.recipeId&&recipes.find(function(r){return r.id===e.recipeId;});
+    var ins=(rec&&rec.instructions)||e.instructions||'';
+    if(ins)payload.ins=ins;
+    var pp=e.portions||1;
+    _shareItem(payload,e.name,(payload.i||[]).length+' Zutaten · '+pp+' Portion'+(pp===1?'':'en')+' · '+tot);
+    return;
+  }
+  _shareItem(payload,e.name,(payload.a?Math.round(payload.a)+' g · ':'')+tot);
 }
 
 // ─── IMPORT: VORSCHAU + BESTÄTIGUNG ───
@@ -5477,7 +5503,7 @@ var _pendingImportMeta=null;
 // statt stiller 100 g (#246).
 function _materializeIng(x,em){
   var a=_shIngA(x.a);
-  var ing={name:x.n,emoji:safeEmoji(em,'🍽'),amount:a,per100:{kcal:x.p.k||0,protein:x.p.pr||0,carbs:x.p.c||0,fat:x.p.f||0,sugar:0,fiber:0,salt:0}};
+  var ing={name:x.n,emoji:safeEmoji(em,'🍽'),amount:a,per100:_shPer100Dec(x.p)};
   if(!(a>0))ing.missingGrams=true;
   return ing;
 }
@@ -5486,7 +5512,7 @@ function _materializeRecipe(d){
   return{id:Date.now().toString(),name:d.n||'Importiertes Rezept',emoji:safeEmoji(d.em||d.e,'📋'),ingredients:ings,instructions:d.ins||''};
 }
 function _materializeFood(d){
-  return{name:d.n||'Importiertes Lebensmittel',emoji:safeEmoji(d.em||d.e,'🍽'),per100:{kcal:d.p.k||0,protein:d.p.pr||0,carbs:d.p.c||0,fat:d.p.f||0,sugar:0,fiber:0,salt:0}};
+  return{name:d.n||'Importiertes Lebensmittel',emoji:safeEmoji(d.em||d.e,'🍽'),per100:_shPer100Dec(d.p)};
 }
 function _materializeMealEntries(d){
   return _materializeEntryList(d.e||[]);
@@ -5498,7 +5524,7 @@ function _materializeEntryList(arr){
       var t=ingTotal(ings);
       return Object.assign({name:x.n,emoji:safeEmoji(x.em,'📋'),isRecipe:true,recipeId:null,portions:x.p||1,ingredients:ings},scaleNutrients(t,x.p||1));
     }
-    var per100={kcal:x.p.k||0,protein:x.p.pr||0,carbs:x.p.c||0,fat:x.p.f||0,sugar:0,fiber:0,salt:0};
+    var per100=_shPer100Dec(x.p);
     var fa=_shFoodA(x.a);
     return Object.assign({name:x.n,emoji:safeEmoji(x.em,'🍽'),amount:fa,per100:per100},scaleNutrients(per100,fa/100));
   });
@@ -5540,8 +5566,11 @@ function _previewImport(d,meta){
   var dayRow=document.getElementById('importConfirmDayRow');
   var modeRow=document.getElementById('importConfirmModeRow');
   var btn=document.getElementById('importConfirmBtn');
+  var amtRow=document.getElementById('importConfirmAmtRow');
+  var actsEl=document.getElementById('importConfirmActs');
   insEl.style.display='none';mealRow.style.display='none';
   pickWrap.style.display='none';dayRow.style.display='none';modeRow.style.display='none';
+  amtRow.style.display='none';actsEl.style.display='none';btn.style.display='';
   pickList.innerHTML='';
   var fromWho=(meta&&meta.from)?meta.from:'';
   var viaPartner=!!(meta&&meta.packetId);
@@ -5555,14 +5584,15 @@ function _previewImport(d,meta){
     summaryEl.textContent=ings.length+' Zutat'+(ings.length===1?'':'en')+' · '+Math.round(totalK)+' kcal';
     detailEl.innerHTML=ings.map(function(i){return esc(i.em||'🍽')+' '+esc(i.n)+' <span style="color:var(--mu);">('+esc(_shIngA(i.a))+'g'+(_shIngA(i.a)>0?'':' ⚠️')+')</span>';}).join(' · ');
     if(d.ins){insEl.style.display='block';insEl.textContent=d.ins.length>240?d.ins.substring(0,240)+'…':d.ins;}
-    btn.textContent='✅ In Bibliothek speichern';
+    summaryEl.textContent=ings.length+' Zutat'+(ings.length===1?'':'en')+' · '+Math.round(totalK)+' kcal je Portion';
+    _importSingleRows(d,'Portionen',d.p||1,'Portion(en)','📚 Als Rezept speichern');
   } else if(d.t==='f'){
     titleEl.textContent='📥 Lebensmittel importieren?';
     subEl.textContent=viaPartner?('Von '+fromWho+' gesendet'):'Du hast einen Lebensmittel-Link geöffnet';
     nameEl.textContent=(d.em||'🍽')+' '+d.n;
-    summaryEl.textContent='Werte pro 100g';
-    detailEl.innerHTML='kcal: <strong>'+esc(d.p.k||0)+'</strong> · Protein: <strong>'+esc(d.p.pr||0)+'g</strong> · KH: <strong>'+esc(d.p.c||0)+'g</strong> · Fett: <strong>'+esc(d.p.f||0)+'g</strong>';
-    btn.textContent='✅ In Bibliothek speichern';
+    summaryEl.textContent=d.a?('Gesendet: '+Math.round(_shFoodA(d.a))+' g · '+Math.round((d.p.k||0)*_shFoodA(d.a)/100)+' kcal'):'Werte pro 100g';
+    detailEl.innerHTML='Pro 100 g: kcal <strong>'+esc(d.p.k||0)+'</strong> · Protein <strong>'+esc(d.p.pr||0)+'g</strong> · KH <strong>'+esc(d.p.c||0)+'g</strong> · Fett <strong>'+esc(d.p.f||0)+'g</strong>';
+    _importSingleRows(d,'Menge',Math.round(_shFoodA(d.a)),'g','📚 Als Lebensmittel speichern');
   } else if(d.t==='m'){
     var entries=d.e||[];
     var totalKcal=entries.reduce(function(a,e){
@@ -5645,6 +5675,119 @@ function _pickedValues(attr){
     if(cb.checked&&cb.getAttribute(attr)!==null)out.push(cb.getAttribute(attr));
   });
   return out;
+}
+
+// ─── EINZELNES LEBENSMITTEL / REZEPT ÜBERNEHMEN ───
+// Drei Wege statt nur „In Bibliothek“: ins Tagebuch (Mahlzeit), in den
+// Wochenplan oder in die Bibliothek. Menge bzw. Portionen sind vom Absender
+// vorbelegt. Nach Tagebuch/Wochenplan fragt die App, ob es zusätzlich in die
+// Bibliothek soll.
+function _importSingleRows(d,lbl,val,unit,libLabel){
+  document.getElementById('importConfirmAmtRow').style.display='block';
+  document.getElementById('importConfirmAmtLbl').textContent=lbl;
+  document.getElementById('importConfirmAmtUnit').textContent=unit;
+  /** @type {HTMLInputElement} */ (document.getElementById('importConfirmAmt')).value=String(val);
+  var mealRow=document.getElementById('importConfirmMealRow');
+  mealRow.style.display='block';
+  /** @type {HTMLSelectElement} */ (document.getElementById('importConfirmMealTarget')).value=_importGuessMeal();
+  var dayRow=document.getElementById('importConfirmDayRow');
+  dayRow.style.display='block';
+  var sel=document.getElementById('importConfirmDayTarget');
+  var t=today(),opts=[],seen={};
+  var add=function(k,label){if(seen[k])return;seen[k]=1;opts.push('<option value="'+esc(k)+'">'+esc(label)+'</option>');};
+  if(S.currentDate&&S.currentDate!==t)add(S.currentDate,fmtDate(S.currentDate)+' (angezeigter Tag)');
+  add(t,'Heute');
+  for(var i=1;i<=6;i++){var k=addDays(t,i);add(k,fmtDate(k));}
+  sel.innerHTML=opts.join('');
+  /** @type {HTMLSelectElement} */ (sel).value=S.currentDate||t;
+  document.getElementById('importConfirmLibBtn').textContent=libLabel;
+  document.getElementById('importConfirmActs').style.display='block';
+  document.getElementById('importConfirmBtn').style.display='none';
+  importAmtPreview();
+}
+function _importGuessMeal(){
+  var h=new Date().getHours();
+  return h<11?'breakfast':h<15?'lunch':h<21?'dinner':'snack';
+}
+function _importAmt(){
+  var v=parseFloat(String(/** @type {HTMLInputElement} */ (document.getElementById('importConfirmAmt')).value).replace(',','.'));
+  return v>0?v:0;
+}
+function importAmtPreview(){
+  var d=_pendingImport,el=document.getElementById('importConfirmAmtInfo');
+  if(!d||!el)return;
+  var v=_importAmt();
+  if(d.t==='f')el.textContent=Math.round((d.p.k||0)*v/100)+' kcal';
+  else if(d.t==='r'){
+    var k=(d.i||[]).reduce(function(s,i){return s+(i.p.k||0)*_shIngA(i.a)/100;},0);
+    el.textContent=Math.round(k*v)+' kcal';
+  }
+}
+// Rezept-Eintrag bzw. Lebensmittel-Eintrag in der gewählten Menge.
+function _importSingleEntry(d,amt){
+  if(d.t==='r'){
+    var x=JSON.parse(JSON.stringify(d));x.p=amt;
+    return _materializeEntryList([x])[0];
+  }
+  var f=_materializeFood(d);
+  return Object.assign({name:f.name,emoji:f.emoji,amount:amt,per100:f.per100},scaleNutrients(f.per100,amt/100));
+}
+// In die Bibliothek: Rezept (mit Dubletten-Frage) oder eigenes Lebensmittel.
+// Gibt die neue Rezept-ID zurück, true bei Lebensmittel, sonst null.
+function _importToLibrary(d,amt){
+  if(d.t==='r'){
+    var rec=_materializeRecipe(d);
+    if(window.NTPlan&&NTPlan.confirmNotDuplicate&&!NTPlan.confirmNotDuplicate(rec.name,rec.ingredients||[]))return null;
+    recipes.unshift(rec);saveX();
+    return rec.id;
+  }
+  var f=_materializeFood(d);
+  var low=f.name.toLowerCase();
+  var ex=customFoods.filter(function(c){return c&&String(c.name||'').toLowerCase()===low;})[0];
+  if(ex)ex.per100=f.per100;else customFoods.unshift(f);
+  if(amt>0)rememberPortion(f.name,amt);
+  saveX();
+  return true;
+}
+function importConfirmTo(where){
+  var d=_pendingImport;if(!d||(d.t!=='f'&&d.t!=='r'))return;
+  var amt=_importAmt();
+  if(!(amt>0)){showToast(d.t==='r'?'Portionen eingeben':'Menge eingeben');return;}
+  var what=d.t==='r'?'Rezept':'Lebensmittel';
+  var nm=d.n||what;
+  if(where==='lib'){
+    if(_importToLibrary(d,amt)===null)return;
+    showToast('✅ '+what+' „'+nm+'“ gespeichert');
+  } else {
+    var meal=/** @type {HTMLSelectElement} */ (document.getElementById('importConfirmMealTarget')).value||'breakfast';
+    var key=/** @type {HTMLSelectElement} */ (document.getElementById('importConfirmDayTarget')).value||S.currentDate||today();
+    var entry=_importSingleEntry(d,amt);
+    var dayLbl=key===today()?'heute':fmtDate(key);
+    if(where==='plan'){
+      if(!window.NTPlan||!NTPlan.addSnapshot){showToast('Wochenplan nicht verfügbar');return;}
+      var ings=entry.isRecipe?entry.ingredients:[{name:entry.name,emoji:entry.emoji,amount:amt,per100:entry.per100}];
+      NTPlan.addSnapshot(key,meal,entry.name,entry.emoji,ings,entry.isRecipe?amt:1);
+      showToast('📅 '+nm+' für '+MEAL_NAMES[meal]+' '+dayLbl+' eingeplant');
+    } else {
+      var day=_ensureDayForImport(key);
+      day.meals[meal].push(entry);
+      saveS();
+      showToast('✅ '+nm+' in '+MEAL_NAMES[meal]+' '+dayLbl+' übernommen');
+    }
+    var q=d.t==='r'?'„'+nm+'“ zusätzlich als Rezept in der Bibliothek speichern?':'„'+nm+'“ zusätzlich als eigenes Lebensmittel speichern?';
+    if(confirm(q)){
+      var id=_importToLibrary(d,amt);
+      if(typeof id==='string'&&where==='diary')entry.recipeId=id;
+      if(id!==null){saveS();showToast('✅ Auch in der Bibliothek gespeichert');}
+    }
+  }
+  if(_pendingImportMeta&&_pendingImportMeta.packetId&&window.NTPartner){
+    NTPartner.markDone(_pendingImportMeta.packetId);
+  }
+  _pendingImport=null;_pendingImportMeta=null;
+  closeOv('importConfirmOv');
+  if(typeof renderAll==='function')renderAll();
+  if(typeof renderLibrary==='function')renderLibrary();
 }
 
 // Abbrechen muss die Vorschau-Daten mitnehmen – sonst hinge die nächste
@@ -8007,30 +8150,30 @@ function axTestSync(){
 }
 
 </script>
-<script src="js/ampel.js?v=0.307"></script>
-<script src="picker.js?v=0.307"></script>
-<script src="js/health-sync.js?v=0.307"></script>
-<script src="js/sync-core.js?v=0.307"></script>
-<script src="js/baby.js?v=0.307"></script>
-<script src="js/baby-meds.js?v=0.307"></script>
-<script src="js/baby-growth-data.js?v=0.307"></script>
-<script src="js/baby-growth.js?v=0.307"></script>
-<script src="js/baby-week.js?v=0.307"></script>
-<script src="js/baby-milestones.js?v=0.307"></script>
-<script src="js/baby-midwife.js?v=0.307"></script>
-<script src="js/shopping.js?v=0.307"></script>
-<script src="js/partner.js?v=0.307"></script>
-<script src="js/alexa-sync.js?v=0.307"></script>
-<script src="js/dashboard.js?v=0.307"></script>
-<script src="js/features.js?v=0.307"></script>
-<script src="js/mealplan.js?v=0.307"></script>
-<script src="js/onedrive.js?v=0.307"></script>
-<script src="js/autosave.js?v=0.307"></script>
-<script src="js/recurring.js?v=0.307"></script>
-<script src="js/stats.js?v=0.307"></script>
-<script src="js/reminders.js?v=0.307"></script>
-<script src="js/templates.js?v=0.307"></script>
-<script src="js/offline-queue.js?v=0.307"></script>
+<script src="js/ampel.js?v=0.308"></script>
+<script src="picker.js?v=0.308"></script>
+<script src="js/health-sync.js?v=0.308"></script>
+<script src="js/sync-core.js?v=0.308"></script>
+<script src="js/baby.js?v=0.308"></script>
+<script src="js/baby-meds.js?v=0.308"></script>
+<script src="js/baby-growth-data.js?v=0.308"></script>
+<script src="js/baby-growth.js?v=0.308"></script>
+<script src="js/baby-week.js?v=0.308"></script>
+<script src="js/baby-milestones.js?v=0.308"></script>
+<script src="js/baby-midwife.js?v=0.308"></script>
+<script src="js/shopping.js?v=0.308"></script>
+<script src="js/partner.js?v=0.308"></script>
+<script src="js/alexa-sync.js?v=0.308"></script>
+<script src="js/dashboard.js?v=0.308"></script>
+<script src="js/features.js?v=0.308"></script>
+<script src="js/mealplan.js?v=0.308"></script>
+<script src="js/onedrive.js?v=0.308"></script>
+<script src="js/autosave.js?v=0.308"></script>
+<script src="js/recurring.js?v=0.308"></script>
+<script src="js/stats.js?v=0.308"></script>
+<script src="js/reminders.js?v=0.308"></script>
+<script src="js/templates.js?v=0.308"></script>
+<script src="js/offline-queue.js?v=0.308"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

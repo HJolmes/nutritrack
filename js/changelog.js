@@ -2,6 +2,10 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.308',items:[
+    {icon:'📤',text:'<b>Teilen mit Menge und Portionen</b>: Ein geteilter Eintrag kommt mit derselben Menge bzw. denselben Portionen an, Rezepte bleiben Rezepte (vorher stand beim Empfänger 100 g = ganzes Gericht). Zucker, Ballaststoffe und Salz werden mitgeschickt.',where:'Eintrag antippen → 📤'},
+    {icon:'📥',text:'<b>Empfangenes direkt übernehmen</b>: Ein geteiltes Lebensmittel oder Rezept lässt sich jetzt in eine Mahlzeit, in den Wochenplan oder in die Bibliothek übernehmen – Menge und Tag wählbar. Danach fragt die App, ob es zusätzlich in der Bibliothek landen soll.',where:'📬 Postfach / 📥 Import'}
+  ]},
   {v:'0.306',items:[
     {icon:'📷',text:'<b>Foto-Analyse verliert keine Zutaten mehr</b>: Antwortete die KI mit einer reinen Zutatenliste statt mit Gericht und Zutaten, kam bei mehr als einer Zutat eine leere Liste an. Jetzt erscheinen alle erkannten Zutaten.',where:'＋ → 📷 Foto'}
   ]},

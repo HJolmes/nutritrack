@@ -209,6 +209,22 @@ function dbPer100(f){
 // Rezeptzutat ohne Menge (fehlt/null/0) = 0 g, denn ingTotal() rechnet (amount||0);
 // Lebensmittel-Eintrag (t:'f') ohne Menge = 100 g, denn _encEntry schreibt bei
 // Alteinträgen ohne per100 die Gesamtwerte als p, und der Editor nimmt (amount||100).
+// Naehrwerte pro 100 g ins Share-Format und zurueck. Zucker (g), Ballaststoffe (b)
+// und Salz (l) reisen nur mit, wenn sie > 0 sind — aeltere Sendungen ohne sie
+// lesen sich damit wie bisher als 0.
+function _shPer100Enc(p){
+  p=p||{};
+  var r1=function(v){return Math.round((v||0)*10)/10;};
+  var o={k:Math.round(p.kcal||0),pr:r1(p.protein),c:r1(p.carbs),f:r1(p.fat)};
+  if(r1(p.sugar)>0)o.g=r1(p.sugar);
+  if(r1(p.fiber)>0)o.b=r1(p.fiber);
+  if(Math.round((p.salt||0)*100)>0)o.l=Math.round((p.salt||0)*100)/100;
+  return o;
+}
+function _shPer100Dec(p){
+  p=p||{};
+  return{kcal:p.k||0,protein:p.pr||0,carbs:p.c||0,fat:p.f||0,sugar:p.g||0,fiber:p.b||0,salt:p.l||0};
+}
 function _shIngA(a){return parseFloat(a)||0;}
 function _shFoodA(a){return parseFloat(a)||100;}
 function _mmKcal(mm){

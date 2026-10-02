@@ -281,7 +281,7 @@ if (!mCore) {
 // Kommentare ausblenden (Abschnitte 5 und 5d): Ein Doku-Kommentar, der die
 // Schreibweise erklaert ("<button data-act=… statt onclick=foo()"), ist kein
 // Aufruf. Der Lexer steht in tools/js-scan.js (auch fuer tools/smoke.js).
-const { blankOut, stripComments, handlerCalls } = require('./js-scan');
+const { blankOut, stripComments, templateSpans, handlerCalls } = require('./js-scan');
 
 // ── 5. Handler-Ziele (on*, data-act) in generiertem HTML ──────────────────
 // Der Rauchtest (tools/smoke.js) prueft nur, was zur Pruefzeit im DOM steht.
@@ -294,23 +294,33 @@ const { blankOut, stripComments, handlerCalls } = require('./js-scan');
   // In index.html HTML-Kommentare im Markup und JS-Kommentare in den
   // Inline-Scripts ausblenden (Zeichen durch Leerzeichen, Zeilen bleiben): Der
   // Kommentar ueber openPickerForOpenMeal() zitiert ein
-  // `onclick="openPicker('breakfast')"`. Die Script-Bereiche merken: Ein
-  // Handler dort steht in einem JS-String (Verkettung, \' als Anfuehrung),
-  // einer im Markup nicht.
-  const scriptRanges = [];
+  // `onclick="openPicker('breakfast')"`.
+  // Je Datei merken, wo JS steht und wo darin Template-Text: Ein Handler in
+  // einem '…'-String hat Verkettungen ('+id+') und \' als Anfuehrung, einer im
+  // Markup oder in einem `…`-Template nicht.
+  const jsStringAt = {};
+  const inSpan = (spans, at) => spans.some(([from, to]) => at >= from && at < to);
   let idxNoComments = '';
   {
     let last = 0;
+    const scripts = [], tpl = [];
     for (const mb of indexHtml.matchAll(/(<script(?![^>]*\bsrc=)[^>]*>)([\s\S]*?)<\/script>/g)) {
       const from = mb.index + mb[1].length, to = from + mb[2].length;
       idxNoComments += indexHtml.slice(last, from).replace(/<!--[\s\S]*?-->/g, blankOut) + stripComments(mb[2]);
-      scriptRanges.push([from, to]);
+      scripts.push([from, to]);
+      for (const [a, b] of templateSpans(mb[2])) tpl.push([from + a, from + b]);
       last = to;
     }
     idxNoComments += indexHtml.slice(last).replace(/<!--[\s\S]*?-->/g, blankOut);
+    jsStringAt['index.html'] = (at) => inSpan(scripts, at) && !inSpan(tpl, at);
   }
   const sources = [['index.html', idxNoComments]];
-  for (const f of jsFiles) { if (!f.includes('zxing')) sources.push([f, stripComments(read(f))]); }
+  for (const f of jsFiles) {
+    if (f.includes('zxing')) continue;
+    const code = read(f), tpl = templateSpans(code);
+    sources.push([f, stripComments(code)]);
+    jsStringAt[f] = (at) => !inSpan(tpl, at);
+  }
 
   // Global verfuegbar ist alles, was NICHT in einer IIFE gekapselt ist:
   // das Inline-Script von index.html und picker.js (das bewusst nie gekapselt
@@ -355,7 +365,7 @@ const { blankOut, stripComments, handlerCalls } = require('./js-scan');
     for (const h of code.matchAll(handlerRe)) {
       handlerAttrs++;
       handlerKinds[h[1]] = (handlerKinds[h[1]] || 0) + 1;
-      const inJsString = file !== 'index.html' || scriptRanges.some(([from, to]) => h.index >= from && h.index < to);
+      const inJsString = jsStringAt[file](h.index);
       const where = `${file}:${code.slice(0, h.index).split('\n').length}: ${h[1]}`;
       for (const name of handlerCalls(h[4], { inJsString })) {
         const parts = name.split('.');

@@ -34,7 +34,7 @@ Reine Doku-Änderungen (`UEBERGABE.md`, `CLAUDE.md`, `AGENTS.md`, README) dürfe
 
 ```bash
 npm ci                 # Werkzeuge (Playwright, TypeScript) aus package-lock.json
-node tools/check.js    # Versionen, Syntax, CORE_ASSETS, on*-Handler/data-act auflösbar, IDs eindeutig, keine dependencies, Kopplung
+node tools/check.js    # Versionen, Syntax, CORE_ASSETS, on*-Handler/data-act/NTx.name auflösbar, IDs eindeutig, keine dependencies, Kopplung
 npm run typecheck      # tsc --noEmit über picker.js, js/*.js und das Inline-JS (checkJs), Zeilen = Zeilen in index.html
 npm test               # node --test: Rechenkern js/calc.js ohne Browser
 node tools/smoke.js    # App in Chromium laden (braucht: npx http-server@14.1.1 -p 8099 -s . &)

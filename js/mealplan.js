@@ -889,11 +889,11 @@ function newFromLink(){
   _from=null;
   closeOv('recNewOv');closeOv('planOv');closeOv('libraryOv');
   setTimeout(function(){
-    if(typeof openPicker!=='function')return;
-    openPicker(null,'link');
+    if(!window.NTPicker)return;
+    NTPicker.openPicker(null,'link');
     // NACH openPicker: der Dialog setzt seinen Zustand beim Oeffnen zurueck.
     window._pickerRecipeOnly=true;
-    if(typeof _pickerRecipeOnlyUI==='function')_pickerRecipeOnlyUI();
+    NTPicker._pickerRecipeOnlyUI();
   },200);
 }
 
@@ -1004,7 +1004,7 @@ function analyze(){
     },
     function(err){
       btn.disabled=false;btn.textContent='📷 Erneut auslesen';
-      setStatus(typeof pickerFriendlyAiError==='function'?pickerFriendlyAiError(err):('Fehler: '+err),true);
+      setStatus(window.NTPicker?NTPicker.pickerFriendlyAiError(err):('Fehler: '+err),true);
     }
   );
 }
@@ -1025,8 +1025,8 @@ function showResult(){
   if(po)po.value=(_photoMeta&&_photoMeta.portionen)||4;
   var ins=document.getElementById('recPhotoIns');
   if(ins&&!ins.value.trim())ins.value=(_photoMeta&&_photoMeta.anleitung)||'';
-  if(typeof pickerRenderIngList==='function'){
-    pickerRenderIngList('recPhotoIngList',_photoIngs,
+  if(window.NTPicker){
+    NTPicker.pickerRenderIngList('recPhotoIngList',_photoIngs,
       function(i,v){_photoIngs[i].amount=parseFloat(v)||0;_photoIngs[i].missingGrams=false;updateTotal();},
       function(i){_photoIngs.splice(i,1);showResult();}
     );

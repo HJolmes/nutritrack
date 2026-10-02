@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.304"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.305"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.304"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.305"></script>
 <script>
   // @ts-check
   (function(){
@@ -1004,7 +1004,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
   <div class="bnav">
     <button type="button" class="ni on" data-tab="main" data-act="switchTab" data-args='["main"]'><span>🏠</span>Heute</button>
     <button type="button" class="ni" data-tab="history" data-act="switchTab" data-args='["history"]'><span>📅</span>Verlauf</button>
-    <div class="cw"><button type="button" class="cb" data-act="openPicker" data-args='[null]'>＋</button></div>
+    <div class="cw"><button type="button" class="cb" data-act="NTPicker.openPicker" data-args='[null]'>＋</button></div>
     <button type="button" class="ni" data-tab="trends" data-act="switchTab" data-args='["trends"]'><span>📈</span>Trends</button>
     <button type="button" class="ni" data-tab="more" data-act="switchTab" data-args='["more"]'><span>☰</span>Mehr</button>
   </div>
@@ -1077,7 +1077,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
   <div class="bnav">
     <button type="button" class="ni" data-tab="main" data-act="switchTab" data-args='["main"]'><span>🏠</span>Heute</button>
     <button type="button" class="ni" data-tab="history" data-act="switchTab" data-args='["history"]'><span>📅</span>Verlauf</button>
-    <div class="cw"><button type="button" class="cb" data-act="openPicker" data-args='[null]'>＋</button></div>
+    <div class="cw"><button type="button" class="cb" data-act="NTPicker.openPicker" data-args='[null]'>＋</button></div>
     <button type="button" class="ni on" data-tab="trends" data-act="switchTab" data-args='["trends"]'><span>📈</span>Trends</button>
     <button type="button" class="ni" data-tab="more" data-act="switchTab" data-args='["more"]'><span>☰</span>Mehr</button>
   </div>
@@ -1103,7 +1103,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
   <div class="bnav">
     <button type="button" class="ni" data-tab="main" data-act="switchTab" data-args='["main"]'><span>🏠</span>Heute</button>
     <button type="button" class="ni on" data-tab="history" data-act="switchTab" data-args='["history"]'><span>📅</span>Verlauf</button>
-    <div class="cw"><button type="button" class="cb" data-act="openPicker" data-args='[null]'>＋</button></div>
+    <div class="cw"><button type="button" class="cb" data-act="NTPicker.openPicker" data-args='[null]'>＋</button></div>
     <button type="button" class="ni" data-tab="trends" data-act="switchTab" data-args='["trends"]'><span>📈</span>Trends</button>
     <button type="button" class="ni" data-tab="more" data-act="switchTab" data-args='["more"]'><span>☰</span>Mehr</button>
   </div>
@@ -1219,14 +1219,14 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.304</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.305</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
   <div class="bnav">
     <button type="button" class="ni" data-tab="main" data-act="switchTab" data-args='["main"]'><span>🏠</span>Heute</button>
     <button type="button" class="ni" data-tab="history" data-act="switchTab" data-args='["history"]'><span>📅</span>Verlauf</button>
-    <div class="cw"><button type="button" class="cb" data-act="openPicker" data-args='[null]'>＋</button></div>
+    <div class="cw"><button type="button" class="cb" data-act="NTPicker.openPicker" data-args='[null]'>＋</button></div>
     <button type="button" class="ni" data-tab="trends" data-act="switchTab" data-args='["trends"]'><span>📈</span>Trends</button>
     <button type="button" class="ni on" data-tab="more" data-act="switchTab" data-args='["more"]'><span>☰</span>Mehr</button>
   </div>
@@ -1237,20 +1237,20 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
-      <button type="button" class="mcl" data-act="closePicker">✕</button>
+      <button type="button" class="mcl" data-act="NTPicker.closePicker">✕</button>
       <div class="mti" id="pickerTitle">Zutat hinzufügen</div>
       <div class="msu" id="pickerSub">Lokal + Online kombiniert</div>
     </div>
     <div class="mbd">
       <!-- Tabs -->
       <div class="picker-tabs">
-        <button type="button" class="picker-tab" id="ptab-chat" data-act="pickerSetTab" data-args='["chat"]'><span>💬</span>Chat</button>
-        <button type="button" class="picker-tab act" id="ptab-search" data-act="pickerSetTab" data-args='["search"]'><span>🔍</span>Suche</button>
-        <button type="button" class="picker-tab" id="ptab-recent" data-act="pickerSetTab" data-args='["recent"]'><span>⭐</span>Zuletzt</button>
-        <button type="button" class="picker-tab" id="ptab-foto" data-act="pickerSetTab" data-args='["foto"]'><span>📷</span>Foto</button>
-        <button type="button" class="picker-tab" id="ptab-barcode" data-act="pickerSetTab" data-args='["barcode"]'><span>📊</span>Barcode</button>
-        <button type="button" class="picker-tab" id="ptab-own" data-act="pickerSetTab" data-args='["own"]'><span>✚</span>Eigenes</button>
-        <button type="button" class="picker-tab" id="ptab-link" data-act="pickerSetTab" data-args='["link"]'><span>🔗</span>Link</button>
+        <button type="button" class="picker-tab" id="ptab-chat" data-act="NTPicker.pickerSetTab" data-args='["chat"]'><span>💬</span>Chat</button>
+        <button type="button" class="picker-tab act" id="ptab-search" data-act="NTPicker.pickerSetTab" data-args='["search"]'><span>🔍</span>Suche</button>
+        <button type="button" class="picker-tab" id="ptab-recent" data-act="NTPicker.pickerSetTab" data-args='["recent"]'><span>⭐</span>Zuletzt</button>
+        <button type="button" class="picker-tab" id="ptab-foto" data-act="NTPicker.pickerSetTab" data-args='["foto"]'><span>📷</span>Foto</button>
+        <button type="button" class="picker-tab" id="ptab-barcode" data-act="NTPicker.pickerSetTab" data-args='["barcode"]'><span>📊</span>Barcode</button>
+        <button type="button" class="picker-tab" id="ptab-own" data-act="NTPicker.pickerSetTab" data-args='["own"]'><span>✚</span>Eigenes</button>
+        <button type="button" class="picker-tab" id="ptab-link" data-act="NTPicker.pickerSetTab" data-args='["link"]'><span>🔗</span>Link</button>
       </div>
 
       <!-- Tab: Zuletzt / Favoriten -->
@@ -1260,14 +1260,14 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
       <!-- Tab: Suche -->
       <div class="picker-panel act" id="ppanel-search">
         <div class="psb">
-          <input type="text" class="psi" id="pickerSearchQ" placeholder="z.B. Banane, Skyr..." oninput="pickerSearchLocalLive()" onkeydown="if(event.key==='Enter')pickerSearch()">
-          <button type="button" class="psg" id="pickerSearchBtn" data-act="pickerSearch">Suchen</button>
+          <input type="text" class="psi" id="pickerSearchQ" placeholder="z.B. Banane, Skyr..." oninput="NTPicker.pickerSearchLocalLive()" onkeydown="if(event.key==='Enter')NTPicker.pickerSearch()">
+          <button type="button" class="psg" id="pickerSearchBtn" data-act="NTPicker.pickerSearch">Suchen</button>
         </div>
         <div class="src-hint" id="pickerSearchHint">Lokale Treffer sofort · Online bei Suche</div>
         <div class="rl" id="pickerResults"></div>
         <div id="pickerAddSec" class="hidden">
           <div class="ar"><input type="number" class="ai2" id="pickerAmt" value="100" min="1" step="0.1"><div class="au" id="pickerAmtUnit">Gramm</div></div>
-          <button type="button" class="cb2" data-act="pickerConfirmAdd">Hinzufügen ✓</button>
+          <button type="button" class="cb2" data-act="NTPicker.pickerConfirmAdd">Hinzufügen ✓</button>
         </div>
       </div>
 
@@ -1279,22 +1279,22 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
             <label class="photo-btn" for="pickerGal" style="cursor:pointer;" onclick="void(0)"><span>🖼️</span>Galerie</label>
           </div>
         </div>
-        <input type="file" id="pickerCam" accept="image/*" capture="environment" style="position:fixed;top:-100vh;left:-100vw;width:1px;height:1px;opacity:0;" onchange="pickerHandlePhoto(event)">
-        <input type="file" id="pickerGal" accept="image/*" style="position:fixed;top:-100vh;left:-100vw;width:1px;height:1px;opacity:0;" onchange="pickerHandlePhoto(event)">
+        <input type="file" id="pickerCam" accept="image/*" capture="environment" style="position:fixed;top:-100vh;left:-100vw;width:1px;height:1px;opacity:0;" onchange="NTPicker.pickerHandlePhoto(event)">
+        <input type="file" id="pickerGal" accept="image/*" style="position:fixed;top:-100vh;left:-100vw;width:1px;height:1px;opacity:0;" onchange="NTPicker.pickerHandlePhoto(event)">
         <div id="pickerPrevWrap" class="pprev-wrap hidden">
-          <img id="pickerPrev"><button type="button" class="pchange" data-act="pickerResetPhoto">Ändern</button>
+          <img id="pickerPrev"><button type="button" class="pchange" data-act="NTPicker.pickerResetPhoto">Ändern</button>
         </div>
         <div id="pickerPhotoSaveHint" class="hidden" data-act="openSettings" data-args='["ernaehrung"]' style="font-size:11px;color:var(--mu);margin:6px 4px 0;cursor:pointer;line-height:1.4;"></div>
         <div id="pickerBcConfirm" class="bc-confirm hidden">
           <div class="bc-confirm-name" id="pickerBcName"></div>
           <div class="bc-confirm-vals" id="pickerBcVals"></div>
           <div class="bc-btns">
-            <button type="button" class="cb2" style="margin-top:0;flex:1;" data-act="pickerBcYes">✓ Ja, korrekt</button>
-            <button type="button" class="seb" style="margin-top:0;flex:1;" data-act="pickerBcNo">✕ KI nutzen</button>
+            <button type="button" class="cb2" style="margin-top:0;flex:1;" data-act="NTPicker.pickerBcYes">✓ Ja, korrekt</button>
+            <button type="button" class="seb" style="margin-top:0;flex:1;" data-act="NTPicker.pickerBcNo">✕ KI nutzen</button>
           </div>
         </div>
         <div id="pickerPhotoStatus" class="hidden" style="background:var(--gl);border:1.5px solid var(--g3);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--g1);margin-bottom:10px;"></div>
-        <button type="button" class="abt" id="pickerAnalyzeBtn" disabled data-act="pickerAnalyze">📷 KI-Analyse starten</button>
+        <button type="button" class="abt" id="pickerAnalyzeBtn" disabled data-act="NTPicker.pickerAnalyze">📷 KI-Analyse starten</button>
         <div id="pickerPhotoResult" class="hidden" style="margin-top:10px;">
           <div style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:6px;">Erkannte Zutaten<span id="pickerPhotoSource"></span></div>
           <div style="margin-bottom:6px;">
@@ -1310,14 +1310,14 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
           <div style="border-top:1px solid var(--br);padding-top:10px;margin-top:6px;">
             <div style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:8px;">Weitere Zutat hinzufügen</div>
             <div style="display:flex;gap:6px;margin-bottom:6px;">
-              <input type="text" class="psi" id="pickerPhotoAddQ" placeholder="Suchen oder beschreiben..." onkeydown="if(event.key==='Enter')pickerPhotoAddSearch()">
-              <button type="button" class="psg" data-act="pickerPhotoAddSearch">Suchen</button>
+              <input type="text" class="psi" id="pickerPhotoAddQ" placeholder="Suchen oder beschreiben..." onkeydown="if(event.key==='Enter')NTPicker.pickerPhotoAddSearch()">
+              <button type="button" class="psg" data-act="NTPicker.pickerPhotoAddSearch">Suchen</button>
             </div>
             <div id="pickerPhotoAddResults" class="rl" style="max-height:160px;overflow-y:auto;margin-bottom:8px;"></div>
           </div>
           <div style="display:flex;gap:8px;margin-top:6px;">
-            <button type="button" class="cb2" id="pickerPhotoAddBtn" style="margin-top:0;" data-act="pickerPhotoAdd" data-args='[false]'>✓ Eintragen</button>
-            <button type="button" class="cb2" id="pickerPhotoRecBtn" style="margin-top:0;background:linear-gradient(135deg,#2d5f8a,#3d8bc4);" data-act="pickerPhotoAdd" data-args='[true]'>📋 Als Rezept</button>
+            <button type="button" class="cb2" id="pickerPhotoAddBtn" style="margin-top:0;" data-act="NTPicker.pickerPhotoAdd" data-args='[false]'>✓ Eintragen</button>
+            <button type="button" class="cb2" id="pickerPhotoRecBtn" style="margin-top:0;background:linear-gradient(135deg,#2d5f8a,#3d8bc4);" data-act="NTPicker.pickerPhotoAdd" data-args='[true]'>📋 Als Rezept</button>
           </div>
         </div>
       </div>
@@ -1329,13 +1329,13 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
           <div class="barcode-overlay"><div style="width:70%;height:50%;border:2px solid var(--g2);border-radius:8px;position:relative;"><div class="barcode-line"></div></div></div>
           <div class="barcode-hint">Barcode in den Rahmen halten</div>
         </div>
-        <input type="file" id="pickerBcPhoto" accept="image/*" capture="environment" style="position:fixed;top:-100vh;left:-100vw;width:1px;height:1px;opacity:0;" onchange="pickerScanFromPhoto(event)">
-        <button type="button" id="torchBtn" data-act="pickerToggleTorch" style="display:none;width:100%;background:rgba(0,0,0,.08);border:1.5px solid var(--br);border-radius:10px;padding:10px;font-size:15px;margin-bottom:8px;font-weight:600;">🔦 Taschenlampe ein/aus</button>
+        <input type="file" id="pickerBcPhoto" accept="image/*" capture="environment" style="position:fixed;top:-100vh;left:-100vw;width:1px;height:1px;opacity:0;" onchange="NTPicker.pickerScanFromPhoto(event)">
+        <button type="button" id="torchBtn" data-act="NTPicker.pickerToggleTorch" style="display:none;width:100%;background:rgba(0,0,0,.08);border:1.5px solid var(--br);border-radius:10px;padding:10px;font-size:15px;margin-bottom:8px;font-weight:600;">🔦 Taschenlampe ein/aus</button>
         <div id="pickerBarcodeResult"></div>
-        <button type="button" id="pickerBcStartBtn" class="abt" data-act="pickerStartScan">▶ Scanner starten</button>
-        <button type="button" id="pickerBcStopBtn" class="abt" style="display:none;background:linear-gradient(135deg,#555,#777);" data-act="pickerStopScan">■ Scanner stoppen</button>
+        <button type="button" id="pickerBcStartBtn" class="abt" data-act="NTPicker.pickerStartScan">▶ Scanner starten</button>
+        <button type="button" id="pickerBcStopBtn" class="abt" style="display:none;background:linear-gradient(135deg,#555,#777);" data-act="NTPicker.pickerStopScan">■ Scanner stoppen</button>
         <label id="pickerBcPhotoBtn" for="pickerBcPhoto" style="margin-top:8px;display:block;width:100%;box-sizing:border-box;background:rgba(0,0,0,.06);border:1.5px solid var(--br);border-radius:10px;padding:10px;font-size:14px;font-weight:700;color:var(--g1);text-align:center;cursor:pointer;">📸 Foto aufnehmen (alle Decoder)</label>
-        <button type="button" id="pickerBcManualBtn" data-act="pickerOpenManualBarcode" style="margin-top:8px;width:100%;background:rgba(0,0,0,.04);border:1.5px solid var(--br);border-radius:10px;padding:10px;font-size:14px;font-weight:600;color:var(--mu);">📝 Code manuell eingeben</button>
+        <button type="button" id="pickerBcManualBtn" data-act="NTPicker.pickerOpenManualBarcode" style="margin-top:8px;width:100%;background:rgba(0,0,0,.04);border:1.5px solid var(--br);border-radius:10px;padding:10px;font-size:14px;font-weight:600;color:var(--mu);">📝 Code manuell eingeben</button>
       </div>
 
       <!-- Tab: Chat -->
@@ -1355,14 +1355,14 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
             <div class="au">Portion(en)</div>
           </div>
           <div style="display:flex;gap:8px;margin-top:10px;">
-            <button type="button" class="cb2" id="pickerChatAddBtn" style="margin-top:0;" data-act="pickerChatAdd" data-args='[false]'>✓ Eintragen</button>
-            <button type="button" class="cb2" id="pickerChatRecBtn" style="margin-top:0;background:linear-gradient(135deg,#2d5f8a,#3d8bc4);" data-act="pickerChatAdd" data-args='[true]'>📋 Als Rezept</button>
+            <button type="button" class="cb2" id="pickerChatAddBtn" style="margin-top:0;" data-act="NTPicker.pickerChatAdd" data-args='[false]'>✓ Eintragen</button>
+            <button type="button" class="cb2" id="pickerChatRecBtn" style="margin-top:0;background:linear-gradient(135deg,#2d5f8a,#3d8bc4);" data-act="NTPicker.pickerChatAdd" data-args='[true]'>📋 Als Rezept</button>
           </div>
         </div>
         <div class="chat-row">
-          <textarea class="chat-inp" id="pickerChatInp" rows="1" placeholder="Was hast du gegessen?" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();pickerSendChat();}"></textarea>
+          <textarea class="chat-inp" id="pickerChatInp" rows="1" placeholder="Was hast du gegessen?" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();NTPicker.pickerSendChat();}"></textarea>
           <button type="button" class="chat-mic" id="pickerChatMic" title="Tippen oder halten zum Diktieren">🎙️</button>
-          <button type="button" class="chat-send" id="pickerChatSend" data-act="pickerSendChat">➤</button>
+          <button type="button" class="chat-send" id="pickerChatSend" data-act="NTPicker.pickerSendChat">➤</button>
         </div>
       </div>
 
@@ -1380,7 +1380,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
             <span>Nur einmal eintragen (nicht in „Eigene Lebensmittel" speichern)</span>
           </label>
           <div style="font-size:11px;color:var(--mu);margin:2px 2px 6px 26px;line-height:1.4;">Angehakt: Werte gelten als Gesamtwerte der Portion. Sonst: pro 100 g.</div>
-          <button type="button" class="fsave" data-act="pickerSaveOwn">✓ Übernehmen</button>
+          <button type="button" class="fsave" data-act="NTPicker.pickerSaveOwn">✓ Übernehmen</button>
         </div>
       </div>
 
@@ -1389,9 +1389,9 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
         <textarea id="pickerLinkInput" rows="3"
           style="width:100%;box-sizing:border-box;border:1.5px solid var(--br);border-radius:12px;padding:12px;font-size:14px;font-family:inherit;resize:none;outline:none;color:var(--tx);"
           placeholder="Link einfügen – Rezept-Seite, Food-Blog oder eine geteilte NutriTrack-Sendung (auch als Code)"
-          oninput="pickerLinkDetect()"></textarea>
+          oninput="NTPicker.pickerLinkDetect()"></textarea>
         <div id="pickerLinkUrlInfo" style="margin-top:6px;min-height:30px;"></div>
-        <button type="button" class="abt" id="pickerLinkImportBtn" disabled data-act="pickerLinkImport" style="opacity:.4;">🔗 Rezept laden</button>
+        <button type="button" class="abt" id="pickerLinkImportBtn" disabled data-act="NTPicker.pickerLinkImport" style="opacity:.4;">🔗 Rezept laden</button>
         <div id="pickerLinkResult" class="hidden" style="margin-top:10px;">
           <div style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:6px;">Erkannte Zutaten</div>
           <div id="pickerLinkSrcHint"></div>
@@ -1399,17 +1399,17 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
           <div class="ing-list" id="pickerLinkIngList"></div>
           <div id="pickerLinkTotal" class="rec-total"></div>
           <div class="ar" style="margin-top:0;">
-            <input type="number" class="ai2" id="pickerLinkPortions" value="1" min="0.1" step="0.1" onchange="pickerUpdateLinkTotal()">
+            <input type="number" class="ai2" id="pickerLinkPortions" value="1" min="0.1" step="0.1" onchange="NTPicker.pickerUpdateLinkTotal()">
             <div class="au">Portion(en)</div>
           </div>
           <div style="font-size:11px;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;margin:12px 2px 6px;">Wohin damit?</div>
           <div style="display:flex;gap:8px;">
-            <button type="button" class="cb2" id="pickerLinkAddBtn" style="margin-top:0;" data-act="pickerLinkAdd" data-args='[false]'>✓ Eintragen</button>
-            <button type="button" class="cb2" id="pickerLinkRecBtn" style="margin-top:0;background:linear-gradient(135deg,#2d5f8a,#3d8bc4);" data-act="pickerLinkAdd" data-args='[true]'>📋 Als Rezept</button>
+            <button type="button" class="cb2" id="pickerLinkAddBtn" style="margin-top:0;" data-act="NTPicker.pickerLinkAdd" data-args='[false]'>✓ Eintragen</button>
+            <button type="button" class="cb2" id="pickerLinkRecBtn" style="margin-top:0;background:linear-gradient(135deg,#2d5f8a,#3d8bc4);" data-act="NTPicker.pickerLinkAdd" data-args='[true]'>📋 Als Rezept</button>
           </div>
-          <button type="button" class="cb2" id="pickerLinkShopBtn" style="width:100%;margin-top:8px;background:linear-gradient(135deg,#2e7d52,#4caf7d);" data-act="pickerLinkToShop">🛒 Auf den Einkaufszettel</button>
+          <button type="button" class="cb2" id="pickerLinkShopBtn" style="width:100%;margin-top:8px;background:linear-gradient(135deg,#2e7d52,#4caf7d);" data-act="NTPicker.pickerLinkToShop">🛒 Auf den Einkaufszettel</button>
           <div id="pickerLinkShopOpen" class="hidden">
-            <button type="button" class="seb" data-act="pickerLinkOpenShop">🛒 Einkaufszettel öffnen</button>
+            <button type="button" class="seb" data-act="NTPicker.pickerLinkOpenShop">🛒 Einkaufszettel öffnen</button>
           </div>
           <div style="font-size:11px;color:var(--mu);margin:8px 2px 0;line-height:1.4;">Der Einkaufszettel kann zusätzlich zum Eintragen befüllt werden. Artikel, die schon auf dem Zettel stehen, werden nicht doppelt angelegt — sie bekommen nur den Rezeptnamen dazu.</div>
         </div>
@@ -3079,7 +3079,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
       <div style="display:flex;gap:8px;margin-bottom:10px;">
         <button type="button" id="libTabRec" data-act="libSetTab" data-args='["recipes"]' style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--g2);background:var(--g2);color:white;font-weight:700;font-size:13px;">📋 Rezepte</button>
         <button type="button" id="libTabFoods" data-act="libSetTab" data-args='["foods"]' style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--br);background:white;color:var(--mu);font-weight:700;font-size:13px;">🥗 Lebensmittel</button>
-        <button type="button" onclick="closeOv('libraryOv');openPicker(null,'link')" style="padding:9px 14px;border-radius:10px;border:1.5px solid var(--g2);background:white;color:var(--g2);font-weight:700;font-size:13px;" title="Rezept per URL importieren">🔗</button>
+        <button type="button" onclick="closeOv('libraryOv');NTPicker.openPicker(null,'link')" style="padding:9px 14px;border-radius:10px;border:1.5px solid var(--g2);background:white;color:var(--g2);font-weight:700;font-size:13px;" title="Rezept per URL importieren">🔗</button>
         <button type="button" data-act="openImportPaste" style="padding:9px 14px;border-radius:10px;border:1.5px solid var(--g2);background:white;color:var(--g2);font-weight:700;font-size:13px;" title="Link oder Code einlösen">📥</button>
       </div>
       <button type="button" class="svb" id="libNewRecBtn" style="margin-bottom:10px;" data-act="NTPlan.newRecipe">＋ Neues Rezept</button>
@@ -3358,14 +3358,14 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.304"></script>
-<script src="js/single-tab.js?v=0.304"></script>
-<script src="js/fooddb.js?v=0.304"></script>
-<script src="js/fooddb-usda.js?v=0.304"></script>
-<script src="js/metdb.js?v=0.304"></script>
-<script src="js/idb-photos.js?v=0.304"></script>
-<script src="js/changelog.js?v=0.304"></script>
-<script src="js/calc.js?v=0.304"></script>
+<script src="js/actions.js?v=0.305"></script>
+<script src="js/single-tab.js?v=0.305"></script>
+<script src="js/fooddb.js?v=0.305"></script>
+<script src="js/fooddb-usda.js?v=0.305"></script>
+<script src="js/metdb.js?v=0.305"></script>
+<script src="js/idb-photos.js?v=0.305"></script>
+<script src="js/changelog.js?v=0.305"></script>
+<script src="js/calc.js?v=0.305"></script>
 <script>
 // @ts-check
 // ════════════════════════════════════════
@@ -3385,7 +3385,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.304';
+var APP_VERSION='0.305';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -4943,7 +4943,7 @@ function editIngDel(i){
 function editAddIng(){
   var meal=editMeal,idx=editIdx;
   closeOv('editOv');
-  openPicker(meal);
+  NTPicker.openPicker(meal);
   window._editEntryMode=true;
   window._editEntryMeal=meal;
   window._editEntryIdx=idx;
@@ -6650,9 +6650,9 @@ function updateSavePickerPhotosToggle(){
   var chk=document.getElementById('ssavepickerphotos');
   S.savePickerPhotos=!!(chk&&chk.checked);
   saveS();
-  if(typeof _pickerRefreshPhotoSaveHint==='function'){
+  if(window.NTPicker){
     var prev=document.getElementById('pickerPrevWrap');
-    if(prev&&!prev.classList.contains('hidden'))_pickerRefreshPhotoSaveHint();
+    if(prev&&!prev.classList.contains('hidden'))NTPicker._pickerRefreshPhotoSaveHint();
   }
 }
 
@@ -7381,10 +7381,10 @@ function libAddRecipe(id){
   closeOv('libraryOv');
   switchTab('main');
   setTimeout(function(){
-    openPicker(mealByTime(),'search');
+    NTPicker.openPicker(mealByTime(),'search');
     // Pre-select recipe in search
     var inp=document.getElementById('pickerSearchQ');
-    if(inp){inp.value=rec.name;pickerSearch();}
+    if(inp){inp.value=rec.name;NTPicker.pickerSearch();}
   },200);
 }
 
@@ -7393,9 +7393,9 @@ function libAddFood(i){
   closeOv('libraryOv');
   switchTab('main');
   setTimeout(function(){
-    openPicker(mealByTime(),'search');
+    NTPicker.openPicker(mealByTime(),'search');
     var inp=document.getElementById('pickerSearchQ');
-    if(inp){inp.value=f.name;pickerSearch();}
+    if(inp){inp.value=f.name;NTPicker.pickerSearch();}
   },200);
 }
 
@@ -7453,7 +7453,7 @@ function closeMealDetail(){window._mealDetailOpen=null;switchTab('main');}
 // zuletzt, und `openPicker(null)` waehlte die Mahlzeit wieder nach der Uhrzeit.
 // Gemessen: geoeffnet war das Fruehstueck, gebucht wurde in „Snack".
 function openPickerForOpenMeal(defaultTab){
-  openPicker(window._mealDetailOpen||null,defaultTab);
+  NTPicker.openPicker(window._mealDetailOpen||null,defaultTab);
 }
 function renderMealDetail(meal){
   var info=MEAL_LABELS[meal];if(!info)return;
@@ -7587,7 +7587,7 @@ function renderMore(){/* statisch, kein Render nötig */}
 function openOv(id){document.getElementById(id).classList.add('open');}
 function closeOv(id){
   document.getElementById(id).classList.remove('open');
-  if(id==='pickerOv'){pickerStopScan();}
+  if(id==='pickerOv'){NTPicker.pickerStopScan();}
   // Ein per „＋ Neues Rezept → selbst zusammenstellen" angelegtes, nie
   // befuelltes Rezept soll beim Schliessen nicht als Karteileiche bleiben.
   if(id==='recEditOv'&&window.NTPlan&&NTPlan.discardEmptyDraft)NTPlan.discardEmptyDraft();
@@ -8060,30 +8060,30 @@ function axTestSync(){
 }
 
 </script>
-<script src="js/ampel.js?v=0.304"></script>
-<script src="picker.js?v=0.304"></script>
-<script src="js/health-sync.js?v=0.304"></script>
-<script src="js/sync-core.js?v=0.304"></script>
-<script src="js/baby.js?v=0.304"></script>
-<script src="js/baby-meds.js?v=0.304"></script>
-<script src="js/baby-growth-data.js?v=0.304"></script>
-<script src="js/baby-growth.js?v=0.304"></script>
-<script src="js/baby-week.js?v=0.304"></script>
-<script src="js/baby-milestones.js?v=0.304"></script>
-<script src="js/baby-midwife.js?v=0.304"></script>
-<script src="js/shopping.js?v=0.304"></script>
-<script src="js/partner.js?v=0.304"></script>
-<script src="js/alexa-sync.js?v=0.304"></script>
-<script src="js/dashboard.js?v=0.304"></script>
-<script src="js/features.js?v=0.304"></script>
-<script src="js/mealplan.js?v=0.304"></script>
-<script src="js/onedrive.js?v=0.304"></script>
-<script src="js/autosave.js?v=0.304"></script>
-<script src="js/recurring.js?v=0.304"></script>
-<script src="js/stats.js?v=0.304"></script>
-<script src="js/reminders.js?v=0.304"></script>
-<script src="js/templates.js?v=0.304"></script>
-<script src="js/offline-queue.js?v=0.304"></script>
+<script src="js/ampel.js?v=0.305"></script>
+<script src="picker.js?v=0.305"></script>
+<script src="js/health-sync.js?v=0.305"></script>
+<script src="js/sync-core.js?v=0.305"></script>
+<script src="js/baby.js?v=0.305"></script>
+<script src="js/baby-meds.js?v=0.305"></script>
+<script src="js/baby-growth-data.js?v=0.305"></script>
+<script src="js/baby-growth.js?v=0.305"></script>
+<script src="js/baby-week.js?v=0.305"></script>
+<script src="js/baby-milestones.js?v=0.305"></script>
+<script src="js/baby-midwife.js?v=0.305"></script>
+<script src="js/shopping.js?v=0.305"></script>
+<script src="js/partner.js?v=0.305"></script>
+<script src="js/alexa-sync.js?v=0.305"></script>
+<script src="js/dashboard.js?v=0.305"></script>
+<script src="js/features.js?v=0.305"></script>
+<script src="js/mealplan.js?v=0.305"></script>
+<script src="js/onedrive.js?v=0.305"></script>
+<script src="js/autosave.js?v=0.305"></script>
+<script src="js/recurring.js?v=0.305"></script>
+<script src="js/stats.js?v=0.305"></script>
+<script src="js/reminders.js?v=0.305"></script>
+<script src="js/templates.js?v=0.305"></script>
+<script src="js/offline-queue.js?v=0.305"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

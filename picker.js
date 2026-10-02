@@ -3,6 +3,13 @@
 // NutriTrack – Ingredient Picker
 // Ausgelagert aus index.html (v0.119)
 // ════════════════════════════════════════
+//
+// Seit v0.305 gekapselt (#257): Nach aussen geht nur window.NTPicker — die
+// Funktionen, die index.html, andere Module oder ein on*-/data-act-String im
+// generierten HTML rufen (Liste am Ende). Zustand und Hilfsfunktionen sind
+// privat. Bewusst ohne 'use strict' und ohne neue Einrueckung: Verhalten und
+// Zeilen wie vorher, `git blame` bleibt lesbar.
+(function(){
 
 // HTML-Escaping für Namen aus untrusted Quellen (OpenFoodFacts, KI-Antworten,
 // Suchtreffer), die per innerHTML eingefügt werden — Schutz vor XSS. Nutzt den
@@ -213,7 +220,7 @@ function pickerRenderResults(products,loading){
   document.getElementById('pickerResults').innerHTML=products.map(function(p,i){
     var bdg=p.badge?'<span class="ri-bdg'+(p.bdgCls?' '+p.bdgCls:'')+'">'+(p.badge)+'</span>':'';
     var isR=p.isRecipe;
-    return'<div class="ri'+(isR?' is-recipe':'')+'" onclick="pickerSelResult('+i+')" id="pri'+i+'">'+bdg
+    return'<div class="ri'+(isR?' is-recipe':'')+'" onclick="NTPicker.pickerSelResult('+i+')" id="pri'+i+'">'+bdg
       +'<div class="ri-e">'+esc(p.emoji||'🍽')+'</div>'
       +'<div style="flex:1;min-width:0;"><div class="ri-n">'+_esc(p.name)+'</div>'
       +(p.per100?'<div class="ri-d">P '+(p.per100.protein||0).toFixed(1)+'g · K '+(p.per100.carbs||0).toFixed(1)+'g · F '+(p.per100.fat||0).toFixed(1)+'g · /100g</div>':'<div class="ri-d">Rezept</div>')
@@ -957,7 +964,7 @@ function pickerScanFromPhoto(event){
       el.innerHTML='<div style="background:var(--gl);border:1.5px solid var(--br);border-radius:12px;padding:12px;">'
         +'<div style="font-size:13px;color:var(--re);margin-bottom:8px;text-align:center;">❌ Kein Barcode erkannt</div>'
         +'<div style="font-size:11px;color:var(--mu);text-align:center;margin-bottom:10px;">Nochmal versuchen oder Code direkt eintippen:</div>'
-        +'<button type="button" onclick="pickerOpenManualBarcode()" style="width:100%;background:linear-gradient(135deg,var(--g1),var(--g2));color:white;border:none;border-radius:10px;padding:10px;font-weight:800;font-size:13px;">📝 Code manuell eingeben</button>'
+        +'<button type="button" onclick="NTPicker.pickerOpenManualBarcode()" style="width:100%;background:linear-gradient(135deg,var(--g1),var(--g2));color:white;border:none;border-radius:10px;padding:10px;font-weight:800;font-size:13px;">📝 Code manuell eingeben</button>'
         +'</div>';
       var inp=document.getElementById('pickerBcPhoto');if(inp)inp.value='';
     }
@@ -1074,7 +1081,7 @@ function pickerOpenManualBarcode(){
     +'<div style="font-size:12px;color:var(--mu);margin-bottom:6px;">Tippe die 13 Ziffern unter dem Strichcode ein.</div>'
     +'<div style="font-size:11px;color:var(--mu);margin-bottom:10px;line-height:1.4;">📱 <strong>iPhone-Tipp:</strong> Halte das Eingabefeld lang gedrückt → „Text scannen" → mit Kamera die Ziffern lesen lassen (Apples Live Text).</div>'
     +'<input type="text" id="bcDirectInput" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="z.B. 4006381333931" style="width:100%;box-sizing:border-box;border:2px solid var(--br);border-radius:9px;padding:10px;font-size:16px;font-family:ui-monospace,Menlo,monospace;letter-spacing:1px;outline:none;margin-bottom:10px;" maxlength="14">'
-    +'<button type="button" data-act="pickerSubmitManualBarcode" style="width:100%;background:linear-gradient(135deg,var(--g1),var(--g2));color:white;border:none;border-radius:10px;padding:11px;font-weight:800;font-size:14px;">Suchen ✓</button>'
+    +'<button type="button" data-act="NTPicker.pickerSubmitManualBarcode" style="width:100%;background:linear-gradient(135deg,var(--g1),var(--g2));color:white;border:none;border-radius:10px;padding:11px;font-weight:800;font-size:14px;">Suchen ✓</button>'
     +'</div>';
   setTimeout(function(){var i=document.getElementById('bcDirectInput');if(i)i.focus();},50);
 }
@@ -1199,7 +1206,7 @@ function pickerShowBarcodeResult(food,fromCache){
     +'<input type="number" id="pickerBcAmt" value="100" min="1" style="flex:1;border:2px solid var(--br);border-radius:9px;padding:8px;font-size:14px;font-weight:700;text-align:center;outline:none;">'
     +'<div style="font-size:13px;color:var(--mu);">Gramm</div>'
     +'</div>'
-    +'<button type="button" onclick="pickerBarcodeAdd()" style="width:100%;background:linear-gradient(135deg,var(--g1),var(--g2));color:white;border:none;border-radius:10px;padding:11px;font-weight:800;font-size:14px;">Hinzufügen ✓</button>'
+    +'<button type="button" onclick="NTPicker.pickerBarcodeAdd()" style="width:100%;background:linear-gradient(135deg,var(--g1),var(--g2));color:white;border:none;border-radius:10px;padding:11px;font-weight:800;font-size:14px;">Hinzufügen ✓</button>'
     +'</div>';
   window._pickerBarcodeFood=food;
 }
@@ -1234,7 +1241,7 @@ function pickerShowBarcodeNotFound(code,msg){
     +'<label style="font-size:11px;color:var(--mu);">Kohlenhydrate g<input type="number" id="bcManualCarbs" placeholder="0" min="0" style="width:100%;box-sizing:border-box;border:1.5px solid var(--br);border-radius:8px;padding:6px;font-size:13px;margin-top:2px;outline:none;"></label>'
     +'<label style="font-size:11px;color:var(--mu);">Fett g<input type="number" id="bcManualFat" placeholder="0" min="0" style="width:100%;box-sizing:border-box;border:1.5px solid var(--br);border-radius:8px;padding:6px;font-size:13px;margin-top:2px;outline:none;"></label>'
     +'</div>'
-    +'<button type="button" onclick="pickerBarcodeManualSave(\''+_esc(String(code).replace(/[\\']/g,''))+'\')" style="width:100%;background:linear-gradient(135deg,var(--g1),var(--g2));color:white;border:none;border-radius:10px;padding:11px;font-weight:800;font-size:14px;">Speichern & hinzufügen ✓</button>'
+    +'<button type="button" onclick="NTPicker.pickerBarcodeManualSave(\''+_esc(String(code).replace(/[\\']/g,''))+'\')" style="width:100%;background:linear-gradient(135deg,var(--g1),var(--g2));color:white;border:none;border-radius:10px;padding:11px;font-weight:800;font-size:14px;">Speichern & hinzufügen ✓</button>'
     +'</div>';
 }
 
@@ -1332,7 +1339,7 @@ function pickerPhotoAddSearch(){
   if(!results.length){el.innerHTML='<div class="nr">Kein Ergebnis</div>';return;}
   window._pickerPhotoAddRes=results;
   el.innerHTML=results.slice(0,8).map(function(p,i){
-    return'<div class="ri" onclick="pickerPhotoAddFromResult('+i+')">'
+    return'<div class="ri" onclick="NTPicker.pickerPhotoAddFromResult('+i+')">'
       +'<div class="ri-e">'+esc(p.emoji||'🍽')+'</div>'
       +'<div style="flex:1;min-width:0;"><div class="ri-n">'+_esc(p.name)+'</div>'
       +(p.per100?'<div class="ri-d">'+Math.round(p.per100.kcal)+' kcal/100g</div>':'')
@@ -1739,7 +1746,7 @@ function pickerSendChat(){
     if(!document.getElementById('pickerChatRecipeName').value)
       document.getElementById('pickerChatRecipeName').value=msg.slice(0,50);
     msgs.innerHTML+='<div class="cm a">📦 Lokal erkannt (ohne KI): '+pre.length+' Zutat'+(pre.length===1?'':'en')+'.'
-      +'<div style="padding-top:2px;"><button type="button" data-act="pickerChatKiFallback" data-args="'+esc(JSON.stringify([msg]))+'" style="background:none;border:none;color:var(--mu);font-size:12px;cursor:pointer;padding:4px 0;text-decoration:underline;">🤖 Stattdessen KI fragen</button></div></div>';
+      +'<div style="padding-top:2px;"><button type="button" data-act="NTPicker.pickerChatKiFallback" data-args="'+esc(JSON.stringify([msg]))+'" style="background:none;border:none;color:var(--mu);font-size:12px;cursor:pointer;padding:4px 0;text-decoration:underline;">🤖 Stattdessen KI fragen</button></div></div>';
     _pickerChatRebind();
     pickerUpdateChatTotal();
     document.getElementById('pickerChatResult').classList.remove('hidden');
@@ -1768,10 +1775,10 @@ function pickerSendChat(){
       html+='<div style="background:var(--gl);border:1px solid var(--br);border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:8px;">'
         +'<div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:13px;">'+esc(p.emoji||'🍽')+' '+_esc(p.name)+(badge?' <span style="font-size:11px;color:var(--mu);">'+_esc(badge)+'</span>':'')+'</div>'
         +(sub?'<div style="font-size:11px;color:var(--mu);">'+sub+'</div>':'')+'</div>'
-        +'<button type="button" onclick="pickerChatAddLocal('+i+')" style="background:var(--g1);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:14px;font-weight:700;cursor:pointer;flex-shrink:0;">＋</button>'
+        +'<button type="button" onclick="NTPicker.pickerChatAddLocal('+i+')" style="background:var(--g1);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:14px;font-weight:700;cursor:pointer;flex-shrink:0;">＋</button>'
         +'</div>';
     });
-    html+='<div style="text-align:center;padding-top:2px;"><button type="button" onclick="pickerChatKiFallback(window._pickerChatLastMsg)" style="background:none;border:none;color:var(--mu);font-size:12px;cursor:pointer;padding:4px 8px;text-decoration:underline;">🤖 Stattdessen KI fragen</button></div>';
+    html+='<div style="text-align:center;padding-top:2px;"><button type="button" onclick="NTPicker.pickerChatKiFallback(window._pickerChatLastMsg)" style="background:none;border:none;color:var(--mu);font-size:12px;cursor:pointer;padding:4px 8px;text-decoration:underline;">🤖 Stattdessen KI fragen</button></div>';
     html+='</div>';
     msgs.innerHTML+=html;
     _pickerChatScrollEnd();
@@ -2383,10 +2390,10 @@ function pickerRenderIngList(elId,ings,onAmtChange,onDel){
       +'<div class="ing-item">'
       +'<div class="ing-e" onclick="ingToggle(event,\''+nid+'\')">'+esc(ing.emoji||'🍽')+'</div>'
       +'<div class="ing-n" onclick="ingToggle(event,\''+nid+'\')">'+_esc(ing.name)+ampelDot+'</div>'
-      +'<input type="number" class="ing-amt" value="'+amtVal+'" min="1" placeholder="g?" style="'+borderStyle+'" data-i="'+i+'" onchange="pickerIngAmtChange(\''+elId+'\','+i+',this.value)">'
+      +'<input type="number" class="ing-amt" value="'+amtVal+'" min="1" placeholder="g?" style="'+borderStyle+'" data-i="'+i+'" onchange="NTPicker.pickerIngAmtChange(\''+elId+'\','+i+',this.value)">'
       +'<div class="ing-u">g</div>'
       +warn
-      +'<button type="button" class="ing-del" onclick="pickerIngDel(\''+elId+'\','+i+')">✕</button>'
+      +'<button type="button" class="ing-del" onclick="NTPicker.pickerIngDel(\''+elId+'\','+i+')">✕</button>'
       +'</div>'
       +'<div class="ing-details" id="'+nid+'">'+ingNutrHtml(ing)+'</div>'
       +'</div>';
@@ -2469,7 +2476,7 @@ function renderRecentList(){
   var items=getRecentFoods();
   if(!items.length){el.innerHTML='<div style="text-align:center;color:var(--mu);padding:20px;font-size:13px;">Noch keine Einträge</div>';return;}
   el.innerHTML=items.map(function(item,i){
-    return'<div class="ri" onclick="pickerAddRecent('+i+')">'
+    return'<div class="ri" onclick="NTPicker.pickerAddRecent('+i+')">'
       +'<div class="ri-e">'+esc(item.emoji||'🍽')+'</div>'
       +'<div style="flex:1;min-width:0;"><div class="ri-n">'+esc(item.name)+'</div>'
       +(item.per100?'<div class="ri-d">'+Math.round(item.per100.kcal)+' kcal/100g</div>':'<div class="ri-d">'+(item.kcal?Math.round(item.kcal)+' kcal':'')+'</div>')
@@ -2479,3 +2486,29 @@ function renderRecentList(){
   }).join('');
   window._recentItems=items;
 }
+
+// ── Nach aussen ──
+// Nur, was ausserhalb dieser Datei gerufen wird. tools/check.js loest jeden
+// on*-/data-act-String gegen diese Liste auf, tools/smoke.js prueft jeden Eintrag.
+window.NTPicker={
+  pickerFriendlyAiError:pickerFriendlyAiError, openPicker:openPicker, closePicker:closePicker,
+  pickerSetTab:pickerSetTab, pickerSearchLocalLive:pickerSearchLocalLive, pickerSearch:pickerSearch,
+  pickerSelResult:pickerSelResult, pickerConfirmAdd:pickerConfirmAdd,
+  pickerHandlePhoto:pickerHandlePhoto, pickerResetPhoto:pickerResetPhoto,
+  _pickerRefreshPhotoSaveHint:_pickerRefreshPhotoSaveHint, pickerToggleTorch:pickerToggleTorch,
+  pickerStartScan:pickerStartScan, pickerStopScan:pickerStopScan,
+  pickerScanFromPhoto:pickerScanFromPhoto, pickerBcYes:pickerBcYes, pickerBcNo:pickerBcNo,
+  pickerOpenManualBarcode:pickerOpenManualBarcode,
+  pickerSubmitManualBarcode:pickerSubmitManualBarcode, pickerBarcodeAdd:pickerBarcodeAdd,
+  pickerBarcodeManualSave:pickerBarcodeManualSave, pickerAnalyze:pickerAnalyze,
+  pickerPhotoAddSearch:pickerPhotoAddSearch, pickerPhotoAddFromResult:pickerPhotoAddFromResult,
+  _pickerRecipeOnlyUI:_pickerRecipeOnlyUI, pickerPhotoAdd:pickerPhotoAdd,
+  pickerChatAddLocal:pickerChatAddLocal, pickerChatKiFallback:pickerChatKiFallback,
+  pickerSendChat:pickerSendChat, pickerChatAdd:pickerChatAdd, pickerLinkDetect:pickerLinkDetect,
+  pickerLinkImport:pickerLinkImport, pickerUpdateLinkTotal:pickerUpdateLinkTotal,
+  pickerLinkAdd:pickerLinkAdd, pickerLinkToShop:pickerLinkToShop,
+  pickerLinkOpenShop:pickerLinkOpenShop, pickerSaveOwn:pickerSaveOwn,
+  pickerRenderIngList:pickerRenderIngList, pickerIngAmtChange:pickerIngAmtChange,
+  pickerIngDel:pickerIngDel, pickerAddRecent:pickerAddRecent
+};
+})();

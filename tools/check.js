@@ -322,9 +322,9 @@ const { blankOut, stripComments, templateSpans, handlerCalls } = require('./js-s
     jsStringAt[f] = (at) => !inSpan(tpl, at);
   }
 
-  // Global verfuegbar ist alles, was NICHT in einer IIFE gekapselt ist:
-  // das Inline-Script von index.html und picker.js (das bewusst nie gekapselt
-  // wurde — seine 93 Funktionen haengen direkt an window).
+  // Global verfuegbar ist alles, was NICHT in einer IIFE gekapselt ist: das
+  // Inline-Script von index.html. Seit v0.305 ist auch picker.js gekapselt
+  // (window.NTPicker, #257) — davor hingen seine Funktionen direkt an window.
   const globals = new Set();
   for (const [file, code] of sources) {
     const encapsulated = /^\s*\(function\s*\(/m.test(code.split('\n').slice(0, 40).join('\n'));
@@ -403,6 +403,34 @@ const { blankOut, stripComments, templateSpans, handlerCalls } = require('./js-s
     }
   }
   if (!deadAct) ok(`Alle ${acts} data-act-Ziele sind aufloesbar.`);
+
+  // Jeder Zugriff NTx.name im Code (nicht nur in Handler-Strings) muss einen
+  // Export treffen. tsc sieht das nicht: Die Namespaces sind in
+  // types/globals.d.ts `any`. Seit picker.js gekapselt ist (#257), liefen dort
+  // 15 direkte Aufrufe ohne Pruefung — ein `NTPicker.pickerSerch()` faellt
+  // sonst erst beim Klick auf. Spaeter zugewiesene Member (`NTx.y = …`) zaehlen
+  // als Export; ein Namespace ohne `window.NTx = {…}`-Literal ist nicht
+  // statisch lesbar und wird nur genannt.
+  {
+    for (const [, code] of sources) {
+      for (const m of code.matchAll(/(?<![\w$.])(?:window\.)?(NT[A-Za-z]+)\.([A-Za-z_$][\w$]*)\s*=(?!=)/g)) {
+        if (nsMembers[m[1]]) nsMembers[m[1]].add(m[2]);
+      }
+    }
+    let deadNs = 0, nsRefs = 0;
+    const unread = new Set();
+    for (const [file, code] of sources) {
+      for (const m of code.matchAll(/(?<![\w$.])(?:window\.)?(NT[A-Za-z]+)\.([A-Za-z_$][\w$]*)/g)) {
+        if (!nsMembers[m[1]]) { unread.add(m[1]); continue; }
+        nsRefs++;
+        if (!nsMembers[m[1]].has(m[2])) {
+          fail(`${file}:${code.slice(0, m.index).split('\n').length}: '${m[1]}.${m[2]}' — ${m[1]} exportiert '${m[2]}' nicht.`);
+          deadNs++;
+        }
+      }
+    }
+    if (!deadNs) ok(`Alle ${nsRefs} Zugriffe NTx.name im Code treffen einen Export (${Object.keys(nsMembers).length} Namespaces${unread.size ? `; nicht statisch lesbar: ${[...unread].sort().join(', ')}` : ''}).`);
+  }
 
   // data-args muss gueltiges JSON sein — die Delegation wirft es sonst zur
   // Klickzeit weg und die Funktion bekommt gar keine Argumente.

@@ -2487,6 +2487,65 @@ function renderRecentList(){
   window._recentItems=items;
 }
 
+// ── Aus index.html (#301): nur der Picker ruft sie ──
+// Unveraendert verschoben; foodCache, recipes, customFoods, DB, MEALS und
+// PROJECT_WORKER_BASE bleiben Globals von index.html.
+function urlProxyUrl(u){return PROJECT_WORKER_BASE+'/fetch?u='+encodeURIComponent(u);}
+function cacheFood(f){if(!f||!f.name)return;if(!f.per100||!_hasNutrients(f.per100))return;var k=f.name.toLowerCase().trim();foodCache[k]={name:f.name,emoji:f.emoji,per100:f.per100,addedAt:Date.now()};saveX();}
+
+function searchLocal(q){
+  var ql=(q||'').toLowerCase().trim();
+  var results=[],seen={};
+  function add(item,score){var k=item.name.toLowerCase();if(!seen[k]){seen[k]=true;results.push({score:score,item:item});}}
+  // Recipes first
+  recipes.forEach(function(r){
+    var nl=r.name.toLowerCase();
+    var s=!ql?1:(nl===ql?5:nl.startsWith(ql)?4:nl.includes(ql)?2:0);
+    if(s>0)add({name:r.name,emoji:r.emoji||'📋',isRecipe:true,recipeId:r.id,per100:null,badge:'📋',bdgCls:''},s+20);
+  });
+  // Custom foods
+  customFoods.forEach(function(f){
+    var nl=f.name.toLowerCase();
+    var s=!ql?1:(nl===ql?5:nl.startsWith(ql)?4:nl.includes(ql)?2:0);
+    if(s>0)add({name:f.name,emoji:f.emoji,per100:f.per100,badge:'⭐',bdgCls:'own'},s+15);
+  });
+  // Saved cache
+  Object.values(foodCache).forEach(function(f){
+    var nl=f.name.toLowerCase();
+    var s=!ql?0:(nl===ql?5:nl.startsWith(ql)?4:nl.includes(ql)?2:0);
+    if(s>0)add({name:f.name,emoji:f.emoji,per100:f.per100,badge:'🕐',bdgCls:'saved'},s+5);
+  });
+  // Built-in DB
+  DB.forEach(function(f){var s=fuzzy(f,q);if(s>0||!ql)add({name:f.n,emoji:f.e,per100:dbPer100(f)},s);});
+  results.sort(function(a,b){return b.score-a.score;});
+  var out=[],seenOut={};
+  results.forEach(function(x){var k=x.item.name.toLowerCase();if(!seenOut[k]){seenOut[k]=true;out.push(x.item);}});
+  return out.slice(0,ql?15:12);
+}
+
+// ── Zuletzt gegessen / Favoriten ──
+function getRecentFoods(){
+  var seen={};var list=[];
+  var dates=Object.keys(S.days).sort().reverse().slice(0,14);
+  dates.forEach(function(d){
+    var day=S.days[d];
+    if(!day||!day.meals)return;// komprimierter Alt-Tag (#232)
+    MEALS.forEach(function(m){
+      (day.meals[m]||[]).forEach(function(e){
+        if(e._archived)return;
+        if(e.isRecipe||(e.ingredients&&e.ingredients.length)){
+          var k=(e.name||'').toLowerCase();
+          if(!seen[k]&&e.name){seen[k]=true;list.push({name:e.name,emoji:e.emoji,kcal:e.kcal,amount:e.amount,per100:e.per100,isRecipe:e.isRecipe,recipeId:e.recipeId,ingredients:e.ingredients,portions:e.portions});}
+        } else {
+          var k=(e.name||'').toLowerCase();
+          if(!seen[k]&&e.name&&e.per100){seen[k]=true;list.push({name:e.name,emoji:e.emoji,amount:e.amount||100,per100:e.per100});}
+        }
+      });
+    });
+  });
+  return list.slice(0,15);
+}
+
 // ── Nach aussen ──
 // Nur, was ausserhalb dieser Datei gerufen wird. tools/check.js loest jeden
 // on*-/data-act-String gegen diese Liste auf, tools/smoke.js prueft jeden Eintrag.

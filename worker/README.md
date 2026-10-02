@@ -38,7 +38,7 @@ Der Worker prüft Raum und Token nur auf ihr Format, nicht gegen eine Nutzerlist
 - Jede unbehandelte Ausnahme (z. B. KV wirft, weil das Tageskontingent erschöpft ist) wird zu `500 internal_error` als JSON **mit** CORS-Headern, damit die App eine Meldung statt „Server nicht erreichbar" sieht.
 - `/fetch` verfolgt Weiterleitungen selbst (höchstens 5) und prüft jedes Ziel: nur `http(s)`, keine Adress-Literale aus privaten, Loopback-, Link-local-, CGNAT- (100.64/10) oder Multicast-Netzen, bei IPv6 nur Global Unicast (2000::/3, ohne 6to4 und Teredo), keine Namen `localhost`, `*.localhost`, `*.local`, `*.internal` (auch mit Punkt am Ende). Namen, die per DNS auf private Adressen zeigen, erkennt der Worker nicht. Die Seite wird höchstens bis 2 MB gelesen.
 - `/feedback` nimmt als Screenshot nur JPEG (Base64 beginnt mit `/9j/`); schlägt der Upload fehl, steht im öffentlichen Issue nur „upload threw", die echte Meldung im Worker-Log.
-- Bekannte offene Grenze: Auch ein Abruf (`GET`) mit frei gewähltem Raum/Token kostet beim ersten Mal ein `list` und einen Schreibzugriff (Änderungsmarke). Das KV-Schreibkontingent (1.000/Tag im Gratis-Tarif, für das ganze Konto) ist damit ohne Anmeldung erschöpfbar.
+- Ein Abruf (`GET`) mit frei gewähltem Raum/Token kostet ein `list`, aber keinen Schreibzugriff mehr: Die Änderungsmarke wird nur nachgetragen, wenn das `list` Schlüssel gefunden hat (#260). Schreibende POSTs (`/share`, `/workout`, `/alexa/*`, Sync-Pushes) laufen weiter ohne App-Secret. Das KV-Kontingent schützt der Tarif Workers Paid (Entscheidung 2026-10-01), nicht der Code.
 
 ## Cloudflare Setup
 
@@ -86,14 +86,11 @@ Dann in `wrangler.toml` die `id` unter `[[kv_namespaces]]` ersetzen (`REPLACE_WI
 
 Health-Check `GET /health` zeigt `shareConfigured: true` wenn der Binding aktiv ist. Ist KV nicht konfiguriert, gibt der Worker `503 kv_not_configured` zurück und die PWA fällt automatisch auf is.gd / Originallink zurück.
 
-Free Tier deckt unsere Volumina locker ab:
-- 100k Reads/Tag (Empfaenger tippt Link an)
-- 1k Writes/Tag (Sender erstellt neuen Kurzlink)
-- 1 GB Storage gesamt
+Tarif: Workers Paid (seit 2026-10-01, #260). Das KV-Kontingent ist damit eine Kostenfrage statt einer harten Tagesgrenze; die Kosten je Vorgang stehen in der Cloudflare-Preisliste.
 
 TTL pro Eintrag: 1 Jahr (`SHARE_TTL_SECONDS`). Löschung läuft automatisch.
 
-Derselbe Namespace trägt seit v0.225 auch den Baby-Tagebuch-Sync (`bd:`-Präfix, `babySyncConfigured`) und seit v0.227 den Einkaufszettel (`sl:`-Präfix, `shopSyncConfigured`). Schreib-Budget im Blick behalten: Jede Tagebuch-Änderung ist ein Write, ein Familien-Tag mit ~20 Einträgen bleibt aber weit unter dem 1k-Limit.
+Derselbe Namespace trägt seit v0.225 auch den Baby-Tagebuch-Sync (`bd:`-Präfix, `babySyncConfigured`) und seit v0.227 den Einkaufszettel (`sl:`-Präfix, `shopSyncConfigured`). Ein Push kostet je Record einen Write plus einen für die Änderungsmarke. Ein Abruf ohne Änderung kostet ein Read – außer in den 2 min nach einem Push und bei einem Briefkasten ohne Schlüssel und ohne Marke (noch leer, oder geleert und Marke abgelaufen); dann kommt ein `list` dazu.
 
 ## GitHub Setup
 

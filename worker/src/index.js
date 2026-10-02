@@ -612,7 +612,8 @@ async function handleFeedback(request, origin, env) {
 // gleichzeitige Pushes können die Marke kurz zu niedrig hinterlassen, und ein
 // anderer Edge-Standort sieht die neue Marke bis zu ~60 s später; beides ist
 // nach diesem Fenster ausgeglichen. Fehlt die Marke (Altbestand vor dem Deploy,
-// abgelaufen), wird gelistet und die Marke aus den Metadaten nachgetragen.
+// abgelaufen), wird gelistet und die Marke aus den Metadaten nachgetragen,
+// sofern Schlüssel da sind (siehe backfillMark).
 const MARK_HOT_MS = 2 * 60 * 1000;
 
 async function readMark(env, key) {
@@ -642,7 +643,11 @@ async function bumpMark(env, key, v, ttl) {
 }
 
 // Nach einem vollständigen `list` ohne Marke: Marke einmalig aus den Metadaten
-// aller Schlüssel nachtragen (auch 0 für einen leeren Briefkasten).
+// aller Schlüssel nachtragen — nur wenn das `list` Schlüssel gefunden hat
+// (gezählt VOR dem since-Filter). Ein leerer Briefkasten bekommt keine Marke:
+// Sonst kostete jeder GET mit frei erfundenem Raum oder Token ein `put` (#260).
+// Preis: Ein echter, noch leerer Briefkasten listet bei jedem Abruf, bis der
+// erste Push die Marke über bumpMark setzt.
 // `at` = jetzt, damit die nächsten Abrufe im Heiß-Fenster noch voll listen,
 // falls parallel ein Push lief.
 async function backfillMark(env, key, maxV, ttl) {
@@ -769,6 +774,7 @@ async function handleWorkoutList(request, origin, env) {
   }
   let maxMeta = 0;
   let metaGap = false; // Schlüssel ohne Cursor-Metadatum → keine Marke nachtragen
+  let seen = 0; // gelistete Schlüssel über alle Seiten, vor dem since-Filter
   // Page through the whole namespace via cursor so tokens with >200 workouts
   // don't silently lose older entries. Bounded by MAX_WORKOUT_LIST_PAGES.
   const candidateKeys = [];
@@ -777,6 +783,7 @@ async function handleWorkoutList(request, origin, env) {
   let complete = false;
   do {
     const list = await env.SHARE_KV.list({ prefix, limit: MAX_WORKOUT_LIST_LIMIT, cursor });
+    seen += list.keys.length;
     for (const k of list.keys) {
       const meta = k.metadata && typeof k.metadata === "object" ? k.metadata : null;
       const v = workoutCursorOf(meta);
@@ -789,7 +796,7 @@ async function handleWorkoutList(request, origin, env) {
     cursor = list.cursor;
     pages++;
   } while (!complete && cursor && pages < MAX_WORKOUT_LIST_PAGES);
-  if (!mark && complete && !metaGap) await backfillMark(env, markKey, maxMeta, WORKOUT_TTL_SECONDS);
+  if (!mark && complete && !metaGap && seen > 0) await backfillMark(env, markKey, maxMeta, WORKOUT_TTL_SECONDS);
 
   // Fetch the surviving keys in parallel (KV has no batch-get).
   const raws = await Promise.all(candidateKeys.map((name) => env.SHARE_KV.get(name)));
@@ -985,6 +992,7 @@ async function handleAlexaPull(request, origin, env) {
   }
   let maxMeta = 0;
   let metaGap = false; // Schlüssel ohne Cursor-Metadatum → keine Marke nachtragen
+  let seen = 0; // gelistete Schlüssel über alle Seiten, vor dem since-Filter
 
   const names = [];
   let cursor;
@@ -992,6 +1000,7 @@ async function handleAlexaPull(request, origin, env) {
   let complete = false;
   do {
     const list = await env.SHARE_KV.list({ prefix, limit: MAX_ALEXA_LIST_LIMIT, cursor });
+    seen += list.keys.length;
     for (const k of list.keys) {
       const meta = k.metadata && typeof k.metadata === "object" ? k.metadata : null;
       if (!meta || !Number.isFinite(meta.srev)) metaGap = true;
@@ -1003,7 +1012,7 @@ async function handleAlexaPull(request, origin, env) {
     cursor = list.cursor;
     pages++;
   } while (!complete && cursor && pages < MAX_ALEXA_LIST_PAGES);
-  if (!mark && complete && !metaGap) await backfillMark(env, markKey, maxMeta, ALEXA_TTL_SECONDS);
+  if (!mark && complete && !metaGap && seen > 0) await backfillMark(env, markKey, maxMeta, ALEXA_TTL_SECONDS);
 
   const raws = await Promise.all(names.map((n) => env.SHARE_KV.get(n)));
   const items = [];
@@ -1255,12 +1264,14 @@ async function handleSyncPull(request, origin, env, cfg) {
   }
   let maxMeta = 0;
   let metaGap = false; // Schlüssel ohne Cursor-Metadatum → keine Marke nachtragen
+  let seen = 0; // gelistete Schlüssel über alle Seiten, vor dem since-Filter
   const candidateKeys = [];
   let cursor;
   let pages = 0;
   let complete = false;
   do {
     const listed = await env.SHARE_KV.list({ prefix, limit: MAX_ROOM_LIST_LIMIT, cursor });
+    seen += listed.keys.length;
     for (const k of listed.keys) {
       const meta = k.metadata && typeof k.metadata === "object" ? k.metadata : null;
       if (!meta || !Number.isFinite(meta.srev)) metaGap = true;
@@ -1272,7 +1283,7 @@ async function handleSyncPull(request, origin, env, cfg) {
     cursor = listed.cursor;
     pages++;
   } while (!complete && cursor && pages < MAX_ROOM_LIST_PAGES);
-  if (!mark && complete && !metaGap) await backfillMark(env, markKey, maxMeta, ROOM_TTL_SECONDS);
+  if (!mark && complete && !metaGap && seen > 0) await backfillMark(env, markKey, maxMeta, ROOM_TTL_SECONDS);
 
   const raws = await Promise.all(candidateKeys.map((name) => env.SHARE_KV.get(name)));
   const records = [];
@@ -1837,7 +1848,7 @@ async function route(request, env) {
       alexaInboxConfigured: Boolean(env.SHARE_KV),
       planSyncConfigured: Boolean(env.SHARE_KV),
       decoderSecretConfigured: Boolean(env.DECODER_SECRET),
-      codeVersion: "v0.292-upce",
+      codeVersion: "v0.301-mark-empty",
     });
   }
 

@@ -79,8 +79,8 @@ jobs:
   typecheck:
     name: Typpruefung (tsc --noEmit)
     # Ohne Build: tsc liest picker.js, js/*.js und die Inline-Scripts aus
-    # index.html und schreibt nichts. Geprueft wird jede Datei mit // @ts-check
-    # in Zeile 1 (#254). Eine verschobene oder umbenannte Funktion faellt damit
+    # index.html und schreibt nichts. Geprueft wird alles davon (checkJs true,
+    # #254 Stufe 1). Eine verschobene oder umbenannte Funktion faellt damit
     # vor dem Deploy auf statt beim Klick eines Nutzers.
     runs-on: ubuntu-latest
     steps:

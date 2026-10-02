@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.302"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.303"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.302"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.303"></script>
 <script>
   // @ts-check
   (function(){
@@ -1219,7 +1219,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.302</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.303</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -3358,15 +3358,16 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.302"></script>
-<script src="js/single-tab.js?v=0.302"></script>
-<script src="js/fooddb.js?v=0.302"></script>
-<script src="js/fooddb-usda.js?v=0.302"></script>
-<script src="js/metdb.js?v=0.302"></script>
-<script src="js/idb-photos.js?v=0.302"></script>
-<script src="js/changelog.js?v=0.302"></script>
-<script src="js/calc.js?v=0.302"></script>
+<script src="js/actions.js?v=0.303"></script>
+<script src="js/single-tab.js?v=0.303"></script>
+<script src="js/fooddb.js?v=0.303"></script>
+<script src="js/fooddb-usda.js?v=0.303"></script>
+<script src="js/metdb.js?v=0.303"></script>
+<script src="js/idb-photos.js?v=0.303"></script>
+<script src="js/changelog.js?v=0.303"></script>
+<script src="js/calc.js?v=0.303"></script>
 <script>
+// @ts-check
 // ════════════════════════════════════════
 // SECTION: DATABASE
 // ════════════════════════════════════════
@@ -3378,13 +3379,13 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 // ════════════════════════════════════════
 // SECTION: STATE
 // ════════════════════════════════════════
-var S={apiKey:'',name:'Du',goal:2000,goalManual:false,weight:0,height:0,age:0,gender:'',activity:'',pregnant:0,pregnantET:'',pregWarn:false,nursing:0,nursWarn:false,babyOn:false,baby:{name:'',birth:''},babyLog:{},babyTomb:{},babyMiles:{},babyQs:[],babyQuick:null,babySync:null,shopList:[],shopTomb:{},shopSync:null,shopRecent:[],shopCats:[],shopCatMem:{},links:[],linksMigrated:0,planTomb:{},goalWeight:0,goalDate:'',goalAchievedShown:'',goalStart:null,dietPrefs:[],dietFree:'',savedDietFree:[],dietWarn:false,macroTargets:{protein:0,carbs:0,fat:0},macroGoalMode:'percent',macroGoalG:{protein:0,carbs:0,fat:0},reminders:[],weightLog:{},portionMemory:{},waterGoal:8,waterUnit:250,mealTemplates:[],recurringMeals:[],exerciseLibrary:[],dashOrder:null,dashHidden:null,mealPlan:{},planApplied:{},currentDate:'',days:{}};
+var S={apiKey:'',name:'Du',goal:2000,goalManual:false,weight:0,height:0,age:0,gender:'',activity:'',pregnant:/** @type {0|'0'|'1'|'2'|'3'|'et'} */ (0),pregnantET:'',pregWarn:false,nursing:/** @type {0|'0'|'excl'|'part'} */ (0),nursWarn:false,babyOn:false,baby:{name:'',birth:''},babyLog:{},babyTomb:{},babyMiles:{},babyQs:[],babyQuick:null,babySync:null,shopList:[],shopTomb:{},shopSync:null,shopRecent:[],shopCats:[],shopCatMem:{},links:[],linksMigrated:0,planTomb:{},goalWeight:0,goalDate:'',goalAchievedShown:'',goalStart:null,dietPrefs:[],dietFree:'',savedDietFree:[],dietWarn:false,macroTargets:{protein:0,carbs:0,fat:0},macroGoalMode:'percent',macroGoalG:{protein:0,carbs:0,fat:0},reminders:[],weightLog:{},portionMemory:{},waterGoal:8,waterUnit:250,mealTemplates:[],recurringMeals:[],exerciseLibrary:[],dashOrder:null,dashHidden:null,mealPlan:{},planApplied:{},currentDate:'',days:{}};
 // Tracking für Settings-Session: manuelle Eingabe vs. „Kalorienbedarf berechnen"
 var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.302';
+var APP_VERSION='0.303';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -3746,7 +3747,7 @@ function setAppleTouchIconPNG(){
     img.onload=function(){
       ctx.drawImage(img,0,0,180,180);
       var png=canvas.toDataURL('image/png');
-      var link=document.querySelector('link[rel="apple-touch-icon"]');
+      var link=/** @type {HTMLLinkElement} */ (document.querySelector('link[rel="apple-touch-icon"]'));
       if(link)link.href=png;
     };
     img.src='/nutritrack/icon.svg';
@@ -3935,6 +3936,7 @@ if('serviceWorker' in navigator){
   });
 }
 function reloadForUpdate(){
+  // @ts-expect-error forceGet: nur Firefox wertet es aus, alle anderen ignorieren es
   window.location.reload(true);
 }
 function checkFullscreen(){
@@ -4098,7 +4100,7 @@ function saveProxyPwFromSettings(){
 }
 // ── KI-Anbieter-Einstellungen ──
 function renderAiProviderSettings(){
-  var sel=document.getElementById('aiProviderSelect');
+  var sel=/** @type {HTMLSelectElement} */ (document.getElementById('aiProviderSelect'));
   if(sel){
     if(!sel.options.length){
       AI_PROVIDERS.forEach(function(p){
@@ -4111,7 +4113,7 @@ function renderAiProviderSettings(){
   if(key)key.value=getAiProviderKey();
   onAiProviderChange();
   // Foto-KI-Block mitbefüllen
-  var vsel=document.getElementById('aiVisionSelect');
+  var vsel=/** @type {HTMLSelectElement} */ (document.getElementById('aiVisionSelect'));
   if(vsel){
     if(!vsel.options.length){
       AI_PROVIDERS.filter(function(p){return p.keyless||p.vision;}).forEach(function(p){
@@ -4416,9 +4418,11 @@ function renderAll(){
   var all=day.meals.breakfast.concat(day.meals.lunch,day.meals.dinner,day.meals.snack);
   var t=calcM(all);
   var burned=(day.exercise||[]).reduce(function(a,e){return a+(e.kcal||0);},0);
+  // @ts-expect-error textContent wandelt die Zahl selbst in Text
   document.getElementById('totKcal').textContent=Math.round(t.kcal);
   document.getElementById('totBurned').textContent=burned?'-'+Math.round(burned):'0';
   var net=Math.max(0,S.goal-Math.round(t.kcal)+Math.round(burned));
+  // @ts-expect-error textContent wandelt die Zahl selbst in Text
   document.getElementById('remKcal').textContent=net;
   document.getElementById('pFill').style.width=Math.min(100,(t.kcal/(S.goal+burned))*100)+'%';
   document.getElementById('tP').textContent=Math.round(t.protein)+'g';
@@ -4908,7 +4912,7 @@ function _mealPhotoImgHtml(e){
 }
 function _hydratePhotoImgs(){
   if(!window.NTPhotos||!NTPhotos.ok())return;
-  document.querySelectorAll('img[data-phid]').forEach(function(im){
+  document.querySelectorAll('img[data-phid]').forEach(/** @param {HTMLImageElement} im */ function(im){
     var id=im.getAttribute('data-phid');
     im.removeAttribute('data-phid');
     NTPhotos.get(id).then(function(d){if(d)im.src=d;});
@@ -5494,7 +5498,7 @@ function _fmtRange(a,b){
 function openShareRange(){
   closeOv('partnerOv');
   var to=today(),from=addDays(to,-6);
-  var f=document.getElementById('shareRangeFrom'),t=document.getElementById('shareRangeTo');
+  var f=/** @type {HTMLInputElement} */ (document.getElementById('shareRangeFrom')),t=/** @type {HTMLInputElement} */ (document.getElementById('shareRangeTo'));
   if(f)f.value=from;
   if(t){t.value=to;t.max=to;}
   if(f)f.max=to;
@@ -5723,7 +5727,7 @@ function _applyDayMeals(key,mm,onlyMeals,mode){
 }
 function _pickedValues(attr){
   var out=[];
-  document.querySelectorAll('#importConfirmPick .icpick').forEach(function(cb){
+  document.querySelectorAll('#importConfirmPick .icpick').forEach(/** @param {HTMLInputElement} cb */ function(cb){
     if(cb.checked&&cb.getAttribute(attr)!==null)out.push(cb.getAttribute(attr));
   });
   return out;
@@ -5922,7 +5926,7 @@ function _fixViewportChrome(){
     var vv=window.visualViewport;
     if(vv&&vv.offsetTop>1)window.scrollTo(window.pageXOffset||0,window.pageYOffset||0);
   }catch(e){}
-  document.querySelectorAll('.bnav').forEach(function(el){
+  document.querySelectorAll('.bnav').forEach(/** @param {HTMLElement} el */ function(el){
     var prev=el.style.bottom;
     el.style.bottom='0px';
     void el.offsetHeight;
@@ -6052,7 +6056,7 @@ function openSettings(tab){
   var bnm=document.getElementById('sbabyname');if(bnm)bnm.value=S.baby.name||'';
   var bbd=document.getElementById('sbabybirth');if(bbd)bbd.value=S.baby.birth||'';
   _toggleFemaleRows(S.gender);
-  document.getElementById('sgender').onchange=function(){
+  document.getElementById('sgender').onchange=/** @this {HTMLSelectElement} */ function(){
     _toggleFemaleRows(this.value);
     updatePregnantUI();
     updateNursingUI();
@@ -6064,7 +6068,7 @@ function openSettings(tab){
   NTRemind.render();
   var wg=document.getElementById('swatergoal');if(wg)wg.value=S.waterGoal||8;
   setMacroMode(S.macroGoalMode||'percent');
-  var mg=S.macroGoalG||{};
+  var mg=/** @type {{protein?: number, carbs?: number, fat?: number}} */ (S.macroGoalG||{});
   var mp=document.getElementById('smacrop');if(mp)mp.value=mg.protein||'';
   var mc=document.getElementById('smacroc');if(mc)mc.value=mg.carbs||'';
   var mf=document.getElementById('smacrof');if(mf)mf.value=mg.fat||'';
@@ -6100,7 +6104,7 @@ function updatePregnantUI(){
   if(val==='et'){
     var etVal=document.getElementById('set').value;
     if(etVal)showETInfo(etVal);
-    document.getElementById('set').onchange=function(){showETInfo(this.value);};
+    document.getElementById('set').onchange=/** @this {HTMLInputElement} */ function(){showETInfo(this.value);};
   }
   // Toggle visuell
   var chk=document.getElementById('spregwarn');
@@ -6210,6 +6214,7 @@ function updateGoalFromET(){
   // Abnehmziel einrechnen wenn gesetzt
   var goal=base;
   if(S.goalWeight&&S.goalDate&&S.goalWeight<S.weight){
+    // @ts-expect-error Date-Arithmetik ueber valueOf()
     var days=Math.round((new Date(S.goalDate)-new Date())/(24*3600000));
     if(days>0){
       var deficit=Math.round((S.weight-S.goalWeight)*7700/days);
@@ -6233,6 +6238,7 @@ function updateWeightLossInfo(){
   var info=document.getElementById('weightLossInfo');
   if(!info)return;
   if(!gw||!gd||!w||gw>=w){info.textContent='';return;}
+  // @ts-expect-error Date-Arithmetik ueber valueOf()
   var days=Math.round((new Date(gd)-new Date())/(24*3600000));
   if(days<=0){info.textContent='';return;}
   var deficit=Math.round((w-gw)*7700/days);
@@ -6326,6 +6332,7 @@ function calcGoal(){
   var floor=nursAdd?NURSING_MIN_KCAL:1000;
   var capped=false;
   if(gw&&gd&&gw<w){
+    // @ts-expect-error Date-Arithmetik ueber valueOf()
     var days=Math.round((new Date(gd)-new Date())/(24*3600000));
     if(days>0){
       var deficit=Math.round((w-gw)*7700/days);
@@ -6503,7 +6510,7 @@ function showAmpelModal(results,title,subtitle){
   var warn=results.filter(function(r){return r.ampel==='rot'||r.ampel==='gelb';});
   if(!warn.length)return;
   // Banner von oben einblenden
-  var el=document.getElementById('ampelBanner');
+  var el=/** @type {HTMLElement & {_sec?: Object<string, {html: string, ts: number}>, _t?: number}} */ (document.getElementById('ampelBanner'));
   if(!el){
     el=document.createElement('div');
     el.id='ampelBanner';
@@ -6537,7 +6544,7 @@ function showAmpelModal(results,title,subtitle){
   el._t=setTimeout(closeAmpelBanner,5000);
 }
 function closeAmpelBanner(){
-  var el=document.getElementById('ampelBanner');if(!el)return;
+  var el=/** @type {HTMLElement & {_sec?: Object<string, {html: string, ts: number}>, _t?: number}} */ (document.getElementById('ampelBanner'));if(!el)return;
   clearTimeout(el._t);
   el.style.display='none';
   el._sec={};
@@ -6872,7 +6879,7 @@ function handleEditMealPhoto(e){
       var b64=c.toDataURL('image/jpeg',0.6);
       saveMealPhoto(editMeal,editIdx,b64);
       // Bild direkt im Dialog zeigen
-      var existing=document.querySelector('#editBody img');
+      var existing=/** @type {HTMLImageElement} */ (document.querySelector('#editBody img'));
       if(existing){existing.src=b64;}else{
         var div=document.createElement('div');div.style='margin:8px 0;';
         var im=document.createElement('img');im.src=b64;im.style='width:100%;border-radius:10px;max-height:160px;object-fit:cover;';
@@ -6881,7 +6888,7 @@ function handleEditMealPhoto(e){
         if(btn&&btn.parentNode)btn.parentNode.insertBefore(div,btn);
       }
     };
-    img.src=ev.target.result;
+    img.src=/** @type {string} */ (ev.target.result);
   };
   reader.readAsDataURL(file);
 }
@@ -7095,14 +7102,14 @@ function pickExerciseSugg(name){
   selectExercisePreset(name);
   var inp=document.getElementById('exName');if(inp)inp.blur();
 }
-document.addEventListener('input',function(ev){
+document.addEventListener('input',/** @param {Event & {target: HTMLInputElement}} ev */ function(ev){
   if(ev.target&&ev.target.id==='exName'){
     if(ev.target.value.trim())renderExerciseSugg(false);else hideExerciseSugg();
   }
 });
 // Antippen außerhalb von Feld, ▼ und Liste schließt die Liste.
 document.addEventListener('click',function(ev){
-  var t=ev.target;
+  var t=/** @type {Element} */ (ev.target);
   if(!t||!t.closest||t.closest('#exSugg,#exSuggBtn,#exName'))return;
   hideExerciseSugg();
 });
@@ -7194,7 +7201,7 @@ function moveExerciseDuration(){
   inp.value=sp.name;
   if(!parseFloat(du.value))du.value=sp.dur;
 }
-document.addEventListener('change',function(ev){
+document.addEventListener('change',/** @param {Event & {target: HTMLInputElement}} ev */ function(ev){
   if(ev.target&&ev.target.id==='exName')moveExerciseDuration();
 },true);
 
@@ -7205,6 +7212,7 @@ function showExerciseResult(kcal,st){
   el.textContent=kcal;
   if(st){
     el.dataset.name=st.name;el.dataset.dur=st.dur;el.dataset.int=st.intensity;
+    // @ts-expect-error dataset wandelt die Zahl selbst in Text
     el.dataset.rate=st.dur?(kcal/st.dur):'';
   }
   document.getElementById('exResult').style.display='block';
@@ -7240,7 +7248,7 @@ function recalcExerciseForm(ev){
   else if(!ev||ev.type!=='input'||ev.target.id!=='exName')hideExerciseResult();
 }
 ['input','change'].forEach(function(type){
-  document.addEventListener(type,function(ev){
+  document.addEventListener(type,/** @param {Event & {target: HTMLInputElement}} ev */ function(ev){
     var id=ev.target&&ev.target.id;
     if(id==='exName'||id==='exDuration'||id==='exIntensity')recalcExerciseForm(ev);
   });
@@ -7364,7 +7372,7 @@ function importData(e){
   var reader=new FileReader();
   reader.onload=function(ev){
     try{
-      var d=JSON.parse(ev.target.result);
+      var d=JSON.parse(/** @type {string} */ (ev.target.result));
       // Stand von vor v0.280 ohne goalStart: das Startgewicht DIESES Geraets gehoert
       // zu einem anderen Ziel und wuerde den Glueckwunsch neu freigeben (#247).
       if(d.state){delete d.state.apiKey;if(!('goalStart' in d.state))S.goalStart=null;Object.assign(S,d.state);S.apiKey='';S.setupDone=true;}
@@ -7789,7 +7797,7 @@ function _showFeedbackShotPreview(dataUrl){
   var p=document.getElementById('feedbackShotPreview');
   var clr=document.getElementById('feedbackShotClear');
   var badge=document.getElementById('feedbackShotBadge');
-  var det=document.getElementById('feedbackShotDetails');
+  var det=/** @type {HTMLDetailsElement} */ (document.getElementById('feedbackShotDetails'));
   if(img)img.src=dataUrl;
   if(p)p.style.display='block';
   if(clr)clr.style.display='block';
@@ -7891,7 +7899,7 @@ function attachFeedbackPhoto(ev){
   if(f.size>8*1024*1024){showToast('Bild zu groß (max 8 MB)');return;}
   var reader=new FileReader();
   reader.onload=function(e){
-    var src=e.target.result;
+    var src=/** @type {string} */ (e.target.result);
     var im=new Image();
     im.onload=function(){
       // Auf max 1200px Breite verkleinern + JPEG 0.8
@@ -8144,30 +8152,30 @@ function axTestSync(){
 }
 
 </script>
-<script src="js/ampel.js?v=0.302"></script>
-<script src="picker.js?v=0.302"></script>
-<script src="js/health-sync.js?v=0.302"></script>
-<script src="js/sync-core.js?v=0.302"></script>
-<script src="js/baby.js?v=0.302"></script>
-<script src="js/baby-meds.js?v=0.302"></script>
-<script src="js/baby-growth-data.js?v=0.302"></script>
-<script src="js/baby-growth.js?v=0.302"></script>
-<script src="js/baby-week.js?v=0.302"></script>
-<script src="js/baby-milestones.js?v=0.302"></script>
-<script src="js/baby-midwife.js?v=0.302"></script>
-<script src="js/shopping.js?v=0.302"></script>
-<script src="js/partner.js?v=0.302"></script>
-<script src="js/alexa-sync.js?v=0.302"></script>
-<script src="js/dashboard.js?v=0.302"></script>
-<script src="js/features.js?v=0.302"></script>
-<script src="js/mealplan.js?v=0.302"></script>
-<script src="js/onedrive.js?v=0.302"></script>
-<script src="js/autosave.js?v=0.302"></script>
-<script src="js/recurring.js?v=0.302"></script>
-<script src="js/stats.js?v=0.302"></script>
-<script src="js/reminders.js?v=0.302"></script>
-<script src="js/templates.js?v=0.302"></script>
-<script src="js/offline-queue.js?v=0.302"></script>
+<script src="js/ampel.js?v=0.303"></script>
+<script src="picker.js?v=0.303"></script>
+<script src="js/health-sync.js?v=0.303"></script>
+<script src="js/sync-core.js?v=0.303"></script>
+<script src="js/baby.js?v=0.303"></script>
+<script src="js/baby-meds.js?v=0.303"></script>
+<script src="js/baby-growth-data.js?v=0.303"></script>
+<script src="js/baby-growth.js?v=0.303"></script>
+<script src="js/baby-week.js?v=0.303"></script>
+<script src="js/baby-milestones.js?v=0.303"></script>
+<script src="js/baby-midwife.js?v=0.303"></script>
+<script src="js/shopping.js?v=0.303"></script>
+<script src="js/partner.js?v=0.303"></script>
+<script src="js/alexa-sync.js?v=0.303"></script>
+<script src="js/dashboard.js?v=0.303"></script>
+<script src="js/features.js?v=0.303"></script>
+<script src="js/mealplan.js?v=0.303"></script>
+<script src="js/onedrive.js?v=0.303"></script>
+<script src="js/autosave.js?v=0.303"></script>
+<script src="js/recurring.js?v=0.303"></script>
+<script src="js/stats.js?v=0.303"></script>
+<script src="js/reminders.js?v=0.303"></script>
+<script src="js/templates.js?v=0.303"></script>
+<script src="js/offline-queue.js?v=0.303"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

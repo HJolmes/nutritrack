@@ -428,26 +428,43 @@ if (!mCore) {
   if (!late) ok(`Keines der ${lateChecked} zur Laufzeit gesetzten onclick trifft ein data-act-Element.`);
 }
 
-// ── 5a. Jedes Modul unter js/ ist in der Typpruefung (#254) ──────────────
-// tsc prueft nur Dateien mit `// @ts-check` in Zeile 1 (tsconfig: checkJs
-// false). Ein neues Modul ohne die Zeile waere still ungeprueft. Die Liste
-// darunter sind die Module, die bei Stufe 0 noch Befunde hatten — sie wird nur
-// kuerzer: Wer ein Modul fehlerfrei bekommt, setzt die Zeile UND streicht es hier.
+// ── 5a. Alles eigene JS ist in der Typpruefung (#254) ───────────────────
+// tsconfig.json: checkJs true — tsc prueft jede Datei aus `include`, mit oder
+// ohne Markierung. Die Zeile `// @ts-check` bleibt trotzdem Pflicht in Zeile 1
+// jedes Moduls, von picker.js und jedes klassischen Inline-Blocks: Sie zeigt beim
+// Lesen, dass die Datei geprueft wird, und haelt die Pruefung, falls checkJs je
+// zurueckgestellt wird. @ts-ignore und @ts-nocheck schalten still ab — ein
+// begruendetes `// @ts-expect-error <Grund>` meldet sich, sobald es nichts mehr
+// unterdrueckt.
 {
-  const TS_PENDING = new Set(['alexa-sync.js', 'baby.js', 'baby-midwife.js', 'baby-milestones.js', 'baby-week.js',
-    'mealplan.js', 'onedrive.js', 'shopping.js', 'stats.js', 'sync-core.js']);
   let tsFail = 0, tsOn = 0;
-  for (const f of fs.readdirSync(path.join(ROOT, 'js'))) {
-    if (!f.endsWith('.js')) continue;
-    const has = /^\/\/\s*@ts-check\b/.test(read(path.join('js', f)));
-    if (has) tsOn++;
-    if (TS_PENDING.has(f)) {
-      if (has) { fail(`js/${f} traegt // @ts-check — dann aus TS_PENDING in tools/check.js streichen.`); tsFail++; }
-    } else if (!has) {
-      fail(`js/${f} beginnt nicht mit // @ts-check — jedes Modul ist in der Typpruefung (npm run typecheck).`); tsFail++;
-    }
+  let tsconf = {};
+  try { tsconf = JSON.parse(read('tsconfig.json')); } catch (e) { fail('tsconfig.json nicht lesbar: ' + e.message); tsFail++; }
+  if (!(tsconf.compilerOptions && tsconf.compilerOptions.checkJs === true)) {
+    fail('tsconfig.json: compilerOptions.checkJs muss true sein (#254 Stufe 1).'); tsFail++;
   }
-  if (!tsFail) ok(`${tsOn} Module unter js/ mit // @ts-check, ${TS_PENDING.size} noch ausstehend (Stufe 1 von #254).`);
+  const tsSrc = ['picker.js', ...fs.readdirSync(path.join(ROOT, 'js')).filter((f) => f.endsWith('.js')).map((f) => 'js/' + f)];
+  const blocks = [];
+  const re = /<script(?![^>]*\bsrc=)([^>]*)>([\s\S]*?)<\/script>/g;
+  let mb;
+  while ((mb = re.exec(indexHtml)) !== null) {
+    if (/type\s*=\s*["'](module|application\/(ld\+)?json)["']/.test(mb[1] || '') || !mb[2].trim()) continue;
+    blocks.push([`index.html (Inline-Block ab Zeile ${indexHtml.slice(0, mb.index).split('\n').length})`, mb[2]]);
+  }
+  for (const [name, code] of [...tsSrc.map((f) => [f, read(f)]), ...blocks]) {
+    if (/^\s*\/\/\s*@ts-check\b/.test(code)) tsOn++;
+    else { fail(`${name} beginnt nicht mit // @ts-check — alles eigene JS ist in der Typpruefung (npm run typecheck).`); tsFail++; }
+    // In jeder Kommentarform: tsc wertet auch /* @ts-ignore */ als Direktive.
+    const bad = code.match(/(\/\/|\/\*)[\s*]*@ts-(ignore|nocheck)\b/);
+    if (bad) { fail(`${name} enthaelt @ts-${bad[2]} — stattdessen beheben, per JSDoc typisieren oder // @ts-expect-error <Grund>.`); tsFail++; }
+    if (/@ts-expect-error[ \t]*(\*\/)?[ \t]*$/m.test(code)) { fail(`${name}: // @ts-expect-error ohne Grund — der Grund gehoert in dieselbe Zeile.`); tsFail++; }
+  }
+  // Jedes lokal eingebundene Script ist eine gepruefte Datei (Fremdcode unter js/zxing/ ausgenommen).
+  const checkedSet = new Set(tsSrc);
+  [...indexHtml.matchAll(/<script[^>]*\bsrc="([^"]+)"/g)].map((x) => x[1].split('?')[0])
+    .filter((src) => !/^https?:\/\//.test(src) && !src.startsWith('js/zxing/'))
+    .forEach((src) => { if (!checkedSet.has(src)) { fail(`${src} wird in index.html geladen, ist aber nicht in der Typpruefung (tsconfig include: picker.js, js/*.js).`); tsFail++; } });
+  if (!tsFail) ok(`${tsOn} Dateien/Inline-Bloecke mit // @ts-check, checkJs an, kein @ts-ignore/@ts-nocheck.`);
 }
 
 // ── 5c. Der Rechenkern bleibt rein (#255) ─────────────────────────────────

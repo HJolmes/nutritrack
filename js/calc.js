@@ -124,7 +124,7 @@ function calcSSW(etVal){
   return Math.floor((new Date()-lmp)/(7*24*3600000));
 }
 function getPregAddFromState(){
-  /** @type {any} S.pregnant ist 0, '1'–'3' oder 'et'; das Literal in index.html macht daraus number */
+  /** @type {any} S.pregnant ist 0, '0'–'3' oder 'et' (Literal in index.html); parseInt nimmt nur string, deshalb any */
   var mode=S.pregnant;
   if(mode==='et'&&S.pregnantET){
     var ssw=calcSSW(S.pregnantET);

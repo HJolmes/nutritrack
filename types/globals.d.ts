@@ -20,11 +20,13 @@ interface Window {
   [k: `_${string}`]: any;
   ZXingWasm: any; ZBarWasm: any; DB: any; DB_USDA: any; DB_DEFAULT: any; DE_EN: any; MET_DB: any;
   CHANGELOG: any; html2canvas: any; MSStream: any;
+  // Web Speech API: nicht in lib.dom, Chrome liefert nur den webkit-Namen.
+  SpeechRecognition?: any; webkitSpeechRecognition?: any;
 }
 // Bewusster Preis: `.value` ist damit auch auf einem <div> erlaubt. Die App ruft
 // `.value` rund 400-mal auf getElementById()-Ergebnissen; ein typisierter
 // Helfer waere ein Umbau dieser Stellen (Stufe 3, optional).
 interface HTMLElement { value: any; checked: boolean; disabled: boolean; src: string; srcObject: any; select(): void; }
-interface Element { style: CSSStyleDeclaration; }
+interface Element { get style(): CSSStyleDeclaration; set style(cssText: string); }
 interface Navigator { standalone?: boolean; }
 interface EventTarget { tagName?: string; }

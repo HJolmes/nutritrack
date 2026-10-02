@@ -5,14 +5,14 @@
 //
 // Dateien ohne import/export teilen in tsc einen globalen Scope: Die rund 350
 // Top-Level-Funktionen aus index.html sind damit in allen Modulen bekannt, ohne
-// dass irgendwo eine Liste gepflegt wird. Geprueft wird nur, was in Zeile 1
-// `// @ts-check` traegt (tsconfig.json: checkJs false) — Opt-in je Datei.
+// dass irgendwo eine Liste gepflegt wird. Geprueft wird alles aus `include` in
+// tsconfig.json (checkJs true, #254 Stufe 1); `// @ts-check` in Zeile 1 bleibt
+// Pflicht als Markierung, tools/check.js wacht darueber.
 //
 // Die Inline-Bloecke landen in .typecheck/inline_<n>.js, mit so vielen
 // Leerzeilen davor, dass jede gemeldete Zeile die Zeile in index.html ist; im
-// Fehlertext steht danach index.html statt des Hilfspfads. Ein Block wird
-// geprueft, wenn `// @ts-check` in seiner ersten Zeile steht. Der Modul-Block
-// (<script type="module">) bleibt draussen.
+// Fehlertext steht danach index.html statt des Hilfspfads. Der Modul-Block
+// (<script type="module">, zbar-wasm per URL-Import) bleibt draussen.
 //
 //   npm run typecheck        (braucht npm ci)
 'use strict';
@@ -46,8 +46,7 @@ while ((m = re.exec(html)) !== null) {
   const line = html.slice(0, start).split('\n').length;
   const file = `inline_${n}.js`;
   fs.writeFileSync(path.join(OUT, file), '\n'.repeat(line - 1) + m[2]);
-  const checked = /^\s*\/\/\s*@ts-check\b/.test(m[2]);
-  blocks.push({ file, line, checked });
+  blocks.push({ file, line });
 }
 
 const t0 = Date.now();
@@ -55,6 +54,8 @@ const r = spawnSync(process.execPath, [TSC, '-p', path.join(ROOT, 'tsconfig.json
 const out = ((r.stdout || '') + (r.stderr || '')).replace(/\.typecheck[\\/]inline_\d+\.js/g, 'index.html');
 if (out.trim()) process.stdout.write(out);
 const errors = (out.match(/error TS\d+/g) || []).length;
-console.log(`typecheck: ${blocks.filter((b) => b.checked).length}/${blocks.length} Inline-Bloecke mit @ts-check, ` +
+let checkJs = false;
+try { checkJs = JSON.parse(fs.readFileSync(path.join(ROOT, 'tsconfig.json'), 'utf8')).compilerOptions.checkJs === true; } catch (e) { /* bleibt false */ }
+console.log(`typecheck: ${blocks.length} Inline-Bloecke (ohne Modul-Block), checkJs ${checkJs ? 'an' : 'AUS'}, ` +
   `${errors} Fehler, ${((Date.now() - t0) / 1000).toFixed(1)} s`);
 process.exit(r.status === 0 ? 0 : 1);

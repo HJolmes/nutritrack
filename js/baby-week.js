@@ -1,3 +1,4 @@
+// @ts-check
 // NutriTrack – Baby: Verlauf, Beikost-Übersicht und Arzt-Bericht (Reiter im
 // Baby-Tagebuch, v0.263). Klassisches Script, exportiert window.NTBabyWeek.
 // Nutzt NTBaby (js/baby.js), NTGrowth (js/baby-growth.js) und die globalen
@@ -118,7 +119,7 @@ function reportText(){
   L.push('Zeitraum: '+dFull(ks[ks.length-1])+' – '+dFull(ks[0]));
   L.push('');
   // Letzte Messung
-  var gm=null;
+  var gm=/** @type {{d: string, e: object}|null} */ (null);
   Object.keys(S.babyLog||{}).sort().forEach(function(d){
     NTBaby.logRO(d).forEach(function(e){if(e.t==='growth')gm={d:d,e:e};});
   });

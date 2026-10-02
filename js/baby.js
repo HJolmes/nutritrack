@@ -1,3 +1,4 @@
+// @ts-check
 // NutriTrack – Baby-Tagebuch (v0.225)
 // Klassisches Script, kein Modul. Exportiert window.NTBaby und greift direkt auf
 // die globalen Helfer aus index.html zu (S, saveS, renderAll, openOv, closeOv,
@@ -613,6 +614,7 @@ function saveQuick(){
   var label=document.getElementById('bqLabel').value.trim();
   if(!label){showToast('Bitte eine Beschriftung eingeben');return;}
   var icon=document.getElementById('bqIcon').value.trim()||((TYPES[t]&&TYPES[t].ic)||'•');
+  /** @type {{side?: string, main?: string, timer?: number, min?: number, ml?: number, kind?: string, text?: string}} */
   var p={};
   if(t==='breast'){
     var side=document.getElementById('bqSide').value;

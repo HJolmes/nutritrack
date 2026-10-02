@@ -1,3 +1,4 @@
+// @ts-check
 // NutriTrack – Baby-Meilensteine (Reiter im Baby-Tagebuch, v0.261).
 // Klassisches Script, exportiert window.NTMile. Zeigt die Entwicklungs-
 // Meilensteine passend zum Alter aus S.baby.birth; abgehakt wird in
@@ -18,6 +19,7 @@
 var CAT={g:'🏃',f:'✋',k:'🧠',l:'💬',s:'💛',i:'🤝'};
 var CAT_LABEL={g:'Grobmotorik',f:'Feinmotorik',k:'Perzeption/Kognition',l:'Sprache',s:'Soziale/emotionale Kompetenz',i:'Interaktion/Kommunikation'};
 
+/** @typedef {{id: string, c: string, t: string}} MileItem */
 var STAGES=[
   {u:'U3',span:'4.–5. Lebenswoche',from:{d:21},items:[
     ['g','Kopf wird in schwebender Bauchlage für wenigstens 3 Sekunden gehalten.'],
@@ -125,6 +127,7 @@ var STAGES=[
 ];
 STAGES.forEach(function(st){
   st.label=st.u+' · '+st.span;
+  // @ts-expect-error Punkte wechseln hier die Form: [Kategorie, Text] -> MileItem
   st.items=st.items.map(function(it,i){return {id:st.u.toLowerCase()+'_'+(i+1),c:it[0],t:it[1]};});
 });
 
@@ -133,7 +136,7 @@ STAGES.forEach(function(st){
 // Lebenstag 1 = Geburtstag, also „3.–10. Lebenstag" = Tag 2 bis Tag 9.
 // „3.–4. Lebensmonat" = ab 2 vollen Monaten bis vor 4 vollen Monaten.
 // U1 fehlt bewusst: sie findet direkt nach der Geburt statt.
-var UDATES=[{u:'U2',span:'3.–10. Lebenstag',from:{d:2},to:{d:10}}].concat(STAGES.map(function(st){
+var UDATES=/** @type {Array<{u: string, span: string, from: {d?: number, m?: number}, to: {d?: number, m?: number}}>} */ ([{u:'U2',span:'3.–10. Lebenstag',from:{d:2},to:{d:10}}]).concat(STAGES.map(function(st){
   var TO={U3:{d:35},U4:{m:4},U5:{m:7},U6:{m:12},U7:{m:24},U7a:{m:36},U8:{m:48},U9:{m:64}};
   return {u:st.u,span:st.span,from:st.from,to:TO[st.u]};
 }));
@@ -227,7 +230,8 @@ function render(){
       +'<span>'+(open?'▾':'▸')+' '+st.label+tag+'</span>'
       +'<span class="mile-cnt'+(n===tot?' full':'')+'">'+n+'/'+tot+'</span></button>';
     if(open){
-      h+='<div class="mile-items">'+st.items.map(function(it){
+      // @ts-expect-error st.items sind seit STAGES.forEach oben MileItem, nicht mehr [Kategorie, Text]
+      h+='<div class="mile-items">'+st.items.map(/** @param {MileItem} it */ function(it){
         var d=(s[it.id]&&s[it.id].d)||'';
         return '<button type="button" class="mile-it'+(d?' done':'')+'" data-act="NTMile.check" data-args=\'["'+it.id+'"]\' title="'+CAT_LABEL[it.c]+'">'
           +'<span class="mile-cb">'+(d?'✓':'')+'</span>'

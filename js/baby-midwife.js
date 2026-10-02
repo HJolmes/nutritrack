@@ -1,3 +1,4 @@
+// @ts-check
 // NutriTrack – Baby: Fragen an die Hebamme (Reiter im Baby-Tagebuch, v0.264).
 // Klassisches Script, exportiert window.NTMidwife. Nutzt NTBaby (js/baby.js)
 // und die globalen Helfer aus index.html (S, saveS, esc, openOv, closeOv, showToast).
@@ -146,7 +147,7 @@ function edit(id){
 // Wer eine Antwort eintraegt, hat die Frage in der Regel besprochen: beim
 // ersten Zeichen den Haken setzen – bleibt sichtbar und abwaehlbar.
 function answerInput(){
-  var a=document.getElementById('bqaA'),c=document.getElementById('bqaDone');
+  var a=/** @type {HTMLTextAreaElement & {_auto?: number}} */ (document.getElementById('bqaA')),c=document.getElementById('bqaDone');
   if(a&&c&&a.value.trim()&&!a._auto){a._auto=1;c.checked=true;}
 }
 function save(){
@@ -174,7 +175,7 @@ function del(){
 }
 function closeEdit(){
   _editId=null;
-  var a=document.getElementById('bqaA');if(a)a._auto=0;
+  var a=/** @type {HTMLTextAreaElement & {_auto?: number}} */ (document.getElementById('bqaA'));if(a)a._auto=0;
   closeOv('babyQaOv');
 }
 

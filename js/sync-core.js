@@ -1,3 +1,4 @@
+// @ts-check
 // NutriTrack – Verbindungen und der gemeinsame Sync-Kern (v0.247)
 // Klassisches Script, kein Modul. Exportiert window.NTSync und greift direkt auf
 // die globalen Helfer aus index.html zu (S, saveS, esc, showToast, openOv,
@@ -271,6 +272,7 @@ function engine(cfg){
   }
 
   function pull(link){
+    /** @type {Record<string, string>} */
     var h={};h[cfg.header]=link.room;
     var since=link.since[cfg.topic]||0;
     return fetch(API+'?since='+encodeURIComponent(since),{headers:h})

@@ -1,3 +1,4 @@
+// @ts-check
 // NutriTrack – OneDrive-Backup (v0.250)
 // Klassisches Script, kein Modul. Exportiert window.NTDrive und greift direkt auf
 // die globalen Helfer aus index.html zu (S, saveS, saveX, backupState, renderAll,
@@ -176,6 +177,7 @@ function oneDriveSyncUp(){
       headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
       body:data
     }).then(function(r){
+      // @ts-expect-error Error() wandelt den Status selbst in Text
       if(!r.ok)throw new Error(r.status);
       localStorage.setItem('nt_last_sync',new Date().toISOString());
       localStorage.setItem('nt_od_sync_date',today());
@@ -197,6 +199,7 @@ function oneDriveSyncDown(){
       headers:{'Authorization':'Bearer '+token}
     }).then(function(r){
       if(r.status===404){showToast('Keine Sicherung in OneDrive gefunden');return null;}
+      // @ts-expect-error Error() wandelt den Status selbst in Text
       if(!r.ok)throw new Error(r.status);
       return r.json();
     }).then(function(backup){
@@ -237,6 +240,7 @@ function oneDriveSyncSlot(){
       headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
       body:data
     }).then(function(r){
+      // @ts-expect-error Error() wandelt den Status selbst in Text
       if(!r.ok)throw new Error(r.status);
       meta[idx]={savedAt:savedAt};
       _odSlotsMetaSave(meta);
@@ -266,6 +270,7 @@ function _odSlotLoad(idx){
       headers:{'Authorization':'Bearer '+token}
     }).then(function(r){
       if(r.status===404){showToast('Slot '+(idx+1)+' nicht gefunden');return null;}
+      // @ts-expect-error Error() wandelt den Status selbst in Text
       if(!r.ok)throw new Error(r.status);
       return r.json();
     }).then(function(d){

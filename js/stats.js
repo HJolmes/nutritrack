@@ -1,3 +1,4 @@
+// @ts-check
 // NutriTrack – Statistik, Gewichtsverlauf und Wochenbericht (v0.277)
 // Klassisches Script, kein Modul. Exportiert window.NTStats und greift direkt auf
 // die globalen Helfer aus index.html zu (S, saveS, esc, showToast, today,
@@ -71,7 +72,7 @@ function renderStatsPanel(){
 function renderWeightChart(){
   var wlog=S.weightLog||{};
   var dates=Object.keys(wlog).sort().slice(-14);
-  var canvas=document.getElementById('weightChart');
+  var canvas=/** @type {HTMLCanvasElement} */ (document.getElementById('weightChart'));
   var empty=document.getElementById('weightChartEmpty');
   if(!canvas)return;
   if(dates.length<2){canvas.style.display='none';if(empty)empty.style.display='block';return;}
@@ -169,7 +170,9 @@ function renderWeekBars(){
   while(true){var dt=dayTotals(S.days[d2]);if(!dt)break;if((dt.kcal||0)<10)break;streak++;d2=addDays(d2,-1);}
   var streakEl=document.getElementById('streakNum');
   var avgEl=document.getElementById('avgKcal');
+  // @ts-expect-error textContent wandelt die Zahl selbst in Text
   if(streakEl)streakEl.textContent=streak;
+  // @ts-expect-error textContent wandelt die Zahl selbst in Text
   if(avgEl)avgEl.textContent=cnt?Math.round(avg/cnt):0;
 }
 
@@ -259,7 +262,7 @@ function weekStats(){
     r.avgKcal=Math.round(sum.kcal/n);r.avgNet=Math.round(sum.net/n);r.avgBurned=Math.round(sum.burned/n);
     r.avgP=Math.round(sum.p/n);r.avgC=Math.round(sum.c/n);r.avgF=Math.round(sum.f/n);
   }
-  var mt=getMacroTargets()||{};
+  var mt=/** @type {{protein?: number, carbs?: number, fat?: number}} */ (getMacroTargets()||{});
   r.mt={protein:+mt.protein||0,carbs:+mt.carbs||0,fat:+mt.fat||0};
   r.stP=_macroStatus(r.avgP,r.mt.protein,true);
   r.stC=_macroStatus(r.avgC,r.mt.carbs,false);

@@ -78,7 +78,7 @@
 | v0.305 | #300 | #257 Teil B: `picker.js` in IIFE, API `window.NTPicker` (41 Exporte), alle Aufrufer und `on*`/`data-act`-Strings auf `NTPicker.<name>`; `js/templates.js` `tplMeal`; Rauchtest prüft `NTPicker`, Chat-Ergebnis über den echten KI-Rückfall (KI/Nährwertsuche ersetzt). |
 | v0.306 | #303 | #298 `parsePhotoResponse`: Objekt- und Array-Versuch je mit eigenem `try`, protokolliert nur, wenn beide scheitern; Test schreibt das neue Verhalten fest. |
 | v0.307 | #304 | #301 Schritt 1: `cacheFood`, `getRecentFoods`, `searchLocal`, `urlProxyUrl` → `picker.js` (unverändert, nicht exportiert), `coupling-allow.json` `picker.js` 27 → 23. |
-| v0.308 | — | Teilen/Import: `shareEntryAsFood` über `_encEntry` (Menge/Portionen, Rezept bleibt Rezept), `_shPer100Enc`/`_shPer100Dec` (g/b/l) mit Test; Import-Dialog für `t:'f'`/`'r'`: Menge vorbelegt, `importConfirmTo('diary'|'plan'|'lib')`, `NTPlan.addSnapshot`. |
+| v0.308 | #305 | Teilen/Import: `shareEntryAsFood` über `_encEntry` (Menge/Portionen, Rezept bleibt Rezept), `_shPer100Enc`/`_shPer100Dec` (g/b/l) mit Test; Import-Dialog für `t:'f'`/`'r'`: Menge vorbelegt, `importConfirmTo('diary'|'plan'|'lib')`, `NTPlan.addSnapshot`. |
 
 ---
 

@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 // Aktualisiert McDonald's und Burger King in js/restaurants.js (#307).
-// Läuft vierteljährlich in .github/workflows/update-restaurants.yml, lokal:
+// Burger King läuft vierteljährlich in .github/workflows/update-restaurants.yml
+// (--only bk); McDonald's blockt GitHub-Server und läuft in der Claude-Routine
+// (--only mcd, aus der Claude-Umgebung erreichbar). Lokal:
 //   node tools/update-restaurants.js [--only mcd|bk] [--summary datei.md]
 // (in der Claude-Umgebung mit NODE_USE_ENV_PROXY=1, damit fetch den Proxy nimmt)
 //

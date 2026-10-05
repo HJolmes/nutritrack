@@ -1,9 +1,10 @@
 name: Ketten-Nährwerte aktualisieren
 
-# #307: Holt vierteljährlich die Nährwerte von McDonald's und Burger King neu
-# (tools/update-restaurants.js) und legt bei Änderungen einen PR an – nie direkt
-# auf main. dean&david und Subway kommen aus PDFs; die aktualisiert eine
-# Claude-Routine zwei Tage später.
+# #307: Holt vierteljährlich die Nährwerte von Burger King neu
+# (tools/update-restaurants.js --only bk) und legt bei Änderungen einen PR an –
+# nie direkt auf main. McDonald's blockt die Server von GitHub (Akamai, erster
+# Lauf 2026-10-05: keine Produktlinks); McDonald's und alle übrigen Ketten
+# aktualisiert deshalb die Claude-Routine zwei Tage später.
 #
 # Ein PR, den GITHUB_TOKEN anlegt, startet keine anderen Workflows. Deshalb laufen
 # die Prüfungen aus checks.yml hier selbst, bevor der PR entsteht.
@@ -34,6 +35,7 @@ jobs:
           node-version: "22"
 
       - name: Playwright + Chromium
+        # Für den Rauchtest in „Prüfungen“; Burger King selbst braucht keinen Browser.
         run: |
           npm ci
           npx playwright install --with-deps chromium
@@ -43,7 +45,7 @@ jobs:
         # Exit 2 = keine Kette aktualisierbar (Quelle weg/blockiert) → Lauf rot,
         # damit es auffällt; die Zusammenfassung steht im Job-Log.
         run: |
-          node tools/update-restaurants.js --summary "$RUNNER_TEMP/summary.md"
+          node tools/update-restaurants.js --only bk --summary "$RUNNER_TEMP/summary.md"
           cat "$RUNNER_TEMP/summary.md" >> "$GITHUB_STEP_SUMMARY"
           if git diff --quiet -- js/restaurants.js; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
@@ -77,7 +79,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BR"
           git add -A
-          git commit -m "chore(v$VER): Ketten-Nährwerte $STAND (McDonald's, Burger King)"
+          git commit -m "chore(v$VER): Ketten-Nährwerte $STAND (Burger King)"
           git push -f origin "$BR"
           {
             cat "$RUNNER_TEMP/summary.md"

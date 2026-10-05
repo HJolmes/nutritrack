@@ -237,7 +237,7 @@ function pickerSelResult(i){
   var el=document.getElementById('pri'+i);if(el)el.classList.add('sel');
   pickerSelFood=p;
   var isRec=p.isRecipe;
-  document.getElementById('pickerAmt').value=isRec?'1':'100';
+  document.getElementById('pickerAmt').value=isRec?'1':String(p.portionG||100);
   document.getElementById('pickerAmtUnit').textContent=isRec?'Portion(en)':'Gramm';
   document.getElementById('pickerAddSec').classList.remove('hidden');
 }
@@ -1638,8 +1638,29 @@ function pickerChatLocalSearch(q){
   // statt sie an die KI weiterzureichen (die bei Alkohol gern nichts Parsebares liefert, #135).
   // Mehrdeutige Synonyme („Reis": roh UND gekocht) stehen alle zur Wahl (#210).
   _pickerDbHits(q).forEach(function(d){add(_pickerDbItem(d),9);});
+  // Restaurant-Ketten (#307): Kettenname in der Anfrage → ihr Sortiment zur
+  // Auswahl, vor allem anderen; sonst Produkttreffer („big mac“) unter der DB.
+  var ch=_pickerChainHits(q);
+  if(ch.length&&ch[0].chainNamed)return ch.slice(0,40);
+  ch.forEach(function(c){add(c,8);});
   results.sort(function(a,b){return b.score-a.score;});
   return results.slice(0,6).map(function(x){return x.item;});
+}
+// Treffer aus js/restaurants.js als Picker-Einträge: per100 + Portion in g.
+// Produkte ohne Portionsgewicht fallen weg (die App rechnet in Gramm).
+function _pickerChainHits(q){
+  if(typeof chainSearch!=='function')return [];
+  return chainSearch(window.CHAINS||[],q).filter(function(x){return x.item.g>0;}).map(function(x){
+    return {name:x.item.n+' ('+x.chain.n+')',emoji:x.chain.e||'🍔',per100:chainPer100(x.item),portionG:x.item.g,badge:x.chain.n,bdgCls:'',chainNamed:x.named};
+  });
+}
+// Gramm für einen Ketten-Treffer: Grammangabe, sonst Anzahl × Portion, sonst
+// eine Portion. „6 Nuggets“ bei „Chicken McNuggets 6 Stück“ ist EINE Portion.
+function _pickerChainGrams(p,q){
+  if(q&&q.grams>0)return Math.round(q.grams);
+  var n=(q&&q.count>0)?q.count:1;
+  if(q&&q.count>0&&new RegExp('(^|\\D)'+q.count+'(\\D|$)').test(p.name))n=1;
+  return Math.max(1,Math.round(n*p.portionG));
 }
 
 // Portionen eines Rezepts aus der Nachricht: „2 Chili" → 2. Eine Grammangabe
@@ -1674,7 +1695,8 @@ function pickerChatAddLocal(i){
   // Menge aus der Nachricht (#210): „2 Bier" ist nicht 100 g. Ohne Stückgewicht
   // und ohne Portionsgedächtnis bleibt das Feld leer („g?") statt geraten.
   var ing={name:p.name,emoji:p.emoji,g:100,amount:100,per100:p.per100};
-  if(p.qty){var ga=_pickerQtyGrams(p.qty,p.name);ing.g=ga||null;ing.amount=ga;if(!ga)ing.missingGrams=true;}
+  if(p.portionG){ing.g=ing.amount=_pickerChainGrams(p,p.qty);}
+  else if(p.qty){var ga=_pickerQtyGrams(p.qty,p.name);ing.g=ga||null;ing.amount=ga;if(!ga)ing.missingGrams=true;}
   pickerIngredients=[ing];
   if(!document.getElementById('pickerChatRecipeName').value)
     document.getElementById('pickerChatRecipeName').value=p.name.slice(0,50);
@@ -1763,15 +1785,18 @@ function pickerSendChat(){
     results.forEach(function(p){if(cq)p.qty=cq;});
     window._pickerLocalResults=results;
     var html='<div id="pickerLocalCards" style="display:flex;flex-direction:column;gap:6px;margin-top:4px;">';
-    html+='<div class="cm a">📚 '+results.length+' Treffer in deinem Bestand:</div>';
+    html+='<div class="cm a">'+(results[0].chainNamed?'🍔 '+_esc(results[0].badge)+': '+results.length+' Produkt'+(results.length===1?'':'e')+' – wähle aus:':'📚 '+results.length+' Treffer in deinem Bestand:')+'</div>';
     results.forEach(function(p,i){
       var sub=p.isRecipe?'Rezept':(p.per100?Math.round(p.per100.kcal)+' kcal · P'+(p.per100.protein||0).toFixed(1)+'g · K'+(p.per100.carbs||0).toFixed(1)+'g · F'+(p.per100.fat||0).toFixed(1)+'g /100g':'');
-      if(p.qty){
+      if(p.portionG){
+        var cg=_pickerChainGrams(p,p.qty);
+        sub=cg+' g · '+Math.round((p.per100.kcal||0)*cg/100)+' kcal · P'+((p.per100.protein||0)*cg/100).toFixed(1)+'g · K'+((p.per100.carbs||0)*cg/100).toFixed(1)+'g · F'+((p.per100.fat||0)*cg/100).toFixed(1)+'g';
+      }else if(p.qty){
         var qp=p.isRecipe?_pickerQtyPortions(p.qty):0,qg=p.isRecipe?0:_pickerQtyGrams(p.qty,p.name);
         var qs=p.isRecipe?(qp?qp+' Portion'+(qp===1?'':'en'):''):(qg?qg+' g':'Menge g?');
         if(qs)sub=qs+(sub?' · '+sub:'');
       }
-      var badge=p.badge||'';
+      var badge=p.portionG?'':(p.badge||'');
       html+='<div style="background:var(--gl);border:1px solid var(--br);border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:8px;">'
         +'<div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:13px;">'+esc(p.emoji||'🍽')+' '+_esc(p.name)+(badge?' <span style="font-size:11px;color:var(--mu);">'+_esc(badge)+'</span>':'')+'</div>'
         +(sub?'<div style="font-size:11px;color:var(--mu);">'+sub+'</div>':'')+'</div>'
@@ -2517,10 +2542,12 @@ function searchLocal(q){
   });
   // Built-in DB
   DB.forEach(function(f){var s=fuzzy(f,q);if(s>0||!ql)add({name:f.n,emoji:f.e,per100:dbPer100(f)},s);});
+  // Restaurant-Ketten (#307): mit Kettenname ganz oben
+  if(ql)_pickerChainHits(q).forEach(function(c){add(c,c.chainNamed?40:6);});
   results.sort(function(a,b){return b.score-a.score;});
   var out=[],seenOut={};
   results.forEach(function(x){var k=x.item.name.toLowerCase();if(!seenOut[k]){seenOut[k]=true;out.push(x.item);}});
-  return out.slice(0,ql?15:12);
+  return out.slice(0,!ql?12:(out.length&&out[0].chainNamed)?40:15);
 }
 
 // ── Zuletzt gegessen / Favoriten ──

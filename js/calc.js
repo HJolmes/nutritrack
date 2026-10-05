@@ -428,3 +428,79 @@ function parsePhotoResponse(text){
   if(err)console.error('[NutriTrack parsePhotoResponse]',err);
   return{rezept:'',zutaten:[]};
 }
+
+// ── Restaurant-Ketten (#307) ──
+// Daten: window.CHAINS aus js/restaurants.js, je Produkt Werte PRO PORTION
+// ({n,g,k,p,c,f,su,fi,sa}, g = Portionsgewicht in g bzw. ml). Die App rechnet
+// in per100 + amount; chainPer100 liefert per100, die Portion bleibt g.
+/** @param {string} s */
+function chainFold(s){
+  return String(s||'').toLowerCase().replace(/ä/g,'a').replace(/ö/g,'o').replace(/ü/g,'u').replace(/ß/g,'ss')
+    .replace(/['’´`]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+}
+/** @param {{g?:number|null,k?:number|null,p?:number|null,c?:number|null,f?:number|null,su?:number|null,fi?:number|null,sa?:number|null}} it */
+function chainPer100(it){
+  var g=it&&it.g;if(!(g&&g>0))return null;
+  /** @param {number|null|undefined} v */
+  function r(v){return Math.round((Number(v)||0)*100/g*10)/10;}
+  return {kcal:r(it.k),protein:r(it.p),carbs:r(it.c),fat:r(it.f),sugar:r(it.su),fiber:r(it.fi),salt:Math.round((Number(it.sa)||0)*100/g*100)/100};
+}
+var _CHAIN_STOP={bei:1,von:1,vom:1,im:1,aus:1,der:1,die:1,das:1,ein:1,eine:1,einen:1,einmal:1,vs:1};
+/** @param {string} s */
+function _chainTok(s){return chainFold(s).split(' ').filter(function(w){return w&&!_CHAIN_STOP[w];});}
+// Punkte eines Produktnamens für die Suchwörter: jedes Wort muss treffen
+// (gleich 3, Wortanfang 2, im Wort ab 4 Zeichen 1), sonst 0.
+/** @param {string} name @param {string[]} qTok */
+function _chainScore(name,qTok){
+  var nTok=_chainTok(name),sum=0;
+  for(var i=0;i<qTok.length;i++){
+    var q=qTok[i],best=0;
+    for(var j=0;j<nTok.length;j++){
+      var t=nTok[j];
+      if(t===q){best=3;break;}
+      if(t.indexOf(q)===0&&best<2)best=2;
+      else if(q.length>=4&&t.indexOf(q)>0&&best<1)best=1;
+    }
+    if(!best)return 0;
+    sum+=best;
+  }
+  return sum;
+}
+// Suche über alle Ketten. Steht ein Kettenname (oder Alias wie „mces“, „bk“)
+// in der Anfrage, zählt nur diese Kette: ohne weitere Wörter — oder wenn die
+// nichts treffen — kommt ihr ganzes Sortiment (named:true). Ohne Kettennamen
+// muss jedes Wort einen Produktnamen treffen („big mac“, „whopper“).
+// Ergebnis: [{chain,item,score,named}], beste zuerst, sonst Reihenfolge der Daten.
+/**
+ * @param {Array<{id:string,n:string,a?:string[],items:Array<any>}>} chains
+ * @param {string} q
+ * @returns {Array<{chain:any,item:any,score:number,named:boolean}>}
+ */
+function chainSearch(chains,q){
+  var fq=' '+chainFold(q)+' ',hitLen=0;
+  /** @type {{id:string,n:string,a?:string[],items:Array<any>}|null} */
+  var hit=null;
+  for(var ci=0;ci<(chains||[]).length;ci++){
+    var c0=chains[ci],als=[c0.n].concat(c0.a||[]);
+    for(var ai=0;ai<als.length;ai++){
+      var fa=chainFold(als[ai]);
+      if(fa&&fa.length>hitLen&&fq.indexOf(' '+fa+' ')>=0){hit=c0;hitLen=fa.length;}
+    }
+  }
+  /** @type {Array<{chain:any,item:any,score:number,named:boolean,i:number}>} */
+  var out=[];
+  if(hit){
+    var ch=hit,rest=fq;
+    [ch.n].concat(ch.a||[]).map(chainFold).filter(Boolean).sort(function(a,b){return b.length-a.length;})
+      .forEach(function(fa){rest=rest.split(' '+fa+' ').join(' ');});
+    var rt=_chainTok(rest);
+    ch.items.forEach(function(it,i){var s=rt.length?_chainScore(it.n,rt):1;if(s>0)out.push({chain:ch,item:it,score:s,named:true,i:i});});
+    if(!out.length)ch.items.forEach(function(it,i){out.push({chain:ch,item:it,score:0,named:true,i:i});});
+  }else{
+    var qt=_chainTok(q);if(!qt.length)return [];
+    var n=0;
+    (chains||[]).forEach(function(c){c.items.forEach(function(it){var s=_chainScore(it.n,qt);if(s>0)out.push({chain:c,item:it,score:s,named:false,i:n});n++;});});
+  }
+  out.sort(function(a,b){return b.score-a.score||a.i-b.i;});
+  return out.map(function(x){return {chain:x.chain,item:x.item,score:x.score,named:x.named};});
+}

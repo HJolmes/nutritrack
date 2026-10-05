@@ -650,6 +650,24 @@ test('chainSearch: Schreibfehler und Zusammenschreibung', () => {
   assert.deepEqual(names(C.chainSearch(CH, 'Kaffee')), []);
 });
 
+test('chainSearch: halb getippter Kettenname zeigt das Sortiment', () => {
+  const C = load({});
+  const r = C.chainSearch(CH, 'mcdon');
+  assert.deepEqual(names(r), ['mcd:Big Mac', 'mcd:Cheeseburger', 'mcd:Pommes Frites mittel']);
+  assert.ok(r.every((x) => x.named));
+  assert.ok(C.chainSearch(CH, 'Burger Ki').every((x) => x.named && x.chain.id === 'bk'));
+  // Ein ganzes Produktwort bleibt Produktsuche: „burger“ zeigt nicht nur Burger King
+  assert.ok(plain(C.chainSearch(CH, 'cheeseburger')).every((x) => !x.named));
+  const SB = [{ id: 'sub', n: 'Subway', a: [], items: [{ n: 'Tuna Sub', g: 1, k: 1 }, { n: 'Cookie', g: 1, k: 1 }] }];
+  assert.equal(C.chainSearch(SB, 'Subw').length, 2);
+  // Kürzer als die Hälfte: nur als Rückfall, wenn kein Produkt trifft
+  assert.deepEqual(plain(C.chainSearch(SB, 'Sub')).map((x) => x.item.n), ['Tuna Sub']);
+  assert.equal(C.chainSearch(SB, 'Sbw').length, 0);
+  assert.ok(plain(C.chainSearch(SB, 'Su')).every((x) => !x.named));
+  const ST = [{ id: 'sb', n: 'Starbucks', a: [], items: [{ n: 'Latte', g: null, k: 1 }] }];
+  assert.ok(plain(C.chainSearch(ST, 'Sta')).every((x) => x.named && x.item.n === 'Latte'));
+});
+
 test('chainPortionEntry: Produkt ohne Gewicht als Portionen-Eintrag', () => {
   const C = load({});
   const per = C.chainPerPortion({ k: 681, p: 30, c: 50, f: 38, su: null, fi: 3, sa: 2.5 });

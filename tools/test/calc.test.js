@@ -539,3 +539,95 @@ test('_shPer100Enc/_shPer100Dec: Zucker, Ballaststoffe, Salz reisen mit, alte Se
   assert.deepEqual(JSON.parse(JSON.stringify(C._shPer100Dec({k:100,pr:1,c:2,f:3}))), {kcal:100,protein:1,carbs:2,fat:3,sugar:0,fiber:0,salt:0});
   assert.deepEqual(JSON.parse(JSON.stringify(C._shPer100Enc(null))), {k:0,pr:0,c:0,f:0});
 });
+
+// ── Restaurant-Ketten (#307) ─────────────────────────────────────────────
+const CH = [
+  { id: 'mcd', n: "McDonald's", a: ['mcdonalds', 'mces', 'mc donalds'], items: [
+    { n: 'Big Mac', g: 200, k: 500, p: 26, c: 42, f: 25, su: 9, fi: 3, sa: 2.2 },
+    { n: 'Cheeseburger', g: 100, k: 300, p: 15, c: 30, f: 12, su: 6, fi: null, sa: 1.5 },
+    { n: 'Pommes Frites mittel', g: 114, k: 330, p: 4, c: 40, f: 16, su: 0.3, fi: 4, sa: 0.6 },
+  ] },
+  { id: 'bk', n: 'Burger King', a: ['bk'], items: [
+    { n: 'Whopper', g: 270, k: 630, p: 28, c: 50, f: 35, su: 11, fi: 3, sa: 2.3 },
+    { n: 'Cheeseburger', g: 120, k: 320, p: 16, c: 31, f: 14, su: 7, fi: 1, sa: 1.6 },
+  ] },
+];
+const names = (r) => plain(r).map((x) => x.chain.id + ':' + x.item.n);
+
+test('chainFold: Apostroph, & und Umlaute', () => {
+  const C = load({});
+  assert.equal(C.chainFold("McDonald's"), 'mcdonalds');
+  assert.equal(C.chainFold('dean&david'), 'dean david');
+  assert.equal(C.chainFold('Mäckes Süß'), 'mackes suss');
+});
+
+test('chainPer100: Portion auf 100 g, fehlende Werte als 0, ohne Gewicht null', () => {
+  const C = load({});
+  assert.deepEqual(plain(C.chainPer100(CH[0].items[0])), { kcal: 250, protein: 13, carbs: 21, fat: 12.5, sugar: 4.5, fiber: 1.5, salt: 1.1 });
+  assert.equal(C.chainPer100(CH[0].items[1]).fiber, 0);
+  assert.equal(C.chainPer100({ n: 'x', g: null, k: 100 }), null);
+});
+
+test('chainSearch: Kettenname allein zeigt das ganze Sortiment', () => {
+  const C = load({});
+  const r = C.chainSearch(CH, 'mcdonalds');
+  assert.deepEqual(names(r), ['mcd:Big Mac', 'mcd:Cheeseburger', 'mcd:Pommes Frites mittel']);
+  assert.ok(r.every((x) => x.named));
+  assert.equal(C.chainSearch(CH, "McDonald's").length, 3);
+  assert.equal(C.chainSearch(CH, 'Mc Donalds').length, 3);
+});
+
+test('chainSearch: Kettenname + Produkt grenzt auf die Kette ein', () => {
+  const C = load({});
+  assert.deepEqual(names(C.chainSearch(CH, 'bk cheeseburger')), ['bk:Cheeseburger']);
+  assert.deepEqual(names(C.chainSearch(CH, 'Pommes bei McDonalds')), ['mcd:Pommes Frites mittel']);
+  // Trifft nichts: ganzes Sortiment statt leer
+  assert.equal(C.chainSearch(CH, 'bk zzz').length, 2);
+});
+
+test('chainSearch: ohne Kettennamen muss jedes Wort treffen', () => {
+  const C = load({});
+  assert.deepEqual(names(C.chainSearch(CH, 'big mac')), ['mcd:Big Mac']);
+  assert.deepEqual(names(C.chainSearch(CH, 'cheeseburger')), ['mcd:Cheeseburger', 'bk:Cheeseburger']);
+  assert.deepEqual(names(C.chainSearch(CH, 'big burger')), []);
+  assert.deepEqual(names(C.chainSearch(CH, 'Apfel')), []);
+  // Kein Fehltreffer durch Wortteile: „bk“ steckt nicht in anderen Wörtern
+  assert.deepEqual(names(C.chainSearch(CH, 'Whopperbk')), []);
+  assert.equal(C.chainSearch(CH, '').length, 0);
+  assert.equal(C.chainSearch(null, 'big mac').length, 0);
+});
+
+test('js/restaurants.js: jedes Produkt mit Gewicht und kcal, Namen je Kette eindeutig', () => {
+  const ctx = { window: {} };
+  vm.createContext(ctx);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'js/restaurants.js'), 'utf8'), ctx);
+  const chains = ctx.window.CHAINS;
+  assert.ok(Array.isArray(chains) && chains.length >= 4);
+  for (const ch of chains) {
+    const seen = new Set();
+    for (const it of ch.items) {
+      assert.ok(it.g > 0, ch.n + ': ' + it.n + ' ohne Gewicht');
+      assert.equal(typeof it.k, 'number', ch.n + ': ' + it.n + ' ohne kcal');
+      assert.ok(!seen.has(it.n), ch.n + ': ' + it.n + ' doppelt');
+      seen.add(it.n);
+    }
+    if (ch.items.length) assert.ok(/^https:\/\//.test(ch.src), ch.n + ': Quelle fehlt');
+  }
+});
+
+test('chainPer100: Rückrechnung auf die Portion trifft die Quelle', () => {
+  const C = load({});
+  const it = { n: 'Red Thai Chicken Curry', g: 576, k: 711, p: 29.8, c: 95.7, f: 21.6, su: 16.3, fi: null, sa: 4.2 };
+  const per = C.chainPer100(it);
+  assert.equal(Math.round(per.fat * 576 / 100 * 10) / 10, 21.6);
+  assert.equal(Math.round(per.protein * 576 / 100 * 10) / 10, 29.8);
+  assert.equal(Math.round(per.kcal * 576 / 100), 711);
+});
+
+test('chainSearch: genauer Name vor längeren Varianten', () => {
+  const C = load({});
+  const ch = [{ id: 'bk', n: 'Burger King', a: ['bk'], items: [
+    { n: 'Double Whopper', g: 1, k: 1 }, { n: 'Plant-based Whopper', g: 1, k: 1 }, { n: 'Whopper', g: 1, k: 1 }, { n: 'Whopper Jr.', g: 1, k: 1 },
+  ] }];
+  assert.deepEqual(plain(C.chainSearch(ch, 'whopper')).map((x) => x.item.n), ['Whopper', 'Double Whopper', 'Whopper Jr.', 'Plant-based Whopper']);
+});

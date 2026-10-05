@@ -237,8 +237,8 @@ function pickerSelResult(i){
   var el=document.getElementById('pri'+i);if(el)el.classList.add('sel');
   pickerSelFood=p;
   var isRec=p.isRecipe;
-  document.getElementById('pickerAmt').value=isRec?'1':String(p.portionG||100);
-  document.getElementById('pickerAmtUnit').textContent=isRec?'Portion(en)':'Gramm';
+  document.getElementById('pickerAmt').value=(isRec||p.pu)?'1':String(p.portionG||100);
+  document.getElementById('pickerAmtUnit').textContent=(isRec||p.pu)?'Portion(en)':'Gramm';
   document.getElementById('pickerAddSec').classList.remove('hidden');
 }
 
@@ -293,6 +293,16 @@ function pickerConfirmAdd(){
   if(!pickerSelFood)return;
   var amt=parseFloat(document.getElementById('pickerAmt').value)||1;
   var f=pickerSelFood;
+  if(f.pu){
+    // Ketten-Produkt ohne Gewicht: amt sind Portionen (#307)
+    if(window._editEntryMode){_pickerAppendToEditEntry([{name:f.name,emoji:f.emoji,amount:100*amt,per100:f.per100,pu:true}]);return;}
+    getDay().meals[pickerMeal].push(chainPortionEntry(f.name,f.emoji,f.per100,amt));
+    saveS();renderAll();closePicker();
+    animateAdd(pickerMeal);
+    _pickerRateEntry(pickerMeal,getDay().meals[pickerMeal].length-1);
+    showToast((f.emoji||'🍽')+' '+f.name+' hinzugefügt');
+    return;
+  }
   // Zutat-Modus: an den offenen Eintrag anhängen statt neu zu buchen.
   if(window._editEntryMode){
     var item;
@@ -1650,10 +1660,13 @@ function pickerChatLocalSearch(q){
 }
 // Treffer aus js/restaurants.js als Picker-Einträge: per100 + Portion in g.
 // Produkte ohne Portionsgewicht fallen weg (die App rechnet in Gramm).
+// Ohne Portionsgewicht (pu): per100 sind die Portionswerte, portionG 100 =
+// eine Portion; gebucht wird dann in Portionen (chainPortionEntry).
 function _pickerChainHits(q){
   if(typeof chainSearch!=='function')return [];
-  return chainSearch(window.CHAINS||[],q).filter(function(x){return x.item.g>0;}).map(function(x){
-    return {name:x.item.n+' ('+x.chain.n+')',emoji:x.chain.e||'🍔',per100:chainPer100(x.item),portionG:x.item.g,badge:x.chain.n,bdgCls:'',chainNamed:x.named};
+  return chainSearch(window.CHAINS||[],q).filter(function(x){return x.item.g>0||typeof x.item.k==='number';}).map(function(x){
+    var pu=!(x.item.g>0);
+    return {name:x.item.n+' ('+x.chain.n+')',emoji:x.chain.e||'🍔',per100:pu?chainPerPortion(x.item):chainPer100(x.item),portionG:pu?100:x.item.g,pu:pu,badge:x.chain.n,bdgCls:'',chainNamed:x.named};
   });
 }
 /** @param {string} name @param {number} n */
@@ -1694,6 +1707,16 @@ function pickerChatAddLocal(i){
     saveS();renderAll();closePicker();
     _pickerRateEntry(pickerMeal,getDay().meals[pickerMeal].length-1);
     showToast('📋 '+rec.name+' eingetragen');
+    return;
+  }
+  if(p.pu){
+    // Ketten-Produkt ohne Gewicht: in Portionen buchen (#307)
+    var np=_pickerChainGrams(p,p.qty)/100;
+    if(window._editEntryMode){_pickerAppendToEditEntry([{name:p.name,emoji:p.emoji,amount:100*np,per100:p.per100,pu:true}]);return;}
+    getDay().meals[pickerMeal].push(chainPortionEntry(p.name,p.emoji,p.per100,np));
+    saveS();renderAll();closePicker();
+    _pickerRateEntry(pickerMeal,getDay().meals[pickerMeal].length-1);
+    showToast((p.emoji||'🍽')+' '+p.name+' eingetragen');
     return;
   }
   // Menge aus der Nachricht (#210): „2 Bier" ist nicht 100 g. Ohne Stückgewicht
@@ -1802,7 +1825,7 @@ function pickerSendChat(){
       var sub=p.isRecipe?'Rezept':(p.per100?Math.round(p.per100.kcal)+' kcal · P'+(p.per100.protein||0).toFixed(1)+'g · K'+(p.per100.carbs||0).toFixed(1)+'g · F'+(p.per100.fat||0).toFixed(1)+'g /100g':'');
       if(p.portionG){
         var cg=_pickerChainGrams(p,p.qty);
-        sub=cg+' g · '+Math.round((p.per100.kcal||0)*cg/100)+' kcal · P'+((p.per100.protein||0)*cg/100).toFixed(1)+'g · K'+((p.per100.carbs||0)*cg/100).toFixed(1)+'g · F'+((p.per100.fat||0)*cg/100).toFixed(1)+'g';
+        sub=(p.pu?(cg/100)+' Portion'+(cg===100?'':'en'):cg+' g')+' · '+Math.round((p.per100.kcal||0)*cg/100)+' kcal · P'+((p.per100.protein||0)*cg/100).toFixed(1)+'g · K'+((p.per100.carbs||0)*cg/100).toFixed(1)+'g · F'+((p.per100.fat||0)*cg/100).toFixed(1)+'g';
       }else if(p.qty){
         var qp=p.isRecipe?_pickerQtyPortions(p.qty):0,qg=p.isRecipe?0:_pickerQtyGrams(p.qty,p.name);
         var qs=p.isRecipe?(qp?qp+' Portion'+(qp===1?'':'en'):''):(qg?qg+' g':'Menge g?');
@@ -2428,7 +2451,7 @@ function pickerRenderIngList(elId,ings,onAmtChange,onDel){
       +'<div class="ing-e" onclick="ingToggle(event,\''+nid+'\')">'+esc(ing.emoji||'🍽')+'</div>'
       +'<div class="ing-n" onclick="ingToggle(event,\''+nid+'\')">'+_esc(ing.name)+ampelDot+'</div>'
       +'<input type="number" class="ing-amt" value="'+amtVal+'" min="1" placeholder="g?" style="'+borderStyle+'" data-i="'+i+'" onchange="NTPicker.pickerIngAmtChange(\''+elId+'\','+i+',this.value)">'
-      +'<div class="ing-u">g</div>'
+      +'<div class="ing-u">'+(ing.pu?'% Port.':'g')+'</div>'
       +warn
       +'<button type="button" class="ing-del" onclick="NTPicker.pickerIngDel(\''+elId+'\','+i+')">✕</button>'
       +'</div>'
@@ -2447,7 +2470,10 @@ function pickerAddRecent(i){
     var it;
     if(item.isRecipe||item.ingredients){
       // Auch Chat-/Foto-Einträge ohne Rezept: die Zutaten des Eintrags zählen.
-      it=_pickerIngsAsOne(item.name,item.emoji||'📋',item.ingredients,item.portions||1);
+      var ing0=(item.ingredients||[])[0];
+      // Ketten-Produkt in Portionen (#307): bleibt eine Portionen-Zutat
+      if(item.ingredients&&item.ingredients.length===1&&ing0.pu)it={name:item.name,emoji:item.emoji,amount:(ing0.amount||100)*(item.portions||1),per100:ing0.per100,pu:true};
+      else it=_pickerIngsAsOne(item.name,item.emoji||'📋',item.ingredients,item.portions||1);
       if(!it){showToast(_PICKER_NO_GRAMS);return;}
     } else {
       it={name:item.name,emoji:item.emoji,amount:recallPortion(item.name)||item.amount||100,per100:item.per100};

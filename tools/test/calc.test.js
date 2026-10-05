@@ -606,7 +606,7 @@ test('js/restaurants.js: jedes Produkt mit Gewicht und kcal, Namen je Kette eind
   for (const ch of chains) {
     const seen = new Set();
     for (const it of ch.items) {
-      assert.ok(it.g > 0, ch.n + ': ' + it.n + ' ohne Gewicht');
+      assert.ok(it.g > 0 || it.g === null, ch.n + ': ' + it.n + ' Gewicht ungültig');
       assert.equal(typeof it.k, 'number', ch.n + ': ' + it.n + ' ohne kcal');
       assert.ok(!seen.has(it.n), ch.n + ': ' + it.n + ' doppelt');
       seen.add(it.n);
@@ -648,4 +648,19 @@ test('chainSearch: Schreibfehler und Zusammenschreibung', () => {
   // Kurze Wörter bleiben streng: „Apfel“ ist kein Tippfehler von irgendwas
   assert.deepEqual(names(C.chainSearch(CH, 'Apfel')), []);
   assert.deepEqual(names(C.chainSearch(CH, 'Kaffee')), []);
+});
+
+test('chainPortionEntry: Produkt ohne Gewicht als Portionen-Eintrag', () => {
+  const C = load({});
+  const per = C.chainPerPortion({ k: 681, p: 30, c: 50, f: 38, su: null, fi: 3, sa: 2.5 });
+  assert.deepEqual(plain(per), { kcal: 681, protein: 30, carbs: 50, fat: 38, sugar: 0, fiber: 3, salt: 2.5 });
+  const e = plain(C.chainPortionEntry('Klassik (Hans im Glück)', '🍔', per, 2));
+  assert.equal(e.isRecipe, true);
+  assert.equal(e.portions, 2);
+  assert.equal(e.kcal, 1362);
+  assert.equal(e.ingredients.length, 1);
+  assert.equal(e.ingredients[0].pu, true);
+  // Eine Portion des Eintrags = Summe der Zutaten (ingTotal), wie bei Rezepten
+  assert.equal(Math.round(C.ingTotal(e.ingredients).kcal), 681);
+  assert.equal(plain(C.chainPortionEntry('x', '🍔', per, 0)).portions, 1);
 });

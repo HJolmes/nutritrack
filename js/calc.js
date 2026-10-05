@@ -548,6 +548,26 @@ function _chainFind(chains,tok){
   }
   return best;
 }
+// Ketten, deren Name oder Alias (ohne Leerzeichen) mit der Anfrage anfängt;
+// half: die Anfrage deckt mindestens die Hälfte des Namens ab.
+/**
+ * @template {{n:string,a?:string[]}} T
+ * @param {T[]} chains @param {string[]} tok @param {number} min @param {boolean} [half]
+ * @returns {T[]}
+ */
+function _chainPrefix(chains,tok,min,half){
+  var pre=tok.join('');if(pre.length<min)return [];
+  return chains.filter(function(c){
+    return [c.n].concat(c.a||[]).some(function(a){
+      var sa=chainFold(a).replace(/ /g,'');
+      return sa.indexOf(pre)===0&&(!half||pre.length*2>=sa.length);
+    });
+  });
+}
+/** @param {Array<{items:Array<{n:string}>}>} chains @param {string} w */
+function _chainIsWord(chains,w){
+  return chains.some(function(c){return c.items.some(function(it){return _chainTok(it.n).indexOf(w)>=0;});});
+}
 // Suche über alle Ketten. Steht ein Kettenname (oder Alias wie „mces“, „bk“)
 // in der Anfrage, zählt nur diese Kette: ohne weitere Wörter — oder wenn die
 // nichts treffen — kommt ihr ganzes Sortiment (named:true). Ohne Kettennamen
@@ -561,6 +581,13 @@ function _chainFind(chains,tok){
 function chainSearch(chains,q){
   var tok=chainFold(q).split(' ').filter(Boolean);
   var hit=_chainFind(chains||[],tok);
+  // Halb getippter Kettenname beim Tippen („Subw“, „burger k“, „peter p“):
+  // mindestens 4 Zeichen und die Hälfte des Namens, und das letzte Wort ist
+  // kein ganzes Produktwort — sonst zeigte „burger“ nur Burger King
+  if(!hit&&tok.length){
+    var pc=_chainPrefix(chains||[],tok,4,true);
+    if(pc.length===1&&!_chainIsWord(chains||[],tok[tok.length-1]))hit={chain:pc[0],rest:[]};
+  }
   /** @type {Array<{chain:any,item:any,score:number,named:boolean,i:number}>} */
   var out=[];
   if(hit){
@@ -571,6 +598,10 @@ function chainSearch(chains,q){
     var qt=_chainTok(q);if(!qt.length)return [];
     var n=0;
     (chains||[]).forEach(function(c){c.items.forEach(function(it){var s=_chainScore(it.n,qt);if(s>0)out.push({chain:c,item:it,score:s,named:false,i:n});n++;});});
+    // Halb getippter Kettenname, der kein Produkt trifft („Sta“ → Starbucks)
+    if(!out.length)_chainPrefix(chains||[],tok,3).forEach(function(c){
+      c.items.forEach(function(it,i){out.push({chain:c,item:it,score:0,named:true,i:i});});
+    });
   }
   // Gleichstand bei einer Suche: kürzerer Name zuerst; das ganze Sortiment
   // (Punkte ≤ 1) bleibt in der Reihenfolge der Daten

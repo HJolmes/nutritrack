@@ -442,8 +442,10 @@ function chainFold(s){
 function chainPer100(it){
   var g=it&&it.g;if(!(g&&g>0))return null;
   /** @param {number|null|undefined} v */
-  function r(v){return Math.round((Number(v)||0)*100/g*10)/10;}
-  return {kcal:r(it.k),protein:r(it.p),carbs:r(it.c),fat:r(it.f),sugar:r(it.su),fiber:r(it.fi),salt:Math.round((Number(it.sa)||0)*100/g*100)/100};
+  // Drei Nachkommastellen: Die App rechnet per100 × Portion zurück, und auf
+  // eine Stelle gerundet würden aus 21,6 g Fett je 576-g-Curry 21,9 g.
+  function r(v){return Math.round((Number(v)||0)*100/g*1000)/1000;}
+  return {kcal:r(it.k),protein:r(it.p),carbs:r(it.c),fat:r(it.f),sugar:r(it.su),fiber:r(it.fi),salt:r(it.sa)};
 }
 var _CHAIN_STOP={bei:1,von:1,vom:1,im:1,aus:1,der:1,die:1,das:1,ein:1,eine:1,einen:1,einmal:1,vs:1};
 /** @param {string} s */

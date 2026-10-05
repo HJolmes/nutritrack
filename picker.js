@@ -1639,10 +1639,12 @@ function pickerChatLocalSearch(q){
   // Mehrdeutige Synonyme („Reis": roh UND gekocht) stehen alle zur Wahl (#210).
   _pickerDbHits(q).forEach(function(d){add(_pickerDbItem(d),9);});
   // Restaurant-Ketten (#307): Kettenname in der Anfrage → ihr Sortiment zur
-  // Auswahl, vor allem anderen; sonst Produkttreffer („big mac“) unter der DB.
+  // Auswahl, vor allem anderen; sonst Produkttreffer („big mac“) nur, wenn
+  // der eigene Bestand und die DB nichts haben – sonst stünden bei „Kaffee“
+  // die Ketten-Getränke im Weg.
   var ch=_pickerChainHits(q);
-  if(ch.length&&ch[0].chainNamed)return ch.slice(0,40);
-  ch.forEach(function(c){add(c,8);});
+  if(ch.length&&ch[0].chainNamed)return ch.slice(0,200);
+  if(!results.length)ch.forEach(function(c){add(c,8);});
   results.sort(function(a,b){return b.score-a.score;});
   return results.slice(0,6).map(function(x){return x.item;});
 }
@@ -1785,7 +1787,9 @@ function pickerSendChat(){
     results.forEach(function(p){if(cq)p.qty=cq;});
     window._pickerLocalResults=results;
     var html='<div id="pickerLocalCards" style="display:flex;flex-direction:column;gap:6px;margin-top:4px;">';
-    html+='<div class="cm a">'+(results[0].chainNamed?'🍔 '+_esc(results[0].badge)+': '+results.length+' Produkt'+(results.length===1?'':'e')+' – wähle aus:':'📚 '+results.length+' Treffer in deinem Bestand:')+'</div>';
+    var allChain=results.every(function(r){return !!r.portionG;});
+    html+='<div class="cm a">'+(results[0].chainNamed?esc(results[0].emoji)+' '+_esc(results[0].badge)+': '+results.length+' Produkt'+(results.length===1?'':'e')+' – wähle aus:'
+      :allChain?'🍽 '+results.length+' Treffer bei Restaurant-Ketten:':'📚 '+results.length+' Treffer in deinem Bestand:')+'</div>';
     results.forEach(function(p,i){
       var sub=p.isRecipe?'Rezept':(p.per100?Math.round(p.per100.kcal)+' kcal · P'+(p.per100.protein||0).toFixed(1)+'g · K'+(p.per100.carbs||0).toFixed(1)+'g · F'+(p.per100.fat||0).toFixed(1)+'g /100g':'');
       if(p.portionG){
@@ -2547,7 +2551,7 @@ function searchLocal(q){
   results.sort(function(a,b){return b.score-a.score;});
   var out=[],seenOut={};
   results.forEach(function(x){var k=x.item.name.toLowerCase();if(!seenOut[k]){seenOut[k]=true;out.push(x.item);}});
-  return out.slice(0,!ql?12:(out.length&&out[0].chainNamed)?40:15);
+  return out.slice(0,!ql?12:(out.length&&out[0].chainNamed)?200:15);
 }
 
 // ── Zuletzt gegessen / Favoriten ──

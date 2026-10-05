@@ -596,3 +596,30 @@ test('chainSearch: ohne Kettennamen muss jedes Wort treffen', () => {
   assert.equal(C.chainSearch(CH, '').length, 0);
   assert.equal(C.chainSearch(null, 'big mac').length, 0);
 });
+
+test('js/restaurants.js: jedes Produkt mit Gewicht und kcal, Namen je Kette eindeutig', () => {
+  const ctx = { window: {} };
+  vm.createContext(ctx);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'js/restaurants.js'), 'utf8'), ctx);
+  const chains = ctx.window.CHAINS;
+  assert.ok(Array.isArray(chains) && chains.length >= 4);
+  for (const ch of chains) {
+    const seen = new Set();
+    for (const it of ch.items) {
+      assert.ok(it.g > 0, ch.n + ': ' + it.n + ' ohne Gewicht');
+      assert.equal(typeof it.k, 'number', ch.n + ': ' + it.n + ' ohne kcal');
+      assert.ok(!seen.has(it.n), ch.n + ': ' + it.n + ' doppelt');
+      seen.add(it.n);
+    }
+    if (ch.items.length) assert.ok(/^https:\/\//.test(ch.src), ch.n + ': Quelle fehlt');
+  }
+});
+
+test('chainPer100: Rückrechnung auf die Portion trifft die Quelle', () => {
+  const C = load({});
+  const it = { n: 'Red Thai Chicken Curry', g: 576, k: 711, p: 29.8, c: 95.7, f: 21.6, su: 16.3, fi: null, sa: 4.2 };
+  const per = C.chainPer100(it);
+  assert.equal(Math.round(per.fat * 576 / 100 * 10) / 10, 21.6);
+  assert.equal(Math.round(per.protein * 576 / 100 * 10) / 10, 29.8);
+  assert.equal(Math.round(per.kcal * 576 / 100), 711);
+});

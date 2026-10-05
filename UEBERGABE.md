@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie beschreibt den **aktuellen** Stand, nicht seine Geschichte — die steht in Git und in `js/changelog.js`. Der Stand vor der Kürzung (#258, 132 KB): `git show 0d69ba2:UEBERGABE.md`. Grenzen siehe „Pflege“, `tools/check.js` prüft sie.
 
-**Stand:** v0.310 (2026-10-05) — #307 Ketten-Update automatisiert: GitHub Action `update-restaurants.yml` (1. Jan/Apr/Jul/Okt, McDonald's + Burger King über `tools/update-restaurants.js`, ersetzt nur die `/*gen:mcd*/`- und `/*gen:bk*/`-Blöcke in `js/restaurants.js`, prüft selbst und legt einen PR an) und Claude-Routine „NutriTrack: Ketten-Nährwerte dean&david + Subway (Quartal)“ (3. des Quartalsmonats, PDFs → PR). v0.309: Restaurant-Ketten im Picker (McDonald's 151, Burger King 181, dean&david 153, Subway 96). Entscheidung 2026-10-05: Ketten-Werte nur aus offiziellen Quellen, nichts geschätzt.
+**Stand:** v0.311 (2026-10-05) — dean&david auf Nährwertübersicht September 2026 (131 Produkte: Herbst-Karte mit Pumpkin Spice, neues Frühstück; Toasts/Porridge/Korean BBQ/Kebab entfallen). v0.310: Ketten-Update automatisiert (Action `update-restaurants.yml` für McDonald's/Burger King, Claude-Routine für die PDF-Ketten), Ketten-Suche tippfehlertolerant. v0.309: Restaurant-Ketten im Picker. Entscheidung 2026-10-05: Ketten-Werte nur aus offiziellen Quellen, nichts geschätzt.
 
 ## URLs
 
@@ -75,11 +75,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.306 | #303 | #298 `parsePhotoResponse`: Objekt- und Array-Versuch je mit eigenem `try`, protokolliert nur, wenn beide scheitern; Test schreibt das neue Verhalten fest. |
 | v0.307 | #304 | #301 Schritt 1: `cacheFood`, `getRecentFoods`, `searchLocal`, `urlProxyUrl` → `picker.js` (unverändert, nicht exportiert), `coupling-allow.json` `picker.js` 27 → 23. |
 | v0.308 | #305 | Teilen/Import: `shareEntryAsFood` über `_encEntry` (Menge/Portionen, Rezept bleibt Rezept), `_shPer100Enc`/`_shPer100Dec` (g/b/l) mit Test; Import-Dialog für `t:'f'`/`'r'`: Menge vorbelegt, `importConfirmTo('diary'|'plan'|'lib')`, `NTPlan.addSnapshot`. |
 | v0.309 | #308 | #307 `js/restaurants.js` + `chainSearch`/`chainPer100` (Tests, Datenprüfung), Picker-Chat/Suche mit Ketten-Treffern; Daten McDonald's (Produktseiten 2026-10), Burger King (Menü 2026-10), dean&david (2026-04) und Subway (2026-03). |
-| v0.310 | — | #307 `tools/update-restaurants.js` + `.github/workflows/update-restaurants.yml` (vierteljährlich, PR statt Push, Prüfungen im Workflow), Marker `/*gen:mcd*/`/`/*gen:bk*/` in `js/restaurants.js`; Claude-Routine für die PDF-Ketten; Ketten-Suche tippfehlertolerant (`_chainLev`/`_chainFind`). |
+| v0.310 | #309 | #307 `tools/update-restaurants.js` + `.github/workflows/update-restaurants.yml` (vierteljährlich, PR statt Push, Prüfungen im Workflow), Marker `/*gen:mcd*/`/`/*gen:bk*/` in `js/restaurants.js`; Claude-Routine für die PDF-Ketten; Ketten-Suche tippfehlertolerant (`_chainLev`/`_chainFind`). |
+| v0.311 | — | dean&david-Daten aus der Nährwertübersicht 2026-09 (153 → 131). |
 
 ---
 

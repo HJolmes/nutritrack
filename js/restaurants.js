@@ -14,6 +14,7 @@ window.CHAINS=[
   // Makros passen. Mezzo Mix: Seite nennt 0 g Kohlenhydrate bei 38 g Zucker → KH = Zucker.
   {id:'mcd',n:"McDonald's",e:'🍔',a:['mcdonalds','mcdonald','mc donalds','mc donald','mces','mackes','mcd'],
     src:'https://www.mcdonalds.com/de/de-de/produkte/alle-produkte.html',stand:'2026-10',items:[
+      /*gen:mcd*/
       {n:"2 McGriddles Pancakes",g:100,k:335,p:4.7,c:45,f:15,su:12,fi:1,sa:0.9},
       {n:"20 Chicken McNuggets",g:363,k:892,p:54,c:60,f:47,su:2.7,fi:4.1,sa:3.7},
       {n:"20 McPlant Nuggets",g:330,k:947,p:44,c:69,f:52,su:3,fi:14,sa:3.7},
@@ -165,12 +166,14 @@ window.CHAINS=[
       {n:"McFlurry/McSundae Wahlzutat KitKat White",g:30,k:147,p:2.1,c:20,f:6.2,su:14,fi:0.4,sa:0.08},
       {n:"McFlurry/McSundae Wahlzutat Smarties",g:36,k:170,p:1.5,c:25,f:7.1,su:24,fi:0.9,sa:0.05},
       {n:"Winter Spiced Latte Grande",g:375,k:291,p:7.5,c:36,f:13,su:36,fi:0,sa:0.29}
+      /*/gen:mcd*/
     ]},
   // Nährwerte der Produkte im aktuellen Menü von burgerking.de (dessen Datenquelle,
   // Stand 2026-10-05; je Portion mit Portionsgewicht). Ohne Produkte mit ≈ 0 kcal und
   // ohne Lieferservice-Doppel. Heineken: kcal enthalten Alkohol, daher ohne Makro-Abgleich.
   {id:'bk',n:'Burger King',e:'👑',a:['burgerking','bk'],
     src:'https://www.burgerking.de/menu',stand:'2026-10',items:[
+      /*gen:bk*/
       {n:"15er Churros Erdbeersauce",g:138,k:395,p:6.4,c:56.4,f:14.6,su:13.9,fi:3.2,sa:1.2},
       {n:"15er Churros Karamellsauce",g:138,k:390,p:6.4,c:55.4,f:14.6,su:13.9,fi:3.2,sa:1.4},
       {n:"15er Churros Schokosauce",g:138,k:393,p:6.7,c:54.4,f:14.6,su:13.9,fi:3.3,sa:1.2},
@@ -352,6 +355,7 @@ window.CHAINS=[
       {n:"XXL Butter Chicken Style Dip",g:120,k:190,p:2.4,c:16,f:12.4,su:9.2,fi:null,sa:3.6},
       {n:"XXL Cheese Dip",g:120,k:285,p:11.5,c:10.7,f:21.9,su:7.5,fi:0.1,sa:3.3},
       {n:"XXL Whopper Style Dip",g:120,k:473,p:1.1,c:19.2,f:43.3,su:15.8,fi:0.5,sa:2.2}
+      /*/gen:bk*/
     ]},
   // Nährwertübersicht April 2026 (PDF der Kette). Die PDF nennt Werte je 100 g/ml und
   // je Portion, aber kein Portionsgewicht: g = kJ je Portion / kJ je 100 g × 100

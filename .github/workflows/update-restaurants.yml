@@ -1,0 +1,89 @@
+name: Ketten-Nährwerte aktualisieren
+
+# #307: Holt vierteljährlich die Nährwerte von McDonald's und Burger King neu
+# (tools/update-restaurants.js) und legt bei Änderungen einen PR an – nie direkt
+# auf main. dean&david und Subway kommen aus PDFs; die aktualisiert eine
+# Claude-Routine zwei Tage später.
+#
+# Ein PR, den GITHUB_TOKEN anlegt, startet keine anderen Workflows. Deshalb laufen
+# die Prüfungen aus checks.yml hier selbst, bevor der PR entsteht.
+# Voraussetzung: Settings → Actions → General → „Allow GitHub Actions to create
+# and approve pull requests“.
+
+on:
+  schedule:
+    - cron: "17 3 1 1,4,7,10 *"   # 1. Jan/Apr/Jul/Okt, 03:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    name: Ketten-Update
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Playwright + Chromium
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Daten holen
+        id: fetch
+        # Exit 2 = keine Kette aktualisierbar (Quelle weg/blockiert) → Lauf rot,
+        # damit es auffällt; die Zusammenfassung steht im Job-Log.
+        run: |
+          node tools/update-restaurants.js --summary "$RUNNER_TEMP/summary.md"
+          cat "$RUNNER_TEMP/summary.md" >> "$GITHUB_STEP_SUMMARY"
+          if git diff --quiet -- js/restaurants.js; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Version erhöhen
+        if: steps.fetch.outputs.changed == 'true'
+        run: node tools/bump.js
+
+      - name: Prüfungen
+        if: steps.fetch.outputs.changed == 'true'
+        run: |
+          node tools/check.js
+          npm run typecheck
+          npm test
+          npx --yes http-server@14.1.1 -p 8099 -s . &
+          sleep 3
+          node tools/smoke.js
+
+      - name: PR anlegen
+        if: steps.fetch.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          STAND=$(date -u +%Y-%m)
+          BR="claude/nutritrack-ketten-$STAND"
+          VER=$(grep -oP "APP_VERSION='\K[0-9.]+" index.html)
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BR"
+          git add -A
+          git commit -m "chore(v$VER): Ketten-Nährwerte $STAND (McDonald's, Burger King)"
+          git push -f origin "$BR"
+          {
+            cat "$RUNNER_TEMP/summary.md"
+            echo
+            echo "Erzeugt von \`.github/workflows/update-restaurants.yml\` (#307). Prüfungen (check, typecheck, test, Rauchtest) liefen im Workflow grün."
+            echo "Vor dem Merge: Entfallene Produkte und große kcal-Sprünge kurz gegenlesen."
+          } > "$RUNNER_TEMP/body.md"
+          gh pr create --base main --head "$BR" --title "chore(v$VER): Ketten-Nährwerte $STAND" --body-file "$RUNNER_TEMP/body.md" --label enhancement --label topic:picker \
+            || gh pr create --base main --head "$BR" --title "chore(v$VER): Ketten-Nährwerte $STAND" --body-file "$RUNNER_TEMP/body.md"

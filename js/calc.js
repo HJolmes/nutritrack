@@ -447,6 +447,26 @@ function chainPer100(it){
   function r(v){return Math.round((Number(v)||0)*100/g*1000)/1000;}
   return {kcal:r(it.k),protein:r(it.p),carbs:r(it.c),fat:r(it.f),sugar:r(it.su),fiber:r(it.fi),salt:r(it.sa)};
 }
+// Produkte ohne Portionsgewicht (#307, Variante „1 Portion“): Die Werte gelten
+// je Portion. Gebucht wird ein Eintrag wie ein Rezept (Portionen statt Gramm)
+// mit EINER Zutat, deren per100 die Portionswerte sind und deren amount 100 =
+// eine Portion bedeutet (Kennzeichen pu:true, die Bearbeitung zeigt „% Port.“).
+/** @param {{k?:number|null,p?:number|null,c?:number|null,f?:number|null,su?:number|null,fi?:number|null,sa?:number|null}} it */
+function chainPerPortion(it){
+  /** @param {number|null|undefined} v */
+  function n(v){return Number(v)||0;}
+  return {kcal:n(it.k),protein:n(it.p),carbs:n(it.c),fat:n(it.f),sugar:n(it.su),fiber:n(it.fi),salt:n(it.sa)};
+}
+/**
+ * @param {string} name @param {string} emoji
+ * @param {{kcal:number,protein:number,carbs:number,fat:number,sugar:number,fiber:number,salt:number}} perPortion
+ * @param {number} portions
+ */
+function chainPortionEntry(name,emoji,perPortion,portions){
+  var n=portions>0?portions:1;
+  return Object.assign({name:name,emoji:emoji,isRecipe:true,portions:n,
+    ingredients:[{name:name,emoji:emoji,amount:100,per100:perPortion,pu:true}]},scaleNutrients(perPortion,n));
+}
 var _CHAIN_STOP={bei:1,von:1,vom:1,im:1,aus:1,der:1,die:1,das:1,ein:1,eine:1,einen:1,einmal:1,vs:1};
 /** @param {string} s */
 function _chainTok(s){return chainFold(s).split(' ').filter(function(w){return w&&!_CHAIN_STOP[w];});}

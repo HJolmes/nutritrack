@@ -121,16 +121,19 @@ async function fetchMCD(skipped) {
     const rows = [];
     for (const h of links) {
       const slug = h.split('/').pop().replace('.html', '');
-      const got = [];
-      const onResp = async (r) => {
-        if (!/dnaapp\/itemDetails/.test(r.url())) return;
-        try { got.push({ id: (r.url().match(/item=(\d+)/) || [])[1], json: JSON.parse(await r.text()) }); } catch (e) { /* kein JSON */ }
-      };
-      page.on('response', onResp);
-      await page.goto(MCD + h, { timeout: 45000 }).catch(() => {});
-      await page.waitForTimeout(2500);
-      page.off('response', onResp);
-      got.forEach((g) => rows.push({ key: slug + '__' + g.id + '.json', item: g.json.item }));
+      // Auf die Nährwert-Antwort der Seite warten (bis 20 s), einmal neu laden,
+      // wenn sie ausbleibt – eine feste Wartezeit verlor im Test 3 von 151 Produkten.
+      let got = null;
+      for (let attempt = 0; attempt < 2 && !got; attempt++) {
+        const wait = page.waitForResponse((r) => /dnaapp\/itemDetails/.test(r.url()), { timeout: 20000 }).catch(() => null);
+        await page.goto(MCD + h, { timeout: 45000 }).catch(() => {});
+        const r = await wait;
+        if (r) {
+          try { got = { id: (r.url().match(/item=(\d+)/) || [])[1], json: JSON.parse(await r.text()) }; } catch (e) { got = null; }
+        }
+      }
+      if (got) rows.push({ key: slug + '__' + got.id + '.json', item: got.json.item });
+      else skipped.push(slug + ': keine Nährwert-Antwort der Produktseite');
     }
     rows.sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
     const out = [], seen = new Set();

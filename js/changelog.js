@@ -2,6 +2,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.310',items:[
+    {icon:'✍️',text:'<b>Ketten-Suche verzeiht Schreibfehler</b>: „bigmac“, „whooper“, „mcdonals pommes“ oder „chiken teriyaki sub“ finden das richtige Produkt, auch zusammen- oder falsch geschriebene Kettennamen.',where:'Picker · Chat & Suche'},
+  ]},
   {v:'0.309',items:[
     {icon:'🍽',text:'<b>Restaurant-Ketten</b>: Im Chat und in der Suche „McDonald’s“, „Burger King“, „dean&david“ oder „Subway“ eingeben → das Sortiment zur Auswahl, mit ＋ übernehmen (eine Portion, „2 chicken teriyaki sub“ = 2, „9 chicken mcnuggets“ = die 9er-Packung). Auch ein Gericht allein findet sich, z. B. „big mac“, „whopper“ oder „red thai curry dean david“. Werte aus den offiziellen Nährwertangaben der Ketten, auch offline.',where:'Picker · Chat & Suche'},
   ]},

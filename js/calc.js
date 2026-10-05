@@ -450,30 +450,88 @@ function chainPer100(it){
 var _CHAIN_STOP={bei:1,von:1,vom:1,im:1,aus:1,der:1,die:1,das:1,ein:1,eine:1,einen:1,einmal:1,vs:1};
 /** @param {string} s */
 function _chainTok(s){return chainFold(s).split(' ').filter(function(w){return w&&!_CHAIN_STOP[w];});}
-// Punkte eines Produktnamens für die Suchwörter: jedes Wort muss treffen
-// (gleich 3, Wortanfang 2, im Wort ab 4 Zeichen 1), sonst 0.
+// Tippfehler-Toleranz (#307): kurze Wörter nie, bis 7 Zeichen 1 Fehler, darüber 2
+// — dieselbe Staffel wie die lokale Chat-Suche im Picker.
+/** @param {number} len */
+function _chainTol(len){return len<5?0:len<=7?1:2;}
+/** @param {string} a @param {string} b */
+function _chainLev(a,b){
+  if(a===b)return 0;
+  var m=a.length,n=b.length,i,j;if(!m)return n;if(!n)return m;
+  var prev=[],cur=[];
+  for(j=0;j<=n;j++)prev[j]=j;
+  for(i=1;i<=m;i++){
+    cur[0]=i;
+    for(j=1;j<=n;j++)cur[j]=Math.min(cur[j-1]+1,prev[j]+1,prev[j-1]+(a.charCodeAt(i-1)===b.charCodeAt(j-1)?0:1));
+    prev=cur.slice();
+  }
+  return prev[n];
+}
+// Punkte eines Produktnamens für die Suchwörter: jedes Wort muss treffen —
+// gleich 3, Wortanfang 2, zusammengeschrieben („bigmac“ in „Big Mac“) 2, im Wort
+// ab 4 Zeichen 1, Tippfehler („whooper“, „nugets“) 1 —, sonst 0.
 /** @param {string} name @param {string[]} qTok */
 function _chainScore(name,qTok){
-  var nTok=_chainTok(name),sum=0;
+  var nTok=_chainTok(name),joined=nTok.join(''),sum=0;
   for(var i=0;i<qTok.length;i++){
-    var q=qTok[i],best=0;
-    for(var j=0;j<nTok.length;j++){
-      var t=nTok[j];
+    var q=qTok[i],best=0,j,t;
+    for(j=0;j<nTok.length;j++){
+      t=nTok[j];
       if(t===q){best=3;break;}
       if(t.indexOf(q)===0&&best<2)best=2;
       else if(q.length>=4&&t.indexOf(q)>0&&best<1)best=1;
     }
+    if(best<2&&q.length>=4&&joined.indexOf(q)>=0)best=2;
+    if(!best){
+      for(j=0;j<nTok.length&&!best;j++){
+        t=nTok[j];
+        var tol=_chainTol(Math.max(t.length,q.length));
+        if(tol&&_chainLev(t,q)<=tol)best=1;
+        else if(j+1<nTok.length){
+          var tt=t+nTok[j+1],tol2=_chainTol(Math.max(tt.length,q.length));
+          if(tol2&&_chainLev(tt,q)<=tol2)best=1;
+        }
+      }
+    }
     if(!best)return 0;
     sum+=best;
   }
-  // Ganzer Name getroffen („whopper“ → „Whopper“ vor „Double Whopper“)
-  if(nTok.join(' ')===qTok.join(' '))sum+=10;
+  // Ganzer Name getroffen („whopper“ vor „Double Whopper“, auch „bigmac“,
+  // „whooper“): genau +10, mit einem Tippfehler +8 (nur einem: sonst wäre
+  // „whopper“ schon fast „Whopper Jr.“)
+  var qj=qTok.join('');
+  if(qj===joined)sum+=10;
+  else if(_chainTol(joined.length)&&_chainLev(qj,joined)<=1)sum+=8;
   return sum;
+}
+// Kettenname in der Anfrage: 1–3 Wörter zusammengezogen gegen jeden Namen/Alias
+// ohne Leerzeichen („mc donald's“ = „mcdonalds“). Ab 6 Zeichen auch mit
+// Tippfehler („mcdonals“, „burgerkin“, „subwy“). Mehr Wörter vor weniger
+// („dean davd“ ganz, nicht nur „dean“), genau vor ungefähr, länger vor kürzer.
+// → {chain, rest} oder null.
+/** @param {Array<{id:string,n:string,a?:string[],items:Array<any>}>} chains @param {string[]} tok */
+function _chainFind(chains,tok){
+  var best=null,bestScore=0;
+  for(var ci=0;ci<chains.length;ci++){
+    var c0=chains[ci],als=[c0.n].concat(c0.a||[]);
+    for(var ai=0;ai<als.length;ai++){
+      var sa=chainFold(als[ai]).replace(/ /g,'');if(!sa)continue;
+      for(var i=0;i<tok.length;i++){
+        for(var w=1;w<=3&&i+w<=tok.length;w++){
+          var s=tok.slice(i,i+w).join(''),sc=0;
+          if(s===sa)sc=w*1000+500+sa.length;
+          else if(sa.length>=6&&_chainLev(s,sa)<=(sa.length>=10?2:1))sc=w*1000+sa.length;
+          if(sc>bestScore){bestScore=sc;best={chain:c0,rest:tok.slice(0,i).concat(tok.slice(i+w))};}
+        }
+      }
+    }
+  }
+  return best;
 }
 // Suche über alle Ketten. Steht ein Kettenname (oder Alias wie „mces“, „bk“)
 // in der Anfrage, zählt nur diese Kette: ohne weitere Wörter — oder wenn die
 // nichts treffen — kommt ihr ganzes Sortiment (named:true). Ohne Kettennamen
-// muss jedes Wort einen Produktnamen treffen („big mac“, „whopper“).
+// muss jedes Wort einen Produktnamen treffen („big mac“, „bigmac“, „whooper“).
 // Ergebnis: [{chain,item,score,named}], beste zuerst, sonst Reihenfolge der Daten.
 /**
  * @param {Array<{id:string,n:string,a?:string[],items:Array<any>}>} chains
@@ -481,23 +539,12 @@ function _chainScore(name,qTok){
  * @returns {Array<{chain:any,item:any,score:number,named:boolean}>}
  */
 function chainSearch(chains,q){
-  var fq=' '+chainFold(q)+' ',hitLen=0;
-  /** @type {{id:string,n:string,a?:string[],items:Array<any>}|null} */
-  var hit=null;
-  for(var ci=0;ci<(chains||[]).length;ci++){
-    var c0=chains[ci],als=[c0.n].concat(c0.a||[]);
-    for(var ai=0;ai<als.length;ai++){
-      var fa=chainFold(als[ai]);
-      if(fa&&fa.length>hitLen&&fq.indexOf(' '+fa+' ')>=0){hit=c0;hitLen=fa.length;}
-    }
-  }
+  var tok=chainFold(q).split(' ').filter(Boolean);
+  var hit=_chainFind(chains||[],tok);
   /** @type {Array<{chain:any,item:any,score:number,named:boolean,i:number}>} */
   var out=[];
   if(hit){
-    var ch=hit,rest=fq;
-    [ch.n].concat(ch.a||[]).map(chainFold).filter(Boolean).sort(function(a,b){return b.length-a.length;})
-      .forEach(function(fa){rest=rest.split(' '+fa+' ').join(' ');});
-    var rt=_chainTok(rest);
+    var ch=hit.chain,rt=_chainTok(hit.rest.join(' '));
     ch.items.forEach(function(it,i){var s=rt.length?_chainScore(it.n,rt):1;if(s>0)out.push({chain:ch,item:it,score:s,named:true,i:i});});
     if(!out.length)ch.items.forEach(function(it,i){out.push({chain:ch,item:it,score:0,named:true,i:i});});
   }else{

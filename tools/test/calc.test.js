@@ -591,8 +591,8 @@ test('chainSearch: ohne Kettennamen muss jedes Wort treffen', () => {
   assert.deepEqual(names(C.chainSearch(CH, 'cheeseburger')), ['mcd:Cheeseburger', 'bk:Cheeseburger']);
   assert.deepEqual(names(C.chainSearch(CH, 'big burger')), []);
   assert.deepEqual(names(C.chainSearch(CH, 'Apfel')), []);
-  // Kein Fehltreffer durch Wortteile: „bk“ steckt nicht in anderen Wörtern
-  assert.deepEqual(names(C.chainSearch(CH, 'Whopperbk')), []);
+  // „bk“ im Wortinneren ist kein Kettenname (das Wort selbst darf als Tippfehler treffen)
+  assert.ok(plain(C.chainSearch(CH, 'Whopperbk')).every((x) => !x.named));
   assert.equal(C.chainSearch(CH, '').length, 0);
   assert.equal(C.chainSearch(null, 'big mac').length, 0);
 });
@@ -630,4 +630,22 @@ test('chainSearch: genauer Name vor längeren Varianten', () => {
     { n: 'Double Whopper', g: 1, k: 1 }, { n: 'Plant-based Whopper', g: 1, k: 1 }, { n: 'Whopper', g: 1, k: 1 }, { n: 'Whopper Jr.', g: 1, k: 1 },
   ] }];
   assert.deepEqual(plain(C.chainSearch(ch, 'whopper')).map((x) => x.item.n), ['Whopper', 'Double Whopper', 'Whopper Jr.', 'Plant-based Whopper']);
+});
+
+test('chainSearch: Schreibfehler und Zusammenschreibung', () => {
+  const C = load({});
+  assert.deepEqual(names(C.chainSearch(CH, 'bigmac')), ['mcd:Big Mac']);
+  assert.deepEqual(names(C.chainSearch(CH, 'Bigmak')), ['mcd:Big Mac']);
+  assert.deepEqual(names(C.chainSearch(CH, 'whooper')), ['bk:Whopper']);
+  assert.deepEqual(names(C.chainSearch(CH, 'Pomes Fritess mittel')), ['mcd:Pommes Frites mittel']);
+  // Kettenname mit Tippfehler oder anders geschrieben
+  assert.deepEqual(names(C.chainSearch(CH, "mc donald's big mac")), ['mcd:Big Mac']);
+  assert.deepEqual(names(C.chainSearch(CH, 'mcdonals cheeseburger')), ['mcd:Cheeseburger']);
+  assert.deepEqual(names(C.chainSearch(CH, 'burgerkin whopper')), ['bk:Whopper']);
+  assert.equal(C.chainSearch(CH, 'mcdonals').length, 3);
+  const DD = [{ id: 'dd', n: 'dean&david', a: ['dean david', 'dean'], items: [{ n: 'Red Thai Chicken Curry', g: 1, k: 1 }, { n: 'Paris Salat', g: 1, k: 1 }] }];
+  assert.deepEqual(plain(C.chainSearch(DD, 'dean davd red thai')).map((x) => x.item.n), ['Red Thai Chicken Curry']);
+  // Kurze Wörter bleiben streng: „Apfel“ ist kein Tippfehler von irgendwas
+  assert.deepEqual(names(C.chainSearch(CH, 'Apfel')), []);
+  assert.deepEqual(names(C.chainSearch(CH, 'Kaffee')), []);
 });

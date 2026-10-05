@@ -466,6 +466,8 @@ function _chainScore(name,qTok){
     if(!best)return 0;
     sum+=best;
   }
+  // Ganzer Name getroffen („whopper“ → „Whopper“ vor „Double Whopper“)
+  if(nTok.join(' ')===qTok.join(' '))sum+=10;
   return sum;
 }
 // Suche über alle Ketten. Steht ein Kettenname (oder Alias wie „mces“, „bk“)
@@ -503,6 +505,8 @@ function chainSearch(chains,q){
     var n=0;
     (chains||[]).forEach(function(c){c.items.forEach(function(it){var s=_chainScore(it.n,qt);if(s>0)out.push({chain:c,item:it,score:s,named:false,i:n});n++;});});
   }
-  out.sort(function(a,b){return b.score-a.score||a.i-b.i;});
+  // Gleichstand bei einer Suche: kürzerer Name zuerst; das ganze Sortiment
+  // (Punkte ≤ 1) bleibt in der Reihenfolge der Daten
+  out.sort(function(a,b){return b.score-a.score||(a.score>1?_chainTok(a.item.n).length-_chainTok(b.item.n).length:0)||a.i-b.i;});
   return out.map(function(x){return {chain:x.chain,item:x.item,score:x.score,named:x.named};});
 }

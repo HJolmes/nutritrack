@@ -623,3 +623,11 @@ test('chainPer100: Rückrechnung auf die Portion trifft die Quelle', () => {
   assert.equal(Math.round(per.protein * 576 / 100 * 10) / 10, 29.8);
   assert.equal(Math.round(per.kcal * 576 / 100), 711);
 });
+
+test('chainSearch: genauer Name vor längeren Varianten', () => {
+  const C = load({});
+  const ch = [{ id: 'bk', n: 'Burger King', a: ['bk'], items: [
+    { n: 'Double Whopper', g: 1, k: 1 }, { n: 'Plant-based Whopper', g: 1, k: 1 }, { n: 'Whopper', g: 1, k: 1 }, { n: 'Whopper Jr.', g: 1, k: 1 },
+  ] }];
+  assert.deepEqual(plain(C.chainSearch(ch, 'whopper')).map((x) => x.item.n), ['Whopper', 'Double Whopper', 'Whopper Jr.', 'Plant-based Whopper']);
+});

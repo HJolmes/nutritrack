@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie beschreibt den **aktuellen** Stand, nicht seine Geschichte — die steht in Git und in `js/changelog.js`. Der Stand vor der Kürzung (#258, 132 KB): `git show 0d69ba2:UEBERGABE.md`. Grenzen siehe „Pflege“, `tools/check.js` prüft sie.
 
-**Stand:** v0.309 (2026-10-05) — #307 Restaurant-Ketten im Picker (Chat + Suche): `js/restaurants.js` (`window.CHAINS`, McDonald's 151 (Produktseiten mcdonalds.com, per Chromium, Akamai blockt curl), dean&david 153 und Subway 96 (offizielle PDFs); Burger King ohne Daten – www.burgerking.de in der Umgebung gesperrt), Suche/Umrechnung `chainSearch`/`chainPer100` in `js/calc.js`. v0.308: Teilen/Import mit Menge und Portionen. Entscheidungen 2026-10-05: Ketten-Werte nur aus offiziellen Quellen, nichts geschätzt.
+**Stand:** v0.309 (2026-10-05) — #307 Restaurant-Ketten im Picker (Chat + Suche): `js/restaurants.js` (`window.CHAINS`, McDonald's 151 (Produktseiten mcdonalds.com, per Chromium, Akamai blockt curl), Burger King 181 (Sanity-Datensatz `prod_bk_de` hinter burgerking.de, Produkte aus dem aktuellen Menü-Dokument), dean&david 153 und Subway 96 (offizielle PDFs)), Suche/Umrechnung `chainSearch`/`chainPer100` in `js/calc.js`. v0.308: Teilen/Import mit Menge und Portionen. Entscheidungen 2026-10-05: Ketten-Werte nur aus offiziellen Quellen, nichts geschätzt.
 
 ## URLs
 
@@ -62,7 +62,7 @@
 
 ## Live-Test offen
 
-- **v0.309 Restaurant-Ketten (#307, Android-PWA und iPhone):** Chat „dean david“ → Liste mit Produkten der Kette, ＋ übernimmt 1 Portion mit Gramm; „2 chicken teriyaki sub“ → Karte 454 g; „red thai curry dean david“ → 711 kcal; „9 chicken mcnuggets“ → nur die 9er-Packung, 163 g; Suche-Tab „subway“ → Subway-Produkte, Menge vorbelegt mit Portion. Im Flugmodus gleich. „Was ist neu“ zeigt v0.309 einmal.
+- **v0.309 Restaurant-Ketten (#307, Android-PWA und iPhone):** Chat „dean david“ → Liste mit Produkten der Kette, ＋ übernimmt 1 Portion mit Gramm; „2 chicken teriyaki sub“ → Karte 454 g; „red thai curry dean david“ → 711 kcal; „9 chicken mcnuggets“ → nur die 9er-Packung, 163 g; „whopper“ → Whopper zuerst, 282 g; Suche-Tab „subway“ → Subway-Produkte, Menge vorbelegt mit Portion. Im Flugmodus gleich. „Was ist neu“ zeigt v0.309 einmal.
 - **v0.308 Teilen mit Menge (Android-PWA und iPhone, zwei Geräte oder Partner-Postfach):** Rezept-Eintrag mit 2 Portionen und ein Lebensmittel mit 180 g über Eintrag → 📤 teilen. Empfänger: Vorschau zeigt 2 Portionen bzw. 180 g; „In Mahlzeit übernehmen“ → gleiche kcal wie beim Sender, Zucker/Salz nicht 0; Rückfrage „zusätzlich … speichern?“ erscheint. „In Wochenplan übernehmen“ → Eintrag im gewählten Tag/Slot. „In Bibliothek speichern“ → unter Eigenes bzw. Rezepte. „Was ist neu“ zeigt v0.308 einmal.
 - **v0.306 Foto-Analyse (#298):** ＋ → 📷 Foto mit einem Teller aus mehreren Zutaten → alle Zutaten erscheinen in der Liste, kein leeres Ergebnis. „Was ist neu“ zeigt v0.306 einmal.
 - **v0.305/v0.307 Picker gekapselt (#257, #301, Android-PWA und iPhone, nach Neustart der App):** je einmal über ＋ buchen: Chat („2 Bier“), Suche → Treffer → Hinzufügen, Zuletzt, Foto (Kamera und Galerie, „Ändern“), Barcode (Scanner starten/stoppen, „Taschenlampe ein/aus“, manuelle Eingabe), Link (Rezept-URL importieren, „Auf den Einkaufszettel“), Eigenes. Vorlage laden und löschen. Offline-Fotos: Foto im Flugmodus aufnehmen, online unter Trends „📷 Offline-Fotos“ → „Jetzt analysieren“. Kein Fehler-Toast, kein Knopf ohne Wirkung.
@@ -79,7 +79,7 @@
 | v0.306 | #303 | #298 `parsePhotoResponse`: Objekt- und Array-Versuch je mit eigenem `try`, protokolliert nur, wenn beide scheitern; Test schreibt das neue Verhalten fest. |
 | v0.307 | #304 | #301 Schritt 1: `cacheFood`, `getRecentFoods`, `searchLocal`, `urlProxyUrl` → `picker.js` (unverändert, nicht exportiert), `coupling-allow.json` `picker.js` 27 → 23. |
 | v0.308 | #305 | Teilen/Import: `shareEntryAsFood` über `_encEntry` (Menge/Portionen, Rezept bleibt Rezept), `_shPer100Enc`/`_shPer100Dec` (g/b/l) mit Test; Import-Dialog für `t:'f'`/`'r'`: Menge vorbelegt, `importConfirmTo('diary'|'plan'|'lib')`, `NTPlan.addSnapshot`. |
-| v0.309 | — | #307 `js/restaurants.js` + `chainSearch`/`chainPer100` (Tests, Datenprüfung), Picker-Chat/Suche mit Ketten-Treffern; Daten McDonald's (Produktseiten 2026-10), dean&david (2026-04) und Subway (2026-03). |
+| v0.309 | — | #307 `js/restaurants.js` + `chainSearch`/`chainPer100` (Tests, Datenprüfung), Picker-Chat/Suche mit Ketten-Treffern; Daten McDonald's (Produktseiten 2026-10), Burger King (Menü 2026-10), dean&david (2026-04) und Subway (2026-03). |
 
 ---
 

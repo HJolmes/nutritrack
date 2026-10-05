@@ -1141,6 +1141,7 @@ window.CHAINS=[
   // Produktseiten (Auswahl laut BackWerk): Werte je 100 g × Verkaufsgewicht. Ballaststoffe nicht angegeben. Ohne Getränke ohne Nährwerte und Produkte mit widersprüchlichen Angaben.
   {id:'bw',n:"BackWerk",e:'🥐',a:['backwerk', 'back werk'],
     src:'https://www.back-werk.de/de/sortiment/',stand:'2026-10',items:[
+      /*gen:bw*/
       {n:"Apfelecke",g:130,k:365.3,p:3.9,c:37.7,f:22.1,su:15.6,fi:null,sa:0.65},
       {n:"Apfelkörbchen XL",g:157,k:431.9,p:8.3,c:59.7,f:18.1,su:21.8,fi:null,sa:1.19},
       {n:"Baguette BBQ Chicken",g:305,k:561.8,p:30.5,c:82.3,f:11.6,su:6.7,fi:null,sa:3.23},
@@ -1186,10 +1187,12 @@ window.CHAINS=[
       {n:"Spinat-Feta-Snack",g:125,k:401.8,p:10.6,c:37.6,f:25.6,su:11.5,fi:null,sa:1.43},
       {n:"Tomaten-Paprika-Snack",g:130,k:399.1,p:9.5,c:41.6,f:22.1,su:3.6,fi:null,sa:1.3},
       {n:"Vanillestange",g:105,k:306.6,p:3.7,c:29.7,f:18.9,su:7.6,fi:null,sa:0.59}
+      /*/gen:bw*/
     ]},
   // Produktliste mit Spalte „pro Portion“; Gewicht = kcal je Portion / kcal je 100 g. Ohne ≈0-kcal-Produkte, alte Rezepturen und 5 Produkte mit widersprüchlichen Angaben; Red Velvet Muffin: kcal/kJ in der Quelle vertauscht, kcal aus der kJ-Spalte.
   {id:'cf',n:"Coffee Fellows",e:'☕',a:['coffeefellows', 'coffee fellows'],
     src:'https://products.coffee-fellows.com/print',stand:'2026-10',items:[
+      /*gen:cf*/
       {n:"Surfcup Pasta",g:407,k:844.6,p:18.9,c:97.5,f:41,su:10.8,fi:4.97,sa:4.13},
       {n:"Apfelkuchen",g:166,k:313.7,p:2.5,c:53.1,f:8.5,su:31.54,fi:0,sa:0.22},
       {n:"Apfelsaft mit Ingwer, Zitrone, Karotte – Saft des Tages (Medium)",g:300,k:131.2,p:1.1,c:30.1,f:0.3,su:26.88,fi:0.9,sa:0.07},
@@ -1198,7 +1201,7 @@ window.CHAINS=[
       {n:"Avocado Bagel",g:247,k:546.1,p:13.9,c:61.7,f:25.6,su:7.06,fi:4.84,sa:1.91},
       {n:"Avocado Stulle",g:274,k:458.8,p:13.9,c:31.4,f:29.2,su:2.94,fi:13.2,sa:3.04},
       {n:"Bagel Avocado Caprese",g:243,k:564.8,p:21.6,c:62.3,f:24.4,su:10.56,fi:3.35,sa:2.12},
-      {n:"Bagel Chicken (CS)",g:240,k:508.3,p:24.4,c:61.3,f:17.1,su:6.46,fi:5.65,sa:2.3},
+      {n:"Bagel Chicken",g:240,k:508.3,p:24.4,c:61.3,f:17.1,su:6.46,fi:5.65,sa:2.3},
       {n:"Bagel Ei",g:245,k:482.5,p:18.3,c:61,f:17.6,su:7.61,fi:3.4,sa:2.08},
       {n:"Bagel Omelette",g:270,k:635,p:21.8,c:66.8,f:30.1,su:5.48,fi:5.31,sa:4.93},
       {n:"Bagel Pulled Pastrami",g:258,k:523.8,p:22.1,c:69.8,f:16.2,su:8.67,fi:5.61,sa:5.37},
@@ -1229,13 +1232,13 @@ window.CHAINS=[
       {n:"Chai Latte (Medium)",g:260,k:199.8,p:8,c:22.7,f:8.4,su:21.54,fi:0.04,sa:0.31},
       {n:"Ciabatta Antipasti",g:215,k:471,p:12.4,c:64.1,f:21.9,su:10,fi:0,sa:3.36},
       {n:"Ciabatta Caesars",g:221,k:431.2,p:25.4,c:57,f:10.4,su:8.55,fi:0,sa:3.22},
-      {n:"Ciabatta Double Cheese (CS)",g:204,k:496.9,p:18,c:53.1,f:22.8,su:6.78,fi:0.15,sa:2.6},
-      {n:"Ciabatta Double Cheese Salami (CS)",g:222,k:564.1,p:20.3,c:53.4,f:29.4,su:6.79,fi:0.18,sa:3.58},
-      {n:"Ciabatta Frikadelle (CS)",g:305,k:721.2,p:27.9,c:69.8,f:35.9,su:11.94,fi:1.04,sa:4.91},
-      {n:"Ciabatta Hähnchenbrust (CS)",g:245,k:480.9,p:22,c:64,f:14.3,su:10.83,fi:1.04,sa:3.41},
-      {n:"Ciabatta Salami (CS)",g:212,k:542.9,p:16.3,c:55.1,f:28.3,su:7.76,fi:0.2,sa:4.01},
+      {n:"Ciabatta Double Cheese",g:204,k:496.9,p:18,c:53.1,f:22.8,su:6.78,fi:0.15,sa:2.6},
+      {n:"Ciabatta Double Cheese Salami",g:222,k:564.1,p:20.3,c:53.4,f:29.4,su:6.79,fi:0.18,sa:3.58},
+      {n:"Ciabatta Frikadelle",g:305,k:721.2,p:27.9,c:69.8,f:35.9,su:11.94,fi:1.04,sa:4.91},
+      {n:"Ciabatta Hähnchenbrust",g:245,k:480.9,p:22,c:64,f:14.3,su:10.83,fi:1.04,sa:3.41},
+      {n:"Ciabatta Salami",g:212,k:542.9,p:16.3,c:55.1,f:28.3,su:7.76,fi:0.2,sa:4.01},
       {n:"Ciabatta Serrano",g:206,k:464.5,p:21.9,c:56.6,f:16.3,su:9.66,fi:0,sa:3.92},
-      {n:"Ciabatta Turkey & Cheese (CS)",g:225,k:493.1,p:15.2,c:53.4,f:20.4,su:7.09,fi:0.18,sa:3.2},
+      {n:"Ciabatta Turkey & Cheese",g:225,k:493.1,p:15.2,c:53.4,f:20.4,su:7.09,fi:0.18,sa:3.2},
       {n:"Cold Brew Vanilla Latte (Medium)",g:280,k:96.6,p:2.8,c:16.2,f:3,su:15.69,fi:0,sa:0.09},
       {n:"Collagen Matcha (Large)",g:417,k:278.8,p:25.7,c:17,f:11.8,su:15.51,fi:0,sa:0.66},
       {n:"Cookie Choc Frappiato (Large)",g:448,k:693.3,p:14.7,c:87.2,f:31,su:73.64,fi:2.86,sa:0.67},
@@ -1383,10 +1386,12 @@ window.CHAINS=[
       {n:"Wrap Sweet Chili Chicken",g:190,k:362.9,p:15.8,c:57,f:6.8,su:13.49,fi:4.37,sa:2.28},
       {n:"Wrap Thunfisch",g:190,k:437,p:15.2,c:49.4,f:18.6,su:4.56,fi:4.56,sa:2.09},
       {n:"Wrap Tomate Mozzarella",g:190,k:469.3,p:15.8,c:51.3,f:20.9,su:5.51,fi:4.75,sa:2.28}
+      /*/gen:cf*/
     ]},
   // Nährwerte je Portion („Gesamt“, Standardaufbau mit Sauerteigbrot) aus der digitalen Speisekarte, ohne Gewicht → Buchung in Portionen. Ohne ≈0-kcal-Getränke und Cocktails, deren kcal nicht zu den Makros passen.
   {id:'hig',n:"Hans im Glück",e:'🍔',a:['hans im gluck', 'hans im glueck', 'hansimgluck', 'hig'],
     src:'https://menu.hansimglueck-burgergrill.de/?naehrwerte=true',stand:'2026-10',items:[
+      /*gen:hig*/
       {n:"Double Smash Rösti & Speck",g:null,k:1023,p:47.6,c:63.9,f:61.1,su:11,fi:3.6,sa:5.6},
       {n:"Herbstgarten",g:null,k:825,p:21.5,c:68.4,f:51.3,su:28.6,fi:10,sa:3.4},
       {n:"Knusperkartoffeln",g:null,k:291,p:8.2,c:32,f:13.4,su:1,fi:0.3,sa:0.9},
@@ -1534,10 +1539,12 @@ window.CHAINS=[
       {n:"Kleiner Glücksgriff",g:null,k:602,p:22.7,c:55.1,f:29.3,su:13.9,fi:11.7,sa:3},
       {n:"Menü Zwergenschmaus",g:null,k:405,p:25.2,c:22.4,f:22,su:1.5,fi:8.3,sa:2.2},
       {n:"ZWERGENLIMO 0,3 l",g:null,k:84,p:0.5,c:20.9,f:0.3,su:20.8,fi:1,sa:0}
+      /*/gen:hig*/
     ]},
   // Nährwerte je Portion von den Produktseiten der Speisekarte (Burger mit Mehrkorn-Bun), ohne Gewicht → Buchung in Portionen. Getränke haben dort meist keine Nährwerte.
   {id:'pp',n:"Peter Pane",e:'🍔',a:['peterpane', 'peter pane'],
     src:'https://peterpane.de/speisekarte/',stand:'2026-10',items:[
+      /*gen:pp*/
       {n:"Sticky Chicken Burger",g:null,k:666,p:29.9,c:55.7,f:35.3,su:44.8,fi:0,sa:3.5},
       {n:"Sticky Chicken Cheddar Fries",g:null,k:1189,p:55.6,c:107.7,f:57,su:9.8,fi:8.5,sa:6},
       {n:"Sticky Chicken Lime Fries",g:null,k:1251,p:39.7,c:144.1,f:55.1,su:50.4,fi:8.5,sa:6},
@@ -1643,5 +1650,6 @@ window.CHAINS=[
       {n:"Overload Nachos",g:null,k:798,p:20.3,c:66.9,f:47.2,su:8.6,fi:25.3,sa:4.1},
       {n:"Peter´s Lieblingsbrot",g:null,k:667,p:2,c:103,f:20,su:7.6,fi:0,sa:3.9},
       {n:"Potato Cheese Balls",g:null,k:364,p:15.8,c:43.4,f:13.6,su:3,fi:0,sa:2.8}
+      /*/gen:pp*/
     ]}
 ];

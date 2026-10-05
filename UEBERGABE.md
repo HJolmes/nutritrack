@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie beschreibt den **aktuellen** Stand, nicht seine Geschichte — die steht in Git und in `js/changelog.js`. Der Stand vor der Kürzung (#258, 132 KB): `git show 0d69ba2:UEBERGABE.md`. Grenzen siehe „Pflege“, `tools/check.js` prüft sie.
 
-**Stand:** v0.312 (2026-10-05) — #307 zehn Ketten in `js/restaurants.js`: neu KFC 102, Starbucks 407, BackWerk 45, Coffee Fellows 193, Hans im Glück 147, Peter Pane 105; Subway September 2026 (111), dean&david September 2026. Produkte ohne Portionsgewicht (`g:null`) bucht der Picker in Portionen (`chainPortionEntry`: Rezept-Eintrag mit einer Zutat `pu:true`, amount 100 = 1 Portion). Geprüft und verworfen (keine offiziellen Portionswerte): Nordsee, Domino's, Vapiano, L'Osteria, IKEA, Tim Hortons. v0.310: Ketten-Update automatisiert, Suche tippfehlertolerant. Entscheidung 2026-10-05: Ketten-Werte nur aus offiziellen Quellen, nichts geschätzt; ohne Gewicht → Portionen.
+**Stand:** v0.313 (2026-10-05) — #307 zehn Ketten in `js/restaurants.js`: neu KFC 102, Starbucks 407, BackWerk 45, Coffee Fellows 193, Hans im Glück 147, Peter Pane 105; Subway September 2026 (111), dean&david September 2026. Produkte ohne Portionsgewicht (`g:null`) bucht der Picker in Portionen (`chainPortionEntry`: Rezept-Eintrag mit einer Zutat `pu:true`, amount 100 = 1 Portion). Geprüft und verworfen (keine offiziellen Portionswerte): Nordsee, Domino's, Vapiano, L'Osteria, IKEA, Tim Hortons. v0.310: Ketten-Update automatisiert, Suche tippfehlertolerant. Entscheidung 2026-10-05: Ketten-Werte nur aus offiziellen Quellen, nichts geschätzt; ohne Gewicht → Portionen.
 
 ## URLs
 
@@ -75,11 +75,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.308 | #305 | Teilen/Import: `shareEntryAsFood` über `_encEntry` (Menge/Portionen, Rezept bleibt Rezept), `_shPer100Enc`/`_shPer100Dec` (g/b/l) mit Test; Import-Dialog für `t:'f'`/`'r'`: Menge vorbelegt, `importConfirmTo('diary'|'plan'|'lib')`, `NTPlan.addSnapshot`. |
 | v0.309 | #308 | #307 `js/restaurants.js` + `chainSearch`/`chainPer100` (Tests, Datenprüfung), Picker-Chat/Suche mit Ketten-Treffern; Daten McDonald's (Produktseiten 2026-10), Burger King (Menü 2026-10), dean&david (2026-04) und Subway (2026-03). |
 | v0.310 | #309 | #307 `tools/update-restaurants.js` + `.github/workflows/update-restaurants.yml` (vierteljährlich, PR statt Push, Prüfungen im Workflow), Marker `/*gen:mcd*/`/`/*gen:bk*/` in `js/restaurants.js`; Claude-Routine für die PDF-Ketten; Ketten-Suche tippfehlertolerant (`_chainLev`/`_chainFind`). |
 | v0.311 | #310 | dean&david-Daten aus der Nährwertübersicht 2026-09 (153 → 131). |
-| v0.312 | — | #307 sechs neue Ketten, Portionsmodus (`chainPerPortion`/`chainPortionEntry`, `pu`-Zutaten zeigen „% Port.“), Subway 2026-09. |
+| v0.312 | #311 | #307 sechs neue Ketten, Portionsmodus (`chainPerPortion`/`chainPortionEntry`, `pu`-Zutaten zeigen „% Port.“), Subway 2026-09. |
+| v0.313 | — | #307 `tools/update-restaurants.js`: `fetchCF`/`fetchBW`/`fetchHIG`/`fetchPP` (regelbasierte Namensbereinigung, `--only` als Liste), Marker `/*gen:cf|bw|hig|pp*/`; Action holt bk,cf,bw,hig,pp. |
 
 ---
 

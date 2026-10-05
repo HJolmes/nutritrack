@@ -1656,12 +1656,14 @@ function _pickerChainHits(q){
     return {name:x.item.n+' ('+x.chain.n+')',emoji:x.chain.e||'🍔',per100:chainPer100(x.item),portionG:x.item.g,badge:x.chain.n,bdgCls:'',chainNamed:x.named};
   });
 }
+/** @param {string} name @param {number} n */
+function _pickerHasNum(name,n){return new RegExp('(^|\\D)'+n+'(\\D|$)').test(name);}
 // Gramm für einen Ketten-Treffer: Grammangabe, sonst Anzahl × Portion, sonst
 // eine Portion. „6 Nuggets“ bei „Chicken McNuggets 6 Stück“ ist EINE Portion.
 function _pickerChainGrams(p,q){
   if(q&&q.grams>0)return Math.round(q.grams);
   var n=(q&&q.count>0)?q.count:1;
-  if(q&&q.count>0&&new RegExp('(^|\\D)'+q.count+'(\\D|$)').test(p.name))n=1;
+  if(q&&q.count>0&&_pickerHasNum(p.name,q.count))n=1;
   return Math.max(1,Math.round(n*p.portionG));
 }
 
@@ -1783,6 +1785,12 @@ function pickerSendChat(){
   var cq=(window.NTAlexa&&NTAlexa.splitItems&&NTAlexa.splitItems(msg).length===1)?_pickerChatQty(msg):null;
   if(cq&&!(cq.grams>0||cq.count>0))cq=null;
   var results=pickerChatLocalSearch(cq?cq.lookupName:msg);
+  // „6 chicken mcnuggets“: Steht die Zahl in Ketten-Produktnamen (6/9/20 Stück),
+  // ist das die Packung, nicht die Anzahl – nur diese Packungen zeigen.
+  if(cq&&cq.count>0&&!(cq.grams>0)){
+    var pk=results.filter(function(r){return r.portionG&&_pickerHasNum(r.name,cq.count);});
+    if(pk.length)results=pk;
+  }
   if(results.length){
     results.forEach(function(p){if(cq)p.qty=cq;});
     window._pickerLocalResults=results;

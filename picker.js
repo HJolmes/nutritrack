@@ -1653,7 +1653,7 @@ function pickerChatLocalSearch(q){
   // der eigene Bestand und die DB nichts haben – sonst stünden bei „Kaffee“
   // die Ketten-Getränke im Weg.
   var ch=_pickerChainHits(q);
-  if(ch.length&&ch[0].chainNamed)return ch.slice(0,200);
+  if(ch.length&&ch[0].chainNamed)return ch.slice(0,500);
   if(!results.length)ch.forEach(function(c){add(c,8);});
   results.sort(function(a,b){return b.score-a.score;});
   return results.slice(0,6).map(function(x){return x.item;});
@@ -2585,7 +2585,7 @@ function searchLocal(q){
   results.sort(function(a,b){return b.score-a.score;});
   var out=[],seenOut={};
   results.forEach(function(x){var k=x.item.name.toLowerCase();if(!seenOut[k]){seenOut[k]=true;out.push(x.item);}});
-  return out.slice(0,!ql?12:(out.length&&out[0].chainNamed)?200:15);
+  return out.slice(0,!ql?12:(out.length&&out[0].chainNamed)?500:15);
 }
 
 // ── Zuletzt gegessen / Favoriten ──

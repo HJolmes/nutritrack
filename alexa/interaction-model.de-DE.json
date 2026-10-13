@@ -101,7 +101,10 @@
           "slots": [
             {
               "name": "item",
-              "type": "AMAZON.SearchQuery"
+              "type": "AMAZON.SearchQuery",
+              "samples": [
+                "{item}"
+              ]
             }
           ],
           "samples": [
@@ -477,7 +480,10 @@
           "slots": [
             {
               "name": "question",
-              "type": "AMAZON.SearchQuery"
+              "type": "AMAZON.SearchQuery",
+              "samples": [
+                "{question}"
+              ]
             }
           ],
           "samples": [

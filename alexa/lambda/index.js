@@ -595,5 +595,5 @@ exports.handler = async function (event) {
   }
 };
 
-// Für tools/alexa-test.js: reine Textfunktionen, ohne Netz.
+// Für tools/test/alexa.test.js: reine Textfunktionen, ohne Netz.
 exports._test = { babyTypeOf, babyEntry, questionText, shopItems, isShopText, DOC_RE };

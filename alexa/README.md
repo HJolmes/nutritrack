@@ -131,7 +131,9 @@ Satz geschlossen, ein Dialog nach „öffne" mit `new: false` und bleibt offen.
 | Einkaufsliste | „Setze Bananen auf meine Einkaufsliste" |
 | Einkaufsliste | „Schreib Milch auf den Einkaufszettel" |
 | Einkaufsliste | „Wir brauchen Klopapier" · „Kauf Butter ein" |
-| Baby, Windel | „Wickeln" · „Wickeln Stuhl und Pipi" · „Windel gewechselt" |
+| Einkaufsliste, mehrere | „Milch, Eier und Butter auf die Einkaufsliste" → drei Einträge |
+| Einkaufsliste in zwei Schritten | „Einkaufsliste" → „Was soll auf den Einkaufszettel?" → „Milch und Eier" |
+| Baby, Windel | „Wickeln" · „Wickeln Stuhl und Pipi" · „Windel gewechselt" · „Volle Windel" · „Windel nass" |
 | Baby, Stillen | „Stillen rechts" · „Gestillt beide, hauptsächlich links" |
 | Baby, Flasche | „Flasche 120 Milliliter" |
 | Baby, Schlaf | „Schläft" |
@@ -141,14 +143,23 @@ Satz geschlossen, ein Dialog nach „öffne" mit `new: false` und bleibt offen.
 | Frage an die Hebamme | „Frag die Hebamme, ob sie Fencheltee trinken darf" |
 | Frage an die Hebamme | „Ich hab eine Frage an die Hebamme: …" |
 | Frage in zwei Schritten | „Alexa, sage mein Tagebuch, Hebamme" → „Was möchtest du die Hebamme fragen?" → Frage sprechen |
+| Frage an den Arzt | „Frag den Kinderarzt, wann die nächste Impfung ist" · „Ich hab eine Frage an die Ärztin: …" · „Arzt" → Nachfrage |
 
-Fragen an die Hebamme landen im Reiter 🤱 Hebamme des Baby-Tagebuchs (Tagebuch
-muss eingeschaltet sein), bis 500 Zeichen. Alle Satzanfänge stehen in
-`MidwifeQuestionIntent` im Sprachmodell. Die Nachfrage nach „Hebamme" allein
+Fragen an Hebamme oder Arzt landen im Reiter ❓ Fragen des Baby-Tagebuchs
+(Tagebuch muss eingeschaltet sein), bis 500 Zeichen. Alle Satzanfänge stehen in
+`MidwifeQuestionIntent` bzw. `DoctorQuestionIntent` im Sprachmodell. Die
+Nachfrage nach „Hebamme", „Arzt" oder „Einkaufsliste" allein
 läuft über das Dialog-Modell (`dialog`/`prompts` im JSON, `Dialog.ElicitSlot`
 in der Lambda) — Alexa legt die nächste Antwort wörtlich in den Slot, auch wenn
 sie keinem Satzmuster entspricht. Technisch reisen die Fragen als Baby-Notiz
-mit `babyP.mw=1`; eine ältere App legt sie als Notiz ins Tagebuch. Die
+mit `babyP.mw=1`, Arztfragen zusätzlich mit `babyP.to='doc'`; eine App vor
+v0.315 legt Arztfragen als Hebammenfrage ab, eine noch ältere als Notiz ins
+Tagebuch.
+
+Ein Einkauf, den Alexa einem anderen Befehl zuordnet („notiere Milch auf dem
+Einkaufszettel" passt auch auf `notiere {food}`), erkennt die Lambda am Wort
+Einkaufsliste/-zettel bzw. „auf die Liste" und schreibt ihn trotzdem auf den
+Zettel. Die Textdeutung prüft `tools/test/alexa.test.js` (`npm test`). Die
 500-Zeichen-Grenze braucht den Worker ab `v0.265-alexa-midwife`, ein älterer
 Worker kürzt auf 200.
 

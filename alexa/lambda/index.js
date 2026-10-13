@@ -331,15 +331,27 @@ async function pushBaby(type, detail, noteRaw, keepOpen, ctx) {
   return confirm(e.spoken, keepOpen);
 }
 
-// Frage an die Hebamme: Sie reist als Baby-Notiz mit Kennzeichen `babyP.mw`,
-// nicht als eigener Typ. So braucht der Worker kein Update, und eine ältere
-// App, die das Kennzeichen nicht kennt, legt sie wenigstens als Notiz ins
-// Tagebuch, statt sie zu verwerfen.
+// Fragen an Hebamme oder Arzt: Sie reisen als Baby-Notiz mit Kennzeichen
+// `babyP.mw`, nicht als eigener Typ. So braucht der Worker kein Update (er
+// erlaubt mit `mw` 500 Zeichen), und eine ältere App, die das Kennzeichen nicht
+// kennt, legt sie wenigstens als Notiz ins Tagebuch, statt sie zu verwerfen.
+// Arztfragen tragen zusätzlich `to: 'doc'`; eine App vor v0.315 legt sie als
+// Hebammenfrage ab — der Empfänger lässt sich dort nachträglich ändern.
+const ASK = {
+  mw: { who: 'die Hebamme', label: 'Frage an die Hebamme.', intent: 'MidwifeQuestionIntent' },
+  doc: { who: 'den Arzt', label: 'Frage an den Arzt.', intent: 'DoctorQuestionIntent' },
+};
+// Wörter für den Arzt, wie man sie sagt: Arzt, Ärztin, Kinderarzt, Frauenärztin,
+// Doktor, Doc, Praxis …
+const DOC_WORD = '(?:kinder|frauen|haus)?(?:arzt|ärztin|aerztin|ärzte|doktor|doc)\\w*|(?:die\\s+|der\\s+)?praxis';
+// Lookbehind statt \b: \b kennt kein "ä", "Ärztin" fände sonst nichts.
+const DOC_RE = new RegExp('(?<![\\wäöüß])(?:' + DOC_WORD + ')(?![\\wäöüß])', 'i');
+
 // "ob sie Fencheltee trinken darf" → "Ob sie Fencheltee trinken darf?"
-function midwifeText(raw) {
+function questionText(raw) {
   let t = String(raw || '').trim()
-    .replace(/^(?:frage\s+)?(?:an|für)\s+die\s+hebamme\s*/i, '')
-    .replace(/^(?:hebamme|frage|fragen|habe|hab)[,:]?\s+/i, '')
+    .replace(new RegExp('^(?:frage\\s+)?(?:an|für)\\s+(?:die|den|der|meine[nr]?|unsere[nr]?)?\\s*(?:hebamme|' + DOC_WORD + ')\\s*', 'i'), '')
+    .replace(new RegExp('^(?:hebamme|' + DOC_WORD + '|frage|fragen|habe|hab)[,:]?\\s+', 'i'), '')
     .trim();
   if (!t) return '';
   // Sprach-Eingaben sind nicht begrenzt, der Worker schneidet bei 500 ab —
@@ -350,36 +362,78 @@ function midwifeText(raw) {
   return t;
 }
 
-// Nur "Hebamme" gesagt: Alexa fragt nach und legt die nächste Antwort
-// wörtlich in den Slot `question` (Dialog-Modell im Sprachmodell). Ohne diesen
-// Schritt landete die Frage als eigener Satz im Fallback, weil sie keinem
-// Satzmuster entspricht. `mwOneShot` merkt sich, dass der Nutzer mit einem
-// Einzelbefehl kam — nach der Frage wird dann geschlossen, nicht "Was noch?".
-function elicitMidwife(ctx) {
+// Nur "Hebamme" bzw. "Arzt" gesagt: Alexa fragt nach und legt die nächste
+// Antwort wörtlich in den Slot `question` (Dialog-Modell im Sprachmodell).
+// Ohne diesen Schritt landete die Frage als eigener Satz im Fallback, weil sie
+// keinem Satzmuster entspricht. `mwOneShot` merkt sich, dass der Nutzer mit
+// einem Einzelbefehl kam — nach der Frage wird dann geschlossen, nicht "Was noch?".
+function elicit(intent, slotName, text, reprompt, ctx) {
   return {
     version: '1.0',
     sessionAttributes: { mwOneShot: Boolean(ctx.oneShot) },
     response: {
-      outputSpeech: { type: 'PlainText', text: 'Was möchtest du die Hebamme fragen?' },
-      reprompt: { outputSpeech: { type: 'PlainText', text: 'Sag mir deine Frage an die Hebamme.' } },
+      outputSpeech: { type: 'PlainText', text },
+      reprompt: { outputSpeech: { type: 'PlainText', text: reprompt } },
       shouldEndSession: false,
       directives: [{
         type: 'Dialog.ElicitSlot',
-        slotToElicit: 'question',
+        slotToElicit: slotName,
         updatedIntent: {
-          name: 'MidwifeQuestionIntent',
+          name: intent,
           confirmationStatus: 'NONE',
-          slots: { question: { name: 'question', confirmationStatus: 'NONE' } },
+          slots: { [slotName]: { name: slotName, confirmationStatus: 'NONE' } },
         },
       }],
     },
   };
 }
-async function pushMidwife(raw, keepOpen, ctx) {
-  const q = midwifeText(raw);
-  if (!q) return elicitMidwife(ctx);
-  await push({ kind: 'baby', babyType: 'note', text: q, babyP: { mw: 1 } }, ctx);
-  return confirm('Frage an die Hebamme.', keepOpen);
+function elicitQuestion(to, ctx) {
+  const a = ASK[to];
+  return elicit(a.intent, 'question', 'Was möchtest du ' + a.who + ' fragen?', 'Sag mir deine Frage an ' + a.who + '.', ctx);
+}
+async function pushQuestion(to, raw, keepOpen, ctx) {
+  const q = questionText(raw);
+  if (!q) return elicitQuestion(to, ctx);
+  const babyP = to === 'doc' ? { mw: 1, to: 'doc' } : { mw: 1 };
+  await push({ kind: 'baby', babyType: 'note', text: q, babyP }, ctx);
+  return confirm(ASK[to].label, keepOpen);
+}
+
+// ── Einkaufszettel ──
+//
+// Ein Einkauf, der im falschen Intent landet ("notiere Milch auf dem
+// Einkaufszettel" passt auch auf "notiere {food}"), wird an diesem Wort erkannt
+// und umgeleitet, statt als Mahlzeit gebucht zu werden.
+const SHOP_RE = /\b(?:einkaufs(?:liste|zettel)|einkaufen|einkauf)\b|\b(?:auf|in|zu|zur|zum)\s+(?:die|den|der|dem|meine[nmr]?|unsere[nmr]?)\s+(?:liste|zettel)\b/i;
+function isShopText(t) {
+  return SHOP_RE.test(String(t || ''));
+}
+// "noch Milch und Eier auf die Einkaufsliste bitte" → ["Milch", "Eier"]
+function shopItems(raw) {
+  const t = String(raw || '')
+    // Ziel-Angabe und Verb-Reste ("auf die Einkaufsliste", "zum Zettel hinzu")
+    .replace(/\b(?:auf|in|zu|zur|zum)\s+(?:die|den|der|dem|meine[nmr]?|unsere[nmr]?)?\s*(?:einkaufs)?(?:liste|zettel)\b/gi, ' ')
+    .replace(/\b(?:einkaufs(?:liste|zettel)|einkaufen|einkauf)\b/gi, ' ')
+    .replace(/\b(?:hinzu|hinzufügen|setzen|schreiben|packen|eintragen|ein|drauf|rauf|bitte|noch|mal|auch|dann)\b/gi, ' ')
+    .replace(/^\s*(?:setz|setze|schreib|schreibe|pack|packe|tu|tue|trag|trage|notier|notiere|füg|füge|kauf|kaufe)\b/i, ' ')
+    .replace(/\s+/gi, ' ').trim();
+  if (!t) return [];
+  // Mehrere Artikel in einem Satz: an Komma und "und" trennen. Bleibt die
+  // Mengenangabe am Artikel ("zwei Liter Milch"), rechnet die App sie aus.
+  const parts = t.split(/\s*,\s*|\s+und\s+|\s+sowie\s+/i).map((x) => x.trim()).filter(Boolean);
+  return parts.slice(0, 10).map((x) => x.charAt(0).toUpperCase() + x.slice(1));
+}
+async function pushShop(raw, keepOpen, ctx) {
+  const items = shopItems(raw);
+  // Nur "Einkaufsliste" gesagt: nachfragen wie bei der Hebamme, damit die
+  // Antwort ("Milch und Eier") im Slot landet und nicht im Fallback.
+  if (!items.length) return elicit('AddShoppingIntent', 'item', 'Was soll auf den Einkaufszettel?', 'Sag mir, was auf den Einkaufszettel soll.', ctx);
+  // Ein Einwurf je Artikel: Jeder bekommt in der App seine eigene Zeile.
+  await Promise.all(items.map((text) => push({ kind: 'shop', text }, ctx)));
+  const spoken = items.length === 1 ? items[0] + ' steht'
+    : items.slice(0, -1).join(', ') + ' und ' + items[items.length - 1] + ' stehen';
+  return keepOpen ? say(spoken + ' auf dem Einkaufszettel. Was noch?', false)
+    : say(spoken + ' auf dem Einkaufszettel.');
 }
 
 // ── Intents ──
@@ -387,6 +441,7 @@ const HANDLERS = {
   async LogMealIntent(request, keepOpen, ctx) {
     const spoken = slot(request, 'food');
     if (!spoken) return say('Was hast du gegessen?', false);
+    if (isShopText(spoken)) return pushShop(spoken, keepOpen, ctx);
     const { meal, text } = extractMeal(spoken);
     if (!text) return say('Was hast du gegessen?', false);
     const payload = { kind: 'meal', text };
@@ -404,6 +459,7 @@ const HANDLERS = {
   async LogExerciseIntent(request, keepOpen, ctx) {
     const spoken = slot(request, 'activity');
     if (!spoken) return say('Was hast du gemacht?', false);
+    if (isShopText(spoken)) return pushShop(spoken, keepOpen, ctx);
     const { minutes, text } = extractMinutes(spoken);
     const activity = text || spoken;
     const payload = { kind: 'exercise', text: activity };
@@ -413,20 +469,21 @@ const HANDLERS = {
   },
 
   async AddShoppingIntent(request, keepOpen, ctx) {
-    const item = slot(request, 'item');
-    if (!item) return say('Was soll auf den Einkaufszettel?', false);
-    await push({ kind: 'shop', text: item }, ctx);
-    return keepOpen ? say(item + ' steht auf dem Einkaufszettel. Was noch?', false)
-      : say(item + ' steht auf dem Einkaufszettel.');
+    return pushShop(slot(request, 'item'), keepOpen, ctx);
   },
 
   async LogBabyIntent(request, keepOpen, ctx) {
     const spokenRaw = slot(request, 'event');
     if (!spokenRaw) return say('Was soll ins Baby-Tagebuch?', false);
     const kindRaw = spokenRaw.toLowerCase();
-    // "Baby Frage an die Hebamme …" landet hier statt im eigenen Intent.
-    // Nur mit "frag…": "Baby Hebamme war da" bleibt eine Notiz.
-    if (/hebamme/.test(kindRaw) && /frag/.test(kindRaw)) return pushMidwife(spokenRaw.replace(/^.*?hebamme\w*[,:]?\s*/i, ''), keepOpen, ctx);
+    // "Baby Frage an die Hebamme/den Arzt …" landet hier statt im eigenen
+    // Intent. Nur mit "frag…": "Baby Hebamme war da" bleibt eine Notiz.
+    if (/frag/.test(kindRaw)) {
+      if (/hebamme/.test(kindRaw)) return pushQuestion('mw', spokenRaw.replace(/^.*?hebamme\w*[,:]?\s*/i, ''), keepOpen, ctx);
+      const m = kindRaw.match(DOC_RE);
+      if (m) return pushQuestion('doc', spokenRaw.slice(m.index + m[0].length).replace(/^[,:]?\s*/, ''), keepOpen, ctx);
+    }
+    if (isShopText(spokenRaw)) return pushShop(spokenRaw, keepOpen, ctx);
     // "Baby gestillt rechts": Die Art steckt im Freitext und wird geraten.
     return pushBaby(babyTypeOf(spokenRaw), spokenRaw, spokenRaw, keepOpen, ctx);
   },
@@ -436,6 +493,8 @@ const HANDLERS = {
   // weil im Slot nur noch "rechts" ankommt und das allein nichts verraten würde.
   async BabyDiaperIntent(request, keepOpen, ctx) {
     const d = slot(request, 'detail');
+    // "Windeln auf die Einkaufsliste" / "wir brauchen Windeln" ist ein Einkauf.
+    if (isShopText(d) || /brauch|kaufen|alle\b|leer\b/.test(d.toLowerCase())) return pushShop('Windeln', keepOpen, ctx);
     return pushBaby('diaper', d, d, keepOpen, ctx);
   },
   async BabyBreastIntent(request, keepOpen, ctx) {
@@ -456,7 +515,10 @@ const HANDLERS = {
   },
 
   async MidwifeQuestionIntent(request, keepOpen, ctx) {
-    return pushMidwife(slot(request, 'question'), keepOpen, ctx);
+    return pushQuestion('mw', slot(request, 'question'), keepOpen, ctx);
+  },
+  async DoctorQuestionIntent(request, keepOpen, ctx) {
+    return pushQuestion('doc', slot(request, 'question'), keepOpen, ctx);
   },
 };
 
@@ -482,7 +544,7 @@ exports.handler = async function (event) {
 
   if (name === 'AMAZON.HelpIntent') {
     return say(
-      'Du kannst mir Essen, Wasser, Sport, Einkäufe, Baby-Einträge und Fragen an die Hebamme diktieren. ' +
+      'Du kannst mir Essen, Wasser, Sport, Einkäufe, Baby-Einträge und Fragen an Hebamme oder Arzt diktieren. ' +
       'Zum Beispiel: Ich habe 150 Gramm Reis gegessen. Oder: Ich war 30 Minuten joggen. ' +
       'Nachlesen kannst du alles in der NutriTrack-App.',
       false
@@ -509,7 +571,7 @@ exports.handler = async function (event) {
     // mit "öffne mein Tagebuch" gestartet wurde. Fehlt die Angabe, wird
     // geschlossen: eine grundlos offene Sitzung wartet auf eine Antwort, die
     // niemand erwartet, und wirkt wie ein hängender Skill.
-    // Ausnahme: Nach "Hebamme" allein hat der Skill nachgefragt — kam der
+    // Ausnahme: Nach "Hebamme"/"Arzt"/"Einkaufsliste" allein hat der Skill nachgefragt — kam der
     // Nutzer mit einem Einzelbefehl, schließt die Antwort die Sitzung wieder.
     const attrs = (event.session && event.session.attributes) || {};
     const keepOpen = Boolean(event.session && event.session.new === false) && !attrs.mwOneShot;
@@ -532,3 +594,6 @@ exports.handler = async function (event) {
     return failed(e);
   }
 };
+
+// Für tools/alexa-test.js: reine Textfunktionen, ohne Netz.
+exports._test = { babyTypeOf, babyEntry, questionText, shopItems, isShopText, DOC_RE };

@@ -134,11 +134,11 @@ function add(){
 // Von aussen (Alexa-Einwurf): feste ID, damit derselbe Einwurf auf beiden
 // Telefonen EINE Frage ergibt. Eine schon bekannte ID – auch eine geloeschte –
 // wird nicht erneut angelegt.
-function addExternal(q,id,at){
+function addExternal(q,id,at,to){
   q=String(q||'').trim();
   if(!q||!id)return false;
   if(all().some(function(x){return x.id===id;}))return false;
-  var x={id:id,q:q,a:'',done:0,doneAt:'',at:at||Date.now()};
+  var x={id:id,q:q,a:'',to:to==='doc'?'doc':'mw',done:0,doneAt:'',at:at||Date.now()};
   all().push(x);
   touch(x);
   render();

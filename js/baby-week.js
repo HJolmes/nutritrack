@@ -160,9 +160,10 @@ function reportText(){
   sec('Auffälliger Stuhl:',stool);
   sec('Reaktionen auf Beikost:',reacts);
   sec('Notizen:',notes);
-  // Offene Fragen an die Hebamme (js/baby-midwife.js) – aelteste zuerst.
+  // Offene Fragen an Hebamme/Arzt (js/baby-midwife.js) – aelteste zuerst.
   if(window.NTMidwife)sec('Offene Fragen:',NTMidwife.list().filter(function(q){return !q.done;})
-    .sort(function(a,b){return (a.at||0)-(b.at||0);}).map(function(q){return q.q;}));
+    .sort(function(a,b){return (a.at||0)-(b.at||0);})
+    .map(function(q){return (NTMidwife.toOf(q)==='doc'?'(Arzt) ':'(Hebamme) ')+q.q;}));
   L.push('');
   L.push('Erstellt mit NutriTrack am '+dFull(NTBaby.today())+'. Eigene Aufzeichnungen der Eltern, keine Diagnose.');
   return L.join('\n');

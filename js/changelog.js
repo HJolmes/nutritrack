@@ -2,6 +2,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.315',items:[
+    {icon:'🩺',text:'<b>Fragen an Ärztin/Arzt</b>: Im Reiter <b>❓ Fragen</b> (vorher „Hebamme“) wählst du beim Notieren, ob die Frage an die Hebamme oder an Ärztin/Arzt geht. Filter nach Empfänger, Empfänger nachträglich änderbar; der Bericht kennzeichnet offene Fragen mit (Hebamme)/(Arzt). Bisherige Fragen bleiben bei der Hebamme.',where:'Baby-Tagebuch → ❓ Fragen'},
+  ]},
   {v:'0.314',items:[
     {icon:'🔎',text:'<b>Ketten schon beim Tippen</b>: Ein halb geschriebener Kettenname wie „Subw“, „Starb“ oder „Burger K“ zeigt sofort das Sortiment der Kette.',where:'Picker · Suche & Chat'},
   ]},

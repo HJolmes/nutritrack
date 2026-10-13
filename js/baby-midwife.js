@@ -1,10 +1,11 @@
 // @ts-check
-// NutriTrack – Baby: Fragen an die Hebamme (Reiter im Baby-Tagebuch, v0.264).
+// NutriTrack – Baby: Fragen an Hebamme und Arzt (Reiter im Baby-Tagebuch).
 // Klassisches Script, exportiert window.NTMidwife. Nutzt NTBaby (js/baby.js)
 // und die globalen Helfer aus index.html (S, saveS, esc, openOv, closeOv, showToast).
 //
-// Eine Liste S.babyQs=[{id,q,a,done,doneAt,at,rev,del?}]: Frage, Antwort der
-// Hebamme, abgehakt (besprochen) mit Datum. Geloescht wird weich (del:1), damit
+// Eine Liste S.babyQs=[{id,q,a,to?,done,doneAt,at,rev,del?}]: Frage, Antwort,
+// Empfaenger `to` ('mw' Hebamme – auch wenn das Feld fehlt –, 'doc' Arzt/Aerztin),
+// abgehakt (besprochen) mit Datum. Geloescht wird weich (del:1), damit
 // die Loeschung mit verbundenen Personen abgeglichen wird. Die Liste reist im
 // Baby-Topf als `hqa_<id>`, Payload {hq} (siehe records()/applyRec() in js/baby.js).
 (function(){
@@ -13,6 +14,11 @@
 var _filter='open';// 'open' | 'done' | 'all'
 var _query='';
 var _editId=null;
+var _to='mw';// Empfaenger fuer neue Fragen
+var _who='all';// Filter nach Empfaenger: 'all' | 'mw' | 'doc'
+var WHO={mw:{ic:'🤱',n:'Hebamme',an:'an die Hebamme',ph:'Frage an die Hebamme, z.B. „Wie oft nachts wecken zum Stillen?“',ans:'Antwort der Hebamme',was:'Was hat die Hebamme gesagt?'},
+  doc:{ic:'🩺',n:'Arzt',an:'an Ärztin/Arzt',ph:'Frage an Ärztin/Arzt, z.B. „Wann ist die nächste Impfung fällig?“',ans:'Antwort von Ärztin/Arzt',was:'Was hat die Ärztin/der Arzt gesagt?'}};
+function toOf(x){return x&&x.to==='doc'?'doc':'mw';}
 
 function all(){if(!Array.isArray(S.babyQs))S.babyQs=[];return S.babyQs;}
 function list(){return all().filter(function(x){return !x.del;});}
@@ -51,8 +57,16 @@ function render(){
   document.querySelectorAll('#babyQaFilter [data-qf]').forEach(function(b){
     b.classList.toggle('act',b.getAttribute('data-qf')===_filter);
   });
+  document.querySelectorAll('#babyQaTo [data-qt]').forEach(function(b){
+    b.classList.toggle('act',b.getAttribute('data-qt')===_to);
+  });
+  document.querySelectorAll('#babyQaWho [data-qw]').forEach(function(b){
+    b.classList.toggle('act',b.getAttribute('data-qw')===_who);
+  });
+  var nf=/** @type {HTMLTextAreaElement|null} */ (document.getElementById('bqaNew'));
+  if(nf)nf.placeholder=WHO[_to].ph;
   var ws=words();
-  var qs=list();
+  var qs=list().filter(function(x){return _who==='all'||toOf(x)===_who;});
   var nOpen=qs.filter(function(x){return !x.done;}).length;
   var head=document.getElementById('babyQaHead');
   if(head){
@@ -81,18 +95,21 @@ function render(){
   }
   box.innerHTML=shown.map(function(x){
     var a=argsOf([x.id]);
-    var meta='notiert '+fmtTs(x.at)+(x.done?' · abgehakt '+fmtD(x.doneAt):'');
+    var w=WHO[toOf(x)];
+    var meta=w.ic+' '+w.n+' · notiert '+fmtTs(x.at)+(x.done?' · abgehakt '+fmtD(x.doneAt):'');
     return '<div class="qa-it'+(x.done?' done':'')+'">'
       +'<button type="button" class="mile-cb qa-cb" aria-label="'+(x.done?'Haken entfernen':'Abhaken')+'" data-act="NTMidwife.toggle" data-args=\''+a+'\'>'+(x.done?'✓':'')+'</button>'
       +'<div class="qa-body" data-act="NTMidwife.edit" data-args=\''+a+'\'>'
         +'<div class="qa-q">'+hl(x.q,ws)+'</div>'
-        +(x.a?'<div class="qa-a"><b>🤱 Antwort:</b> '+hl(x.a,ws).replace(/\n/g,'<br>')+'</div>'
+        +(x.a?'<div class="qa-a"><b>'+w.ic+' Antwort:</b> '+hl(x.a,ws).replace(/\n/g,'<br>')+'</div>'
              :'<div class="qa-add">＋ Antwort eintragen</div>')
         +'<div class="qa-meta">'+meta+'</div>'
       +'</div></div>';
   }).join('');
 }
 function setFilter(f){_filter=(f==='done'||f==='all')?f:'open';render();}
+function setTo(t){_to=t==='doc'?'doc':'mw';render();}
+function setWho(t){_who=(t==='mw'||t==='doc')?t:'all';render();}
 function search(v){_query=String(v||'').trim();render();}
 function clearSearch(){
   _query='';
@@ -105,13 +122,14 @@ function add(){
   var f=document.getElementById('bqaNew');
   var q=f?f.value.trim():'';
   if(!q){showToast('Bitte zuerst die Frage eintippen');if(f)f.focus();return;}
-  var x={id:'q'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),q:q,a:'',done:0,doneAt:'',at:Date.now()};
+  var x={id:'q'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),q:q,a:'',to:_to,done:0,doneAt:'',at:Date.now()};
   all().push(x);
   touch(x);
   f.value='';
   if(_filter==='done')_filter='open';
+  if(_who!=='all'&&_who!==_to)_who='all';
   render();NTBaby.refresh();
-  showToast('❓ Frage notiert');
+  showToast('❓ Frage '+WHO[_to].an+' notiert');
 }
 // Von aussen (Alexa-Einwurf): feste ID, damit derselbe Einwurf auf beiden
 // Telefonen EINE Frage ergibt. Eine schon bekannte ID – auch eine geloeschte –
@@ -141,8 +159,18 @@ function edit(id){
   document.getElementById('bqaQ').value=x.q||'';
   document.getElementById('bqaA').value=x.a||'';
   document.getElementById('bqaDone').checked=!!x.done;
+  /** @type {HTMLSelectElement} */ (document.getElementById('bqaTo')).value=toOf(x);
+  editToChanged();
   document.getElementById('bqaMeta').textContent='Notiert am '+fmtTs(x.at)+(x.done&&x.doneAt?' · abgehakt am '+fmtD(x.doneAt):'');
   openOv('babyQaOv');
+}
+// Titel und Beschriftung folgen dem gewaehlten Empfaenger.
+function editToChanged(){
+  var sel=/** @type {HTMLSelectElement|null} */ (document.getElementById('bqaTo'));
+  var w=WHO[sel&&sel.value==='doc'?'doc':'mw'];
+  var t=document.getElementById('bqaTitle');if(t)t.textContent=w.ic+' Frage '+w.an;
+  var l=document.getElementById('bqaALbl');if(l)l.textContent=w.ans;
+  var a=/** @type {HTMLTextAreaElement|null} */ (document.getElementById('bqaA'));if(a)a.placeholder=w.was;
 }
 // Wer eine Antwort eintraegt, hat die Frage in der Regel besprochen: beim
 // ersten Zeichen den Haken setzen – bleibt sichtbar und abwaehlbar.
@@ -156,6 +184,7 @@ function save(){
   if(!q){showToast('Die Frage darf nicht leer sein');return;}
   var done=document.getElementById('bqaDone').checked?1:0;
   x.q=q;
+  x.to=/** @type {HTMLSelectElement} */ (document.getElementById('bqaTo')).value==='doc'?'doc':'mw';
   x.a=document.getElementById('bqaA').value.trim();
   if(done&&!x.done)x.doneAt=NTBaby.today();
   if(!done)x.doneAt='';
@@ -182,9 +211,12 @@ function closeEdit(){
 // Hinweis auf Kachel/Tagebuch: offene Fragen, ein Tipp oeffnet den Reiter.
 function cardHtml(){
   if(!S.babyOn)return '';
-  var n=openCount();
+  var qs=list().filter(function(x){return !x.done;});
+  var n=qs.length;
   if(!n)return '';
-  return '<div class="bby-hint"><span>❓ '+n+(n===1?' offene Frage':' offene Fragen')+' an die Hebamme</span>'
+  var nd=qs.filter(function(x){return toOf(x)==='doc';}).length;
+  var who=!nd?' an die Hebamme':nd===n?' an Ärztin/Arzt':' an Hebamme/Arzt';
+  return '<div class="bby-hint"><span>❓ '+n+(n===1?' offene Frage':' offene Fragen')+who+'</span>'
     +'<button type="button" class="bby-pill" data-act="NTMidwife.open">Ansehen</button></div>';
 }
 
@@ -194,7 +226,7 @@ function open(){
   if(S.babyOn)NTBaby.setTab('mw');
 }
 
-window.NTMidwife={list:list,render:render,setFilter:setFilter,search:search,clearSearch:clearSearch,
+window.NTMidwife={list:list,render:render,setFilter:setFilter,setTo:setTo,setWho:setWho,editToChanged:editToChanged,toOf:toOf,search:search,clearSearch:clearSearch,
   add:add,addExternal:addExternal,toggle:toggle,edit:edit,answerInput:answerInput,save:save,del:del,closeEdit:closeEdit,
   cardHtml:cardHtml,open:open,openCount:openCount};
 })();

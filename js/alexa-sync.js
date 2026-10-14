@@ -302,10 +302,11 @@
     var log=(window.S.babyLog&&window.S.babyLog[key])||null;
     if(hasAlexaId(log,item.id))return false;
     var eid=sharedId(item.id);
-    // Frage an die Hebamme: kommt als Notiz mit Kennzeichen `mw` (siehe
-    // pushMidwife im Skill) und gehört in den Reiter Hebamme, nicht ins Tagebuch.
+    // Frage an Hebamme/Arzt: kommt als Notiz mit Kennzeichen `mw`, Arztfragen
+    // zusätzlich mit `to:'doc'` (siehe pushQuestion im Skill), und gehört in
+    // den Reiter Fragen, nicht ins Tagebuch.
     if(item.babyType==='note'&&item.babyP&&item.babyP.mw&&window.NTMidwife&&window.NTMidwife.addExternal){
-      return window.NTMidwife.addExternal(item.text,eid,item.ts);
+      return window.NTMidwife.addExternal(item.text,eid,item.ts,item.babyP.to==='doc'?'doc':'mw');
     }
     // Der Eintrag kann schon per Baby-Sync vom anderen Telefon da sein.
     if(eid&&babyHasId(eid))return false;

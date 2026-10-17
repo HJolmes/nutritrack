@@ -551,8 +551,8 @@ function itemToShop(){
 //  2. WIE VIEL? Bisher: ein Rezept je Mittag und Abend, Portion 1, Kalorien
 //     egal — sieben Tage zwischen 900 und 3000 kcal. Jetzt bekommt jeder Tag
 //     das Kalorienziel als Vorgabe: die leeren Slots teilen sich, was nach dem
-//     schon Geplanten uebrig ist (Fruehstueck 25 %, Mittag 35 %, Abend 30 %,
-//     Snack 10 %), und danach zieht rebalance() die Portionen nach, bis der Tag
+//     schon Geplanten uebrig ist (Fruehstueck 25 %, Mittag 35 %, Abend 30 %;
+//     die 10 % des Snacks bleiben frei, Snacks plant „Füllen“ nie), und danach zieht rebalance() die Portionen nach, bis der Tag
 //     innerhalb von 5 % liegt. Von Hand Geplantes wird dabei nie angefasst.
 //
 // Was schon im Plan steht, bleibt unangetastet; innerhalb einer Woche wird
@@ -584,6 +584,7 @@ function entryToIngredients(e){
   if(!per)return [];
   return [{name:e.name||'Eintrag',emoji:e.emoji||'🍽',amount:e.amount||0,per100:per}];
 }
+function isDrink(name){return !!(window.NTAmpel&&NTAmpel.isLiquid(name));}
 function comboName(names){
   if(names.length===1)return names[0];
   if(names.length===2)return names[0]+' mit '+names[1];
@@ -602,7 +603,8 @@ function historyCombos(){
     var day=S.days[k];
     if(!day||day._compressed||!day.meals)return;
     SLOTS.forEach(function(sl){
-      var en=(day.meals[sl.id]||[]).filter(function(e){return e&&e.name&&!e._fromPlan;});
+      // Getraenke („Aperol Spritz“, „Bier“) sind keine Mahlzeit und fallen raus.
+      var en=(day.meals[sl.id]||[]).filter(function(e){return e&&e.name&&!e._fromPlan&&!isDrink(e.name);});
       if(!en.length)return;
       if(en.length<2&&!en[0].isRecipe)return;
       var names=en.map(function(e){return e.name;});
@@ -665,13 +667,12 @@ function rebalance(date,fresh,goal){
   }
 }
 
-// Wozu ein Rezept taugt, wenn es das sagt (Grundrezepte: meal, cat).
-// Ohne Angabe passt es ueberall — wie bisher.
-function recipeSlots(r){
-  var cat=r.cat||[],m=r.meal||[];
-  if(cat.indexOf('Dessert')>=0||cat.indexOf('Snack')>=0)return ['snack'];
-  if(!m.length)return null;
-  return m.filter(function(x){return SLOTS.some(function(s){return s.id===x;});});
+// Snacks fuellt „Füllen“ nie; ihr Anteil am Tagesziel bleibt frei, solange
+// der Snack-Slot leer ist. Rezepte nur in die Slots ihres Markers
+// (bookFillSlots: ohne Marker, Snack, Getraenk nie).
+var FILL_SLOTS=['breakfast','lunch','dinner'];
+function fillGoal(date,goal){
+  return slotItems(date,'snack').length?goal:goal*(1-SLOT_BUDGET.snack);
 }
 function autoFill(){
   var hist=historyCombos();
@@ -680,12 +681,15 @@ function autoFill(){
   // Was im Kochmodus kuerzlich als gekocht markiert wurde, kommt seltener dran.
   var since=iso(addDays(new Date(),-COOKED_DAYS)),log=S.cookLog||{};
   recipes.forEach(function(r){
+    var sl=bookFillSlots(r);
+    if(!sl.length)return;
     var k=ingTotal(viewIngs(r)).kcal;
     if(!(k>0))return;
-    cands.push({key:'r:'+r.id,kcal:k,slot:null,slots:recipeSlots(r),hist:false,recent:!!(log[r.id]&&log[r.id].last>=since),
+    cands.push({key:'r:'+r.id,kcal:k,slot:null,slots:sl,hist:false,recent:!!(log[r.id]&&log[r.id].last>=since),
       make:function(pp){return {r:r.id,p:pp};}});
   });
   hist.forEach(function(c){
+    if(FILL_SLOTS.indexOf(c.slot)<0)return;
     var k=ingTotal(c.ings).kcal;
     if(!(k>0))return;
     // Als Abzug, nicht als Verweis: Der Vorschlag steht in keiner Bibliothek,
@@ -694,7 +698,7 @@ function autoFill(){
       make:function(pp){return {r:'',p:pp,h:1,s:{n:c.name,em:c.emoji,
         i:c.ings.map(function(g){return {n:g.name,em:g.emoji,a:g.amount,p:g.per100};})}};}});
   });
-  if(!cands.length){showToast('Zu wenig Daten — leg ein Rezept an');return;}
+  if(!cands.length){showToast(recipes.length?'Keinem Rezept ist eine Mahlzeit zugeordnet — ✏️ Bearbeiten → Passt zu':'Zu wenig Daten — leg ein Rezept an');return;}
 
   var mo=weekStart(),goal=goalKcal(),used={},added=0;
   for(var i=0;i<7;i++){
@@ -708,10 +712,11 @@ function autoFill(){
     var ds=iso(addDays(mo,k));
     var pl=planFor(ds,true);
     var open=[];
-    SLOTS.forEach(function(s){if(!(pl[s.id]||[]).length)open.push(s.id);});
+    FILL_SLOTS.forEach(function(sl){if(!(pl[sl]||[]).length)open.push(sl);});
     if(!open.length)continue;
     var budSum=open.reduce(function(a,sl){return a+SLOT_BUDGET[sl];},0);
-    var rest=Math.max(0,goal-dayKcal(ds));
+    var dg=fillGoal(ds,goal);
+    var rest=Math.max(0,dg-dayKcal(ds));
     var fresh=[];
     open.forEach(function(slot){
       var target=budSum>0?rest*(SLOT_BUDGET[slot]/budSum):0;
@@ -722,7 +727,7 @@ function autoFill(){
       pl[slot].push(it);fresh.push(it);added++;
     });
     if(!fresh.length)continue;
-    rebalance(ds,fresh,goal);
+    rebalance(ds,fresh,dg);
     if(S.planApplied)delete S.planApplied[ds];
     touch(ds);
   }
@@ -733,7 +738,8 @@ function autoFill(){
     var dz=iso(addDays(mo,z));
     if(isEmptyPlan(dz))continue;
     planned++;
-    if(!goal||Math.abs(dayKcal(dz)-goal)<=goal*0.1)inGoal++;
+    var gz=fillGoal(dz,goal);
+    if(!goal||Math.abs(dayKcal(dz)-gz)<=gz*0.1)inGoal++;
   }
   showToast(added+' Mahlzeiten eingeplant ✓'
     +(goal?(' · '+inGoal+' von '+planned+' Tagen im Kalorienziel'):''));
@@ -909,6 +915,8 @@ function noteRecipeCreated(r){
   render();refreshCard();
   if(window.NTBook)NTBook.render();
 }
+// Aus dem ＋ eines Slots angelegt: Der Marker steht schon auf diesem Slot.
+function pendingMeal(){return _pendingSlot?[_pendingSlot.slot]:[];}
 // Editor ohne Speichern geschlossen (NTBook.editClosed): kein Slot zu fuellen.
 function cancelNew(){_pendingSlot=null;}
 // Abgebrochen: Der Slot, aus dem heraus angelegt werden sollte, ist erledigt —
@@ -931,7 +939,7 @@ function backToOrigin(){
 function newBlank(){
   var f=_from;_from=null;
   closeOv('recNewOv');
-  if(window.NTBook)NTBook.editDraft({name:'',emoji:'📋',ingredients:[],baseServings:1},{from:_pendingSlot?'plan':f});
+  if(window.NTBook)NTBook.editDraft({name:'',emoji:'📋',ingredients:[],baseServings:1,meal:pendingMeal()},{from:_pendingSlot?'plan':f});
 }
 
 // (3) Aus dem Internet: der vorhandene Link-Tab des Pickers kann das schon —
@@ -1074,7 +1082,7 @@ function toEditor(){
   var f=_from;_from=null;
   closeOv('recPhotoOv');
   if(!window.NTBook)return;
-  NTBook.editDraft({name:m.titel,baseServings:m.portionen,time:m.minuten,instructions:m.anleitung,
+  NTBook.editDraft({name:m.titel,meal:pendingMeal(),baseServings:m.portionen,time:m.minuten,instructions:m.anleitung,
     ingredients:_photoIngs.map(function(g){return {name:g.name,emoji:g.emoji||'🍽',amount:g.amount||0,per100:g.per100,missingGrams:!g.amount};})},
     {from:_pendingSlot?'plan':f,hint:'Von der KI gelesen — Mengen und Portionen bitte prüfen.'});
   resetPhoto();

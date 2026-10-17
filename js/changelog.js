@@ -2,10 +2,14 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
-  {v:'0.320',items:[
+  {v:'0.321',items:[
     {icon:'🥗',text:'<b>Ballaststoffe für Grundlebensmittel</b>: Obst, Gemüse, Brot, Nudeln, Reis, Hülsenfrüchte, Nüsse und Samen aus der eingebauten Liste bringen jetzt ihre Ballaststoffe mit (Quelle: USDA).',where:'Lebensmittel hinzufügen'},
     {icon:'🚦',text:'<b>Keto/Low Carb fairer</b>: Die Ernährungs-Ampel zieht bei Grundlebensmitteln die Ballaststoffe von den Kohlenhydraten ab – wie auf deutschen Etiketten. Avocado, Nüsse und Samen werden dadurch nicht mehr zu streng bewertet.',where:'Mehr → 🥗 Ernährung'},
     {icon:'🍶',text:'<b>Essig korrigiert</b>: „Essig“ hat jetzt die Werte von Tafelessig (18 kcal) statt Balsamico; Balsamico gibt es als eigenen Eintrag. „Kartoffelsalat“ heißt „Kartoffelsalat (mit Mayonnaise)“, weil die Werte von dieser Variante stammen.',where:'Lebensmittel hinzufügen'},
+  ]},
+  {v:'0.320',items:[
+    {icon:'🏷️',text:'<b>Rezepte mit Mahlzeit</b>: Im Rezept wählst du unter „Passt zu“, ob es ein Frühstück, Mittag, Abend, Snack oder Getränk ist. „🎲 Füllen“ im Wochenplan setzt Rezepte nur noch in die passende Mahlzeit; Rezepte ohne Auswahl plant es nicht ein.',where:'📖 Rezept → ✏️ Bearbeiten'},
+    {icon:'🎲',text:'<b>Füllen ohne Snacks und Getränke</b>: Snacks bleiben frei (ihr Anteil am Kalorienziel auch), und Getränke wie Aperol oder Bier werden nie als Mahlzeit eingeplant – auch nicht aus dem Tagebuch.',where:'📅 Wochenplan → 🎲 Füllen'},
   ]},
   {v:'0.319',items:[
     {icon:'🧭',text:'<b>App-Tour</b>: Die Hilfe (❓ oben) führt dich auf Wunsch Schritt für Schritt durch die App und hebt jede Stelle hervor. Jederzeit mit ✕ oder „Beenden“ verlassen – oder direkt an einem einzelnen Punkt einsteigen.',where:'❓ Hilfe → 🧭 App-Tour'},

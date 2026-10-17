@@ -790,6 +790,22 @@ test('parseTags und bookTags', () => {
   assert.deepEqual(plain(C.bookTags([{ cat: ['Pasta'] }, { cat: ['Suppe', 'Pasta'] }, {}])), ['Pasta', 'Suppe']);
 });
 
+test('Mahlzeit-Marker: bookMeals, bookToggleMeal, bookFillSlots, bookSeedMeal', () => {
+  const C = load({});
+  assert.deepEqual(plain(C.bookMeals({ meal: ['dinner', 'x', 'breakfast'] })), ['breakfast', 'dinner']);
+  assert.deepEqual(plain(C.bookMeals({ meal: ['lunch', 'drink'] })), ['drink']);
+  assert.deepEqual(plain(C.bookMeals({})), []);
+  assert.deepEqual(plain(C.bookToggleMeal(['lunch'], 'dinner')), ['lunch', 'dinner']);
+  assert.deepEqual(plain(C.bookToggleMeal(['lunch', 'dinner'], 'lunch')), ['dinner']);
+  assert.deepEqual(plain(C.bookToggleMeal(['lunch'], 'drink')), ['drink']);
+  assert.deepEqual(plain(C.bookToggleMeal(['drink'], 'snack')), ['snack']);
+  assert.deepEqual(plain(C.bookFillSlots({ meal: ['breakfast', 'snack'] })), ['breakfast']);
+  assert.deepEqual(plain(C.bookFillSlots({ meal: ['drink'] })), []);
+  assert.deepEqual(plain(C.bookFillSlots({})), []);
+  assert.deepEqual(plain(C.bookSeedMeal({ cat: ['Dessert'], meal: ['lunch', 'dinner'] })), ['snack']);
+  assert.deepEqual(plain(C.bookSeedMeal({ cat: ['Hauptgericht'], meal: ['lunch', 'dinner'] })), ['lunch', 'dinner']);
+});
+
 test('bookFilter und bookSort', () => {
   const C = load({});
   const p = { kcal: 100, protein: 0, carbs: 0, fat: 0 };

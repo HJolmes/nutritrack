@@ -5,8 +5,9 @@
 // showToast, callClaude, canUseAi, recipes) sowie auf NTShop, NTBook und NTSync.
 //
 // Was zu Hause da ist, wo es steht und was immer da sein soll:
-//   S.pantry      [{id,n,ic,loc,q,g,min,ts,rev,_sy}]  q = Stück, g = Gramm je Stück,
-//                 min = Mindestmenge in Stück (0 = keine)
+//   S.pantry      [{id,n,ic,loc,q,g,min,mhd,vd,ts,rev,_sy}]  q = Stück, g = Gramm je
+//                 Stück, min = Mindestmenge in Stück (0 = keine), mhd/vd =
+//                 Mindesthaltbarkeits-/Verbrauchsdatum JJJJ-MM-TT (leer = keins)
 //   S.pantryLocs  [{id,ic,label,pos,rev,_sy}]  Lagerorte, alle änderbar
 //   S.pantryTomb  {id:{rev}}  Grabsteine für Artikel und Lagerorte (`loc:<id>`)
 //
@@ -34,7 +35,9 @@ var LOC_PREFIX='loc:';
 var MAX_PHOTOS=6;
 
 var _editId=null;
-var _filter='';
+var _filter='';      // Lagerort-ID, '' = alle, EXP = bald ablaufend
+var EXP='__exp';
+var EXP_DAYS=3;
 var _photos=[];      // komprimierte Fotos als base64, nur im Speicher
 var _found=[];       // Ergebnis der Foto-Auswertung bis zur Bestätigung
 var _refill={};      // Einkaufs-ID → {pid,n}: was ein Abhaken aufgefüllt hat
@@ -61,6 +64,23 @@ function byId(id){var a=items();for(var i=0;i<a.length;i++)if(a[i].id===id)retur
 function findByName(n){var k=pantryKey(n);if(!k)return null;var a=items();for(var i=0;i<a.length;i++)if(pantryKey(a[i].n)===k)return a[i];return null;}
 function low(it){return pantryNeed(it.q,it.min)>0;}
 function guessIc(n){return (window.NTShop&&NTShop.guess)?NTShop.guess(n).ic:'🥫';}
+function fmtD(d){var p=String(d||'').split('-');return p.length===3?(p[2]+'.'+p[1]+'.'+p[0].slice(2)):'';}
+function expiry(it){return pantryExpiry(it,today());}
+function expiring(){return pantryExpiring(items(),today(),EXP_DAYS);}
+// „MHD 02.11.26“ bzw. „Verbrauchen bis …“, abgelaufen/bald mit Hinweis.
+function expiryText(e){
+  if(!e)return '';
+  var t=(e.k==='vd'?'Verbr. bis ':'MHD ')+fmtD(e.d);
+  if(e.lvl==='over')t+=e.k==='vd'?' ⛔ abgelaufen':' ⚠️ abgelaufen';
+  else if(e.days===0)t+=' ⏰ heute';
+  else if(e.days===1)t+=' ⏰ morgen';
+  else if(e.lvl==='soon')t+=' ⏰ in '+e.days+' Tagen';
+  return t;
+}
+function expiryColor(e){return !e||e.lvl==='ok'?'var(--mu)':(e.lvl==='over'?'var(--re)':'var(--or)');}
+// Ein späteres Datum ersetzt kein früheres: steht schon etwas da, gilt das,
+// was zuerst abläuft (die ältere Packung wird zuerst gegessen).
+function earlier(a,b){if(!a)return b||'';if(!b)return a;return a<b?a:b;}
 function amountText(it){
   var t=fmtN(it.q)+' Stück';
   if(+it.g>0)t+=' à '+fmtN(it.g)+' g';
@@ -80,19 +100,23 @@ function afterChange(it,before){
 }
 function touch(it){it.rev=nextRev();saveS();Sync.schedule();render();}
 
-function add(n,q,g,locId,ic,min){
+/** @param {any} [dates] {mhd,vd} */
+function add(n,q,g,locId,ic,min,dates){
   n=String(n||'').trim();
   if(!n)return null;
+  var mhd=(dates&&dates.mhd)||'',vd=(dates&&dates.vd)||'';
   var ex=findByName(n);
   if(ex){
     var before=pantryNeed(ex.q,ex.min);
     ex.q=Math.round(((+ex.q||0)+(+q||0))*10)/10;
     if(+g>0&&!(+ex.g>0))ex.g=+g;
     if(locId&&!ex.loc)ex.loc=locId;
+    if(mhd)ex.mhd=earlier(ex.mhd,mhd);
+    if(vd)ex.vd=earlier(ex.vd,vd);
     touch(ex);afterChange(ex,before);
     return ex;
   }
-  var it={id:uid('p'),n:n,ic:ic||guessIc(n),loc:locId||'',q:+q>0?+q:0,g:+g>0?+g:0,min:+min>0?+min:0,ts:Date.now(),rev:nextRev()};
+  var it={id:uid('p'),n:n,ic:ic||guessIc(n),loc:locId||'',q:+q>0?+q:0,g:+g>0?+g:0,min:+min>0?+min:0,mhd:mhd,vd:vd,ts:Date.now(),rev:nextRev()};
   items().push(it);
   touch(it);afterChange(it,0);
   return it;
@@ -203,14 +227,25 @@ function renderCard(){
   var v=document.getElementById('pantryCardVal');
   var body=document.getElementById('pantryCardBody');
   if(!v||!body)return;
-  var a=items(),lo=a.filter(low);
+  var a=items(),lo=a.filter(low),ex=expiring();
   v.textContent=a.length?(a.length+' Artikel'):'＋ Eintragen';
   if(!a.length){body.innerHTML='<div style="font-size:12px;color:var(--mu);">Noch nichts eingetragen.</div>';return;}
-  if(!lo.length){body.innerHTML='<div style="font-size:12px;color:var(--mu);">Alles da, was da sein soll ✓</div>';return;}
-  body.innerHTML='<div style="font-size:11px;font-weight:700;color:var(--or);margin-bottom:4px;">Knapp:</div>'
-    +lo.slice(0,6).map(function(it){
-      return '<span style="display:inline-block;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:3px 9px;font-size:11px;font-weight:700;margin:0 4px 4px 0;">'+esc((it.ic||'🥫')+' '+it.n)+'</span>';
-    }).join('')+(lo.length>6?'<span style="font-size:11px;color:var(--mu);font-weight:700;">+'+(lo.length-6)+' weitere</span>':'');
+  if(!lo.length&&!ex.length){body.innerHTML='<div style="font-size:12px;color:var(--mu);">Alles da, was da sein soll ✓</div>';return;}
+  function chip(t){return '<span style="display:inline-block;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:3px 9px;font-size:11px;font-weight:700;margin:0 4px 4px 0;">'+esc(t)+'</span>';}
+  function more(n){return n>6?'<span style="font-size:11px;color:var(--mu);font-weight:700;">+'+(n-6)+' weitere</span>':'';}
+  var html='';
+  if(ex.length){
+    html+='<div style="font-size:11px;font-weight:700;color:var(--re);margin-bottom:4px;">Läuft ab:</div>'
+      +ex.slice(0,6).map(function(x){
+        var d=x.e.days<0?'abgelaufen':(x.e.days===0?'heute':(x.e.days===1?'morgen':fmtD(x.e.d)));
+        return chip((x.it.ic||'🥫')+' '+x.it.n+' · '+d);
+      }).join('')+more(ex.length);
+  }
+  if(lo.length){
+    html+='<div style="font-size:11px;font-weight:700;color:var(--or);margin:'+(ex.length?'4px':'0')+' 0 4px;">Knapp:</div>'
+      +lo.slice(0,6).map(function(it){return chip((it.ic||'🥫')+' '+it.n);}).join('')+more(lo.length);
+  }
+  body.innerHTML=html;
 }
 
 // ════════ Vorrats-Liste ════════
@@ -228,13 +263,14 @@ function render(){
 }
 function setFilter(id){_filter=id||'';renderList();}
 function row(it){
-  var lw=low(it);
+  var lw=low(it),e=(+it.q||0)>0?expiry(it):null;
   return '<div style="display:flex;align-items:center;gap:8px;padding:9px 2px;border-bottom:1px solid var(--br);">'
     +'<div style="font-size:20px;flex-shrink:0;">'+esc(it.ic||'🥫')+'</div>'
     +'<div style="flex:1;min-width:0;cursor:pointer;" data-act="NTPantry.openItem" data-args="'+args([it.id])+'">'
       +'<div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(it.n)+'</div>'
       +'<div style="font-size:11px;color:'+(lw?'var(--or)':'var(--mu)')+';margin-top:1px;">'+esc(amountText(it))
         +(+it.min>0?' · mind. '+fmtN(it.min)+(lw?' ⚠️':''):'')+'</div>'
+      +(e?'<div style="font-size:11px;font-weight:'+(e.lvl==='ok'?'400':'700')+';color:'+expiryColor(e)+';margin-top:1px;">'+esc(expiryText(e))+'</div>':'')
     +'</div>'
     +'<button type="button" class="pt-st" data-act="NTPantry.step" data-args="'+args([it.id,-1])+'">−</button>'
     +'<button type="button" class="pt-st" data-act="NTPantry.step" data-args="'+args([it.id,1])+'">＋</button>'
@@ -243,15 +279,21 @@ function row(it){
 function renderList(){
   var el=document.getElementById('pantryList');
   if(!el)return;
-  var a=items(),lo=a.filter(low);
+  var a=items(),lo=a.filter(low),ex=expiring();
+  if(_filter===EXP&&!ex.length)_filter='';
   var sub=document.getElementById('pantryOvSub');
-  if(sub)sub.textContent=a.length?(a.length+' Artikel'+(lo.length?' · '+lo.length+' knapp':'')+(Sync.active()?' · geteilt':'')):'Noch nichts eingetragen';
+  if(sub)sub.textContent=a.length?(a.length+' Artikel'+(lo.length?' · '+lo.length+' knapp':'')+(ex.length?' · '+ex.length+' läuft ab':'')+(Sync.active()?' · geteilt':'')):'Noch nichts eingetragen';
   var chips=document.getElementById('pantryLocChips');
   if(chips){
     chips.innerHTML='<button type="button" class="stab'+(!_filter?' act':'')+'" data-act="NTPantry.setFilter" data-args="'+args([''])+'">Alle</button>'
+      +(ex.length?'<button type="button" class="stab'+(_filter===EXP?' act':'')+'" data-act="NTPantry.setFilter" data-args="'+args([EXP])+'">⏰ Läuft ab ('+ex.length+')</button>':'')
       +sortedLocs().map(function(l){
         return '<button type="button" class="stab'+(_filter===l.id?' act':'')+'" data-act="NTPantry.setFilter" data-args="'+args([l.id])+'">'+esc(l.ic+' '+l.label)+'</button>';
       }).join('');
+  }
+  if(_filter===EXP){
+    el.innerHTML=ex.map(function(x){return row(x.it);}).join('');
+    return;
   }
   var shown=a.filter(function(it){return !_filter||it.loc===_filter;});
   if(!shown.length){
@@ -286,7 +328,7 @@ function submitInput(){
     if(/^\d/.test(m[1])){q=parseFloat(m[1].replace(',','.'));n=m[2];}
     else{n=m[1];q=parseFloat(m[2].replace(',','.'));}
   }
-  var it=add(n,q,0,_filter);
+  var it=add(n,q,0,_filter===EXP?'':_filter);
   inp.value='';inp.focus();
   if(it)showToast('Im Vorrat ✓');
 }
@@ -308,8 +350,10 @@ function openItem(id){
   setVal('pantryItemQ',it?fmtN(it.q):'1');
   setVal('pantryItemG',it&&+it.g>0?fmtN(it.g):'');
   setVal('pantryItemMin',it&&+it.min>0?fmtN(it.min):'');
+  setVal('pantryItemMhd',it&&it.mhd||'');
+  setVal('pantryItemVd',it&&it.vd||'');
   var sel=document.getElementById('pantryItemLoc');
-  if(sel)sel.innerHTML=locOptions(it?it.loc:_filter);
+  if(sel)sel.innerHTML=locOptions(it?it.loc:(_filter===EXP?'':_filter));
   var t=document.getElementById('pantryItemTitle');
   if(t)t.textContent=it?'✏️ Vorrats-Artikel':'＋ Neuer Vorrats-Artikel';
   var del=document.getElementById('pantryItemDel');
@@ -331,6 +375,8 @@ function saveItem(){
   it.q=num(val('pantryItemQ'));
   it.g=num(val('pantryItemG'));
   it.min=num(val('pantryItemMin'));
+  it.mhd=pantryDays(val('pantryItemMhd'),today())===null?'':val('pantryItemMhd');
+  it.vd=pantryDays(val('pantryItemVd'),today())===null?'':val('pantryItemVd');
   touch(it);
   _editId=null;
   closeOv('pantryItemOv');
@@ -417,6 +463,8 @@ function photoStatus(t,err){
   el.style.display=t?'':'none';
 }
 function pickPhotos(){var f=document.getElementById('pantryPhotoFile');if(f)f.click();}
+// Eigenes Feld mit capture: Android bietet bei `multiple` oft nur die Galerie an.
+function takePhoto(){var f=document.getElementById('pantryCamFile');if(f)f.click();}
 // Fotos verkleinert im Speicher halten (lange Kante 1280 px, JPEG): der Worker
 // nimmt höchstens 4 MB je Anfrage, sechs Fotos passen so sicher hinein.
 function photosChosen(input){
@@ -444,6 +492,10 @@ function photosChosen(input){
   });
 }
 function dropPhoto(i){_photos.splice(i,1);renderPhotos();}
+function tile(act,ic,label){
+  return '<button type="button" data-act="NTPantry.'+act+'" style="width:72px;height:72px;border-radius:10px;border:1.5px dashed var(--g3);background:var(--gl);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-family:inherit;color:var(--tx);">'
+    +'<span style="font-size:22px;line-height:1;">'+ic+'</span><span style="font-size:10px;font-weight:700;">'+label+'</span></button>';
+}
 function renderPhotos(){
   var el=document.getElementById('pantryPhotoThumbs');
   if(el){
@@ -453,7 +505,7 @@ function renderPhotos(){
         +'<button type="button" data-act="NTPantry.dropPhoto" data-args="'+args([i])+'" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:12px;cursor:pointer;">✕</button>'
         +'</div>';
     }).join('')
-    +(_photos.length<MAX_PHOTOS?'<button type="button" data-act="NTPantry.pickPhotos" style="width:72px;height:72px;border-radius:10px;border:1.5px dashed var(--g3);background:var(--gl);font-size:24px;cursor:pointer;">📷</button>':'');
+    +(_photos.length<MAX_PHOTOS?tile('takePhoto','📷','Kamera')+tile('pickPhotos','🖼️','Galerie'):'');
   }
   var btn=/** @type {HTMLButtonElement} */ (document.getElementById('pantryPhotoBtn'));
   if(btn){btn.disabled=!_photos.length;btn.textContent=_photos.length?('🤖 '+_photos.length+' Foto'+(_photos.length===1?'':'s')+' auswerten'):'🤖 Auswerten';}
@@ -462,12 +514,14 @@ function renderPhotos(){
 function photoPrompt(){
   return 'Auf den Fotos sind Kühlschrank, Tiefkühler oder Vorratsschrank eines Haushalts in Deutschland.\n'
     +'Liste alle erkennbaren Lebensmittel über ALLE Fotos zusammen (jedes nur einmal) und gib AUSSCHLIESSLICH dieses JSON zurück, ohne Fließtext und ohne Markdown:\n'
-    +'{"artikel":[{"name":"Milch","stueck":2,"g":1000,"ort":"kuehl"}]}\n'
+    +'{"artikel":[{"name":"Milch","stueck":2,"g":1000,"ort":"kuehl","mhd":"2026-11-02","vd":""}]}\n'
     +'Regeln:\n'
     +'- "name": einfacher deutscher Grundname ohne Marke („Milch“, „Nudeln“, „Tomaten (Dose)“).\n'
     +'- "stueck": erkennbare Anzahl Packungen/Stück, sonst 1.\n'
     +'- "g": Gramm bzw. ml je Stück laut Packung, wenn lesbar oder üblich, sonst 0.\n'
     +'- "ort": einer von '+sortedLocs().map(function(l){return '"'+l.id+'" ('+l.label+')';}).join(', ')+' — nach dem Foto, sonst "".\n'
+    +'- "mhd": Mindesthaltbarkeitsdatum („mindestens haltbar bis“) als JJJJ-MM-TT, nur wenn auf dem Foto lesbar, sonst "".\n'
+    +'- "vd": Verbrauchsdatum („zu verbrauchen bis“) als JJJJ-MM-TT, nur wenn auf dem Foto lesbar, sonst "".\n'
     +'- Keine Getränke-Leergut, keine Gewürze ohne Etikett, nichts Geratenes.\n'
     +'- Nichts erkannt: {"artikel":[]}';
 }
@@ -484,7 +538,7 @@ function analyzePhotos(){
   callClaude('claude-sonnet-5-5',content,2048,function(text){
     _found=parsePantryPhoto(text,locs().map(function(l){return l.id;})).map(function(x){
       var ex=findByName(x.n);
-      return {n:x.n,q:x.q,g:x.g,loc:x.loc||(ex&&ex.loc)||'',on:true,ex:!!ex};
+      return {n:x.n,q:x.q,g:x.g,loc:x.loc||(ex&&ex.loc)||'',mhd:x.mhd,vd:x.vd,on:true,ex:!!ex};
     });
     photoStatus(_found.length?(_found.length+' Lebensmittel erkannt — prüfen, anpassen, übernehmen.'):'Nichts erkannt. Ein schärferes Foto hilft.',!_found.length);
     renderPhotos();
@@ -504,7 +558,8 @@ function renderFound(){
         +'<input type="text" class="sinp" value="'+esc(x.n)+'" onchange="NTPantry.foundSet('+i+',\'n\',this.value)" style="flex:1;min-width:0;padding:7px 8px;font-size:13px;">'
         +'<input type="number" class="sinp" value="'+x.q+'" min="0" step="1" inputmode="decimal" onchange="NTPantry.foundSet('+i+',\'q\',this.value)" style="width:56px;padding:7px 6px;font-size:13px;" aria-label="Stück">'
         +'<select class="sinp" onchange="NTPantry.foundSet('+i+',\'loc\',this.value)" style="width:96px;padding:7px 4px;font-size:12px;">'+locOptions(x.loc)+'</select>'
-        +'</div>'+(x.ex?'<div style="font-size:10px;color:var(--mu);margin:-2px 0 4px 26px;">steht schon im Vorrat — wird dazugezählt</div>':'');
+        +'</div>'+(x.ex?'<div style="font-size:10px;color:var(--mu);margin:-2px 0 4px 26px;">steht schon im Vorrat — wird dazugezählt</div>':'')
+        +(x.vd||x.mhd?'<div style="font-size:10px;color:var(--mu);margin:-2px 0 4px 26px;">'+esc([x.vd?'Verbr. bis '+fmtD(x.vd):'',x.mhd?'MHD '+fmtD(x.mhd):''].filter(Boolean).join(' · '))+'</div>':'');
     }).join('')
     +'<button type="button" class="svb" data-act="NTPantry.foundApply">✓ Ausgewählte übernehmen</button>';
 }
@@ -516,7 +571,7 @@ function foundSet(i,k,v){
 }
 function foundApply(){
   var n=0;
-  _found.forEach(function(x){if(x.on&&x.n&&add(x.n,x.q||1,x.g,x.loc))n++;});
+  _found.forEach(function(x){if(x.on&&x.n&&add(x.n,x.q||1,x.g,x.loc,'',0,{mhd:x.mhd,vd:x.vd}))n++;});
   _found=[];_photos=[];
   closeOv('pantryPhotoOv');
   showToast(n?(n+' Artikel im Vorrat ✓'):'Nichts übernommen');
@@ -600,7 +655,7 @@ window.NTPantry={
   add:add,step:step,remove:remove,submitInput:submitInput,inputKey:inputKey,
   openItem:openItem,saveItem:saveItem,deleteItem:deleteItem,
   openLocs:openLocs,locAdd:locAdd,locSave:locSave,locMove:locMove,locDelete:locDelete,
-  openPhotos:openPhotos,pickPhotos:pickPhotos,photosChosen:photosChosen,dropPhoto:dropPhoto,
+  openPhotos:openPhotos,pickPhotos:pickPhotos,takePhoto:takePhoto,photosChosen:photosChosen,dropPhoto:dropPhoto,
   analyzePhotos:analyzePhotos,foundSet:foundSet,foundApply:foundApply,
   openCook:openCook,openRecipe:openRecipe,aiIdeas:aiIdeas,
   onBought:onBought,useRecipe:useRecipe,

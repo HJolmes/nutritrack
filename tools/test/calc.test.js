@@ -1043,8 +1043,36 @@ test('parsePantryPhoto: JSON aus der Antwort, Dubletten und unbekannte Orte fall
   const C = load({});
   const txt = 'Hier: ```json {"artikel":[{"name":"Milch","stueck":2,"g":1000,"ort":"kuehl"},{"name":"Milch","stueck":1},{"name":"Nudeln","stueck":0,"ort":"keller"},{"name":""}]} ```';
   assert.deepEqual(plain(C.parsePantryPhoto(txt, ['kuehl', 'vorrat'])), [
-    { n: 'Milch', q: 2, g: 1000, loc: 'kuehl' },
-    { n: 'Nudeln', q: 1, g: 0, loc: '' }
+    { n: 'Milch', q: 2, g: 1000, loc: 'kuehl', mhd: '', vd: '' },
+    { n: 'Nudeln', q: 1, g: 0, loc: '', mhd: '', vd: '' }
   ]);
   assert.deepEqual(plain(C.parsePantryPhoto('kein json', [])), []);
+  const d = C.parsePantryPhoto('{"artikel":[{"name":"Joghurt","mhd":"2026-11-02","vd":"02.11.2026"},{"name":"Hack","vd":"2026-13-01"}]}', []);
+  assert.equal(d[0].mhd, '2026-11-02');
+  assert.equal(d[0].vd, '');
+  assert.equal(d[1].vd, '');
+});
+test('pantryDays/pantryExpiry: Tage bis zum Datum, dringlicheres Datum, Stufe', () => {
+  const C = load({});
+  assert.equal(C.pantryDays('2026-10-20', '2026-10-17'), 3);
+  assert.equal(C.pantryDays('2026-10-16', '2026-10-17'), -1);
+  assert.equal(C.pantryDays('2026-04-01', '2026-03-28'), 4); // Zeitumstellung zählt nicht
+  assert.equal(C.pantryDays('', '2026-10-17'), null);
+  assert.equal(C.pantryDays('17.10.2026', '2026-10-17'), null);
+  assert.equal(C.pantryExpiry({}, '2026-10-17'), null);
+  assert.deepEqual(plain(C.pantryExpiry({ mhd: '2026-10-30' }, '2026-10-17')), { k: 'mhd', d: '2026-10-30', days: 13, lvl: 'ok' });
+  assert.deepEqual(plain(C.pantryExpiry({ mhd: '2026-10-30', vd: '2026-10-19' }, '2026-10-17')), { k: 'vd', d: '2026-10-19', days: 2, lvl: 'soon' });
+  assert.equal(C.pantryExpiry({ mhd: '2026-10-19', vd: '2026-10-19' }, '2026-10-17').k, 'vd');
+  assert.equal(C.pantryExpiry({ mhd: '2026-10-16' }, '2026-10-17').lvl, 'over');
+});
+test('pantryExpiring: nur mit Bestand, innerhalb der Frist, Dringendstes zuerst', () => {
+  const C = load({});
+  const items = [
+    { n: 'Milch', q: 1, mhd: '2026-10-19' },
+    { n: 'Hack', q: 1, vd: '2026-10-16' },
+    { n: 'Käse', q: 0, mhd: '2026-10-18' },
+    { n: 'Nudeln', q: 2, mhd: '2027-05-01' },
+    { n: 'Reis', q: 1 }
+  ];
+  assert.deepEqual(plain(C.pantryExpiring(items, '2026-10-17', 3)).map((x) => x.it.n), ['Hack', 'Milch']);
 });

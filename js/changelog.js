@@ -2,6 +2,10 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.320',items:[
+    {icon:'🥗',text:'<b>Ballaststoffe für Grundlebensmittel</b>: Obst, Gemüse, Brot, Nudeln, Reis, Hülsenfrüchte, Nüsse und Samen aus der eingebauten Liste bringen jetzt ihre Ballaststoffe mit (Quelle: USDA).',where:'Lebensmittel hinzufügen'},
+    {icon:'🍶',text:'<b>Essig korrigiert</b>: „Essig“ hat jetzt die Werte von Tafelessig (18 kcal) statt Balsamico; Balsamico gibt es als eigenen Eintrag. „Kartoffelsalat“ heißt „Kartoffelsalat (mit Mayonnaise)“, weil die Werte von dieser Variante stammen.',where:'Lebensmittel hinzufügen'},
+  ]},
   {v:'0.319',items:[
     {icon:'🧭',text:'<b>App-Tour</b>: Die Hilfe (❓ oben) führt dich auf Wunsch Schritt für Schritt durch die App und hebt jede Stelle hervor. Jederzeit mit ✕ oder „Beenden“ verlassen – oder direkt an einem einzelnen Punkt einsteigen.',where:'❓ Hilfe → 🧭 App-Tour'},
     {icon:'❓',text:'<b>Hilfe aktualisiert</b>: neue Abschnitte zu Verlauf &amp; Trends, Funktionen, Wasser/Fasten/Erinnerungen, Verbindungen &amp; Alexa und Feedback; Baby-Tagebuch und Einkaufszettel auf aktuellem Stand.',where:'❓ Hilfe'},

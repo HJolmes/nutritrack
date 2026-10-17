@@ -1,5 +1,5 @@
 // @ts-check
-// NutriTrack – erweiterte Lebensmittel-Datenbank (341 Eintraege).
+// NutriTrack – erweiterte Lebensmittel-Datenbank (342 Eintraege).
 //
 // ERZEUGT von tools/build-fooddb.js — nicht von Hand bearbeiten.
 // Gepflegt wird tools/fooddb-usda.map.json (deutscher Name, Emoji,
@@ -97,7 +97,7 @@ window.DB_USDA=[
   {n:"Ofenkartoffel",e:"🥔",k:93,p:2.5,c:21.2,f:0.1,g:1.2,b:2.2,l:0.03,s:"backkartoffel baked ofenkartoffel potato",u:"11674"},
   {n:"Kartoffelpüree",e:"🥔",k:113,p:2,c:16.9,f:4.2,g:1.4,b:1.5,l:0.83,s:"kartoffelbrei kartoffelpueree kartoffelpüree pueree",u:"11371"},
   {n:"Kartoffelchips",e:"🥔",k:532,p:6.4,c:53.8,f:34,g:0.3,b:3.1,l:1.32,s:"chips kartoffelchips",u:"19411"},
-  {n:"Kartoffelsalat",e:"🥔",k:143,p:2.7,c:11.2,f:8.2,g:0,b:1.3,l:1.32,s:"kartoffelsalat",u:"11414"},
+  {n:"Kartoffelsalat (mit Mayonnaise)",e:"🥔",k:143,p:2.7,c:11.2,f:8.2,g:0,b:1.3,l:1.32,s:"kartoffelsalat mayo",u:"11414"},
   {n:"Reis weiß (roh)",e:"🍚",k:365,p:7.1,c:80,f:0.7,g:0.1,b:1.3,l:0.01,s:"reis rice",u:"20044"},
   {n:"Reis weiß (gekocht)",e:"🍚",k:130,p:2.7,c:28.2,f:0.3,g:0.1,b:0.4,l:0,s:"gekocht reis",u:"20045"},
   {n:"Nudeln (roh)",e:"🍝",k:371,p:13,c:74.7,f:1.5,g:2.7,b:3.2,l:0.02,s:"nudeln pasta spaghetti trocken",u:"20120"},
@@ -269,7 +269,8 @@ window.DB_USDA=[
   {n:"Energy Drink",e:"🥤",k:43,p:0.5,c:10.2,f:0,g:10.2,b:0,l:0.1,s:"energydrink redbull",u:"14154"},
   {n:"Weißwein",e:"🍷",k:82,p:0.1,c:2.6,f:0,g:1,b:0,l:0.01,s:"weisswein weißwein white wine",u:"14106"},
   {n:"Wodka/Korn (40%)",e:"🥃",k:231,p:0,c:0,f:0,g:0,b:0,l:0,s:"gin schnaps vodka wodka/korn",u:"14037"},
-  {n:"Essig",e:"🥄",k:88,p:0.5,c:17,f:0,g:15,b:0,l:0.06,s:"balsamico essig vinegar",u:"02069"},
+  {n:"Essig",e:"🥄",k:18,p:0,c:0,f:0,g:0,b:0,l:0.01,s:"branntweinessig essig tafelessig vinegar",u:"02053"},
+  {n:"Balsamico-Essig",e:"🥄",k:88,p:0.5,c:17,f:0,g:15,b:0,l:0.06,s:"balsamessig balsamico balsamico-essig",u:"02069"},
   {n:"Salatdressing (Vinaigrette)",e:"🥗",k:240,p:0.4,c:12.1,f:21.1,g:10.8,b:0,l:2.48,s:"dressing italian salatdressing",u:"04114"},
   {n:"Barbecue-Sauce",e:"🥄",k:172,p:0.8,c:40.8,f:0.6,g:33.2,b:0.9,l:2.57,s:"barbecue-sauce bbq grillsauce",u:"06150"},
   {n:"Currypulver",e:"🌶️",k:325,p:14.3,c:55.8,f:14,g:2.8,b:53.2,l:0.13,s:"curry currypulver gewuerz",u:"02015"},

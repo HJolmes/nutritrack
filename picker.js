@@ -309,7 +309,7 @@ function pickerConfirmAdd(){
     if(f.isRecipe){
       var erec=recipes.find(function(r){return r.id===f.recipeId;});
       if(!erec){showToast('Rezept nicht gefunden');return;}
-      item=_pickerIngsAsOne(erec.name,erec.emoji||'📋',erec.ingredients,amt);
+      item=_pickerIngsAsOne(erec.name,erec.emoji||'📋',_pickerRecIngs(erec),amt);
       if(!item){showToast(_PICKER_NO_GRAMS);return;}
     } else {
       item={name:f.name,emoji:f.emoji,amount:amt,per100:f.per100||{kcal:0,protein:0,carbs:0,fat:0}};
@@ -321,9 +321,10 @@ function pickerConfirmAdd(){
   if(f.isRecipe){
     var rec=recipes.find(function(r){return r.id===f.recipeId;});
     if(!rec){showToast('Rezept nicht gefunden');return;}
-    var t=ingTotal(rec.ingredients);
+    var rIngs=_pickerRecIngs(rec),t=ingTotal(rIngs);
+    _pickerMarkUsed(rec);
     /** @type {Record<string, any>} */
-    var entry=Object.assign({name:rec.name,emoji:rec.emoji||'📋',isRecipe:true,recipeId:rec.id,portions:amt,ingredients:JSON.parse(JSON.stringify(rec.ingredients))},scaleNutrients(t,amt));
+    var entry=Object.assign({name:rec.name,emoji:rec.emoji||'📋',isRecipe:true,recipeId:rec.id,portions:amt,ingredients:JSON.parse(JSON.stringify(rIngs))},scaleNutrients(t,amt));
     getDay().meals[pickerMeal].push(entry);
   } else {
     var r=amt/100;
@@ -1639,7 +1640,7 @@ function pickerChatLocalSearch(q){
   // Cache und eingebaute DB sind ausgeschlossen (nicht „selbst gespeichert").
   recipes.forEach(function(r){
     var s=_pickerScoreName(r.name,qTokens,qFull);
-    if(s>0)add({name:r.name,emoji:r.emoji||'📋',isRecipe:true,recipeId:r.id,per100:null,badge:'📋'},s+10);
+    if(s>0)add({name:r.name,emoji:r.emoji||'📋',isRecipe:true,recipeId:r.id,per100:null,badge:'📋'},s+(_pickerSeedIdle(r)?2:10));
   });
   customFoods.forEach(function(f){
     var s=_pickerScoreName(f.name,qTokens,qFull);
@@ -1697,14 +1698,15 @@ function pickerChatAddLocal(i){
     var rec=recipes.find(function(r){return r.id===p.recipeId;});
     if(!rec){msgs.innerHTML+='<div class="cm a">❌ Rezept nicht mehr vorhanden.</div>';_pickerChatScrollEnd();return;}
     if(window._editEntryMode){
-      var one=_pickerIngsAsOne(rec.name,rec.emoji||'📋',rec.ingredients,_pickerQtyPortions(p.qty)||1);
+      var one=_pickerIngsAsOne(rec.name,rec.emoji||'📋',_pickerRecIngs(rec),_pickerQtyPortions(p.qty)||1);
       if(!one){msgs.innerHTML+='<div class="cm a">❌ '+_esc(_PICKER_NO_GRAMS)+'.</div>';_pickerChatScrollEnd();showToast(_PICKER_NO_GRAMS);return;}
       _pickerAppendToEditEntry([one]);
       return;
     }
-    var t=ingTotal(rec.ingredients||[]);
+    var cIngs=_pickerRecIngs(rec),t=ingTotal(cIngs);
     var portions=_pickerQtyPortions(p.qty)||rec.portions||1;
-    getDay().meals[pickerMeal].push(Object.assign({name:rec.name,emoji:rec.emoji||'📋',isRecipe:true,recipeId:rec.id,portions:portions,ingredients:JSON.parse(JSON.stringify(rec.ingredients||[]))},scaleNutrients(t,portions)));
+    _pickerMarkUsed(rec);
+    getDay().meals[pickerMeal].push(Object.assign({name:rec.name,emoji:rec.emoji||'📋',isRecipe:true,recipeId:rec.id,portions:portions,ingredients:JSON.parse(JSON.stringify(cIngs))},scaleNutrients(t,portions)));
     saveS();renderAll();closePicker();
     _pickerRateEntry(pickerMeal,getDay().meals[pickerMeal].length-1);
     showToast('📋 '+rec.name+' eingetragen');
@@ -2593,15 +2595,22 @@ function renderRecentList(){
 function urlProxyUrl(u){return PROJECT_WORKER_BASE+'/fetch?u='+encodeURIComponent(u);}
 function cacheFood(f){if(!f||!f.name)return;if(!f.per100||!_hasNutrients(f.per100))return;var k=f.name.toLowerCase().trim();foodCache[k]={name:f.name,emoji:f.emoji,per100:f.per100,addedAt:Date.now()};saveX();}
 
+// Ein Grundrezept aus dem Kochbuch, das nie gekocht, eingeplant oder
+// favorisiert wurde: 101 davon sollen die Lebensmittel-Suche nicht verdecken.
+function _pickerSeedIdle(r){
+  return !!(r&&r.seed&&!r.fav&&!(S.cookLog&&S.cookLog[r.id])&&!r.used);
+}
 function searchLocal(q){
   var ql=(q||'').toLowerCase().trim();
   var results=[],seen={};
   function add(item,score){var k=item.name.toLowerCase();if(!seen[k]){seen[k]=true;results.push({score:score,item:item});}}
-  // Recipes first
+  // Recipes first — eigene; Grundrezepte des Kochbuchs nur auf Suche und
+  // hinter Lebensmitteln, solange sie nie benutzt wurden (_pickerSeedIdle).
   recipes.forEach(function(r){
-    var nl=r.name.toLowerCase();
+    var nl=r.name.toLowerCase(),idle=_pickerSeedIdle(r);
+    if(idle&&!ql)return;
     var s=!ql?1:(nl===ql?5:nl.startsWith(ql)?4:nl.includes(ql)?2:0);
-    if(s>0)add({name:r.name,emoji:r.emoji||'📋',isRecipe:true,recipeId:r.id,per100:null,badge:'📋',bdgCls:''},s+20);
+    if(s>0)add({name:r.name,emoji:r.emoji||'📋',isRecipe:true,recipeId:r.id,per100:null,badge:'📋',bdgCls:''},s+(idle?3:20));
   });
   // Custom foods
   customFoods.forEach(function(f){
@@ -2651,21 +2660,33 @@ function getRecentFoods(){
 // ── Nach aussen ──
 // Nur, was ausserhalb dieser Datei gerufen wird. tools/check.js loest jeden
 // on*-/data-act-String gegen diese Liste auf, tools/smoke.js prueft jeden Eintrag.
+// Zutaten eines Kochbuch-Rezepts, wie sie gegessen werden: angepasst an die
+// eigenen Angaben (NTBook.view), mit orig=true die Fassung der Quelle.
+function _pickerRecIngs(rec,orig){
+  return (window.NTBook&&NTBook.view)?NTBook.view(rec,!!orig).ingredients:(rec.ingredients||[]);
+}
+// Ein Grundrezept, das einmal gegessen wurde, gehoert ab jetzt zu den eigenen
+// (Suche, „Zuletzt“) — Markierung am Rezept, das Rezept selbst bleibt.
+function _pickerMarkUsed(rec){
+  if(rec&&rec.seed&&!rec.used){rec.used=1;saveX();}
+}
 // Ein Kochbuch-Rezept direkt ins Tagebuch, ohne den Picker zu oeffnen
 // (NTBook: „🍽 Eintragen“, Kochmodus „Fertig“). Derselbe Eintrag wie über die
 // Suche: eigene Kopie der Zutaten, Ampel ueber die Zutaten (#205).
-function addRecipeEntry(id,meal,portions){
+function addRecipeEntry(id,meal,portions,orig){
   var rec=recipes.find(function(r){return r.id===id;});
   if(!rec){showToast('Rezept nicht gefunden');return false;}
   var m=MEALS.indexOf(meal)>=0?meal:mealByTime();
   var p=parseFloat(portions)>0?parseFloat(portions):1;
-  var t=ingTotal(rec.ingredients||[]);
+  var ings=_pickerRecIngs(rec,orig),t=ingTotal(ings);
   var list=getDay().meals[m];
-  list.push(Object.assign({name:rec.name,emoji:rec.emoji||'📋',isRecipe:true,recipeId:rec.id,portions:p,
-    ingredients:JSON.parse(JSON.stringify(rec.ingredients||[]))},scaleNutrients(t,p)));
+  var nm=(window.NTBook&&NTBook.view)?NTBook.view(rec,!!orig).name:rec.name;
+  _pickerMarkUsed(rec);
+  list.push(Object.assign({name:nm,emoji:rec.emoji||'📋',isRecipe:true,recipeId:rec.id,portions:p,
+    ingredients:JSON.parse(JSON.stringify(ings))},scaleNutrients(t,p)));
   saveS();renderAll();
   _pickerRateEntry(m,list.length-1);
-  showToast((rec.emoji||'📋')+' '+rec.name+' → '+(MEAL_NAMES[m]||m)+' eingetragen');
+  showToast((rec.emoji||'📋')+' '+nm+' → '+(MEAL_NAMES[m]||m)+' eingetragen');
   return true;
 }
 

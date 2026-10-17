@@ -228,6 +228,18 @@ if (!mCore) {
       fail(`sw.js CORE_ASSETS nennt '${a}', aber die Datei existiert nicht — der Install-Schritt schlaegt dafuer fehl.`);
     }
   }
+
+  // Der Grundbestand des Kochbuchs wird nachgeladen (kein <script>-Tag), muss
+  // also selbst in CORE_ASSETS stehen — und js/cookbook.js laedt ihn nur, solange
+  // S.bookSeedV kleiner als SEED_V ist. Passen SEED_V und die Fassung in
+  // js/book-seed.js nicht zusammen, kommt ein neuer Grundbestand nie an.
+  const seedJs = fs.existsSync(path.join(ROOT, 'js/book-seed.js')) ? read('js/book-seed.js') : '';
+  const seedV = (seedJs.match(/window\.BOOK_SEED=\{v:(\d+)/) || [])[1];
+  const bookV = (read('js/cookbook.js').match(/var SEED_V=(\d+)/) || [])[1];
+  if (!seedJs) fail('js/book-seed.js fehlt (node tools/build-book-seed.js <morphcook-Ordner>).');
+  else if (!coreAssets.includes('js/book-seed.js')) fail("sw.js CORE_ASSETS nennt 'js/book-seed.js' nicht — offline fehlte der Grundbestand des Kochbuchs.");
+  else if (!seedV || seedV !== bookV) fail(`js/book-seed.js hat Fassung ${seedV}, js/cookbook.js SEED_V=${bookV} — beide gleich setzen.`);
+  else ok(`Kochbuch-Grundbestand Fassung ${seedV} in js/book-seed.js, js/cookbook.js und sw.js CORE_ASSETS.`);
 }
 
 // ── 4. IDs im statischen Markup eindeutig ─────────────────────────────────

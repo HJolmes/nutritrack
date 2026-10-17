@@ -24,6 +24,20 @@
 // Im Editor stehen die Mengen fuer das GANZE Rezept (baseServings Portionen),
 // gespeichert wird je Portion — wie ein Kochbuch es schreibt, wie der Rest der
 // App es rechnet.
+//
+// ── Fuer dich angepasst (v0.318) ──────────────────────────────────────────
+// view(r) liefert das Rezept so, wie es fuer die Angaben im Profil auf den
+// Tisch kommt (vegetarisch, schwanger, glutenfrei …): erst die Tausch-Tabelle
+// (js/book-swaps.js ueber adaptRecipe in js/calc.js), dann — einmal je Rezept
+// und Profil, wenn online — die KI fuer alles, was die Tabelle nicht kennt.
+// Gespeichert bleibt das Original; der Schalter „Original anzeigen“ zeigt es.
+// Ansicht, Kochmodus, Wochenplan, Einkauf und Tagebuch rechnen alle mit view().
+//
+// ── Grundbestand ──────────────────────────────────────────────────────────
+// js/book-seed.js (101 Gerichte aus MorphCook, erzeugt von
+// tools/build-book-seed.js) wird beim ersten Start nachgeladen und in
+// `recipes` uebernommen — danach sind es gewoehnliche Rezepte: aenderbar,
+// loeschbar. Geloeschte stehen in S.bookSeedOff und kommen nicht wieder.
 (function(){
 'use strict';
 
@@ -41,6 +55,194 @@ function servingsOf(r){return Math.max(1,Math.round((r&&r.baseServings)||1));}
 function logOf(id){var l=S.cookLog&&S.cookLog[id];return l||{n:0,last:''};}
 function args(a){return esc(JSON.stringify(a));}
 function guessEmoji(name){var e=emo(name||'');return (e&&e!=='🍽')?e:'📋';}
+
+// ══════════════════════════════════════════════════════════════════════════
+// GRUNDBESTAND
+// ══════════════════════════════════════════════════════════════════════════
+// SEED_V muss zu BOOK_SEED.v in js/book-seed.js passen (tools/check.js).
+var SEED_V=1,_seedLoading=false;
+function boot(){
+  renderCard();
+  if((S.bookSeedV||0)>=SEED_V)return;
+  setTimeout(loadSeed,1500);
+}
+function loadSeed(cb){
+  if(window.BOOK_SEED){mergeSeed();if(cb)cb();return;}
+  if(_seedLoading)return;
+  _seedLoading=true;
+  var sc=document.createElement('script');
+  sc.src='js/book-seed.js?v='+APP_VERSION;
+  sc.onload=function(){_seedLoading=false;mergeSeed();if(cb)cb();};
+  sc.onerror=function(){_seedLoading=false;};
+  document.head.appendChild(sc);
+}
+function mergeSeed(){
+  var seed=window.BOOK_SEED;
+  if(!seed||!Array.isArray(seed.recipes))return 0;
+  if(window.NTTab&&!NTTab.canWrite())return 0;
+  var off=Array.isArray(S.bookSeedOff)?S.bookSeedOff:[],have={},n=0;
+  recipes.forEach(function(r){have[r.id]=1;if(r.seed)have['s:'+r.seed]=1;});
+  seed.recipes.forEach(function(sr){
+    if(off.indexOf(sr.id)>=0||have[sr.id]||have['s:'+sr.seed])return;
+    recipes.push(JSON.parse(JSON.stringify(sr)));n++;
+  });
+  S.bookSeedV=seed.v||SEED_V;
+  saveX();saveS();
+  render();
+  if(window.NTPlan&&NTPlan.render)NTPlan.render();
+  return n;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// FUER DICH ANGEPASST
+// ══════════════════════════════════════════════════════════════════════════
+var _orig={};          // Rezept-ID → true: „Original anzeigen“ ist an
+var _memo={};          // id → {r, key, v}
+// Ersatz aus der eigenen Lebensmittel-Datenbank (eigene Lebensmittel zuerst).
+var _dbIdx=null;
+function lookupFood(name){
+  for(var i=0;i<customFoods.length;i++)if(customFoods[i].name===name)return {name:name,emoji:customFoods[i].emoji,per100:customFoods[i].per100};
+  if(!_dbIdx){_dbIdx={};for(var j=DB.length-1;j>=0;j--)_dbIdx[DB[j].n]=DB[j];}
+  var d=_dbIdx[name];
+  return d?{name:d.n,emoji:d.e,per100:dbPer100(d)}:null;
+}
+function profile(){return bookProfile(S);}
+function profileActive(pr){return !!(pr.keys.length||pr.free.length);}
+// Kennung des Inhalts — die KI-Antwort gilt nur fuer genau diesen Stand.
+function contentHash(r){
+  var s=JSON.stringify([r.name,(r.ingredients||[]).map(function(g){return [g.name,g.t||'',g.amount];}),r.instructions||'']);
+  var h=5381;for(var i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;
+  return (h>>>0).toString(36);
+}
+// ── KI-Ergaenzung: einmal je Rezept und Profil, gemerkt in nt_book_ai ──
+var AI_KEY='nt_book_ai',AI_MAX=150,_ai=null,_aiBusy={},_aiErr={};
+function aiStore(){
+  if(!_ai){try{_ai=JSON.parse(localStorage.getItem(AI_KEY)||'{}')||{};}catch(e){_ai={};}}
+  return _ai;
+}
+function aiSave(){
+  if(window.NTTab&&!NTTab.canWrite())return;
+  var st=aiStore(),keys=Object.keys(st);
+  if(keys.length>AI_MAX){
+    keys.sort(function(a,b){return (st[a].at||0)-(st[b].at||0);});
+    keys.slice(0,keys.length-AI_MAX).forEach(function(k){delete st[k];});
+  }
+  try{localStorage.setItem(AI_KEY,JSON.stringify(st));}catch(e){}
+}
+function aiKey(r,pr){return r.id+'|'+contentHash(r)+'|'+pr.sig;}
+function aiState(r,pr){
+  if(!profileActive(pr))return '';
+  var k=aiKey(r,pr);
+  if(aiStore()[k])return 'done';
+  if(_aiBusy[k])return 'busy';
+  if(_aiErr[k])return 'err';
+  if(typeof isOnline!=='undefined'&&!isOnline)return 'off';
+  if(!canUseAi())return 'noai';
+  return 'todo';
+}
+function aiApply(v,entry,serv){
+  (entry.t||[]).forEach(function(t){
+    var want=bookFold(t.zutat).trim();
+    var idx=-1;
+    for(var i=0;i<v.ingredients.length&&idx<0;i++){
+      var g=v.ingredients[i];
+      if(bookFold(bookIngShort(g)).trim()===want||bookFold(g.name).trim()===want||bookFold(g.t||'').trim()===want)idx=i;
+    }
+    if(idx<0)return;
+    var old=v.ingredients[idx],from=bookIngShort(old);
+    if(!t.neu){
+      v.ingredients.splice(idx,1);
+      v.swaps.push({from:from,to:'',why:t.grund||'',k:'ki',m:'',ki:1});
+      return;
+    }
+    v.ingredients[idx]={name:t.name||t.neu,emoji:t.emoji||old.emoji,amount:Math.round((t.g||0)/serv*10)/10,
+      per100:t.per100||old.per100,t:t.neu,was:old.was||from};
+    v.swaps.push({from:from,to:t.neu,why:t.grund||'',k:'ki',m:'',ki:1});
+  });
+  if(entry.s&&entry.s.length){v.instructions=entry.s.join('\n');v.aiSteps=true;}
+  if(entry.n&&(v.swaps.length||v.aiSteps))v.name=entry.n;
+}
+function aiCheck(r){
+  var pr=profile(),st=aiState(r,pr);
+  if(st!=='todo')return;
+  var k=aiKey(r,pr),serv=servingsOf(r);
+  _aiBusy[k]=1;
+  var base=view(r,false);
+  var list=base.ingredients.map(function(g){
+    var amt=Math.round((g.amount||0)*serv);
+    return '- '+(amt>0?amt+' g ':'')+bookIngShort(g)+(g.was?' (statt '+g.was+')':'');
+  }).join('\n');
+  var steps=recipeSteps(r.instructions).map(function(x,i){return (i+1)+'. '+x;}).join('\n');
+  var prompt='Du passt ein Rezept an die Ernährung einer Person an. Vorgaben: '+pr.labels.join(', ')+'.\n'
+    +'Rezept „'+r.name+'“ für '+serv+' Portionen.\n'
+    +'Zutaten (Menge für das ganze Rezept; „statt …“ ist schon getauscht):\n'+list+'\n'
+    +(steps?'Zubereitung:\n'+steps+'\n':'')
+    +'Prüfe jede Zutat und jeden Schritt gegen die Vorgaben — auch versteckt: Alkohol, rohes oder kaum gegartes Ei, '
+    +'nicht durchgegartes Fleisch oder Fisch, Rohmilchkäse, Gelatine, Fisch- oder Austernsauce, Gluten in Saucen und Fertigprodukten.\n'
+    +'Antworte NUR mit JSON ohne Markdown:\n'
+    +'{"titel":"<Name der angepassten Fassung, leer wenn der alte passt>","tausch":[{"zutat":"<Name genau wie in der Liste, ohne Menge>","neu":"<Ersatz als einfacher deutscher Lebensmittelname, leer = weglassen>","g":<Gramm für das ganze Rezept>,"grund":"<höchstens 8 Wörter>"}],'
+    +'"schritte":["<alle Schritte, angepasst an alle Täusche>"]}\n'
+    +'Passt schon alles: "tausch":[]. "titel" nur, wenn der Name eine getauschte Zutat nennt („Hähnchen-Curry“ → „Tofu-Curry“). '
+    +'"schritte" nur, wenn ein Schritt eine getauschte Zutat nennt oder sich ändern muss, sonst [].';
+  var done=function(entry){
+    delete _aiBusy[k];
+    entry.at=Date.now();
+    aiStore()[k]=entry;aiSave();
+    delete _memo[r.id];
+    refreshViews(r.id);
+  };
+  callClaude('claude-haiku-5-5',[{type:'text',text:prompt}],1600,function(text){
+    var d=null,txt=String(text||''),a=txt.indexOf('{'),z=txt.lastIndexOf('}');
+    try{if(a>=0&&z>a)d=JSON.parse(txt.slice(a,z+1));}catch(e){d=null;}
+    if(!d||!Array.isArray(d.tausch)){delete _aiBusy[k];_aiErr[k]=1;refreshViews(r.id);return;}
+    var t=d.tausch.filter(function(x){return x&&x.zutat;}).slice(0,20).map(function(x){
+      return {zutat:String(x.zutat).slice(0,80),neu:String(x.neu||'').trim().slice(0,80),g:Math.max(0,parseFloat(x.g)||0),grund:String(x.grund||'').slice(0,80)};
+    });
+    var s2=Array.isArray(d.schritte)?d.schritte.map(function(x){return String(x||'').trim();}).filter(Boolean).slice(0,40):[];
+    var ti=String(d.titel||'').trim().slice(0,90);
+    var need=t.filter(function(x){return x.neu;});
+    if(!need.length){done({t:t,s:s2,n:ti});return;}
+    // Naehrwerte der neuen Zutaten wie bei jedem Import: Datenbank, OFF, KI.
+    lookupNutrients(need.map(function(x){return {name:x.neu,g:x.g||null};}),function(res){
+      need.forEach(function(x,i){var r0=res[i]||{};x.name=r0.name||x.neu;x.emoji=r0.emoji;x.per100=r0.per100;});
+      done({t:t,s:s2,n:ti});
+    });
+  },function(){delete _aiBusy[k];_aiErr[k]=1;refreshViews(r.id);});
+  refreshViews(r.id);
+}
+function refreshViews(id){
+  if(isOpen('bookDetailOv')&&_cur===id)renderDetail();
+  if(isOpen('cookOv')&&_ck&&_ck.id===id)renderCook();
+  if(window.NTPlan&&NTPlan.render&&isOpen('planOv'))NTPlan.render();
+}
+// Das Rezept, wie es auf den Tisch kommt. forceOrig: true = Original, false =
+// angepasst (Schalter ueberstimmt), undefined = wie der Schalter steht.
+// Zurueck: {name, emoji, ingredients, instructions, swaps, adapted, orig, ai, prof}
+function view(r,forceOrig){
+  if(!r)return null;
+  var pr=profile();
+  var orig=forceOrig===true||(forceOrig!==false&&!!_orig[r.id]);
+  var ai=aiState(r,pr);
+  var key=pr.sig+'|'+(orig?1:0)+'|'+ai;
+  var m=_memo[r.id];
+  if(m&&m.r===r&&m.key===key)return m.v;
+  var v={name:r.name,emoji:r.emoji||'📋',ingredients:r.ingredients||[],instructions:r.instructions||'',
+    swaps:[],adapted:false,orig:orig,ai:ai,prof:pr,aiSteps:false};
+  if(!orig&&profileActive(pr)){
+    var a=adaptRecipe(r,pr,window.BOOK_SWAPS||[],lookupFood);
+    v.ingredients=a.ingredients;v.swaps=a.swaps;
+    var entry=ai==='done'?aiStore()[aiKey(r,pr)]:null;
+    if(entry)aiApply(v,entry,servingsOf(r));
+    v.adapted=v.swaps.length>0||v.aiSteps;
+  }
+  _memo[r.id]={r:r,key:key,v:v};
+  return v;
+}
+function toggleOrig(){
+  if(!_cur)return;
+  _orig[_cur]=!_orig[_cur];
+  renderDetail();
+}
 function mins(t){
   if(!(t>0))return '';
   return t<60?t+' Min':Math.floor(t/60)+' Std'+(t%60?' '+(t%60)+' Min':'');
@@ -49,7 +251,7 @@ function mins(t){
 function metaLine(r){
   var l=logOf(r.id),parts=[];
   if(r.time>0)parts.push('⏱ '+mins(r.time));
-  parts.push(Math.round(ingTotal(r.ingredients||[]).kcal)+' kcal/Portion');
+  parts.push(Math.round(ingTotal(view(r).ingredients).kcal)+' kcal/Portion');
   if(servingsOf(r)>1)parts.push('für '+servingsOf(r));
   if(l.n)parts.push(l.n+'× gekocht');
   return parts.join(' · ');
@@ -110,21 +312,50 @@ function detail(id){
   _cur=id;_portions=servingsOf(r);_panel='';
   renderDetail();
   openOv('bookDetailOv');
+  aiCheck(r);
   var b=document.querySelector('#bookDetailOv .mod');if(b)b.scrollTop=0;
 }
 function closeDetail(){_panel='';closeOv('bookDetailOv');}
 function setPortions(d){
   _portions=Math.max(1,Math.min(99,_portions+d));
-  renderIngs('bookDetIngs',rec(_cur),_portions);
+  renderIngs('bookDetIngs',view(rec(_cur)),_portions);
   var v=document.getElementById('bookDetP');if(v)v.textContent=String(_portions);
 }
-function ingsHtml(r,p){
-  return (r.ingredients||[]).map(function(g){
+// v = view(r): getauschte Zutaten tragen `was` (die Zutat des Originals).
+function ingsHtml(v,p){
+  return (v.ingredients||[]).map(function(g){
     var l=bookIngLine(g,p);
-    return '<div class="bk-ing"><span class="bk-iq">'+esc(l.q||'—')+'</span>'
-      +'<span class="bk-in">'+esc(l.n)+'</span>'
+    return '<div class="bk-ing'+(g.was?' sw':'')+'"><span class="bk-iq">'+esc(l.q||'—')+'</span>'
+      +'<span class="bk-in">'+esc(l.n)+(g.was?'<small>↻ statt '+esc(g.was)+'</small>':'')+'</span>'
       +(l.g?'<span class="bk-ig">'+esc(l.g)+'</span>':'')+'</div>';
   }).join('');
+}
+// Hinweis oben in der Ansicht: angepasst an …, Täusche, KI-Stand, Schalter.
+function adaptHtml(v){
+  var pr=v.prof;
+  if(!profileActive(pr))return '';
+  var who=esc(pr.labels.join(', '));
+  var aiTxt={busy:'🤖 Die KI prüft gerade die übrigen Zutaten und Schritte …',done:'🤖 Von der KI geprüft.',
+    off:'Ohne Internet ist nur die Tausch-Tabelle geprüft.',noai:'Nur die Tausch-Tabelle geprüft (KI nicht eingerichtet).',
+    err:'Die KI-Prüfung hat nicht geklappt — nur die Tausch-Tabelle.',todo:''}[v.ai]||'';
+  if(v.orig){
+    return '<div class="bk-adapt is-orig"><div class="bk-at">📖 Original wird angezeigt</div>'
+      +'<div class="bk-mu">Deine Angaben: '+who+'</div>'
+      +'<button type="button" class="seb" style="margin-top:8px;" data-act="NTBook.toggleOrig">🌱 Für mich anpassen</button></div>';
+  }
+  if(!v.adapted){
+    return '<div class="bk-adapt"><div class="bk-at">✓ Passt zu deinen Angaben</div>'
+      +'<div class="bk-mu">'+who+(aiTxt?' · '+aiTxt:'')+'</div></div>';
+  }
+  var rows=v.swaps.map(function(s){
+    return '<li><b>'+esc(s.from)+'</b> → '+(s.to?esc(s.to):'<i>weglassen</i>')+(s.ki?' 🤖':'')
+      +(s.why?'<span> · '+esc(s.why)+'</span>':'')+'</li>';
+  }).join('');
+  return '<div class="bk-adapt"><div class="bk-at">🌱 Für dich angepasst · '+who+'</div>'
+    +(rows?'<ul class="bk-swaps">'+rows+'</ul>':'')
+    +(v.aiSteps?'<div class="bk-mu">Die Zubereitung hat die KI an die Täusche angepasst.</div>':'')
+    +(aiTxt?'<div class="bk-mu">'+aiTxt+'</div>':'')
+    +'<button type="button" class="seb" style="margin-top:8px;" data-act="NTBook.toggleOrig">📖 Original anzeigen</button></div>';
 }
 function renderIngs(elId,r,p){var el=document.getElementById(elId);if(el&&r)el.innerHTML=ingsHtml(r,p);}
 function togglePanel(p){_panel=(_panel===p)?'':p;renderDetail();}
@@ -149,7 +380,7 @@ function eatNow(pre){
   if(!id||!window.NTPicker||!NTPicker.addRecipeEntry)return;
   var m=(document.getElementById(pre+'EatMeal')||{}).value||null;
   var p=parseFloat((document.getElementById(pre+'EatP')||{}).value)||1;
-  if(!NTPicker.addRecipeEntry(id,m,p))return;
+  if(!NTPicker.addRecipeEntry(id,m,p,!!_orig[id]))return;
   if(pre==='cook'){cookClose(true);return;}
   _panel='';renderDetail();
 }
@@ -168,14 +399,14 @@ function planNow(){
   var sl=(document.getElementById('bookPlanSlot')||{}).value||'dinner';
   var p=parseFloat((document.getElementById('bookPlanP')||{}).value)||1;
   if(!/^\d{4}-\d{2}-\d{2}$/.test(d)){showToast('Bitte einen Tag wählen');return;}
-  if(!NTPlan.planRecipe(d,sl,r.id,p))return;
+  if(!NTPlan.planRecipe(d,sl,r.id,p,!!_orig[r.id]))return;
   var s=SLOTS.filter(function(x){return x.id===sl;})[0];
   showToast('📅 '+r.name+' · '+(s?s.label:'')+' '+fmtDate(d)+' eingeplant ✓');
   _panel='';renderDetail();
 }
 function toShop(){
   if(!window.NTShop){showToast('Einkaufszettel nicht verfügbar');return;}
-  NTShop.addRecipe(_cur,_portions);
+  NTShop.addRecipe(_cur,_portions,!!_orig[_cur]);
 }
 function toggleFav(){
   var r=rec(_cur);if(!r)return;
@@ -191,14 +422,22 @@ function duplicate(){
   detail(c.id);
   showToast('⎘ Kopie angelegt — jetzt bearbeiten');
 }
+// Unter einem Schritt: welche Zutat dort jetzt anders ist (nur ohne KI-Text).
+function stepNote(v,step){
+  if(v.orig||v.aiSteps||!v.swaps.length)return '';
+  var hits=bookStepSwaps(step,v.swaps);
+  if(!hits.length)return '';
+  return '<small class="bk-stepsw">'+hits.map(function(s){return '↻ '+(s.to?esc(s.to)+' statt '+esc(s.from):esc(s.from)+' weglassen');}).join(' · ')+'</small>';
+}
 function renderDetail(){
   var r=rec(_cur);
   if(!r){closeOv('bookDetailOv');return;}
-  var t=document.getElementById('bookDetTitle');if(t)t.textContent=(r.emoji||'📋')+' '+r.name;
-  var sub=document.getElementById('bookDetSub');if(sub)sub.textContent=metaLine(r);
+  var v=view(r);
+  var t=document.getElementById('bookDetTitle');if(t)t.textContent=(r.emoji||'📋')+' '+v.name;
+  var sub=document.getElementById('bookDetSub');if(sub)sub.textContent=metaLine(r)+(v.adapted?' · 🌱 angepasst':'');
   var el=document.getElementById('bookDetBody');if(!el)return;
-  var steps=recipeSteps(r.instructions);
-  var l=logOf(r.id),per=ingTotal(r.ingredients||[]);
+  var steps=recipeSteps(v.instructions);
+  var l=logOf(r.id),per=ingTotal(v.ingredients);
   var src=String(r.src||''),host='';
   if(/^https?:\/\//i.test(src)){try{host=new URL(src).hostname.replace(/^www\./,'');}catch(e){host='';}}
   var btn=function(act,label){return '<button type="button" class="bk-act" data-act="'+act+'">'+label+'</button>';};
@@ -212,19 +451,22 @@ function renderDetail(){
       +'<button type="button" class="bk-act'+(r.fav?' on':'')+'" data-act="NTBook.toggleFav">'+(r.fav?'⭐':'☆')+'<span>Favorit</span></button>'
     +'</div>'
     +(_panel==='plan'?planPanel():'')+(_panel==='eat'?eatPanel('book'):'')
+    +(r.desc&&!v.adapted?'<div class="bk-desc">'+esc(r.desc)+'</div>':'')
+    +adaptHtml(v)
     +'<div class="bk-sec"><div class="bk-sh">Zutaten</div>'
       +'<div class="bk-scale"><button type="button" data-act="NTBook.setPortions" data-args="[-1]">−</button>'
       +'<b id="bookDetP">'+_portions+'</b><span>Portion'+(_portions===1?'':'en')+'</span>'
       +'<button type="button" data-act="NTBook.setPortions" data-args="[1]">＋</button></div></div>'
-    +'<div id="bookDetIngs" class="bk-ings">'+ingsHtml(r,_portions)+'</div>'
+    +'<div id="bookDetIngs" class="bk-ings">'+ingsHtml(v,_portions)+'</div>'
     +'<div class="bk-mu" style="margin:4px 2px 0;">1 Portion: '+esc(totalStr(per))+'. Der Rechner ändert nur die Anzeige, nicht das Rezept.</div>'
     +'<div class="bk-sec"><div class="bk-sh">Zubereitung</div></div>'
     +(steps.length
-      ?'<ol class="bk-steps">'+steps.map(function(s){return '<li>'+esc(s)+'</li>';}).join('')+'</ol>'
+      ?'<ol class="bk-steps">'+steps.map(function(s){return '<li>'+esc(s)+stepNote(v,s)+'</li>';}).join('')+'</ol>'
       :'<div class="bk-mu">Noch keine Zubereitung hinterlegt — über ✏️ Bearbeiten ergänzen.</div>')
     +(r.note?'<div class="bk-sec"><div class="bk-sh">Notizen</div></div><div class="bk-note">'+esc(r.note)+'</div>':'')
     +'<div class="bk-foot">'
-      +(host?'<a class="bk-src" href="'+esc(src)+'" target="_blank" rel="noopener noreferrer">🔗 '+esc(host)+'</a>':'')
+      +(host?'<a class="bk-src" href="'+esc(src)+'" target="_blank" rel="noopener noreferrer">🔗 '+esc(r.seed?'MorphCook':host)+'</a>':'')
+      +(r.seed?'<div class="bk-mu">Grundrezept aus MorphCook (MIT-Lizenz), von einer KI geschrieben; Nährwerte aus der NutriTrack-Datenbank.</div>':'')
       +(l.n?'<div class="bk-mu">👨‍🍳 '+l.n+'× gekocht · zuletzt '+esc(fmtDate(l.last))+'</div>':'')
     +'</div>'
     +'<div class="bk-acts" style="margin-top:12px;">'
@@ -432,6 +674,8 @@ function editDelete(){
     +'\n\nEinträge im Tagebuch bleiben erhalten.'))return;
   recipes.splice(recipes.indexOf(r),1);
   if(S.cookLog)delete S.cookLog[r.id];
+  // Ein geloeschtes Grundrezept kommt mit dem naechsten Grundbestand nicht wieder.
+  if(r.seed){if(!Array.isArray(S.bookSeedOff))S.bookSeedOff=[];if(S.bookSeedOff.indexOf(r.id)<0)S.bookSeedOff.push(r.id);}
   saveX();saveS();
   _saved=true;_draft=null;_dOpts=null;
   closeOv('recEditOv');
@@ -454,12 +698,13 @@ function cook(id,p){
   var keep=_ck&&_ck.id===id;
   if(_ck&&!keep&&running().length&&!confirm('Für „'+(rec(_ck.id)||{name:'?'}).name+'“ läuft noch ein Timer. Beenden?'))return;
   if(!keep)stopTimers();
-  var steps=recipeSteps(r.instructions);
-  _ck={id:id,steps:steps,i:keep?_ck.i:0,p:p||(_cur===id?_portions:servingsOf(r)),
+  var steps=recipeSteps(view(r).instructions);
+  _ck={id:id,steps:steps,i:keep?Math.min(_ck.i,Math.max(0,steps.length-1)):0,p:p||(_cur===id?_portions:servingsOf(r)),
        timers:keep?_ck.timers:[],done:false,ings:!steps.length};
   renderCook();
   openOv('cookOv');
   wakeOn();
+  aiCheck(r);
 }
 function running(){return _ck?_ck.timers.filter(function(t){return !t.done;}):[];}
 function stopTimers(){if(_tick){clearInterval(_tick);_tick=0;}if(_ck)_ck.timers=[];}
@@ -559,8 +804,12 @@ function cookDone(){
 function renderCook(){
   var r=_ck?rec(_ck.id):null;
   if(!_ck||!r){cookClose(true);return;}
+  var v=view(r);
+  // Die KI kann die Schritte nachtraeglich anpassen — dann gilt ihre Fassung.
+  var st=recipeSteps(v.instructions);
+  if(st.join('\n')!==_ck.steps.join('\n')){_ck.steps=st;_ck.i=Math.min(_ck.i,Math.max(0,st.length-1));}
   var n=_ck.steps.length,i=_ck.i;
-  var t=document.getElementById('cookTitle');if(t)t.textContent=(r.emoji||'📋')+' '+r.name;
+  var t=document.getElementById('cookTitle');if(t)t.textContent=(r.emoji||'📋')+' '+v.name;
   var sub=document.getElementById('cookSub');
   if(sub)sub.textContent=_ck.done?'Fertig gekocht':(n?'Schritt '+(i+1)+' von '+n:'Keine Zubereitung hinterlegt');
   var el=document.getElementById('cookBody');if(!el)return;
@@ -582,8 +831,9 @@ function renderCook(){
     +(n>1?'<div class="ck-prog"><div style="width:'+Math.round((i+1)/n*100)+'%;"></div></div>':'')
     +'<button type="button" class="ck-ingbtn" data-act="NTBook.cookIngs">🥕 Zutaten für '+_ck.p+' Portion'+(_ck.p===1?'':'en')+(_ck.ings?' ▲':' ▼')+'</button>'
     +(_ck.ings?'<div class="bk-scale" style="margin:6px 0;"><button type="button" data-act="NTBook.cookPortions" data-args="[-1]">−</button><b>'+_ck.p+'</b><span>Portionen</span><button type="button" data-act="NTBook.cookPortions" data-args="[1]">＋</button></div>'
-      +'<div class="bk-ings">'+ingsHtml(r,_ck.p)+'</div>':'')
-    +(n?'<div class="ck-step"><div class="ck-no">'+(i+1)+'</div><div class="ck-tx">'+esc(step)+'</div></div>'
+      +'<div class="bk-ings">'+ingsHtml(v,_ck.p)+'</div>':'')
+    +(v.adapted&&!v.orig?'<div class="bk-mu" style="margin:0 2px 6px;">🌱 Für dich angepasst · '+esc(v.prof.labels.join(', '))+'</div>':'')
+    +(n?'<div class="ck-step"><div class="ck-no">'+(i+1)+'</div><div class="ck-tx">'+esc(step)+stepNote(v,step)+'</div></div>'
       :'<div class="bk-mu" style="margin:14px 2px;">Für dieses Rezept ist keine Zubereitung hinterlegt. Ergänzen kannst du sie über ✏️ Bearbeiten.</div>')
     +(tms.length?'<div class="ck-tstart">'+tms.map(function(x){
         return '<button type="button" data-act="NTBook.timerStart" data-args="'+args([x.sec,x.label])+'">⏱ '+esc(x.label)+' starten</button>';
@@ -638,6 +888,7 @@ function render(){
 }
 
 window.NTBook={
+  boot:boot,loadSeed:loadSeed,mergeSeed:mergeSeed,view:view,toggleOrig:toggleOrig,aiCheck:aiCheck,
   render:render,renderList:renderList,renderCard:renderCard,setTag:setTag,setSort:setSort,
   detail:detail,closeDetail:closeDetail,setPortions:setPortions,togglePanel:togglePanel,
   planNow:planNow,eatNow:eatNow,toShop:toShop,toggleFav:toggleFav,duplicate:duplicate,

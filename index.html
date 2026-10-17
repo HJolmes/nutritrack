@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.317"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.318"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.317"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.318"></script>
 <script>
   // @ts-check
   (function(){
@@ -728,6 +728,14 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 .bk-cook{flex-shrink:0;background:var(--gl);border:1.5px solid var(--g3);border-radius:999px;padding:3px 10px;font-size:15px;cursor:pointer;}
 .bk-cchips{display:flex;flex-wrap:wrap;gap:5px;}
 .ing-src{font-size:11px;font-weight:500;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bk-desc{font-size:13px;color:var(--mu);line-height:1.5;margin:0 2px 10px;font-style:italic;}
+.bk-adapt{background:var(--gl);border:1.5px solid var(--g3);border-radius:14px;padding:10px 12px;margin:0 0 10px;}
+.bk-adapt.is-orig{background:var(--card);border-color:var(--br);}
+.bk-at{font-weight:800;font-size:13px;margin-bottom:4px;}
+.bk-swaps{margin:4px 0 4px;padding:0 0 0 18px;font-size:12.5px;line-height:1.5;}
+.bk-swaps span{color:var(--mu);}
+.bk-ing.sw .bk-in{color:var(--g1);font-weight:600;}
+.bk-ing small,.bk-stepsw{display:block;font-size:11px;font-weight:600;color:var(--g1);margin-top:1px;}
 #cookOv .mod{height:100vh;height:100dvh;max-height:100dvh;border-radius:0;}
 .ck-prog{height:6px;background:var(--gl);border-radius:999px;overflow:hidden;margin:2px 0 10px;}
 .ck-prog div{height:100%;background:var(--g2);border-radius:999px;}
@@ -1290,7 +1298,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.317</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.318</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1561,7 +1569,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
       <details><summary>➕ Mahlzeit erfassen</summary><div class="hb">Der <strong>＋</strong>-Knopf in der Mitte der unteren Leiste öffnet den Picker, standardmäßig im <strong>Chat</strong>: Einfach tippen oder per 🎙️ diktieren, was du gegessen hast („Brot mit Käse und Schinken") — die App zerlegt es in Zutaten und schätzt Nährwerte. Weitere Wege:<ul><li><strong>Suche</strong> — lokale Treffer sofort beim Tippen, Enter lädt Online-Ergebnisse</li><li><strong>Zuletzt</strong> — kürzlich verwendete Einträge</li><li><strong>Foto</strong> — Teller fotografieren, KI erkennt die Komponenten</li><li><strong>Barcode</strong> — Verpackung scannen</li><li><strong>Eigenes</strong> — Nährwerte selbst eintragen; mit Häkchen „Nur einmal eintragen" wird nichts dauerhaft gespeichert</li><li><strong>Link</strong> — ein Feld für beides: Rezept-Link von nahezu jeder Rezept-Seite oder jedem Food-Blog (Chefkoch, Lecker, Kochbar, Essen &amp; Trinken, AllRecipes …) <em>oder</em> eine geteilte NutriTrack-Sendung (Mahlzeit, Rezept, ganzer Tag, Zeitraum) als Link oder Code. Die App erkennt selbst, was du eingefügt hast; ein passender Inhalt aus der Zwischenablage wird beim Öffnen gleich angeboten. Die App liest zuerst die Rezeptdaten der Seite selbst und fragt die KI nur, wenn die Seite keine hat. Danach wählst du unter „Wohin damit?", ob das Rezept eingetragen, als Rezept gespeichert und/oder auf den Einkaufszettel gelegt wird</li></ul></div></details>
       <details><summary>🍽 Mahlzeit-Detail</summary><div class="hb">Die Karte einer Mahlzeit öffnet die Detail-Ansicht mit allen Posten. Unten findest du: <strong>📋 Vorlage</strong> (Mahlzeit als Vorlage laden/speichern), <strong>🔁 Wiederholen</strong> (an festen Wochentagen automatisch eintragen) und <strong>💾 Als Rezept</strong> (alle Einträge als Rezept ins Kochbuch übernehmen — du prüfst es im Editor). Einzelne Einträge antippen zum Bearbeiten, Verschieben oder Löschen.</div></details>
       <details><summary>🛒 Einkaufszettel</summary><div class="hb">Über die Kachel <strong>🛒 Einkaufszettel</strong> auf „Heute" (oder Mehr → Funktionen, wenn der Zettel leer ist) führst du eine Einkaufsliste: oben eintippen („2 Liter Milch" erkennt Menge und Kategorie von selbst) oder über „🧺 Artikel wählen" aus den Kacheln antippen. Ein Tipp auf einen Artikel hakt ihn ab, ✏️ ändert Name, Menge, Symbol und Kategorie. Über „🔄 Teilen" koppelst du ein zweites Gerät mit einem Code — beide Geräte sehen denselben Zettel in Echtzeit, verschlüsselt und getrennt vom Baby-Tagebuch. Per Alexa Angesagtes erreicht ebenfalls beide, sofern beide Handys dasselbe Familien-Token tragen (Mehr → 🔗 Verbindungen → 🗣️ Alexa). Rezepte übernimmst du im Kochbuch über das Rezept → 🛒 Einkaufen.</div></details>
-      <details><summary>📖 Kochbuch</summary><div class="hb">Das <strong>Kochbuch</strong> (Kachel auf „Heute" oder <strong>Mehr → 📖 Kochbuch</strong>) sammelt deine Rezepte und eigenen Lebensmittel. Oben suchst du nach Name, Zutat oder Kategorie, darunter filterst du nach ⭐ Favoriten und Kategorien und wählst die Sortierung (neu, A–Z, zuletzt oder oft gekocht, schnell, wenig kcal).<br><br><strong>Ein Rezept antippen</strong> zeigt Zutaten, Zubereitung und Nährwerte je Portion. Mit − / ＋ rechnest du die Zutaten auf mehr oder weniger Portionen um — das ändert nur die Anzeige. Von dort: <strong>📅 Einplanen</strong> (Tag und Mahlzeit im Wochenplan), <strong>🛒 Einkaufen</strong> (Zutaten in der angezeigten Portionenzahl auf den Zettel), <strong>🍽 Eintragen</strong> (ins Tagebuch), ⭐ Favorit, ✏️ Bearbeiten, ⎘ Kopieren und 📤 Teilen.<br><br><strong>👨‍🍳 Kochmodus:</strong> ein Schritt pro Bildschirm in großer Schrift, der Bildschirm bleibt an. Steht in einem Schritt eine Zeit („10 Minuten köcheln"), startest du per Tipp einen Timer; er läuft beim Blättern weiter und meldet sich mit Ton und Vibration. „✓ Fertig gekocht" zählt mit — der Wochenplan schlägt beim 🎲 Füllen Rezepte, die du in den letzten zwei Wochen gekocht hast, seltener vor.<br><br><strong>Neue Rezepte</strong> über „＋ Neues Rezept": selbst, per Foto einer Kochbuchseite oder per Link (Chefkoch, Lecker, Blogs). Beim Link übernimmt die App Portionen, Zeit, Zubereitung, Quelle und die Mengen der Seite („2 EL Olivenöl") — du prüfst alles im Editor, bevor es gespeichert wird. Auch im ＋ → 🔗 Link-Tab legt „📖 Ins Kochbuch" so an.<br><br><strong>Ein Rezept bleibt, wie es ist</strong>, bis du es selbst bearbeitest und 💾 speicherst. Schließt du den Editor ohne Speichern, bleibt alles beim Alten. Wochenplan, Tagebuch und Einkaufszettel arbeiten mit Kopien bzw. verweisen nur darauf; geplante Tage zeigen nach dem Bearbeiten den neuen Stand, das Tagebuch behält, was du gegessen hast.<br><br>Beim Anlegen und Umbenennen prüft die App, ob schon etwas Ähnliches drinsteht (gleiche Quelle, ähnlicher Name oder fast dieselben Zutaten), und fragt nach, bevor ein zweites daraus wird.</div></details>
+      <details><summary>📖 Kochbuch</summary><div class="hb">Das <strong>Kochbuch</strong> (Kachel auf „Heute" oder <strong>Mehr → 📖 Kochbuch</strong>) sammelt deine Rezepte und eigenen Lebensmittel. Oben suchst du nach Name, Zutat oder Kategorie, darunter filterst du nach ⭐ Favoriten und Kategorien und wählst die Sortierung (neu, A–Z, zuletzt oder oft gekocht, schnell, wenig kcal).<br><br><strong>Ein Rezept antippen</strong> zeigt Zutaten, Zubereitung und Nährwerte je Portion. Mit − / ＋ rechnest du die Zutaten auf mehr oder weniger Portionen um — das ändert nur die Anzeige. Von dort: <strong>📅 Einplanen</strong> (Tag und Mahlzeit im Wochenplan), <strong>🛒 Einkaufen</strong> (Zutaten in der angezeigten Portionenzahl auf den Zettel), <strong>🍽 Eintragen</strong> (ins Tagebuch), ⭐ Favorit, ✏️ Bearbeiten, ⎘ Kopieren und 📤 Teilen.<br><br><strong>👨‍🍳 Kochmodus:</strong> ein Schritt pro Bildschirm in großer Schrift, der Bildschirm bleibt an. Steht in einem Schritt eine Zeit („10 Minuten köcheln"), startest du per Tipp einen Timer; er läuft beim Blättern weiter und meldet sich mit Ton und Vibration. „✓ Fertig gekocht" zählt mit — der Wochenplan schlägt beim 🎲 Füllen Rezepte, die du in den letzten zwei Wochen gekocht hast, seltener vor.<br><br><strong>Neue Rezepte</strong> über „＋ Neues Rezept": selbst, per Foto einer Kochbuchseite oder per Link (Chefkoch, Lecker, Blogs). Beim Link übernimmt die App Portionen, Zeit, Zubereitung, Quelle und die Mengen der Seite („2 EL Olivenöl") — du prüfst alles im Editor, bevor es gespeichert wird. Auch im ＋ → 🔗 Link-Tab legt „📖 Ins Kochbuch" so an.<br><br><strong>Ein Rezept bleibt, wie es ist</strong>, bis du es selbst bearbeitest und 💾 speicherst. Schließt du den Editor ohne Speichern, bleibt alles beim Alten. Wochenplan, Tagebuch und Einkaufszettel arbeiten mit Kopien bzw. verweisen nur darauf; geplante Tage zeigen nach dem Bearbeiten den neuen Stand, das Tagebuch behält, was du gegessen hast.<br><br><strong>Grundrezepte:</strong> Das Kochbuch bringt 101 Gerichte mit (Schnitzel, Lasagne, Dal, Pad Thai, Tiramisu …) — aus dem freien Projekt MorphCook (MIT-Lizenz, © Cedric Mössner), dort von einer KI geschrieben; die Nährwerte rechnet NutriTrack aus der eigenen Lebensmittel-Datenbank. Jedes lässt sich bearbeiten oder löschen; Gelöschtes kommt nicht wieder.<br><br><strong>🌱 Für dich angepasst:</strong> Stehen unter Mehr → 🥗 Ernährung z. B. Vegetarisch, Vegan, Glutenfrei, Laktosefrei, Keto, Low Carb oder Fischallergie — oder bist du schwanger bzw. stillst —, zeigt jedes Rezept die passende Fassung: Hackfleisch wird zu roten Linsen, Hähnchen zu Tofu, Wein zu Brühe, rohes Ei zu pasteurisiertem, Weizenmehl zu Reismehl usw. Oben steht, was getauscht wurde und warum. Was die feste Tausch-Tabelle nicht kennt, prüft einmal je Rezept die KI (mit Internet). Einplanen, Einkaufen, Eintragen und der Kochmodus nehmen die angepasste Fassung. Das gespeicherte Rezept bleibt unverändert — <strong>📖 Original anzeigen</strong> schaltet zurück.<br><br>Beim Anlegen und Umbenennen prüft die App, ob schon etwas Ähnliches drinsteht (gleiche Quelle, ähnlicher Name oder fast dieselben Zutaten), und fragt nach, bevor ein zweites daraus wird.</div></details>
       <details><summary>📅 Wochenplan</summary><div class="hb">Unter <strong>Mehr → 📅 Wochenplan</strong> (oder über die Kachel auf „Heute“) verteilst du Rezepte auf die Woche. Das ＋ an einer Mahlzeit öffnet die Auswahl: Tipp ein, was du suchst — du kannst einen <strong>Rezept-Treffer</strong> nehmen oder den Text direkt <strong>als Notiz</strong> einplanen („Pizza bestellen“, „Reste“, „bei Oma essen“). Eine Notiz zählt mit 0 kcal, steht nicht auf dem Einkaufszettel und wandert nicht ins Tagebuch; tipp sie an und wähle „📋 Rezept hinterlegen“, sobald du weißt, was es gibt. Oben sagt der Plan, wie viele Einträge noch offen sind.<br><br><strong>🎲 Füllen</strong> plant die leeren Mahlzeiten so, dass <strong>jeder Tag dein Kalorienziel trifft</strong>: Frühstück, Mittag, Abend und Snack teilen sich das Ziel, danach werden die Portionen nachgezogen. Jeder Tag zeigt seine Summe gegen das Ziel. Die Vorschläge kommen zuerst aus deinen Rezepten, dazu aus ganzen Mahlzeiten deines Tagebuchs („Burger mit Pommes“) — einzelne Lebensmittel bleiben draußen, und was du zum Frühstück gegessen hast, wird nicht als Abendessen vorgeschlagen. Von Hand Geplantes wird nie angefasst.<br><br><strong>＋ Neues Rezept</strong> legt das Rezept im <strong>Kochbuch</strong> ab — nicht als Mahlzeit im Tagebuch. Wurde es aus dem ＋ eines Tages heraus angelegt, steht es danach gleich in diesem Slot.</div></details>
       <details><summary>📤 Teilen &amp; Import</summary><div class="hb">Rezepte, Lebensmittel, einzelne Mahlzeiten, <strong>ganze Tage</strong> und <strong>Zeiträume</strong> lassen sich teilen (📤-Symbole; der Tages-Knopf liegt auf „Heute" oben rechts in der Kopfzeile und im Verlauf bei jedem Tag, der Zeitraum hinter 🗓 im Verlauf).<ul><li><strong>Mit Partner-Kopplung (empfohlen):</strong> Einmalig unter <strong>Mehr → 🔗 Verbindungen → 📬 Partner-Postfach</strong> verbinden — danach steht im Teilen-Dialog oben „An … senden" und die Sendung landet direkt im Postfach des anderen. Kein Link, kein Messenger.</li><li><strong>Ohne Kopplung:</strong> weiterhin als Link. Der Empfänger öffnet ihn — auf dem iPhone ggf. in der installierten App über <strong>＋ → 🔗 Link</strong> einfügen (das Feld erkennt selbst, ob ein Rezept-Link oder eine NutriTrack-Sendung drinsteht, und bietet einen passenden Link aus der Zwischenablage gleich an). Für ganze Tage und Zeiträume braucht der Link-Weg eine Internetverbindung, weil die Daten sonst nicht in eine URL passen.</li></ul></div></details>
       <details><summary>👫 Partner</summary><div class="hb">Unter <strong>Mehr → 🔗 Verbindungen → 📬 Partner-Postfach</strong> verbindest du dein Gerät mit dem deines Partners: auf einem Gerät „Kopplung starten", den Code auf dem anderen einfügen. Trag dort auch deinen Namen ein — der steht beim Empfänger an jeder Sendung.<br><br><strong>Es wird nichts automatisch übertragen.</strong> Nur was du ausdrücklich sendest, geht raus und landet im <strong>Postfach</strong> des anderen. Das sitzt auf „Heute" oben rechts (📬) und trägt eine Flagge mit der Zahl der ungelesenen Sendungen; bei etwas Neuem erscheint zusätzlich eine Kachel im Tagesüberblick. Eine Sendung, die zu einer bestimmten Mahlzeit gehört, zeigt ihr 📬 außerdem <strong>an genau dieser Mahlzeit</strong> — an der Kachel auf „Heute" und in der geöffneten Mahlzeit. Ein Tipp darauf öffnet die Übernahme direkt, mit der richtigen Mahlzeit schon ausgewählt. Dort wird jede Sendung einzeln angesehen und übernommen — bei einem ganzen Tag wählst du, welche Mahlzeiten du willst, auf welchen Tag sie sollen und ob Vorhandenes ergänzt oder ersetzt wird; bei einem Zeitraum hakst du einzelne Tage ab. Eure Tagebücher bleiben also getrennt.<br><br>Die Sendungen werden auf dem Gerät verschlüsselt; der Schlüssel steckt nur im Kopplungs-Code und wird nie übertragen. Der Code gilt <strong>nur</strong> fürs Partner-Postfach — Einkaufszettel und Baby-Tagebuch haben eigene Codes und bleiben unberührt. Neue Sendungen holt die App beim Start, beim Zurückkehren in die App und solange das Postfach offen ist; das kann bis zu einer Minute dauern.</div></details>
@@ -3366,6 +3374,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
           <button type="button" class="diet-btn" data-act="toggleDietPreset" data-args='["Low Carb"]'>📉 Low Carb</button>
           <button type="button" class="diet-btn" data-act="toggleDietPreset" data-args='["Keto"]'>🥑 Keto</button>
           <button type="button" class="diet-btn" data-act="toggleDietPreset" data-args='["High Protein"]'>💪 High Protein</button>
+          <button type="button" class="diet-btn" data-act="toggleDietPreset" data-args='["Fischallergie"]'>🐟 Fischallergie</button>
         </div>
         <div id="savedDietFreeList" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;"></div>
         <div style="display:flex;gap:6px;margin-bottom:8px;">
@@ -3489,15 +3498,15 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.317"></script>
-<script src="js/single-tab.js?v=0.317"></script>
-<script src="js/fooddb.js?v=0.317"></script>
-<script src="js/fooddb-usda.js?v=0.317"></script>
-<script src="js/restaurants.js?v=0.317"></script>
-<script src="js/metdb.js?v=0.317"></script>
-<script src="js/idb-photos.js?v=0.317"></script>
-<script src="js/changelog.js?v=0.317"></script>
-<script src="js/calc.js?v=0.317"></script>
+<script src="js/actions.js?v=0.318"></script>
+<script src="js/single-tab.js?v=0.318"></script>
+<script src="js/fooddb.js?v=0.318"></script>
+<script src="js/fooddb-usda.js?v=0.318"></script>
+<script src="js/restaurants.js?v=0.318"></script>
+<script src="js/metdb.js?v=0.318"></script>
+<script src="js/idb-photos.js?v=0.318"></script>
+<script src="js/changelog.js?v=0.318"></script>
+<script src="js/calc.js?v=0.318"></script>
 <script>
 // @ts-check
 // ════════════════════════════════════════
@@ -3517,7 +3526,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.317';
+var APP_VERSION='0.318';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -3963,7 +3972,8 @@ function _bootApp(){
   if(window.NTDash&&typeof NTDash.boot==='function')NTDash.boot();
   // Wochenplan: Kachel „Heute" fuellen. Rein lokal, kein Netz.
   if(window.NTPlan&&typeof NTPlan.boot==='function')NTPlan.boot();
-  if(window.NTBook)NTBook.renderCard();
+  // Kochbuch: Kachel fuellen, beim ersten Start den Grundbestand nachladen.
+  if(window.NTBook)NTBook.boot();
   // iOS Safari/PWA: Bottom-Nav nach Viewport-Shift wieder anheften (#177)
   var _vvTimer=null;
   function _fixViewportChromeDebounced(){
@@ -6691,7 +6701,7 @@ function renderAmpelInfo(e){
 // ════════════════════════════════════════
 // SECTION: ERNÄHRUNGSPRÄFERENZEN
 // ════════════════════════════════════════
-var _dietPresets=['Vegetarisch','Vegan','Glutenfrei','Laktosefrei','Low Carb','Keto','High Protein'];
+var _dietPresets=['Vegetarisch','Vegan','Glutenfrei','Laktosefrei','Low Carb','Keto','High Protein','Fischallergie'];
 
 function addDietFree(){
   var input=document.getElementById('sdietfree');
@@ -8080,31 +8090,32 @@ function axTestSync(){
 }
 
 </script>
-<script src="js/ampel.js?v=0.317"></script>
-<script src="picker.js?v=0.317"></script>
-<script src="js/health-sync.js?v=0.317"></script>
-<script src="js/sync-core.js?v=0.317"></script>
-<script src="js/baby.js?v=0.317"></script>
-<script src="js/baby-meds.js?v=0.317"></script>
-<script src="js/baby-growth-data.js?v=0.317"></script>
-<script src="js/baby-growth.js?v=0.317"></script>
-<script src="js/baby-week.js?v=0.317"></script>
-<script src="js/baby-milestones.js?v=0.317"></script>
-<script src="js/baby-midwife.js?v=0.317"></script>
-<script src="js/shopping.js?v=0.317"></script>
-<script src="js/partner.js?v=0.317"></script>
-<script src="js/alexa-sync.js?v=0.317"></script>
-<script src="js/dashboard.js?v=0.317"></script>
-<script src="js/features.js?v=0.317"></script>
-<script src="js/mealplan.js?v=0.317"></script>
-<script src="js/cookbook.js?v=0.317"></script>
-<script src="js/onedrive.js?v=0.317"></script>
-<script src="js/autosave.js?v=0.317"></script>
-<script src="js/recurring.js?v=0.317"></script>
-<script src="js/stats.js?v=0.317"></script>
-<script src="js/reminders.js?v=0.317"></script>
-<script src="js/templates.js?v=0.317"></script>
-<script src="js/offline-queue.js?v=0.317"></script>
+<script src="js/ampel.js?v=0.318"></script>
+<script src="picker.js?v=0.318"></script>
+<script src="js/health-sync.js?v=0.318"></script>
+<script src="js/sync-core.js?v=0.318"></script>
+<script src="js/baby.js?v=0.318"></script>
+<script src="js/baby-meds.js?v=0.318"></script>
+<script src="js/baby-growth-data.js?v=0.318"></script>
+<script src="js/baby-growth.js?v=0.318"></script>
+<script src="js/baby-week.js?v=0.318"></script>
+<script src="js/baby-milestones.js?v=0.318"></script>
+<script src="js/baby-midwife.js?v=0.318"></script>
+<script src="js/shopping.js?v=0.318"></script>
+<script src="js/partner.js?v=0.318"></script>
+<script src="js/alexa-sync.js?v=0.318"></script>
+<script src="js/dashboard.js?v=0.318"></script>
+<script src="js/features.js?v=0.318"></script>
+<script src="js/mealplan.js?v=0.318"></script>
+<script src="js/book-swaps.js?v=0.318"></script>
+<script src="js/cookbook.js?v=0.318"></script>
+<script src="js/onedrive.js?v=0.318"></script>
+<script src="js/autosave.js?v=0.318"></script>
+<script src="js/recurring.js?v=0.318"></script>
+<script src="js/stats.js?v=0.318"></script>
+<script src="js/reminders.js?v=0.318"></script>
+<script src="js/templates.js?v=0.318"></script>
+<script src="js/offline-queue.js?v=0.318"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

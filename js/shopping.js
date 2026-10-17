@@ -940,13 +940,15 @@ function shopToast(r){
     ? (r.total+' Zutaten auf dem Zettel – '+r.merged+' war'+(r.merged===1?'':'en')+' schon drauf')
     : (r.total+' Zutaten auf dem Einkaufszettel ✓'));
 }
-function addRecipe(recipeId,portions){
+function addRecipe(recipeId,portions,orig){
   var rec=null;
   try{rec=(recipes||[]).find(function(r){return r.id===recipeId;});}catch(e){}
   if(!rec){showToast('Rezept nicht gefunden');return;}
   var p=parseFloat(portions)||1;
-  var ings=(rec.ingredients||[]).map(function(ing){
-    return {name:ing.name,amount:Math.round((ing.amount||100)*p),emoji:ing.emoji||''};
+  // Was gekocht wird: die fuer die eigenen Angaben angepasste Fassung (NTBook.view).
+  var src=(window.NTBook&&NTBook.view)?NTBook.view(rec,!!orig).ingredients:(rec.ingredients||[]);
+  var ings=src.map(function(ing){
+    return {name:bookIngShort(ing)||ing.name,amount:Math.round((ing.amount||100)*p),emoji:ing.emoji||''};
   });
   shopToast(addIngredients(ings,rec.name));
 }

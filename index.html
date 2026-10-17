@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.315"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.316"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.315"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.316"></script>
 <script>
   // @ts-check
   (function(){
@@ -1219,7 +1219,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.315</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.316</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -3389,15 +3389,15 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.315"></script>
-<script src="js/single-tab.js?v=0.315"></script>
-<script src="js/fooddb.js?v=0.315"></script>
-<script src="js/fooddb-usda.js?v=0.315"></script>
-<script src="js/restaurants.js?v=0.315"></script>
-<script src="js/metdb.js?v=0.315"></script>
-<script src="js/idb-photos.js?v=0.315"></script>
-<script src="js/changelog.js?v=0.315"></script>
-<script src="js/calc.js?v=0.315"></script>
+<script src="js/actions.js?v=0.316"></script>
+<script src="js/single-tab.js?v=0.316"></script>
+<script src="js/fooddb.js?v=0.316"></script>
+<script src="js/fooddb-usda.js?v=0.316"></script>
+<script src="js/restaurants.js?v=0.316"></script>
+<script src="js/metdb.js?v=0.316"></script>
+<script src="js/idb-photos.js?v=0.316"></script>
+<script src="js/changelog.js?v=0.316"></script>
+<script src="js/calc.js?v=0.316"></script>
 <script>
 // @ts-check
 // ════════════════════════════════════════
@@ -3417,7 +3417,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.315';
+var APP_VERSION='0.316';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -4009,7 +4009,7 @@ function skipProxyPwGate(){
 // true = akzeptiert, false = 401 (falsch), null = offline/unklar. 403 (Herkunft)
 // und 5xx (Worker nicht eingerichtet, Upstream) sagen nichts ueber das Passwort.
 function verifyProxySecret(h){
-  return fetchT(PROJECT_AI_PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json','x-app-proxy-secret':h||getProxySecret()},body:JSON.stringify({model:'claude-haiku-4-5',max_tokens:1,messages:[{role:'user',content:[{type:'text',text:'ping'}]}]})},10000)
+  return fetchT(PROJECT_AI_PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json','x-app-proxy-secret':h||getProxySecret()},body:JSON.stringify({model:'claude-haiku-5-5',max_tokens:1,thinking:{type:'disabled'},messages:[{role:'user',content:[{type:'text',text:'ping'}]}]})},10000)
     .then(function(r){
       // Der Worker reicht Anthropics Status durch: ein 401 kann auch ein
       // abgelaufener Anthropic-Key des Workers sein. Falsch ist das Passwort
@@ -4720,7 +4720,7 @@ function _hasNutrients(per100){
 }
 function kiNutrientLookup(name,emoji,grams,onDone){
   var prompt='Nährwerte pro 100g für "'+name+'". Nur JSON: {"kcal":0,"protein":0,"carbs":0,"fat":0,"sugar":0,"fiber":0,"salt":0}';
-  callClaude('claude-haiku-4-5',[{type:'text',text:prompt}],100,
+  callClaude('claude-haiku-5-5',[{type:'text',text:prompt}],100,
     function(text){
       try{var a=text.indexOf('{'),z=text.lastIndexOf('}');if(a===-1||z<a)throw new Error();var d=JSON.parse(text.slice(a,z+1));
         var per100={kcal:parseFloat(d.kcal)||0,protein:parseFloat(d.protein)||0,carbs:parseFloat(d.carbs)||0,fat:parseFloat(d.fat)||0,sugar:parseFloat(d.sugar)||0,fiber:parseFloat(d.fiber)||0,salt:parseFloat(d.salt)||0};
@@ -4795,7 +4795,7 @@ function _callAnthropic(model,content,maxTok,onOk,onErr,isFallback){
   fetchT(PROJECT_AI_PROXY_URL,{
     method:'POST',
     headers:{'Content-Type':'application/json','x-app-proxy-secret':getProxySecret()},
-    body:JSON.stringify({model:model,max_tokens:maxTok,temperature:0,messages:[{role:'user',content:content}]})
+    body:JSON.stringify(anthropicBody(model,maxTok,content))
   },25000).then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error((d.error&&d.error.message)||d.error||('HTTP '+r.status));return d;});}).then(function(d){
     if(d.error)throw new Error(d.error.message);
     _setLastAiSource('anthropic',model,!!isFallback);
@@ -6490,7 +6490,7 @@ function _checkAmpelWarn(ingredients,meal,entryIdx,guardOk,promptPrefix,ampelFie
   // Antwort ab etwa acht Zutaten ab, JSON.parse scheiterte, und das ganze
   // Ergebnis ging still verloren.
   var maxTok=Math.min(1500,Math.max(300,80+40*rest.length));
-  callClaude('claude-haiku-4-5',[{type:'text',text:prefix+items.join(', ')}],maxTok,
+  callClaude('claude-haiku-5-5',[{type:'text',text:prefix+items.join(', ')}],maxTok,
     function(text){
       try{
         var results=JSON.parse(text.replace(/```json|```/g,'').trim());
@@ -7164,7 +7164,7 @@ function estimateExercise(){
   if(!canUseAi()){showExerciseResult(Math.round(EXERCISE_FALLBACK_MET*weight*(dur/60)),st);return;}
   var btn=document.getElementById('exEstimateBtn');
   if(btn){btn.disabled=true;btn.textContent='⏳ Schätze...';}
-  callClaude('claude-haiku-4-5',[{type:'text',text:
+  callClaude('claude-haiku-5-5',[{type:'text',text:
     'Schätze MET und kcal für "'+name+'" ('+weight+'kg, '+dur+' Min, '
     +{low:'leicht',medium:'mittel',high:'intensiv'}[intensity]+').\n'
     +'Antworte NUR mit JSON: {"kcal":ZAHL,"met_low":ZAHL,"met_medium":ZAHL,"met_high":ZAHL,"emoji":"EMOJI"}'}],60,
@@ -8169,30 +8169,30 @@ function axTestSync(){
 }
 
 </script>
-<script src="js/ampel.js?v=0.315"></script>
-<script src="picker.js?v=0.315"></script>
-<script src="js/health-sync.js?v=0.315"></script>
-<script src="js/sync-core.js?v=0.315"></script>
-<script src="js/baby.js?v=0.315"></script>
-<script src="js/baby-meds.js?v=0.315"></script>
-<script src="js/baby-growth-data.js?v=0.315"></script>
-<script src="js/baby-growth.js?v=0.315"></script>
-<script src="js/baby-week.js?v=0.315"></script>
-<script src="js/baby-milestones.js?v=0.315"></script>
-<script src="js/baby-midwife.js?v=0.315"></script>
-<script src="js/shopping.js?v=0.315"></script>
-<script src="js/partner.js?v=0.315"></script>
-<script src="js/alexa-sync.js?v=0.315"></script>
-<script src="js/dashboard.js?v=0.315"></script>
-<script src="js/features.js?v=0.315"></script>
-<script src="js/mealplan.js?v=0.315"></script>
-<script src="js/onedrive.js?v=0.315"></script>
-<script src="js/autosave.js?v=0.315"></script>
-<script src="js/recurring.js?v=0.315"></script>
-<script src="js/stats.js?v=0.315"></script>
-<script src="js/reminders.js?v=0.315"></script>
-<script src="js/templates.js?v=0.315"></script>
-<script src="js/offline-queue.js?v=0.315"></script>
+<script src="js/ampel.js?v=0.316"></script>
+<script src="picker.js?v=0.316"></script>
+<script src="js/health-sync.js?v=0.316"></script>
+<script src="js/sync-core.js?v=0.316"></script>
+<script src="js/baby.js?v=0.316"></script>
+<script src="js/baby-meds.js?v=0.316"></script>
+<script src="js/baby-growth-data.js?v=0.316"></script>
+<script src="js/baby-growth.js?v=0.316"></script>
+<script src="js/baby-week.js?v=0.316"></script>
+<script src="js/baby-milestones.js?v=0.316"></script>
+<script src="js/baby-midwife.js?v=0.316"></script>
+<script src="js/shopping.js?v=0.316"></script>
+<script src="js/partner.js?v=0.316"></script>
+<script src="js/alexa-sync.js?v=0.316"></script>
+<script src="js/dashboard.js?v=0.316"></script>
+<script src="js/features.js?v=0.316"></script>
+<script src="js/mealplan.js?v=0.316"></script>
+<script src="js/onedrive.js?v=0.316"></script>
+<script src="js/autosave.js?v=0.316"></script>
+<script src="js/recurring.js?v=0.316"></script>
+<script src="js/stats.js?v=0.316"></script>
+<script src="js/reminders.js?v=0.316"></script>
+<script src="js/templates.js?v=0.316"></script>
+<script src="js/offline-queue.js?v=0.316"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

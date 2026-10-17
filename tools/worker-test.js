@@ -222,7 +222,7 @@ const secretHdr = { 'x-app-proxy-secret': SECRET, 'Content-Type': 'application/j
 const workoutBody = { id: 'w1', source: 'apple-health', type: 'Running', start: '2026-09-30T07:00:00Z', durationSec: 1800, kcal: 320 };
 const alexaBody = { id: 'ax1', ts: Date.now(), kind: 'meal', text: 'ein Apfel', meal: 'snack' };
 const syncBody = { records: [{ id: 'e1', rev: Date.now(), iv: 'aXY=', ct: 'Y3Q=' }] };
-const aiBody = { model: 'claude-haiku-4-5', max_tokens: 10, messages: [{ role: 'user', content: 'hi' }] };
+const aiBody = { model: 'claude-haiku-5-5', max_tokens: 10, messages: [{ role: 'user', content: 'hi' }] };
 const JPEG_B64 = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0x10, 0x4a, 0x46, 0x49, 0x46, 0, 1]).toString('base64');
 const PNG_B64 = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]).toString('base64');
 

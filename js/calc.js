@@ -1072,3 +1072,88 @@ function parsePantryPhoto(text,locIds){
   });
   return out;
 }
+// Gramm einer Zutat für den Einkaufszettel: `amount` (Rezept, Wochenplan) oder
+// eine Menge wie „200 g“, „1,5 kg“, „500 ml“ (Link-Import). Sonst 0.
+function _pantryGrams(ing){
+  var a=+(ing&&ing.amount)||0;
+  if(a>0)return a;
+  var m=/^\s*(\d+(?:[.,]\d+)?)\s*(g|kg|ml|l)\b/i.exec(String((ing&&ing.q)||''));
+  if(!m)return 0;
+  var v=parseFloat(m[1].replace(',','.')),u=m[2].toLowerCase();
+  return u==='kg'||u==='l'?v*1000:v;
+}
+// Was vom Bedarf nach dem Vorrat noch fehlt (#334). `ings` wie für
+// NTShop.addIngredients. Vorrat in Gramm = Stück × Gramm je Stück; mehrere
+// Zutaten auf denselben Artikel teilen sich seinen Bestand. Ohne Gramm je Stück
+// (oder ohne Gramm in der Zutat) lässt sich nichts verrechnen — die Zutat bleibt
+// ganz auf der Liste (lieber zu viel als zu wenig) und zählt als `unknown`.
+// Rückgabe {ings, covered, partial, unknown}; teilweise gedeckte Zutaten tragen
+// die Restmenge als `amount` (Gramm), ihr `q` entfällt.
+/** @param {Array<any>} ings @param {Array<any>} items */
+function pantryShortfall(ings,items){
+  var have=(items||[]).filter(function(it){return (+(it&&it.q)||0)>0;});
+  /** @type {Object<string,number>} */
+  var left={};
+  var out=[],covered=0,partial=0,unknown=0;
+  (ings||[]).forEach(function(ing){
+    if(!ing)return;
+    var it=pantryFind(have,String(ing.name||ing.n||''));
+    if(!it){out.push(ing);return;}
+    var g=+it.g||0,need=_pantryGrams(ing);
+    if(!(g>0)||!(need>0)){unknown++;out.push(ing);return;}
+    var key=String(it.id||it.n);
+    if(!(key in left))left[key]=(+it.q||0)*g;
+    var use=Math.min(left[key],need);
+    left[key]-=use;
+    var rest=Math.round(need-use);
+    if(rest<=0){covered++;return;}
+    partial++;
+    var c={};Object.keys(ing).forEach(function(k){if(k!=='q')c[k]=ing[k];});
+    c.amount=rest;
+    out.push(c);
+  });
+  return {ings:out,covered:covered,partial:partial,unknown:unknown};
+}
+// MHD beim Auffüllen aus der Standard-Haltbarkeit `hd` (Tage, #337): War der
+// Artikel leer oder ohne Datum, gilt heute + hd; sonst bleibt das frühere der
+// beiden Daten (die ältere Packung zählt, verlängert wird nie). Ohne hd bleibt
+// das MHD, wie es ist.
+function pantryRefillMhd(it,qBefore,todayStr){
+  var cur=String((it&&it.mhd)||''),hd=Math.round(+(it&&it.hd)||0);
+  if(!(hd>0)||pantryDays(todayStr,todayStr)===null)return cur;
+  var d=addDays(todayStr,hd);
+  if(!((+qBefore||0)>0)||pantryDays(cur,todayStr)===null)return d;
+  return cur<d?cur:d;
+}
+// Verlauf (#336): Einträge {id,t,pid,n,ic,d,k,src,u,rev}. Ältere als `days`
+// Tage fallen weg, höchstens `max` Einträge, die neuesten zuerst.
+/** @param {Array<any>} log @param {number} nowMs @param {number} days @param {number} max */
+function pantryLogTrim(log,nowMs,days,max){
+  var from=nowMs-days*864e5;
+  return (log||[]).filter(function(e){return e&&(+e.t||0)>=from;})
+    .sort(function(a,b){return (+b.t||0)-(+a.t||0);})
+    .slice(0,max);
+}
+// Weggeworfenes eines Monats (`month` = 'JJJJ-MM'): Stück gesamt, Anzahl
+// Buchungen und die häufigsten Artikel (nach Buchungen, dann Stück).
+// Rückgängig gemachte zählen nicht. Monat nach Ortszeit.
+/** @param {Array<any>} log @param {string} month */
+function pantryWaste(log,month){
+  /** @type {Object<string,{n:string,ic:string,count:number,q:number}>} */
+  var by={};
+  var n=0,q=0;
+  (log||[]).forEach(function(e){
+    if(!e||e.k!=='verderb'||e.u)return;
+    var d=new Date(+e.t||0);
+    var m=d.getFullYear()+'-'+pad(d.getMonth()+1);
+    if(m!==month)return;
+    var amt=Math.abs(+e.d||0);
+    n++;q+=amt;
+    var k=pantryKey(e.n)||String(e.n||'');
+    if(!by[k])by[k]={n:String(e.n||''),ic:String(e.ic||''),count:0,q:0};
+    by[k].count++;by[k].q+=amt;
+  });
+  var top=Object.keys(by).map(function(k){return by[k];})
+    .sort(function(a,b){return b.count-a.count||b.q-a.q||a.n.localeCompare(b.n,'de');});
+  return {n:n,q:_pantryR1(q),top:top};
+}

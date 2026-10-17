@@ -2,6 +2,12 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.324',items:[
+    {icon:'🛒',text:'<b>Einkaufen nur, was fehlt</b>: Rezepte und der Wochenplan legen nur noch auf den Einkaufszettel, was dein Vorrat nicht deckt – teilweise Vorhandenes mit der Restmenge. Gerechnet wird über „Gramm je Stück“; Artikel ohne diese Angabe kommen sicherheitshalber trotzdem auf den Zettel.',where:'📅 Wochenplan / 📖 Kochbuch → 🛒'},
+    {icon:'🏷️',text:'<b>Barcode im Vorrat</b>: „🏷️ Einbuchen“ und „🏷️ Verbrauchen“ scannen Packungen ＋1 / −1, mehrere hintereinander. Ein neuer Barcode holt Name und Packungsgröße und wird einem Artikel zugeordnet.',where:'🥫 Vorrat'},
+    {icon:'📜',text:'<b>Verbraucht, weggeworfen, Verlauf</b>: Im Artikel „🍽️ Verbraucht“ oder „🗑️ Weggeworfen“ tippen. Der Verlauf zeigt jede Buchung (auch auf dem verbundenen Handy) mit ↩️ zum Rückgängigmachen und was diesen Monat weggeworfen wurde.',where:'🥫 Vorrat → 📜 Verlauf'},
+    {icon:'⏰',text:'<b>Haltbarkeit von selbst</b>: „Hält ca. … Tage“ je Artikel setzt beim Auffüllen das MHD. Auf Wunsch meldet NutriTrack einmal am Tag, was bald abläuft.',where:'🥫 Vorrat → Artikel · Einstellungen → Erinnerungen'},
+  ]},
   {v:'0.323',items:[
     {icon:'📅',text:'<b>Haltbarkeit im Vorrat</b>: Je Artikel „Mindestens haltbar bis“ und „Zu verbrauchen bis“ eintragen. Was abgelaufen ist oder in den nächsten 3 Tagen abläuft, steht unter „⏰ Läuft ab“ und auf der Vorrats-Kachel. Ist das Datum auf einem Foto lesbar, übernimmt die KI es gleich mit.',where:'🥫 Vorrat → Artikel antippen'},
     {icon:'📷',text:'<b>Fotos direkt aus der App</b>: Beim Auswerten des Vorrats gibt es jetzt „📷 Kamera“ neben „🖼️ Galerie“.',where:'🥫 Vorrat → 📷 Fotos'},

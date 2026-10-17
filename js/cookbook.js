@@ -840,7 +840,7 @@ function cookDone(){
   saveS();
   // Was gekocht wurde, ist aus dem Vorrat verbraucht (angepasste Fassung).
   var r=rec(_ck.id);
-  if(r&&window.NTPantry)NTPantry.useRecipe(view(r).ingredients,_ck.p);
+  if(r&&window.NTPantry)NTPantry.useRecipe(view(r).ingredients,_ck.p,r.name);
   _ck.done=true;
   renderCook();render();
 }

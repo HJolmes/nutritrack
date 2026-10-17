@@ -218,6 +218,8 @@ function notifyHint(){
 
 // ── Erinnerungen in Einstellungen ──
 function renderReminders(){
+  var pc=/** @type {HTMLInputElement|null} */ (document.getElementById('pantryRemindChk'));
+  if(pc&&window.NTPantry)pc.checked=NTPantry.remindOn();
   var el=document.getElementById('reminderList');if(!el)return;
   var reminders=S.reminders||[];
   if(!reminders.length){el.innerHTML='<div style="font-size:12px;color:var(--mu);">Keine Erinnerungen</div>';return;}

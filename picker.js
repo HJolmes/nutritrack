@@ -49,6 +49,11 @@ var pickerTorchOn=false;
 // SECTION: INGREDIENT PICKER (universell)
 // ════════════════════════════════════════
 function openPicker(meal, defaultTab){
+  _pickerScanFor=null;
+  var _tabs=document.querySelector('#pickerOv .picker-tabs');
+  if(_tabs)/** @type {HTMLElement} */(_tabs).style.display='';
+  var _pov=document.getElementById('pickerOv');
+  if(_pov)_pov.style.zIndex='';
   // Der Normalfall ist „eintragen“. Nur der Weg „Neues Rezept → aus dem
   // Internet“ schaltet direkt nach diesem Aufruf auf „nur in die Bibliothek“.
   window._pickerRecipeOnly=false;
@@ -106,6 +111,7 @@ function openPicker(meal, defaultTab){
 }
 
 function closePicker(){
+  _pickerScanFor=null;
   window._editEntryMode=false;// abgebrochenes „Zutat hinzufuegen" nicht nachwirken lassen (#230)
   pickerStopScan();
   if(typeof pickerVoiceStop==='function')pickerVoiceStop();
@@ -1144,7 +1150,67 @@ function pickerSubmitManualBarcode(){
   pickerLookupBarcode(code);
 }
 
+// ── Scanner für den Vorrat (#335) ─────────────────────────────────────────
+// Derselbe Scanner, aber ohne Mahlzeit: Ein Treffer geht an den Aufrufer statt
+// in den Nährwert-Weg. opts = {title, known(code) → Meldung|'' , unknown(code,
+// prod|null)}. Bekannt → Meldung zeigen und weiterscannen (Einkauf auspacken);
+// unbekannt → Name und Packungsgröße von Open Food Facts holen, Picker zu,
+// `unknown` entscheidet. Jeder andere openPicker/closePicker beendet den Modus.
+var _pickerScanFor=null;
+/** @param {{title:string,known:function(string):string,unknown:function(string,any):void}} opts */
+function scanFor(opts){
+  openPicker(null,'barcode');
+  _pickerScanFor=opts;
+  document.getElementById('pickerTitle').textContent=opts.title||'Barcode scannen';
+  document.getElementById('pickerSub').textContent='Barcode in den grünen Rahmen halten';
+  var tabs=document.querySelector('#pickerOv .picker-tabs');
+  if(tabs)/** @type {HTMLElement} */(tabs).style.display='none';
+  // Über dem Dialog des Aufrufers: alle .ov teilen z-index 300, und #pickerOv
+  // steht im Markup vor dem Vorrat.
+  var ov=document.getElementById('pickerOv');
+  if(ov)ov.style.zIndex='301';
+}
+// Name und Packungsgröße in Gramm (oder ml) aus Open Food Facts, sonst null.
+function _pickerOffProduct(p){
+  if(!p)return null;
+  var name=String(p.product_name_de||p.product_name||'').trim();
+  if(!name)return null;
+  var g=0,pq=parseFloat(p.product_quantity),u=String(p.product_quantity_unit||'g').toLowerCase();
+  if(pq>0&&(u==='g'||u==='ml'))g=Math.round(pq);
+  if(!g){
+    var m=/(\d+(?:[.,]\d+)?)\s*(kg|g|l|ml)\b/i.exec(String(p.quantity||''));
+    if(m){var v=parseFloat(m[1].replace(',','.')),mu=m[2].toLowerCase();g=Math.round(mu==='kg'||mu==='l'?v*1000:v);}
+  }
+  return {name:name,g:g>0?g:0};
+}
+function _pickerScanHit(code){
+  var o=_pickerScanFor;if(!o)return;
+  var el=document.getElementById('pickerBarcodeResult');
+  var startBtn=document.getElementById('pickerBcStartBtn');
+  if(startBtn)startBtn.style.display='none';
+  code=String(code||'').replace(/\s/g,'');
+  function again(msg,ok){
+    if(el)el.innerHTML='<div style="font-size:14px;font-weight:700;color:'+(ok?'var(--g1)':'var(--re)')+';padding:10px;text-align:center;">'+_esc(msg)+'</div>';
+    setTimeout(function(){var ov=document.getElementById('pickerOv');if(_pickerScanFor===o&&ov&&ov.classList.contains('open'))pickerStartScan();},1300);
+  }
+  if(!/^(\d{8}|\d{13})$/.test(code)){again('Kein EAN-Barcode erkannt – nochmal versuchen',false);return;}
+  var msg=o.known(code);
+  if(msg){again(msg,true);return;}
+  function done(prod){
+    if(_pickerScanFor!==o)return;
+    closePicker();
+    o.unknown(code,prod);
+  }
+  if(!isOnline){done(null);return;}
+  if(el)el.innerHTML='<div style="font-size:13px;color:var(--g1);padding:8px;text-align:center;">🔍 Suche Barcode '+_esc(code)+'...</div>';
+  fetchT(offProxyUrl('https://world.openfoodfacts.org/api/v0/product/'+code+'.json'),{},6000)
+    .then(function(r){return r.json();})
+    .then(function(data){done(data&&data.status===1?_pickerOffProduct(data.product):null);})
+    .catch(function(){done(null);});
+}
+
 function pickerLookupBarcode(code){
+  if(_pickerScanFor){_pickerScanHit(code);return;}
   var el=document.getElementById('pickerBarcodeResult');
   var startBtn=document.getElementById('pickerBcStartBtn');
   if(startBtn)startBtn.style.display='none';
@@ -2426,14 +2492,12 @@ function pickerLinkToShop(){
     return {name:f.name,q:f.amount?Math.round(f.amount*p)+' g':'',emoji:f.emoji||''};
   });
   var r=NTShop.addIngredients(items,name);
-  if(!r.total){showToast('Nichts zu übernehmen');return;}
+  if(!r.total){showToast(NTShop.resultText(r));return;}
   var btn=document.getElementById('pickerLinkShopBtn');
   if(btn){btn.disabled=true;btn.style.opacity='.5';btn.textContent='✓ Auf dem Zettel';}
   var open=document.getElementById('pickerLinkShopOpen');
   if(open)open.classList.remove('hidden');
-  showToast(r.merged
-    ? (r.total+' Zutaten auf dem Zettel – '+r.merged+' war'+(r.merged===1?'':'en')+' schon drauf')
-    : (r.total+' Zutaten auf dem Einkaufszettel ✓'));
+  showToast(NTShop.resultText(r));
 }
 function pickerLinkOpenShop(){
   closePicker();
@@ -2691,6 +2755,7 @@ function addRecipeEntry(id,meal,portions,orig){
 }
 
 window.NTPicker={
+  scanFor:scanFor,
   addRecipeEntry:addRecipeEntry, pickerLinkToBook:pickerLinkToBook,
   pickerFriendlyAiError:pickerFriendlyAiError, openPicker:openPicker, closePicker:closePicker,
   pickerSetTab:pickerSetTab, pickerSearchLocalLive:pickerSearchLocalLive, pickerSearch:pickerSearch,

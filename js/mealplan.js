@@ -531,9 +531,9 @@ function itemToShop(){
   // Bewusst NICHT NTShop.addRecipe(id): ein von aussen geteiltes Rezept steht
   // nicht in der eigenen Bibliothek, die ID liefe dort ins Leere.
   var p=it.p||1;
-  NTShop.addIngredients(r.ingredients.map(function(g){
+  showToast(NTShop.resultText(NTShop.addIngredients(r.ingredients.map(function(g){
     return {name:bookIngShort(g)||g.name,emoji:g.emoji||'',amount:Math.round((g.amount||0)*p)};
-  }),r.name);
+  }),r.name)));
 }
 
 // ── Automatisch fuellen ────────────────────────────────────────
@@ -798,7 +798,7 @@ function weekToShop(){
   if(!days){showToast('Für diese Woche ist nichts geplant');return;}
   var ings=order.map(function(k){var a=agg[k];return{name:a.name,emoji:a.emoji,amount:Math.round(a.amount)};});
   var r=NTShop.addIngredients(ings,'Wochenplan KW '+isoWeek(mo));
-  showToast(r.total?(r.total+' Zutaten aus '+days+' Tagen auf dem Zettel ✓'):'Nichts zu übernehmen');
+  showToast(NTShop.resultText(r,' aus '+days+' Tag'+(days===1?'':'en')));
 }
 
 // ── Plan → Tagebuch ───────────────────────────────────────────────────────

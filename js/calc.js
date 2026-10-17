@@ -1008,7 +1008,50 @@ function pantrySuggest(recs,items){
   out.sort(function(a,b){return b.ratio-a.ratio||b.have.length-a.have.length||a.miss.length-b.miss.length;});
   return out;
 }
-// KI-Antwort der Foto-Auswertung → Liste {n,q,g,loc}. Unbrauchbares fällt weg;
+// Haltbarkeit: `mhd` = Mindesthaltbarkeitsdatum, `vd` = Verbrauchsdatum
+// („zu verbrauchen bis“), beide JJJJ-MM-TT oder leer. Tage bis zum Datum
+// (negativ = abgelaufen), null ohne gültiges Datum.
+function pantryDays(date,todayStr){
+  var re=/^(\d{4})-(\d{2})-(\d{2})$/,a=re.exec(String(date||'')),b=re.exec(String(todayStr||''));
+  if(!a||!b)return null;
+  var da=Date.UTC(+a[1],+a[2]-1,+a[3]),db=Date.UTC(+b[1],+b[2]-1,+b[3]);
+  if(!isFinite(da)||!isFinite(db))return null;
+  return Math.round((da-db)/864e5);
+}
+// Das dringlichere der beiden Daten als {k:'vd'|'mhd',d,days,lvl}; bei
+// gleichem Tag gewinnt das Verbrauchsdatum (danach nicht mehr essen, beim MHD
+// nur prüfen). lvl: 'over' abgelaufen, 'soon' in höchstens 3 Tagen, sonst 'ok'.
+function pantryExpiry(it,todayStr){
+  /** @type {{k:string,d:string,days:number,lvl:string}|null} */
+  var best=null;
+  var ks=['vd','mhd'];
+  for(var i=0;i<ks.length;i++){
+    var k=ks[i],d=it&&it[k],n=pantryDays(d,todayStr);
+    if(n!==null&&(!best||n<best.days))best={k:k,d:d,days:n,lvl:n<0?'over':(n<=3?'soon':'ok')};
+  }
+  return best;
+}
+// Artikel mit Bestand, die abgelaufen sind oder in `within` Tagen ablaufen,
+// das Dringendste zuerst.
+/** @param {Array<any>} items @param {string} todayStr @param {number} within */
+function pantryExpiring(items,todayStr,within){
+  var out=[];
+  (items||[]).forEach(function(it){
+    if(!((+(it&&it.q)||0)>0))return;
+    var e=pantryExpiry(it,todayStr);
+    if(e&&e.days<=within)out.push({it:it,e:e});
+  });
+  out.sort(function(a,b){return a.e.days-b.e.days||String(a.it.n).localeCompare(String(b.it.n),'de');});
+  return out;
+}
+// Nur echte Kalendertage im Format JJJJ-MM-TT, sonst leer (kein 31.02.).
+function _pantryIsoDate(v){
+  var s=String(v||'').trim(),m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if(!m)return '';
+  var d=new Date(Date.UTC(+m[1],+m[2]-1,+m[3]));
+  return d.getUTCMonth()===+m[2]-1&&d.getUTCDate()===+m[3]?s:'';
+}
+// KI-Antwort der Foto-Auswertung → Liste {n,q,g,loc,mhd,vd}. Unbrauchbares fällt weg;
 // der Lagerort gilt nur, wenn es ihn gibt.
 /** @param {string} text @param {Array<string>} locIds */
 function parsePantryPhoto(text,locIds){
@@ -1025,7 +1068,7 @@ function parsePantryPhoto(text,locIds){
     var q=Math.round(parseFloat(x.stueck));
     var g=Math.round(parseFloat(x.g));
     var loc=String(x.ort||'');
-    out.push({n:n,q:q>0?q:1,g:g>0?g:0,loc:(locIds||[]).indexOf(loc)>=0?loc:''});
+    out.push({n:n,q:q>0?q:1,g:g>0?g:0,loc:(locIds||[]).indexOf(loc)>=0?loc:'',mhd:_pantryIsoDate(x.mhd),vd:_pantryIsoDate(x.vd)});
   });
   return out;
 }

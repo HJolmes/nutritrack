@@ -2,6 +2,11 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.323',items:[
+    {icon:'📅',text:'<b>Haltbarkeit im Vorrat</b>: Je Artikel „Mindestens haltbar bis“ und „Zu verbrauchen bis“ eintragen. Was abgelaufen ist oder in den nächsten 3 Tagen abläuft, steht unter „⏰ Läuft ab“ und auf der Vorrats-Kachel. Ist das Datum auf einem Foto lesbar, übernimmt die KI es gleich mit.',where:'🥫 Vorrat → Artikel antippen'},
+    {icon:'📷',text:'<b>Fotos direkt aus der App</b>: Beim Auswerten des Vorrats gibt es jetzt „📷 Kamera“ neben „🖼️ Galerie“.',where:'🥫 Vorrat → 📷 Fotos'},
+    {icon:'🐛',text:'<b>Feedback-Knopf immer erreichbar</b>: Der 🐛 bleibt auch in offenen Dialogen sichtbar – dort klein oben links.',where:'überall'},
+  ]},
   {v:'0.322',items:[
     {icon:'🥫',text:'<b>Vorrat</b>: Trag ein, was zu Hause da ist und wo es steht (Kühlschrank, Tiefkühler, Vorratsschrank – oder eigene Orte). Mit „Immer da: mindestens … Stück“ kommt ein knapper Artikel von selbst auf den Einkaufszettel; abgehakt auf dem Zettel füllt ihn wieder auf, „Fertig gekocht“ im Kochbuch zieht die Zutaten ab.',where:'🥫 Vorrat auf „Heute“'},
     {icon:'📷',text:'<b>Fotos auswerten</b>: Bis zu sechs Fotos von Kühlschrank und Schrank – die KI listet, was sie erkennt, du übernimmst nur, was stimmt. Die Fotos werden nicht gespeichert.',where:'🥫 Vorrat → 📷 Fotos'},

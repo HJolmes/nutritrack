@@ -695,3 +695,114 @@ test('chainPortionEntry: Produkt ohne Gewicht als Portionen-Eintrag', () => {
   assert.equal(Math.round(C.ingTotal(e.ingredients).kcal), 681);
   assert.equal(plain(C.chainPortionEntry('x', '🍔', per, 0)).portions, 1);
 });
+
+// ── Kochbuch ─────────────────────────────────────────────────────────────
+test('parseIsoDuration: schema.org-Dauer und blosse Minuten', () => {
+  const C = load({});
+  assert.equal(C.parseIsoDuration('PT1H30M'), 90);
+  assert.equal(C.parseIsoDuration('PT45M'), 45);
+  assert.equal(C.parseIsoDuration('P0DT2H'), 120);
+  assert.equal(C.parseIsoDuration('PT90S'), 2);
+  assert.equal(C.parseIsoDuration('30'), 30);
+  assert.equal(C.parseIsoDuration(''), 0);
+  assert.equal(C.parseIsoDuration('eine Stunde'), 0);
+});
+
+test('parseYield: erste Zahl zwischen 1 und 100', () => {
+  const C = load({});
+  assert.equal(C.parseYield('4 Portionen'), 4);
+  assert.equal(C.parseYield('Für 4-6 Personen'), 4);
+  assert.equal(C.parseYield('12'), 12);
+  assert.equal(C.parseYield('Portionen'), 0);
+  assert.equal(C.parseYield('0'), 0);
+  assert.equal(C.parseYield(null), 0);
+});
+
+test('recipeSteps: Zeilen ohne Nummern, langer Absatz an Satzenden', () => {
+  const C = load({});
+  assert.deepEqual(plain(C.recipeSteps('1. Zwiebeln schneiden.\n\n2) Anbraten.\n- Servieren')),
+    ['Zwiebeln schneiden.', 'Anbraten.', 'Servieren']);
+  assert.deepEqual(plain(C.recipeSteps('Schritt 3: Backen')), ['Backen']);
+  assert.deepEqual(plain(C.recipeSteps('')), []);
+  const long = 'Den Ofen auf 200 Grad vorheizen und ein Blech mit Backpapier auslegen, damit nichts anhaftet. '
+    + 'Kartoffeln waschen, schälen und in gleich große Spalten schneiden, damit sie gleichmäßig garen. '
+    + 'Mit Öl, Salz und Rosmarin mischen und auf dem Blech verteilen. Ca. 30 Minuten backen.';
+  const st = plain(C.recipeSteps(long));
+  assert.ok(st.length >= 2, 'langer Absatz wird geteilt');
+  assert.equal(st.join(' '), long);
+});
+
+test('stepTimers: Minuten, Stunden, Bereiche, keine Dubletten', () => {
+  const C = load({});
+  assert.deepEqual(plain(C.stepTimers('10 Minuten köcheln')).map((t) => t.sec), [600]);
+  assert.deepEqual(plain(C.stepTimers('10–15 Min. backen')).map((t) => t.sec), [600]);
+  assert.deepEqual(plain(C.stepTimers('1 Std. 30 Min. schmoren')).map((t) => t.sec), [5400]);
+  assert.deepEqual(plain(C.stepTimers('1,5 Stunden gehen lassen')).map((t) => t.sec), [5400]);
+  assert.deepEqual(plain(C.stepTimers('30 Sekunden rühren, dann 5 Minuten ziehen, nochmal 5 Minuten')).map((t) => t.sec), [30, 300]);
+  assert.deepEqual(plain(C.stepTimers('200 Grad, 2 Minzblätter')), []);
+});
+
+test('fmtQty: Brueche, ganze Zahlen, Komma', () => {
+  const C = load({});
+  assert.equal(C.fmtQty(0.5), '½');
+  assert.equal(C.fmtQty(1.5), '1 ½');
+  assert.equal(C.fmtQty(0.25), '¼');
+  assert.equal(C.fmtQty(2 / 3), '⅔');
+  assert.equal(C.fmtQty(2), '2');
+  assert.equal(C.fmtQty(0.98), '1');
+  assert.equal(C.fmtQty(12.4), '12');
+  assert.equal(C.fmtQty(1.4), '1,4');
+  assert.equal(C.fmtQty(0.04), '0,04');
+  assert.equal(C.fmtQty(0), '');
+});
+
+test('scaleIngs: Kopie mal Faktor, Original bleibt', () => {
+  const C = load({});
+  const ings = [{ name: 'Mehl', amount: 125, q: 0.5, u: 'Tasse', per100: { kcal: 350 } }, { name: 'Salz', amount: 0, per100: { kcal: 0 } }];
+  const s = plain(C.scaleIngs(ings, 4));
+  assert.equal(s[0].amount, 500);
+  assert.equal(s[0].q, 2);
+  assert.equal(s[1].amount, 0);
+  assert.equal(ings[0].amount, 125, 'Original unverändert');
+  assert.equal(plain(C.scaleIngs(s, 1 / 3))[0].amount, 166.7);
+});
+
+test('bookIngLine: Menge aus der Quelle, sonst Gramm', () => {
+  const C = load({});
+  assert.deepEqual(plain(C.bookIngLine({ name: 'Olivenöl', amount: 7.5, q: 0.5, u: 'EL', t: 'Olivenöl' }, 4)), { q: '2 EL', n: 'Olivenöl', g: '30 g' });
+  assert.deepEqual(plain(C.bookIngLine({ name: 'Zwiebel', amount: 40, q: 0.5, u: '', t: 'Zwiebel(n), gewürfelt' }, 2)), { q: '1', n: 'Zwiebel(n), gewürfelt', g: '80 g' });
+  assert.deepEqual(plain(C.bookIngLine({ name: 'Mehl', amount: 125, q: 125, u: 'g', t: 'Mehl' }, 4)), { q: '500 g', n: 'Mehl', g: '' });
+  assert.deepEqual(plain(C.bookIngLine({ name: 'Reis', amount: 80 }, 3)), { q: '240 g', n: 'Reis', g: '' });
+  assert.deepEqual(plain(C.bookIngLine({ name: 'Salz', amount: 0 }, 3)), { q: '', n: 'Salz', g: '' });
+  assert.deepEqual(plain(C.bookIngLine({ name: 'Big Mac', amount: 100, pu: true }, 2)), { q: '2 Port.', n: 'Big Mac', g: '' });
+});
+
+test('parseTags und bookTags', () => {
+  const C = load({});
+  assert.deepEqual(plain(C.parseTags('pasta, Vegetarisch ,  Pasta,,')), ['Pasta', 'Vegetarisch']);
+  assert.deepEqual(plain(C.parseTags(['suppe', 'Suppe'])), ['Suppe']);
+  assert.deepEqual(plain(C.bookTags([{ cat: ['Pasta'] }, { cat: ['Suppe', 'Pasta'] }, {}])), ['Pasta', 'Suppe']);
+});
+
+test('bookFilter und bookSort', () => {
+  const C = load({});
+  const p = { kcal: 100, protein: 0, carbs: 0, fat: 0 };
+  const list = [
+    { id: '100', name: 'Spaghetti Bolognese', cat: ['Pasta'], fav: true, time: 40, ingredients: [{ name: 'Hackfleisch', amount: 200, per100: p }] },
+    { id: '300', name: 'Käsespätzle', cat: ['Pasta', 'Vegetarisch'], ingredients: [{ name: 'Bergkäse', amount: 100, per100: p }] },
+    { id: '200', name: 'Linsensuppe', cat: ['Suppe'], time: 25, ingredients: [{ name: 'Linsen', amount: 50, per100: p, t: 'rote Linsen' }] }
+  ];
+  const ids = (l) => plain(l).map((r) => r.id);
+  assert.deepEqual(ids(C.bookFilter(list, '', 'Pasta')), ['100', '300']);
+  assert.deepEqual(ids(C.bookFilter(list, '', '★')), ['100']);
+  assert.deepEqual(ids(C.bookFilter(list, 'kaese', '')), ['300']);
+  assert.deepEqual(ids(C.bookFilter(list, 'rote linsen', '')), ['200']);
+  assert.deepEqual(ids(C.bookFilter(list, 'hack pasta', '')), ['100']);
+  assert.deepEqual(ids(C.bookSort(list, 'new')), ['300', '200', '100']);
+  assert.deepEqual(ids(C.bookSort(list, 'az')), ['300', '200', '100']);
+  assert.deepEqual(ids(C.bookSort(list, 'kcal')), ['200', '300', '100']);
+  assert.deepEqual(ids(C.bookSort(list, 'time')), ['200', '100', '300']);
+  const log = { 100: { n: 3, last: '2026-10-01' }, 200: { n: 1, last: '2026-10-10' } };
+  assert.deepEqual(ids(C.bookSort(list, 'cooked', log)), ['200', '100', '300']);
+  assert.deepEqual(ids(C.bookSort(list, 'often', log)), ['100', '200', '300']);
+});

@@ -43,7 +43,7 @@ const BASE = process.env.SMOKE_URL || 'http://127.0.0.1:8099/index.html';
 const EXPECTED_NAMESPACES = [
   'NTSync', 'NTBaby', 'NTShop', 'NTPartner', 'NTPlan', 'NTDash',
   'NTHealth', 'NTAlexa', 'NTPhotos', 'NTDrive',
-  'NTRecur', 'NTStats', 'NTRemind', 'NTTpl', 'NTQueue', 'NTFeat', 'NTAmpel', 'NTMet', 'NTTab', 'NTPicker',
+  'NTRecur', 'NTStats', 'NTRemind', 'NTTpl', 'NTQueue', 'NTFeat', 'NTAmpel', 'NTMet', 'NTTab', 'NTPicker', 'NTBook',
 ];
 
 (async () => {
@@ -579,6 +579,66 @@ const EXPECTED_NAMESPACES = [
     if (!pickFail) console.log(`  ok  Picker (#257): geoeffnet, ${tabs.length} Tabs (${tabs.join(', ')}) geschaltet, Suche per Tippen und Enter, geschlossen — ohne Fehler.`);
   }
 
+  // 12. Kochbuch (v0.317): Ein Rezept aendert sich nur ueber „💾 Speichern“.
+  //     Angelegt wird erst beim Speichern (Entwurf), der Editor rechnet fuer
+  //     das ganze Rezept und speichert je Portion, ✕ verwirft eine geaenderte
+  //     Menge mit Rueckfrage, Portionsrechner, Tagebuch und Kochmodus lassen
+  //     das Rezept unberuehrt. Muss vor Schritt 8 stehen (Fenster pausiert).
+  let bookFail = 0;
+  {
+    const errBefore = errors.length;
+    const onDialog = (d) => d.accept();
+    page.on('dialog', onDialog);
+    const r = await page.evaluate(async () => {
+      const wait = (ms) => new Promise((res) => setTimeout(res, ms));
+      const out = {};
+      const n0 = recipes.length;
+      NTBook.editDraft({ name: 'Smoke-Suppe', baseServings: 4, instructions: 'Schneiden.\nGenau 10 Minuten köcheln.',
+        ingredients: [{ name: 'Linsen', emoji: '🫘', amount: 200, per100: { kcal: 300, protein: 20, carbs: 50, fat: 1 } }] }, { from: 'mealDetail' });
+      out.draftNotSaved = recipes.length === n0;
+      NTBook.editSave();
+      await wait(50);
+      const rec = recipes.find((x) => x.name === 'Smoke-Suppe');
+      out.saved = !!rec && rec.ingredients[0].amount === 50 && rec.baseServings === 4;
+      const snap = JSON.stringify(rec);
+      NTBook.detail(rec.id);
+      NTBook.setPortions(3);
+      out.scaled = /350 g/.test(document.getElementById('bookDetIngs').textContent) && JSON.stringify(rec) === snap;
+      NTBook.editCur();
+      const amt = document.querySelector('#recEditIngList input.ing-amt');
+      out.whole = amt && amt.value === '200';
+      amt.value = '999'; amt.dispatchEvent(new Event('change'));
+      closeOv('recEditOv');
+      out.cancelKeeps = JSON.stringify(recipes.find((x) => x.id === rec.id)) === snap;
+      NTBook.cook(rec.id, 0);
+      NTBook.cookGo(1);
+      out.timer = !!document.querySelector('#cookOv .ck-tstart button');
+      NTBook.cookDone();
+      NTBook.cookClose(true);
+      out.cooked = !!(S.cookLog[rec.id] && S.cookLog[rec.id].n === 1);
+      NTPicker.addRecipeEntry(rec.id, 'snack', 2);
+      const e = getDay().meals.snack[getDay().meals.snack.length - 1];
+      out.diary = e.recipeId === rec.id && e.portions === 2 && e.ingredients !== rec.ingredients;
+      out.untouched = JSON.stringify(recipes.find((x) => x.id === rec.id)) === snap;
+      NTBook.closeDetail();
+      getDay().meals.snack.pop();
+      recipes.splice(recipes.indexOf(recipes.find((x) => x.id === rec.id)), 1);
+      delete S.cookLog[rec.id];
+      return out;
+    }).catch((e) => { record('Kochbuch', e.message); return {}; });
+    page.off('dialog', onDialog);
+    for (const [k, v] of Object.entries({ draftNotSaved: 'Entwurf legt vor dem Speichern nichts an',
+      saved: 'gespeichert je Portion (200 g fuer 4 → 50 g)', scaled: 'Portionsrechner zeigt 3 Portionen, Rezept bleibt',
+      whole: 'Editor zeigt Mengen fuer das ganze Rezept', cancelKeeps: '✕ nach Aenderung laesst das Rezept unveraendert',
+      timer: 'Kochmodus bietet den Timer aus „10 Minuten“ an', cooked: '„Fertig gekocht“ zaehlt in S.cookLog',
+      diary: 'Tagebuch bekommt eine Kopie', untouched: 'Rezept nach allem unveraendert' })) {
+      if (!r[k]) { bookFail++; console.log('  x   Kochbuch: ' + v); }
+    }
+    const newErr = errors.length - errBefore;
+    if (newErr) { bookFail++; console.log(`  x   Kochbuch: ${newErr} neue(r) Fehler, siehe unten.`); }
+    if (!bookFail) console.log('  ok  Kochbuch: Entwurf, Speichern je Portion, Rechner/✕/Kochmodus/Tagebuch lassen das Rezept unveraendert, Timer und Kochverlauf.');
+  }
+
   // 8. Zweites Fenster (#261): Es darf die App nicht starten und nichts
   //    schreiben, sondern landet auf tab.html. „Hier weiterarbeiten“ uebernimmt,
   //    und das erste Fenster pausiert. Vorher ueberschrieb der letzte Schreiber
@@ -771,10 +831,10 @@ const EXPECTED_NAMESPACES = [
 
   await browser.close();
 
-  if (errors.length || nsFail || badExports.length || deadHandlers.length || delegationFail || stack.length || deadFeatActs.length || remindFail || tabFail || kbFail || dietFail || pickFail) {
+  if (errors.length || nsFail || badExports.length || deadHandlers.length || delegationFail || stack.length || deadFeatActs.length || remindFail || tabFail || kbFail || dietFail || pickFail || bookFail) {
     console.error('\nFEHLER:');
     [...new Set(errors)].forEach((e) => console.error('  x   ' + e));
-    console.error(`\n${errors.length + nsFail + badExports.length + deadHandlers.length + delegationFail + stack.length + deadFeatActs.length + remindFail + tabFail + kbFail + dietFail + pickFail} Problem(e).`);
+    console.error(`\n${errors.length + nsFail + badExports.length + deadHandlers.length + delegationFail + stack.length + deadFeatActs.length + remindFail + tabFail + kbFail + dietFail + pickFail + bookFail} Problem(e).`);
     process.exit(1);
   }
   console.log('\nRauchtest bestanden.');

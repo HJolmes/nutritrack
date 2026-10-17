@@ -1378,7 +1378,8 @@ function _pickerRecipeOnlyUI(){
    ['pickerChatAddBtn','pickerChatRecBtn']].forEach(function(pair){
     var a=document.getElementById(pair[0]),b=document.getElementById(pair[1]);
     if(a)a.style.display=on?'none':'';
-    if(b)b.textContent=on?'📚 In die Bibliothek':'📋 Als Rezept';
+    // Der Link-Tab legt immer nur ins Kochbuch an (pickerLinkToBook).
+    if(b&&pair[1]!=='pickerLinkRecBtn')b.textContent=on?'📖 Ins Kochbuch':'📋 Als Rezept';
   });
 }
 
@@ -1405,8 +1406,8 @@ function _pickerAdd(emoji,nameId,portionsId,defaultName,saveAsRecipe,hasEditMode
       window._pickerRecipeOnly=false;
       _pickerSavePhotoIfWanted();closePicker();
       if(window.NTPlan&&NTPlan.noteRecipeCreated)NTPlan.noteRecipeCreated(createdRec);
-      else showToast(emoji+' '+name+' in der Bibliothek gespeichert');
-      if(typeof renderLibrary==='function')renderLibrary();
+      else showToast(emoji+' '+name+' im Kochbuch gespeichert');
+      if(window.NTBook)NTBook.render();
       return createdRec;
     }
     // Eigene Kopie fuer den Eintrag: Die Ampel schreibt ihre Ergebnisse an die
@@ -2107,10 +2108,12 @@ function _parseIngLine(raw){
   if(v!==null&&factor)g=Math.round(v*factor);
   else if(v!==null)g=Math.round(Math.min(v,20)*100);// Stückzahl ohne Einheit
   if(g!==null&&g<=0)g=null;
-  // Küchenmaße werden bewusst NUR umgerechnet, nicht weitergereicht: im
-  // Supermarkt hilft „30 g Mehl" mehr als „2 EL Mehl". Zutatenliste und
-  // Einkaufszettel rechnen deshalb durchgängig in Gramm.
-  return {name:name,g:g,raw:s};
+  // Küchenmaße werden für Nährwerte und Einkaufszettel umgerechnet: im
+  // Supermarkt hilft „30 g Mehl" mehr als „2 EL Mehl". Das Kochbuch zeigt
+  // daneben die Angabe der Quelle — q (Menge), u (Einheit), t (Text ohne
+  // Menge), siehe bookIngLine() in js/calc.js.
+  var t=(v!==null?rest:_stripVague(s)).replace(/\s+/g,' ').replace(/^[,;:\s]+|[,;\s]+$/g,'').trim();
+  return {name:name,g:g,raw:s,q:v,u:unit,t:t||name};
 }
 
 // ── 1) JSON-LD ──
@@ -2169,6 +2172,7 @@ function _recipeFromJsonLd(html){
     ings:ings,
     instructions:_ldText(rec.recipeInstructions),
     yield:_stripTags(_ldText(rec.recipeYield)),
+    time:parseIsoDuration(_ldText(rec.totalTime))||(parseIsoDuration(_ldText(rec.prepTime))+parseIsoDuration(_ldText(rec.cookTime))),
     src:'Rezeptdaten der Seite'
   };
 }
@@ -2292,7 +2296,7 @@ function pickerLinkImport(){
       // Erst die strukturierten Rezeptdaten der Seite versuchen – die kennen
       // fast alle Rezept-Portale und Blogs, unabhängig vom Layout.
       var rec=_recipeFromHtml(html);
-      if(rec&&rec.ings.length>=2){_pickerLinkFill(rec,btn);return;}
+      if(rec&&rec.ings.length>=2){rec.url=url;_pickerLinkFill(rec,btn);return;}
       // Bot-Wall/Consent-Layer statt Seite: gar nicht erst die KI bemühen.
       if(!_pageHasContent(html)){
         fail('Die Seite hat keinen Rezeptinhalt geliefert (vermutlich Bot-Schutz)');
@@ -2306,7 +2310,7 @@ function pickerLinkImport(){
       btn.textContent='🤖 KI liest die Seite...';
       callClaude('claude-haiku-5-5',[{type:'text',text:
         'Extrahiere das Rezept aus diesem Text und gib NUR gültiges JSON zurück:\n'
-        +'{"name":"Rezeptname","zutaten":[{"name":"Zutat","menge":"250 g"}],"portionen":"4","anleitung":"Zubereitungsschritte (optional)"}\n'
+        +'{"name":"Rezeptname","zutaten":[{"name":"Zutat","menge":"250 g"}],"portionen":"4","minuten":30,"anleitung":"Zubereitungsschritte, ein Schritt pro Zeile (optional)"}\n'
         +'Übernimm die Mengenangabe wörtlich inklusive Einheit (z. B. "2 EL", "1 Dose", "500 g"). '
         +'Ohne Mengenangabe lässt du "menge" leer.\n'
         +'Text: '+_recipeTextWindow(html)}],900,
@@ -2325,7 +2329,8 @@ function pickerLinkImport(){
           });
           if(!ings.length){fail('Rezept konnte nicht erkannt werden');return;}
           _pickerLinkFill({name:d.name||'',ings:ings,instructions:d.anleitung||'',
-                           yield:d.portionen?String(d.portionen):'',src:'KI-Auswertung'},btn);
+                           yield:d.portionen?String(d.portionen):'',time:parseInt(d.minuten,10)||0,
+                           src:'KI-Auswertung',url:url},btn);
         },
         function(){fail('Import fehlgeschlagen');}
       );
@@ -2338,11 +2343,21 @@ function pickerLinkImport(){
 // Gemeinsamer Abschluss für beide Extraktionswege: Nährwerte nachschlagen,
 // Liste rendern, Ziel-Auswahl freischalten.
 function _pickerLinkFill(rec,btn){
-  window._pickerLinkInstructions=rec.instructions||'';
+  // Was das Kochbuch ausser den Zutaten braucht (pickerLinkToBook).
+  window._pickerLinkMeta={name:rec.name||'',instructions:rec.instructions||'',
+    serv:parseYield(rec.yield),time:rec.time||0,url:rec.url||''};
   var rawItems=rec.ings.map(function(x){
     return {name:x.name,g:x.g,emoji:emo(x.name)};
   });
   lookupNutrients(rawItems,function(ings){
+    // lookupNutrients liefert neue Objekte (Name ggf. aus der Datenbank) —
+    // die Angabe der Quelle wird ueber die Position wieder angehaengt.
+    ings.forEach(function(g,i){
+      var x=rec.ings[i];if(!g||!x)return;
+      if(x.q>0)g.q=x.q;
+      if(x.u)g.u=x.u;
+      if(x.t)g.t=x.t;
+    });
     pickerIngredients=ings;
     document.getElementById('pickerLinkRecipeName').value=rec.name||'';
     var hint=document.getElementById('pickerLinkSrcHint');
@@ -2367,14 +2382,26 @@ function _pickerLinkFill(rec,btn){
 
 function pickerUpdateLinkTotal(){pickerUpdateTotal('Link');}
 
-function pickerLinkAdd(saveAsRecipe){
-  var rec=_pickerAdd('🔗','pickerLinkRecipeName','pickerLinkPortions','Rezept',saveAsRecipe,true);
-  // Kochanleitung auf das tatsächlich erstellte Rezept übertragen (statt blind recipes[0])
-  if(saveAsRecipe&&window._pickerLinkInstructions&&rec){
-    rec.instructions=window._pickerLinkInstructions;
-    saveX();
-  }
-  window._pickerLinkInstructions='';
+function pickerLinkAdd(){
+  _pickerAdd('🔗','pickerLinkRecipeName','pickerLinkPortions','Rezept',false,true);
+}
+// „📖 Ins Kochbuch“: Das importierte Rezept geht zur Pruefung in den Editor
+// des Kochbuchs — mit Portionenzahl, Zeit, Zubereitung und Quelle der Seite.
+// Gespeichert (und damit angelegt) wird erst dort; das Tagebuch bleibt leer.
+function pickerLinkToBook(){
+  if(!pickerIngredients.length){showToast('Keine Zutaten');return;}
+  if(!window.NTBook){showToast('Kochbuch nicht verfügbar');return;}
+  var m=window._pickerLinkMeta||{};
+  var name=document.getElementById('pickerLinkRecipeName').value.trim()||m.name||'';
+  pickerIngredients.forEach(function(f){cacheFood(f);});
+  // Nur der Weg „＋ Neues Rezept → Aus dem Internet“ (nur Kochbuch) darf einen
+  // Wochenplan-Slot befuellen; aus ＋ → 🔗 Link heraus gilt keiner.
+  if(!window._pickerRecipeOnly&&window.NTPlan&&NTPlan.cancelNew)NTPlan.cancelNew();
+  var d={name:name,baseServings:m.serv||1,ingredients:JSON.parse(JSON.stringify(pickerIngredients)),
+    instructions:m.instructions||'',time:m.time||0,src:m.url||''};
+  window._pickerRecipeOnly=false;
+  closePicker();
+  NTBook.editDraft(d,{from:'picker',hint:m.serv?'':'Die Seite nennt keine Portionenzahl — bitte unter „Rezept für … Portionen“ eintragen.'});
 }
 
 // ─── PICKER: LINK → EINKAUFSZETTEL ───
@@ -2437,6 +2464,16 @@ function pickerSaveOwn(){
 }
 
 // ─── PICKER: universal ingredient list renderer ───
+// Angabe der Quelle unter dem Namen („2 EL Olivenöl, kaltgepresst“), wenn sie
+// etwas anderes sagt als Name und Gramm. Mengen in der Liste gelten für das
+// ganze Rezept (Link-Import, Kochbuch-Editor).
+function _pickerSrcLine(ing){
+  if(!ing||!(ing.q>0||ing.t))return '';
+  var l=bookIngLine(ing,1),same=String(l.n).toLowerCase()===String(ing.name||'').toLowerCase();
+  // „250 g rote Linsen“ neben „rote Linsen · 250 g“ sagt nichts Neues.
+  if(same&&(!l.q||/^[\d.,]+ (g|gr|gramm|ml)$/i.test(l.q)))return '';
+  return '<div class="ing-src">'+_esc(((l.q?l.q+' ':'')+l.n).trim())+'</div>';
+}
 function pickerRenderIngList(elId,ings,onAmtChange,onDel){
   var el=document.getElementById(elId);if(!el)return;
   el.innerHTML=(ings||[]).map(function(ing,i){
@@ -2449,7 +2486,7 @@ function pickerRenderIngList(elId,ings,onAmtChange,onDel){
     return'<div class="ing-wrap">'
       +'<div class="ing-item">'
       +'<div class="ing-e" onclick="ingToggle(event,\''+nid+'\')">'+esc(ing.emoji||'🍽')+'</div>'
-      +'<div class="ing-n" onclick="ingToggle(event,\''+nid+'\')">'+_esc(ing.name)+ampelDot+'</div>'
+      +'<div class="ing-n" onclick="ingToggle(event,\''+nid+'\')">'+_esc(ing.name)+ampelDot+_pickerSrcLine(ing)+'</div>'
       +'<input type="number" class="ing-amt" value="'+amtVal+'" min="1" placeholder="g?" style="'+borderStyle+'" data-i="'+i+'" onchange="NTPicker.pickerIngAmtChange(\''+elId+'\','+i+',this.value)">'
       +'<div class="ing-u">'+(ing.pu?'% Port.':'g')+'</div>'
       +warn
@@ -2614,7 +2651,26 @@ function getRecentFoods(){
 // ── Nach aussen ──
 // Nur, was ausserhalb dieser Datei gerufen wird. tools/check.js loest jeden
 // on*-/data-act-String gegen diese Liste auf, tools/smoke.js prueft jeden Eintrag.
+// Ein Kochbuch-Rezept direkt ins Tagebuch, ohne den Picker zu oeffnen
+// (NTBook: „🍽 Eintragen“, Kochmodus „Fertig“). Derselbe Eintrag wie über die
+// Suche: eigene Kopie der Zutaten, Ampel ueber die Zutaten (#205).
+function addRecipeEntry(id,meal,portions){
+  var rec=recipes.find(function(r){return r.id===id;});
+  if(!rec){showToast('Rezept nicht gefunden');return false;}
+  var m=MEALS.indexOf(meal)>=0?meal:mealByTime();
+  var p=parseFloat(portions)>0?parseFloat(portions):1;
+  var t=ingTotal(rec.ingredients||[]);
+  var list=getDay().meals[m];
+  list.push(Object.assign({name:rec.name,emoji:rec.emoji||'📋',isRecipe:true,recipeId:rec.id,portions:p,
+    ingredients:JSON.parse(JSON.stringify(rec.ingredients||[]))},scaleNutrients(t,p)));
+  saveS();renderAll();
+  _pickerRateEntry(m,list.length-1);
+  showToast((rec.emoji||'📋')+' '+rec.name+' → '+(MEAL_NAMES[m]||m)+' eingetragen');
+  return true;
+}
+
 window.NTPicker={
+  addRecipeEntry:addRecipeEntry, pickerLinkToBook:pickerLinkToBook,
   pickerFriendlyAiError:pickerFriendlyAiError, openPicker:openPicker, closePicker:closePicker,
   pickerSetTab:pickerSetTab, pickerSearchLocalLive:pickerSearchLocalLive, pickerSearch:pickerSearch,
   pickerSelResult:pickerSelResult, pickerConfirmAdd:pickerConfirmAdd,

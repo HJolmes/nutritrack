@@ -385,6 +385,156 @@ function recipeImportExtractUrl(text){
   return m?m[0].replace(/[.,;:!?)\]]+$/,''):null;
 }
 
+// ── Kochbuch (js/cookbook.js) ──
+// Rezepte stehen JE PORTION in `recipes` (amount = Gramm je Portion); das
+// Kochbuch zeigt und bearbeitet sie fuer das ganze Rezept (baseServings).
+// Optionale Zutatenfelder aus dem Import: q = Menge je Portion in der Einheit
+// u („EL“, „Dose“, leer = Stueck), t = Text der Quelle ohne Menge.
+
+// „PT1H30M“ (schema.org totalTime) → 90; eine blosse Zahl gilt als Minuten.
+function parseIsoDuration(s){
+  s=String(s==null?'':s).trim();
+  if(/^\d+$/.test(s))return parseInt(s,10);
+  var m=s.match(/^P(?:(\d+(?:[.,]\d+)?)D)?(?:T(?:(\d+(?:[.,]\d+)?)H)?(?:(\d+(?:[.,]\d+)?)M)?(?:(\d+(?:[.,]\d+)?)S)?)?$/i);
+  if(!m)return 0;
+  var n=function(x){return x?parseFloat(x.replace(',','.')):0;};
+  return Math.round(n(m[1])*1440+n(m[2])*60+n(m[3])+n(m[4])/60);
+}
+// „4 Portionen“, „Für 4-6 Personen“, „4“ → 4; nichts Brauchbares → 0.
+function parseYield(v){
+  var m=String(v==null?'':v).match(/\d+/);
+  var n=m?parseInt(m[0],10):0;
+  return n>=1&&n<=100?n:0;
+}
+// Zubereitung → Schritte. Eine Zeile je Schritt; Nummern und Spiegelstriche
+// am Anfang fallen weg. Ein einziger langer Absatz wird an Satzenden geteilt
+// und zu Schritten von mindestens 120 Zeichen zusammengefasst.
+function recipeSteps(text){
+  var lines=String(text||'').split(/\r?\n/).map(function(l){
+    return l.replace(/^\s*(?:schritt\s*)?\d+\s*[.):]\s*/i,'').replace(/^\s*[-•*–]\s+/,'').trim();
+  }).filter(Boolean);
+  if(lines.length!==1||lines[0].length<=240)return lines;
+  var s=lines[0],parts=[],re=/[.!?]\s+(?=[A-ZÄÖÜ])/g,last=0,m;
+  while((m=re.exec(s))){parts.push(s.slice(last,m.index+1).trim());last=m.index+m[0].length;}
+  parts.push(s.slice(last).trim());
+  var out=[],cur='';
+  parts.filter(Boolean).forEach(function(p){
+    cur=cur?cur+' '+p:p;
+    if(cur.length>=120){out.push(cur);cur='';}
+  });
+  if(cur){if(out.length&&cur.length<60)out[out.length-1]+=' '+cur;else out.push(cur);}
+  return out;
+}
+// Zeitangaben in einem Schritt → Timer in Sekunden. „10–15 Minuten“ nimmt
+// die untere Grenze (lieber zu frueh nachsehen), „1 Std. 30 Min.“ wird ein
+// Timer. Hoechstens 24 Stunden, jede Dauer nur einmal.
+function stepTimers(text){
+  var re=/(\d+(?:[.,]\d+)?)(?:\s*(?:-|–|bis)\s*\d+(?:[.,]\d+)?)?\s*(sekunden|sek\.?|minuten|minute|min\.?|stunden|stunde|std\.?)(?![a-zäöüß])(?:\s*(?:und\s+)?(\d+)\s*(?:minuten|min\.?)(?![a-zäöüß]))?/gi;
+  var out=[],seen={},m;
+  while((m=re.exec(String(text||'')))){
+    var v=parseFloat(m[1].replace(',','.')),u=m[2].toLowerCase(),sec;
+    if(/^sek/.test(u))sec=v;
+    else if(/^(std|stunde)/.test(u))sec=v*3600+(m[3]?parseInt(m[3],10)*60:0);
+    else sec=v*60;
+    sec=Math.round(sec);
+    if(!(sec>0)||sec>86400||seen[sec])continue;
+    seen[sec]=true;
+    out.push({sec:sec,label:m[0].trim()});
+  }
+  return out;
+}
+// Menge zum Lesen: ab 10 ganze Zahl, darunter Brueche (½, ⅓, ¼ …), sonst
+// eine Nachkommastelle mit Komma.
+function fmtQty(n){
+  n=+n;if(!(n>0))return '';
+  if(n>=10)return String(Math.round(n));
+  var whole=Math.floor(n),frac=n-whole;
+  /** @type {{d:number,v:number,s:string}|null} */
+  var best=null;
+  /** @type {Array<[number,string]>} */
+  var fr=[[0,''],[0.25,'¼'],[1/3,'⅓'],[0.5,'½'],[2/3,'⅔'],[0.75,'¾'],[1,'']];
+  fr.forEach(function(f){
+    var d=Math.abs(frac-f[0]);
+    if(d<0.05&&(!best||d<best.d))best={d:d,v:f[0],s:f[1]};
+  });
+  if(best){
+    var w=whole+(best.v===1?1:0);
+    if(best.s)return w?w+' '+best.s:best.s;
+    if(w)return String(w);
+  }
+  return String(Math.round(n*(n<1?100:10))/(n<1?100:10)).replace('.',',');
+}
+// Zutaten mal Faktor (Portionen umrechnen, Ganzes ↔ je Portion). Kopien —
+// das Rezept selbst bleibt, wie es ist.
+function scaleIngs(ings,f){
+  return (ings||[]).map(function(g){
+    var c=JSON.parse(JSON.stringify(g));
+    if(c.amount>0)c.amount=Math.round(c.amount*f*10)/10;
+    if(c.q>0)c.q=Math.round(c.q*f*1000)/1000;
+    return c;
+  });
+}
+// Eine Zutatenzeile fuer p Portionen: {q:'2 EL', n:'Olivenöl', g:'30 g'}.
+// Mit Menge aus der Quelle steht sie vorn und das Gramm daneben; sonst Gramm.
+function bookIngLine(ing,p){
+  var amt=(parseFloat(ing&&ing.amount)||0)*p,g=amt>0?Math.round(amt)+' g':'';
+  if(ing&&ing.pu)return {q:fmtQty(amt/100)+' Port.',n:ing.name,g:''};
+  if(ing&&(ing.q>0||ing.t)){
+    var u=String(ing.u||''),grams=/^(g|gr|gramm|ml)$/i.test(u);
+    var q=ing.q>0?(grams?String(Math.round(ing.q*p)):fmtQty(ing.q*p))+(u?' '+u:''):'';
+    return {q:q,n:ing.t||ing.name,g:grams?'':g};
+  }
+  return {q:g,n:ing?ing.name:'',g:''};
+}
+// „Pasta, vegetarisch , pasta“ → ['Pasta','Vegetarisch']: getrimmt, erster
+// Buchstabe gross, ohne Gross/Klein-Dubletten.
+function parseTags(s){
+  var out=[],seen={};
+  (Array.isArray(s)?s:String(s||'').split(',')).forEach(function(t){
+    t=String(t||'').replace(/\s+/g,' ').trim();if(!t)return;
+    t=t.charAt(0).toUpperCase()+t.slice(1);
+    var k=t.toLowerCase();if(seen[k])return;seen[k]=true;out.push(t);
+  });
+  return out;
+}
+// Alle Kategorien des Kochbuchs, die haeufigste zuerst.
+function bookTags(list){
+  var n={};
+  (list||[]).forEach(function(r){(r.cat||[]).forEach(function(t){n[t]=(n[t]||0)+1;});});
+  return Object.keys(n).sort(function(a,b){return n[b]-n[a]||a.localeCompare(b,'de');});
+}
+function _bookFold(s){
+  return String(s||'').toLowerCase().replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss');
+}
+// Suche ueber Name, Kategorien und Zutaten; tag '★' = nur Favoriten.
+function bookFilter(list,q,tag){
+  var words=_bookFold(q).split(/\s+/).filter(Boolean);
+  return (list||[]).filter(function(r){
+    if(tag==='★'){if(!r.fav)return false;}
+    else if(tag&&(r.cat||[]).indexOf(tag)<0)return false;
+    if(!words.length)return true;
+    var hay=_bookFold([r.name].concat(r.cat||[],(r.ingredients||[]).map(function(g){return g.name+' '+(g.t||'');})).join(' '));
+    return words.every(function(w){return hay.indexOf(w)>=0;});
+  });
+}
+// Sortierung: new (zuletzt angelegt), az, cooked (zuletzt gekocht), often,
+// kcal (je Portion aufsteigend), time (schnell zuerst). log = S.cookLog.
+function bookSort(list,mode,log){
+  log=log||{};
+  var lg=function(r){return log[r.id]||{n:0,last:''};};
+  var idn=function(r){return parseInt(r.id,10)||0;};
+  var out=(list||[]).slice();
+  out.sort(function(a,b){
+    if(mode==='az')return String(a.name).localeCompare(String(b.name),'de');
+    if(mode==='cooked')return (lg(b).last>lg(a).last?1:lg(b).last<lg(a).last?-1:0)||idn(b)-idn(a);
+    if(mode==='often')return lg(b).n-lg(a).n||idn(b)-idn(a);
+    if(mode==='kcal')return ingTotal(a.ingredients||[]).kcal-ingTotal(b.ingredients||[]).kcal;
+    if(mode==='time')return (a.time>0?a.time:1e9)-(b.time>0?b.time:1e9)||idn(b)-idn(a);
+    return idn(b)-idn(a);
+  });
+  return out;
+}
+
 // ── KI-Anfrage an Anthropic ──
 // Haiku 5.5 und Sonnet 5.5 lehnen temperature≠1 ab (400) und denken sonst
 // mit; das Denken zählt in max_tokens und schnitte die kurzen JSON-Antworten

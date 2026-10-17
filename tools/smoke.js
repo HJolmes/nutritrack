@@ -624,6 +624,32 @@ const EXPECTED_NAMESPACES = [
       getDay().meals.snack.pop();
       recipes.splice(recipes.indexOf(recipes.find((x) => x.id === rec.id)), 1);
       delete S.cookLog[rec.id];
+      // Grundbestand (v0.318): nachladen, einmal einspielen, angepasst anzeigen.
+      await new Promise((res) => NTBook.loadSeed(res));
+      const seeded = recipes.filter((x) => x.seed).length;
+      out.seed = seeded >= 100 && NTBook.mergeSeed() === 0;
+      const sch = recipes.find((x) => x.id === 'mc-schnitzel');
+      const schSnap = JSON.stringify(sch);
+      const prefs = S.dietPrefs, preg = S.pregnant;
+      S.dietPrefs = ['Vegetarisch']; S.pregnant = 0;
+      const v = NTBook.view(sch);
+      out.adapted = v.adapted && v.ingredients.some((g) => g.name === 'Tofu (fest)') && !v.ingredients.some((g) => /Hähnchen/.test(g.name));
+      NTBook.detail(sch.id);
+      out.banner = /Für dich angepasst/.test(document.getElementById('bookDetBody').textContent);
+      NTBook.toggleOrig();
+      out.orig = /Original wird angezeigt/.test(document.getElementById('bookDetBody').textContent)
+        && NTBook.view(sch).ingredients.some((g) => /Hähnchen/.test(g.name));
+      NTBook.toggleOrig();
+      NTPicker.addRecipeEntry(sch.id, 'snack', 1);
+      const ve = getDay().meals.snack[getDay().meals.snack.length - 1];
+      out.diaryAdapted = ve.ingredients.some((g) => g.name === 'Tofu (fest)');
+      getDay().meals.snack.pop();
+      // `used` markiert nur die Benutzung (Picker-Suche), der Inhalt bleibt.
+      const now = JSON.parse(JSON.stringify(recipes.find((x) => x.id === 'mc-schnitzel'))), was = JSON.parse(schSnap);
+      delete now.used; delete was.used;
+      out.seedUntouched = JSON.stringify(now) === JSON.stringify(was);
+      NTBook.closeDetail();
+      S.dietPrefs = prefs; S.pregnant = preg;
       return out;
     }).catch((e) => { record('Kochbuch', e.message); return {}; });
     page.off('dialog', onDialog);
@@ -631,12 +657,16 @@ const EXPECTED_NAMESPACES = [
       saved: 'gespeichert je Portion (200 g fuer 4 → 50 g)', scaled: 'Portionsrechner zeigt 3 Portionen, Rezept bleibt',
       whole: 'Editor zeigt Mengen fuer das ganze Rezept', cancelKeeps: '✕ nach Aenderung laesst das Rezept unveraendert',
       timer: 'Kochmodus bietet den Timer aus „10 Minuten“ an', cooked: '„Fertig gekocht“ zaehlt in S.cookLog',
-      diary: 'Tagebuch bekommt eine Kopie', untouched: 'Rezept nach allem unveraendert' })) {
+      diary: 'Tagebuch bekommt eine Kopie', untouched: 'Rezept nach allem unveraendert',
+      seed: 'Grundbestand (101 Gerichte) nachgeladen, ein zweites Einspielen fuegt nichts hinzu',
+      adapted: 'vegetarisch: Hähnchen wird Tofu', banner: 'Ansicht nennt die Anpassung',
+      orig: '„Original anzeigen“ zeigt das Hähnchen', diaryAdapted: 'Tagebuch bekommt die angepasste Fassung',
+      seedUntouched: 'Grundrezept nach Anpassung unveraendert' })) {
       if (!r[k]) { bookFail++; console.log('  x   Kochbuch: ' + v); }
     }
     const newErr = errors.length - errBefore;
     if (newErr) { bookFail++; console.log(`  x   Kochbuch: ${newErr} neue(r) Fehler, siehe unten.`); }
-    if (!bookFail) console.log('  ok  Kochbuch: Entwurf, Speichern je Portion, Rechner/✕/Kochmodus/Tagebuch lassen das Rezept unveraendert, Timer und Kochverlauf.');
+    if (!bookFail) console.log('  ok  Kochbuch: Entwurf, Speichern je Portion, Rechner/✕/Kochmodus/Tagebuch lassen das Rezept unveraendert, Timer und Kochverlauf; Grundbestand, vegetarische Fassung, „Original anzeigen“.');
   }
 
   // 7c. App-Tour: aus der Hilfe von vorn bis „Fertig“ per Klick, dann an

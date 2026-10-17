@@ -14,12 +14,13 @@ declare var NTTab: any; declare var NTTour: any; declare var NTTpl: any;
 declare var ZXing: any; declare var ZXingWASM: any; declare var BarcodeDetector: any;
 declare var DB: any; declare var DB_USDA: any; declare var DB_DEFAULT: any; declare var DE_EN: any; declare var CHAINS: any;
 declare var MET_DB: any; declare var CHANGELOG: any; declare var html2canvas: any;
+declare var BOOK_SEED: any; declare var BOOK_SWAPS: any;
 
 interface Window {
   [k: `NT${string}`]: any;
   [k: `_${string}`]: any;
   ZXingWasm: any; ZBarWasm: any; DB: any; DB_USDA: any; DB_DEFAULT: any; DE_EN: any; CHAINS: any; MET_DB: any;
-  CHANGELOG: any; html2canvas: any; MSStream: any;
+  CHANGELOG: any; html2canvas: any; MSStream: any; BOOK_SEED: any; BOOK_SWAPS: any;
   // Web Speech API: nicht in lib.dom, Chrome liefert nur den webkit-Namen.
   SpeechRecognition?: any; webkitSpeechRecognition?: any;
 }

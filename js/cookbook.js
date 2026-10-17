@@ -47,6 +47,15 @@ var SLOTS=[
   {id:'dinner',   ic:'🌙',label:'Abendessen'},
   {id:'snack',    ic:'🍎',label:'Snack'}
 ];
+// Mahlzeit-Marker (r.meal): die Slots plus Getraenk.
+var MEALS=SLOTS.map(function(s){return {id:s.id,ic:s.ic,label:s.label.replace('essen','')};})
+  .concat([{id:'drink',ic:'🥤',label:'Getränk'}]);
+function mealTags(r){
+  return bookMeals(r).map(function(id){
+    var m=MEALS.filter(function(x){return x.id===id;})[0];
+    return m?'<span class="bk-tag bk-meal">'+m.ic+' '+esc(m.label)+'</span>':'';
+  }).join('');
+}
 var SORTS=[['new','Neueste zuerst'],['az','A–Z'],['cooked','Zuletzt gekocht'],['often','Am häufigsten gekocht'],['time','Schnell zuerst'],['kcal','Wenig kcal zuerst']];
 
 function rec(id){for(var i=0;i<recipes.length;i++)if(recipes[i].id===id)return recipes[i];return null;}
@@ -63,6 +72,7 @@ function guessEmoji(name){var e=emo(name||'');return (e&&e!=='🍽')?e:'📋';}
 var SEED_V=1,_seedLoading=false;
 function boot(){
   renderCard();
+  fixSeedMeals();
   if((S.bookSeedV||0)>=SEED_V)return;
   setTimeout(loadSeed,1500);
 }
@@ -84,13 +94,22 @@ function mergeSeed(){
   recipes.forEach(function(r){have[r.id]=1;if(r.seed)have['s:'+r.seed]=1;});
   seed.recipes.forEach(function(sr){
     if(off.indexOf(sr.id)>=0||have[sr.id]||have['s:'+sr.seed])return;
-    recipes.push(JSON.parse(JSON.stringify(sr)));n++;
+    var cp=JSON.parse(JSON.stringify(sr));cp.meal=bookSeedMeal(cp);
+    recipes.push(cp);n++;
   });
   S.bookSeedV=seed.v||SEED_V;
   saveX();saveS();
   render();
   if(window.NTPlan&&NTPlan.render)NTPlan.render();
   return n;
+}
+// Einmalig: Grundrezepte, die vor den Mahlzeit-Markern geladen wurden, tragen
+// bei Desserts und Snacks noch Mittag/Abend aus MorphCook.
+function fixSeedMeals(){
+  if(S.bookMealV||(window.NTTab&&!NTTab.canWrite()))return;
+  recipes.forEach(function(r){if(r.seed)r.meal=bookSeedMeal(r);});
+  S.bookMealV=1;
+  saveX();saveS();
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -292,7 +311,7 @@ function renderList(){
   var list=bookSort(bookFilter(recipes,q,_tag),_sort,S.cookLog);
   if(!list.length){el.innerHTML='<div class="bk-empty bk-mu">Keine Rezepte gefunden</div>';return;}
   el.innerHTML=list.map(function(r){
-    var cats=(r.cat||[]).slice(0,3).map(function(t){return '<span class="bk-tag">'+esc(t)+'</span>';}).join('');
+    var cats=mealTags(r)+(r.cat||[]).slice(0,3).map(function(t){return '<span class="bk-tag">'+esc(t)+'</span>';}).join('');
     return '<div class="list-row bk-row" data-act="NTBook.detail" data-args="'+args([r.id])+'">'
       +'<div class="lr-ic">'+esc(r.emoji||'📋')+'</div>'
       +'<div class="lr-body"><div class="lr-name">'+(r.fav?'⭐ ':'')+esc(r.name)+'</div>'
@@ -384,11 +403,16 @@ function eatNow(pre){
   if(pre==='cook'){cookClose(true);return;}
   _panel='';renderDetail();
 }
+// Vorauswahl im Einplanen: der erste Marker, sonst Abendessen.
+function planSlotOf(r){
+  var m=bookMeals(r).filter(function(x){return x!=='drink';});
+  return m[0]||'dinner';
+}
 function planPanel(){
   return '<div class="bk-panel">'
     +'<div class="bk-pt">📅 In den Wochenplan</div>'
     +'<div class="bk-prow"><input type="date" class="sinp" id="bookPlanDate" value="'+esc(S.currentDate||today())+'">'
-    +'<select class="sinp" id="bookPlanSlot">'+slotOptions('dinner',false)+'</select></div>'
+    +'<select class="sinp" id="bookPlanSlot">'+slotOptions(planSlotOf(rec(_cur)),false)+'</select></div>'
     +'<div class="bk-prow"><span class="bk-mu">Portionen für dich</span><input type="number" class="sinp bk-pn" id="bookPlanP" value="1" min="0.25" step="0.25"></div>'
     +'<button type="button" class="svb" data-act="NTBook.planNow">📅 Einplanen</button>'
     +'</div>';
@@ -441,8 +465,10 @@ function renderDetail(){
   var src=String(r.src||''),host='';
   if(/^https?:\/\//i.test(src)){try{host=new URL(src).hostname.replace(/^www\./,'');}catch(e){host='';}}
   var btn=function(act,label){return '<button type="button" class="bk-act" data-act="'+act+'">'+label+'</button>';};
+  var tags=mealTags(r)+(r.cat||[]).map(function(c){return '<span class="bk-tag">'+esc(c)+'</span>';}).join('');
   el.innerHTML=
-    ((r.cat||[]).length?'<div class="bk-tags" style="margin:0 0 10px;">'+r.cat.map(function(c){return '<span class="bk-tag">'+esc(c)+'</span>';}).join('')+'</div>':'')
+    (tags?'<div class="bk-tags" style="margin:0 0 10px;">'+tags+'</div>':'')
+    +(bookMeals(r).length?'':'<div class="bk-mu" style="margin:0 0 10px;">Keine Mahlzeit gewählt – „🎲 Füllen“ plant das Rezept nicht ein. ✏️ Bearbeiten → Passt zu.</div>')
     +'<button type="button" class="svb" style="margin:0 0 8px;" data-act="NTBook.cook" data-args="'+args([r.id,0])+'">👨‍🍳 Kochen'+(steps.length?' · '+steps.length+' Schritt'+(steps.length===1?'':'e'):'')+'</button>'
     +'<div class="bk-acts">'
       +'<button type="button" class="bk-act'+(_panel==='plan'?' on':'')+'" data-act="NTBook.togglePanel" data-args="'+args(['plan'])+'">📅<span>Einplanen</span></button>'
@@ -511,10 +537,11 @@ function openEditor(d,opts){
   setVal('recEditName',d.name);setVal('recEditEmoji',d.emoji||'');
   setVal('recEditServ',d.baseServings);setVal('recEditTime',d.time>0?d.time:'');
   setVal('recEditCats',(d.cat||[]).join(', '));
+  d.meal=bookMeals(d);
   setVal('recEditInstructions',d.instructions||'');setVal('recEditNote',d.note||'');
   setVal('recEditSrc',d.src||'');setVal('recEditSearchQ','');
   var del=document.getElementById('recEditDelBtn');if(del)del.style.display=opts.isNew?'none':'';
-  renderEditIngs();renderCatChips();editSearch();
+  renderEditIngs();renderCatChips();renderMealChips();editSearch();
   _snap=JSON.stringify(readFields(JSON.parse(JSON.stringify(d))));
   openOv('recEditOv');
   var m=document.querySelector('#recEditOv .mod');if(m)m.scrollTop=0;
@@ -562,6 +589,18 @@ function renderCatChips(){
   el.innerHTML=tags.map(function(t){
     return '<button type="button" class="bk-chip" data-act="NTBook.addCat" data-args="'+args([t])+'">＋ '+esc(t)+'</button>';
   }).join('');
+}
+function renderMealChips(){
+  var el=document.getElementById('recEditMeals');if(!el||!_draft)return;
+  var have=bookMeals(_draft);
+  el.innerHTML=MEALS.map(function(m){
+    return '<button type="button" class="bk-chip'+(have.indexOf(m.id)>=0?' on':'')+'" data-act="NTBook.toggleMeal" data-args="'+args([m.id])+'">'+m.ic+' '+esc(m.label)+'</button>';
+  }).join('');
+}
+function toggleMeal(id){
+  if(!_draft)return;
+  _draft.meal=bookToggleMeal(_draft.meal,id);
+  renderMealChips();
 }
 function addCat(t){
   var c=parseTags(getVal('recEditCats'));c.push(t);
@@ -626,11 +665,12 @@ function editSave(){
   // Vom alten Rezept bleibt, was der Editor nicht kennt (fav und kuenftige Felder).
   /** @type {Record<string, any>} */
   var out=old?JSON.parse(JSON.stringify(old)):{};
-  ['baseServings','time','cat','note','src'].forEach(function(k){delete out[k];});
+  ['baseServings','time','cat','meal','note','src'].forEach(function(k){delete out[k];});
   Object.assign(out,{id:d.id,name:d.name,emoji:d.emoji||'📋',ingredients:scaleIngs(d.ingredients,1/n),instructions:d.instructions||''});
   if(n>1)out.baseServings=n;
   if(d.time>0)out.time=d.time;
   if(d.cat&&d.cat.length)out.cat=d.cat;
+  var ml=bookMeals(d);if(ml.length)out.meal=ml;
   if(d.note)out.note=d.note;
   if(d.src)out.src=d.src;
   var idx=-1;for(var i=0;i<recipes.length;i++)if(recipes[i].id===out.id){idx=i;break;}
@@ -893,7 +933,7 @@ window.NTBook={
   detail:detail,closeDetail:closeDetail,setPortions:setPortions,togglePanel:togglePanel,
   planNow:planNow,eatNow:eatNow,toShop:toShop,toggleFav:toggleFav,duplicate:duplicate,
   edit:edit,editCur:editCur,editDraft:editDraft,editSave:editSave,editClosed:editClosed,editDelete:editDelete,
-  editTotal:editTotal,editSearch:editSearch,editAdd:editAdd,addCat:addCat,renderCatChips:renderCatChips,
+  editTotal:editTotal,editSearch:editSearch,editAdd:editAdd,addCat:addCat,renderCatChips:renderCatChips,toggleMeal:toggleMeal,
   cook:cook,cookClose:cookClose,cookGo:cookGo,cookIngs:cookIngs,cookPortions:cookPortions,cookDone:cookDone,
   timerStart:timerStart,timerDrop:timerDrop
 };

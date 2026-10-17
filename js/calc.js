@@ -537,6 +537,33 @@ function bookSort(list,mode,log){
   return out;
 }
 
+// ── Kochbuch: Mahlzeit-Marker (r.meal) ──
+// Wozu ein Rezept passt. Getraenk schliesst die anderen aus.
+var BOOK_MEALS=['breakfast','lunch','dinner','snack','drink'];
+function bookMeals(r){
+  var m=(r&&Array.isArray(r.meal))?r.meal:[],out=[];
+  BOOK_MEALS.forEach(function(id){if(m.indexOf(id)>=0)out.push(id);});
+  return out.indexOf('drink')>=0?['drink']:out;
+}
+function bookToggleMeal(list,id){
+  var m=bookMeals({meal:list});
+  if(BOOK_MEALS.indexOf(id)<0)return m;
+  if(m.indexOf(id)>=0)return m.filter(function(x){return x!==id;});
+  if(id==='drink')return ['drink'];
+  return bookMeals({meal:m.filter(function(x){return x!=='drink';}).concat(id)});
+}
+// Wohin „🎲 Füllen“ ein Rezept setzen darf: nur Fruehstueck, Mittag, Abend
+// laut Marker. Ohne Marker, Snack oder Getraenk: nie.
+function bookFillSlots(r){
+  return bookMeals(r).filter(function(x){return x==='breakfast'||x==='lunch'||x==='dinner';});
+}
+// Grundrezepte: MorphCook nennt fuer Desserts und Snacks Mittag/Abend.
+function bookSeedMeal(r){
+  var cat=(r&&r.cat)||[];
+  if(cat.indexOf('Dessert')>=0||cat.indexOf('Snack')>=0)return ['snack'];
+  return bookMeals(r);
+}
+
 // ── Kochbuch: Anpassung an die eigenen Angaben ──
 // Welche Angaben ein Rezept umbauen (Tausch-Tabelle js/book-swaps.js).
 var BOOK_KEY_LABEL={veg:'vegetarisch',vegan:'vegan',gf:'glutenfrei',lf:'laktosefrei',keto:'Keto',lc:'Low Carb',fish:'ohne Fisch',preg:'Schwangerschaft',nurs:'Stillzeit'};

@@ -369,7 +369,7 @@ var LIQ_W=['wasser','tee','kaffee','espresso','cappuccino','latte','macchiato','
   'milch','drink','shake','schorle','nektar','brause','fassbrause','pils','pilsener','pilsner','helles','koelsch',
   'hefeweizen','weissbier','fanta','sprite','pepsi','mirinda','almdudler','bionade','capri','tea','energy','bull',
   'punsch','grog','likoer','schnaps','wodka','vodka','whisky','whiskey','gin','rum','champagner','actimel','baileys',
-  'valensina','mezzo','glühwein'];
+  'valensina','mezzo','glühwein','aperol','campari','spritz','hugo','cocktail','sangria','mojito','martini','caipirinha','eierlikoer'];
 var LIQ_E=['wasser','tee','kaffee','cola','limo','limonade','saft','milch','drink','shake','schorle','nektar','brause',
   'bier','wein','smoothie','punsch','likoer','schnaps'];
 var LIQ_PH=['heisse schokolade','red bull','hohes c'];

@@ -5,7 +5,7 @@
 // Die Module haengen ihre API mit `window.NTx = {…}` an — tsc kennt den nackten
 // Namen `NTx` dadurch nicht. Fremdbibliotheken und erzeugte Daten ebenso.
 declare var NTActions: any; declare var NTAlexa: any; declare var NTAmpel: any; declare var NTAutoSave: any;
-declare var NTBaby: any; declare var NTBabyMed: any; declare var NTBabyWeek: any; declare var NTDash: any;
+declare var NTBaby: any; declare var NTBook: any; declare var NTBabyMed: any; declare var NTBabyWeek: any; declare var NTDash: any;
 declare var NTDrive: any; declare var NTFeat: any; declare var NTGrowth: any; declare var NTHealth: any;
 declare var NTMet: any; declare var NTMidwife: any; declare var NTMile: any; declare var NTPartner: any;
 declare var NTPhotos: any; declare var NTPicker: any; declare var NTPlan: any; declare var NTQueue: any; declare var NTRecur: any;

@@ -3,7 +3,8 @@
 // Klassisches Script, kein Modul. Exportiert window.NTPlan und greift direkt auf
 // die globalen Helfer aus index.html/picker.js zu (S, saveS, saveX, recipes,
 // getDay, calcM, ingTotal, scaleNutrients, totalStr, lookupNutrients, callClaude,
-// openOv, closeOv, esc, showToast, openRecipeEditor, pickerRenderIngList).
+// openOv, closeOv, esc, showToast). Rezepte anlegen und bearbeiten laeuft ueber
+// das Kochbuch (NTBook.editDraft), angezeigt werden sie dort (NTBook.detail).
 //
 // Der Plan liegt in S.mealPlan, datumsgenau statt nach Wochentag:
 //   S.mealPlan['2026-09-22'] = {breakfast:[{r:'<recipeId>',p:1}], lunch:[], …}
@@ -188,7 +189,7 @@ function similarRecipe(name,ings,skipId){
 function confirmNotDuplicate(name,ings,skipId){
   var m=similarRecipe(name,ings,skipId);
   if(!m)return true;
-  return confirm('In deiner Bibliothek steht schon „'+m.r.name+'“ ('
+  return confirm('In deinem Kochbuch steht schon „'+m.r.name+'“ ('
     +(m.name?'ähnlicher Name':'fast dieselben Zutaten')+').\n\n„'+name
     +'“ trotzdem zusätzlich anlegen?');
 }
@@ -304,6 +305,8 @@ function renderPick(){
   var raw=((document.getElementById('planPickQ')||{}).value||'').trim();
   var q=raw.toLowerCase();
   var list=recipes.filter(function(r){return !q||r.name.toLowerCase().indexOf(q)>=0;});
+  // Favoriten des Kochbuchs zuerst, sonst die gewohnte Reihenfolge.
+  list=list.filter(function(r){return r.fav;}).concat(list.filter(function(r){return !r.fav;}));
   // Dasselbe Feld, zwei Ausgaenge: Was getippt wurde, laesst sich als Rezept
   // suchen ODER direkt als Notiz einplanen. Ein zweites Eingabefeld daneben
   // haette dieselbe Frage zweimal gestellt.
@@ -323,7 +326,7 @@ function renderPick(){
     var t=ingTotal(r.ingredients||[]);
     return '<div class="ri" onclick="NTPlan.addToSlot(\''+esc(r.id)+'\')">'
       +'<div style="font-size:22px;">'+esc(r.emoji||'📋')+'</div>'
-      +'<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:13px;">'+esc(r.name)+'</div>'
+      +'<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:13px;">'+(r.fav?'⭐ ':'')+esc(r.name)+'</div>'
       +'<div style="font-size:11px;color:var(--mu);">'+Math.round(t.kcal)+' kcal / Portion · '+(r.ingredients||[]).length+' Zutaten</div></div>'
       +'<div style="font-size:18px;color:var(--g2);font-weight:900;">＋</div></div>';
   }).join('');
@@ -340,6 +343,29 @@ function addSnapshot(date,slot,name,emoji,ings,portions){
   saveS();Sync.schedule();
   if(isPlanOpen())render();
   refreshCard();
+}
+// Ein Rezept aus dem Kochbuch einplanen (NTBook: „📅 Einplanen“).
+function planRecipe(date,slot,recipeId,portions){
+  if(!rec(recipeId)){showToast('Rezept nicht gefunden');return false;}
+  if(!SLOTS.some(function(s){return s.id===slot;}))slot='dinner';
+  var p=planFor(date,true);
+  p[slot].push({r:recipeId,p:parseFloat(portions)>0?parseFloat(portions):1});
+  if(S.planApplied)delete S.planApplied[date];
+  touch(date);
+  saveS();Sync.schedule();
+  if(isPlanOpen())render();
+  refreshCard();
+  return true;
+}
+// Die eigenen Rezepte eines Tages, in Slot-Reihenfolge (Kochbuch-Kachel).
+function dayRecipes(date){
+  var out=[];
+  SLOTS.forEach(function(s){
+    slotItems(date,s.id).forEach(function(it){
+      if(!isNote(it)&&it.r&&rec(it.r))out.push({slot:s.id,ic:s.ic,id:it.r,p:it.p||1});
+    });
+  });
+  return out;
 }
 function addToSlot(recipeId){
   if(!_target)return;
@@ -443,10 +469,17 @@ function openItem(date,slot,idx){
     var src=r.own?'':(r.hist?' · aus deinem Tagebuch':' · von einer geteilten Liste');
     document.getElementById('planItemTitle').textContent=(r.emoji||'📋')+' '+r.name+src;
     document.getElementById('planItemPortions').value=it.p||1;
+    var bb=document.getElementById('planItemBookBtn');if(bb)bb.style.display=r.own?'':'none';
     planItemTotal();
   }
   document.getElementById('planItemSub').textContent=DOW[(d.getDay()+6)%7]+' · '+shortDate(d)+' · '+(s?s.label:'');
   openOv('planItemOv');
+}
+// Eigenes Rezept: im Kochbuch oeffnen — dort Zubereitung und Kochmodus.
+function itemToBook(){
+  var c=curItem();if(!c||!c.it.r||!window.NTBook)return;
+  closeOv('planItemOv');
+  NTBook.detail(c.it.r);
 }
 function planItemTotal(){
   var c=curItem(true);if(!c)return;
@@ -515,6 +548,8 @@ var HIST_DAYS=90;          // so weit zurueck wird das Tagebuch gelesen
 var HIST_PENALTY=0.45;     // Aufschlag, den ein Tagebuch-Vorschlag mitbringt
 var PORTION_STEPS=[0.5,0.75,1,1.25,1.5,2];
 var SLOT_BUDGET={breakfast:0.25,lunch:0.35,dinner:0.30,snack:0.10};
+var COOKED_DAYS=14;        // so lange gilt ein Rezept als „gerade gekocht“ …
+var COOKED_PENALTY=0.3;    // … und muss um so viel besser passen (S.cookLog)
 
 // Ein Tagebuch-Eintrag als Zutatenliste. Rezept-Eintraege tragen ihre Zutaten
 // je Portion, alles andere hat per100 — und wenn nicht, wird es aus der
@@ -585,7 +620,7 @@ function bestCandidate(cands,used,slot,target,relax){
       var d=Math.abs(c.kcal*pp-target);
       if(d<bd){bd=d;bp=pp;}
     });
-    scored.push({c:c,p:bp,score:(target>0?bd/target:bd)+(c.hist?HIST_PENALTY:0)});
+    scored.push({c:c,p:bp,score:(target>0?bd/target:bd)+(c.hist?HIST_PENALTY:0)+(c.recent?COOKED_PENALTY:0)});
   });
   if(!scored.length)return relax?null:bestCandidate(cands,used,slot,target,true);
   scored.sort(function(a,b){return a.score-b.score;});
@@ -620,10 +655,12 @@ function autoFill(){
   var hist=historyCombos();
   if(!recipes.length&&!hist.length){showToast('Erst ein Rezept anlegen');return;}
   var cands=[];
+  // Was im Kochmodus kuerzlich als gekocht markiert wurde, kommt seltener dran.
+  var since=iso(addDays(new Date(),-COOKED_DAYS)),log=S.cookLog||{};
   recipes.forEach(function(r){
     var k=ingTotal(r.ingredients||[]).kcal;
     if(!(k>0))return;
-    cands.push({key:'r:'+r.id,kcal:k,slot:null,hist:false,
+    cands.push({key:'r:'+r.id,kcal:k,slot:null,hist:false,recent:!!(log[r.id]&&log[r.id].last>=since),
       make:function(pp){return {r:r.id,p:pp};}});
   });
   hist.forEach(function(c){
@@ -799,6 +836,8 @@ function refreshCard(){
     }).join(', ');
     rows+='<div style="display:flex;gap:6px;font-size:12px;margin-top:3px;"><span style="flex-shrink:0;">'+s.ic+'</span><span style="color:var(--tx);min-width:0;">'+names+'</span></div>';
   });
+  // Die Kochbuch-Kachel zeigt die heute geplanten Rezepte mit — sie haengt am Plan.
+  if(window.NTBook)NTBook.renderCard();
   var applied=S.planApplied&&S.planApplied[ds];
   body.innerHTML=rows
     +'<button type="button" class="seb" style="margin-top:8px;margin-bottom:0;" onclick="NTPlan.toDiary(\''+ds+'\')">'
@@ -809,8 +848,8 @@ function refreshCard(){
 // REZEPTE ANLEGEN — drei Wege
 // ══════════════════════════════════════════════════════════════════════════
 // Alle Overlays teilen sich z-index 300 — was spaeter im DOM steht, liegt oben.
-// Die Bibliothek steht NACH den Rezept-Overlays und wuerde sie sonst verdecken.
-// Sie wird deshalb geschlossen und nach dem Anlegen wieder geoeffnet.
+// Die Rezept-Overlays (recNewOv, recPhotoOv, recEditOv) stehen seit v0.317
+// NACH Kochbuch und Wochenplan; beide bleiben beim Anlegen darunter offen.
 var _from=null;
 // Wer aus ＋ eines Slots heraus „Neues Rezept“ antippt, will es dort haben.
 // Der Slot wird deshalb ueber das Anlegen hinweg gemerkt und danach befuellt.
@@ -819,7 +858,6 @@ function newRecipe(){
   _from=isOpen('libraryOv')?'library':(isOpen('planOv')?'plan':null);
   _pendingSlot=(_from==='plan'&&_target&&_target.date)?{date:_target.date,slot:_target.slot}:null;
   _target=null;_replaceIdx=null;
-  if(_from==='library')closeOv('libraryOv');
   openOv('recNewOv');
 }
 
@@ -841,59 +879,34 @@ function noteRecipeCreated(r){
     saveS();Sync.schedule();
     showToast((r.emoji||'📋')+' '+r.name+' gespeichert und eingeplant ✓');
   } else {
-    showToast((r.emoji||'📋')+' '+r.name+' in der Bibliothek gespeichert ✓');
+    showToast((r.emoji||'📋')+' '+r.name+' im Kochbuch gespeichert ✓');
   }
   render();refreshCard();
-  if(typeof renderLibrary==='function')renderLibrary();
+  if(window.NTBook)NTBook.render();
 }
-function closeNew(){closeOv('recNewOv');backToOrigin();}
-function closePhoto(){closeOv('recPhotoOv');backToOrigin();}
+// Editor ohne Speichern geschlossen (NTBook.editClosed): kein Slot zu fuellen.
+function cancelNew(){_pendingSlot=null;}
+// Abgebrochen: Der Slot, aus dem heraus angelegt werden sollte, ist erledigt —
+// sonst landete ein spaeter anderswo angelegtes Rezept noch darin.
+function closeNew(){_pendingSlot=null;closeOv('recNewOv');backToOrigin();}
+function closePhoto(){_pendingSlot=null;closeOv('recPhotoOv');backToOrigin();}
 function isOpen(id){var e=document.getElementById(id);return !!(e&&e.classList.contains('open'));}
 // Zurueck dorthin, wo „＋ Neues Rezept" angetippt wurde — ein Rezept anzulegen
 // ist ein Zwischenschritt, kein Ortswechsel.
 function backToOrigin(){
   var f=_from;_from=null;
-  if(f==='library'&&typeof openLibrary==='function')setTimeout(function(){openLibrary();},200);
-  else if(f==='plan')setTimeout(function(){render();openOv('planOv');},200);
+  if(f==='library'&&window.NTBook)NTBook.render();
+  else if(f==='plan')render();
 }
 
-// (1) Selbst anlegen: leeres Rezept + vorhandener Editor.
-// Der Editor arbeitet auf einem VORHANDENEN Rezept — es muss also vorher
-// angelegt werden. Wer den Editor gleich wieder schliesst, soll aber keine
-// Karteileiche „Neues Rezept" in der Bibliothek zurueckbehalten: Die ID wird
-// als Entwurf gemerkt und beim Schliessen verworfen, solange keine einzige
-// Zutat drinsteht. Sobald etwas drinsteht, ist es ein echtes Rezept.
-var _draftId=null;
+// (1) Selbst anlegen: leerer Entwurf im Kochbuch-Editor. Angelegt wird erst
+// beim Speichern — wer den Editor gleich wieder schliesst, hinterlaesst nichts.
+// Die Dublettenpruefung und das Befuellen des Slots (noteRecipeCreated) ruft
+// der Editor selbst.
 function newBlank(){
-  var r={id:Date.now().toString(),name:'Neues Rezept',emoji:'📋',ingredients:[],instructions:''};
-  recipes.unshift(r);saveX();
-  _draftId=r.id;_from=null;
+  var f=_from;_from=null;
   closeOv('recNewOv');
-  setTimeout(function(){
-    if(typeof openRecipeEditor==='function')openRecipeEditor(r.id);
-    // openRecipeEditor setzt die Herkunft selbst auf 'settings' und wuerde
-    // danach die Bibliothek aufschlagen. Aus dem Wochenplan heraus gehoert der
-    // Rueckweg in den Plan — deshalb erst oeffnen, dann ueberschreiben.
-    if(_pendingSlot)window.recEditOpenedFrom='plan';
-  },200);
-}
-// Der Editor speichert selbst; hier wird nur noch aufgeraeumt bzw. — wenn
-// wirklich etwas entstanden ist — der Slot befuellt, aus dem heraus angelegt
-// wurde. Die Dublettenpruefung sitzt im Editor (saveRecipe), weil erst dort
-// Name und Zutaten feststehen.
-function discardEmptyDraft(){
-  if(!_draftId)return;
-  var id=_draftId;_draftId=null;
-  var r=rec(id);
-  if(r&&(r.ingredients||[]).length){noteRecipeCreated(r);return;}
-  _pendingSlot=null;
-  if(r){
-    recipes=recipes.filter(function(x){return x.id!==id;});
-    // `recipes` ist eine globale Variable aus index.html — die Neuzuweisung
-    // oben trifft die globale Bindung, weil hier kein eigenes `var` steht.
-    saveX();
-    if(typeof renderLibrary==='function')renderLibrary();
-  }
+  if(window.NTBook)NTBook.editDraft({name:'',emoji:'📋',ingredients:[],baseServings:1},{from:_pendingSlot?'plan':f});
 }
 
 // (3) Aus dem Internet: der vorhandene Link-Tab des Pickers kann das schon —
@@ -922,13 +935,9 @@ function resetPhoto(){
   _photoB64=null;_photoIngs=[];_photoMeta=null;
   var w=document.getElementById('recPhotoPrevWrap');if(w)w.classList.add('hidden');
   var a=document.getElementById('recPhotoPickArea');if(a)a.style.display='flex';
-  var res=document.getElementById('recPhotoResult');if(res)res.classList.add('hidden');
   var btn=document.getElementById('recPhotoBtn');if(btn){btn.disabled=true;btn.textContent='🤖 Rezept auslesen';}
   setStatus('',false);
   ['recPhotoCam','recPhotoGal'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
-  var nm=document.getElementById('recPhotoName');if(nm)nm.value='';
-  var po=document.getElementById('recPhotoPortions');if(po)po.value=1;
-  var ins=document.getElementById('recPhotoIns');if(ins)ins.value='';
 }
 function setStatus(msg,isErr){
   var el=document.getElementById('recPhotoStatus');if(!el)return;
@@ -974,7 +983,7 @@ function handlePhoto(ev){
 var PHOTO_PROMPT=
 'Auf dem Bild steht ein Rezept — Kochbuchseite, Zeitschrift, Rezeptkarte oder Handschrift.\n'+
 'Lies es und gib AUSSCHLIESSLICH dieses JSON zurück, ohne Fließtext und ohne Markdown-Block:\n'+
-'{"titel":"...","portionen":4,"zutaten":[{"name":"Mehl","g":500}],"anleitung":"1. ...\\n2. ..."}\n'+
+'{"titel":"...","portionen":4,"minuten":45,"zutaten":[{"name":"Mehl","g":500}],"anleitung":"1. ...\\n2. ..."}\n'+
 'Regeln:\n'+
 '- "portionen" = die im Rezept angegebene Personen-/Portionszahl. Fehlt sie: 4.\n'+
 '- "g" = Menge in GRAMM für genau diese Portionszahl, als Zahl ohne Einheit.\n'+
@@ -984,9 +993,10 @@ var PHOTO_PROMPT=
 '- Menge unklar oder "nach Geschmack": "g": null.\n'+
 '- "name": einfacher deutscher Grundname ohne Zusätze wie "frisch gehackt",\n'+
 '  "Bio" oder "zimmerwarm". Also "Petersilie", nicht "frisch gehackte Petersilie".\n'+
-'- "anleitung": die Zubereitungsschritte als Text mit Zeilenumbrüchen. Steht auf\n'+
+'- "minuten": Gesamtzeit laut Rezept als Zahl, fehlt sie: 0.\n'+
+'- "anleitung": die Zubereitungsschritte als Text, ein Schritt pro Zeile. Steht auf\n'+
 '  dem Bild keine Zubereitung: "".\n'+
-'- Ist auf dem Bild gar kein Rezept zu erkennen: {"titel":"","portionen":0,"zutaten":[],"anleitung":""}';
+'- Ist auf dem Bild gar kein Rezept zu erkennen: {"titel":"","portionen":0,"minuten":0,"zutaten":[],"anleitung":""}';
 
 function analyze(){
   if(!_photoB64)return;
@@ -1005,14 +1015,15 @@ function analyze(){
         setStatus(text&&text.length?('Kein Rezept erkannt. KI: '+String(text).slice(0,140)):'Kein Rezept erkannt.',true);
         return;
       }
-      _photoMeta={titel:String(d.titel||'').trim(),portionen:Math.max(1,parseFloat(d.portionen)||4),anleitung:String(d.anleitung||'').trim()};
+      _photoMeta={titel:String(d.titel||'').trim(),portionen:Math.max(1,Math.round(parseFloat(d.portionen)||4)),
+        minuten:Math.max(0,Math.round(parseFloat(d.minuten)||0)),anleitung:String(d.anleitung||'').trim()};
       setStatus('Nährwerte werden nachgeschlagen …',false);
       lookupNutrients(d.zutaten.map(function(z){
         return {name:String(z.name||'').trim(),g:(z.g===null||z.g===undefined||z.g==='')?null:parseFloat(z.g)};
       }).filter(function(z){return !!z.name;}),function(resolved){
         _photoIngs=resolved;
-        showResult();
         setStatus('',false);
+        toEditor();
       });
     },
     function(err){
@@ -1031,61 +1042,17 @@ function parseJson(text){
   try{return JSON.parse(s.slice(a,b+1));}catch(e){return null;}
 }
 
-function showResult(){
-  var nm=document.getElementById('recPhotoName');
-  if(nm&&!nm.value.trim())nm.value=(_photoMeta&&_photoMeta.titel)||'';
-  var po=document.getElementById('recPhotoPortions');
-  if(po)po.value=(_photoMeta&&_photoMeta.portionen)||4;
-  var ins=document.getElementById('recPhotoIns');
-  if(ins&&!ins.value.trim())ins.value=(_photoMeta&&_photoMeta.anleitung)||'';
-  if(window.NTPicker){
-    NTPicker.pickerRenderIngList('recPhotoIngList',_photoIngs,
-      function(i,v){_photoIngs[i].amount=parseFloat(v)||0;_photoIngs[i].missingGrams=false;updateTotal();},
-      function(i){_photoIngs.splice(i,1);showResult();}
-    );
-  }
-  updateTotal();
-  var res=document.getElementById('recPhotoResult');if(res)res.classList.remove('hidden');
-}
-function updateTotal(){
-  var el=document.getElementById('recPhotoTotal');if(!el)return;
-  var p=Math.max(1,parseFloat((document.getElementById('recPhotoPortions')||{}).value)||1);
-  var t=ingTotal(_photoIngs);
-  el.textContent='Ganzes Rezept: '+totalStr(t)+'  ·  1 Portion: '+totalStr(scaleNutrients(t,1/p));
-}
-
-// Rezepte werden in NutriTrack JE PORTION gespeichert (ingTotal(rec.ingredients)
-// ist eine Portion, der Eintrag multipliziert mit `portions`). Ein Kochbuch gibt
-// die Mengen fuer N Portionen an — sie werden deshalb hier geteilt. `baseServings`
-// merkt die urspruengliche Zahl, damit die Einkaufsliste sie vorschlagen kann.
-function guessEmoji(name){
-  var e=(typeof emo==='function')?emo(name):'';
-  return (e&&e!=='🍽')?e:'📋';
-}
-function savePhotoRecipe(){
-  if(!_photoIngs.length){showToast('Keine Zutaten');return;}
-  var name=((document.getElementById('recPhotoName')||{}).value||'').trim();
-  if(!name){showToast('Bitte einen Namen eintragen');return;}
-  var p=Math.max(1,parseFloat((document.getElementById('recPhotoPortions')||{}).value)||1);
-  var missing=_photoIngs.filter(function(g){return !g.amount;}).length;
-  if(missing&&!confirm(missing+' Zutat'+(missing===1?' hat':'en haben')+' keine Menge und zählen mit 0 g. Trotzdem speichern?'))return;
-  if(!confirmNotDuplicate(name,_photoIngs))return;
-  var r={
-    id:Date.now().toString(),
-    name:name,
-    // emo() liefert '\ud83c\udf7d' (Teller), wenn es nichts erkennt — fuer ein Rezept
-    // ist '\ud83d\udccb' die eingefuehrte Vorgabe, also wird nur ein echter Treffer genommen.
-    emoji:guessEmoji(name),
-    baseServings:p,
-    ingredients:_photoIngs.map(function(g){
-      return {name:g.name,emoji:g.emoji||'🍽',amount:Math.round(((g.amount||0)/p)*10)/10,per100:g.per100};
-    }),
-    instructions:((document.getElementById('recPhotoIns')||{}).value||'').trim()
-  };
-  recipes.unshift(r);saveX();
+// Ergebnis pruefen und speichern im Kochbuch-Editor: Mengen fuer das ganze
+// Rezept, Portionenzahl der Seite — gespeichert wird je Portion (NTBook).
+function toEditor(){
+  var m=_photoMeta||{titel:'',portionen:4,minuten:0,anleitung:''};
+  var f=_from;_from=null;
   closeOv('recPhotoOv');
-  backToOrigin();
-  noteRecipeCreated(r);
+  if(!window.NTBook)return;
+  NTBook.editDraft({name:m.titel,baseServings:m.portionen,time:m.minuten,instructions:m.anleitung,
+    ingredients:_photoIngs.map(function(g){return {name:g.name,emoji:g.emoji||'🍽',amount:g.amount||0,per100:g.per100,missingGrams:!g.amount};})},
+    {from:_pendingSlot?'plan':f,hint:'Von der KI gelesen — Mengen und Portionen bitte prüfen.'});
+  resetPhoto();
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -1216,13 +1183,12 @@ window.NTPlan={
   pick:pick,renderPick:renderPick,addToSlot:addToSlot,addSnapshot:addSnapshot,
   addNote:addNote,saveNote:saveNote,noteToRecipe:noteToRecipe,
   similarRecipe:similarRecipe,confirmNotDuplicate:confirmNotDuplicate,
-  noteRecipeCreated:noteRecipeCreated,
+  noteRecipeCreated:noteRecipeCreated,cancelNew:cancelNew,planRecipe:planRecipe,dayRecipes:dayRecipes,itemToBook:itemToBook,
   openItem:openItem,saveItem:saveItem,deleteItem:deleteItem,removeItem:removeItem,
   itemToShop:itemToShop,planItemTotal:planItemTotal,
   openSync:openSync,renderSyncUI:renderSyncUI,openLinks:openLinks,syncNow:syncNow,Sync:Sync,
   newRecipe:newRecipe,newBlank:newBlank,newFromLink:newFromLink,newFromPhoto:newFromPhoto,
-  discardEmptyDraft:discardEmptyDraft,backToOrigin:backToOrigin,closeNew:closeNew,closePhoto:closePhoto,
-  handlePhoto:handlePhoto,analyze:analyze,resetPhoto:resetPhoto,
-  savePhotoRecipe:savePhotoRecipe,updateTotal:updateTotal
+  backToOrigin:backToOrigin,closeNew:closeNew,closePhoto:closePhoto,
+  handlePhoto:handlePhoto,analyze:analyze,resetPhoto:resetPhoto
 };
 })();

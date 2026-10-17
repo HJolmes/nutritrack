@@ -2,6 +2,12 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.317',items:[
+    {icon:'📖',text:'<b>Kochbuch</b>: Aus der Rezeptbibliothek wird ein richtiges Kochbuch – mit eigener Kachel auf „Heute“, Suche über Name, Zutat und Kategorie, ⭐ Favoriten, Kategorien und Sortierung. Ein Rezept antippen zeigt Zutaten (auf beliebig viele Portionen umrechenbar), Zubereitung in Schritten, Nährwerte, Notizen und Quelle – und von dort geht es direkt in den Wochenplan, auf den Einkaufszettel oder ins Tagebuch.',where:'Kachel 📖 Kochbuch · Mehr → 📖 Kochbuch'},
+    {icon:'👨‍🍳',text:'<b>Kochmodus</b>: Schritt für Schritt in großer Schrift, der Bildschirm bleibt an. Zeitangaben im Schritt („10 Minuten köcheln“) lassen sich als Timer starten – mit Ton und Vibration. „Fertig gekocht“ zählt mit; 🎲 Füllen im Wochenplan schlägt kürzlich Gekochtes seltener vor.',where:'Rezept → 👨‍🍳 Kochen'},
+    {icon:'🔗',text:'<b>Import ins Kochbuch</b>: Rezepte von Chefkoch, Lecker &amp; Co. kommen mit Portionen, Zeit, Zubereitung, Quelle und den Mengen der Seite („2 EL Olivenöl“) – zur Prüfung im Editor. Auch Fotos von Kochbuchseiten landen dort.',where:'＋ Neues Rezept · ＋ → 🔗 Link → 📖 Ins Kochbuch'},
+    {icon:'🔒',text:'<b>Rezepte bleiben, wie sie sind</b>: Ein Rezept ändert sich nur, wenn du es bearbeitest und speicherst. Vorher wirkte eine geänderte Menge im Editor sofort – auch ohne Speichern.',where:'Rezept → ✏️ Bearbeiten'},
+  ]},
   {v:'0.316',items:[
     {icon:'🤖',text:'<b>Neuere KI-Modelle</b>: Die eingebaute KI (auch als Rückfall für eigene Anbieter) nutzt jetzt Claude Haiku 5.5 und Claude Sonnet 5.5.',where:'KI'},
   ]},

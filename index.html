@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.316"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.317"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.316"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.317"></script>
 <script>
   // @ts-check
   (function(){
@@ -684,6 +684,70 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 .rec-way .ic{font-size:26px;flex-shrink:0;}
 .rec-way .nm{font-weight:700;font-size:14px;color:var(--tx);}
 .rec-way .sb{font-size:11px;color:var(--mu);margin-top:2px;line-height:1.4;}
+/* KOCHBUCH (v0.317, js/cookbook.js) */
+.bk-mu{font-size:12px;color:var(--mu);line-height:1.45;}
+.bk-empty{text-align:center;padding:24px 12px;}
+.bk-chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0 8px;}
+.bk-chip{flex-shrink:0;background:var(--card);border:1.5px solid var(--br);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:700;color:var(--mu);cursor:pointer;white-space:nowrap;}
+.bk-chip.on{background:var(--g2);border-color:var(--g2);color:#fff;}
+.bk-tools{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.bk-tools select{flex:1;min-width:0;border:1.5px solid var(--br);border-radius:12px;padding:7px 10px;font-size:13px;background:var(--card);color:var(--tx);outline:none;}
+.bk-row .lr-name{white-space:normal;line-height:1.2;}
+.bk-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
+.bk-tag{background:var(--gl);border-radius:999px;padding:1px 8px;font-size:10.5px;font-weight:700;color:var(--g1);}
+.bk-acts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px;}
+.bk-act{background:var(--gl);border:1.5px solid var(--br);border-radius:14px;padding:8px 2px 6px;font-size:18px;cursor:pointer;color:var(--tx);display:flex;flex-direction:column;align-items:center;gap:2px;}
+.bk-act span{font-size:10.5px;font-weight:700;color:var(--mu);}
+.bk-act.on{border-color:var(--g2);background:var(--card);}
+.bk-panel{background:var(--gl);border:1.5px solid var(--g3);border-radius:14px;padding:10px 12px;margin-bottom:10px;}
+.bk-pt{font-weight:800;font-size:13px;margin-bottom:8px;}
+.bk-prow{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+.bk-prow .sinp{flex:1;min-width:0;padding:8px 10px;font-size:14px;}
+.bk-prow .bk-pn{flex:0 0 72px;text-align:center;}
+.bk-sec{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:14px 2px 6px;}
+.bk-sh{font-size:11px;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;}
+.bk-scale{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mu);}
+.bk-scale button{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--g3);background:var(--card);color:var(--g1);font-size:16px;font-weight:800;cursor:pointer;line-height:1;}
+.bk-scale b{font-size:15px;color:var(--tx);min-width:18px;text-align:center;}
+.bk-ings{background:var(--card);border:1.5px solid var(--br);border-radius:14px;padding:4px 12px;}
+.bk-ing{display:flex;align-items:baseline;gap:10px;padding:7px 0;border-bottom:1px solid var(--br);font-size:14px;}
+.bk-ing:last-child{border-bottom:none;}
+.bk-iq{flex:0 0 74px;font-weight:800;color:var(--g1);text-align:right;}
+.bk-in{flex:1;min-width:0;}
+.bk-ig{font-size:11px;color:var(--mu);flex-shrink:0;}
+.bk-steps{margin:0;padding:0 0 0 22px;font-size:14px;line-height:1.55;}
+.bk-steps li{margin-bottom:8px;padding-left:2px;}
+.bk-note{background:var(--card);border:1.5px dashed var(--br);border-radius:14px;padding:10px 12px;font-size:13px;white-space:pre-wrap;}
+.bk-foot{display:flex;flex-direction:column;gap:4px;margin-top:12px;}
+.bk-src{font-size:13px;font-weight:700;color:var(--g1);text-decoration:none;}
+.bk-res{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1.5px solid var(--br);border-radius:12px;cursor:pointer;margin-bottom:4px;background:var(--card);}
+.bk-ch{font-size:11px;font-weight:700;color:var(--mu);margin-bottom:4px;}
+.bk-crow{display:flex;align-items:center;gap:8px;margin-top:4px;}
+.bk-cic{flex-shrink:0;width:20px;text-align:center;}
+.bk-clink{flex:1;min-width:0;text-align:left;background:none;border:none;padding:4px 0;font-size:13px;font-weight:600;color:var(--tx);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bk-cook{flex-shrink:0;background:var(--gl);border:1.5px solid var(--g3);border-radius:999px;padding:3px 10px;font-size:15px;cursor:pointer;}
+.bk-cchips{display:flex;flex-wrap:wrap;gap:5px;}
+.ing-src{font-size:11px;font-weight:500;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#cookOv .mod{height:100vh;height:100dvh;max-height:100dvh;border-radius:0;}
+.ck-prog{height:6px;background:var(--gl);border-radius:999px;overflow:hidden;margin:2px 0 10px;}
+.ck-prog div{height:100%;background:var(--g2);border-radius:999px;}
+.ck-ingbtn{width:100%;background:var(--gl);border:1.5px solid var(--br);border-radius:12px;padding:9px 12px;font-size:13px;font-weight:700;color:var(--tx);text-align:left;cursor:pointer;margin-bottom:8px;}
+.ck-step{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1.5px solid var(--br);border-radius:20px;padding:18px 16px;margin:6px 0 12px;box-shadow:var(--sh);}
+.ck-no{flex-shrink:0;width:34px;height:34px;border-radius:50%;background:var(--g2);color:#fff;font-weight:800;font-size:16px;display:flex;align-items:center;justify-content:center;}
+.ck-tx{font-family:var(--fs-display);font-size:21px;line-height:1.45;letter-spacing:-0.01em;}
+.ck-tstart{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+.ck-tstart button{background:var(--card);border:1.5px solid var(--g2);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:700;color:var(--g1);cursor:pointer;}
+.ck-timer{display:flex;align-items:center;gap:8px;background:var(--gl);border:1.5px solid var(--g3);border-radius:14px;padding:8px 10px;margin-bottom:6px;}
+.ck-timer.done{background:var(--g2);border-color:var(--g2);color:#fff;animation:ckPulse 1s ease-in-out infinite;}
+.ck-tc{font-weight:800;font-size:17px;font-variant-numeric:tabular-nums;flex-shrink:0;}
+.ck-tl{flex:1;min-width:0;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ck-timer button{background:none;border:none;font-size:15px;cursor:pointer;color:inherit;padding:2px 4px;}
+.ck-nav{display:grid;grid-template-columns:1fr 1.4fr;gap:8px;position:sticky;bottom:0;background:var(--card);padding:10px 0 calc(10px + env(safe-area-inset-bottom,0px));}
+.ck-nav [disabled]{opacity:.35;}
+.ck-done{text-align:center;padding:18px 0 12px;}
+.ck-dt{font-family:var(--fs-display);font-size:24px;margin:6px 0 2px;}
+@keyframes ckPulse{50%{opacity:.75;}}
+@media (prefers-reduced-motion:reduce){.ck-timer.done{animation:none;}}
 /* EIGENE EINKAUFS-KATEGORIEN (v0.245) */
 .shopcat-row{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
 .shopcat-ic{width:48px;flex-shrink:0;text-align:center;border:1.5px solid var(--br);border-radius:10px;padding:8px 2px;font-size:17px;outline:none;background:#fff;}
@@ -952,6 +1016,13 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
       </div>
       <div id="planCardBody" style="margin-top:6px;"></div>
     </div>
+    <div class="wc" id="bookCard">
+      <div class="wh">
+        <div class="wt">📖 Kochbuch</div>
+        <button type="button" data-act="openLibrary" style="background:var(--g2);border:none;border-radius:20px;color:white;font-size:13px;font-weight:700;padding:4px 12px;cursor:pointer;"><span id="bookCardVal">Öffnen</span> →</button>
+      </div>
+      <div id="bookCardBody" style="margin-top:6px;"></div>
+    </div>
     <div class="wc" id="exerciseCard">
       <div class="wh">
         <div class="wt">🏃 Sport & Aktivität</div>
@@ -1192,8 +1263,8 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div style="font-size:11px;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin:14px 4px 6px;">Meine Inhalte</div>
     <div class="list-row" data-act="openLibrary">
-      <div class="lr-ic">📚</div>
-      <div class="lr-body"><div class="lr-name">Rezeptbibliothek</div><div class="lr-sub">Rezepte &amp; eigene Lebensmittel</div></div>
+      <div class="lr-ic">📖</div>
+      <div class="lr-body"><div class="lr-name">Kochbuch</div><div class="lr-sub">Rezepte, Kochmodus &amp; eigene Lebensmittel</div></div>
       <div class="lr-val">›</div>
     </div>
     <div class="list-row" data-act="NTPlan.open">
@@ -1219,7 +1290,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.316</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.317</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1404,14 +1475,14 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
           </div>
           <div style="font-size:11px;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;margin:12px 2px 6px;">Wohin damit?</div>
           <div style="display:flex;gap:8px;">
-            <button type="button" class="cb2" id="pickerLinkAddBtn" style="margin-top:0;" data-act="NTPicker.pickerLinkAdd" data-args='[false]'>✓ Eintragen</button>
-            <button type="button" class="cb2" id="pickerLinkRecBtn" style="margin-top:0;background:linear-gradient(135deg,#2d5f8a,#3d8bc4);" data-act="NTPicker.pickerLinkAdd" data-args='[true]'>📋 Als Rezept</button>
+            <button type="button" class="cb2" id="pickerLinkAddBtn" style="margin-top:0;" data-act="NTPicker.pickerLinkAdd">✓ Eintragen</button>
+            <button type="button" class="cb2" id="pickerLinkRecBtn" style="margin-top:0;background:linear-gradient(135deg,#2d5f8a,#3d8bc4);" data-act="NTPicker.pickerLinkToBook">📖 Ins Kochbuch</button>
           </div>
           <button type="button" class="cb2" id="pickerLinkShopBtn" style="width:100%;margin-top:8px;background:linear-gradient(135deg,#2e7d52,#4caf7d);" data-act="NTPicker.pickerLinkToShop">🛒 Auf den Einkaufszettel</button>
           <div id="pickerLinkShopOpen" class="hidden">
             <button type="button" class="seb" data-act="NTPicker.pickerLinkOpenShop">🛒 Einkaufszettel öffnen</button>
           </div>
-          <div style="font-size:11px;color:var(--mu);margin:8px 2px 0;line-height:1.4;">Der Einkaufszettel kann zusätzlich zum Eintragen befüllt werden. Artikel, die schon auf dem Zettel stehen, werden nicht doppelt angelegt — sie bekommen nur den Rezeptnamen dazu.</div>
+          <div style="font-size:11px;color:var(--mu);margin:8px 2px 0;line-height:1.4;">„📖 Ins Kochbuch“ legt das Rezept mit Portionen, Zubereitung und Quelle an — du prüfst es vorher. Der Einkaufszettel kann zusätzlich zum Eintragen befüllt werden. Artikel, die schon auf dem Zettel stehen, werden nicht doppelt angelegt — sie bekommen nur den Rezeptnamen dazu.</div>
         </div>
       </div>
 
@@ -1429,36 +1500,6 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 </div>
 
 <!-- ══ REZEPT BEARBEITEN (Einstellungen) ══ -->
-<div class="ov" id="recEditOv" data-bg-close="recEditOv">
-  <div class="mod">
-    <div class="mhan"></div>
-    <div class="mhd"><button type="button" class="mcl" data-act="closeOv" data-args='["recEditOv"]'>✕</button><div class="mti" id="recEditTitle">Rezept bearbeiten</div></div>
-    <div class="mbd">
-      <label class="lbl">Rezeptname</label>
-      <input type="text" class="finp" id="recEditName" placeholder="Rezeptname" style="margin-bottom:8px;">
-      <label class="lbl">Emoji</label>
-      <input type="text" class="finp" id="recEditEmoji" placeholder="z.B. 🍝" style="margin-bottom:12px;">
-      <label class="lbl">Zutaten</label>
-      <div id="recEditIngList" class="ing-list" style="margin-bottom:8px;"></div>
-      <div id="recEditTotal" class="rec-total" style="margin-bottom:10px;"></div>
-      <div style="font-size:12px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:8px;">Zutat hinzufügen</div>
-      <div class="rec-search-row">
-        <input type="text" class="rec-search-inp" id="recEditSearchQ" placeholder="Zutat suchen..." onkeydown="if(event.key==='Enter')recEditSearch()">
-        <button type="button" class="rec-search-btn" data-act="recEditSearch">Suchen</button>
-      </div>
-      <div class="rec-results" id="recEditResults"></div>
-      <div id="recEditInstructionsWrap" style="margin-top:8px;">
-        <label class="lbl">📝 Kochanleitung (optional)</label>
-        <textarea id="recEditInstructions" rows="4" placeholder="Zubereitungsschritte hier eingeben..."
-          style="width:100%;border:1.5px solid var(--br);border-radius:12px;padding:10px;font-size:13px;font-family:inherit;resize:vertical;outline:none;margin-bottom:8px;min-height:80px;"></textarea>
-      </div>
-      <button type="button" class="cb2" data-act="recEditSave">💾 Rezept speichern</button>
-      <button type="button" class="seb" style="margin-bottom:8px;" onclick="shareRecipe(recEditId)">📤 Rezept teilen</button>
-      <button type="button" class="del-btn" data-act="recEditDelete">🗑️ Rezept löschen</button>
-    </div>
-  </div>
-</div>
-
 <!-- ══ EIGENES LEBENSMITTEL BEARBEITEN ══ -->
 <div class="ov" id="ownFoodEditOv" data-bg-close="ownFoodEditOv">
   <div class="mod">
@@ -1518,10 +1559,10 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 </style>
       <details open><summary>🏠 Heute-Tab</summary><div class="hb">Der Startbildschirm zeigt dein Tagesziel, die verbleibenden Kalorien und die drei Makro-Karten (Protein, Kohlenhydrate, Fett). Darunter liegen die vier Mahlzeiten-Karten — antippen öffnet die Detail-Ansicht. Mit den Pfeilen <strong>‹ ›</strong> blätterst du zwischen Tagen. Oben rechts liegen <strong>?</strong> (Hilfe), <strong>📬</strong> (Partner-Postfach, sobald ihr gekoppelt seid — mit Flagge für ungelesene Sendungen) und <strong>📤</strong> (den angezeigten Tag teilen). „▶ Nährwert-Details" klappt die Ampel-Kacheln (Zucker, Ballaststoffe, Salz …) auf. Wasser trackst du über die Gläser-Reihe, Sport über „+ Aktivität" — verbrannte Kalorien werden vom Ziel abgezogen.</div></details>
       <details><summary>➕ Mahlzeit erfassen</summary><div class="hb">Der <strong>＋</strong>-Knopf in der Mitte der unteren Leiste öffnet den Picker, standardmäßig im <strong>Chat</strong>: Einfach tippen oder per 🎙️ diktieren, was du gegessen hast („Brot mit Käse und Schinken") — die App zerlegt es in Zutaten und schätzt Nährwerte. Weitere Wege:<ul><li><strong>Suche</strong> — lokale Treffer sofort beim Tippen, Enter lädt Online-Ergebnisse</li><li><strong>Zuletzt</strong> — kürzlich verwendete Einträge</li><li><strong>Foto</strong> — Teller fotografieren, KI erkennt die Komponenten</li><li><strong>Barcode</strong> — Verpackung scannen</li><li><strong>Eigenes</strong> — Nährwerte selbst eintragen; mit Häkchen „Nur einmal eintragen" wird nichts dauerhaft gespeichert</li><li><strong>Link</strong> — ein Feld für beides: Rezept-Link von nahezu jeder Rezept-Seite oder jedem Food-Blog (Chefkoch, Lecker, Kochbar, Essen &amp; Trinken, AllRecipes …) <em>oder</em> eine geteilte NutriTrack-Sendung (Mahlzeit, Rezept, ganzer Tag, Zeitraum) als Link oder Code. Die App erkennt selbst, was du eingefügt hast; ein passender Inhalt aus der Zwischenablage wird beim Öffnen gleich angeboten. Die App liest zuerst die Rezeptdaten der Seite selbst und fragt die KI nur, wenn die Seite keine hat. Danach wählst du unter „Wohin damit?", ob das Rezept eingetragen, als Rezept gespeichert und/oder auf den Einkaufszettel gelegt wird</li></ul></div></details>
-      <details><summary>🍽 Mahlzeit-Detail</summary><div class="hb">Die Karte einer Mahlzeit öffnet die Detail-Ansicht mit allen Posten. Unten findest du: <strong>📋 Vorlage</strong> (Mahlzeit als Vorlage laden/speichern), <strong>🔁 Wiederholen</strong> (an festen Wochentagen automatisch eintragen) und <strong>💾 Als Rezept</strong> (alle Einträge als Rezept in die Bibliothek übernehmen). Einzelne Einträge antippen zum Bearbeiten, Verschieben oder Löschen.</div></details>
-      <details><summary>🛒 Einkaufszettel</summary><div class="hb">Über die Kachel <strong>🛒 Einkaufszettel</strong> auf „Heute" (oder Mehr → Funktionen, wenn der Zettel leer ist) führst du eine Einkaufsliste: oben eintippen („2 Liter Milch" erkennt Menge und Kategorie von selbst) oder über „🧺 Artikel wählen" aus den Kacheln antippen. Ein Tipp auf einen Artikel hakt ihn ab, ✏️ ändert Name, Menge, Symbol und Kategorie. Über „🔄 Teilen" koppelst du ein zweites Gerät mit einem Code — beide Geräte sehen denselben Zettel in Echtzeit, verschlüsselt und getrennt vom Baby-Tagebuch. Per Alexa Angesagtes erreicht ebenfalls beide, sofern beide Handys dasselbe Familien-Token tragen (Mehr → 🔗 Verbindungen → 🗣️ Alexa). Rezepte übernimmst du in der Bibliothek über 🛒 → „Auf den Einkaufszettel".</div></details>
-      <details><summary>📚 Rezeptbibliothek</summary><div class="hb">Unter <strong>Mehr → 📚 Rezeptbibliothek</strong> liegen deine Rezepte und eigenen Lebensmittel. Rezepte kannst du bearbeiten, duplizieren, teilen, als Einkaufsliste anzeigen und direkt in eine Mahlzeit übernehmen. Der 🔗-Knopf öffnet das Link-Feld: Dort kannst du sowohl ein Rezept per URL importieren als auch einen geteilten NutriTrack-Code/Link einlösen — die App erkennt selbst, was es ist.<br><br>Beim Anlegen, Umbenennen und Importieren eines Rezepts prüft die App, ob schon etwas Ähnliches drinsteht — gleicher oder ähnlicher Name, oder fast dieselben Zutaten — und fragt nach, bevor ein zweites daraus wird.</div></details>
-      <details><summary>📅 Wochenplan</summary><div class="hb">Unter <strong>Mehr → 📅 Wochenplan</strong> (oder über die Kachel auf „Heute“) verteilst du Rezepte auf die Woche. Das ＋ an einer Mahlzeit öffnet die Auswahl: Tipp ein, was du suchst — du kannst einen <strong>Rezept-Treffer</strong> nehmen oder den Text direkt <strong>als Notiz</strong> einplanen („Pizza bestellen“, „Reste“, „bei Oma essen“). Eine Notiz zählt mit 0 kcal, steht nicht auf dem Einkaufszettel und wandert nicht ins Tagebuch; tipp sie an und wähle „📋 Rezept hinterlegen“, sobald du weißt, was es gibt. Oben sagt der Plan, wie viele Einträge noch offen sind.<br><br><strong>🎲 Füllen</strong> plant die leeren Mahlzeiten so, dass <strong>jeder Tag dein Kalorienziel trifft</strong>: Frühstück, Mittag, Abend und Snack teilen sich das Ziel, danach werden die Portionen nachgezogen. Jeder Tag zeigt seine Summe gegen das Ziel. Die Vorschläge kommen zuerst aus deinen Rezepten, dazu aus ganzen Mahlzeiten deines Tagebuchs („Burger mit Pommes“) — einzelne Lebensmittel bleiben draußen, und was du zum Frühstück gegessen hast, wird nicht als Abendessen vorgeschlagen. Von Hand Geplantes wird nie angefasst.<br><br><strong>＋ Neues Rezept</strong> legt das Rezept in der <strong>Bibliothek</strong> ab — nicht als Mahlzeit im Tagebuch. Wurde es aus dem ＋ eines Tages heraus angelegt, steht es danach gleich in diesem Slot.</div></details>
+      <details><summary>🍽 Mahlzeit-Detail</summary><div class="hb">Die Karte einer Mahlzeit öffnet die Detail-Ansicht mit allen Posten. Unten findest du: <strong>📋 Vorlage</strong> (Mahlzeit als Vorlage laden/speichern), <strong>🔁 Wiederholen</strong> (an festen Wochentagen automatisch eintragen) und <strong>💾 Als Rezept</strong> (alle Einträge als Rezept ins Kochbuch übernehmen — du prüfst es im Editor). Einzelne Einträge antippen zum Bearbeiten, Verschieben oder Löschen.</div></details>
+      <details><summary>🛒 Einkaufszettel</summary><div class="hb">Über die Kachel <strong>🛒 Einkaufszettel</strong> auf „Heute" (oder Mehr → Funktionen, wenn der Zettel leer ist) führst du eine Einkaufsliste: oben eintippen („2 Liter Milch" erkennt Menge und Kategorie von selbst) oder über „🧺 Artikel wählen" aus den Kacheln antippen. Ein Tipp auf einen Artikel hakt ihn ab, ✏️ ändert Name, Menge, Symbol und Kategorie. Über „🔄 Teilen" koppelst du ein zweites Gerät mit einem Code — beide Geräte sehen denselben Zettel in Echtzeit, verschlüsselt und getrennt vom Baby-Tagebuch. Per Alexa Angesagtes erreicht ebenfalls beide, sofern beide Handys dasselbe Familien-Token tragen (Mehr → 🔗 Verbindungen → 🗣️ Alexa). Rezepte übernimmst du im Kochbuch über das Rezept → 🛒 Einkaufen.</div></details>
+      <details><summary>📖 Kochbuch</summary><div class="hb">Das <strong>Kochbuch</strong> (Kachel auf „Heute" oder <strong>Mehr → 📖 Kochbuch</strong>) sammelt deine Rezepte und eigenen Lebensmittel. Oben suchst du nach Name, Zutat oder Kategorie, darunter filterst du nach ⭐ Favoriten und Kategorien und wählst die Sortierung (neu, A–Z, zuletzt oder oft gekocht, schnell, wenig kcal).<br><br><strong>Ein Rezept antippen</strong> zeigt Zutaten, Zubereitung und Nährwerte je Portion. Mit − / ＋ rechnest du die Zutaten auf mehr oder weniger Portionen um — das ändert nur die Anzeige. Von dort: <strong>📅 Einplanen</strong> (Tag und Mahlzeit im Wochenplan), <strong>🛒 Einkaufen</strong> (Zutaten in der angezeigten Portionenzahl auf den Zettel), <strong>🍽 Eintragen</strong> (ins Tagebuch), ⭐ Favorit, ✏️ Bearbeiten, ⎘ Kopieren und 📤 Teilen.<br><br><strong>👨‍🍳 Kochmodus:</strong> ein Schritt pro Bildschirm in großer Schrift, der Bildschirm bleibt an. Steht in einem Schritt eine Zeit („10 Minuten köcheln"), startest du per Tipp einen Timer; er läuft beim Blättern weiter und meldet sich mit Ton und Vibration. „✓ Fertig gekocht" zählt mit — der Wochenplan schlägt beim 🎲 Füllen Rezepte, die du in den letzten zwei Wochen gekocht hast, seltener vor.<br><br><strong>Neue Rezepte</strong> über „＋ Neues Rezept": selbst, per Foto einer Kochbuchseite oder per Link (Chefkoch, Lecker, Blogs). Beim Link übernimmt die App Portionen, Zeit, Zubereitung, Quelle und die Mengen der Seite („2 EL Olivenöl") — du prüfst alles im Editor, bevor es gespeichert wird. Auch im ＋ → 🔗 Link-Tab legt „📖 Ins Kochbuch" so an.<br><br><strong>Ein Rezept bleibt, wie es ist</strong>, bis du es selbst bearbeitest und 💾 speicherst. Schließt du den Editor ohne Speichern, bleibt alles beim Alten. Wochenplan, Tagebuch und Einkaufszettel arbeiten mit Kopien bzw. verweisen nur darauf; geplante Tage zeigen nach dem Bearbeiten den neuen Stand, das Tagebuch behält, was du gegessen hast.<br><br>Beim Anlegen und Umbenennen prüft die App, ob schon etwas Ähnliches drinsteht (gleiche Quelle, ähnlicher Name oder fast dieselben Zutaten), und fragt nach, bevor ein zweites daraus wird.</div></details>
+      <details><summary>📅 Wochenplan</summary><div class="hb">Unter <strong>Mehr → 📅 Wochenplan</strong> (oder über die Kachel auf „Heute“) verteilst du Rezepte auf die Woche. Das ＋ an einer Mahlzeit öffnet die Auswahl: Tipp ein, was du suchst — du kannst einen <strong>Rezept-Treffer</strong> nehmen oder den Text direkt <strong>als Notiz</strong> einplanen („Pizza bestellen“, „Reste“, „bei Oma essen“). Eine Notiz zählt mit 0 kcal, steht nicht auf dem Einkaufszettel und wandert nicht ins Tagebuch; tipp sie an und wähle „📋 Rezept hinterlegen“, sobald du weißt, was es gibt. Oben sagt der Plan, wie viele Einträge noch offen sind.<br><br><strong>🎲 Füllen</strong> plant die leeren Mahlzeiten so, dass <strong>jeder Tag dein Kalorienziel trifft</strong>: Frühstück, Mittag, Abend und Snack teilen sich das Ziel, danach werden die Portionen nachgezogen. Jeder Tag zeigt seine Summe gegen das Ziel. Die Vorschläge kommen zuerst aus deinen Rezepten, dazu aus ganzen Mahlzeiten deines Tagebuchs („Burger mit Pommes“) — einzelne Lebensmittel bleiben draußen, und was du zum Frühstück gegessen hast, wird nicht als Abendessen vorgeschlagen. Von Hand Geplantes wird nie angefasst.<br><br><strong>＋ Neues Rezept</strong> legt das Rezept im <strong>Kochbuch</strong> ab — nicht als Mahlzeit im Tagebuch. Wurde es aus dem ＋ eines Tages heraus angelegt, steht es danach gleich in diesem Slot.</div></details>
       <details><summary>📤 Teilen &amp; Import</summary><div class="hb">Rezepte, Lebensmittel, einzelne Mahlzeiten, <strong>ganze Tage</strong> und <strong>Zeiträume</strong> lassen sich teilen (📤-Symbole; der Tages-Knopf liegt auf „Heute" oben rechts in der Kopfzeile und im Verlauf bei jedem Tag, der Zeitraum hinter 🗓 im Verlauf).<ul><li><strong>Mit Partner-Kopplung (empfohlen):</strong> Einmalig unter <strong>Mehr → 🔗 Verbindungen → 📬 Partner-Postfach</strong> verbinden — danach steht im Teilen-Dialog oben „An … senden" und die Sendung landet direkt im Postfach des anderen. Kein Link, kein Messenger.</li><li><strong>Ohne Kopplung:</strong> weiterhin als Link. Der Empfänger öffnet ihn — auf dem iPhone ggf. in der installierten App über <strong>＋ → 🔗 Link</strong> einfügen (das Feld erkennt selbst, ob ein Rezept-Link oder eine NutriTrack-Sendung drinsteht, und bietet einen passenden Link aus der Zwischenablage gleich an). Für ganze Tage und Zeiträume braucht der Link-Weg eine Internetverbindung, weil die Daten sonst nicht in eine URL passen.</li></ul></div></details>
       <details><summary>👫 Partner</summary><div class="hb">Unter <strong>Mehr → 🔗 Verbindungen → 📬 Partner-Postfach</strong> verbindest du dein Gerät mit dem deines Partners: auf einem Gerät „Kopplung starten", den Code auf dem anderen einfügen. Trag dort auch deinen Namen ein — der steht beim Empfänger an jeder Sendung.<br><br><strong>Es wird nichts automatisch übertragen.</strong> Nur was du ausdrücklich sendest, geht raus und landet im <strong>Postfach</strong> des anderen. Das sitzt auf „Heute" oben rechts (📬) und trägt eine Flagge mit der Zahl der ungelesenen Sendungen; bei etwas Neuem erscheint zusätzlich eine Kachel im Tagesüberblick. Eine Sendung, die zu einer bestimmten Mahlzeit gehört, zeigt ihr 📬 außerdem <strong>an genau dieser Mahlzeit</strong> — an der Kachel auf „Heute" und in der geöffneten Mahlzeit. Ein Tipp darauf öffnet die Übernahme direkt, mit der richtigen Mahlzeit schon ausgewählt. Dort wird jede Sendung einzeln angesehen und übernommen — bei einem ganzen Tag wählst du, welche Mahlzeiten du willst, auf welchen Tag sie sollen und ob Vorhandenes ergänzt oder ersetzt wird; bei einem Zeitraum hakst du einzelne Tage ab. Eure Tagebücher bleiben also getrennt.<br><br>Die Sendungen werden auf dem Gerät verschlüsselt; der Schlüssel steckt nur im Kopplungs-Code und wird nie übertragen. Der Code gilt <strong>nur</strong> fürs Partner-Postfach — Einkaufszettel und Baby-Tagebuch haben eigene Codes und bleiben unberührt. Neue Sendungen holt die App beim Start, beim Zurückkehren in die App und solange das Postfach offen ist; das kann bis zu einer Minute dauern.</div></details>
       <details><summary>💾 Backup</summary><div class="hb">Alle Sicherungswege liegen unter <strong>Mehr → 💾 Backup &amp; Daten</strong>: „Jetzt sichern"-Knopf, Datei-Export/-Import (JSON), OneDrive-Sync mit täglichem Autospeicher sowie lokale Autospeicher-Stände. Tipp: Vor einem Gerätewechsel einmal exportieren. Hinweis: Mahlzeit-Fotos sind gerätelokal und nicht Teil der Backup-Datei.</div></details>
@@ -1529,7 +1570,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
       <details><summary>🤖 KI</summary><div class="hb">Foto-Erkennung, Chat und das Ausformulieren des Wochenberichts laufen über einen geschützten KI-Zugang — dafür brauchst du das Proxy-Passwort (Mehr → 🤖 KI). Optional kannst du dort einen eigenen KI-Anbieter (DeepSeek, OpenAI, Gemini, …) mit eigenem API-Key hinterlegen. Ohne Passwort funktioniert alles außer den KI-Funktionen — der Wochenbericht selbst wird ohne KI berechnet.</div></details>
       <details><summary>🤰 Schwangerschaft &amp; 🤱 Stillzeit</summary><div class="hb">Unter <strong>Mehr → Profil</strong> kannst du Schwangerschaft (Trimester oder errechneter Termin) oder Stillzeit angeben — beides schließt sich gegenseitig aus. Zuschläge auf den Kalorienbedarf: 2. Trimester +300, 3. Trimester +500, ausschließliches Stillen +500, Teilstillen mit Beikost +250 kcal/Tag (Richtwerte nach DGE). Der Zuschlag greift, sobald du „🧮 Kalorienbedarf berechnen" antippst. Beim Abnehmen in der Stillzeit deckelt die App das Defizit auf 500 kcal/Tag und geht nie unter 1800 kcal — darunter leiden Milchmenge und Nährstoffdichte. Zusätzlich kannst du die <strong>Lebensmittel-Ampel</strong> einschalten: Sie bewertet eingetragene Lebensmittel und meldet sich bei gelben und roten Treffern. Die Stillzeit-Ampel ist bewusst liberaler als die Schwangerschafts-Ampel — Rohmilchkäse, Sushi und Salami sind beim Stillen unbedenklich. Die Ampel ersetzt keine Beratung durch Hebamme, Ärztin oder Arzt.</div></details>
       <details><summary>👶 Baby-Tagebuch</summary><div class="hb">Einschalten unter <strong>Mehr → 🧩 Funktionen</strong> — unabhängig von Schwangerschaft und Stillzeit, damit auch Partner, Väter und Betreuende es führen können. Danach erscheint eine Kachel auf „Heute"; alles Weitere steht unter <strong>Mehr → 🧩 Funktionen → 👶 Baby-Tagebuch</strong>. Festhalten lassen sich: <ul><li><strong>Stillen</strong> — welche Brust und wie lange; die App schlägt vor, welche Seite als Nächstes dran ist. Bei „Beide" lässt sich die <strong>Hauptseite</strong> angeben (die, an der mehr getrunken wurde) — daraus ergibt sich der Vorschlag für das nächste Mal</li><li><strong>Flasche</strong> — Menge in ml und Art (Muttermilch, Pre, Folgemilch)</li><li><strong>Windel</strong> — Pipi, Stuhl oder beides, bei Stuhl zusätzlich Farbe und Konsistenz</li><li><strong>Temperatur</strong> — mit Messort; ab 38,0 °C wird der Eintrag rot markiert</li><li><strong>Schlaf</strong> — von/bis, wobei eines von beiden genügt: Trag „schläft seit 13:00" ein, während es noch schläft, und tippe später in der Liste auf <strong>Wach jetzt</strong>. Ein Schnell-Knopf vom Typ Schlaf schaltet mit einem Tipp zwischen einschlafen und aufwachen um.</li><li><strong>Notiz</strong> — Freitext, z. B. „Vitamin D gegeben"</li></ul>Die Schnell-Knöpfe tragen mit einem Tipp und der aktuellen Uhrzeit ein — jeder Eintrag lässt sich danach antippen und in Zeit und Details korrigieren. Über <strong>⚙️ Schnell-Knöpfe</strong> stellst du sie frei ein: eigene Knöpfe anlegen (z. B. „Fläschchen 120 ml" oder „Vitamin D gegeben"), Symbol und Beschriftung wählen, sortieren, löschen oder alles zurücksetzen. Ein Knopf vom Typ Temperatur öffnet den Dialog, weil dort ein Messwert gebraucht wird; ein Schlaf-Knopf schaltet direkt zwischen einschlafen und aufwachen um.<br><br><strong>🔄 Zu zweit führen:</strong> Über „🔄 Sync" im Tagebuch koppelst du ein zweites Gerät — auf dem ersten „Kopplung starten", den Code auf dem zweiten Gerät einfügen. Danach gleichen sich die Einträge automatisch ab: nach jeder Änderung, beim Öffnen des Tagebuchs und beim Zurückkehren in die App. Ein Abgleich kann bis zu einer Minute brauchen; ohne Netz wird alles gesammelt und später nachgeholt. Ändern beide Geräte denselben Eintrag, gewinnt die spätere Änderung. <strong>Übertragen wird ausschließlich das Baby-Tagebuch</strong> — Mahlzeiten, Kalorien, Gewicht und Profil bleiben auf deinem Gerät. Die Einträge werden vor dem Senden auf dem Gerät verschlüsselt; der Schlüssel steckt nur im Kopplungs-Code. Deshalb: Den Code nur direkt an die Person weitergeben, die mitlesen soll — und wer ihn verliert, koppelt einfach neu. Sagt ihr Einträge per Alexa an, kommen sie bei <b>beiden</b> an, sobald einer von euch die App öffnet — dafür tragen beide Handys dasselbe Familien-Token (Mehr → 🔗 Verbindungen → 🗣️ Alexa). Die Einträge gehören immer zum Tag, der oben auf „Heute" ausgewählt ist, und wandern in jedes Backup mit. Das Tagebuch ist eine Gedächtnisstütze, keine medizinische Überwachung und stellt keine Diagnose.</div></details>
-      <details><summary>❓ FAQ</summary><div class="hb"><strong>Warum stimmt eine Schätzung nicht?</strong> KI-Werte sind Näherungen — Menge und Zutaten lassen sich jederzeit anpassen.<br><strong>Funktioniert die App offline?</strong> Ja, Tagebuch, Suche (lokale Datenbank) und Bibliothek laufen offline; KI und Online-Suche brauchen Netz.<br><strong>Erinnerungen kommen nicht?</strong> Technisch bedingt erscheinen sie nur, solange die App geöffnet ist.<br><strong>Daten weg?</strong> Mehr → Backup &amp; Daten → Autospeicher anzeigen — dort liegen die letzten Stände.</div></details>
+      <details><summary>❓ FAQ</summary><div class="hb"><strong>Warum stimmt eine Schätzung nicht?</strong> KI-Werte sind Näherungen — Menge und Zutaten lassen sich jederzeit anpassen.<br><strong>Funktioniert die App offline?</strong> Ja, Tagebuch, Suche (lokale Datenbank) und Kochbuch laufen offline; KI und Online-Suche brauchen Netz.<br><strong>Erinnerungen kommen nicht?</strong> Technisch bedingt erscheinen sie nur, solange die App geöffnet ist.<br><strong>Daten weg?</strong> Mehr → Backup &amp; Daten → Autospeicher anzeigen — dort liegen die letzten Stände.</div></details>
       <div style="text-align:center;margin:14px 0 6px;"><a href="nutritrack_anleitung.pdf" target="_blank" style="font-size:13px;color:var(--g2);font-weight:700;">📄 Anleitung als PDF öffnen</a></div>
     </div>
   </div>
@@ -2426,17 +2467,6 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 </div>
 
 <!-- ══ EINKAUFSLISTE ══ -->
-<div class="ov" id="shoppingOv" data-bg-close="shoppingOv">
-  <div class="mod">
-    <div class="mhan"></div>
-    <div class="mhd">
-      <button type="button" class="mcl" data-act="closeOv" data-args='["shoppingOv"]'>✕</button>
-      <div class="mti" id="shoppingListTitle">🛒 Einkaufsliste</div>
-    </div>
-    <div class="mbd" id="shoppingListContent"></div>
-  </div>
-</div>
-
 <!-- ══ WAS IST NEU ══ -->
 <div class="ov" id="whatsNewOv">
   <div class="mod">
@@ -2459,43 +2489,6 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
       <div class="mti" id="entryMenuTitle">Eintrag</div>
     </div>
     <div class="mbd" id="entryMenuBody"></div>
-  </div>
-</div>
-
-<!-- ══ TEILEN (universal: Rezept / Mahlzeit / Lebensmittel) ══ -->
-<div class="ov" id="shareItemOv" data-bg-close="shareItemOv">
-  <div class="mod">
-    <div class="mhan"></div>
-    <div class="mhd">
-      <button type="button" class="mcl" data-act="closeOv" data-args='["shareItemOv"]'>✕</button>
-      <div class="mti" id="shareItemTitle">📤 Teilen</div>
-      <div class="msu" id="shareItemSubtitle">Per Link teilen oder kopieren</div>
-    </div>
-    <div class="mbd">
-      <div style="background:var(--gl);border-radius:12px;padding:12px;margin-bottom:10px;">
-        <div id="shareItemName" style="font-weight:800;font-size:15px;color:var(--tx);"></div>
-        <div id="shareItemSummary" style="font-size:12px;color:var(--mu);margin-top:2px;"></div>
-      </div>
-      <input type="hidden" id="shareItemUrl">
-      <input type="hidden" id="shareItemUrlLong">
-      <input type="hidden" id="shareItemCode">
-      <div id="shareItemPartnerRow" style="display:none;margin-bottom:12px;">
-        <button type="button" class="cb2" id="shareItemPartnerBtn" data-act="shareItemSendToPartner" style="margin-bottom:6px;">👫 An Partner senden</button>
-        <div style="font-size:11px;color:var(--mu);text-align:center;line-height:1.4;">Landet direkt im Postfach – kein Link nötig</div>
-        <div style="border-bottom:1px solid var(--br);margin:12px 0 10px;"></div>
-      </div>
-      <div id="shareItemShortStatus" style="font-size:11px;color:var(--mu);text-align:center;margin-bottom:8px;min-height:14px;"></div>
-      <div id="shareItemLinkBtns">
-        <button type="button" class="cb2" data-act="shareItemDoShare" style="margin-bottom:8px;">📤 Link teilen</button>
-        <button type="button" class="seb" data-act="shareItemDoCopy" style="margin-bottom:12px;">📋 Link kopieren</button>
-      </div>
-      <details style="margin-bottom:4px;">
-        <summary style="font-size:12px;color:var(--mu);cursor:pointer;padding:4px 0;">Erweitert: Code statt Link</summary>
-        <textarea id="shareItemCodeText" readonly rows="3"
-          style="width:100%;box-sizing:border-box;border:1.5px solid var(--g2);border-radius:12px;padding:12px;font-size:12px;font-family:monospace;resize:none;outline:none;background:var(--gl);color:var(--tx);margin:8px 0;word-break:break-all;"></textarea>
-        <button type="button" class="seb" data-act="shareItemDoCopyCode" style="width:100%;">📋 Code kopieren</button>
-      </details>
-    </div>
   </div>
 </div>
 
@@ -2594,7 +2587,7 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
       <div id="importConfirmActs" style="display:none;">
         <button type="button" class="svb" data-act="importConfirmTo" data-args='["diary"]' style="margin-top:0;margin-bottom:8px;">🍽 In Mahlzeit übernehmen</button>
         <button type="button" class="seb" data-act="importConfirmTo" data-args='["plan"]' style="margin-bottom:8px;">📅 In Wochenplan übernehmen</button>
-        <button type="button" class="seb" id="importConfirmLibBtn" data-act="importConfirmTo" data-args='["lib"]' style="margin-bottom:8px;">📚 In Bibliothek speichern</button>
+        <button type="button" class="seb" id="importConfirmLibBtn" data-act="importConfirmTo" data-args='["lib"]' style="margin-bottom:8px;">📖 Ins Kochbuch</button>
       </div>
       <button type="button" class="svb" id="importConfirmBtn" data-act="importConfirm" style="margin-top:0;margin-bottom:8px;">✅ Speichern</button>
       <button type="button" class="seb" data-act="importCancel">Abbrechen</button>
@@ -2922,78 +2915,9 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
           <span style="font-size:12px;color:var(--mu);" id="planItemTotal"></span>
         </div>
         <button type="button" class="svb" data-act="NTPlan.saveItem">✓ Übernehmen</button>
+        <button type="button" class="seb" id="planItemBookBtn" data-act="NTPlan.itemToBook">📖 Im Kochbuch öffnen · Kochmodus</button>
         <button type="button" class="seb" data-act="NTPlan.itemToShop">🛒 Zutaten auf den Einkaufszettel</button>
         <button type="button" class="seb" style="border-color:var(--re);color:var(--re);" data-act="NTPlan.deleteItem">🗑 Aus dem Plan nehmen</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ══ NEUES REZEPT: DREI WEGE ══ -->
-<div class="ov" id="recNewOv" onclick="if(event.target.id==='recNewOv')NTPlan.closeNew()">
-  <div class="mod">
-    <div class="mhan"></div>
-    <div class="mhd">
-      <button type="button" class="mcl" data-act="NTPlan.closeNew">✕</button>
-      <div class="mti">📋 Neues Rezept</div>
-      <div class="msu">Woher kommt es?</div>
-    </div>
-    <div class="mbd">
-      <button type="button" class="rec-way" data-act="NTPlan.newBlank">
-        <div class="ic">✏️</div>
-        <div style="flex:1;min-width:0;"><div class="nm">Selbst zusammenstellen</div><div class="sb">Zutaten aus der Datenbank suchen und Mengen eintragen</div></div>
-        <div style="color:var(--g1);font-size:18px;">›</div>
-      </button>
-      <button type="button" class="rec-way" data-act="NTPlan.newFromPhoto">
-        <div class="ic">📷</div>
-        <div style="flex:1;min-width:0;"><div class="nm">Aus dem Kochbuch fotografieren</div><div class="sb">Seite abfotografieren — die KI liest Titel, Portionen, Zutaten und Zubereitung</div></div>
-        <div style="color:var(--g1);font-size:18px;">›</div>
-      </button>
-      <button type="button" class="rec-way" data-act="NTPlan.newFromLink">
-        <div class="ic">🔗</div>
-        <div style="flex:1;min-width:0;"><div class="nm">Aus dem Internet</div><div class="sb">Rezept-Link einfügen — Chefkoch, Lecker, Foodblogs und andere</div></div>
-        <div style="color:var(--g1);font-size:18px;">›</div>
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- ══ REZEPT AUS FOTO ══ -->
-<div class="ov" id="recPhotoOv" onclick="if(event.target.id==='recPhotoOv')NTPlan.closePhoto()">
-  <div class="mod">
-    <div class="mhan"></div>
-    <div class="mhd">
-      <button type="button" class="mcl" data-act="NTPlan.closePhoto">✕</button>
-      <div class="mti">📷 Rezept aus dem Kochbuch</div>
-      <div class="msu">Seite fotografieren oder aus der Galerie wählen</div>
-    </div>
-    <div class="mbd">
-      <div id="recPhotoPickArea" style="display:flex;gap:8px;">
-        <label class="seb" style="flex:1;margin:0;text-align:center;cursor:pointer;">📷 Kamera
-          <input type="file" id="recPhotoCam" accept="image/*" capture="environment" style="display:none;" onchange="NTPlan.handlePhoto(event)">
-        </label>
-        <label class="seb" style="flex:1;margin:0;text-align:center;cursor:pointer;">🖼 Galerie
-          <input type="file" id="recPhotoGal" accept="image/*" style="display:none;" onchange="NTPlan.handlePhoto(event)">
-        </label>
-      </div>
-      <div id="recPhotoPrevWrap" class="hidden" style="margin-top:10px;position:relative;">
-        <img id="recPhotoPrev" alt="" style="width:100%;border-radius:14px;display:block;">
-        <button type="button" data-act="NTPlan.resetPhoto" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.55);border:none;border-radius:50%;width:30px;height:30px;color:#fff;font-size:15px;cursor:pointer;">✕</button>
-      </div>
-      <button type="button" class="svb" id="recPhotoBtn" style="margin-top:10px;" disabled data-act="NTPlan.analyze">🤖 Rezept auslesen</button>
-      <div id="recPhotoStatus" class="hidden" style="margin-top:8px;padding:9px 11px;border:1.5px solid var(--g3);border-radius:10px;font-size:12px;line-height:1.5;"></div>
-      <div id="recPhotoResult" class="hidden" style="margin-top:12px;">
-        <input type="text" id="recPhotoName" class="psi" placeholder="Name des Rezepts" style="width:100%;margin-bottom:8px;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-          <span style="font-size:13px;font-weight:700;">Rezept für</span>
-          <input type="number" id="recPhotoPortions" value="4" min="1" step="1" oninput="NTPlan.updateTotal()" style="width:64px;border:2px solid var(--br);border-radius:10px;padding:6px;font-size:15px;font-weight:700;text-align:center;outline:none;">
-          <span style="font-size:13px;font-weight:700;">Portionen</span>
-        </div>
-        <div id="recPhotoIngList"></div>
-        <div id="recPhotoTotal" style="font-size:11px;color:var(--mu);margin:6px 0 8px;line-height:1.5;"></div>
-        <textarea id="recPhotoIns" placeholder="Zubereitung (von der KI gelesen, frei änderbar)" style="width:100%;box-sizing:border-box;min-height:100px;border:1.5px solid var(--br);border-radius:12px;padding:10px;font-size:13px;font-family:inherit;line-height:1.5;outline:none;resize:vertical;"></textarea>
-        <div style="font-size:11px;color:var(--mu);line-height:1.5;margin:8px 0;">Die Mengen gelten für die oben eingetragene Portionszahl. Gespeichert wird je Portion — beim Eintragen wählst du dann, wie viele Portionen du gegessen hast.</div>
-        <button type="button" class="svb" data-act="NTPlan.savePhotoRecipe">📋 Rezept speichern</button>
       </div>
     </div>
   </div>
@@ -3097,27 +3021,203 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 
 
 <!-- ══ EINSTELLUNGEN ══ -->
-<div class="ov" id="libraryOv" data-bg-close="libraryOv">
+<div class="ov" id="libraryOv" data-bg-close="libraryOv" data-tab="recipes">
   <div class="mod">
     <div class="mhan"></div>
     <div class="mhd">
       <button type="button" class="mcl" data-act="closeOv" data-args='["libraryOv"]'>✕</button>
-      <div class="mti">📚 Rezeptbibliothek</div>
-      <div class="msu">Rezepte &amp; eigene Lebensmittel</div>
+      <div class="mti">📖 Kochbuch</div>
+      <div class="msu">Deine Rezepte &amp; eigene Lebensmittel</div>
     </div>
     <div class="mbd">
-      <input type="text" id="libSearchQ" class="psi" placeholder="Suchen..." onkeyup="renderLibrary()" style="width:100%;margin-bottom:8px;">
+      <input type="text" id="libSearchQ" class="psi" placeholder="Suchen – Name, Zutat, Kategorie …" oninput="renderLibrary()" style="width:100%;margin-bottom:8px;">
       <div style="display:flex;gap:8px;margin-bottom:10px;">
-        <button type="button" id="libTabRec" data-act="libSetTab" data-args='["recipes"]' style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--g2);background:var(--g2);color:white;font-weight:700;font-size:13px;">📋 Rezepte</button>
+        <button type="button" id="libTabRec" data-act="libSetTab" data-args='["recipes"]' style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--g2);background:var(--g2);color:white;font-weight:700;font-size:13px;">📖 Rezepte</button>
         <button type="button" id="libTabFoods" data-act="libSetTab" data-args='["foods"]' style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--br);background:white;color:var(--mu);font-weight:700;font-size:13px;">🥗 Lebensmittel</button>
-        <button type="button" onclick="closeOv('libraryOv');NTPicker.openPicker(null,'link')" style="padding:9px 14px;border-radius:10px;border:1.5px solid var(--g2);background:white;color:var(--g2);font-weight:700;font-size:13px;" title="Rezept per URL importieren">🔗</button>
-        <button type="button" data-act="openImportPaste" style="padding:9px 14px;border-radius:10px;border:1.5px solid var(--g2);background:white;color:var(--g2);font-weight:700;font-size:13px;" title="Link oder Code einlösen">📥</button>
+        <button type="button" data-act="libImportPaste" style="padding:9px 14px;border-radius:10px;border:1.5px solid var(--g2);background:white;color:var(--g2);font-weight:700;font-size:13px;" title="Link oder Code einlösen">📥</button>
       </div>
       <button type="button" class="svb" id="libNewRecBtn" style="margin-bottom:10px;" data-act="NTPlan.newRecipe">＋ Neues Rezept</button>
+      <div id="bookTools">
+        <div class="bk-chips" id="bookChips"></div>
+        <div class="bk-tools">
+          <span class="bk-mu">Sortieren</span>
+          <select id="bookSortSel" onchange="NTBook.setSort(this.value)">
+            <option value="new">Neueste zuerst</option>
+            <option value="az">A–Z</option>
+            <option value="cooked">Zuletzt gekocht</option>
+            <option value="often">Am häufigsten gekocht</option>
+            <option value="time">Schnell zuerst</option>
+            <option value="kcal">Wenig kcal zuerst</option>
+          </select>
+        </div>
+      </div>
       <div id="libraryList" style="display:flex;flex-direction:column;gap:8px;"></div>
     </div>
   </div>
 </div>
+
+<!-- ══ KOCHBUCH: REZEPT ANSEHEN (js/cookbook.js) ══ -->
+<!-- Alle .ov teilen z-index 300; was spaeter im DOM steht, liegt oben. Ansicht,
+     Anlegen, Editor, Kochmodus und Teilen stehen deshalb hinter Kochbuch und
+     Wochenplan. -->
+<div class="ov" id="bookDetailOv" data-bg-close="bookDetailOv">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" data-act="NTBook.closeDetail">✕</button>
+      <div class="mti" id="bookDetTitle">Rezept</div>
+      <div class="msu" id="bookDetSub"></div>
+    </div>
+    <div class="mbd" id="bookDetBody"></div>
+  </div>
+</div>
+
+<!-- ══ NEUES REZEPT: DREI WEGE ══ -->
+<div class="ov" id="recNewOv" onclick="if(event.target.id==='recNewOv')NTPlan.closeNew()">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" data-act="NTPlan.closeNew">✕</button>
+      <div class="mti">📋 Neues Rezept</div>
+      <div class="msu">Woher kommt es?</div>
+    </div>
+    <div class="mbd">
+      <button type="button" class="rec-way" data-act="NTPlan.newBlank">
+        <div class="ic">✏️</div>
+        <div style="flex:1;min-width:0;"><div class="nm">Selbst zusammenstellen</div><div class="sb">Zutaten aus der Datenbank suchen und Mengen eintragen</div></div>
+        <div style="color:var(--g1);font-size:18px;">›</div>
+      </button>
+      <button type="button" class="rec-way" data-act="NTPlan.newFromPhoto">
+        <div class="ic">📷</div>
+        <div style="flex:1;min-width:0;"><div class="nm">Aus dem Kochbuch fotografieren</div><div class="sb">Seite abfotografieren — die KI liest Titel, Portionen, Zutaten und Zubereitung</div></div>
+        <div style="color:var(--g1);font-size:18px;">›</div>
+      </button>
+      <button type="button" class="rec-way" data-act="NTPlan.newFromLink">
+        <div class="ic">🔗</div>
+        <div style="flex:1;min-width:0;"><div class="nm">Aus dem Internet</div><div class="sb">Rezept-Link einfügen — Chefkoch, Lecker, Foodblogs und andere</div></div>
+        <div style="color:var(--g1);font-size:18px;">›</div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ REZEPT AUS FOTO ══ -->
+<div class="ov" id="recPhotoOv" onclick="if(event.target.id==='recPhotoOv')NTPlan.closePhoto()">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" data-act="NTPlan.closePhoto">✕</button>
+      <div class="mti">📷 Rezept aus dem Kochbuch</div>
+      <div class="msu">Seite fotografieren — die KI liest sie, du prüfst im Kochbuch</div>
+    </div>
+    <div class="mbd">
+      <div id="recPhotoPickArea" style="display:flex;gap:8px;">
+        <label class="seb" style="flex:1;margin:0;text-align:center;cursor:pointer;">📷 Kamera
+          <input type="file" id="recPhotoCam" accept="image/*" capture="environment" style="display:none;" onchange="NTPlan.handlePhoto(event)">
+        </label>
+        <label class="seb" style="flex:1;margin:0;text-align:center;cursor:pointer;">🖼 Galerie
+          <input type="file" id="recPhotoGal" accept="image/*" style="display:none;" onchange="NTPlan.handlePhoto(event)">
+        </label>
+      </div>
+      <div id="recPhotoPrevWrap" class="hidden" style="margin-top:10px;position:relative;">
+        <img id="recPhotoPrev" alt="" style="width:100%;border-radius:14px;display:block;">
+        <button type="button" data-act="NTPlan.resetPhoto" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.55);border:none;border-radius:50%;width:30px;height:30px;color:#fff;font-size:15px;cursor:pointer;">✕</button>
+      </div>
+      <button type="button" class="svb" id="recPhotoBtn" style="margin-top:10px;" disabled data-act="NTPlan.analyze">🤖 Rezept auslesen</button>
+      <div id="recPhotoStatus" class="hidden" style="margin-top:8px;padding:9px 11px;border:1.5px solid var(--g3);border-radius:10px;font-size:12px;line-height:1.5;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ KOCHBUCH: REZEPT BEARBEITEN (Entwurf, gespeichert erst mit 💾) ══ -->
+<div class="ov" id="recEditOv" data-bg-close="recEditOv">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd"><button type="button" class="mcl" data-act="closeOv" data-args='["recEditOv"]'>✕</button><div class="mti" id="recEditTitle">Rezept bearbeiten</div></div>
+    <div class="mbd">
+      <div id="recEditHint" class="bk-panel bk-mu" style="display:none;"></div>
+      <label class="lbl">Rezeptname</label>
+      <input type="text" class="finp" id="recEditName" placeholder="z. B. Spaghetti Bolognese">
+      <div class="bk-prow" style="margin-bottom:10px;">
+        <div style="flex:0 0 64px;"><label class="lbl">Emoji</label><input type="text" class="finp" id="recEditEmoji" placeholder="🍝" style="margin:0;text-align:center;"></div>
+        <div style="flex:1;"><label class="lbl">Portionen</label><input type="number" class="finp" id="recEditServ" min="1" max="99" step="1" value="1" oninput="NTBook.editTotal()" style="margin:0;"></div>
+        <div style="flex:1;"><label class="lbl">⏱ Minuten</label><input type="number" class="finp" id="recEditTime" min="0" step="5" placeholder="—" style="margin:0;"></div>
+      </div>
+      <label class="lbl">Kategorien</label>
+      <input type="text" class="finp" id="recEditCats" placeholder="z. B. Pasta, Vegetarisch, Schnell" oninput="NTBook.renderCatChips()">
+      <div class="bk-chips" id="recEditCatChips" style="flex-wrap:wrap;margin-top:-2px;"></div>
+      <label class="lbl">Zutaten · Mengen für das ganze Rezept</label>
+      <div id="recEditIngList" class="ing-list" style="margin-bottom:8px;"></div>
+      <div id="recEditTotal" class="rec-total" style="margin-bottom:10px;"></div>
+      <div style="font-size:12px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:8px;">Zutat hinzufügen</div>
+      <div class="rec-search-row">
+        <input type="text" class="rec-search-inp" id="recEditSearchQ" placeholder="Zutat suchen..." oninput="NTBook.editSearch()">
+      </div>
+      <div class="rec-results" id="recEditResults"></div>
+      <label class="lbl" style="margin-top:10px;">📝 Zubereitung · ein Schritt pro Zeile</label>
+      <textarea id="recEditInstructions" rows="6" placeholder="Zwiebeln würfeln und in Öl glasig dünsten.&#10;Hackfleisch zugeben und 10 Minuten anbraten.&#10;…"
+        style="width:100%;border:1.5px solid var(--br);border-radius:12px;padding:10px;font-size:13px;font-family:inherit;resize:vertical;outline:none;margin-bottom:8px;min-height:110px;"></textarea>
+      <label class="lbl">Notizen</label>
+      <textarea id="recEditNote" rows="2" placeholder="z. B. „Mit Parmesan noch besser“"
+        style="width:100%;border:1.5px solid var(--br);border-radius:12px;padding:10px;font-size:13px;font-family:inherit;resize:vertical;outline:none;margin-bottom:8px;"></textarea>
+      <label class="lbl">Quelle (Link)</label>
+      <input type="url" class="finp" id="recEditSrc" placeholder="https://…">
+      <div class="bk-mu" style="margin:2px 2px 0;">Gespeichert wird je Portion. Das Rezept ändert sich nur hier — Wochenplan, Tagebuch und Einkaufszettel schreiben nie zurück.</div>
+      <button type="button" class="cb2" data-act="NTBook.editSave">💾 Rezept speichern</button>
+      <button type="button" class="del-btn" id="recEditDelBtn" data-act="NTBook.editDelete">🗑️ Rezept löschen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ KOCHBUCH: KOCHMODUS ══ -->
+<div class="ov" id="cookOv">
+  <div class="mod">
+    <div class="mhd">
+      <button type="button" class="mcl" data-act="NTBook.cookClose">✕</button>
+      <div class="mti" id="cookTitle">Kochmodus</div>
+      <div class="msu" id="cookSub"></div>
+    </div>
+    <div class="mbd" id="cookBody"></div>
+  </div>
+</div>
+
+<!-- ══ TEILEN (universal: Rezept / Mahlzeit / Lebensmittel) ══ -->
+<div class="ov" id="shareItemOv" data-bg-close="shareItemOv">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" data-act="closeOv" data-args='["shareItemOv"]'>✕</button>
+      <div class="mti" id="shareItemTitle">📤 Teilen</div>
+      <div class="msu" id="shareItemSubtitle">Per Link teilen oder kopieren</div>
+    </div>
+    <div class="mbd">
+      <div style="background:var(--gl);border-radius:12px;padding:12px;margin-bottom:10px;">
+        <div id="shareItemName" style="font-weight:800;font-size:15px;color:var(--tx);"></div>
+        <div id="shareItemSummary" style="font-size:12px;color:var(--mu);margin-top:2px;"></div>
+      </div>
+      <input type="hidden" id="shareItemUrl">
+      <input type="hidden" id="shareItemUrlLong">
+      <input type="hidden" id="shareItemCode">
+      <div id="shareItemPartnerRow" style="display:none;margin-bottom:12px;">
+        <button type="button" class="cb2" id="shareItemPartnerBtn" data-act="shareItemSendToPartner" style="margin-bottom:6px;">👫 An Partner senden</button>
+        <div style="font-size:11px;color:var(--mu);text-align:center;line-height:1.4;">Landet direkt im Postfach – kein Link nötig</div>
+        <div style="border-bottom:1px solid var(--br);margin:12px 0 10px;"></div>
+      </div>
+      <div id="shareItemShortStatus" style="font-size:11px;color:var(--mu);text-align:center;margin-bottom:8px;min-height:14px;"></div>
+      <div id="shareItemLinkBtns">
+        <button type="button" class="cb2" data-act="shareItemDoShare" style="margin-bottom:8px;">📤 Link teilen</button>
+        <button type="button" class="seb" data-act="shareItemDoCopy" style="margin-bottom:12px;">📋 Link kopieren</button>
+      </div>
+      <details style="margin-bottom:4px;">
+        <summary style="font-size:12px;color:var(--mu);cursor:pointer;padding:4px 0;">Erweitert: Code statt Link</summary>
+        <textarea id="shareItemCodeText" readonly rows="3"
+          style="width:100%;box-sizing:border-box;border:1.5px solid var(--g2);border-radius:12px;padding:12px;font-size:12px;font-family:monospace;resize:none;outline:none;background:var(--gl);color:var(--tx);margin:8px 0;word-break:break-all;"></textarea>
+        <button type="button" class="seb" data-act="shareItemDoCopyCode" style="width:100%;">📋 Code kopieren</button>
+      </details>
+    </div>
+  </div>
+</div>
+
 <div class="ov" id="settOv" data-bg-close="settOv">
   <div class="mod">
     <div class="mhan"></div>
@@ -3389,15 +3489,15 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.316"></script>
-<script src="js/single-tab.js?v=0.316"></script>
-<script src="js/fooddb.js?v=0.316"></script>
-<script src="js/fooddb-usda.js?v=0.316"></script>
-<script src="js/restaurants.js?v=0.316"></script>
-<script src="js/metdb.js?v=0.316"></script>
-<script src="js/idb-photos.js?v=0.316"></script>
-<script src="js/changelog.js?v=0.316"></script>
-<script src="js/calc.js?v=0.316"></script>
+<script src="js/actions.js?v=0.317"></script>
+<script src="js/single-tab.js?v=0.317"></script>
+<script src="js/fooddb.js?v=0.317"></script>
+<script src="js/fooddb-usda.js?v=0.317"></script>
+<script src="js/restaurants.js?v=0.317"></script>
+<script src="js/metdb.js?v=0.317"></script>
+<script src="js/idb-photos.js?v=0.317"></script>
+<script src="js/changelog.js?v=0.317"></script>
+<script src="js/calc.js?v=0.317"></script>
 <script>
 // @ts-check
 // ════════════════════════════════════════
@@ -3411,13 +3511,13 @@ body:has(.ov.open) #feedbackFab{display:none!important;}
 // ════════════════════════════════════════
 // SECTION: STATE
 // ════════════════════════════════════════
-var S={apiKey:'',name:'Du',goal:2000,goalManual:false,weight:0,height:0,age:0,gender:'',activity:'',pregnant:/** @type {0|'0'|'1'|'2'|'3'|'et'} */ (0),pregnantET:'',pregWarn:false,nursing:/** @type {0|'0'|'excl'|'part'} */ (0),nursWarn:false,babyOn:false,baby:{name:'',birth:''},babyLog:{},babyTomb:{},babyMiles:{},babyQs:[],babyQuick:null,babySync:null,shopList:[],shopTomb:{},shopSync:null,shopRecent:[],shopCats:[],shopCatMem:{},links:[],linksMigrated:0,planTomb:{},goalWeight:0,goalDate:'',goalAchievedShown:'',goalStart:null,dietPrefs:[],dietFree:'',savedDietFree:[],dietWarn:false,macroTargets:{protein:0,carbs:0,fat:0},macroGoalMode:'percent',macroGoalG:{protein:0,carbs:0,fat:0},reminders:[],weightLog:{},portionMemory:{},waterGoal:8,waterUnit:250,mealTemplates:[],recurringMeals:[],exerciseLibrary:[],dashOrder:null,dashHidden:null,mealPlan:{},planApplied:{},currentDate:'',days:{}};
+var S={apiKey:'',name:'Du',goal:2000,goalManual:false,weight:0,height:0,age:0,gender:'',activity:'',pregnant:/** @type {0|'0'|'1'|'2'|'3'|'et'} */ (0),pregnantET:'',pregWarn:false,nursing:/** @type {0|'0'|'excl'|'part'} */ (0),nursWarn:false,babyOn:false,baby:{name:'',birth:''},babyLog:{},babyTomb:{},babyMiles:{},babyQs:[],babyQuick:null,babySync:null,shopList:[],shopTomb:{},shopSync:null,shopRecent:[],shopCats:[],shopCatMem:{},links:[],linksMigrated:0,planTomb:{},goalWeight:0,goalDate:'',goalAchievedShown:'',goalStart:null,dietPrefs:[],dietFree:'',savedDietFree:[],dietWarn:false,macroTargets:{protein:0,carbs:0,fat:0},macroGoalMode:'percent',macroGoalG:{protein:0,carbs:0,fat:0},reminders:[],weightLog:{},portionMemory:{},waterGoal:8,waterUnit:250,mealTemplates:[],recurringMeals:[],exerciseLibrary:[],dashOrder:null,dashHidden:null,mealPlan:{},planApplied:{},cookLog:{},currentDate:'',days:{}};
 // Tracking für Settings-Session: manuelle Eingabe vs. „Kalorienbedarf berechnen"
 var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.316';
+var APP_VERSION='0.317';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -3677,8 +3777,6 @@ var foodCache={}, customFoods=[], recipes=[], barcodeCache={};
 
 // Edit state
 var editMeal=null, editIdx=null;   // diary entry being edited
-var recEditId=null;                // recipe being edited in settings
-var recEditOpenedFrom=null;        // 'settings' | 'mealDetail' — controls return target
 
 var isOnline=navigator.onLine;
 
@@ -3865,6 +3963,7 @@ function _bootApp(){
   if(window.NTDash&&typeof NTDash.boot==='function')NTDash.boot();
   // Wochenplan: Kachel „Heute" fuellen. Rein lokal, kein Netz.
   if(window.NTPlan&&typeof NTPlan.boot==='function')NTPlan.boot();
+  if(window.NTBook)NTBook.renderCard();
   // iOS Safari/PWA: Bottom-Nav nach Viewport-Shift wieder anheften (#177)
   var _vvTimer=null;
   function _fixViewportChromeDebounced(){
@@ -4551,6 +4650,7 @@ function renderAll(){
   if(window.NTShop)NTShop.render();
   if(window.NTPartner)NTPartner.refreshBadges();
   if(window.NTPlan)NTPlan.refreshCard();
+  if(window.NTBook)NTBook.renderCard();
 }
 // Mehr-Hub-Eintrag folgt dem Schalter aus den Einstellungen
 function renderBabyHub(){
@@ -5054,10 +5154,12 @@ function openEntryMenu(meal,idx){
   body.innerHTML=
     '<button type="button" class="svb" style="margin-bottom:8px;" onclick="closeOv(\'entryMenuOv\');openEditEntry(\''+meal+'\','+idx+')">✏️ Eintrag bearbeiten</button>'
     +'<button type="button" class="seb" style="margin-bottom:8px;" onclick="closeOv(\'entryMenuOv\');'+shareCall+'">'+shareLabel+'</button>'
+    +(rec?'<button type="button" class="seb" style="margin-bottom:8px;" data-act="openEntryInBook" data-args="'+esc(JSON.stringify([rec.id]))+'">📖 Im Kochbuch öffnen · Kochmodus</button>':'')
     +(ins?'<button type="button" class="seb" style="margin-bottom:8px;" onclick="showEntryInstructions()">📝 Kochanleitung anzeigen</button>':'')
     +'<div id="entryInstructionsPanel" style="display:none;background:var(--gl);border-radius:12px;padding:12px;margin-bottom:8px;white-space:pre-wrap;font-size:13px;color:var(--tx);">'+esc(ins)+'</div>';
   openOv('entryMenuOv');
 }
+function openEntryInBook(id){closeOv('entryMenuOv');NTBook.detail(id);}
 function showEntryInstructions(){
   var p=document.getElementById('entryInstructionsPanel');
   if(p)p.style.display=p.style.display==='none'?'block':'none';
@@ -5067,119 +5169,7 @@ function showEntryInstructions(){
 var _origPickerConfirmAdd=null;
 // We handle this via the _editEntryMode flag in pickerConfirmAdd
 
-// ════════════════════════════════════════
-// SECTION: RECIPE EDITOR (Einstellungen)
-// ════════════════════════════════════════
-function openRecipeEditor(recipeId){
-  recEditId=recipeId;
-  recEditOpenedFrom='settings';
-  var rec=recipes.find(function(r){return r.id===recipeId;});
-  if(!rec)return;
-  document.getElementById('recEditTitle').textContent=(rec.emoji||'📋')+' '+rec.name;
-  document.getElementById('recEditName').value=rec.name;
-  document.getElementById('recEditEmoji').value=rec.emoji||'';
-  var insEl=document.getElementById('recEditInstructions');
-  if(insEl)insEl.value=rec.instructions||'';
-  recEditRenderIng(rec.ingredients||[]);
-  recEditSearch();
-  closeOv('libraryOv');
-  setTimeout(function(){openOv('recEditOv');},200);
-}
-
-function recEditRenderIng(ings){
-  var el=document.getElementById('recEditIngList');if(!el)return;
-  var t=ingTotal(ings);
-  el.innerHTML=ings.map(function(ing,i){
-    var missingG=ing.missingGrams||(ing.amount===null||ing.amount===undefined);
-    var amtVal=missingG?'':(ing.amount||'');
-    var bStyle=missingG?'border-color:var(--or);':'';
-    var nid='reced-n-'+i;
-    return'<div class="ing-wrap">'
-      +'<div class="ing-item">'
-      +'<div class="ing-e" onclick="ingToggle(event,\''+nid+'\')">'+esc(ing.emoji||'🍽')+'</div>'
-      +'<div class="ing-n" onclick="ingToggle(event,\''+nid+'\')">'+esc(ing.name)+'</div>'
-      +'<input type="number" class="ing-amt" value="'+amtVal+'" min="1" placeholder="g?" style="'+bStyle+'" onchange="recEditIngAmt('+i+',this.value)">'
-      +'<div class="ing-u">'+(ing.pu?'% Port.':'g')+'</div>'
-      +'<button type="button" class="ing-del" onclick="recEditIngDel('+i+')">✕</button>'
-      +'</div>'
-      +'<div class="ing-details" id="'+nid+'">'+ingNutrHtml(ing)+'</div>'
-      +'</div>';
-  }).join('');
-  document.getElementById('recEditTotal').textContent=ings.length?'Gesamt: '+totalStr(t):'';
-}
-
-function recEditIngAmt(i,v){
-  var rec=recipes.find(function(r){return r.id===recEditId;});
-  if(rec&&rec.ingredients[i]){rec.ingredients[i].amount=parseFloat(v)||0;if(rec.ingredients[i].amount>0)rec.ingredients[i].missingGrams=false;var t=ingTotal(rec.ingredients);document.getElementById('recEditTotal').textContent='Gesamt: '+totalStr(t);}
-}
-
-function recEditIngDel(i){
-  var rec=recipes.find(function(r){return r.id===recEditId;});
-  if(rec){rec.ingredients.splice(i,1);recEditRenderIng(rec.ingredients);}
-}
-
-function recEditSearch(){
-  var q=(document.getElementById('recEditSearchQ')||{}).value||'';
-  var results=[],seen={};
-  customFoods.forEach(function(f){if(!seen[f.name.toLowerCase()]){seen[f.name.toLowerCase()]=true;results.push({name:f.name,emoji:f.emoji,per100:f.per100});}});
-  DB.forEach(function(f){var s=fuzzy(f,q);if((s>0||!q)&&!seen[f.n.toLowerCase()]){seen[f.n.toLowerCase()]=true;results.push({name:f.n,emoji:f.e,per100:dbPer100(f),score:s});}});
-  if(q)results.sort(function(a,b){return(b.score||0)-(a.score||0);});
-  results=results.slice(0,12);
-  window._recEditResults=results;
-  var el=document.getElementById('recEditResults');if(!el)return;
-  if(!results.length){el.innerHTML='<div class="nr" style="padding:8px;">Kein Ergebnis</div>';return;}
-  el.innerHTML=results.map(function(p,i){
-    return'<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1.5px solid var(--br);border-radius:10px;cursor:pointer;margin-bottom:4px;background:white;" onclick="recEditAddFood('+i+')">'
-      +'<div style="font-size:18px;">'+esc(p.emoji||'🍽')+'</div>'
-      +'<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:13px;">'+esc(p.name)+'</div>'
-      +'<div style="font-size:11px;color:var(--mu);">'+Math.round(p.per100.kcal)+' kcal pro 100g</div></div>'
-      +'<div style="font-size:18px;color:var(--g2);font-weight:900;">＋</div></div>';
-  }).join('');
-}
-
-function recEditAddFood(i){
-  var p=(window._recEditResults||[])[i];if(!p)return;
-  var rec=recipes.find(function(r){return r.id===recEditId;});
-  if(!rec)return;
-  rec.ingredients.push({name:p.name,emoji:p.emoji,amount:100,per100:p.per100});
-  recEditRenderIng(rec.ingredients);
-  showToast((p.emoji||'🍽')+' '+p.name+' hinzugefügt');
-}
-
-function recEditSave(){
-  var rec=recipes.find(function(r){return r.id===recEditId;});
-  if(!rec)return;
-  var newName=document.getElementById('recEditName').value.trim();
-  var newEmoji=document.getElementById('recEditEmoji').value.trim();
-  // Ein Rezept, das genauso heisst wie ein vorhandenes, entsteht hier genauso
-  // leicht wie beim Import — gefragt wird deshalb an beiden Stellen.
-  if(newName&&newName!==rec.name&&window.NTPlan&&NTPlan.confirmNotDuplicate
-     &&!NTPlan.confirmNotDuplicate(newName,rec.ingredients||[],rec.id))return;
-  if(newName)rec.name=newName;
-  if(newEmoji)rec.emoji=newEmoji;
-  var insEl=document.getElementById('recEditInstructions');
-  if(insEl)rec.instructions=insEl.value.trim();
-  saveX();
-  var from=recEditOpenedFrom;
-  closeOv('recEditOv');
-  recEditOpenedFrom=null;
-  // 'plan': aus dem Wochenplan heraus angelegt — dorthin gehoert der Rueckweg,
-  // nicht in die Bibliothek. Den Rest erledigt NTPlan.discardEmptyDraft(), das
-  // closeOv() oben ohnehin ausloest.
-  if(from==='plan')return;          // NTPlan meldet selbst, wohin es gespeichert wurde
-  if(from!=='mealDetail'){setTimeout(function(){openLibrary();},200);}
-  showToast('Rezept gespeichert ✓');
-}
-
-function recEditDelete(){
-  recipes=recipes.filter(function(r){return r.id!==recEditId;});
-  saveX();
-  var from=recEditOpenedFrom;
-  closeOv('recEditOv');
-  recEditOpenedFrom=null;
-  if(from!=='mealDetail'&&from!=='plan'){setTimeout(function(){openLibrary();},200);}
-  showToast('Rezept gelöscht');
-}
+// Rezept-Editor, Ansicht und Kochmodus: js/cookbook.js (NTBook).
 
 // ════════════════════════════════════════
 // SECTION: SHARE & IMPORT (universal: Rezept / Mahlzeit / Lebensmittel)
@@ -5370,13 +5360,23 @@ function shareRecipe(id){
   var ings=rec.ingredients||[];
   var payload={t:'r',n:rec.name,em:rec.emoji||'📋',i:ings.map(_encIng)};
   if(rec.instructions)payload.ins=rec.instructions;
+  // Kochbuch-Angaben (v0.317), ältere Empfänger übergehen sie.
+  if(rec.baseServings>1)payload.sv=rec.baseServings;
+  if(rec.time>0)payload.tm=rec.time;
+  if(rec.src)payload.src=rec.src;
+  if(rec.cat&&rec.cat.length)payload.c=rec.cat;
   var t=ingTotal(ings);
   var summary=ings.length+' Zutat'+(ings.length===1?'':'en')+' · '+Math.round(t.kcal)+' kcal';
   _shareItem(payload,rec.name,summary);
 }
 // Ein Tagebuch-Eintrag → Share-Format. Gemeinsame Quelle für Mahlzeit, Tag und
 // Zeitraum: Wer hier etwas ändert, ändert es für alle drei Wege gleichzeitig.
-function _encIng(ing){return{n:ing.name,em:ing.emoji,a:ing.amount,p:_shPer100Enc(ing.per100)};}
+function _encIng(ing){
+  var o={n:ing.name,em:ing.emoji,a:ing.amount,p:_shPer100Enc(ing.per100)};
+  if(ing.q>0){o.q=ing.q;o.u=ing.u||'';}
+  if(ing.t)o.tx=ing.t;
+  return o;
+}
 function _encEntry(e){
   if(e.isRecipe){
     return{t:'r',n:e.name,em:e.emoji,p:e.portions||1,i:(e.ingredients||[]).map(_encIng)};
@@ -5524,11 +5524,19 @@ function _materializeIng(x,em){
   var a=_shIngA(x.a);
   var ing={name:x.n,emoji:safeEmoji(em,'🍽'),amount:a,per100:_shPer100Dec(x.p)};
   if(!(a>0))ing.missingGrams=true;
+  if(parseFloat(x.q)>0){ing.q=parseFloat(x.q);ing.u=String(x.u||'').slice(0,20);}
+  if(x.tx)ing.t=String(x.tx).slice(0,200);
   return ing;
 }
 function _materializeRecipe(d){
   var ings=(d.i||[]).map(function(x){return _materializeIng(x,x.em||x.e);});
-  return{id:Date.now().toString(),name:d.n||'Importiertes Rezept',emoji:safeEmoji(d.em||d.e,'📋'),ingredients:ings,instructions:d.ins||''};
+  var r={id:Date.now().toString(),name:d.n||'Importiertes Rezept',emoji:safeEmoji(d.em||d.e,'📋'),ingredients:ings,instructions:d.ins||''};
+  var sv=parseYield(d.sv),tm=parseInt(d.tm,10),c=parseTags(Array.isArray(d.c)?d.c:[]);
+  if(sv>1)r.baseServings=sv;
+  if(tm>0&&tm<=1440)r.time=tm;
+  if(/^https?:\/\//i.test(String(d.src||'')))r.src=String(d.src);
+  if(c.length)r.cat=c.slice(0,12);
+  return r;
 }
 function _materializeFood(d){
   return{name:d.n||'Importiertes Lebensmittel',emoji:safeEmoji(d.em||d.e,'🍽'),per100:_shPer100Dec(d.p)};
@@ -5793,11 +5801,11 @@ function importConfirmTo(where){
       saveS();
       showToast('✅ '+nm+' in '+MEAL_NAMES[meal]+' '+dayLbl+' übernommen');
     }
-    var q=d.t==='r'?'„'+nm+'“ zusätzlich als Rezept in der Bibliothek speichern?':'„'+nm+'“ zusätzlich als eigenes Lebensmittel speichern?';
+    var q=d.t==='r'?'„'+nm+'“ zusätzlich ins Kochbuch übernehmen?':'„'+nm+'“ zusätzlich als eigenes Lebensmittel speichern?';
     if(confirm(q)){
       var id=_importToLibrary(d,amt);
       if(typeof id==='string'&&where==='diary')entry.recipeId=id;
-      if(id!==null){saveS();showToast('✅ Auch in der Bibliothek gespeichert');}
+      if(id!==null){saveS();showToast('✅ Auch im Kochbuch gespeichert');}
     }
   }
   if(_pendingImportMeta&&_pendingImportMeta.packetId&&window.NTPartner){
@@ -7005,74 +7013,15 @@ function _migratePhotosAfterImport(){localStorage.removeItem('nt_photos_migrated
 
 
 // ════════════════════════════════════════
-// SECTION: REZEPTE: ZUTATENLISTE & BIBLIOTHEK
+// SECTION: KOCHBUCH (Overlay libraryOv)
 // ════════════════════════════════════════
-// openShoppingList() zeigt die ZUTATEN eines Rezepts, hochgerechnet auf
-// Portionen — nicht zu verwechseln mit dem Einkaufszettel in js/shopping.js,
-// der geteilt und abgehakt wird. shoppingToList() ist die Bruecke dorthin.
-// ── Rezept duplizieren ──
-function duplicateRecipe(id){
-  var rec=recipes.find(function(r){return r.id===id;});
-  if(!rec)return;
-  var copy=JSON.parse(JSON.stringify(rec));
-  copy.id=Date.now().toString();
-  copy.name=copy.name+' (Kopie)';
-  recipes.unshift(copy);
-  saveX();renderLibrary();
-  showToast('📋 Rezept kopiert');
-}
-
-// ── Einkaufsliste aus Rezept ──
-function openShoppingList(recipeId){
-  var rec=recipes.find(function(r){return r.id===recipeId;});
-  if(!rec)return;
-  var el=document.getElementById('shoppingListContent');
-  if(!el)return;
-  document.getElementById('shoppingListTitle').textContent='🛒 '+rec.name;
-  var portions=1;
-  el.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">'
-    +'<label style="font-size:13px;color:var(--mu);">Portionen:</label>'
-    +'<input type="number" id="shoppingPortions" value="1" min="0.5" step="0.5" style="width:60px;border:2px solid var(--br);border-radius:8px;padding:6px;font-size:14px;font-weight:700;text-align:center;outline:none;" onchange="renderShoppingItems(\''+recipeId+'\')">'
-    +'</div>'
-    +'<div id="shoppingItems"></div>'
-    +'<button type="button" class="svb" style="margin-top:10px;" onclick="shoppingToList(\''+recipeId+'\')">🛒 Auf den Einkaufszettel</button>'
-    +'<button type="button" class="seb" onclick="copyShoppingList()">📋 Kopieren</button>';
-  openOv('shoppingOv');
-  renderShoppingItems(recipeId);
-}
-
-function renderShoppingItems(recipeId){
-  var rec=recipes.find(function(r){return r.id===recipeId;});if(!rec)return;
-  var p=parseFloat(document.getElementById('shoppingPortions').value)||1;
-  var el=document.getElementById('shoppingItems');if(!el)return;
-  el.innerHTML=rec.ingredients.map(function(ing){
-    var amt=Math.round((ing.amount||100)*p);
-    return'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--br);">'
-      +'<div style="font-size:13px;">'+esc(ing.emoji||'🍽')+' '+esc(ing.name)+'</div>'
-      +'<div style="font-size:13px;font-weight:700;color:var(--g1);">'+amt+'g</div>'
-      +'</div>';
-  }).join('');
-}
-
-// Zutaten des Rezepts auf den geteilten Einkaufszettel übernehmen
-function shoppingToList(recipeId){
-  if(!window.NTShop){showToast('Einkaufszettel nicht verfügbar');return;}
-  var p=parseFloat((document.getElementById('shoppingPortions')||{}).value)||1;
-  NTShop.addRecipe(recipeId,p);
-  closeOv('shoppingOv');
-  NTShop.open();
-}
-
-function copyShoppingList(){
-  var items=document.getElementById('shoppingItems');if(!items)return;
-  var text=Array.from(items.querySelectorAll('div[style*="border-bottom"]')).map(function(row){
-    var cols=row.querySelectorAll('div');
-    return cols[0].textContent.trim()+': '+cols[1].textContent.trim();
-  }).join('\n');
-  navigator.clipboard.writeText(text).then(function(){showToast('📋 Kopiert');}).catch(function(){showToast('Kopieren nicht verfügbar');});
-}
-
-function openLibrary(){renderLibrary();openOv('libraryOv');}
+// Rezepte zeigt, bearbeitet und kocht js/cookbook.js (NTBook); hier bleiben
+// der Reiter „Lebensmittel“ und das Umschalten. Zutaten eines Rezepts auf den
+// Einkaufszettel: NTBook.toShop → NTShop.addRecipe.
+function openLibrary(tab){libSetTab(tab==='foods'?'foods':'recipes');openOv('libraryOv');}
+// Einlösen-Dialog und Vorschau stehen im DOM vor dem Kochbuch und lägen sonst
+// darunter (alle .ov teilen z-index 300).
+function libImportPaste(){closeOv('libraryOv');openImportPaste();}
 
 // ════════════════════════════════════════
 // SECTION: SPORT & AKTIVITÄT
@@ -7301,7 +7250,7 @@ function deleteExercise(idx){
 function deleteExerciseFromLibrary(name){
   S.exerciseLibrary=(S.exerciseLibrary||[]).filter(function(e){return e.name.toLowerCase()!==name.toLowerCase();});
   saveS();renderExercisePresets();
-  showToast('Aus Bibliothek entfernt');
+  showToast('Lebensmittel entfernt');
 }
 function renderExercise(){
   var el=document.getElementById('exerciseList');if(!el)return;
@@ -7364,7 +7313,7 @@ function saveOwnFoodEdit(){
   };
   saveX();
   closeOv('ownFoodEditOv');
-  setTimeout(function(){openLibrary();},200);
+  setTimeout(function(){openLibrary('foods');},200);
   showToast('Gespeichert ✓');
 }
 
@@ -7374,7 +7323,7 @@ function deleteOwnFoodEdit(){
   customFoods.splice(i,1);
   saveX();
   closeOv('ownFoodEditOv');
-  setTimeout(function(){openLibrary();},200);
+  setTimeout(function(){openLibrary('foods');},200);
   showToast('Gelöscht');
 }
 
@@ -7412,6 +7361,8 @@ var _libTab='recipes';
 
 function libSetTab(tab){
   _libTab=tab;
+  var ov=document.getElementById('libraryOv');if(ov)ov.setAttribute('data-tab',tab);
+  var tools=document.getElementById('bookTools');if(tools)tools.style.display=tab==='recipes'?'':'none';
   var rBtn=document.getElementById('libTabRec');
   var fBtn=document.getElementById('libTabFoods');
   if(tab==='recipes'){
@@ -7435,26 +7386,8 @@ function renderLibrary(){
   var html='';
 
   if(_libTab==='recipes'){
-    var filtered=recipes.filter(function(r){return !ql||r.name.toLowerCase().includes(ql);});
-    if(!filtered.length){
-      html='<div style="font-size:13px;color:var(--mu);font-style:italic;text-align:center;padding:24px;">Keine Rezepte gefunden</div>';
-    } else {
-      filtered.forEach(function(r){
-        var t=ingTotal(r.ingredients||[]);
-        html+='<div style="background:white;border-radius:12px;padding:12px 14px;box-shadow:var(--sh);display:flex;align-items:center;gap:10px;">'
-          +'<div style="font-size:26px;">'+esc(r.emoji||'📋')+'</div>'
-          +'<div style="flex:1;min-width:0;">'
-            +'<div style="font-weight:700;font-size:14px;">'+esc(r.name)+'</div>'
-            +'<div style="font-size:11px;color:var(--mu);margin-top:2px;">'+r.ingredients.length+' Zutaten · '+Math.round(t.kcal)+' kcal/Portion</div>'
-          +'</div>'
-          +'<button type="button" onclick="openRecipeEditor(this.dataset.rid)" data-rid="'+r.id+'" style="background:none;border:none;font-size:18px;color:var(--g2);padding:4px;">✏️</button>'
-          +'<button type="button" onclick="duplicateRecipe(\''+r.id+'\')" style="background:none;border:none;font-size:16px;color:var(--mu);padding:4px;" title="Duplizieren">⎘</button>'
-          +'<button type="button" onclick="shareRecipe(\''+r.id+'\')" style="background:none;border:none;font-size:16px;color:var(--mu);padding:4px;" title="Teilen">📤</button>'
-          +'<button type="button" onclick="openShoppingList(\''+r.id+'\')" style="background:none;border:none;font-size:16px;color:var(--mu);padding:4px;" title="Einkaufsliste">🛒</button>'
-          +'<button type="button" onclick="libAddRecipe(this.dataset.rid)" data-rid="'+r.id+'" style="background:var(--g2);border:none;border-radius:8px;color:white;font-size:18px;padding:4px 8px;">+</button>'
-          +'</div>';
-      });
-    }
+    if(window.NTBook)NTBook.renderList();
+    return;
   } else {
     // Custom foods + DB
     var allFoods=[];
@@ -7483,18 +7416,6 @@ function renderLibrary(){
     }
   }
   el.innerHTML=html;
-}
-
-function libAddRecipe(id){
-  var rec=recipes.find(function(r){return r.id===id;});if(!rec)return;
-  closeOv('libraryOv');
-  switchTab('main');
-  setTimeout(function(){
-    NTPicker.openPicker(mealByTime(),'search');
-    // Pre-select recipe in search
-    var inp=document.getElementById('pickerSearchQ');
-    if(inp){inp.value=rec.name;NTPicker.pickerSearch();}
-  },200);
 }
 
 function libAddFood(i){
@@ -7653,18 +7574,8 @@ function saveMealAsRecipe(meal){
   if(!ings.length){showToast('Keine geeigneten Zutaten für ein Rezept gefunden');return;}
   var firstName=en[0].name||MEAL_NAMES[meal]||'Mahlzeit';
   var defaultName=en.length>1?firstName+' & '+(en.length-1)+' weitere':firstName;
-  var rec={id:Date.now().toString(),name:defaultName,emoji:en[0].emoji||'📋',ingredients:JSON.parse(JSON.stringify(ings)),instructions:''};
-  recipes.unshift(rec);saveX();
-  recEditOpenedFrom='mealDetail';
-  recEditId=rec.id;
-  document.getElementById('recEditTitle').textContent=(rec.emoji||'📋')+' '+rec.name;
-  document.getElementById('recEditName').value=rec.name;
-  document.getElementById('recEditEmoji').value=rec.emoji||'';
-  var insEl=document.getElementById('recEditInstructions');if(insEl)insEl.value='';
-  recEditRenderIng(rec.ingredients);
-  recEditSearch();
-  openOv('recEditOv');
-  showToast('📋 Rezept erstellt – Name & Zutaten anpassen');
+  // Erst der Editor legt an (Entwurf) — wer ihn schliesst, hinterlaesst nichts.
+  NTBook.editDraft({name:defaultName,emoji:en[0].emoji||'📋',ingredients:ings,baseServings:1,instructions:''},{from:'mealDetail'});
 }
 
 // ── HISTORY (Verlauf) ──
@@ -7697,9 +7608,9 @@ function openOv(id){document.getElementById(id).classList.add('open');}
 function closeOv(id){
   document.getElementById(id).classList.remove('open');
   if(id==='pickerOv'){NTPicker.pickerStopScan();}
-  // Ein per „＋ Neues Rezept → selbst zusammenstellen" angelegtes, nie
-  // befuelltes Rezept soll beim Schliessen nicht als Karteileiche bleiben.
-  if(id==='recEditOv'&&window.NTPlan&&NTPlan.discardEmptyDraft)NTPlan.discardEmptyDraft();
+  // Rezept-Editor zu (✕, Grund, Speichern): Entwurf verwerfen bzw. mit
+  // Rueckfrage, wenn etwas geaendert wurde (js/cookbook.js).
+  if(id==='recEditOv'&&window.NTBook)NTBook.editClosed();
 }
 function bgClose(e,id){if(e.target.id===id)closeOv(id);}
 
@@ -8169,30 +8080,31 @@ function axTestSync(){
 }
 
 </script>
-<script src="js/ampel.js?v=0.316"></script>
-<script src="picker.js?v=0.316"></script>
-<script src="js/health-sync.js?v=0.316"></script>
-<script src="js/sync-core.js?v=0.316"></script>
-<script src="js/baby.js?v=0.316"></script>
-<script src="js/baby-meds.js?v=0.316"></script>
-<script src="js/baby-growth-data.js?v=0.316"></script>
-<script src="js/baby-growth.js?v=0.316"></script>
-<script src="js/baby-week.js?v=0.316"></script>
-<script src="js/baby-milestones.js?v=0.316"></script>
-<script src="js/baby-midwife.js?v=0.316"></script>
-<script src="js/shopping.js?v=0.316"></script>
-<script src="js/partner.js?v=0.316"></script>
-<script src="js/alexa-sync.js?v=0.316"></script>
-<script src="js/dashboard.js?v=0.316"></script>
-<script src="js/features.js?v=0.316"></script>
-<script src="js/mealplan.js?v=0.316"></script>
-<script src="js/onedrive.js?v=0.316"></script>
-<script src="js/autosave.js?v=0.316"></script>
-<script src="js/recurring.js?v=0.316"></script>
-<script src="js/stats.js?v=0.316"></script>
-<script src="js/reminders.js?v=0.316"></script>
-<script src="js/templates.js?v=0.316"></script>
-<script src="js/offline-queue.js?v=0.316"></script>
+<script src="js/ampel.js?v=0.317"></script>
+<script src="picker.js?v=0.317"></script>
+<script src="js/health-sync.js?v=0.317"></script>
+<script src="js/sync-core.js?v=0.317"></script>
+<script src="js/baby.js?v=0.317"></script>
+<script src="js/baby-meds.js?v=0.317"></script>
+<script src="js/baby-growth-data.js?v=0.317"></script>
+<script src="js/baby-growth.js?v=0.317"></script>
+<script src="js/baby-week.js?v=0.317"></script>
+<script src="js/baby-milestones.js?v=0.317"></script>
+<script src="js/baby-midwife.js?v=0.317"></script>
+<script src="js/shopping.js?v=0.317"></script>
+<script src="js/partner.js?v=0.317"></script>
+<script src="js/alexa-sync.js?v=0.317"></script>
+<script src="js/dashboard.js?v=0.317"></script>
+<script src="js/features.js?v=0.317"></script>
+<script src="js/mealplan.js?v=0.317"></script>
+<script src="js/cookbook.js?v=0.317"></script>
+<script src="js/onedrive.js?v=0.317"></script>
+<script src="js/autosave.js?v=0.317"></script>
+<script src="js/recurring.js?v=0.317"></script>
+<script src="js/stats.js?v=0.317"></script>
+<script src="js/reminders.js?v=0.317"></script>
+<script src="js/templates.js?v=0.317"></script>
+<script src="js/offline-queue.js?v=0.317"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

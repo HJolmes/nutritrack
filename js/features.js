@@ -56,6 +56,13 @@ var FEATURES=[
      {ic:'🔗', label:'Verbindungen',      hint:'Plan mit jemandem teilen', act:'NTSync.open'}
    ]},
 
+  {id:'book', ic:'📖', label:'Kochbuch', card:'bookCard',
+   sub:'Rezepte sammeln, nachkochen, einplanen',
+   actions:[
+     {ic:'📖', label:'Kochbuch öffnen', hint:'Suchen, filtern, Kochmodus', act:'openLibrary'},
+     {ic:'＋', label:'Neues Rezept',    hint:'Selbst, per Foto oder per Link', act:'NTPlan.newRecipe'}
+   ]},
+
   {id:'shop', ic:'🛒', label:'Einkaufszettel', card:'shopCard',
    sub:'Was noch gekauft werden muss',
    actions:[

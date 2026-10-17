@@ -404,6 +404,14 @@ function _plausible(p){
   return k>0&&isFinite(c)&&c>=0&&((pr||0)+c+(f||0))>0;
 }
 function _fmt(x){return String(Math.round(x*10)/10).replace('.',',');}
+// KH wie auf dem EU-Etikett, also ohne Ballaststoffe: Werte der eingebauten
+// DB (src:'db', USDA-Gesamt-KH) verlieren ihre Ballaststoffe, alle anderen
+// (Etikett, KI, eigene Eingabe) gelten unveraendert (#297).
+/** @param {any} p */
+function _labelCarbs(p){
+  var c=_num(p.carbs),b=_num(p.fiber);
+  return p.src==='db'&&b>0?Math.max(0,c-b):c;
+}
 
 // Ein Urteil je Makro-Praeferenz: {p,ampel,grund}, ampel null = kein Punkt
 // (High Protein unter der Schwelle); null = offen (keine plausiblen Werte).
@@ -416,7 +424,7 @@ function rateMacro(pref,name,per100,amount){
     return {p:pref,ampel:null,grund:''};
   }
   var m=MACRO[pref];if(!m)return null;
-  var c=per100.carbs,f=liq?0.5:1;
+  var c=_labelCarbs(per100),f=liq?0.5:1;
   if(typeof amount==='number'&&amount>0&&c*amount/100<=m.portion){
     return {p:pref,ampel:'gruen',grund:'nur '+_fmt(c*amount/100)+' g KH in der Portion'};
   }

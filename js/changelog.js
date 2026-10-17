@@ -4,6 +4,7 @@
 window.CHANGELOG=[
   {v:'0.320',items:[
     {icon:'🥗',text:'<b>Ballaststoffe für Grundlebensmittel</b>: Obst, Gemüse, Brot, Nudeln, Reis, Hülsenfrüchte, Nüsse und Samen aus der eingebauten Liste bringen jetzt ihre Ballaststoffe mit (Quelle: USDA).',where:'Lebensmittel hinzufügen'},
+    {icon:'🚦',text:'<b>Keto/Low Carb fairer</b>: Die Ernährungs-Ampel zieht bei Grundlebensmitteln die Ballaststoffe von den Kohlenhydraten ab – wie auf deutschen Etiketten. Avocado, Nüsse und Samen werden dadurch nicht mehr zu streng bewertet.',where:'Mehr → 🥗 Ernährung'},
     {icon:'🍶',text:'<b>Essig korrigiert</b>: „Essig“ hat jetzt die Werte von Tafelessig (18 kcal) statt Balsamico; Balsamico gibt es als eigenen Eintrag. „Kartoffelsalat“ heißt „Kartoffelsalat (mit Mayonnaise)“, weil die Werte von dieser Variante stammen.',where:'Lebensmittel hinzufügen'},
   ]},
   {v:'0.319',items:[

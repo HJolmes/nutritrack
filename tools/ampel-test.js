@@ -156,6 +156,14 @@ const MAC = [
   ['Pepsi', P(44, 0, 11, 0), 330, 'Low Carb', 'rot'], ['Lipton Ice Tea', P(19, 0, 4.3, 0), 500, 'Keto', 'gelb'],
   ['Birnen in Rotwein', P(90, 0.4, 18, 0.1), 150, 'Low Carb', 'gelb'],
 ];
+// Herkunft eingebaute DB (src:'db', #297): Gesamt-KH minus Ballaststoffe;
+// dieselben Zahlen ohne Herkunft (Etikett) bleiben, wie sie sind.
+const DBP = (kcal, protein, carbs, fat, fiber) => ({ kcal, protein, carbs, fat, fiber, src: 'db' });
+MAC.push(
+  ['Avocado', DBP(160, 2, 9, 15, 6.7), 100, 'Keto', 'gruen'], ['Avocado', { ...P(160, 2, 9, 15), fiber: 6.7 }, 100, 'Keto', 'gelb'],
+  ['Chiasamen', DBP(486, 17, 42, 31, 34.4), 100, 'Keto', 'gelb'], ['Mandeln', DBP(579, 21, 22, 50, 12.5), 100, 'Low Carb', 'gruen'],
+  ['Apfel', DBP(52, 0.3, 14, 0.2, 2.4), 150, 'Keto', 'rot']
+);
 MAC.forEach(([n, per100, amount, p, want]) => {
   const r = A.rate('diet', n, { prefs: [p], per100, amount });
   const b = r && r.by.find((x) => x.p === p);

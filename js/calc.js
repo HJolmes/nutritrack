@@ -202,7 +202,10 @@ function dbPer100(f){
   // Die Basis-DB (js/fooddb.js) fuehrt nur k/p/c/f, die erzeugte USDA-Ergaenzung
   // (js/fooddb-usda.js) zusaetzlich g Zucker, b Ballaststoffe, l Salz. Fehlende
   // Felder bleiben 0 — so lesen beide Quellen ueber denselben Weg.
-  return{kcal:f.k,protein:f.p,carbs:f.c,fat:f.f,sugar:f.g||0,fiber:f.b||0,salt:f.l||0};
+  // src:'db' haelt die Herkunft fest: KH der eingebauten DB sind wie bei USDA
+  // Gesamt-KH inklusive Ballaststoffe, Etiketten (Open Food Facts) fuehren sie
+  // ohne. Die Ampel rechnet damit auf Etikett-KH um (#297).
+  return{kcal:f.k,protein:f.p,carbs:f.c,fat:f.f,sugar:f.g||0,fiber:f.b||0,salt:f.l||0,src:'db'};
 }
 
 // ── Teilen: kcal einer Sendung ──

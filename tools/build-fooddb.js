@@ -14,6 +14,14 @@
 //   node tools/build-fooddb.js            # laedt die Quelle (Netz noetig)
 //   node tools/build-fooddb.js --check    # nur pruefen, nichts schreiben
 //
+// Zweite Aufgabe: Ballaststoffe der handgepflegten Basis-DB (#297). Deren
+// kcal/KH stammen fast alle aus derselben USDA-Datei, nur ohne Ballaststoffe.
+// tools/fooddb-base.map.json nennt je Basis-Name das USDA-Lebensmittel; das
+// Skript schreibt b (Ballaststoffe) und u (NDB_No) in den Eintrag von
+// js/fooddb.js, alle anderen Felder bleiben von Hand. Es weigert sich, wenn
+// kcal oder KH des Eintrags nicht zum USDA-Lebensmittel passen — dann waere
+// der Ballaststoff-Wert von einem anderen Lebensmittel.
+//
 // Eintraege, deren Name schon in js/fooddb.js steht (ohne Klammern und
 // Leerzeichen verglichen), werden uebersprungen:
 // die handgepflegte Basis-DB bleibt fuer diese Namen massgeblich, damit
@@ -25,6 +33,7 @@ var zlib = require('zlib');
 
 var ROOT = path.join(__dirname, '..');
 var MAP = path.join(__dirname, 'fooddb-usda.map.json');
+var BASE_MAP = path.join(__dirname, 'fooddb-base.map.json');
 var BASE = path.join(ROOT, 'js', 'fooddb.js');
 var OUT = path.join(ROOT, 'js', 'fooddb-usda.js');
 var TARBALL = 'https://registry.npmjs.org/fda-nutrient-database/-/fda-nutrient-database-1.0.2.tgz';
@@ -209,6 +218,38 @@ function render(rows, skipped) {
   return out.join('\n');
 }
 
+// ─── Basis-DB: Ballaststoffe ─────────────────────────────────────────────────
+
+function reEsc(t) { return t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+// Passt das USDA-Lebensmittel zum Eintrag? kcal hoechstens 5 % (mind. 2 kcal)
+// daneben, KH hoechstens 1 g + 10 %.
+function fits(k, c, food) {
+  return Math.abs(food.kcal - k) <= Math.max(2, k * 0.05) &&
+         Math.abs(food.c - c) <= 1 + c * 0.1;
+}
+
+function patchBase(src, baseMap, foods) {
+  var res = resolve(baseMap, foods), problems = res.problems.slice();
+  res.rows.forEach(function(r) {
+    var rx = new RegExp("\\{n:'" + reEsc(r.it.n) + "',[^}]*\\}");
+    var m = src.match(rx);
+    if (!m) { problems.push(r.it.n + ': nicht in js/fooddb.js'); return; }
+    var k = parseFloat((m[0].match(/,k:([\d.]+)/) || [])[1]);
+    var c = parseFloat((m[0].match(/,c:([\d.]+)/) || [])[1]);
+    if (!fits(k, c, r.food)) {
+      problems.push(r.it.n + ': ' + k + ' kcal/' + c + ' g KH passt nicht zu ' + r.food.desc +
+                    ' (' + r.food.kcal + '/' + r.food.c + ')');
+      return;
+    }
+    if (r.food.fiber === null) { problems.push(r.it.n + ': USDA ohne Ballaststoffwert'); return; }
+    var entry = m[0].replace(/,b:[\d.]+/, '').replace(/,u:'\d+'/, '')
+      .replace(/,s:'/, ',b:' + round(r.food.fiber, 1) + ",u:'" + r.food.ndb + "',s:'");
+    src = src.replace(m[0], entry);
+  });
+  return { src: src, problems: problems, count: res.rows.length };
+}
+
 // ─── Ablauf ──────────────────────────────────────────────────────────────────
 
 (async function main() {
@@ -244,6 +285,14 @@ function render(rows, skipped) {
     process.exit(1);
   }
 
+  var baseSrc = fs.readFileSync(BASE, 'utf8');
+  var base = patchBase(baseSrc, JSON.parse(fs.readFileSync(BASE_MAP, 'utf8')), foods);
+  if (base.problems.length) {
+    console.error('✗ ' + base.problems.length + ' Basis-Zuordnung(en) unbrauchbar:');
+    base.problems.forEach(function(p) { console.error('  ' + p); });
+    process.exit(1);
+  }
+
   var js = render(res.rows, skipped);
   if (check) {
     var cur = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : '';
@@ -251,10 +300,17 @@ function render(rows, skipped) {
       console.error('✗ js/fooddb-usda.js ist nicht auf dem Stand der Map — node tools/build-fooddb.js');
       process.exit(1);
     }
+    if (baseSrc !== base.src) {
+      console.error('✗ Ballaststoffe in js/fooddb.js nicht auf dem Stand von tools/fooddb-base.map.json — node tools/build-fooddb.js');
+      process.exit(1);
+    }
     console.log('✓ js/fooddb-usda.js passt zur Map (' + res.rows.length + " Eintraege, " + skipped + ' uebersprungen)');
+    console.log('✓ js/fooddb.js: Ballaststoffe fuer ' + base.count + ' Eintraege');
     return;
   }
   fs.writeFileSync(OUT, js);
+  fs.writeFileSync(BASE, base.src);
+  console.log('✓ js/fooddb.js: Ballaststoffe fuer ' + base.count + ' Eintraege');
   console.log('✓ js/fooddb-usda.js: ' + res.rows.length + ' Eintraege, ' + skipped +
               ' uebersprungen (Name schon in js/fooddb.js), ' +
               Math.round(js.length / 1024) + ' KB');

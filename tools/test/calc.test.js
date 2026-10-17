@@ -389,8 +389,8 @@ test('cleanExerciseLibrary: Dauer raus, Doppel zusammen, MET gewinnt, Eingabe un
 // ── Lebensmittel-DB, Suche, Emoji ───────────────────────────────────────
 test('dbPer100: Basis- und USDA-Eintrag ergeben dasselbe Schema', () => {
   const C = load({});
-  assert.deepEqual(plain(C.dbPer100({ k: 52, p: 0.3, c: 14, f: 0.2 })), { kcal: 52, protein: 0.3, carbs: 14, fat: 0.2, sugar: 0, fiber: 0, salt: 0 });
-  assert.deepEqual(plain(C.dbPer100({ k: 130, p: 2.7, c: 28, f: 0.3, g: 0.1, b: 0.4, l: 0.01 })), { kcal: 130, protein: 2.7, carbs: 28, fat: 0.3, sugar: 0.1, fiber: 0.4, salt: 0.01 });
+  assert.deepEqual(plain(C.dbPer100({ k: 52, p: 0.3, c: 14, f: 0.2 })), { kcal: 52, protein: 0.3, carbs: 14, fat: 0.2, sugar: 0, fiber: 0, salt: 0, src: 'db' });
+  assert.deepEqual(plain(C.dbPer100({ k: 130, p: 2.7, c: 28, f: 0.3, g: 0.1, b: 0.4, l: 0.01 })), { kcal: 130, protein: 2.7, carbs: 28, fat: 0.3, sugar: 0.1, fiber: 0.4, salt: 0.01, src: 'db' });
 });
 
 test('fuzzy: Rangfolge exakt > Anfang > Wortanfang > enthalten > fast', () => {

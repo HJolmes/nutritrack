@@ -812,9 +812,9 @@
   "cat": "Getreide & Backwaren"
  },
  {
-  "n": "Kartoffelsalat",
+  "n": "Kartoffelsalat (mit Mayonnaise)",
   "e": "🥔",
-  "s": "kartoffelsalat",
+  "s": "kartoffelsalat mayo",
   "q": "^Potato salad, home-prepared$",
   "cat": "Getreide & Backwaren"
  },
@@ -2165,7 +2165,14 @@
  {
   "n": "Essig",
   "e": "🥄",
-  "s": "balsamico vinegar",
+  "s": "vinegar branntweinessig tafelessig",
+  "q": "^Vinegar, distilled$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Balsamico-Essig",
+  "e": "🥄",
+  "s": "balsamico balsamessig",
   "q": "^Vinegar, balsamic$",
   "cat": "Getränke, Saucen & Gerichte"
  },

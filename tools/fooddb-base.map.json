@@ -1,0 +1,326 @@
+[
+ {
+  "n": "Apfel",
+  "q": "^Apples, raw, with skin$"
+ },
+ {
+  "n": "Birne",
+  "q": "^Pears, raw$"
+ },
+ {
+  "n": "Banane",
+  "q": "^Bananas, raw$"
+ },
+ {
+  "n": "Orange",
+  "q": "^Oranges, raw, all commercial varieties$"
+ },
+ {
+  "n": "Mandarine",
+  "q": "^Tangerines, \\(mandarin oranges\\), raw$"
+ },
+ {
+  "n": "Erdbeeren",
+  "q": "^Strawberries, raw$"
+ },
+ {
+  "n": "Blaubeeren",
+  "q": "^Blueberries, raw$"
+ },
+ {
+  "n": "Himbeeren",
+  "q": "^Raspberries, raw$"
+ },
+ {
+  "n": "Brombeeren",
+  "q": "^Blackberries, raw$"
+ },
+ {
+  "n": "Kirschen",
+  "q": "^Cherries, sweet, raw$"
+ },
+ {
+  "n": "Weintrauben",
+  "q": "^Grapes, american type \\(slip skin\\), raw$"
+ },
+ {
+  "n": "Kiwi",
+  "q": "^Kiwifruit, green, raw$"
+ },
+ {
+  "n": "Mango",
+  "q": "^Mangos, raw$"
+ },
+ {
+  "n": "Ananas",
+  "q": "^Pineapple, raw, all varieties$"
+ },
+ {
+  "n": "Avocado",
+  "q": "^Avocados, raw, all commercial varieties$"
+ },
+ {
+  "n": "Wassermelone",
+  "q": "^Watermelon, raw$"
+ },
+ {
+  "n": "Pfirsich",
+  "q": "^Peaches, yellow, raw$"
+ },
+ {
+  "n": "Pflaume",
+  "q": "^Plums, raw$"
+ },
+ {
+  "n": "Aprikose",
+  "q": "^Apricots, raw$"
+ },
+ {
+  "n": "Grapefruit",
+  "q": "^Grapefruit, raw, pink and red, all areas$"
+ },
+ {
+  "n": "Zitrone",
+  "q": "^Lemons, raw, without peel$"
+ },
+ {
+  "n": "Tomate",
+  "q": "^Tomatoes, red, ripe, raw, year round average$"
+ },
+ {
+  "n": "Cherrytomaten",
+  "q": "^Tomatoes, red, ripe, raw, year round average$"
+ },
+ {
+  "n": "Gurke",
+  "q": "^Cucumber, with peel, raw$"
+ },
+ {
+  "n": "Möhre",
+  "q": "^Carrots, raw$"
+ },
+ {
+  "n": "Brokkoli",
+  "q": "^Broccoli, raw$"
+ },
+ {
+  "n": "Blumenkohl",
+  "q": "^Cauliflower, raw$"
+ },
+ {
+  "n": "Spinat",
+  "q": "^Spinach, raw$"
+ },
+ {
+  "n": "Rucola",
+  "q": "^Arugula, raw$"
+ },
+ {
+  "n": "Eisbergsalat",
+  "q": "^Lettuce, iceberg \\(includes crisphead types\\), raw$"
+ },
+ {
+  "n": "Paprika rot",
+  "q": "^Peppers, sweet, red, raw$"
+ },
+ {
+  "n": "Paprika gelb",
+  "q": "^Peppers, sweet, yellow, raw$"
+ },
+ {
+  "n": "Paprika grün",
+  "q": "^Peppers, sweet, green, raw$"
+ },
+ {
+  "n": "Zucchini",
+  "q": "^Squash, summer, zucchini, includes skin, raw$"
+ },
+ {
+  "n": "Aubergine",
+  "q": "^Eggplant, raw$"
+ },
+ {
+  "n": "Weißkohl",
+  "q": "^Cabbage, raw$"
+ },
+ {
+  "n": "Zwiebel",
+  "q": "^Onions, raw$"
+ },
+ {
+  "n": "Knoblauch",
+  "q": "^Garlic, raw$"
+ },
+ {
+  "n": "Pilze",
+  "q": "^Mushrooms, white, raw$"
+ },
+ {
+  "n": "Erbsen",
+  "q": "^Peas, green, raw$"
+ },
+ {
+  "n": "Mais",
+  "q": "^Corn, sweet, white, raw$"
+ },
+ {
+  "n": "Süßkartoffel",
+  "q": "^Sweet potato, cooked, baked in skin, flesh, without salt$"
+ },
+ {
+  "n": "Kartoffel",
+  "q": "^Potatoes, flesh and skin, raw$"
+ },
+ {
+  "n": "Spargel",
+  "q": "^Asparagus, raw$"
+ },
+ {
+  "n": "Grüne Bohnen",
+  "q": "^Beans, snap, green, raw$"
+ },
+ {
+  "n": "Kürbis",
+  "q": "^Pumpkin, raw$"
+ },
+ {
+  "n": "Edamame",
+  "q": "^Edamame, frozen, prepared$"
+ },
+ {
+  "n": "Weißbrot",
+  "q": "^Bread, white, commercially prepared \\(includes soft bread crumbs\\)$"
+ },
+ {
+  "n": "Vollkornbrot",
+  "q": "^Bread, whole-wheat, commercially prepared$"
+ },
+ {
+  "n": "Laugenbrezel",
+  "q": "^Pretzels, soft$"
+ },
+ {
+  "n": "Croissant",
+  "q": "^Croissants, butter$"
+ },
+ {
+  "n": "Cornflakes",
+  "q": "^Cereals ready-to-eat, KELLOGG, KELLOGG'S Corn Flakes$"
+ },
+ {
+  "n": "Reis (gekocht)",
+  "q": "^Rice, white, long-grain, regular, cooked, enriched, with salt$"
+ },
+ {
+  "n": "Vollkornreis (gekocht)",
+  "q": "^Rice, brown, long-grain, cooked$"
+ },
+ {
+  "n": "Pasta (gekocht)",
+  "q": "^Pasta, cooked, enriched, without added salt$"
+ },
+ {
+  "n": "Vollkornnudeln (gekocht)",
+  "q": "^Pasta, whole-wheat, cooked$"
+ },
+ {
+  "n": "Quinoa (gekocht)",
+  "q": "^Quinoa, cooked$"
+ },
+ {
+  "n": "Couscous (gekocht)",
+  "q": "^Couscous, cooked$"
+ },
+ {
+  "n": "Bulgur (gekocht)",
+  "q": "^Bulgur, cooked$"
+ },
+ {
+  "n": "Sojamilch",
+  "q": "^Soymilk, original and vanilla, unfortified$"
+ },
+ {
+  "n": "Linsen (gekocht)",
+  "q": "^Lentils, mature seeds, cooked, boiled, without salt$"
+ },
+ {
+  "n": "Kichererbsen",
+  "q": "^Chickpeas \\(garbanzo beans, bengal gram\\), mature seeds, canned, drained solids$"
+ },
+ {
+  "n": "Kidneybohnen",
+  "q": "^Beans, kidney, all types, mature seeds, cooked, boiled, without salt$"
+ },
+ {
+  "n": "Tofu",
+  "q": "^Tofu, raw, regular, prepared with calcium sulfate$"
+ },
+ {
+  "n": "Mandeln",
+  "q": "^Nuts, almonds$"
+ },
+ {
+  "n": "Walnüsse",
+  "q": "^Nuts, walnuts, english$"
+ },
+ {
+  "n": "Cashews",
+  "q": "^Nuts, cashew nuts, raw$"
+ },
+ {
+  "n": "Erdnüsse",
+  "q": "^Peanuts, all types, raw$"
+ },
+ {
+  "n": "Erdnussbutter",
+  "q": "^Peanut butter, smooth style, with salt$"
+ },
+ {
+  "n": "Chiasamen",
+  "q": "^Seeds, chia seeds, dried$"
+ },
+ {
+  "n": "Leinsamen",
+  "q": "^Seeds, flaxseed$"
+ },
+ {
+  "n": "Hummus",
+  "q": "^Hummus, commercial$"
+ },
+ {
+  "n": "Senf",
+  "q": "^Mustard, prepared, yellow$"
+ },
+ {
+  "n": "Schokolade (70%)",
+  "q": "^Chocolate, dark, 70-85% cacao solids$"
+ },
+ {
+  "n": "Vollmilchschokolade",
+  "q": "^Candies, milk chocolate$"
+ },
+ {
+  "n": "Chips",
+  "q": "^Snacks, potato chips, plain, made with partially hydrogenated soybean oil, salted$"
+ },
+ {
+  "n": "Honig",
+  "q": "^Honey$"
+ },
+ {
+  "n": "Marmelade",
+  "q": "^Jams and preserves$"
+ },
+ {
+  "n": "Pommes Frites",
+  "q": "^Fast foods, potato, french fried in vegetable oil$"
+ },
+ {
+  "n": "Hamburger",
+  "q": "^Fast foods, hamburger; double, regular, patty; plain$"
+ },
+ {
+  "n": "Orangensaft",
+  "q": "^Orange juice, raw$"
+ }
+]

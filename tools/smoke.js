@@ -639,6 +639,46 @@ const EXPECTED_NAMESPACES = [
     if (!bookFail) console.log('  ok  Kochbuch: Entwurf, Speichern je Portion, Rechner/✕/Kochmodus/Tagebuch lassen das Rezept unveraendert, Timer und Kochverlauf.');
   }
 
+  // 7c. App-Tour: aus der Hilfe von vorn bis „Fertig“ per Klick, dann an
+  //     einem Punkt einsteigen und mit Esc beenden.
+  let tourFail = 0;
+  {
+    const errBefore = errors.length;
+    try {
+      await page.evaluate(() => { document.querySelectorAll('.ov.open').forEach((o) => o.classList.remove('open')); switchTab('main'); });
+      await page.click('#mainScreen .hbtn[data-act="openHelp"]');
+      await page.click('#helpOv [data-act="NTTour.start"][data-args="[0]"]');
+      const n = await page.evaluate(() => NTTour.steps().length);
+      const chips = await page.evaluate(() => document.querySelectorAll('#helpTourList .tour-chip').length);
+      if (chips !== n) { tourFail++; console.log(`  x   Tour: ${chips} Einstiege in der Hilfe, ${n} Schritte.`); }
+      for (let i = 0; i < n; i++) {
+        await page.waitForTimeout(350);
+        const st = await page.evaluate((i) => {
+          const s = NTTour.steps()[i];
+          const ids = { main: 'mainScreen', history: 'historyScreen', trends: 'statsScreen', more: 'moreScreen' };
+          const card = document.getElementById('tourCard').getBoundingClientRect();
+          return { top: Math.round(card.top), bottom: Math.round(card.bottom), h: innerHeight, count: document.getElementById('tourCount').textContent, help: document.getElementById('helpOv').classList.contains('open'),
+            tab: document.getElementById(ids[s.tab]).classList.contains('active'), inView: card.top >= 0 && card.bottom <= innerHeight + 1 };
+        }, i);
+        if (st.count !== `${i + 1} / ${n}` || st.help || !st.tab || !st.inView) { tourFail++; console.log('  x   Tour Schritt ' + (i + 1) + ': ' + JSON.stringify(st)); }
+        await page.click('#tourNext');
+      }
+      const ended = await page.evaluate(() => !NTTour.active() && document.getElementById('mainScreen').classList.contains('active'));
+      if (!ended) { tourFail++; console.log('  x   Tour: „Fertig“ beendet die Tour nicht oder landet nicht auf „Heute“.'); }
+      await page.click('#mainScreen .hbtn[data-act="openHelp"]');
+      const hist = await page.evaluate(() => NTTour.steps().findIndex((s) => s.tab === 'history'));
+      await page.click(`#helpTourList .tour-chip[data-args="[${hist}]"]`);
+      const mid = await page.evaluate(() => ({ on: NTTour.active(), hist: document.getElementById('historyScreen').classList.contains('active') }));
+      if (!mid.on || !mid.hist) { tourFail++; console.log('  x   Tour: Einstieg am Verlauf ' + JSON.stringify(mid)); }
+      await page.keyboard.press('Escape');
+      const esc = await page.evaluate(() => !NTTour.active() && !document.getElementById('tourRoot').classList.contains('on'));
+      if (!esc) { tourFail++; console.log('  x   Tour: Esc beendet die Tour nicht.'); }
+    } catch (e) { tourFail++; console.log('  x   Tour: ' + e.message); }
+    const newErr = errors.length - errBefore;
+    if (newErr) { tourFail++; console.log(`  x   Tour: ${newErr} neue(r) Fehler, siehe unten.`); }
+    if (!tourFail) console.log('  ok  App-Tour: aus der Hilfe gestartet, alle Schritte per Weiter mit passendem Reiter, Fertig, Einstieg an einem Punkt, Esc beendet.');
+  }
+
   // 8. Zweites Fenster (#261): Es darf die App nicht starten und nichts
   //    schreiben, sondern landet auf tab.html. „Hier weiterarbeiten“ uebernimmt,
   //    und das erste Fenster pausiert. Vorher ueberschrieb der letzte Schreiber
@@ -831,10 +871,10 @@ const EXPECTED_NAMESPACES = [
 
   await browser.close();
 
-  if (errors.length || nsFail || badExports.length || deadHandlers.length || delegationFail || stack.length || deadFeatActs.length || remindFail || tabFail || kbFail || dietFail || pickFail || bookFail) {
+  if (errors.length || nsFail || badExports.length || deadHandlers.length || delegationFail || stack.length || deadFeatActs.length || remindFail || tabFail || kbFail || dietFail || pickFail || bookFail || tourFail) {
     console.error('\nFEHLER:');
     [...new Set(errors)].forEach((e) => console.error('  x   ' + e));
-    console.error(`\n${errors.length + nsFail + badExports.length + deadHandlers.length + delegationFail + stack.length + deadFeatActs.length + remindFail + tabFail + kbFail + dietFail + pickFail + bookFail} Problem(e).`);
+    console.error(`\n${errors.length + nsFail + badExports.length + deadHandlers.length + delegationFail + stack.length + deadFeatActs.length + remindFail + tabFail + kbFail + dietFail + pickFail + bookFail + tourFail} Problem(e).`);
     process.exit(1);
   }
   console.log('\nRauchtest bestanden.');

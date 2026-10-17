@@ -2,6 +2,12 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.318',items:[
+    {icon:'📖',text:'<b>101 Gerichte im Kochbuch</b>: Schnitzel, Lasagne, Käsespätzle, Dal, Pad Thai, Chili, Tiramisu und viele mehr sind schon drin – mit Zutaten, Zubereitung, Zeit und Nährwerten. Jedes lässt sich bearbeiten oder löschen. Quelle: das freie Projekt MorphCook (dort von einer KI geschrieben).',where:'📖 Kochbuch'},
+    {icon:'🌱',text:'<b>Rezepte passen sich dir an</b>: Bist du vegetarisch, vegan, glutenfrei, laktosefrei, Keto/Low Carb, hast eine Fischallergie, bist schwanger oder stillst, zeigt jedes Rezept gleich die passende Fassung – Hack wird zu roten Linsen, Hähnchen zu Tofu, Wein zu Brühe, rohes Ei zu pasteurisiertem. Was die Tabelle nicht kennt, prüft einmal die KI. Wochenplan, Einkauf und Tagebuch übernehmen die angepasste Fassung; „📖 Original anzeigen“ schaltet zurück.',where:'Rezept öffnen'},
+    {icon:'🐟',text:'<b>Fischallergie</b> lässt sich jetzt als Ernährungspräferenz wählen.',where:'Mehr → 🥗 Ernährung'},
+    {icon:'🌿',text:'<b>64 neue Lebensmittel</b> in der Datenbank, vor allem frische Kräuter, Gewürze und Zutaten wie rote Linsen, Quinoa, Tamari oder glutenfreie Pasta (Werte der USDA).',where:'＋ → Suche'},
+  ]},
   {v:'0.317',items:[
     {icon:'📖',text:'<b>Kochbuch</b>: Aus der Rezeptbibliothek wird ein richtiges Kochbuch – mit eigener Kachel auf „Heute“, Suche über Name, Zutat und Kategorie, ⭐ Favoriten, Kategorien und Sortierung. Ein Rezept antippen zeigt Zutaten (auf beliebig viele Portionen umrechenbar), Zubereitung in Schritten, Nährwerte, Notizen und Quelle – und von dort geht es direkt in den Wochenplan, auf den Einkaufszettel oder ins Tagebuch.',where:'Kachel 📖 Kochbuch · Mehr → 📖 Kochbuch'},
     {icon:'👨‍🍳',text:'<b>Kochmodus</b>: Schritt für Schritt in großer Schrift, der Bildschirm bleibt an. Zeitangaben im Schritt („10 Minuten köcheln“) lassen sich als Timer starten – mit Ton und Vibration. „Fertig gekocht“ zählt mit; 🎲 Füllen im Wochenplan schlägt kürzlich Gekochtes seltener vor.',where:'Rezept → 👨‍🍳 Kochen'},

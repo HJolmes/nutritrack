@@ -2665,5 +2665,467 @@
   "s": "vollkorntoast",
   "q": "^Bread, whole-wheat, commercially prepared, toasted$",
   "cat": "Weitere Grundnahrungsmittel"
+ },
+ {
+  "n": "Petersilie",
+  "e": "🌿",
+  "s": "petersilie parsley",
+  "q": "^Parsley, fresh$",
+  "cat": "Kräuter & Gewürze"
+ },
+ {
+  "n": "Basilikum",
+  "e": "🌿",
+  "s": "basilikum basil",
+  "q": "^Basil, fresh$",
+  "cat": "Kräuter & Gewürze"
+ },
+ {
+  "n": "Dill",
+  "e": "🌿",
+  "s": "dill",
+  "q": "^Dill weed, fresh$",
+  "cat": "Kräuter & Gewürze"
+ },
+ {
+  "n": "Koriander (frisch)",
+  "e": "🌿",
+  "s": "koriander koriandergruen cilantro",
+  "q": "^Coriander \\(cilantro\\) leaves, raw$",
+  "cat": "Kräuter & Gewürze"
+ },
+ {
+  "n": "Schnittlauch",
+  "e": "🌿",
+  "s": "schnittlauch chives",
+  "q": "^Chives, raw$",
+  "cat": "Kräuter & Gewürze"
+ },
+ {
+  "n": "Minze",
+  "e": "🌿",
+  "s": "minze pfefferminze mint",
+  "q": "^Spearmint, fresh$",
+  "cat": "Kräuter & Gewürze"
+ },
+ {
+  "n": "Thymian",
+  "e": "🌿",
+  "s": "thymian thyme",
+  "q": "^Thyme, fresh$",
+  "cat": "Kräuter & Gewürze"
+ },
+ {
+  "n": "Rosmarin",
+  "e": "🌿",
+  "s": "rosmarin rosemary",
+  "q": "^Rosemary, fresh$",
+  "cat": "Kräuter & Gewürze"
+ },
+ {
+  "n": "Salbei (getrocknet)",
+  "e": "🌿",
+  "s": "salbei sage",
+  "q": "^Spices, sage, ground$",
+  "cat": "Kräuter & Gewürze"
+ },
+ {
+  "n": "Oregano (getrocknet)",
+  "e": "🌿",
+  "s": "oregano",
+  "q": "^Spices, oregano, dried$",
+  "cat": "Kräuter & Gewürze"
+ },
+ {
+  "n": "Majoran (getrocknet)",
+  "e": "🌿",
+  "s": "majoran marjoram",
+  "q": "^Spices, marjoram, dried$",
+  "cat": "Kräuter & Gewürze"
+ },
+ {
+  "n": "Lorbeerblatt",
+  "e": "🍃",
+  "s": "lorbeer lorbeerblaetter bay",
+  "q": "^Spices, bay leaf$",
+  "cat": "Kräuter & Gewürze"
+ },
+ {
+  "n": "Kreuzkümmel",
+  "e": "🧂",
+  "s": "kreuzkuemmel cumin",
+  "q": "^Spices, cumin seed$",
+  "cat": "Kräuter & Gewürze"
+ },
+ {
+  "n": "Kümmel",
+  "e": "🧂",
+  "s": "kuemmel caraway",
+  "q": "^Spices, caraway seed$",
+  "cat": "Kräuter & Gewürze"
+ },
+ {
+  "n": "Muskatnuss",
+  "e": "🧂",
+  "s": "muskat muskatnuss nutmeg",
+  "q": "^Spices, nutmeg, ground$",
+  "cat": "Kräuter & Gewürze"
+ },
+ {
+  "n": "Anis",
+  "e": "🧂",
+  "s": "anis sternanis",
+  "q": "^Spices, anise seed$",
+  "cat": "Kräuter & Gewürze"
+ },
+ {
+  "n": "Safran",
+  "e": "🧂",
+  "s": "safran saffron",
+  "q": "^Spices, saffron$",
+  "cat": "Kräuter & Gewürze"
+ },
+ {
+  "n": "Kardamom",
+  "e": "🧂",
+  "s": "kardamom cardamom",
+  "q": "^Spices, cardamom$",
+  "cat": "Kräuter & Gewürze"
+ },
+ {
+  "n": "Kurkuma",
+  "e": "🧂",
+  "s": "kurkuma turmeric gelbwurz",
+  "q": "^Spices, turmeric, ground$",
+  "cat": "Kräuter & Gewürze"
+ },
+ {
+  "n": "Cayennepfeffer",
+  "e": "🌶️",
+  "s": "cayenne chiliflocken chilipulver",
+  "q": "^Spices, pepper, red or cayenne$",
+  "cat": "Kräuter & Gewürze"
+ },
+ {
+  "n": "Vanilleextrakt",
+  "e": "🍦",
+  "s": "vanille vanilleextrakt",
+  "q": "^Vanilla extract$",
+  "cat": "Kräuter & Gewürze"
+ },
+ {
+  "n": "Natron",
+  "e": "🧂",
+  "s": "natron backsoda",
+  "q": "^Leavening agents, baking soda$",
+  "cat": "Kräuter & Gewürze"
+ },
+ {
+  "n": "Kapern",
+  "e": "🫒",
+  "s": "kapern capers",
+  "q": "^Capers, canned$",
+  "cat": "Kräuter & Gewürze"
+ },
+ {
+  "n": "Rote Linsen (roh)",
+  "e": "🫘",
+  "s": "rote linsen linsen",
+  "q": "^Lentils, pink or red, raw$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Linsen (roh)",
+  "e": "🫘",
+  "s": "linsen tellerlinsen",
+  "q": "^Lentils, raw$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Mandeln (blanchiert)",
+  "e": "🌰",
+  "s": "mandelmehl gemahlene mandeln",
+  "q": "^Nuts, almonds, blanched$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Reismehl",
+  "e": "🌾",
+  "s": "reismehl glutenfrei",
+  "q": "^Rice flour, white, unenriched$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Glutenfreie Nudeln (roh)",
+  "e": "🍝",
+  "s": "glutenfrei nudeln pasta",
+  "q": "^Pasta, gluten-free, corn, dry$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Glutenfreies Brot",
+  "e": "🍞",
+  "s": "glutenfrei brot",
+  "q": "^Bread, gluten-free, white, made with rice flour, corn starch, and/or tapioca$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Quinoa (roh)",
+  "e": "🌾",
+  "s": "quinoa",
+  "q": "^Quinoa, uncooked$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Bulgur (roh)",
+  "e": "🌾",
+  "s": "bulgur",
+  "q": "^Bulgur, dry$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Couscous (roh)",
+  "e": "🌾",
+  "s": "couscous",
+  "q": "^Couscous, dry$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Reisnudeln (roh)",
+  "e": "🍜",
+  "s": "reisnudeln glasnudeln",
+  "q": "^Rice noodles, dry$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Rundkornreis (roh)",
+  "e": "🍚",
+  "s": "rundkornreis risottoreis sushireis milchreis",
+  "q": "^Rice, white, short-grain, raw, unenriched$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Mais-Tortilla",
+  "e": "🌮",
+  "s": "maistortilla tortilla taco",
+  "q": "^Tortillas, ready-to-bake or -fry, corn$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Burgerbrötchen",
+  "e": "🍔",
+  "s": "burgerbroetchen bun hamburgerbroetchen",
+  "q": "^Rolls, hamburger or hotdog, plain$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Croûtons",
+  "e": "🍞",
+  "s": "croutons",
+  "q": "^Croutons, plain$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Blätterteig",
+  "e": "🥐",
+  "s": "blaetterteig puff",
+  "q": "^Puff pastry, frozen, ready-to-bake$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Filoteig",
+  "e": "🥐",
+  "s": "filoteig yufka phyllo",
+  "q": "^Phyllo dough$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Wan-Tan-Teigblätter",
+  "e": "🥟",
+  "s": "wantan dumpling teigblaetter gyoza",
+  "q": "^Wonton wrappers \\(includes egg roll wrappers\\)$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Löffelbiskuits",
+  "e": "🍪",
+  "s": "loeffelbiskuit biskuit",
+  "q": "^Cookies, ladyfingers, without lemon juice and rind$",
+  "cat": "Getreide & Backwaren"
+ },
+ {
+  "n": "Puderzucker",
+  "e": "🍬",
+  "s": "puderzucker",
+  "q": "^Sugars, powdered$",
+  "cat": "Hülsenfrüchte, Nüsse, Fette & Süßes"
+ },
+ {
+  "n": "Schweinebauch (roh)",
+  "e": "🥓",
+  "s": "schweinebauch bauchfleisch",
+  "q": "^Pork, fresh, belly, raw$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Schweinefleisch (mager, roh)",
+  "e": "🥩",
+  "s": "schweinefleisch schwein",
+  "q": "^Pork, fresh, loin, whole, separable lean only, raw$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Rindergulasch (roh)",
+  "e": "🥩",
+  "s": "rind rindfleisch gulaschfleisch",
+  "q": "^Beef, chuck for stew, separable lean and fat, all grades, raw$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Lammfleisch (roh)",
+  "e": "🥩",
+  "s": "lamm lammfleisch lammkeule",
+  "q": "^Lamb, domestic, leg, shank half, separable lean and fat, trimmed to 1/8\" fat, choice, raw$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Sardellen (Öl)",
+  "e": "🐟",
+  "s": "sardellen anchovis",
+  "q": "^Fish, anchovy, european, canned in oil, drained solids$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Ghee",
+  "e": "🧈",
+  "s": "ghee butterschmalz",
+  "q": "^Butter oil, anhydrous$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Sojajoghurt",
+  "e": "🥣",
+  "s": "sojajoghurt joghurt vegan",
+  "q": "^SILK Plain soy yogurt$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Doppelrahmfrischkäse",
+  "e": "🧀",
+  "s": "frischkaese doppelrahm mascarpone",
+  "q": "^Cheese, cream$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Queso blanco (Paneer)",
+  "e": "🧀",
+  "s": "paneer queso",
+  "q": "^Cheese, white, queso blanco$",
+  "cat": "Milchprodukte & Eier"
+ },
+ {
+  "n": "Misopaste",
+  "e": "🥣",
+  "s": "miso",
+  "q": "^Miso$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Tamari",
+  "e": "🥢",
+  "s": "tamari sojasauce glutenfrei",
+  "q": "^Soy sauce made from soy \\(tamari\\)$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Sesamöl",
+  "e": "🫙",
+  "s": "sesamoel",
+  "q": "^Oil, sesame, salad or cooking$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Worcestersauce",
+  "e": "🫙",
+  "s": "worcester worcestershire",
+  "q": "^Sauce, worcestershire$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Chilisauce (Sriracha)",
+  "e": "🌶️",
+  "s": "sriracha chilisauce chilipaste",
+  "q": "^Sauce, hot chile, sriracha$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Reiswein (Sake)",
+  "e": "🍶",
+  "s": "sake reiswein",
+  "q": "^Alcoholic beverage, rice \\(sake\\)$",
+  "cat": "Getränke, Saucen & Gerichte"
+ },
+ {
+  "n": "Tamarinde",
+  "e": "🫘",
+  "s": "tamarinde tamarindenpaste",
+  "q": "^Tamarinds, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Jalapeño",
+  "e": "🌶️",
+  "s": "jalapeno",
+  "q": "^Peppers, jalapeno, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Kimchi",
+  "e": "🥬",
+  "s": "kimchi",
+  "q": "^Cabbage, kimchi$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Nori (Algen)",
+  "e": "🌿",
+  "s": "nori algen seetang",
+  "q": "^Seaweed, laver, raw$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Wasabi",
+  "e": "🌿",
+  "s": "wasabi",
+  "q": "^Wasabi$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Agar-Agar",
+  "e": "🌿",
+  "s": "agar agaragar geliermittel",
+  "q": "^Seaweed, agar, dried$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Dosentomaten",
+  "e": "🥫",
+  "s": "dosentomaten tomaten stueckige",
+  "q": "^Tomatoes, red, ripe, canned, packed in tomato juice$",
+  "cat": "Gemüse"
+ },
+ {
+  "n": "Hähnchenschenkel (roh, ohne Haut)",
+  "e": "🍗",
+  "s": "haehnchenschenkel huehnerschenkel keule",
+  "q": "^Chicken, broilers or fryers, dark meat, thigh, meat only, raw$",
+  "cat": "Fleisch, Wurst & Fisch"
+ },
+ {
+  "n": "Hähnchenschenkel (roh, mit Haut)",
+  "e": "🍗",
+  "s": "haehnchenschenkel huehnerschenkel keule",
+  "q": "^Chicken, broilers or fryers, thigh, meat and skin, raw$",
+  "cat": "Fleisch, Wurst & Fisch"
  }
 ]

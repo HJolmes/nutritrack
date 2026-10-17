@@ -86,10 +86,15 @@ function planTomb(){
 // Der Abzug entsteht beim Teilen: Die Gegenseite hat das Rezept nicht in ihrer
 // Bibliothek, und ein blosser Verweis waere drueben eine leere Zeile. Er traegt
 // genau das, was Anzeige, Einkaufszettel und Tagebuch brauchen.
-function snapOf(recipeId){
+// Zutaten, wie sie gegessen werden: angepasst an die eigenen Angaben
+// (NTBook.view), mit o=1 im Planeintrag die Fassung der Quelle.
+function viewOf(r,orig){return (window.NTBook&&NTBook.view)?NTBook.view(r,!!orig):{name:r.name,ingredients:r.ingredients||[]};}
+function viewIngs(r,orig){return viewOf(r,orig).ingredients;}
+function snapOf(recipeId,orig){
   var r=rec(recipeId);
   if(!r)return null;
-  return {n:r.name,em:r.emoji||'📋',i:(r.ingredients||[]).map(function(g){
+  var v=viewOf(r,orig);
+  return {n:v.name,em:r.emoji||'📋',i:v.ingredients.map(function(g){
     return {n:g.name,em:g.emoji||'🍽',a:g.amount,p:g.per100};
   })};
 }
@@ -98,7 +103,7 @@ function snapOf(recipeId){
 function resolve(it){
   if(!it)return null;
   var r=rec(it.r);
-  if(r)return {name:r.name,emoji:r.emoji||'📋',ingredients:r.ingredients||[],own:true};
+  if(r){var v=viewOf(r,it.o);return {name:v.name,emoji:r.emoji||'📋',ingredients:v.ingredients,own:true};}
   if(it.s)return {name:it.s.n,emoji:safeEmoji(it.s.em,'📋'),own:false,hist:!!it.h,
     ingredients:(it.s.i||[]).map(function(g){return {name:g.n,emoji:safeEmoji(g.em,'🍽'),amount:g.a,per100:g.p};})};
   return null;
@@ -345,11 +350,16 @@ function addSnapshot(date,slot,name,emoji,ings,portions){
   refreshCard();
 }
 // Ein Rezept aus dem Kochbuch einplanen (NTBook: „📅 Einplanen“).
-function planRecipe(date,slot,recipeId,portions){
-  if(!rec(recipeId)){showToast('Rezept nicht gefunden');return false;}
+function planRecipe(date,slot,recipeId,portions,orig){
+  var r0=rec(recipeId);
+  if(!r0){showToast('Rezept nicht gefunden');return false;}
   if(!SLOTS.some(function(s){return s.id===slot;}))slot='dinner';
   var p=planFor(date,true);
-  p[slot].push({r:recipeId,p:parseFloat(portions)>0?parseFloat(portions):1});
+  /** @type {Record<string, any>} */
+  var it={r:recipeId,p:parseFloat(portions)>0?parseFloat(portions):1};
+  if(orig)it.o=1;
+  p[slot].push(it);
+  markUsed(r0);
   if(S.planApplied)delete S.planApplied[date];
   touch(date);
   saveS();Sync.schedule();
@@ -367,8 +377,11 @@ function dayRecipes(date){
   });
   return out;
 }
+// Ein eingeplantes Grundrezept gehoert ab jetzt zu den eigenen (Picker-Suche).
+function markUsed(r){if(r&&r.seed&&!r.used){r.used=1;saveX();}}
 function addToSlot(recipeId){
   if(!_target)return;
+  markUsed(rec(recipeId));
   var t=_target,repl=_replaceIdx;
   _target=null;_replaceIdx=null;
   var p=planFor(t.date,true);
@@ -519,7 +532,7 @@ function itemToShop(){
   // nicht in der eigenen Bibliothek, die ID liefe dort ins Leere.
   var p=it.p||1;
   NTShop.addIngredients(r.ingredients.map(function(g){
-    return {name:g.name,emoji:g.emoji||'',amount:Math.round((g.amount||0)*p)};
+    return {name:bookIngShort(g)||g.name,emoji:g.emoji||'',amount:Math.round((g.amount||0)*p)};
   }),r.name);
 }
 
@@ -615,6 +628,7 @@ function bestCandidate(cands,used,slot,target,relax){
   cands.forEach(function(c){
     if(!relax&&used[c.key])return;
     if(c.slot&&c.slot!==slot)return;
+    if(c.slots&&c.slots.indexOf(slot)<0)return;
     var bp=PORTION_STEPS[0],bd=Infinity;
     PORTION_STEPS.forEach(function(pp){
       var d=Math.abs(c.kcal*pp-target);
@@ -651,6 +665,14 @@ function rebalance(date,fresh,goal){
   }
 }
 
+// Wozu ein Rezept taugt, wenn es das sagt (Grundrezepte: meal, cat).
+// Ohne Angabe passt es ueberall — wie bisher.
+function recipeSlots(r){
+  var cat=r.cat||[],m=r.meal||[];
+  if(cat.indexOf('Dessert')>=0||cat.indexOf('Snack')>=0)return ['snack'];
+  if(!m.length)return null;
+  return m.filter(function(x){return SLOTS.some(function(s){return s.id===x;});});
+}
 function autoFill(){
   var hist=historyCombos();
   if(!recipes.length&&!hist.length){showToast('Erst ein Rezept anlegen');return;}
@@ -658,9 +680,9 @@ function autoFill(){
   // Was im Kochmodus kuerzlich als gekocht markiert wurde, kommt seltener dran.
   var since=iso(addDays(new Date(),-COOKED_DAYS)),log=S.cookLog||{};
   recipes.forEach(function(r){
-    var k=ingTotal(r.ingredients||[]).kcal;
+    var k=ingTotal(viewIngs(r)).kcal;
     if(!(k>0))return;
-    cands.push({key:'r:'+r.id,kcal:k,slot:null,hist:false,recent:!!(log[r.id]&&log[r.id].last>=since),
+    cands.push({key:'r:'+r.id,kcal:k,slot:null,slots:recipeSlots(r),hist:false,recent:!!(log[r.id]&&log[r.id].last>=since),
       make:function(pp){return {r:r.id,p:pp};}});
   });
   hist.forEach(function(c){
@@ -757,9 +779,11 @@ function weekToShop(){
         if(isNote(it))return;
         var r=resolve(it);if(!r)return;
         r.ingredients.forEach(function(ing){
-          var key=String(ing.name||'').toLowerCase().trim();
+          // Einkaufsname wie im Rezept („Weizenmehl“), nicht der Datenbankname.
+          var nm=bookIngShort(ing)||ing.name;
+          var key=String(nm||'').toLowerCase().trim();
           if(!key)return;
-          if(!agg[key]){agg[key]={name:ing.name,emoji:ing.emoji||'',amount:0};order.push(key);}
+          if(!agg[key]){agg[key]={name:nm,emoji:ing.emoji||'',amount:0};order.push(key);}
           agg[key].amount+=(ing.amount||0)*(it.p||1);
         });
       });
@@ -796,6 +820,7 @@ function toDiary(date){
       // wird beim Toast benannt, statt stillschweigend zu verschwinden.
       if(isNote(it)){skipped++;return;}
       var r=resolve(it);if(!r)return;
+      if(r.own)markUsed(rec(it.r));
       var p=it.p||1,t=ingTotal(r.ingredients);
       day.meals[s.id].push(Object.assign({
         name:r.name,emoji:r.emoji||'📋',isRecipe:true,recipeId:r.own?it.r:null,
@@ -1069,8 +1094,10 @@ function dayPayload(date){
   SLOTS.forEach(function(sl){
     out[sl.id]=(p[sl.id]||[]).map(function(it){
       if(isNote(it))return {x:it.x,p:1};
+      /** @type {Record<string, any>} */
       var o={r:it.r||'',p:it.p||1};
-      var snap=(it.r?snapOf(it.r):null)||it.s;
+      if(it.o)o.o=1;
+      var snap=(it.r?snapOf(it.r,it.o):null)||it.s;
       if(snap)o.s=snap;
       if(it.h)o.h=1;
       return o;
@@ -1113,7 +1140,9 @@ function applyRec(id,rev,payload,room){
   SLOTS.forEach(function(sl){
     p[sl.id]=((payload.d||{})[sl.id]||[]).map(function(o){
       if(o&&o.x)return {x:String(o.x)};
+      /** @type {Record<string, any>} */
       var it={r:o.r||'',p:o.p||1};
+      if(o.o)it.o=1;
       if(o.s)it.s=o.s;
       if(o.h)it.h=1;
       return it;

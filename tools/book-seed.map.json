@@ -1,0 +1,918 @@
+{
+ "$comment": "Zutaten aus MorphCook (ingredient_id) → Lebensmittel der NutriTrack-Datenbank (js/fooddb.js, js/fooddb-usda.js). n: DB-Name, g: Gramm je Einheit, wo sie von den Vorgaben in tools/build-book-seed.js abweicht (Stück immer hier), x: Näherung — die Zutat fehlt in der Datenbank, die Werte stammen vom genannten Ersatz. alt: abhängig von der Notiz der Zutat (rx, ohne Groß/Klein) ein anderes Lebensmittel; pf: Faktor auf die Werte je 100 g — 0.75 für Fleisch mit Knochen (essbarer Anteil), 0.2 für Öl zum Ausbacken (aufgenommene Menge).",
+ "ing": {
+  "almonds-ing": {
+   "n": "Mandeln"
+  },
+  "anchovy": {
+   "n": "Sardellen (Öl)",
+   "g": {
+    "piece": 4
+   }
+  },
+  "apple": {
+   "n": "Apfel",
+   "g": {
+    "piece": 150
+   }
+  },
+  "arborio-rice": {
+   "n": "Rundkornreis (roh)"
+  },
+  "avocado": {
+   "n": "Avocado",
+   "g": {
+    "piece": 150
+   }
+  },
+  "bacon": {
+   "n": "Speck"
+  },
+  "baking-powder": {
+   "n": "Backpulver",
+   "g": {
+    "tsp": 4
+   }
+  },
+  "baking-soda": {
+   "n": "Natron",
+   "g": {
+    "tsp": 4.6
+   }
+  },
+  "banana": {
+   "n": "Banane",
+   "g": {
+    "piece": 120
+   }
+  },
+  "basil": {
+   "n": "Basilikum",
+   "g": {
+    "bunch": 20
+   }
+  },
+  "basmati-rice": {
+   "n": "Reis weiß (roh)",
+   "alt": [
+    {
+     "rx": "gekocht",
+     "n": "Reis weiß (gekocht)"
+    }
+   ]
+  },
+  "bay-leaf": {
+   "n": "Lorbeerblatt",
+   "g": {
+    "piece": 0.2
+   }
+  },
+  "beansprouts": {
+   "n": "Sojasprossen"
+  },
+  "beef-fillet": {
+   "n": "Rinderfilet"
+  },
+  "beef-meat": {
+   "n": "Rindergulasch (roh)"
+  },
+  "beetroot": {
+   "n": "Rote Bete"
+  },
+  "bell-pepper": {
+   "n": "Paprika rot",
+   "g": {
+    "piece": 160
+   }
+  },
+  "berries": {
+   "n": "Himbeeren",
+   "x": "gemischte Beeren: Werte von Himbeeren"
+  },
+  "black-beans": {
+   "n": "Schwarze Bohnen (gekocht)",
+   "g": {
+    "can": 240
+   }
+  },
+  "black-pepper": {
+   "n": "Pfeffer",
+   "g": {
+    "tsp": 2.3,
+    "pinch": 0.2
+   }
+  },
+  "blueberry": {
+   "n": "Blaubeeren"
+  },
+  "bread": {
+   "n": "Weißbrot",
+   "g": {
+    "slice": 40,
+    "piece": 50
+   }
+  },
+  "breadcrumbs": {
+   "n": "Paniermehl",
+   "g": {
+    "tbsp": 7
+   }
+  },
+  "broccoli": {
+   "n": "Brokkoli"
+  },
+  "brown-sugar": {
+   "n": "Brauner Zucker",
+   "g": {
+    "tbsp": 12.5,
+    "tsp": 4
+   }
+  },
+  "bulgur": {
+   "n": "Bulgur (roh)"
+  },
+  "burger-bun": {
+   "n": "Burgerbrötchen",
+   "g": {
+    "piece": 60
+   }
+  },
+  "butter": {
+   "n": "Butter",
+   "g": {
+    "tbsp": 14
+   }
+  },
+  "button-mushroom": {
+   "n": "Champignons"
+  },
+  "canned-tomatoes": {
+   "n": "Dosentomaten",
+   "g": {
+    "can": 400
+   }
+  },
+  "caraway": {
+   "n": "Kümmel",
+   "g": {
+    "tsp": 2
+   }
+  },
+  "carrot": {
+   "n": "Möhre",
+   "g": {
+    "piece": 80
+   }
+  },
+  "celery-stalk": {
+   "n": "Sellerie (Stange)",
+   "g": {
+    "piece": 40
+   }
+  },
+  "cheddar": {
+   "n": "Cheddar"
+  },
+  "cherry-tomato": {
+   "n": "Cherrytomaten"
+  },
+  "chia-seeds": {
+   "n": "Chiasamen",
+   "g": {
+    "tbsp": 12
+   }
+  },
+  "chicken-breast": {
+   "n": "Hähnchenbrust (roh)"
+  },
+  "chicken-stock": {
+   "n": "Hühnerbrühe"
+  },
+  "chicken-thigh": {
+   "n": "Hähnchenschenkel (roh, ohne Haut)",
+   "alt": [
+    {
+     "rx": "mit (Haut und )?Knochen|mit Haut",
+     "n": "Hähnchenschenkel (roh, mit Haut)",
+     "pf": 0.75
+    }
+   ]
+  },
+  "chickpeas": {
+   "n": "Kichererbsen (gekocht)",
+   "g": {
+    "can": 240
+   }
+  },
+  "chili": {
+   "n": "Chili",
+   "g": {
+    "piece": 15
+   }
+  },
+  "chili-flakes": {
+   "n": "Cayennepfeffer",
+   "g": {
+    "tsp": 1.5
+   },
+   "x": "Chiliflocken: Werte von Cayennepfeffer"
+  },
+  "chives": {
+   "n": "Schnittlauch",
+   "g": {
+    "bunch": 20
+   }
+  },
+  "cilantro": {
+   "n": "Koriander (frisch)",
+   "g": {
+    "bunch": 25
+   }
+  },
+  "cinnamon": {
+   "n": "Zimt",
+   "g": {
+    "tsp": 2.6,
+    "piece": 3
+   }
+  },
+  "cocoa-powder": {
+   "n": "Kakaopulver",
+   "g": {
+    "tbsp": 7
+   }
+  },
+  "coconut-milk": {
+   "n": "Kokosmilch"
+  },
+  "coconut-oil": {
+   "n": "Kokosöl",
+   "g": {
+    "tbsp": 13.6,
+    "tsp": 4.5
+   }
+  },
+  "cod": {
+   "n": "Kabeljau"
+  },
+  "corn": {
+   "n": "Mais"
+  },
+  "corn-tortilla": {
+   "n": "Mais-Tortilla",
+   "g": {
+    "piece": 25
+   }
+  },
+  "cornstarch": {
+   "n": "Maisstärke",
+   "g": {
+    "tbsp": 8,
+    "tsp": 2.7
+   }
+  },
+  "couscous": {
+   "n": "Couscous (roh)"
+  },
+  "cream": {
+   "n": "Sahne"
+  },
+  "cream-cheese": {
+   "n": "Frischkäse"
+  },
+  "croutons": {
+   "n": "Croûtons"
+  },
+  "cucumber": {
+   "n": "Gurke",
+   "g": {
+    "piece": 400
+   }
+  },
+  "cumin": {
+   "n": "Kreuzkümmel",
+   "g": {
+    "tsp": 2
+   }
+  },
+  "curry-powder": {
+   "n": "Currypulver",
+   "g": {
+    "tbsp": 6,
+    "tsp": 2
+   }
+  },
+  "daikon": {
+   "n": "Rettich"
+  },
+  "dark-chocolate": {
+   "n": "Zartbitterschokolade"
+  },
+  "dijon-mustard": {
+   "n": "Senf",
+   "g": {
+    "tsp": 5,
+    "tbsp": 15
+   },
+   "x": "Dijon-Senf: Werte von Senf"
+  },
+  "dill": {
+   "n": "Dill",
+   "g": {
+    "bunch": 20
+   }
+  },
+  "doubanjiang": {
+   "n": "Chilisauce (Sriracha)",
+   "x": "Doubanjiang: Werte von Chilisauce"
+  },
+  "dried-apricots": {
+   "n": "Aprikosen getrocknet"
+  },
+  "dumpling-wrappers": {
+   "n": "Wan-Tan-Teigblätter",
+   "g": {
+    "piece": 8
+   }
+  },
+  "egg": {
+   "n": "Ei",
+   "g": {
+    "piece": 55
+   }
+  },
+  "eggplant": {
+   "n": "Aubergine",
+   "g": {
+    "piece": 300
+   }
+  },
+  "espresso": {
+   "n": "Espresso"
+  },
+  "feta": {
+   "n": "Feta"
+  },
+  "firm-tofu": {
+   "n": "Tofu (fest)"
+  },
+  "fish-sauce": {
+   "n": "Sojasauce",
+   "x": "Fischsauce: Werte von Sojasauce"
+  },
+  "garam-masala": {
+   "n": "Currypulver",
+   "g": {
+    "tsp": 2,
+    "tbsp": 6
+   },
+   "x": "Garam Masala: Werte von Currypulver"
+  },
+  "garlic": {
+   "n": "Knoblauch",
+   "g": {
+    "clove": 5
+   }
+  },
+  "ghee": {
+   "n": "Ghee",
+   "g": {
+    "tbsp": 13,
+    "tsp": 4.3
+   }
+  },
+  "ginger": {
+   "n": "Ingwer",
+   "g": {
+    "piece": 20
+   }
+  },
+  "gluten-free-flour": {
+   "n": "Reismehl",
+   "x": "glutenfreie Mehlmischung: Werte von Reismehl"
+  },
+  "gochujang": {
+   "n": "Chilisauce (Sriracha)",
+   "x": "Gochujang: Werte von Chilisauce"
+  },
+  "greek-yogurt": {
+   "n": "Griechischer Joghurt"
+  },
+  "green-beans": {
+   "n": "Grüne Bohnen"
+  },
+  "green-curry-paste": {
+   "n": "Chilisauce (Sriracha)",
+   "x": "grüne Currypaste: Werte von Chilisauce"
+  },
+  "ground-beef": {
+   "n": "Rinderhackfleisch (roh)"
+  },
+  "honey-ing": {
+   "n": "Honig",
+   "g": {
+    "tbsp": 21,
+    "tsp": 7
+   }
+  },
+  "jalapeno": {
+   "n": "Jalapeño",
+   "g": {
+    "piece": 15
+   }
+  },
+  "jasmine-rice": {
+   "n": "Reis weiß (roh)",
+   "alt": [
+    {
+     "rx": "gekocht",
+     "n": "Reis weiß (gekocht)"
+    }
+   ]
+  },
+  "katsuobushi": {
+   "n": "Thunfisch (Dose, Wasser)",
+   "x": "Bonitoflocken: Werte von Thunfisch"
+  },
+  "ketchup": {
+   "n": "Ketchup",
+   "g": {
+    "tbsp": 17
+   }
+  },
+  "kidney-beans": {
+   "n": "Kidneybohnen (gekocht)",
+   "g": {
+    "can": 240
+   }
+  },
+  "kimchi": {
+   "n": "Kimchi"
+  },
+  "ladyfingers": {
+   "n": "Löffelbiskuits"
+  },
+  "lamb-meat": {
+   "n": "Lammfleisch (roh)"
+  },
+  "lasagna-sheets": {
+   "n": "Nudeln (roh)"
+  },
+  "lemon": {
+   "n": "Zitrone",
+   "g": {
+    "piece": 60
+   }
+  },
+  "lime": {
+   "n": "Limette",
+   "g": {
+    "piece": 45
+   }
+  },
+  "macaroni": {
+   "n": "Nudeln (roh)"
+  },
+  "maple-syrup": {
+   "n": "Ahornsirup",
+   "g": {
+    "tbsp": 20,
+    "tsp": 6.7
+   }
+  },
+  "mascarpone": {
+   "n": "Doppelrahmfrischkäse",
+   "x": "Mascarpone: Werte von Doppelrahmfrischkäse"
+  },
+  "mayonnaise": {
+   "n": "Mayonnaise",
+   "g": {
+    "tbsp": 14
+   }
+  },
+  "mint": {
+   "n": "Minze",
+   "g": {
+    "bunch": 20
+   }
+  },
+  "mirin": {
+   "n": "Reiswein (Sake)",
+   "x": "Mirin: Werte von Sake"
+  },
+  "miso-paste": {
+   "n": "Misopaste",
+   "g": {
+    "tbsp": 17
+   }
+  },
+  "mozzarella": {
+   "n": "Mozzarella"
+  },
+  "nori": {
+   "n": "Nori (Algen)",
+   "g": {
+    "piece": 3
+   }
+  },
+  "nutmeg": {
+   "n": "Muskatnuss",
+   "g": {
+    "tsp": 2.2,
+    "pinch": 0.2
+   }
+  },
+  "oats": {
+   "n": "Haferflocken (roh)"
+  },
+  "okonomiyaki-sauce": {
+   "n": "Barbecue-Sauce",
+   "g": {
+    "tbsp": 17
+   },
+   "x": "Okonomiyaki-Sauce: Werte von Barbecue-Sauce"
+  },
+  "olive-oil": {
+   "n": "Olivenöl",
+   "g": {
+    "tbsp": 13.5,
+    "tsp": 4.5
+   },
+   "alt": [
+    {
+     "rx": "ausback|frittier",
+     "n": "Olivenöl",
+     "pf": 0.2
+    }
+   ]
+  },
+  "olives": {
+   "n": "Oliven schwarz"
+  },
+  "onion": {
+   "n": "Zwiebel",
+   "g": {
+    "piece": 100
+   }
+  },
+  "oregano": {
+   "n": "Oregano (getrocknet)",
+   "g": {
+    "tsp": 1
+   }
+  },
+  "paneer": {
+   "n": "Queso blanco (Paneer)"
+  },
+  "paprika-powder": {
+   "n": "Paprikapulver",
+   "g": {
+    "tsp": 2.3,
+    "tbsp": 7
+   }
+  },
+  "parmesan": {
+   "n": "Parmesan"
+  },
+  "parsley": {
+   "n": "Petersilie",
+   "g": {
+    "bunch": 30
+   }
+  },
+  "passata": {
+   "n": "Passierte Tomaten"
+  },
+  "pasta": {
+   "n": "Nudeln (roh)"
+  },
+  "peanut-butter": {
+   "n": "Erdnussbutter",
+   "g": {
+    "tbsp": 16
+   }
+  },
+  "peanuts-ing": {
+   "n": "Erdnüsse"
+  },
+  "peas": {
+   "n": "Erbsen"
+  },
+  "phyllo-dough": {
+   "n": "Filoteig"
+  },
+  "pickled-ginger": {
+   "n": "Ingwer",
+   "x": "eingelegter Ingwer: Werte von frischem Ingwer"
+  },
+  "pickles": {
+   "n": "Essiggurke"
+  },
+  "pita": {
+   "n": "Pita",
+   "g": {
+    "piece": 70
+   }
+  },
+  "pork-belly": {
+   "n": "Schweinebauch (roh)"
+  },
+  "pork-meat": {
+   "n": "Schweinefleisch (mager, roh)"
+  },
+  "potato": {
+   "n": "Kartoffel (roh)",
+   "g": {
+    "piece": 150
+   }
+  },
+  "powdered-sugar": {
+   "n": "Puderzucker",
+   "g": {
+    "tbsp": 8
+   }
+  },
+  "puff-pastry": {
+   "n": "Blätterteig"
+  },
+  "raisins": {
+   "n": "Rosinen"
+  },
+  "ramen-noodles": {
+   "n": "Nudeln (roh)",
+   "x": "Ramen-Nudeln: Werte von Nudeln"
+  },
+  "red-curry-paste": {
+   "n": "Chilisauce (Sriracha)",
+   "g": {
+    "tbsp": 16
+   },
+   "x": "rote Currypaste: Werte von Chilisauce"
+  },
+  "red-lentils": {
+   "n": "Rote Linsen (roh)"
+  },
+  "red-onion": {
+   "n": "Zwiebel",
+   "g": {
+    "piece": 100
+   }
+  },
+  "rice": {
+   "n": "Reis weiß (roh)",
+   "alt": [
+    {
+     "rx": "gekocht",
+     "n": "Reis weiß (gekocht)"
+    }
+   ]
+  },
+  "rice-noodles": {
+   "n": "Reisnudeln (roh)"
+  },
+  "rice-vinegar": {
+   "n": "Essig",
+   "g": {
+    "tbsp": 15
+   }
+  },
+  "romaine": {
+   "n": "Romanasalat",
+   "g": {
+    "piece": 300
+   }
+  },
+  "rosemary": {
+   "n": "Rosmarin",
+   "g": {
+    "sprig": 1.5
+   }
+  },
+  "saffron": {
+   "n": "Safran",
+   "g": {
+    "tsp": 0.7,
+    "pinch": 0.05
+   }
+  },
+  "sage": {
+   "n": "Salbei (getrocknet)",
+   "g": {
+    "piece": 0.2
+   }
+  },
+  "salmon": {
+   "n": "Lachs (roh)"
+  },
+  "salt": {
+   "n": "Salz",
+   "g": {
+    "tsp": 6,
+    "tbsp": 18,
+    "pinch": 0.4
+   }
+  },
+  "sesame-oil": {
+   "n": "Sesamöl",
+   "g": {
+    "tsp": 4.5,
+    "tbsp": 13.6
+   }
+  },
+  "shallot": {
+   "n": "Schalotte",
+   "g": {
+    "piece": 30
+   }
+  },
+  "shrimp": {
+   "n": "Garnelen"
+  },
+  "sichuan-peppercorns": {
+   "n": "Pfeffer",
+   "g": {
+    "tsp": 2
+   },
+   "x": "Szechuanpfeffer: Werte von Pfeffer"
+  },
+  "silken-tofu": {
+   "n": "Tofu"
+  },
+  "skim-milk": {
+   "n": "Magermilch"
+  },
+  "smoked-paprika": {
+   "n": "Paprikapulver",
+   "g": {
+    "tsp": 2.3,
+    "tbsp": 7
+   }
+  },
+  "sour-cream": {
+   "n": "Saure Sahne"
+  },
+  "sourdough": {
+   "n": "Weißbrot",
+   "g": {
+    "slice": 40
+   },
+   "x": "Sauerteigbrot: Werte von Weißbrot"
+  },
+  "soy-sauce": {
+   "n": "Sojasauce",
+   "g": {
+    "tbsp": 16
+   }
+  },
+  "spaghetti": {
+   "n": "Nudeln (roh)"
+  },
+  "spinach": {
+   "n": "Spinat"
+  },
+  "spring-onion": {
+   "n": "Frühlingszwiebel",
+   "g": {
+    "piece": 15
+   }
+  },
+  "star-anise": {
+   "n": "Anis",
+   "g": {
+    "piece": 1
+   }
+  },
+  "sugar": {
+   "n": "Zucker",
+   "g": {
+    "tbsp": 12.5,
+    "tsp": 4
+   }
+  },
+  "sumac": {
+   "n": "Oregano (getrocknet)",
+   "g": {
+    "tsp": 2
+   },
+   "x": "Sumach: Werte von Oregano"
+  },
+  "sunflower-seeds": {
+   "n": "Sonnenblumenkerne"
+  },
+  "sushi-rice": {
+   "n": "Rundkornreis (roh)"
+  },
+  "tahini": {
+   "n": "Tahini",
+   "g": {
+    "tbsp": 15
+   }
+  },
+  "tamari": {
+   "n": "Tamari",
+   "g": {
+    "tbsp": 16
+   }
+  },
+  "tamarind-paste": {
+   "n": "Tamarinde",
+   "g": {
+    "tbsp": 18
+   }
+  },
+  "thyme": {
+   "n": "Thymian",
+   "g": {
+    "sprig": 1
+   }
+  },
+  "tomato": {
+   "n": "Tomate",
+   "g": {
+    "piece": 120
+   }
+  },
+  "tomato-paste": {
+   "n": "Tomatenmark",
+   "g": {
+    "tbsp": 16
+   }
+  },
+  "tuna": {
+   "n": "Thunfisch (Dose, Wasser)"
+  },
+  "vanilla-extract": {
+   "n": "Vanilleextrakt",
+   "g": {
+    "tsp": 4.2
+   }
+  },
+  "vegetable-oil": {
+   "n": "Rapsöl",
+   "g": {
+    "tbsp": 13.6,
+    "tsp": 4.5
+   },
+   "alt": [
+    {
+     "rx": "ausback|frittier",
+     "n": "Rapsöl",
+     "pf": 0.2
+    }
+   ]
+  },
+  "vegetable-stock": {
+   "n": "Gemüsebrühe"
+  },
+  "walnuts-ing": {
+   "n": "Walnüsse"
+  },
+  "wasabi": {
+   "n": "Wasabi",
+   "g": {
+    "tsp": 5
+   }
+  },
+  "wheat-flour": {
+   "n": "Weizenmehl Type 405",
+   "g": {
+    "tbsp": 8
+   }
+  },
+  "wheat-tortilla": {
+   "n": "Tortilla (Weizen)",
+   "g": {
+    "piece": 45
+   }
+  },
+  "white-cabbage": {
+   "n": "Weißkohl"
+  },
+  "white-sesame": {
+   "n": "Sesam",
+   "g": {
+    "tsp": 3,
+    "tbsp": 9
+   }
+  },
+  "whole-milk": {
+   "n": "Milch (3,5%)"
+  },
+  "yogurt": {
+   "n": "Naturjoghurt"
+  },
+  "zaatar": {
+   "n": "Oregano (getrocknet)",
+   "g": {
+    "tsp": 2
+   },
+   "x": "Za'atar: Werte von Oregano"
+  },
+  "zucchini": {
+   "n": "Zucchini",
+   "g": {
+    "piece": 200
+   }
+  }
+ }
+}

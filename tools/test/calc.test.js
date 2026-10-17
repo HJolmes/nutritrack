@@ -412,6 +412,12 @@ test('emo: Treffer ueber Teilwort, sonst Teller', () => {
   assert.equal(C.emo('Äpfel'), '🍎');
   assert.equal(C.emo('Unbekanntes'), '🍽');
   assert.equal(C.emo(undefined), '🍽');
+  // Bier und Wein nur, wo sie gemeint sind (v0.318)
+  assert.equal(C.emo('Bier'), '🍺');
+  assert.equal(C.emo('Rotwein'), '🍷');
+  assert.equal(C.emo('Weißwein'), '🍷');
+  assert.notEqual(C.emo('Schoko-Beeren-Crêpes'), '🍺');
+  assert.notEqual(C.emo('Schweinebauch-Kimchi'), '🍷');
 });
 
 // ── Portionsgedaechtnis ─────────────────────────────────────────────────
@@ -805,4 +811,156 @@ test('bookFilter und bookSort', () => {
   const log = { 100: { n: 3, last: '2026-10-01' }, 200: { n: 1, last: '2026-10-10' } };
   assert.deepEqual(ids(C.bookSort(list, 'cooked', log)), ['200', '100', '300']);
   assert.deepEqual(ids(C.bookSort(list, 'often', log)), ['100', '200', '300']);
+});
+
+// ── Kochbuch: Anpassung an die eigenen Angaben (v0.318) ──────────────────
+function loadBook() {
+  const C = load({});
+  for (const f of ['js/fooddb.js', 'js/fooddb-usda.js', 'js/book-swaps.js']) {
+    vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), C, { filename: f });
+  }
+  C.lookup = (n) => {
+    const d = C.DB.find((x) => x.n === n);
+    return d ? { name: d.n, emoji: d.e, per100: C.dbPer100(d) } : null;
+  };
+  return C;
+}
+const P = (k, a) => ({ kcal: k, protein: 0, carbs: 0, fat: 0, ...(a || {}) });
+const tnames = (a) => plain(a.ingredients).map((g) => g.t || g.name);
+
+test('bookProfile: Schluessel aus Ernaehrung, Schwangerschaft, Stillzeit', () => {
+  const C = load({});
+  assert.deepEqual(plain(C.bookProfile({ dietPrefs: [] })).keys, []);
+  assert.deepEqual(plain(C.bookProfile({ dietPrefs: ['Vegan', 'Glutenfrei'] })).keys, ['vegan', 'veg', 'gf']);
+  assert.deepEqual(plain(C.bookProfile({ dietPrefs: ['Keto', 'Low Carb', 'Fischallergie'] })).keys, ['keto', 'fish']);
+  const p = plain(C.bookProfile({ dietPrefs: ['Vegetarisch'], pregnant: '2', nursing: 0, dietFree: 'keine Pilze' }));
+  assert.deepEqual(p.keys, ['veg', 'preg']);
+  assert.deepEqual(p.labels, ['vegetarisch', 'Schwangerschaft', 'keine Pilze']);
+  assert.equal(p.sig, 'veg,preg|keine Pilze');
+  assert.deepEqual(plain(C.bookProfile({ pregnant: '0', nursing: 'part' })).keys, ['nurs']);
+});
+
+test('BOOK_SWAPS: jeder Ersatz steht in der Lebensmittel-Datenbank, jedes Muster ist gueltig', () => {
+  const C = loadBook();
+  const missing = [];
+  C.BOOK_SWAPS.forEach((r, i) => {
+    assert.ok(Array.isArray(r.k) && r.k.length, 'Zeile ' + i + ' ohne k');
+    assert.ok(r.m || r.fl, 'Zeile ' + i + ' ohne m und fl');
+    for (const rx of [r.m, r.x, r.dish]) if (rx) new RegExp(rx);
+    assert.ok(r.rm || r.keep || (r.to && r.to.length), 'Zeile ' + i + ' ohne Ziel');
+    (r.to || []).forEach((n) => { if (!C.lookup(n)) missing.push(n); });
+  });
+  assert.deepEqual(missing, []);
+});
+
+test('adaptRecipe: ohne Angaben unveraendert, Rezept bleibt unberuehrt', () => {
+  const C = loadBook();
+  const r = { name: 'Bolognese', ingredients: [{ name: 'Rinderhackfleisch (roh)', amount: 100, per100: P(215) }] };
+  const snap = JSON.stringify(r);
+  const a = plain(C.adaptRecipe(r, C.bookProfile({}), C.BOOK_SWAPS, C.lookup));
+  assert.equal(a.swaps.length, 0);
+  assert.equal(a.ingredients[0].name, 'Rinderhackfleisch (roh)');
+  C.adaptRecipe(r, C.bookProfile({ dietPrefs: ['Vegan'] }), C.BOOK_SWAPS, C.lookup);
+  assert.equal(JSON.stringify(r), snap, 'Original unveraendert');
+});
+
+test('adaptRecipe: vegetarisch – Hack, Huhn, Bruehe, Fischsauce, Kimchi; Gemuese bleibt', () => {
+  const C = loadBook();
+  const r = { name: 'Testpfanne', ingredients: [
+    { name: 'Rinderhackfleisch (roh)', amount: 100, per100: P(215), q: 100, u: 'g', t: 'Rinderhack' },
+    { name: 'Hähnchenbrust (roh)', amount: 150, per100: P(108), t: 'Hähnchenbrust, in Streifen' },
+    { name: 'Hühnerbrühe', amount: 200, per100: P(6), fl: ['poultry'] },
+    { name: 'Sojasauce', amount: 10, per100: P(60), t: 'Fischsauce', fl: ['fish'] },
+    { name: 'Kimchi', amount: 80, per100: P(15), fl: ['fish', 'shellfish'] },
+    { name: 'Paprika rot', amount: 100, per100: P(31) },
+    { name: 'Austernpilze', amount: 50, per100: P(30) }
+  ] };
+  const a = plain(C.adaptRecipe(r, C.bookProfile({ dietPrefs: ['Vegetarisch'] }), C.BOOK_SWAPS, C.lookup));
+  assert.equal(a.ingredients[0].name, 'Rote Linsen (roh)');
+  assert.equal(a.ingredients[0].amount, 50, 'halbe Menge, trocken');
+  assert.equal(a.ingredients[0].q, 50);
+  assert.equal(a.ingredients[0].was, 'Rinderhack');
+  assert.equal(a.ingredients[1].name, 'Tofu (fest)');
+  assert.equal(a.ingredients[2].name, 'Gemüsebrühe');
+  assert.equal(a.ingredients[3].name, 'Sojasauce');
+  assert.equal(a.ingredients[4].t, 'Kimchi (ohne Fischsauce)');
+  assert.equal(a.ingredients[5].name, 'Paprika rot');
+  assert.equal(a.ingredients[6].name, 'Austernpilze', 'Austernpilze sind kein Fisch');
+  assert.equal(a.swaps.length, 5);
+  assert.ok(a.swaps.every((s) => s.k === 'veg' && s.why));
+});
+
+test('adaptRecipe: vegan + glutenfrei – Kette Sojasauce → Tamari, Ei je nach Gericht', () => {
+  const C = loadBook();
+  const base = [
+    { name: 'Sojasauce', amount: 10, per100: P(60), t: 'Fischsauce', fl: ['fish'] },
+    { name: 'Ei', amount: 55, per100: P(143), q: 1, u: '', t: 'Eier', fl: ['egg'] },
+    { name: 'Butter', amount: 20, per100: P(717), fl: ['dairy'] },
+    { name: 'Milch (3,5%)', amount: 200, per100: P(64) },
+    { name: 'Nudeln (roh)', amount: 80, per100: P(371), fl: ['gluten'] },
+    { name: 'Gochujang', amount: 10, per100: P(93), fl: ['soy', 'gluten'] }
+  ];
+  const prof = C.bookProfile({ dietPrefs: ['Vegan', 'Glutenfrei'] });
+  const a = plain(C.adaptRecipe({ name: 'Pfannkuchen', ingredients: base }, prof, C.BOOK_SWAPS, C.lookup));
+  assert.deepEqual(a.ingredients.map((g) => g.name), ['Tamari', 'Leinsamen', 'Margarine', 'Hafermilch', 'Glutenfreie Nudeln (roh)', 'Gochujang']);
+  assert.equal(a.ingredients[1].q, undefined, 'Stueckzahl passt nicht mehr – nur Gramm');
+  assert.equal(a.ingredients[2].t, 'Margarine (vegan)');
+  assert.equal(a.ingredients[5].t, 'Gochujang (glutenfrei)');
+  const bt = plain(C.adaptRecipe({ name: 'Pastete', ingredients: [{ name: 'Blätterteig', t: 'Blätterteig (Butter)', amount: 50, per100: P(551), fl: ['gluten', 'dairy'] },
+    { name: 'Tamarinde', t: 'Tamarindenpaste', amount: 10, per100: P(239) }] }, prof, C.BOOK_SWAPS, C.lookup));
+  assert.deepEqual(tnames(bt), ['Blätterteig (vegan, glutenfrei)', 'Tamarindenpaste'], 'Klammerzusatz faellt weg, Tamarinde ist kein Rind');
+  const o = plain(C.adaptRecipe({ name: 'Käse-Omelett', ingredients: base.slice(1, 2) }, prof, C.BOOK_SWAPS, C.lookup));
+  assert.equal(o.ingredients[0].name, 'Tofu (fest)');
+});
+
+test('adaptRecipe: Schwangerschaft – Wein, Rum, rohes Ei im Tiramisu, Rohschinken, Raeucherlachs', () => {
+  const C = loadBook();
+  const prof = C.bookProfile({ pregnant: '2' });
+  const r = { name: 'Tiramisu', ingredients: [
+    { name: 'Ei', amount: 55, per100: P(143) },
+    { name: 'Rum', amount: 10, per100: P(230) },
+    { name: 'Weißwein', amount: 50, per100: P(82), fl: ['alcohol'] },
+    { name: 'Vanilleextrakt', amount: 4, per100: P(288) }
+  ] };
+  const a = plain(C.adaptRecipe(r, prof, C.BOOK_SWAPS, C.lookup));
+  assert.deepEqual(tnames(a), ['Ei (pasteurisiert)', 'Gemüsebrühe', 'Vanilleextrakt']);
+  assert.equal(a.ingredients[0].per100.kcal, 143, 'pasteurisiert: Naehrwerte bleiben');
+  assert.equal(a.swaps.find((s) => s.to === '').from, 'Rum');
+  const b = plain(C.adaptRecipe({ name: 'Brotzeit', ingredients: [
+    { name: 'Ei', amount: 55, per100: P(143) },
+    { name: 'Rohschinken', amount: 50, per100: P(250) },
+    { name: 'Räucherlachs', amount: 50, per100: P(180) },
+    { name: 'Camembert', amount: 50, per100: P(300) },
+    { name: 'Schweinebauch (roh)', amount: 50, per100: P(518) }
+  ] }, prof, C.BOOK_SWAPS, C.lookup));
+  assert.deepEqual(tnames(b), ['Ei', 'Schinken (gekocht)', 'Lachs (gegart)', 'Camembert (aus pasteurisierter Milch)', 'Schweinebauch (roh)']);
+  const poke = plain(C.adaptRecipe({ name: 'Tamari-Lachs mit Avocado-Reis', seed: 'poke-bowl-classic', ingredients: [
+    { name: 'Lachs (roh)', amount: 100, per100: P(208), fl: ['fish'] }] }, prof, C.BOOK_SWAPS, C.lookup));
+  assert.equal(poke.ingredients[0].name, 'Lachs (gegart)', 'roher Fisch – Kennung des Grundrezepts zaehlt mit');
+  const n = plain(C.adaptRecipe(r, C.bookProfile({ nursing: 'excl' }), C.BOOK_SWAPS, C.lookup));
+  assert.deepEqual(tnames(n), ['Ei', 'Gemüsebrühe', 'Vanilleextrakt'], 'Stillzeit: nur Alkohol');
+});
+
+test('adaptRecipe: Keto, laktosefrei, Fischallergie', () => {
+  const C = loadBook();
+  const r = { name: 'Lachs mit Reis', ingredients: [
+    { name: 'Lachs (roh)', amount: 150, per100: P(208), fl: ['fish'] },
+    { name: 'Reis weiß (roh)', amount: 75, per100: P(365) },
+    { name: 'Zucker', amount: 5, per100: P(400) },
+    { name: 'Sahne', amount: 50, per100: P(292), fl: ['dairy'] },
+    { name: 'Parmesan', amount: 10, per100: P(431), fl: ['dairy'] }
+  ] };
+  const k = plain(C.adaptRecipe(r, C.bookProfile({ dietPrefs: ['Keto', 'Laktosefrei', 'Fischallergie'] }), C.BOOK_SWAPS, C.lookup));
+  assert.deepEqual(tnames(k), ['Hähnchenbrust (roh)', 'Blumenkohl (als Reis)', 'laktosefreie Sahne', 'Parmesan']);
+  assert.equal(k.ingredients[1].amount, 225, 'dreifache Menge Blumenkohl');
+  const v = plain(C.adaptRecipe(r, C.bookProfile({ dietPrefs: ['Vegetarisch', 'Fischallergie'] }), C.BOOK_SWAPS, C.lookup));
+  assert.equal(v.ingredients[0].name, 'Tofu (fest)', 'vegetarisch geht vor Fischallergie');
+});
+
+test('bookStepSwaps: Schritt nennt die getauschte Zutat', () => {
+  const C = loadBook();
+  const r = { name: 'X', ingredients: [{ name: 'Hähnchenbrust (roh)', amount: 150, per100: P(108), t: 'Hähnchenbrust' }] };
+  const a = C.adaptRecipe(r, C.bookProfile({ dietPrefs: ['Vegetarisch'] }), C.BOOK_SWAPS, C.lookup);
+  assert.equal(C.bookStepSwaps('Brate das Hähnchen 6 Minuten.', a.swaps).length, 1);
+  assert.equal(C.bookStepSwaps('Schneide die Zwiebel.', a.swaps).length, 0);
 });

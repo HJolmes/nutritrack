@@ -175,10 +175,12 @@ function compressOldDays(){
 }
 
 // ── Emoji ──
+// „Beeren“ ist kein Bier und „Schweinebauch“ kein Wein: beer/wine nur als
+// ganzes Wort, wein nicht hinter „sch“.
 function emo(n){
   var nl=(n||'').toLowerCase();
   /** @type {Array<[RegExp,string]>} */
-  var m=[[/banane/,'🍌'],[/apfel|äpfel/,'🍎'],[/birne/,'🍐'],[/orange|mandarine/,'🍊'],[/erdbeere/,'🍓'],[/blaubeer|heidelbeer/,'🫐'],[/himbeere/,'🫐'],[/kirsch/,'🍒'],[/trauben/,'🍇'],[/kiwi/,'🥝'],[/mango/,'🥭'],[/avocado/,'🥑'],[/melone/,'🍉'],[/pfirsich|nektarine/,'🍑'],[/tomate/,'🍅'],[/gurke/,'🥒'],[/karott|möhre/,'🥕'],[/brokkoli/,'🥦'],[/blumenkohl/,'🥦'],[/spinat/,'🥬'],[/salat|rucola|kohl/,'🥬'],[/paprika/,'🫑'],[/pilz|champignon/,'🍄'],[/kartoffel/,'🥔'],[/süßkartoffel/,'🍠'],[/mais/,'🌽'],[/hähnchen|huhn|chicken|hühnerbrust/,'🍗'],[/rind|beef|hack/,'🥩'],[/pute|turkey/,'🦃'],[/lachs|salmon/,'🐟'],[/thunfisch|tuna/,'🐠'],[/garnele|shrimp/,'🦐'],[/\bei\b|eier|egg/,'🥚'],[/milch|milk/,'🥛'],[/käse|cheese/,'🧀'],[/joghurt|yogurt/,'🥣'],[/quark/,'🥄'],[/butter/,'🧈'],[/brot|bread/,'🍞'],[/brötchen/,'🥖'],[/haferflocken|oat/,'🌾'],[/müsli|granola/,'🥣'],[/reis|rice/,'🍚'],[/pasta|nudel|spaghetti/,'🍝'],[/mandel|cashew|erdnuss|walnuss|nuss/,'🥜'],[/chiasamen|sesam/,'🌱'],[/öl|oil/,'🫙'],[/linsen|bohne|kichererbse/,'🫘'],[/tofu|tempeh/,'🧆'],[/schokolade|chocolate|nutella/,'🍫'],[/chips/,'🥔'],[/honig|honey/,'🍯'],[/protein|whey/,'💪'],[/pizza/,'🍕'],[/burger|hamburger/,'🍔'],[/pommes/,'🍟'],[/sushi/,'🍣'],[/döner/,'🥙'],[/kaffee|coffee|espresso/,'☕'],[/tee|tea/,'🍵'],[/saft|juice/,'🧃'],[/cola/,'🥤'],[/bier|beer/,'🍺'],[/wein|wine/,'🍷'],[/salami|speck|schinken|wurst|fleischsalat/,'🍖'],[/skyr/,'🥛'],[/marmelade/,'🍓']];
+  var m=[[/banane/,'🍌'],[/apfel|äpfel/,'🍎'],[/birne/,'🍐'],[/orange|mandarine/,'🍊'],[/erdbeere/,'🍓'],[/blaubeer|heidelbeer/,'🫐'],[/himbeere/,'🫐'],[/kirsch/,'🍒'],[/trauben/,'🍇'],[/kiwi/,'🥝'],[/mango/,'🥭'],[/avocado/,'🥑'],[/melone/,'🍉'],[/pfirsich|nektarine/,'🍑'],[/tomate/,'🍅'],[/gurke/,'🥒'],[/karott|möhre/,'🥕'],[/brokkoli/,'🥦'],[/blumenkohl/,'🥦'],[/spinat/,'🥬'],[/salat|rucola|kohl/,'🥬'],[/paprika/,'🫑'],[/pilz|champignon/,'🍄'],[/kartoffel/,'🥔'],[/süßkartoffel/,'🍠'],[/mais/,'🌽'],[/hähnchen|huhn|chicken|hühnerbrust/,'🍗'],[/rind|beef|hack/,'🥩'],[/pute|turkey/,'🦃'],[/lachs|salmon/,'🐟'],[/thunfisch|tuna/,'🐠'],[/garnele|shrimp/,'🦐'],[/\bei\b|eier|egg/,'🥚'],[/milch|milk/,'🥛'],[/käse|cheese/,'🧀'],[/joghurt|yogurt/,'🥣'],[/quark/,'🥄'],[/butter/,'🧈'],[/brot|bread/,'🍞'],[/brötchen/,'🥖'],[/haferflocken|oat/,'🌾'],[/müsli|granola/,'🥣'],[/reis|rice/,'🍚'],[/pasta|nudel|spaghetti/,'🍝'],[/mandel|cashew|erdnuss|walnuss|nuss/,'🥜'],[/chiasamen|sesam/,'🌱'],[/öl|oil/,'🫙'],[/linsen|bohne|kichererbse/,'🫘'],[/tofu|tempeh/,'🧆'],[/schokolade|chocolate|nutella/,'🍫'],[/chips/,'🥔'],[/honig|honey/,'🍯'],[/protein|whey/,'💪'],[/pizza/,'🍕'],[/burger|hamburger/,'🍔'],[/pommes/,'🍟'],[/sushi/,'🍣'],[/döner/,'🥙'],[/kaffee|coffee|espresso/,'☕'],[/tee|tea/,'🍵'],[/saft|juice/,'🧃'],[/cola/,'🥤'],[/bier|\bbeer\b/,'🍺'],[/(^|[^h])wein|\bwine\b/,'🍷'],[/salami|speck|schinken|wurst|fleischsalat/,'🍖'],[/skyr/,'🥛'],[/marmelade/,'🍓']];
   for(var i=0;i<m.length;i++)if(m[i][0].test(nl))return m[i][1];
   return'🍽';
 }
@@ -533,6 +535,128 @@ function bookSort(list,mode,log){
     return idn(b)-idn(a);
   });
   return out;
+}
+
+// ── Kochbuch: Anpassung an die eigenen Angaben ──
+// Welche Angaben ein Rezept umbauen (Tausch-Tabelle js/book-swaps.js).
+var BOOK_KEY_LABEL={veg:'vegetarisch',vegan:'vegan',gf:'glutenfrei',lf:'laktosefrei',keto:'Keto',lc:'Low Carb',fish:'ohne Fisch',preg:'Schwangerschaft',nurs:'Stillzeit'};
+function bookProfile(S){
+  var p=(S&&S.dietPrefs)||[],keys=[];
+  var has=function(n){return p.indexOf(n)>=0;};
+  if(has('Vegan'))keys.push('vegan','veg');else if(has('Vegetarisch'))keys.push('veg');
+  if(has('Glutenfrei'))keys.push('gf');
+  if(has('Laktosefrei'))keys.push('lf');
+  if(has('Keto'))keys.push('keto');else if(has('Low Carb'))keys.push('lc');
+  if(has('Fischallergie'))keys.push('fish');
+  if(S&&S.pregnant&&S.pregnant!=='0')keys.push('preg');
+  if(S&&(S.nursing==='excl'||S.nursing==='part'))keys.push('nurs');
+  var free=(S&&S.dietFree)?[String(S.dietFree)]:[];
+  var labels=keys.filter(function(k){return !(k==='veg'&&keys.indexOf('vegan')>=0);}).map(function(k){return BOOK_KEY_LABEL[k];});
+  return {keys:keys,free:free,labels:labels.concat(free),sig:keys.join(',')+(free.length?'|'+free.join(','):'')};
+}
+// Kleinschreibung, Umlaute aufgeloest, Satzzeichen zu Leerzeichen — darauf
+// laufen die Suchmuster der Tausch-Tabelle.
+function bookFold(s){
+  return ' '+String(s||'').toLowerCase().replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss')
+    .replace(/[éèê]/g,'e').replace(/[^a-z0-9]+/g,' ').trim()+' ';
+}
+// Kurzname einer Zutat: „Hähnchenbrust, dünn geschnitten“ → „Hähnchenbrust“,
+// „Olivenöl zum Braten“ → „Olivenöl“. Nur er wird mit der Tausch-Tabelle
+// verglichen — in den Notizen stecken sonst „halbiert“ (bier), „gehackt“
+// (hack) oder „für den Lachs“.
+function bookIngShort(g){
+  return String((g&&(g.t||g.name))||'').split(/,|;| zum | zur | für | fuer | nach | oder | als | ca\. /)[0].trim();
+}
+// Ein Wort, das zeigt, dass die Zutat schon passt („laktosefreie Milch“) —
+// sonst griffe dieselbe Zeile nach dem Umbenennen ein zweites Mal.
+var BOOK_KEY_OK={veg:'vegetarisch|vegan|tofu',vegan:'vegan',gf:'glutenfrei',lf:'laktosefrei',preg:'pasteurisiert|gegart',nurs:'alkoholfrei',fish:'ohne fisch'};
+// Muster einmal uebersetzen: Die Liste des Kochbuchs passt 100 Rezepte mit
+// je ~10 Zutaten gegen ~70 Zeilen an — neu gebaut kostete das ~90 ms je Liste.
+var _bookReCache={};
+function _bookRe(src){return _bookReCache[src]||(_bookReCache[src]=new RegExp(src));}
+function _bookRuleHits(rule,keys,hay,dish,fl){
+  var key=null;
+  for(var i=0;i<rule.k.length;i++)if(keys.indexOf(rule.k[i])>=0){key=rule.k[i];break;}
+  if(!key)return null;
+  if(BOOK_KEY_OK[key]&&_bookRe(BOOK_KEY_OK[key]).test(hay))return null;
+  if(rule.dish&&!_bookRe(rule.dish).test(dish))return null;
+  if(rule.x&&_bookRe(rule.x).test(hay))return null;
+  var byName=!!(rule.m&&_bookRe(rule.m).test(hay));
+  var byFlag=!!(rule.fl&&(fl||[]).some(function(f){return rule.fl.indexOf(f)>=0;}));
+  return (byName||byFlag)?key:null;
+}
+// Angezeigter Name nach einem Tausch. {n} = bisheriger Name ohne Klammerzusatz
+// der Quelle („Blätterteig (Butter)“ → „Blätterteig“); eigene Vermerke
+// bleiben und werden zusammengefasst: „Blätterteig (vegan, glutenfrei)“.
+var BOOK_MARK=/vegan|glutenfrei|laktosefrei|pasteurisiert|gegart|ohne /;
+function _bookName(tpl,from){
+  tpl=String(tpl);
+  if(tpl.indexOf('{n}')<0)return tpl;
+  var marks=[];
+  var base=String(from).replace(/\s*\(([^)]*)\)/g,function(m0,inner){if(BOOK_MARK.test(inner))marks.push(inner);return '';}).trim();
+  var out=tpl.replace('{n}',base),m=out.match(/^(.*?)\s*\(([^)]*)\)$/);
+  if(m&&marks.length)return m[1]+' ('+marks.concat(m[2]).join(', ')+')';
+  return marks.length?out+' ('+marks.join(', ')+')':out;
+}
+// Das Rezept so, wie es für dieses Profil auf den Tisch kommt. Das Rezept
+// selbst bleibt unberührt; zurück kommen Kopien der Zutaten und die Liste der
+// Täusche {from,to,why,k,m}. lookup(name) → {name,emoji,per100} oder null.
+function adaptRecipe(r,prof,rules,lookup){
+  var keys=(prof&&prof.keys)||[];
+  var ings=JSON.parse(JSON.stringify((r&&r.ingredients)||[]));
+  if(!keys.length||!rules||!rules.length)return {ingredients:ings,swaps:[]};
+  // Gerichtsname plus Kennung des Grundrezepts: „Tamari-Lachs mit Avocado-Reis“
+  // ist laut MorphCook eine Poke Bowl — roher Fisch, auch wenn der Name schweigt.
+  var dish=bookFold(r.name+' '+(r.seed||'')),out=[],swaps=[];
+  // Nur Zeilen, die eine der Angaben betreffen — spart die meisten Muster.
+  rules=rules.filter(function(x){return x.k.some(function(k){return keys.indexOf(k)>=0;});});
+  ings.forEach(function(g0){
+    // Je Angabe höchstens ein Tausch je Zutat: „Kimchi (ohne Fischsauce)“
+    // darf danach nicht noch über das Wort „Fischsauce“ stolpern. Eine andere
+    // Angabe darf weiter tauschen (vegan → Sojasauce, glutenfrei → Tamari).
+    var g=g0,done={};
+    for(var round=0;round<4&&g;round++){
+      var hay=bookFold((g.name||'')+' '+bookIngShort(g)),hit=null,key=null;
+      var open=keys.filter(function(k){return !done[k];});
+      for(var i=0;i<rules.length&&!hit;i++){
+        key=_bookRuleHits(rules[i],open,hay,dish,g.fl);
+        if(key)hit=rules[i];
+      }
+      if(!hit)break;
+      var from=bookIngShort(g);
+      done[key]=1;
+      if(hit.rm){swaps.push({from:from,to:'',why:hit.why||'',k:key,m:hit.m||''});g=null;break;}
+      /** @type {Record<string, any>|null} */
+      var ng=null;
+      if(hit.keep){
+        ng=JSON.parse(JSON.stringify(g));
+        ng.t=_bookName(hit.n||from,from);
+      } else {
+        var tgt=null;
+        for(var j=0;j<(hit.to||[]).length&&!tgt;j++)tgt=lookup(hit.to[j]);
+        if(!tgt)continue;
+        var f=hit.f||1,u=String(g.u||''),grams=/^(g|gr|gramm|ml)$/i.test(u);
+        ng={name:tgt.name,emoji:tgt.emoji||g.emoji,amount:Math.round((g.amount||0)*f*10)/10,per100:tgt.per100,t:_bookName(hit.n||tgt.name,from)};
+        if(g.q>0&&(grams||f===1)){ng.q=Math.round(g.q*f*1000)/1000;ng.u=u;}
+        if(!(ng.amount>0)&&g.missingGrams)ng.missingGrams=true;
+      }
+      delete ng.fl;
+      ng.was=g0.was||from;
+      swaps.push({from:from,to:bookIngShort(ng),why:hit.why||'',k:key,m:hit.m||''});
+      g=ng;
+    }
+    if(g)out.push(g);
+  });
+  return {ingredients:out,swaps:swaps};
+}
+// Welche Täusche ein Zubereitungsschritt betrifft (Hinweis unter dem Schritt).
+function bookStepSwaps(step,swaps){
+  var hay=bookFold(step);
+  return (swaps||[]).filter(function(s){
+    if(s.m&&_bookRe(s.m).test(hay))return true;
+    var w=bookFold(s.from).trim().split(' ')[0];
+    return w.length>3&&hay.indexOf(' '+w.slice(0,Math.max(4,w.length-2)))>=0;
+  });
 }
 
 // ── KI-Anfrage an Anthropic ──

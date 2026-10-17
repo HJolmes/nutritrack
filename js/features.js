@@ -70,6 +70,15 @@ var FEATURES=[
      {ic:'🔗', label:'Verbindungen',  hint:'Zettel mit jemandem teilen', act:'NTSync.open'}
    ]},
 
+  {id:'pantry', ic:'🥫', label:'Vorrat', card:'pantryCard',
+   sub:'Was zu Hause da ist und was immer da sein soll',
+   actions:[
+     {ic:'🥫', label:'Vorrat öffnen',          hint:'Artikel, Lagerorte, Mindestmengen', act:'NTPantry.open'},
+     {ic:'📷', label:'Fotos auswerten',        hint:'Kühlschrank und Schrank fotografieren', act:'NTPantry.openPhotos'},
+     {ic:'👨‍🍳', label:'Was kann ich kochen?', hint:'Passende Rezepte, dann Ideen der KI', act:'NTPantry.openCook'},
+     {ic:'🔗', label:'Verbindungen',           hint:'Vorrat mit jemandem teilen', act:'NTSync.open'}
+   ]},
+
   {id:'exercise', ic:'🏃', label:'Sport & Aktivität', card:'exerciseCard',
    sub:'Verbrannte Kalorien',
    actions:[

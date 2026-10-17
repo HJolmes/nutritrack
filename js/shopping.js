@@ -350,6 +350,8 @@ function toggle(id){
   if(it.d)it.da=Date.now();else delete it.da;
   it.rev=nextRev();
   saveS();Sync.schedule();render();
+  // Gekauft heißt: im Vorrat aufgefüllt (nur Artikel, die dort stehen).
+  if(window.NTPantry)NTPantry.onBought(it,!!it.d);
 }
 function remove(id){
   var a=list();

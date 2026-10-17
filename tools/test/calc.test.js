@@ -980,3 +980,71 @@ test('bookStepSwaps: Schritt nennt die getauschte Zutat', () => {
   assert.equal(C.bookStepSwaps('Brate das Hähnchen 6 Minuten.', a.swaps).length, 1);
   assert.equal(C.bookStepSwaps('Schneide die Zwiebel.', a.swaps).length, 0);
 });
+
+// ── Vorrat (#325, #326) ──────────────────────────────────────────────────
+test('pantryKey: Umlaute, Satzzeichen, einfache Pluralendung', () => {
+  const C = load({});
+  assert.equal(C.pantryKey('Zwiebeln'), C.pantryKey('Zwiebel'));
+  assert.equal(C.pantryKey('Tomaten'), C.pantryKey('Tomate'));
+  assert.equal(C.pantryKey('Möhren'), C.pantryKey('Möhre'));
+  assert.equal(C.pantryKey('Eier'), C.pantryKey('Ei'));
+  assert.equal(C.pantryKey('Milch 3,5 %'), 'milch 3 5');
+  assert.notEqual(C.pantryKey('Reis'), C.pantryKey('Mais'));
+});
+test('pantryFind: gleicher Name vor ganzem Wort, längster Treffer gewinnt', () => {
+  const C = load({});
+  const items = [{ n: 'Milch' }, { n: 'Hafermilch' }, { n: 'Butter' }, { n: 'Zwiebeln' }];
+  assert.equal(C.pantryFind(items, 'Zwiebel').n, 'Zwiebeln');
+  assert.equal(C.pantryFind(items, 'Milch 3,5 %').n, 'Milch');
+  assert.equal(C.pantryFind(items, 'Hafermilch').n, 'Hafermilch');
+  assert.equal(C.pantryFind(items, 'Butter zum Braten').n, 'Butter');
+  assert.equal(C.pantryFind(items, 'Vollmilch'), null);
+  assert.equal(C.pantryFind(items, ''), null);
+});
+test('pantryUse: Gramm in Stück umrechnen, ohne Gramm je Stück nichts', () => {
+  const C = load({});
+  assert.equal(C.pantryUse({ q: 3, g: 500 }, 250), 2.5);
+  assert.equal(C.pantryUse({ q: 1, g: 250 }, 400), 0);
+  assert.equal(C.pantryUse({ q: 3 }, 250), null);
+  assert.equal(C.pantryUse({ q: 3, g: 500 }, 0), null);
+});
+test('pantryNeed: fehlende Stück bis zur Mindestmenge', () => {
+  const C = load({});
+  assert.equal(C.pantryNeed(1, 3), 2);
+  assert.equal(C.pantryNeed(2.5, 3), 1);
+  assert.equal(C.pantryNeed(3, 3), 0);
+  assert.equal(C.pantryNeed(0, 0), 0);
+});
+test('pantryBought: Stück, Packungen, Gramm, ohne Menge bis zur Mindestmenge', () => {
+  const C = load({});
+  assert.equal(C.pantryBought('2', {}), 2);
+  assert.equal(C.pantryBought('3 Stück', {}), 3);
+  assert.equal(C.pantryBought('2 Packungen', {}), 2);
+  assert.equal(C.pantryBought('1 kg', { g: 500 }), 2);
+  assert.equal(C.pantryBought('200 g', { g: 500 }), 1);
+  assert.equal(C.pantryBought('', { q: 1, min: 4 }), 3);
+  assert.equal(C.pantryBought('', {}), 1);
+  assert.equal(C.pantryBought('500 g', {}), 1);
+});
+test('pantrySuggest: Anteil vorhandener Zutaten, Grundzutaten zählen nicht', () => {
+  const C = load({});
+  const items = [{ n: 'Nudeln', q: 2 }, { n: 'Tomaten', q: 4 }, { n: 'Eier', q: 0 }];
+  const recs = [
+    { id: 'a', name: 'Nudeln mit Tomatensoße', ings: ['Nudeln', 'Tomate', 'Salz', 'Olivenöl'] },
+    { id: 'b', name: 'Rührei', ings: ['Ei', 'Salz'] },
+    { id: 'c', name: 'Tomaten-Mozzarella', ings: ['Tomate', 'Mozzarella', 'Basilikum'] }
+  ];
+  const r = plain(C.pantrySuggest(recs, items));
+  assert.deepEqual(r.map((x) => x.id), ['a', 'c']);
+  assert.deepEqual(r[0].miss, []);
+  assert.deepEqual(r[1].miss, ['Mozzarella', 'Basilikum']);
+});
+test('parsePantryPhoto: JSON aus der Antwort, Dubletten und unbekannte Orte fallen weg', () => {
+  const C = load({});
+  const txt = 'Hier: ```json {"artikel":[{"name":"Milch","stueck":2,"g":1000,"ort":"kuehl"},{"name":"Milch","stueck":1},{"name":"Nudeln","stueck":0,"ort":"keller"},{"name":""}]} ```';
+  assert.deepEqual(plain(C.parsePantryPhoto(txt, ['kuehl', 'vorrat'])), [
+    { n: 'Milch', q: 2, g: 1000, loc: 'kuehl' },
+    { n: 'Nudeln', q: 1, g: 0, loc: '' }
+  ]);
+  assert.deepEqual(plain(C.parsePantryPhoto('kein json', [])), []);
+});

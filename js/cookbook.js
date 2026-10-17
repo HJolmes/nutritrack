@@ -838,6 +838,9 @@ function cookDone(){
   var l=S.cookLog[_ck.id]||{n:0,last:''};
   S.cookLog[_ck.id]={n:(l.n||0)+1,last:today()};
   saveS();
+  // Was gekocht wurde, ist aus dem Vorrat verbraucht (angepasste Fassung).
+  var r=rec(_ck.id);
+  if(r&&window.NTPantry)NTPantry.useRecipe(view(r).ingredients,_ck.p);
   _ck.done=true;
   renderCook();render();
 }

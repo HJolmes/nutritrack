@@ -40,6 +40,8 @@ var STEPS=[
    x:'Ein Tipp auf ein Glas oder einen Mengen-Knopf zählt mit. Das Tagesziel stellst du unter Mehr → 🧩 Funktionen → Wasser ein.'},
   {tab:'main', sel:'#shopCard', ic:'🛒', t:'Einkaufszettel', off:'Der Zettel erscheint hier, sobald etwas darauf steht oder er eingeschaltet ist – sonst über Mehr → 🧩 Funktionen → Einkaufszettel.',
    x:'Artikel eintippen („2 Liter Milch"), abhaken, nach Kategorien sortiert. Mit 🔗 Verbindungen teilt ihr den Zettel verschlüsselt zwischen zwei Handys.'},
+  {tab:'main', sel:'#pantryCard', ic:'🥫', t:'Vorrat', off:OFF,
+   x:'Was zu Hause da ist und wo es steht. Mit einer Mindestmenge kommt ein Artikel von selbst auf den Einkaufszettel, wenn er knapp wird; abgehakt auf dem Zettel füllt ihn wieder auf. Fotos von Kühlschrank und Schrank wertet die KI aus, „👨‍🍳 Kochen“ schlägt passende Rezepte vor.'},
   {tab:'main', sel:'#fastCard', ic:'🌙', t:'Fasten', off:OFF,
    x:'Startet ein Fastenfenster (z. B. 16:8) und zeigt, wie lange es noch läuft. Am Ende meldet sich die App, solange sie geöffnet ist.'},
   {tab:'main', sel:'#babyCard', ic:'👶', t:'Baby-Tagebuch', off:'Das Baby-Tagebuch ist aus. Einschalten unter Mehr → 🧩 Funktionen → Baby-Tagebuch.',

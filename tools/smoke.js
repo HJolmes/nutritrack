@@ -669,6 +669,106 @@ const EXPECTED_NAMESPACES = [
     if (!bookFail) console.log('  ok  Kochbuch: Entwurf, Speichern je Portion, Rechner/✕/Kochmodus/Tagebuch lassen das Rezept unveraendert, Timer und Kochverlauf; Grundbestand, vegetarische Fassung, „Original anzeigen“.');
   }
 
+  // 12b. Vorrat (#325, #326): Eintippen, Mindestmenge → Einkaufszettel,
+  //      Abhaken füllt auf, „Fertig gekocht“ zieht ab, Lagerorte, Fotos mit
+  //      gestellter KI-Antwort erst nach Bestätigung, Kochvorschläge.
+  let pantryFail = 0;
+  {
+    const errBefore = errors.length;
+    const onDialog = (d) => d.accept();
+    page.on('dialog', onDialog);
+    const r = await page.evaluate(async () => {
+      const wait = (ms) => new Promise((res) => setTimeout(res, ms));
+      const out = {};
+      const shop0 = JSON.stringify(S.shopList), pant0 = JSON.stringify(S.pantry || []);
+      NTPantry.open();
+      out.seedLocs = S.pantryLocs.length === 3 && !!document.querySelector('#pantryLocChips .stab');
+      const inp = document.getElementById('pantryInput');
+      inp.value = '3 Dosen Tomaten'; NTPantry.submitInput();
+      const tom = S.pantry.find((x) => x.n === 'Tomaten');
+      out.typed = !!tom && tom.q === 3 && /Tomaten/.test(document.getElementById('pantryList').textContent);
+      // Mindestmenge 2, dann zweimal − → unter 2 → Einkaufszettel
+      NTPantry.openItem(tom.id);
+      document.getElementById('pantryItemMin').value = '2';
+      document.getElementById('pantryItemG').value = '400';
+      NTPantry.saveItem();
+      NTPantry.step(tom.id, -1); NTPantry.step(tom.id, -1);
+      const si = S.shopList.find((x) => x.n === 'Tomaten' && !x.d);
+      out.toShop = !!si && /1 Stück/.test(si.q) && /Knapp/.test(document.getElementById('pantryCardBody').textContent);
+      // Abhaken → +1, wieder ent-haken → zurück
+      NTShop.toggle(si.id);
+      out.bought = tom.q === 2;
+      NTShop.toggle(si.id);
+      out.unbought = tom.q === 1;
+      NTShop.toggle(si.id);
+      // Kochen: 2 Portionen à 200 g Tomaten = 400 g = 1 Stück
+      NTBook.editDraft({ name: 'Smoke-Tomatensuppe', baseServings: 2, instructions: 'Kochen.',
+        ingredients: [{ name: 'Tomaten', emoji: '🍅', amount: 400, per100: { kcal: 20, protein: 1, carbs: 3, fat: 0 } }] }, { from: 'mealDetail' });
+      NTBook.editSave();
+      await wait(50);
+      const rec = recipes.find((x) => x.name === 'Smoke-Tomatensuppe');
+      NTBook.cook(rec.id, 2);
+      NTBook.cookDone();
+      NTBook.cookClose(true);
+      out.cooked = tom.q === 1;
+      // Kochvorschläge: das Rezept steht oben, Tomaten sind da
+      NTPantry.openCook();
+      out.suggest = /Smoke-Tomatensuppe/.test(document.getElementById('pantryCookList').textContent);
+      closeOv('pantryCookOv');
+      // Lagerort anlegen und löschen; Artikel verliert ihn, bleibt aber
+      NTPantry.openLocs();
+      document.getElementById('pantryLocNewNm').value = 'Keller';
+      NTPantry.locAdd();
+      const kel = S.pantryLocs.find((l) => l.label === 'Keller');
+      tom.loc = kel.id;
+      NTPantry.locDelete(kel.id);
+      out.locs = !S.pantryLocs.some((l) => l.label === 'Keller') && tom.loc === '' && !!S.pantryTomb['loc:' + kel.id];
+      closeOv('pantryLocsOv');
+      // Fotos: KI gestellt, übernommen wird erst nach Bestätigung
+      const realAi = window.callClaude, realCan = window.canUseAi;
+      window.canUseAi = () => true;
+      window.callClaude = (m, content, t, ok) => ok('{"artikel":[{"name":"Milch","stueck":2,"g":1000,"ort":"kuehl"},{"name":"Senf","stueck":1,"ort":"kuehl"}]}');
+      NTPantry.openPhotos();
+      NTPantry.photosChosen({ files: [] });
+      out.photoBtn = document.getElementById('pantryPhotoBtn').disabled;
+      const n0 = S.pantry.length;
+      // Ein Foto ohne Dateidialog: dieselbe Funktion, die der Dateidialog ruft
+      const fake = document.createElement('canvas'); fake.width = 4; fake.height = 4;
+      const b64 = fake.toDataURL('image/jpeg').split(',')[1];
+      NTPantry.photosChosen({ files: [new File([Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))], 'k.jpg', { type: 'image/jpeg' })] });
+      await wait(300);
+      NTPantry.analyzePhotos();
+      out.notYet = S.pantry.length === n0 && document.querySelectorAll('#pantryFound input[type=checkbox]').length === 2;
+      NTPantry.foundSet(1, 'on', false);
+      NTPantry.foundApply();
+      const milk = S.pantry.find((x) => x.n === 'Milch');
+      out.applied = !!milk && milk.q === 2 && milk.g === 1000 && milk.loc === 'kuehl' && !S.pantry.some((x) => x.n === 'Senf');
+      window.callClaude = realAi; window.canUseAi = realCan;
+      // Sync-Records: Artikel und Lagerorte
+      out.sync = !!NTPantry.Sync && NTSync.TOPICS.some((t) => t.id === 'pantry');
+      NTPantry.close();
+      // aufräumen
+      recipes.splice(recipes.indexOf(rec), 1);
+      delete S.cookLog[rec.id];
+      S.shopList = JSON.parse(shop0); S.pantry = JSON.parse(pant0); S.pantryTomb = {}; S.pantryLocs = null;
+      saveS(); NTShop.render(); NTPantry.render();
+      return out;
+    }).catch((e) => { record('Vorrat', e.message); return {}; });
+    page.off('dialog', onDialog);
+    for (const [k, v] of Object.entries({ seedLocs: 'drei vorgeschlagene Lagerorte als Filter', typed: '„3 Dosen Tomaten“ → 3 Stück Tomaten',
+      toShop: 'unter der Mindestmenge → Einkaufszettel mit fehlender Menge, Kachel zeigt „Knapp“',
+      bought: 'Abhaken auf dem Zettel füllt auf', unbought: 'Ent-haken nimmt das Auffüllen zurück',
+      cooked: '„Fertig gekocht“ zieht 400 g = 1 Stück ab', suggest: 'Kochvorschlag aus dem Kochbuch',
+      locs: 'Lagerort anlegen und löschen (Artikel bleibt, Grabstein für den Sync)',
+      photoBtn: 'Auswerten ohne Foto gesperrt', notYet: 'Foto-Ergebnis erst nach Bestätigung im Vorrat',
+      applied: 'nur ausgewählte Artikel übernommen, mit Menge, Gramm und Ort', sync: 'eigener Topf „Vorrat“ im Sync-Kern' })) {
+      if (!r[k]) { pantryFail++; console.log('  x   Vorrat: ' + v); }
+    }
+    const newErr = errors.length - errBefore;
+    if (newErr) { pantryFail++; console.log(`  x   Vorrat: ${newErr} neue(r) Fehler, siehe unten.`); }
+    if (!pantryFail) console.log('  ok  Vorrat: Eintippen, Mindestmenge → Einkaufszettel, Abhaken füllt auf, Kochen zieht ab, Lagerorte, Fotos erst nach Bestätigung, Kochvorschläge, eigener Sync-Topf.');
+  }
+
   // 7c. App-Tour: aus der Hilfe von vorn bis „Fertig“ per Klick, dann an
   //     einem Punkt einsteigen und mit Esc beenden.
   let tourFail = 0;
@@ -901,10 +1001,10 @@ const EXPECTED_NAMESPACES = [
 
   await browser.close();
 
-  if (errors.length || nsFail || badExports.length || deadHandlers.length || delegationFail || stack.length || deadFeatActs.length || remindFail || tabFail || kbFail || dietFail || pickFail || bookFail || tourFail) {
+  if (errors.length || nsFail || badExports.length || deadHandlers.length || delegationFail || stack.length || deadFeatActs.length || remindFail || tabFail || kbFail || dietFail || pickFail || bookFail || pantryFail || tourFail) {
     console.error('\nFEHLER:');
     [...new Set(errors)].forEach((e) => console.error('  x   ' + e));
-    console.error(`\n${errors.length + nsFail + badExports.length + deadHandlers.length + delegationFail + stack.length + deadFeatActs.length + remindFail + tabFail + kbFail + dietFail + pickFail + bookFail + tourFail} Problem(e).`);
+    console.error(`\n${errors.length + nsFail + badExports.length + deadHandlers.length + delegationFail + stack.length + deadFeatActs.length + remindFail + tabFail + kbFail + dietFail + pickFail + bookFail + pantryFail + tourFail} Problem(e).`);
     process.exit(1);
   }
   console.log('\nRauchtest bestanden.');

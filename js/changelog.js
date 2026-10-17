@@ -2,6 +2,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.316',items:[
+    {icon:'🤖',text:'<b>Neuere KI-Modelle</b>: Die eingebaute KI (auch als Rückfall für eigene Anbieter) nutzt jetzt Claude Haiku 5.5 und Claude Sonnet 5.5.',where:'KI'},
+  ]},
   {v:'0.315',items:[
     {icon:'🩺',text:'<b>Fragen an Ärztin/Arzt</b>: Im Reiter <b>❓ Fragen</b> (vorher „Hebamme“) wählst du beim Notieren, ob die Frage an die Hebamme oder an Ärztin/Arzt geht. Filter nach Empfänger, Empfänger nachträglich änderbar; der Bericht kennzeichnet offene Fragen mit (Hebamme)/(Arzt). Bisherige Fragen bleiben bei der Hebamme.',where:'Baby-Tagebuch → ❓ Fragen'},
     {icon:'🗣️',text:'<b>Alexa</b>: Fragen an den Arzt diktieren („Frag den Kinderarzt, …“, oder nur „Arzt“). Mehr Windel-Sätze („Volle Windel“, „Windel nass“, „Ich hab die Windel gewechselt“). Einkaufszettel zuverlässiger: „Milch, Eier und Butter auf die Einkaufsliste“ ergibt drei Einträge, „Notiere Milch auf dem Einkaufszettel“ landet nicht mehr im Essen, nur „Einkaufsliste“ → Alexa fragt nach. Dafür einmal Sprachmodell und Code im Alexa-Skill neu einspielen.',where:'Alexa'},

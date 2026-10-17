@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie beschreibt den **aktuellen** Stand, nicht seine Geschichte — die steht in Git und in `js/changelog.js`. Der Stand vor der Kürzung (#258, 132 KB): `git show 0d69ba2:UEBERGABE.md`. Grenzen siehe „Pflege“, `tools/check.js` prüft sie.
 
-**Stand:** v0.315 (2026-10-13) — Fragen-Reiter im Baby-Tagebuch kennt neben der Hebamme auch Ärztin/Arzt (Empfänger beim Notieren, Filter, Bearbeiten, Bericht mit (Hebamme)/(Arzt)). Alexa: `DoctorQuestionIntent` (Payload `babyP {mw:1,to:'doc'}`, kein Worker-Update), mehr Windel-Sätze, Einkauf: mehrere Artikel je Satz, Umleitung aus falschem Intent (`isShopText`), Nachfrage bei „Einkaufsliste“; Tests `tools/test/alexa.test.js`.
+**Stand:** v0.316 (2026-10-17) — Anthropic-Modelle auf `claude-haiku-5-5`/`claude-sonnet-5-5`; Request-Aufbau zentral in `anthropicBody()` (`js/calc.js`): kein `temperature` (400 bei ≠1), Haiku `thinking:disabled`+`effort:low`, Sonnet `thinking:between_tools`, `max_tokens` ×1,3 (neuer Tokenizer). Es gibt keinen „latest“-Alias; Modell-IDs stehen an den `callClaude`-Aufrufen.
 
 ## URLs
 
@@ -62,6 +62,7 @@
 
 ## Live-Test offen
 
+- **v0.316 KI-Modelle (Android-PWA, ohne eigenen KI-Key):** Chat „2 Brötchen mit Butter und Käse“ → Zutaten erkannt, Quelle „Anthropic“; Foto-Analyse eines Tellers → Zutatenliste; Wochenplan-Rezeptfoto; Einstellungen → KI-Passwort prüfen grün. Kein „Konnte nicht parsen“, kein HTTP-400-Toast.
 - **v0.315 Fragen an Arzt (Android-PWA und iPhone, zwei verbundene Geräte):** Baby-Tagebuch → ❓ Fragen → „🩺 Arzt“ → Frage notieren → erscheint mit 🩺 auch auf Gerät B; alte Fragen zeigen 🤱. Filter „🩺 Arzt“ zeigt nur Arztfragen; Frage antippen → Empfänger auf Hebamme ändern → Titel wechselt. Verlauf → Bericht listet „(Arzt) …“. „Was ist neu“ zeigt v0.315 einmal. Alexa (nach Neu-Einspielen von Modell **und** Code): „Frag den Kinderarzt, wann die U4 ist“ → 🩺-Frage; „Arzt“ → Nachfrage; „Volle Windel“ → Windel Stuhl; „Milch, Eier und Butter auf die Einkaufsliste“ → drei Einträge; „Notiere Brot auf dem Einkaufszettel“ → Zettel, nicht Essen; „Einkaufsliste“ → Nachfrage.
 - **v0.314 Ketten beim Tippen (#307, Android-PWA und iPhone):** Suche-Tab „Subw“, „Starb“, „Burger K“, „Peter P“ → Sortiment der jeweiligen Kette; „burger“ → Burger aller Ketten, nicht nur Burger King. Der Rest von #307 (v0.309–v0.313) ist am 2026-10-06 auf Android bestanden.
 - **v0.308 Teilen mit Menge (Android-PWA und iPhone, zwei Geräte oder Partner-Postfach):** Rezept-Eintrag mit 2 Portionen und ein Lebensmittel mit 180 g über Eintrag → 📤 teilen. Empfänger: Vorschau zeigt 2 Portionen bzw. 180 g; „In Mahlzeit übernehmen“ → gleiche kcal wie beim Sender, Zucker/Salz nicht 0; Rückfrage „zusätzlich … speichern?“ erscheint. „In Wochenplan übernehmen“ → Eintrag im gewählten Tag/Slot. „In Bibliothek speichern“ → unter Eigenes bzw. Rezepte. „Was ist neu“ zeigt v0.308 einmal.
@@ -76,11 +77,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.311 | #310 | dean&david-Daten aus der Nährwertübersicht 2026-09 (153 → 131). |
 | v0.312 | #311 | #307 sechs neue Ketten, Portionsmodus (`chainPerPortion`/`chainPortionEntry`, `pu`-Zutaten zeigen „% Port.“), Subway 2026-09. |
 | v0.313 | #313 | #307 `tools/update-restaurants.js`: `fetchCF`/`fetchBW`/`fetchHIG`/`fetchPP` (regelbasierte Namensbereinigung, `--only` als Liste), Marker `/*gen:cf|bw|hig|pp*/`; Action holt bk,cf,bw,hig,pp. |
 | v0.314 | — | #307 `_chainPrefix`/`_chainIsWord` in `chainSearch`: halb getippter Kettenname zeigt das Sortiment (Handy-Fund „Subw“ → kein Ergebnis). |
 | v0.315 | — | Fragen an Ärztin/Arzt: Feld `to` in `S.babyQs`, `NTMidwife.setTo/setWho/editToChanged/toOf`, Reiter heißt ❓ Fragen; Alexa Arzt-Intent, Windel-/Einkaufs-Sätze, `shopItems`/`isShopText`. |
+| v0.316 | — | Haiku 5.5/Sonnet 5.5, `anthropicBody()` in `js/calc.js` mit Test. |
 
 ---
 

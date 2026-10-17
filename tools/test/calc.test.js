@@ -460,6 +460,19 @@ test('mergeState: flach – ein altes Unterobjekt ersetzt die Vorgabe ganz', () 
 });
 
 // ── Aus index.html verschoben (#257): KI-Antworten, Rezept-Link, Anzeige ──
+test('anthropicBody: Haiku ohne Denken, Sonnet between_tools, kein temperature, max_tokens +30 %', () => {
+  const C = load({});
+  const c = [{ type: 'text', text: 'x' }];
+  assert.deepEqual(plain(C.anthropicBody('claude-haiku-5-5', 300, c)), {
+    model: 'claude-haiku-5-5', max_tokens: 390, messages: [{ role: 'user', content: c }],
+    thinking: { type: 'disabled' }, output_config: { effort: 'low' },
+  });
+  assert.deepEqual(plain(C.anthropicBody('claude-sonnet-5-5', 1024, c)), {
+    model: 'claude-sonnet-5-5', max_tokens: 1332, messages: [{ role: 'user', content: c }],
+    thinking: { type: 'between_tools' },
+  });
+});
+
 test('parseIngJSON: ```json-Zaun, Mengen als Zahl oder Text, Emoji sonst aus emo()', () => {
   const C = load({});
   const r = C.parseIngJSON('```json\n[{"name":"Apfel","g":150},{"name":"Brot","emoji":"🥖","g":"50"}]\n```');

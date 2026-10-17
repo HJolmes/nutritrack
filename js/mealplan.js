@@ -995,7 +995,7 @@ function analyze(){
   var btn=document.getElementById('recPhotoBtn');
   btn.disabled=true;btn.innerHTML='<span style="display:inline-flex;gap:5px;align-items:center;"><span class="spin"></span>KI liest das Rezept…</span>';
   setStatus('Die KI liest die Seite …',false);
-  callClaude('claude-sonnet-4-6',
+  callClaude('claude-sonnet-5-5',
     [{type:'image',source:{type:'base64',media_type:'image/jpeg',data:_photoB64}},{type:'text',text:PHOTO_PROMPT}],
     2048,
     function(text){

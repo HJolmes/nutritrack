@@ -388,7 +388,7 @@ function requestWeekReport(){
     +'Nutze ausschließlich die folgenden Kennzahlen. Rechne nichts neu, erfinde keine Zahlen und nenne keine eigenen Richtwerte.\n'
     +'Kennzahlen:\n'+facts.join('\n')+'\n'
     +'Tage:\n'+lines.join('\n');
-  callClaude('claude-haiku-4-5',[{type:'text',text:prompt}],400,
+  callClaude('claude-haiku-5-5',[{type:'text',text:prompt}],400,
     function(text){
       var a=document.getElementById('weekReportAi');
       if(a)a.textContent=text.trim();

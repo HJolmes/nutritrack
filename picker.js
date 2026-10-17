@@ -1284,7 +1284,7 @@ function pickerAnalyze(){
   pickerSetPhotoStatus('KI analysiert das Foto...',false);
   var _srcEl=document.getElementById('pickerPhotoSource');if(_srcEl)_srcEl.innerHTML='';
   var prompt=getFotoPrompt();
-  callClaude('claude-sonnet-4-6',[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:window._pickerPhotoB64}},{type:'text',text:prompt}],1024,
+  callClaude('claude-sonnet-5-5',[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:window._pickerPhotoB64}},{type:'text',text:prompt}],1024,
     function(text){
       // Foto aus der Offline-Warteschlange: KI hat geantwortet → erst jetzt raus (#233).
       if(window._pickerQueueItem){NTQueue.done(window._pickerQueueItem);window._pickerQueueItem=null;}
@@ -1745,7 +1745,7 @@ function pickerChatKiFallback(msg){
   var content=hasPhoto
     ?[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:window._pickerPhotoB64}},{type:'text',text:getChatPrompt().replace('{MSG}',msg)}]
     :[{type:'text',text:getChatPrompt().replace('{MSG}',msg)}];
-  var model=hasPhoto?'claude-sonnet-4-6':'claude-haiku-4-5';
+  var model=hasPhoto?'claude-sonnet-5-5':'claude-haiku-5-5';
   callClaude(model,content,300,
     function(text){
       /** @type {Array<{name: string, emoji?: string, g: number|null}>} */
@@ -2304,7 +2304,7 @@ function pickerLinkImport(){
         return;
       }
       btn.textContent='🤖 KI liest die Seite...';
-      callClaude('claude-haiku-4-5',[{type:'text',text:
+      callClaude('claude-haiku-5-5',[{type:'text',text:
         'Extrahiere das Rezept aus diesem Text und gib NUR gültiges JSON zurück:\n'
         +'{"name":"Rezeptname","zutaten":[{"name":"Zutat","menge":"250 g"}],"portionen":"4","anleitung":"Zubereitungsschritte (optional)"}\n'
         +'Übernimm die Mengenangabe wörtlich inklusive Einheit (z. B. "2 EL", "1 Dose", "500 g"). '

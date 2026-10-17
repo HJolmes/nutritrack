@@ -385,6 +385,19 @@ function recipeImportExtractUrl(text){
   return m?m[0].replace(/[.,;:!?)\]]+$/,''):null;
 }
 
+// ── KI-Anfrage an Anthropic ──
+// Haiku 5.5 und Sonnet 5.5 lehnen temperature≠1 ab (400) und denken sonst
+// mit; das Denken zählt in max_tokens und schnitte die kurzen JSON-Antworten
+// ab. Haiku: Denken aus, Aufwand low; Sonnet 5.5 kennt „aus“ nur als
+// between_tools. Der neue Tokenizer zählt denselben Text ~30 % länger,
+// deshalb wird max_tokens um diesen Anteil angehoben.
+function anthropicBody(model,maxTok,content){
+  var b={model:model,max_tokens:Math.ceil(maxTok*1.3),messages:[{role:'user',content:content}]};
+  if(/haiku/.test(model)){b.thinking={type:'disabled'};b.output_config={effort:'low'};}
+  else if(/sonnet/.test(model))b.thinking={type:'between_tools'};
+  return b;
+}
+
 // ── KI-Antworten lesen ──
 // Zutatenlisten aus Chat- und Foto-Antworten der KI (picker.js). Die KI
 // liefert JSON, oft im ```json-Zaun und bei langen Antworten abgeschnitten;

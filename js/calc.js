@@ -925,3 +925,107 @@ function chainSearch(chains,q){
   out.sort(function(a,b){return b.score-a.score||(a.score>1?_chainTok(a.item.n).length-_chainTok(b.item.n).length:0)||a.i-b.i;});
   return out.map(function(x){return {chain:x.chain,item:x.item,score:x.score,named:x.named};});
 }
+
+// ── Vorrat (#325, #326) ──
+// Name vergleichbar machen: klein, Umlaute ausgeschrieben, Satzzeichen weg und
+// die einfache Pluralendung ab — „Zwiebeln“ und „Zwiebel“, „Tomaten“ und
+// „Tomate“ sind im Vorrat derselbe Artikel.
+var PANTRY_STEM={eier:'ei'};
+function pantryKey(s){
+  var n=String(s||'').toLowerCase().replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss')
+    .replace(/[^a-z0-9]+/g,' ').trim();
+  return n.split(' ').map(function(w){
+    if(PANTRY_STEM[w])return PANTRY_STEM[w];
+    return w.length>=5?w.replace(/(en|e|n|s)$/,''):w;
+  }).join(' ');
+}
+// Der Vorrats-Artikel zu einem Namen: erst gleicher Name, sonst der längste
+// Vorrats-Name, der als ganzes Wort im Namen steht („Milch“ trifft
+// „Milch 3,5 %“, „Butter“ trifft „Butter zum Braten“).
+/** @param {Array<any>} items @param {string} name */
+function pantryFind(items,name){
+  var k=pantryKey(name);
+  if(!k)return null;
+  var best=null,bl=0,hay=' '+k+' ';
+  (items||[]).forEach(function(it){
+    var ik=pantryKey(it&&it.n);
+    if(!ik)return;
+    if(ik===k){best=it;bl=1e9;return;}
+    if(ik.length>bl&&hay.indexOf(' '+ik+' ')>=0){best=it;bl=ik.length;}
+  });
+  return best;
+}
+function _pantryR1(v){return Math.round(v*10)/10;}
+// Stück, die nach Verbrauch von `grams` bleiben. Ohne Gramm je Stück lässt
+// sich nichts umrechnen — dann null, und der Artikel bleibt, wie er ist.
+function pantryUse(it,grams){
+  var g=+(it&&it.g)||0,q=+(it&&it.q)||0;
+  if(!(g>0)||!(grams>0))return null;
+  return Math.max(0,_pantryR1(q-grams/g));
+}
+// Wie viele Stück fehlen bis zur Mindestmenge (0 = genug da).
+function pantryNeed(q,min){
+  q=+q||0;min=+min||0;
+  return min>0&&q<min?Math.ceil(_pantryR1(min-q)):0;
+}
+// Stück, die ein abgehakter Artikel des Einkaufszettels in den Vorrat bringt.
+// „2“, „2 Stück“, „2 Packungen“ → 2; „1 kg“ bei 500 g je Stück → 2;
+// ohne Menge → bis zur Mindestmenge, mindestens 1.
+var PANTRY_COUNT_UNITS=['','x','st','stk','stueck','pack','packung','packungen','dose','dosen','glas','glaeser',
+  'flasche','flaschen','becher','beutel','bund','tuete','tueten','netz','schale','schalen'];
+function pantryBought(qty,it){
+  var s=String(qty||'').toLowerCase().replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').trim();
+  var m=s.match(/^(\d+(?:[.,]\d+)?)\s*([a-z]*)\.?/);
+  var need=pantryNeed(it&&it.q,it&&it.min);
+  if(!m)return need||1;
+  var v=parseFloat(m[1].replace(',','.')),u=m[2]||'';
+  if(PANTRY_COUNT_UNITS.indexOf(u)>=0)return v>0?v:1;
+  var g=+(it&&it.g)||0;
+  var grams=u==='g'||u==='ml'?v:(u==='kg'||u==='l'||u==='liter'?v*1000:0);
+  if(grams>0&&g>0)return Math.max(1,Math.round(grams/g));
+  return need||1;
+}
+// Grundzutaten, die fast jeder zu Hause hat — sie zählen bei den
+// Kochvorschlägen weder als „da“ noch als „fehlt“.
+var PANTRY_BASICS=['salz','pfeffer','wasser','oel','olivenoel','rapsoel','zucker','essig','pfeffer schwarz','salz und pfeffer'];
+// Rezepte nach dem, was im Vorrat ist: je Rezept die vorhandenen und die
+// fehlenden Zutaten, sortiert nach Anteil vorhandener Zutaten, dann nach
+// Anzahl. Ein Rezept ohne vorhandene Zutat fällt weg.
+/** @param {Array<{id:string,name:string,ings:Array<string>}>} recs @param {Array<any>} items */
+function pantrySuggest(recs,items){
+  var have=(items||[]).filter(function(it){return (+it.q||0)>0;});
+  var out=[];
+  (recs||[]).forEach(function(r){
+    var h=[],miss=[];
+    (r.ings||[]).forEach(function(n){
+      var k=pantryKey(n);
+      if(!k||PANTRY_BASICS.indexOf(k)>=0)return;
+      if(pantryFind(have,n))h.push(n);else miss.push(n);
+    });
+    var tot=h.length+miss.length;
+    if(h.length)out.push({id:r.id,name:r.name,have:h,miss:miss,ratio:tot?h.length/tot:0});
+  });
+  out.sort(function(a,b){return b.ratio-a.ratio||b.have.length-a.have.length||a.miss.length-b.miss.length;});
+  return out;
+}
+// KI-Antwort der Foto-Auswertung → Liste {n,q,g,loc}. Unbrauchbares fällt weg;
+// der Lagerort gilt nur, wenn es ihn gibt.
+/** @param {string} text @param {Array<string>} locIds */
+function parsePantryPhoto(text,locIds){
+  var s=String(text||''),a=s.indexOf('{'),b=s.lastIndexOf('}');
+  if(a<0||b<=a)return [];
+  var d;try{d=JSON.parse(s.slice(a,b+1));}catch(e){return [];}
+  var arr=d&&Array.isArray(d.artikel)?d.artikel:[];
+  var out=[],seen={};
+  arr.forEach(function(x){
+    var n=String((x&&x.name)||'').trim().slice(0,40);
+    var k=pantryKey(n);
+    if(!n||seen[k])return;
+    seen[k]=1;
+    var q=Math.round(parseFloat(x.stueck));
+    var g=Math.round(parseFloat(x.g));
+    var loc=String(x.ort||'');
+    out.push({n:n,q:q>0?q:1,g:g>0?g:0,loc:(locIds||[]).indexOf(loc)>=0?loc:''});
+  });
+  return out;
+}

@@ -2,6 +2,12 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.322',items:[
+    {icon:'🥫',text:'<b>Vorrat</b>: Trag ein, was zu Hause da ist und wo es steht (Kühlschrank, Tiefkühler, Vorratsschrank – oder eigene Orte). Mit „Immer da: mindestens … Stück“ kommt ein knapper Artikel von selbst auf den Einkaufszettel; abgehakt auf dem Zettel füllt ihn wieder auf, „Fertig gekocht“ im Kochbuch zieht die Zutaten ab.',where:'🥫 Vorrat auf „Heute“'},
+    {icon:'📷',text:'<b>Fotos auswerten</b>: Bis zu sechs Fotos von Kühlschrank und Schrank – die KI listet, was sie erkennt, du übernimmst nur, was stimmt. Die Fotos werden nicht gespeichert.',where:'🥫 Vorrat → 📷 Fotos'},
+    {icon:'👨‍🍳',text:'<b>Was kann ich kochen?</b> Zuerst Rezepte aus deinem Kochbuch, zu denen die meisten Zutaten da sind, danach Ideen der KI.',where:'🥫 Vorrat → 👨‍🍳 Kochen'},
+    {icon:'🔗',text:'<b>Vorrat teilen</b>: Wer mit jemandem den Einkaufszettel teilt, teilt jetzt auch den Vorrat – einzeln abschaltbar.',where:'Mehr → 🔗 Verbindungen'},
+  ]},
   {v:'0.321',items:[
     {icon:'🥗',text:'<b>Ballaststoffe für Grundlebensmittel</b>: Obst, Gemüse, Brot, Nudeln, Reis, Hülsenfrüchte, Nüsse und Samen aus der eingebauten Liste bringen jetzt ihre Ballaststoffe mit (Quelle: USDA).',where:'Lebensmittel hinzufügen'},
     {icon:'🚦',text:'<b>Keto/Low Carb fairer</b>: Die Ernährungs-Ampel zieht bei Grundlebensmitteln die Ballaststoffe von den Kohlenhydraten ab – wie auf deutschen Etiketten. Avocado, Nüsse und Samen werden dadurch nicht mehr zu streng bewertet.',where:'Mehr → 🥗 Ernährung'},

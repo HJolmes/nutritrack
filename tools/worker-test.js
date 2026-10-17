@@ -248,7 +248,7 @@ async function main() {
   section('/health');
   {
     const r = await call('GET', '/health');
-    check('codeVersion ist v0.301-mark-empty', r.json && r.json.data && r.json.data.codeVersion === 'v0.301-mark-empty', r.json && r.json.data && r.json.data.codeVersion);
+    check('codeVersion ist v0.322-pantry', r.json && r.json.data && r.json.data.codeVersion === 'v0.322-pantry', r.json && r.json.data && r.json.data.codeVersion);
   }
 
   // ── (a) Body null / kein Objekt → 400 mit CORS, keine Ausnahme ──
@@ -511,7 +511,7 @@ async function main() {
     r = await call('POST', '/share', { headers: { 'Content-Type': 'application/json' }, body: { code: 'QUJDREVGR0hJSktMTU5PUA' }, origin: 'https://evil.test' });
     check('POST /share von fremder Webseite → 403 (wie bisher)', r.status === 403, show(r));
 
-    for (const [p, hdr] of [['/baby/sync', 'X-Baby-Room'], ['/shop/sync', 'X-Shop-Room'], ['/partner/sync', 'X-Partner-Room'], ['/plan/sync', 'X-Plan-Room']]) {
+    for (const [p, hdr] of [['/baby/sync', 'X-Baby-Room'], ['/shop/sync', 'X-Shop-Room'], ['/partner/sync', 'X-Partner-Room'], ['/plan/sync', 'X-Plan-Room'], ['/pantry/sync', 'X-Pantry-Room']]) {
       KV.reset();
       const h = { 'Content-Type': 'application/json' };
       h[hdr] = ROOM;
@@ -554,7 +554,7 @@ async function main() {
     check('App: POST /ai/messages → 200 im Anthropic-Schema', r.status === 200 && r.json.content[0].text === 'hallo', show(r));
 
     const pre = await call('OPTIONS', '/shop/sync');
-    check('Preflight → 204 mit Raum-Headern', pre.status === 204 && /x-plan-room/.test(pre.headers.get('access-control-allow-headers') || ''), show(pre));
+    check('Preflight → 204 mit Raum-Headern', pre.status === 204 && /x-plan-room/.test(pre.headers.get('access-control-allow-headers') || '') && /x-pantry-room/.test(pre.headers.get('access-control-allow-headers') || ''), show(pre));
     r = await call('GET', '/gibt-es-nicht');
     check('unbekannter Pfad → 404 samt CORS (wie bisher)', r.status === 404 && cors(r), show(r));
   }
@@ -671,6 +671,7 @@ async function main() {
       ['/shop/sync', { 'X-Shop-Room': FREMD }, 'sl:#' + FREMD],
       ['/partner/sync', { 'X-Partner-Room': FREMD }, 'pm:#' + FREMD],
       ['/plan/sync', { 'X-Plan-Room': FREMD }, 'mp:#' + FREMD],
+      ['/pantry/sync', { 'X-Pantry-Room': FREMD }, 'pt:#' + FREMD],
       ['/workouts', { 'X-User-Token': 'Fremd' + TOKEN }, 'wo:#Fremd' + TOKEN],
       ['/alexa/inbox', { 'X-User-Token': 'Fremd' + TOKEN }, 'ai:#Fremd' + TOKEN],
     ];

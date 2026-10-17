@@ -37,6 +37,7 @@ var CURSOR_LAG_MS=120000;
 var TOPICS=[
   {id:'plan', ic:'📅', label:'Wochenplan',    sub:'Was wann gekocht wird'},
   {id:'shop', ic:'🛒', label:'Einkaufszettel', sub:'Artikel und eigene Kategorien'},
+  {id:'pantry', ic:'🥫', label:'Vorrat',       sub:'Was zu Hause da ist, Lagerorte'},
   {id:'baby', ic:'👶', label:'Baby-Tagebuch',  sub:'Stillen, Flasche, Windeln'}
 ];
 function topicMeta(id){for(var i=0;i<TOPICS.length;i++)if(TOPICS[i].id===id)return TOPICS[i];return null;}
@@ -59,6 +60,9 @@ function links(){
     if(!l.share||typeof l.share!=='object')l.share={};
     if(!l.since||typeof l.since!=='object')l.since={};
     if(!l.state||typeof l.state!=='object')l.state={};
+    // Den Vorrat gibt es seit v0.322. Wer mit einer Person den Einkaufszettel
+    // teilt, teilt ihn auch — beides beschreibt denselben Haushalt.
+    if(l.share.pantry===undefined)l.share.pantry=!!l.share.shop;
   });
   return S.links;
 }
@@ -74,7 +78,7 @@ function parseCode(raw){
   if(p.length!==2||!/^[A-Za-z0-9_-]{24,64}$/.test(p[0])||p[1].length<16)return null;
   return {room:p[0],key:p[1]};
 }
-function defaultShare(){return {plan:true,shop:true,baby:true};}
+function defaultShare(){return {plan:true,shop:true,pantry:true,baby:true};}
 
 function createLink(name){
   if(!cryptoOk()){showToast('Dieses Gerät unterstützt die Verschlüsselung nicht');return null;}
@@ -358,7 +362,7 @@ function engine(cfg){
     var l=linkByRoom(legacy.room);
     if(!l){
       l={id:uid(),name:name,room:legacy.room,key:legacy.key,on:true,
-         share:{plan:false,shop:false,baby:false},since:{},state:{}};
+         share:{plan:false,shop:false,pantry:false,baby:false},since:{},state:{}};
       links().push(l);
     }
     l.share[cfg.topic]=true;
@@ -431,7 +435,7 @@ function render(){
     el.innerHTML='<div style="background:var(--gl);border:1.5px dashed var(--g3);border-radius:14px;padding:16px;text-align:center;">'
       +'<div style="font-size:26px;">🔗</div>'
       +'<div style="font-weight:700;font-size:14px;margin-top:4px;">Noch niemand verbunden</div>'
-      +'<div style="font-size:12px;color:var(--mu);line-height:1.5;margin-top:4px;">Ein Code je Person — an ihr hängt, was ihr teilt. Wochenplan, Einkaufszettel und Baby-Tagebuch einzeln an- und abschaltbar.</div>'
+      +'<div style="font-size:12px;color:var(--mu);line-height:1.5;margin-top:4px;">Ein Code je Person — an ihr hängt, was ihr teilt. Wochenplan, Einkaufszettel, Vorrat und Baby-Tagebuch einzeln an- und abschaltbar.</div>'
       +'</div>';
     return;
   }

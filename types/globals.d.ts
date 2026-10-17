@@ -9,7 +9,7 @@ declare var NTBaby: any; declare var NTBook: any; declare var NTBabyMed: any; de
 declare var NTDrive: any; declare var NTFeat: any; declare var NTGrowth: any; declare var NTHealth: any;
 declare var NTMet: any; declare var NTMidwife: any; declare var NTMile: any; declare var NTPartner: any;
 declare var NTPhotos: any; declare var NTPicker: any; declare var NTPlan: any; declare var NTQueue: any; declare var NTRecur: any;
-declare var NTRemind: any; declare var NTShop: any; declare var NTStats: any; declare var NTSync: any;
+declare var NTRemind: any; declare var NTShop: any; declare var NTPantry: any; declare var NTStats: any; declare var NTSync: any;
 declare var NTTab: any; declare var NTTour: any; declare var NTTpl: any;
 declare var ZXing: any; declare var ZXingWASM: any; declare var BarcodeDetector: any;
 declare var DB: any; declare var DB_USDA: any; declare var DB_DEFAULT: any; declare var DE_EN: any; declare var CHAINS: any;

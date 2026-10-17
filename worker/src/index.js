@@ -1135,10 +1135,13 @@ const SYNC_PARTNER = { header: "x-partner-room", prefix: "pm:", label: "Partner 
 // Plan auch ohne die Rezeptsammlung des Absenders lesen kann — deshalb ein
 // hoeheres `maxCt` als bei Zettel und Tagebuch, wo ein Record winzig ist.
 const SYNC_PLAN = { header: "x-plan-room", prefix: "mp:", label: "Meal plan sync", maxCt: 60000 };
+// Vorrat: gleiche Mechanik wie der Einkaufszettel, ein Record = ein Artikel
+// oder ein Lagerort. Eigener Raum-Header, eigener Praefix, eigener Schluessel.
+const SYNC_PANTRY = { header: "x-pantry-room", prefix: "pt:", label: "Pantry sync" };
 
 // Alle Sync-Töpfe an einer Stelle. Wer einen neuen anlegt, trägt ihn hier ein —
 // und bekommt CORS damit automatisch richtig (siehe corsHeaders).
-const SYNC_POTS = [SYNC_BABY, SYNC_SHOP, SYNC_PARTNER, SYNC_PLAN];
+const SYNC_POTS = [SYNC_BABY, SYNC_SHOP, SYNC_PARTNER, SYNC_PLAN, SYNC_PANTRY];
 const CORS_BASE_HEADERS = ["Content-Type", "x-app-proxy-secret", "x-user-token", "x-ai-provider", "x-ai-key"];
 function CORS_HEADERS_ALLOWED() {
   return CORS_BASE_HEADERS.concat(SYNC_POTS.map((c) => c.header)).join(", ");
@@ -1848,7 +1851,7 @@ async function route(request, env) {
       alexaInboxConfigured: Boolean(env.SHARE_KV),
       planSyncConfigured: Boolean(env.SHARE_KV),
       decoderSecretConfigured: Boolean(env.DECODER_SECRET),
-      codeVersion: "v0.301-mark-empty",
+      codeVersion: "v0.322-pantry",
     });
   }
 
@@ -1879,6 +1882,12 @@ async function route(request, env) {
   }
   if (request.method === "GET" && url.pathname === "/plan/sync") {
     return handleSyncPull(request, origin, env, SYNC_PLAN);
+  }
+  if (request.method === "POST" && url.pathname === "/pantry/sync") {
+    return handleSyncPush(request, origin, env, SYNC_PANTRY);
+  }
+  if (request.method === "GET" && url.pathname === "/pantry/sync") {
+    return handleSyncPull(request, origin, env, SYNC_PANTRY);
   }
   if (request.method === "POST" && url.pathname === "/partner/sync") {
     return handleSyncPush(request, origin, env, SYNC_PARTNER);

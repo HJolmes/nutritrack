@@ -761,13 +761,77 @@ const EXPECTED_NAMESPACES = [
       const milk = S.pantry.find((x) => x.n === 'Milch');
       out.applied = !!milk && milk.q === 2 && milk.g === 1000 && milk.loc === 'kuehl' && milk.mhd === '2030-01-31' && !S.pantry.some((x) => x.n === 'Senf');
       window.callClaude = realAi; window.canUseAi = realCan;
+      const isOpen = (id) => document.getElementById(id).classList.contains('open');
+      // #334: Rezept → Zettel nur, was der Vorrat nicht deckt (Tomaten 1 × 400 g, Milch 2 × 1000 g)
+      const sr = NTShop.addIngredients([{ name: 'Tomaten', amount: 300 }, { name: 'Milch', amount: 2500 }, { name: 'Smoke-Paprika', amount: 100 }], 'Smoke');
+      const sm = S.shopList.find((x) => x.n === 'Milch');
+      out.shortfall = sr.pantry === 1 && sr.part === 1 && sr.total === 2 && !!sm && /500 g/.test(sm.q)
+        && !S.shopList.some((x) => x.n === 'Tomaten' && (x.rc || []).includes('Smoke')) && /schon im Vorrat/.test(NTShop.resultText(sr));
+      // #336: Verlauf mit Kauf, Verbrauch, Zettel, Kochen; Weggeworfen + Rückgängig
+      const ks = S.pantryLog.map((e) => e.k + ':' + e.src);
+      out.log = ks.includes('kauf:hand') && ks.includes('verbrauch:hand') && ks.includes('kauf:zettel')
+        && ks.includes('kochen:Smoke-Tomatensuppe') && ks.includes('kauf:foto');
+      NTPantry.openItem(milk.id);
+      document.getElementById('pantryItemUseQ').value = '1';
+      NTPantry.consume(true);
+      const ve = S.pantryLog[0];
+      NTPantry.saveItem();
+      NTPantry.openLog();
+      out.waste = milk.q === 1 && ve.k === 'verderb' && ve.d === -1 && /weggeworfen: 1 Stück/.test(document.getElementById('pantryWaste').textContent)
+        && !!document.querySelector('#pantryLogList [data-act="NTPantry.undo"]');
+      NTPantry.undo(ve.id);
+      out.undo = milk.q === 2 && ve.u === 1 && !document.querySelector('#pantryLogList [data-args*="' + ve.id + '"]');
+      closeOv('pantryLogOv');
+      // #337: „Hält ca. 5 Tage“, leer aufgefüllt → MHD heute + 5
+      NTPantry.openItem(milk.id);
+      document.getElementById('pantryItemHd').value = '5';
+      document.getElementById('pantryItemQ').value = '0';
+      NTPantry.saveItem();
+      NTPantry.step(milk.id, 1);
+      out.hd = milk.hd === 5 && milk.mhd === addDays(today(), 5) && S.pantryLog[0].k === 'kauf';
+      // Ablauf-Meldung einmal am Tag (Notification gestellt)
+      const realN = window.Notification, realNotify = NTRemind.notify; let sent = 0;
+      window.Notification = /** @type {any} */ ({ permission: 'granted' });
+      NTRemind.notify = () => { sent++; };
+      milk.mhd = addDays(today(), 1); delete S.pantryRemindDay; S.pantryRemindOff = false;
+      NTPantry.checkRemind(); NTPantry.checkRemind();
+      out.remind = new Date().getHours() < 7 ? sent === 0 : (sent === 1 && S.pantryRemindDay === today());
+      window.Notification = realN; NTRemind.notify = realNotify;
+      openSettings('erinnerungen'); NTRemind.render();
+      out.remindChk = document.getElementById('pantryRemindChk').checked === true;
+      closeOv('settOv');
+      // #335: Barcode — bekannt ＋1 und weiterscannen, unbekannt → Open Food Facts → Artikel mit Barcode
+      const ean = (d12) => d12 + ((10 - (d12.split('').reduce((a, c, i) => a + (+c) * (i % 2 ? 3 : 1), 0) % 10)) % 10);
+      const known = ean('400638133393'), fresh = ean('400000000123');
+      milk.bc = [known];
+      const q0 = milk.q;
+      NTPantry.scan('in');
+      NTPicker.pickerStopScan();
+      NTPicker.pickerOpenManualBarcode();
+      document.getElementById('bcDirectInput').value = known;
+      NTPicker.pickerSubmitManualBarcode();
+      out.scanKnown = milk.q === q0 + 1 && isOpen('pickerOv') && /Vorrat: einbuchen/.test(document.getElementById('pickerTitle').textContent)
+        && /Milch · jetzt/.test(document.getElementById('pickerBarcodeResult').textContent) && S.pantryLog[0].src === 'scan';
+      const realFetch = window.fetchT;
+      window.fetchT = () => Promise.resolve({ json: () => ({ status: 1, product: { product_name: 'Smoke-Haferflocken', product_quantity: 500, product_quantity_unit: 'g' } }) });
+      NTPicker.pickerStopScan();
+      NTPicker.pickerOpenManualBarcode();
+      document.getElementById('bcDirectInput').value = fresh;
+      NTPicker.pickerSubmitManualBarcode();
+      await wait(50);
+      window.fetchT = realFetch;
+      out.scanNew = !isOpen('pickerOv') && isOpen('pantryItemOv') && document.getElementById('pantryItemName').value === 'Smoke-Haferflocken'
+        && document.getElementById('pantryItemG').value === '500' && !!document.getElementById('pantryItemAssign');
+      NTPantry.saveItem();
+      const oat = S.pantry.find((x) => x.n === 'Smoke-Haferflocken');
+      out.scanSaved = !!oat && oat.q === 1 && oat.g === 500 && Array.isArray(oat.bc) && oat.bc[0] === fresh;
       // Sync-Records: Artikel und Lagerorte
       out.sync = !!NTPantry.Sync && NTSync.TOPICS.some((t) => t.id === 'pantry');
       NTPantry.close();
       // aufräumen
       recipes.splice(recipes.indexOf(rec), 1);
       delete S.cookLog[rec.id];
-      S.shopList = JSON.parse(shop0); S.pantry = JSON.parse(pant0); S.pantryTomb = {}; S.pantryLocs = null;
+      S.shopList = JSON.parse(shop0); S.pantry = JSON.parse(pant0); S.pantryTomb = {}; S.pantryLocs = null; S.pantryLog = []; delete S.pantryRemindDay;
       saveS(); NTShop.render(); NTPantry.render();
       return out;
     }).catch((e) => { record('Vorrat', e.message); return {}; });
@@ -780,12 +844,18 @@ const EXPECTED_NAMESPACES = [
       camera: 'Kamera-Feld mit capture und Kamera-Kachel', suggest: 'Kochvorschlag aus dem Kochbuch',
       locs: 'Lagerort anlegen und löschen (Artikel bleibt, Grabstein für den Sync)',
       photoBtn: 'Auswerten ohne Foto gesperrt', notYet: 'Foto-Ergebnis erst nach Bestätigung im Vorrat',
-      applied: 'nur ausgewählte Artikel übernommen, mit Menge, Gramm, Ort und MHD', sync: 'eigener Topf „Vorrat“ im Sync-Kern' })) {
+      applied: 'nur ausgewählte Artikel übernommen, mit Menge, Gramm, Ort und MHD',
+      shortfall: 'Rezept → Zettel ohne Gedecktes, Teil mit Restmenge (#334)', log: 'Verlauf: Kauf, Verbrauch, Zettel, Kochen, Foto (#336)',
+      waste: '🗑️ Weggeworfen bucht ab, Monatszeile im Verlauf', undo: '↩️ macht die Buchung rückgängig',
+      hd: '„Hält ca. 5 Tage“: leer aufgefüllt → MHD heute + 5 (#337)', remind: 'Ablauf-Meldung höchstens einmal am Tag',
+      remindChk: 'Schalter in Einstellungen → Erinnerungen', scanKnown: 'bekannter Barcode ＋1, Scanner bleibt offen (#335)',
+      scanNew: 'neuer Barcode → Artikel-Dialog mit Name und Gramm aus Open Food Facts', scanSaved: 'Artikel mit Barcode gespeichert',
+      sync: 'eigener Topf „Vorrat“ im Sync-Kern' })) {
       if (!r[k]) { pantryFail++; console.log('  x   Vorrat: ' + v); }
     }
     const newErr = errors.length - errBefore;
     if (newErr) { pantryFail++; console.log(`  x   Vorrat: ${newErr} neue(r) Fehler, siehe unten.`); }
-    if (!pantryFail) console.log('  ok  Vorrat: Eintippen, Mindestmenge → Einkaufszettel, Abhaken füllt auf, Kochen zieht ab, Haltbarkeit, 🐛 im Dialog, Lagerorte, Kamera, Fotos erst nach Bestätigung, Kochvorschläge, eigener Sync-Topf.');
+    if (!pantryFail) console.log('  ok  Vorrat: Eintippen, Mindestmenge → Einkaufszettel, Abhaken füllt auf, Kochen zieht ab, Haltbarkeit, 🐛 im Dialog, Lagerorte, Kamera, Fotos erst nach Bestätigung, Zettel minus Vorrat, Verlauf/Weggeworfen/Rückgängig, Hält-ca.-Tage, Ablauf-Meldung, Barcode, Kochvorschläge, eigener Sync-Topf.');
   }
 
   // 7c. App-Tour: aus der Hilfe von vorn bis „Fertig“ per Klick, dann an

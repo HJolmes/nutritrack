@@ -922,10 +922,14 @@ function deleteItem(){
 // Zutaten aus beliebiger Quelle (gespeichertes Rezept oder frischer Link-Import)
 // auf den Zettel legen. Vorhandene Artikel werden nicht dupliziert, sondern
 // bekommen das Rezept als Herkunft angehängt und ihre Menge aufaddiert.
-// Rückgabe: {added, merged, total} für eine ehrliche Rückmeldung.
+// Was der Vorrat schon deckt, kommt gar nicht erst auf den Zettel (#334,
+// NTPantry.shortfall) — teilweise Gedecktes nur mit der Restmenge in Gramm.
+// Rückgabe: {added, merged, total, pantry, part} für eine ehrliche Rückmeldung
+// (pantry = ganz im Vorrat, part = nur der Rest auf dem Zettel).
 function addIngredients(ings,recipeName){
-  var added=0,merged=0;
-  (ings||[]).forEach(function(ing){
+  var added=0,merged=0,sf={ings:ings||[],covered:0,partial:0};
+  if(window.NTPantry&&NTPantry.shortfall)sf=NTPantry.shortfall(ings||[]);
+  sf.ings.forEach(function(ing){
     if(!ing)return;
     var nm=String(ing.name||ing.n||'').trim();
     if(!nm)return;
@@ -934,14 +938,18 @@ function addIngredients(ings,recipeName){
     if(!add(nm,q,'',ing.emoji||ing.ic||'',{recipe:recipeName,mergeQty:true}))return;
     if(existed)merged++;else added++;
   });
-  return {added:added,merged:merged,total:added+merged};
+  return {added:added,merged:merged,total:added+merged,pantry:sf.covered,part:sf.partial};
 }
-function shopToast(r){
-  if(!r.total){showToast('Nichts zu übernehmen');return;}
-  showToast(r.merged
-    ? (r.total+' Zutaten auf dem Zettel – '+r.merged+' war'+(r.merged===1?'':'en')+' schon drauf')
-    : (r.total+' Zutaten auf dem Einkaufszettel ✓'));
+// Die Rückmeldung zu addIngredients, für alle Aufrufer gleich.
+/** @param {any} r @param {string} [from] z. B. „ aus 5 Tagen“ */
+function resultText(r,from){
+  var vr=r.pantry?' · '+r.pantry+' schon im Vorrat':'';
+  if(!r.total)return r.pantry?('Alles schon im Vorrat ✓ ('+r.pantry+' Zutat'+(r.pantry===1?'':'en')+')'):'Nichts zu übernehmen';
+  return r.merged
+    ? (r.total+' Zutaten'+(from||'')+' auf dem Zettel – '+r.merged+' war'+(r.merged===1?'':'en')+' schon drauf'+vr)
+    : (r.total+' Zutaten'+(from||'')+' auf dem Einkaufszettel ✓'+vr);
 }
+function shopToast(r){showToast(resultText(r));}
 function addRecipe(recipeId,portions,orig){
   var rec=null;
   try{rec=(recipes||[]).find(function(r){return r.id===recipeId;});}catch(e){}
@@ -974,7 +982,7 @@ window.NTShop={
   add:add,addMany:addMany,toggle:toggle,remove:remove,clearDone:clearDone,toggleDone:toggleDone,
   submitInput:submitInput,inputKey:inputKey,suggest:suggest,addFromSuggest:addFromSuggest,
   openCatalog:openCatalog,catalogQuery:catalogQuery,tileTap:tileTap,addCatQuery:addCatQuery,
-  openItem:openItem,saveItem:saveItem,deleteItem:deleteItem,addRecipe:addRecipe,addIngredients:addIngredients,
+  openItem:openItem,saveItem:saveItem,deleteItem:deleteItem,addRecipe:addRecipe,addIngredients:addIngredients,resultText:resultText,
   openSync:openSync,renderSyncUI:renderSyncUI,openLinks:openLinks,syncNow:syncNow,
   openCount:function(){return openItems().length;},
   openCats:openCats,renderCats:renderCats,catAdd:catAdd,catSave:catSave,catMove:catMove,catDelete:catDelete,

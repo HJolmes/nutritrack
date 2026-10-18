@@ -1076,3 +1076,70 @@ test('pantryExpiring: nur mit Bestand, innerhalb der Frist, Dringendstes zuerst'
   ];
   assert.deepEqual(plain(C.pantryExpiring(items, '2026-10-17', 3)).map((x) => x.it.n), ['Hack', 'Milch']);
 });
+
+// ── Vorrat: Einkaufszettel minus Vorrat, Haltbarkeit, Verlauf (#334, #336, #337)
+test('pantryShortfall: zieht den Vorrat in Gramm ab, teilt Bestand, lässt Unbekanntes stehen', () => {
+  const C = load({});
+  const items = [
+    { id: 'a', n: 'Tomaten', q: 2, g: 400 },   // 800 g
+    { id: 'b', n: 'Milch', q: 1, g: 1000 },    // 1000 g
+    { id: 'c', n: 'Zwiebeln', q: 3, g: 0 },    // ohne Gramm je Stück
+    { id: 'd', n: 'Reis', q: 0, g: 500 },      // leer
+  ];
+  const r = C.pantryShortfall([
+    { name: 'Tomate', amount: 500, emoji: '🍅' },
+    { name: 'Tomaten', amount: 500 },          // nur noch 300 g übrig → 200 fehlen
+    { name: 'Milch 3,5 %', q: '1,5 l' },       // 1500 ml − 1000 → 500
+    { name: 'Zwiebel', amount: 200 },
+    { name: 'Reis', amount: 250 },
+    { name: 'Salz' },
+  ], items);
+  assert.equal(r.covered, 1);
+  assert.equal(r.partial, 2);
+  assert.equal(r.unknown, 1);
+  assert.deepEqual(JSON.parse(JSON.stringify(r.ings.map((x) => [x.name, x.amount ?? null, x.q ?? null]))), [
+    ['Tomaten', 200, null], ['Milch 3,5 %', 500, null], ['Zwiebel', 200, null],
+    ['Reis', 250, null], ['Salz', null, null],
+  ]);
+  // Eingabe bleibt unverändert
+  const ing = { name: 'Tomaten', amount: 900, emoji: '🍅' };
+  C.pantryShortfall([ing], items);
+  assert.equal(ing.amount, 900);
+  assert.deepEqual(JSON.parse(JSON.stringify(C.pantryShortfall([], null))), { ings: [], covered: 0, partial: 0, unknown: 0 });
+});
+test('pantryRefillMhd: leer → heute + Tage, sonst früheres Datum, ohne Tage unverändert', () => {
+  const C = load({});
+  const t = '2026-10-17';
+  assert.equal(C.pantryRefillMhd({ hd: 7, mhd: '' }, 2, t), '2026-10-24');
+  assert.equal(C.pantryRefillMhd({ hd: 7, mhd: '2026-10-01' }, 0, t), '2026-10-24');   // leer: alte Packung weg
+  assert.equal(C.pantryRefillMhd({ hd: 7, mhd: '2026-10-20' }, 1, t), '2026-10-20');   // Rest läuft früher ab
+  assert.equal(C.pantryRefillMhd({ hd: 7, mhd: '2026-12-01' }, 1, t), '2026-10-24');   // nie verlängern
+  assert.equal(C.pantryRefillMhd({ hd: 0, mhd: '2026-12-01' }, 0, t), '2026-12-01');
+  assert.equal(C.pantryRefillMhd({ mhd: '' }, 0, t), '');
+  assert.equal(C.pantryRefillMhd({ hd: 3 }, 0, '2026-12-30'), '2027-01-02');
+});
+test('pantryLogTrim und pantryWaste: 90 Tage, Höchstzahl, Weggeworfenes je Monat', () => {
+  const C = load({});
+  const now = new Date(2026, 9, 17, 12).getTime(), day = 864e5;
+  const log = [
+    { id: '1', t: now - 100 * day, k: 'kauf', n: 'Alt', d: 1 },
+    { id: '2', t: now - 2 * day, k: 'verderb', n: 'Brot', ic: '🍞', d: -1 },
+    { id: '3', t: now - 1 * day, k: 'verderb', n: 'Brote', ic: '🍞', d: -2 },
+    { id: '4', t: now, k: 'verderb', n: 'Milch', d: -1 },
+    { id: '5', t: now, k: 'verderb', n: 'Joghurt', d: -1, u: 1 },          // rückgängig
+    { id: '6', t: now, k: 'verbrauch', n: 'Käse', d: -1 },
+    { id: '7', t: new Date(2026, 8, 30, 12).getTime(), k: 'verderb', n: 'Salat', d: -1 }, // September
+  ];
+  const tr = C.pantryLogTrim(log, now, 90, 4);
+  assert.deepEqual(tr.map((e) => e.id).slice(0, 1), ['4']);
+  assert.equal(tr.length, 4);
+  assert.ok(!C.pantryLogTrim(log, now, 90, 100).some((e) => e.id === '1'));
+  const w = C.pantryWaste(log, '2026-10');
+  assert.equal(w.n, 3);
+  assert.equal(w.q, 4);
+  assert.equal(w.top[0].n, 'Brot');
+  assert.equal(w.top[0].count, 2);
+  assert.equal(w.top[1].n, 'Milch');
+  assert.equal(C.pantryWaste(log, '2026-09').n, 1);
+  assert.equal(C.pantryWaste(null, '2026-10').n, 0);
+});

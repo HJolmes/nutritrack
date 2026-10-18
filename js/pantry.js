@@ -5,11 +5,18 @@
 // showToast, callClaude, canUseAi, recipes) sowie auf NTShop, NTBook und NTSync.
 //
 // Was zu Hause da ist, wo es steht und was immer da sein soll:
-//   S.pantry      [{id,n,ic,loc,q,g,min,mhd,vd,ts,rev,_sy}]  q = Stück, g = Gramm je
-//                 Stück, min = Mindestmenge in Stück (0 = keine), mhd/vd =
-//                 Mindesthaltbarkeits-/Verbrauchsdatum JJJJ-MM-TT (leer = keins)
+//   S.pantry      [{id,n,ic,loc,q,g,min,mhd,vd,hd,bc,ts,rev,_sy}]  q = Stück, g =
+//                 Gramm je Stück, min = Mindestmenge in Stück (0 = keine), mhd/vd =
+//                 Mindesthaltbarkeits-/Verbrauchsdatum JJJJ-MM-TT (leer = keins),
+//                 hd = hält ca. … Tage (MHD beim Auffüllen), bc = Barcodes
 //   S.pantryLocs  [{id,ic,label,pos,rev,_sy}]  Lagerorte, alle änderbar
 //   S.pantryTomb  {id:{rev}}  Grabsteine für Artikel und Lagerorte (`loc:<id>`)
+//   S.pantryLog   [{id,t,pid,n,ic,d,k,src,u,rev,_sy}]  Verlauf (#336): d = ± Stück,
+//                 k = kauf|verbrauch|verderb|kochen|korrektur, u = rückgängig.
+//                 Synchron als Record `log:<id>`, 90 Tage, ohne Grabsteine —
+//                 jedes Gerät kürzt selbst und nimmt Älteres nicht mehr an.
+//   S.pantryRemindOff / S.pantryRemindDay  Ablauf-Meldung aus / zuletzt gemeldet
+//                 (gerätelokal, nicht im Sync)
 //
 // Der Vorrat redet mit drei Stellen:
 //   - Einkaufszettel: fällt ein Artikel unter die Mindestmenge, landet er dort
@@ -17,6 +24,11 @@
 //     (`onBought`, gerufen aus NTShop.toggle).
 //   - Kochbuch: „Fertig gekocht“ zieht die Zutaten ab (`useRecipe`, gerufen aus
 //     NTBook.cookDone) — nur Artikel mit Gramm je Stück lassen sich umrechnen.
+//   - Einkaufszettel, Gegenrichtung: Rezepte und Wochenplan legen nur auf den
+//     Zettel, was der Vorrat nicht deckt (`shortfall`, gerufen aus
+//     NTShop.addIngredients, #334).
+//   - Scanner: NTPicker.scanFor bucht bekannte Barcodes ±1 (#335).
+//   - Erinnerungen: einmal am Tag „läuft bald ab“ über NTRemind.notify (#337).
 //   - KI: Fotos von Kühlschrank und Schrank auswerten (nur nach Bestätigung
 //     übernommen, Fotos werden nicht gespeichert) und Kochideen.
 // Geteilt wird über einen eigenen Topf des Sync-Kerns (`/pantry/sync`), mit
@@ -32,6 +44,9 @@ var SEED_LOCS=[
   {id:'vorrat',ic:'🥫', label:'Vorratsschrank', pos:3}
 ];
 var LOC_PREFIX='loc:';
+var LOG_PREFIX='log:';
+var LOG_DAYS=90,LOG_MAX=500;
+var REMIND_HOUR=7;
 var MAX_PHOTOS=6;
 
 var _editId=null;
@@ -40,7 +55,9 @@ var EXP='__exp';
 var EXP_DAYS=3;
 var _photos=[];      // komprimierte Fotos als base64, nur im Speicher
 var _found=[];       // Ergebnis der Foto-Auswertung bis zur Bestätigung
-var _refill={};      // Einkaufs-ID → {pid,n}: was ein Abhaken aufgefüllt hat
+var _refill={};      // Einkaufs-ID → {pid,n,log}: was ein Abhaken aufgefüllt hat
+var _pendingBc='';   // gescannter, noch unbekannter Barcode für den Artikel-Dialog
+var _scanMode='in';  // Scanner: 'in' = einbuchen, 'out' = verbrauchen
 
 function uid(p){return p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 var _lastRev=0;
@@ -52,6 +69,7 @@ function args(a){return esc(JSON.stringify(a));}
 // ── Daten ─────────────────────────────────────────────────────────────────
 function items(){if(!Array.isArray(S.pantry))S.pantry=[];return S.pantry;}
 function tomb(){if(!S.pantryTomb||typeof S.pantryTomb!=='object')S.pantryTomb={};return S.pantryTomb;}
+function logArr(){if(!Array.isArray(S.pantryLog))S.pantryLog=[];return S.pantryLog;}
 function locs(){
   if(!Array.isArray(S.pantryLocs)){
     S.pantryLocs=SEED_LOCS.map(function(l){return {id:l.id,ic:l.ic,label:l.label,pos:l.pos,rev:1};});
@@ -63,6 +81,8 @@ function loc(id){var a=locs();for(var i=0;i<a.length;i++)if(a[i].id===id)return 
 function byId(id){var a=items();for(var i=0;i<a.length;i++)if(a[i].id===id)return a[i];return null;}
 function findByName(n){var k=pantryKey(n);if(!k)return null;var a=items();for(var i=0;i<a.length;i++)if(pantryKey(a[i].n)===k)return a[i];return null;}
 function low(it){return pantryNeed(it.q,it.min)>0;}
+function findByBc(code){var a=items();for(var i=0;i<a.length;i++)if(Array.isArray(a[i].bc)&&a[i].bc.indexOf(code)>=0)return a[i];return null;}
+function r1(v){return Math.round(v*10)/10;}
 function guessIc(n){return (window.NTShop&&NTShop.guess)?NTShop.guess(n).ic:'🥫';}
 function fmtD(d){var p=String(d||'').split('-');return p.length===3?(p[2]+'.'+p[1]+'.'+p[0].slice(2)):'';}
 function expiry(it){return pantryExpiry(it,today());}
@@ -100,32 +120,80 @@ function afterChange(it,before){
 }
 function touch(it){it.rev=nextRev();saveS();Sync.schedule();render();}
 
-/** @param {any} [dates] {mhd,vd} */
-function add(n,q,g,locId,ic,min,dates){
+// ── Verlauf (#336) ──
+// Eine Buchung je Bestandsänderung. Gespeichert und gerendert wird mit dem
+// Artikel (touch), deshalb hier nur anlegen.
+/** @param {any} it @param {number} d @param {string} k @param {string} [src] */
+function log(it,d,k,src){
+  d=r1(d);
+  if(!d)return null;
+  var e={id:uid('l'),t:Date.now(),pid:it.id,n:it.n,ic:it.ic||'',d:d,k:k,src:src||'hand',u:0,rev:nextRev()};
+  logArr().unshift(e);
+  return e;
+}
+function logById(id){var a=logArr();for(var i=0;i<a.length;i++)if(a[i].id===id)return a[i];return null;}
+function trimLog(){
+  var a=logArr(),t=pantryLogTrim(a,Date.now(),LOG_DAYS,LOG_MAX);
+  if(t.length!==a.length)S.pantryLog=t;
+}
+// Auffüllen um `n` Stück: Menge, MHD aus der Standard-Haltbarkeit, Verlauf.
+/** @param {any} it @param {number} n @param {string} src @param {string} [mhd] */
+function refill(it,n,src,mhd){
+  var qb=+it.q||0;
+  if(!(n>0)){if(mhd)it.mhd=earlier(it.mhd,mhd);return null;}
+  it.q=r1(qb+n);
+  if(mhd)it.mhd=qb>0?earlier(it.mhd,mhd):mhd;
+  else it.mhd=pantryRefillMhd(it,qb,today());
+  return log(it,it.q-qb,'kauf',src);
+}
+// Abziehen um `n` Stück (nie unter 0).
+/** @param {any} it @param {number} n @param {string} k @param {string} [src] */
+function take(it,n,k,src){
+  var qb=+it.q||0;
+  it.q=Math.max(0,r1(qb-n));
+  return log(it,it.q-qb,k,src);
+}
+
+/** @param {any} [dates] {mhd,vd} @param {string} [src] Herkunft für den Verlauf */
+function add(n,q,g,locId,ic,min,dates,src){
   n=String(n||'').trim();
   if(!n)return null;
   var mhd=(dates&&dates.mhd)||'',vd=(dates&&dates.vd)||'';
   var ex=findByName(n);
   if(ex){
     var before=pantryNeed(ex.q,ex.min);
-    ex.q=Math.round(((+ex.q||0)+(+q||0))*10)/10;
     if(+g>0&&!(+ex.g>0))ex.g=+g;
     if(locId&&!ex.loc)ex.loc=locId;
-    if(mhd)ex.mhd=earlier(ex.mhd,mhd);
+    refill(ex,+q||0,src||'hand',mhd);
     if(vd)ex.vd=earlier(ex.vd,vd);
     touch(ex);afterChange(ex,before);
     return ex;
   }
-  var it={id:uid('p'),n:n,ic:ic||guessIc(n),loc:locId||'',q:+q>0?+q:0,g:+g>0?+g:0,min:+min>0?+min:0,mhd:mhd,vd:vd,ts:Date.now(),rev:nextRev()};
+  var it={id:uid('p'),n:n,ic:ic||guessIc(n),loc:locId||'',q:0,g:+g>0?+g:0,min:+min>0?+min:0,mhd:'',vd:vd,ts:Date.now(),rev:nextRev()};
   items().push(it);
+  refill(it,+q>0?+q:0,src||'hand',mhd);
   touch(it);afterChange(it,0);
   return it;
 }
 function step(id,d){
   var it=byId(id);if(!it)return;
   var before=pantryNeed(it.q,it.min);
-  it.q=Math.max(0,Math.round(((+it.q||0)+d)*10)/10);
+  if(d>0)refill(it,d,'hand');else take(it,-d,'verbrauch','hand');
   touch(it);afterChange(it,before);
+}
+// 🍽️ Verbraucht / 🗑️ Weggeworfen im Artikel-Dialog; Menge aus dem Feld daneben.
+/** @param {boolean} spoiled */
+function consume(spoiled){
+  var it=_editId?byId(_editId):null;
+  if(!it)return;
+  var n=num(val('pantryItemUseQ'))||1;
+  if(!((+it.q||0)>0)){showToast(it.n+' ist schon leer');return;}
+  var before=pantryNeed(it.q,it.min);
+  var e=take(it,n,spoiled?'verderb':'verbrauch','hand');
+  touch(it);afterChange(it,before);
+  setVal('pantryItemQ',fmtN(it.q));
+  renderItemExtras(it);
+  if(e)showToast((spoiled?'🗑️ ':'🍽️ ')+fmtN(-e.d)+' '+it.n+(spoiled?' weggeworfen':' verbraucht')+' · ↩️ im Verlauf');
 }
 function remove(id){
   var a=items();
@@ -142,23 +210,29 @@ function onBought(shopItem,done){
     var m=_refill[shopItem.id];
     if(!m)return;
     delete _refill[shopItem.id];
+    var le=m.log?logById(m.log):null;
+    if(le&&le.u)return;// im Verlauf schon rückgängig gemacht
     var back=byId(m.pid);
-    if(back){back.q=Math.max(0,Math.round(((+back.q||0)-m.n)*10)/10);touch(back);}
+    if(back){
+      back.q=Math.max(0,r1((+back.q||0)-m.n));
+      if(le){le.u=1;le.rev=nextRev();}
+      touch(back);
+    }
     return;
   }
   var it=pantryFind(items(),shopItem.n);
   if(!it)return;
   var n=pantryBought(shopItem.q,it);
-  it.q=Math.round(((+it.q||0)+n)*10)/10;
-  _refill[shopItem.id]={pid:it.id,n:n};
+  var e=refill(it,n,'zettel');
+  _refill[shopItem.id]={pid:it.id,n:n,log:e?e.id:''};
   touch(it);
   showToast('Vorrat: '+(it.ic||'')+' '+it.n+' +'+fmtN(n));
 }
 
 // ── Kochbuch: „Fertig gekocht“ zieht ab ───────────────────────────────────
 // `ings` je Portion (wie NTBook.view sie liefert), `portions` = gekochte Portionen.
-/** @param {Array<any>} ings @param {number} portions */
-function useRecipe(ings,portions){
+/** @param {Array<any>} ings @param {number} portions @param {string} [recName] Rezept, für den Verlauf */
+function useRecipe(ings,portions,recName){
   var p=+portions||1,used=[],skipped=0;
   (ings||[]).forEach(function(ing){
     var name=bookIngShort(ing)||ing.name;
@@ -167,6 +241,7 @@ function useRecipe(ings,portions){
     var nq=pantryUse(it,(+ing.amount||0)*p);
     if(nq===null){skipped++;return;}
     var before=pantryNeed(it.q,it.min);
+    log(it,nq-(+it.q||0),'kochen',recName||'Rezept');
     it.q=nq;it.rev=nextRev();
     used.push(it);
     afterChange(it,before);
@@ -185,6 +260,7 @@ function records(){
   var out=[];
   items().forEach(function(it){out.push({id:it.id,rev:it.rev||0,holder:it,payload:{i:stripSy(it)}});});
   locs().forEach(function(l){out.push({id:LOC_PREFIX+l.id,rev:l.rev||0,holder:l,payload:{l:stripSy(l)}});});
+  logArr().forEach(function(e){out.push({id:LOG_PREFIX+e.id,rev:e.rev||0,holder:e,payload:{g:stripSy(e)}});});
   var t=tomb();
   Object.keys(t).forEach(function(id){
     if(!t[id])return;
@@ -194,6 +270,7 @@ function records(){
 }
 // Höhere rev gewinnt — für Artikel, Lagerorte und Grabsteine gleich.
 function applyRec(id,rev,payload,room){
+  if(String(id).indexOf(LOG_PREFIX)===0)return applyLog(String(id).slice(LOG_PREFIX.length),rev,payload,room);
   var isLoc=String(id).indexOf(LOC_PREFIX)===0;
   var t=tomb();
   if(t[id]&&(t[id].rev||0)>=rev)return false;
@@ -214,11 +291,25 @@ function applyRec(id,rev,payload,room){
   if(rev>_lastRev)_lastRev=rev;
   return true;
 }
+// Verlauf: höhere rev gewinnt, Älteres als LOG_DAYS wird nicht angenommen.
+function applyLog(key,rev,payload,room){
+  var body=payload&&payload.g;
+  if(!body||(+body.t||0)<Date.now()-LOG_DAYS*864e5)return false;
+  var a=logArr(),idx=-1;
+  for(var i=0;i<a.length;i++)if(a[i].id===key){idx=i;break;}
+  if(idx>=0&&(a[idx].rev||0)>=rev)return false;
+  body.id=key;body.rev=rev;
+  NTSync.ack(body,room,rev);
+  if(idx>=0)a[idx]=body;else a.push(body);
+  a.sort(function(x,y){return (+y.t||0)-(+x.t||0);});
+  if(rev>_lastRev)_lastRev=rev;
+  return true;
+}
 var Sync=NTSync.engine({
   topic:'pantry',path:'/pantry/sync',header:'X-Pantry-Room',salt:'nutritrack-pantry',
   pollMs:30000,debounceMs:1200,
   records:records,apply:applyRec,
-  onApplied:function(){render();},
+  onApplied:function(){render();if(isOpen('pantryLogOv'))renderLog();},
   onStatus:function(){}
 });
 
@@ -352,6 +443,10 @@ function openItem(id){
   setVal('pantryItemMin',it&&+it.min>0?fmtN(it.min):'');
   setVal('pantryItemMhd',it&&it.mhd||'');
   setVal('pantryItemVd',it&&it.vd||'');
+  setVal('pantryItemHd',it&&+it.hd>0?String(Math.round(it.hd)):'');
+  setVal('pantryItemUseQ','1');
+  _pendingBc='';
+  renderItemExtras(it);
   var sel=document.getElementById('pantryItemLoc');
   if(sel)sel.innerHTML=locOptions(it?it.loc:(_filter===EXP?'':_filter));
   var t=document.getElementById('pantryItemTitle');
@@ -361,22 +456,78 @@ function openItem(id){
   openOv('pantryItemOv');
 }
 function num(s){var v=parseFloat(String(s||'').replace(',','.'));return isFinite(v)&&v>0?v:0;}
+// Barcode-Zeile und Verbrauchs-Knöpfe im Artikel-Dialog.
+function renderItemExtras(it){
+  var bc=document.getElementById('pantryItemBc');
+  if(bc){
+    if(_pendingBc&&!it){
+      var others=items().slice().sort(function(a,b){return String(a.n).localeCompare(String(b.n),'de');});
+      bc.innerHTML='<div style="font-size:12px;line-height:1.5;background:var(--gl);border:1px solid var(--br);border-radius:10px;padding:8px 10px;margin-bottom:8px;">🏷️ Barcode <b>'+esc(_pendingBc)+'</b> — als neuen Artikel anlegen oder einem vorhandenen zuordnen:'
+        +'<select class="sinp" id="pantryItemAssign" style="margin-top:6px;"><option value="">＋ Neuer Artikel</option>'
+        +others.map(function(o){return '<option value="'+esc(o.id)+'">'+esc((o.ic||'')+' '+o.n)+'</option>';}).join('')
+        +'</select></div>';
+    }else if(it&&Array.isArray(it.bc)&&it.bc.length){
+      bc.innerHTML='<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mu);margin-bottom:8px;">🏷️ '+it.bc.length+' Barcode'+(it.bc.length===1?'':'s')+' gespeichert'
+        +'<button type="button" class="seb" style="width:auto;margin:0 0 0 auto;padding:5px 10px;font-size:11px;" data-act="NTPantry.dropBarcodes">Entfernen</button></div>';
+    }else bc.innerHTML='';
+  }
+  var use=document.getElementById('pantryItemUse');
+  if(use)use.style.display=it&&(+it.q||0)>0?'':'none';
+}
+function dropBarcodes(){
+  var it=_editId?byId(_editId):null;
+  if(!it||!Array.isArray(it.bc))return;
+  delete it.bc;touch(it);renderItemExtras(it);
+  showToast('Barcodes entfernt');
+}
+/** @param {any} it @param {string} code */
+function addBc(it,code){
+  if(!code)return;
+  var o=findByBc(code);
+  if(o&&o!==it&&Array.isArray(o.bc)){o.bc=o.bc.filter(function(c){return c!==code;});if(!o.bc.length)delete o.bc;o.rev=nextRev();}
+  if(!Array.isArray(it.bc))it.bc=[];
+  if(it.bc.indexOf(code)<0)it.bc.push(code);
+}
 function saveItem(){
+  // Gescannter Barcode, einem vorhandenen Artikel zugeordnet: nur Barcode
+  // merken und die Scan-Buchung ausführen, die übrigen Felder bleiben.
+  var asg=_pendingBc&&!_editId?val('pantryItemAssign'):'';
+  if(asg){
+    var t=byId(asg);
+    if(t){
+      var code=_pendingBc;_pendingBc='';
+      addBc(t,code);
+      var b0=pantryNeed(t.q,t.min);
+      if(_scanMode==='out')take(t,1,'verbrauch','scan');else refill(t,1,'scan');
+      touch(t);afterChange(t,b0);
+      closeOv('pantryItemOv');
+      showToast('🏷️ Barcode bei „'+t.n+'“ gespeichert · '+fmtN(t.q)+' Stück');
+      return;
+    }
+  }
   var n=val('pantryItemName').trim();
   if(!n){showToast('Bitte einen Namen angeben');return;}
   var it=_editId?byId(_editId):null;
   var dup=findByName(n);
-  if(dup&&dup!==it){showToast('„'+dup.n+'“ steht schon im Vorrat');return;}
-  if(!it){it={id:uid('p'),n:n,ts:Date.now()};items().push(it);}
+  if(dup&&dup!==it){showToast('„'+dup.n+'“ steht schon im Vorrat'+(_pendingBc?' — oben zuordnen':''));return;}
+  var isNew=!it;
+  if(!it){it={id:uid('p'),n:n,q:0,ts:Date.now()};items().push(it);}
   var before=it.rev?pantryNeed(it.q,it.min):0;
+  var qb=+it.q||0,mhdOld=it.mhd||'';
   it.n=n;
   it.ic=val('pantryItemIcon').trim()||guessIc(n);
   it.loc=val('pantryItemLoc');
   it.q=num(val('pantryItemQ'));
   it.g=num(val('pantryItemG'));
   it.min=num(val('pantryItemMin'));
+  it.hd=Math.round(num(val('pantryItemHd')));
+  if(!it.hd)delete it.hd;
   it.mhd=pantryDays(val('pantryItemMhd'),today())===null?'':val('pantryItemMhd');
   it.vd=pantryDays(val('pantryItemVd'),today())===null?'':val('pantryItemVd');
+  // Aufgefüllt, Datum nicht angefasst → MHD aus „Hält ca. … Tage“.
+  if(it.q>qb&&it.mhd===mhdOld)it.mhd=pantryRefillMhd(it,qb,today());
+  if(_pendingBc&&isNew){addBc(it,_pendingBc);_pendingBc='';}
+  log(it,it.q-qb,isNew?'kauf':'korrektur',isNew&&it.bc?'scan':'hand');
   touch(it);
   _editId=null;
   closeOv('pantryItemOv');
@@ -391,6 +542,125 @@ function deleteItem(){
   closeOv('pantryItemOv');
   showToast('Gelöscht');
 }
+
+// ════════ Barcode scannen (#335) ════════
+// Bekannt → ±1 und weiterscannen; unbekannt → Artikel-Dialog mit dem, was Open
+// Food Facts weiß, dort neu anlegen oder einem vorhandenen zuordnen.
+/** @param {string} mode 'in' | 'out' */
+function scan(mode){
+  if(!window.NTPicker||!NTPicker.scanFor){showToast('Scanner nicht geladen');return;}
+  _scanMode=mode==='out'?'out':'in';
+  NTPicker.scanFor({
+    title:_scanMode==='out'?'🏷️ Vorrat: verbrauchen':'🏷️ Vorrat: einbuchen',
+    known:scanKnown,unknown:scanUnknown
+  });
+}
+/** @param {string} code */
+function scanKnown(code){
+  var it=findByBc(code);
+  if(!it)return '';
+  var before=pantryNeed(it.q,it.min);
+  if(_scanMode==='out'){
+    if(!((+it.q||0)>0))return (it.ic||'')+' '+it.n+' ist schon leer';
+    take(it,1,'verbrauch','scan');
+  }else refill(it,1,'scan');
+  touch(it);afterChange(it,before);
+  return (_scanMode==='out'?'− ':'＋ ')+(it.ic||'')+' '+it.n+' · jetzt '+fmtN(it.q);
+}
+/** @param {string} code @param {any} prod {name,g}|null */
+function scanUnknown(code,prod){
+  openItem('');
+  _pendingBc=code;
+  setVal('pantryItemName',prod&&prod.name?prod.name:'');
+  if(prod&&prod.g)setVal('pantryItemG',String(prod.g));
+  setVal('pantryItemQ',_scanMode==='out'?'0':'1');
+  var t=document.getElementById('pantryItemTitle');
+  if(t)t.textContent='🏷️ Neuer Barcode';
+  renderItemExtras(null);
+  if(!prod)showToast('Barcode nicht in Open Food Facts — bitte Namen eintragen');
+}
+
+// ════════ Verlauf (#336) ════════
+var KIND={kauf:'＋ Gekauft',verbrauch:'🍽️ Verbraucht',verderb:'🗑️ Weggeworfen',kochen:'👨‍🍳 Gekocht',korrektur:'✏️ Korrigiert'};
+var SRC={hand:'',zettel:'vom Einkaufszettel',scan:'per Scan',foto:'vom Foto'};
+function openLog(){trimLog();openOv('pantryLogOv');renderLog();}
+function monthKey(d){return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2);}
+function renderLog(){
+  var el=document.getElementById('pantryLogList'),ws=document.getElementById('pantryWaste');
+  if(!el)return;
+  var a=logArr();
+  if(ws){
+    var w=pantryWaste(a,monthKey(new Date()));
+    ws.innerHTML=w.n
+      ?'<div style="font-size:12px;line-height:1.5;background:var(--gl);border:1px solid var(--br);border-radius:10px;padding:8px 10px;margin-bottom:8px;">🗑️ Diesen Monat weggeworfen: <b>'+fmtN(w.q)+' Stück</b> ('+w.n+'×)'
+        +' · meist '+w.top.slice(0,3).map(function(x){return esc((x.ic||'')+' '+x.n)+(x.count>1?' ('+x.count+'×)':'');}).join(', ')+'</div>'
+      :'<div style="font-size:12px;color:var(--mu);margin-bottom:8px;">Diesen Monat nichts weggeworfen ✓</div>';
+  }
+  if(!a.length){el.innerHTML='<div style="font-size:13px;color:var(--mu);font-style:italic;padding:14px 2px;">Noch keine Buchungen.</div>';return;}
+  var html='',day='';
+  a.forEach(function(e){
+    var d=new Date(+e.t||0),ds=('0'+d.getDate()).slice(-2)+'.'+('0'+(d.getMonth()+1)).slice(-2)+'.';
+    if(ds!==day){day=ds;html+='<div style="font-size:11px;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin:12px 2px 2px;">'+ds+'</div>';}
+    var src=SRC[e.src]!==undefined?SRC[e.src]:e.src;
+    html+='<div style="display:flex;align-items:center;gap:8px;padding:7px 2px;border-bottom:1px solid var(--br);'+(e.u?'opacity:.5;':'')+'">'
+      +'<div style="font-size:18px;flex-shrink:0;">'+esc(e.ic||'🥫')+'</div>'
+      +'<div style="flex:1;min-width:0;">'
+        +'<div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'+(e.u?'text-decoration:line-through;':'')+'">'+esc(e.n)+' '+(e.d>0?'+':'−')+fmtN(Math.abs(e.d))+'</div>'
+        +'<div style="font-size:11px;color:var(--mu);">'+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)+' · '+esc(KIND[e.k]||e.k)+(src?' '+esc(src):'')+(e.u?' · rückgängig':'')+'</div>'
+      +'</div>'
+      +(e.u?'':'<button type="button" class="seb" style="width:auto;margin:0;padding:6px 10px;font-size:12px;" data-act="NTPantry.undo" data-args="'+args([e.id])+'">↩️</button>')
+      +'</div>';
+  });
+  el.innerHTML=html;
+}
+// Gegenbuchung: Bestand um die Buchung zurück, Eintrag als rückgängig markiert.
+/** @param {string} id */
+function undo(id){
+  var e=logById(id);
+  if(!e||e.u)return;
+  var it=byId(e.pid);
+  if(!it){showToast('„'+e.n+'“ steht nicht mehr im Vorrat');return;}
+  var before=pantryNeed(it.q,it.min);
+  it.q=Math.max(0,r1((+it.q||0)-(+e.d||0)));
+  e.u=1;e.rev=nextRev();
+  Object.keys(_refill).forEach(function(k){if(_refill[k].log===e.id)delete _refill[k];});
+  touch(it);afterChange(it,before);
+  renderLog();
+  showToast('↩️ '+(it.ic||'')+' '+it.n+' · jetzt '+fmtN(it.q));
+}
+
+// ════════ Ablauf-Erinnerung (#337) ════════
+// Einmal am Tag, beim ersten Blick ab REMIND_HOUR Uhr, wenn etwas abgelaufen
+// ist oder in EXP_DAYS Tagen abläuft. Ohne Server-Push: nur bei offener App
+// (bewusst so entschieden, die App ist mehrmals täglich offen).
+function remindOn(){return !S.pantryRemindOff;}
+/** @param {boolean} on */
+function setRemind(on){
+  S.pantryRemindOff=!on;saveS();
+  if(on&&'Notification' in window&&Notification.permission==='default'){
+    Notification.requestPermission().then(function(p){if(p==='granted')checkRemind();else showToast(NTRemind.hint()||'Meldungen nicht erlaubt');});
+    return;
+  }
+  var h=on&&window.NTRemind?NTRemind.hint():'';
+  showToast(on?(h||'🥫 Ablauf-Erinnerung an'):'Ablauf-Erinnerung aus');
+  if(on)checkRemind();
+}
+function checkRemind(){
+  if(S.pantryRemindOff||!window.NTRemind)return;
+  if(new Date().getHours()<REMIND_HOUR)return;
+  var d=today();
+  if(S.pantryRemindDay===d)return;
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
+  var ex=expiring();
+  if(!ex.length)return;
+  S.pantryRemindDay=d;saveS();
+  var names=ex.slice(0,4).map(function(x){return (x.it.ic||'')+' '+x.it.n+' ('+(x.e.days<0?'abgelaufen':(x.e.days===0?'heute':(x.e.days===1?'morgen':fmtD(x.e.d))))+')';});
+  NTRemind.notify('🥫 '+ex.length+' Artikel '+(ex.length===1?'läuft':'laufen')+' bald ab',{body:names.join(', ')+(ex.length>4?' …':''),tag:'nt-pantry-exp'});
+}
+
+// Einkaufszettel: nur, was der Vorrat nicht deckt (#334).
+/** @param {Array<any>} ings */
+function shortfall(ings){return pantryShortfall(ings,items());}
 
 // ════════ Lagerorte ════════
 function openLocs(){openOv('pantryLocsOv');renderLocs();}
@@ -571,7 +841,7 @@ function foundSet(i,k,v){
 }
 function foundApply(){
   var n=0;
-  _found.forEach(function(x){if(x.on&&x.n&&add(x.n,x.q||1,x.g,x.loc,'',0,{mhd:x.mhd,vd:x.vd}))n++;});
+  _found.forEach(function(x){if(x.on&&x.n&&add(x.n,x.q||1,x.g,x.loc,'',0,{mhd:x.mhd,vd:x.vd},'foto'))n++;});
   _found=[];_photos=[];
   closeOv('pantryPhotoOv');
   showToast(n?(n+' Artikel im Vorrat ✓'):'Nichts übernommen');
@@ -645,10 +915,14 @@ function boot(){
   items().forEach(function(it){if((it.rev||0)>_lastRev)_lastRev=it.rev;});
   locs().forEach(function(l){if((l.rev||0)>_lastRev)_lastRev=l.rev;});
   var t=tomb();Object.keys(t).forEach(function(id){if(t[id]&&(t[id].rev||0)>_lastRev)_lastRev=t[id].rev;});
+  logArr().forEach(function(e){if((e.rev||0)>_lastRev)_lastRev=e.rev;});
+  trimLog();
   render();
   Sync.run();
+  checkRemind();
+  setInterval(checkRemind,30*60000);
 }
-document.addEventListener('visibilitychange',function(){if(!document.hidden)Sync.run();});
+document.addEventListener('visibilitychange',function(){if(!document.hidden){Sync.run();checkRemind();}});
 
 window.NTPantry={
   boot:boot,open:open,close:close,render:render,renderCard:renderCard,setFilter:setFilter,
@@ -658,7 +932,9 @@ window.NTPantry={
   openPhotos:openPhotos,pickPhotos:pickPhotos,takePhoto:takePhoto,photosChosen:photosChosen,dropPhoto:dropPhoto,
   analyzePhotos:analyzePhotos,foundSet:foundSet,foundApply:foundApply,
   openCook:openCook,openRecipe:openRecipe,aiIdeas:aiIdeas,
-  onBought:onBought,useRecipe:useRecipe,
+  onBought:onBought,useRecipe:useRecipe,shortfall:shortfall,
+  consume:consume,dropBarcodes:dropBarcodes,scan:scan,openLog:openLog,undo:undo,
+  remindOn:remindOn,setRemind:setRemind,checkRemind:checkRemind,
   count:function(){return items().length;},lowCount:function(){return items().filter(low).length;},
   Sync:Sync
 };

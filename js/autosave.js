@@ -124,12 +124,12 @@ function rowsHtml(){
   }).catch(function(){return '';});
 }
 
-// ── Tagessicherung als Datei (iOS ohne OneDrive, #340) ─────────────────────
+// ── Wochensicherung als Datei (iOS ohne OneDrive, #340/#343) ───────────────
 // Der Autospeicher oben liegt im selben Website-Speicher wie die App-Daten –
-// loescht iOS den, sind beide weg. Darum einmal am Tag ein Dialog ohne ✕, der
+// loescht iOS den, sind beide weg. Darum alle 7 Tage ein Dialog ohne ✕, der
 // ueber System-Teilen eine Datei nach „Dateien“ gibt. Vier feste Namen
 // rotieren (nutritrack-backup1..4.json), damit iOS ersetzen statt sammeln kann.
-var FILES=4,FDAY='nt_file_backup_day',FIDX='nt_file_backup_idx',_sharing=false;
+var FILES=4,EVERY=7,FDAY='nt_file_backup_day',FIDX='nt_file_backup_idx',_sharing=false;
 
 function isIOS(){
   var u=navigator.userAgent||'';
@@ -141,9 +141,10 @@ function fileName(){return 'nutritrack-backup'+(fileIdx()+1)+'.json';}
 
 function fileCheck(){
   if(_sharing||!window.S||!S.setupDone||!fileActive())return;
-  if(localStorage.getItem(FDAY)===today())return;
+  var last=localStorage.getItem(FDAY);
+  if(last&&addDays(last,EVERY)>today())return;
   var el=document.getElementById('fileSaveName');
-  if(el)el.textContent='Heute: '+fileName()+' (4 Dateien, jede wird alle 4 Tage erneuert)';
+  if(el)el.textContent='Heute: '+fileName()+' (4 Dateien, jede wird alle 4 Wochen erneuert)';
   openOv('fileSaveOv');
 }
 

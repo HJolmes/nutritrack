@@ -981,7 +981,7 @@ const EXPECTED_NAMESPACES = [
     });
     await kp.reload({ waitUntil: 'load' });
     await kp.waitForTimeout(1200);
-    // Tagessicherung (#340): iPhone ohne OneDrive → Dialog ohne ✕; Abbrechen
+    // Wochensicherung (#340/#343): iPhone ohne OneDrive → Dialog ohne ✕; Abbrechen
     // laesst ihn offen, Teilen schliesst ihn und rueckt die Datei 1→2 weiter.
     // Erledigt sie zugleich fuer den Rest des Laufs (runAutosave nach 3 s).
     const fsv = await kp.evaluate(async () => {
@@ -999,12 +999,15 @@ const EXPECTED_NAMESPACES = [
       r.openAfterShare = ov.classList.contains('open');
       r.idx = localStorage.getItem('nt_file_backup_idx'); r.today = localStorage.getItem('nt_file_backup_day') === today();
       NTAutoSave.fileCheck(); r.reopened = ov.classList.contains('open');
+      localStorage.setItem('nt_file_backup_day', addDays(today(), -6)); NTAutoSave.fileCheck(); r.day6 = ov.classList.contains('open');
+      localStorage.setItem('nt_file_backup_day', addDays(today(), -7)); NTAutoSave.fileCheck(); r.day7 = ov.classList.contains('open');
+      closeOv('fileSaveOv'); localStorage.setItem('nt_file_backup_day', today());
       return r;
     });
     if (fsv.open && fsv.noClose && fsv.openAfterAbort && !fsv.openAfterShare && fsv.names.join() === 'nutritrack-backup1.json,nutritrack-backup1.json'
-      && fsv.idx === '1' && fsv.today && !fsv.reopened)
-      console.log('  ok  Tagessicherung (#340): iPhone ohne OneDrive → Dialog ohne ✕, Abbrechen laesst ihn offen, Teilen von nutritrack-backup1.json schliesst ihn, naechste Datei 2, heute kein zweites Mal.');
-    else record('Tagessicherung (#340)', JSON.stringify(fsv));
+      && fsv.idx === '1' && fsv.today && !fsv.reopened && !fsv.day6 && fsv.day7)
+      console.log('  ok  Wochensicherung (#340/#343): iPhone ohne OneDrive → Dialog ohne ✕, Abbrechen laesst ihn offen, Teilen von nutritrack-backup1.json schliesst ihn, naechste Datei 2, nach 6 Tagen still, nach 7 Tagen wieder.');
+    else record('Wochensicherung (#340/#343)', JSON.stringify(fsv));
     // Chat-Ergebnis ueber den echten Weg (KI-Rueckfall), nur KI und
     // Naehrwertsuche ersetzt: seit #257 ist der Zustand des Pickers privat.
     const chatRes = "var _cc=callClaude,_ln=lookupNutrients;"

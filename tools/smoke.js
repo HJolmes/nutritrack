@@ -981,6 +981,30 @@ const EXPECTED_NAMESPACES = [
     });
     await kp.reload({ waitUntil: 'load' });
     await kp.waitForTimeout(1200);
+    // Tagessicherung (#340): iPhone ohne OneDrive → Dialog ohne ✕; Abbrechen
+    // laesst ihn offen, Teilen schliesst ihn und rueckt die Datei 1→2 weiter.
+    // Erledigt sie zugleich fuer den Rest des Laufs (runAutosave nach 3 s).
+    const fsv = await kp.evaluate(async () => {
+      const ov = document.getElementById('fileSaveOv'), btn = ov.querySelector('[data-act]');
+      localStorage.removeItem('nt_file_backup_day'); localStorage.removeItem('nt_file_backup_idx');
+      NTAutoSave.fileCheck();
+      const r = { open: ov.classList.contains('open'), noClose: !ov.querySelector('.mcl') && !ov.hasAttribute('data-bg-close') };
+      let mode = 'abort'; r.names = [];
+      Object.defineProperty(navigator, 'canShare', { configurable: true, value: () => true });
+      Object.defineProperty(navigator, 'share', { configurable: true, value: (d) => { r.names.push(d.files[0].name);
+        return mode === 'abort' ? Promise.reject(new DOMException('x', 'AbortError')) : Promise.resolve(); } });
+      btn.click(); await new Promise((s) => setTimeout(s, 50));
+      r.openAfterAbort = ov.classList.contains('open');
+      mode = 'ok'; btn.click(); await new Promise((s) => setTimeout(s, 50));
+      r.openAfterShare = ov.classList.contains('open');
+      r.idx = localStorage.getItem('nt_file_backup_idx'); r.today = localStorage.getItem('nt_file_backup_day') === today();
+      NTAutoSave.fileCheck(); r.reopened = ov.classList.contains('open');
+      return r;
+    });
+    if (fsv.open && fsv.noClose && fsv.openAfterAbort && !fsv.openAfterShare && fsv.names.join() === 'nutritrack-backup1.json,nutritrack-backup1.json'
+      && fsv.idx === '1' && fsv.today && !fsv.reopened)
+      console.log('  ok  Tagessicherung (#340): iPhone ohne OneDrive → Dialog ohne ✕, Abbrechen laesst ihn offen, Teilen von nutritrack-backup1.json schliesst ihn, naechste Datei 2, heute kein zweites Mal.');
+    else record('Tagessicherung (#340)', JSON.stringify(fsv));
     // Chat-Ergebnis ueber den echten Weg (KI-Rueckfall), nur KI und
     // Naehrwertsuche ersetzt: seit #257 ist der Zustand des Pickers privat.
     const chatRes = "var _cc=callClaude,_ln=lookupNutrients;"

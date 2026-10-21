@@ -2,7 +2,8 @@
 // NutriTrack – lokaler Autospeicher in IndexedDB (window.NTAutoSave)
 // Klassisches Script, kein Modul. Greift auf die globalen Helfer aus index.html
 // zu (S, customFoods, recipes, backupState, _backupAiFields, _importAiFields,
-// _migratePhotosAfterImport, saveS, saveX, renderAll, closeOv, showToast, today).
+// _migratePhotosAfterImport, saveS, saveX, renderAll, openOv, closeOv, showToast, today,
+// foodCache, barcodeCache) und auf NTDrive (js/onedrive.js).
 //
 // ── Warum IndexedDB statt localStorage ────────────────────────────────────
 // Bis v0.267 lagen bis zu drei volle Staende in localStorage ('nt_autosaves').
@@ -123,11 +124,63 @@ function rowsHtml(){
   }).catch(function(){return '';});
 }
 
+// ── Tagessicherung als Datei (iOS ohne OneDrive, #340) ─────────────────────
+// Der Autospeicher oben liegt im selben Website-Speicher wie die App-Daten –
+// loescht iOS den, sind beide weg. Darum einmal am Tag ein Dialog ohne ✕, der
+// ueber System-Teilen eine Datei nach „Dateien“ gibt. Vier feste Namen
+// rotieren (nutritrack-backup1..4.json), damit iOS ersetzen statt sammeln kann.
+var FILES=4,FDAY='nt_file_backup_day',FIDX='nt_file_backup_idx',_sharing=false;
+
+function isIOS(){
+  var u=navigator.userAgent||'';
+  return /iPad|iPhone|iPod/.test(u)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+}
+function fileActive(){return isIOS()&&!NTDrive.tokens();}
+function fileIdx(){return (parseInt(localStorage.getItem(FIDX)||'0',10)||0)%FILES;}
+function fileName(){return 'nutritrack-backup'+(fileIdx()+1)+'.json';}
+
+function fileCheck(){
+  if(_sharing||!window.S||!S.setupDone||!fileActive())return;
+  if(localStorage.getItem(FDAY)===today())return;
+  var el=document.getElementById('fileSaveName');
+  if(el)el.textContent='Heute: '+fileName()+' (4 Dateien, jede wird alle 4 Tage erneuert)';
+  openOv('fileSaveOv');
+}
+
+function download(json,name){
+  var url=URL.createObjectURL(new Blob([json],{type:'application/json'})),a=document.createElement('a');
+  a.href=url;a.download=name;a.click();setTimeout(function(){URL.revokeObjectURL(url);},1000);
+}
+
+function fileSave(){
+  var name=fileName(),idx=fileIdx();
+  var json=JSON.stringify(_backupAiFields({state:backupState(),foodCache:foodCache,customFoods:customFoods,recipes:recipes,barcodeCache:barcodeCache}));
+  var done=function(){
+    try{localStorage.setItem(FDAY,today());localStorage.setItem(FIDX,((idx+1)%FILES)+'');}catch(e){}
+    closeOv('fileSaveOv');showToast('💾 '+name+' gesichert ✓');
+  };
+  var file=null;
+  try{file=new File([json],name,{type:'application/json'});}catch(e){}
+  if(file&&navigator.canShare&&navigator.canShare({files:[file]})){
+    _sharing=true;
+    navigator.share({title:'NutriTrack Backup',files:[file]}).then(function(){_sharing=false;done();},function(e){
+      _sharing=false;
+      if(e&&e.name==='AbortError'){showToast('Noch nicht gesichert');return;}
+      download(json,name);done();
+    });
+    return;
+  }
+  download(json,name);done();
+}
+
+// Bittet den Browser, die Daten nicht von selbst zu raeumen (iOS: Homescreen-App).
+try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(function(){});}catch(e){}
+
 document.addEventListener('visibilitychange',function(){
   if(document.visibilityState!=='visible')return;
   if(!window.S||!S.setupDone||typeof runAutosave!=='function')return;
   runAutosave(true);
 });
 
-window.NTAutoSave={create:create,load:load,list:list,rowsHtml:rowsHtml,savedToday:savedToday};
+window.NTAutoSave={create:create,load:load,list:list,rowsHtml:rowsHtml,savedToday:savedToday,fileActive:fileActive,fileCheck:fileCheck,fileSave:fileSave};
 })();

@@ -2,6 +2,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.325',items:[
+    {icon:'💾',text:'<b>Tagessicherung auf dem iPhone</b>: iOS kann App-Daten ohne Vorwarnung löschen – samt Autospeicher. Ohne OneDrive fragt NutriTrack deshalb einmal am Tag nach einer Sicherung: „Jetzt sichern“ → „In Dateien sichern“ → Ordner „NutriTrack“ → „Ersetzen“. Es gibt vier Dateien (nutritrack-backup1 bis 4), jede wird alle vier Tage erneuert. Zurückholen über „Datei importieren“.',where:'iPhone/iPad · beim Öffnen der App'},
+  ]},
   {v:'0.324',items:[
     {icon:'🛒',text:'<b>Einkaufen nur, was fehlt</b>: Rezepte und der Wochenplan legen nur noch auf den Einkaufszettel, was dein Vorrat nicht deckt – teilweise Vorhandenes mit der Restmenge. Gerechnet wird über „Gramm je Stück“; Artikel ohne diese Angabe kommen sicherheitshalber trotzdem auf den Zettel.',where:'📅 Wochenplan / 📖 Kochbuch → 🛒'},
     {icon:'🏷️',text:'<b>Barcode im Vorrat</b>: „🏷️ Einbuchen“ und „🏷️ Verbrauchen“ scannen Packungen ＋1 / −1, mehrere hintereinander. Ein neuer Barcode holt Name und Packungsgröße und wird einem Artikel zugeordnet.',where:'🥫 Vorrat'},

@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.324"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.325"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.324"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.325"></script>
 <script>
   // @ts-check
   (function(){
@@ -1326,7 +1326,7 @@ body.tour-open #feedbackFab{display:flex!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.324</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.325</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -1608,7 +1608,7 @@ body.tour-open #feedbackFab{display:flex!important;}
       <details><summary>📅 Wochenplan</summary><div class="hb">Unter <strong>Mehr → 📅 Wochenplan</strong> (oder über die Kachel auf „Heute“) verteilst du Rezepte auf die Woche. Das ＋ an einer Mahlzeit öffnet die Auswahl: Tipp ein, was du suchst — du kannst einen <strong>Rezept-Treffer</strong> nehmen oder den Text direkt <strong>als Notiz</strong> einplanen („Pizza bestellen“, „Reste“, „bei Oma essen“). Eine Notiz zählt mit 0 kcal, steht nicht auf dem Einkaufszettel und wandert nicht ins Tagebuch; tipp sie an und wähle „📋 Rezept hinterlegen“, sobald du weißt, was es gibt. Oben sagt der Plan, wie viele Einträge noch offen sind.<br><br><strong>🎲 Füllen</strong> plant die leeren Mahlzeiten so, dass <strong>jeder Tag dein Kalorienziel trifft</strong>: Frühstück, Mittag, Abend und Snack teilen sich das Ziel, danach werden die Portionen nachgezogen. Jeder Tag zeigt seine Summe gegen das Ziel. Die Vorschläge kommen zuerst aus deinen Rezepten, dazu aus ganzen Mahlzeiten deines Tagebuchs („Burger mit Pommes“) — einzelne Lebensmittel bleiben draußen, und was du zum Frühstück gegessen hast, wird nicht als Abendessen vorgeschlagen. Von Hand Geplantes wird nie angefasst.<br><br><strong>＋ Neues Rezept</strong> legt das Rezept im <strong>Kochbuch</strong> ab — nicht als Mahlzeit im Tagebuch. Wurde es aus dem ＋ eines Tages heraus angelegt, steht es danach gleich in diesem Slot.</div></details>
       <details><summary>📤 Teilen &amp; Import</summary><div class="hb">Rezepte, Lebensmittel, einzelne Mahlzeiten, <strong>ganze Tage</strong> und <strong>Zeiträume</strong> lassen sich teilen (📤-Symbole; der Tages-Knopf liegt auf „Heute" oben rechts in der Kopfzeile und im Verlauf bei jedem Tag, der Zeitraum hinter 🗓 im Verlauf).<ul><li><strong>Mit Partner-Kopplung (empfohlen):</strong> Einmalig unter <strong>Mehr → 🔗 Verbindungen → 📬 Partner-Postfach</strong> verbinden — danach steht im Teilen-Dialog oben „An … senden" und die Sendung landet direkt im Postfach des anderen. Kein Link, kein Messenger.</li><li><strong>Ohne Kopplung:</strong> weiterhin als Link. Der Empfänger öffnet ihn — auf dem iPhone ggf. in der installierten App über <strong>＋ → 🔗 Link</strong> einfügen (das Feld erkennt selbst, ob ein Rezept-Link oder eine NutriTrack-Sendung drinsteht, und bietet einen passenden Link aus der Zwischenablage gleich an). Für ganze Tage und Zeiträume braucht der Link-Weg eine Internetverbindung, weil die Daten sonst nicht in eine URL passen.</li></ul></div></details>
       <details><summary>👫 Partner</summary><div class="hb">Unter <strong>Mehr → 🔗 Verbindungen → 📬 Partner-Postfach</strong> verbindest du dein Gerät mit dem deines Partners: auf einem Gerät „Kopplung starten", den Code auf dem anderen einfügen. Trag dort auch deinen Namen ein — der steht beim Empfänger an jeder Sendung.<br><br><strong>Es wird nichts automatisch übertragen.</strong> Nur was du ausdrücklich sendest, geht raus und landet im <strong>Postfach</strong> des anderen. Das sitzt auf „Heute" oben rechts (📬) und trägt eine Flagge mit der Zahl der ungelesenen Sendungen; bei etwas Neuem erscheint zusätzlich eine Kachel im Tagesüberblick. Eine Sendung, die zu einer bestimmten Mahlzeit gehört, zeigt ihr 📬 außerdem <strong>an genau dieser Mahlzeit</strong> — an der Kachel auf „Heute" und in der geöffneten Mahlzeit. Ein Tipp darauf öffnet die Übernahme direkt, mit der richtigen Mahlzeit schon ausgewählt. Dort wird jede Sendung einzeln angesehen und übernommen — bei einem ganzen Tag wählst du, welche Mahlzeiten du willst, auf welchen Tag sie sollen und ob Vorhandenes ergänzt oder ersetzt wird; bei einem Zeitraum hakst du einzelne Tage ab. Eure Tagebücher bleiben also getrennt.<br><br>Die Sendungen werden auf dem Gerät verschlüsselt; der Schlüssel steckt nur im Kopplungs-Code und wird nie übertragen. Der Code gilt <strong>nur</strong> fürs Partner-Postfach — Einkaufszettel und Baby-Tagebuch haben eigene Codes und bleiben unberührt. Neue Sendungen holt die App beim Start, beim Zurückkehren in die App und solange das Postfach offen ist; das kann bis zu einer Minute dauern.</div></details>
-      <details><summary>💾 Backup</summary><div class="hb">Alle Sicherungswege liegen unter <strong>Mehr → 💾 Backup &amp; Daten</strong>: „Jetzt sichern"-Knopf, Datei-Export/-Import (JSON), OneDrive-Sync mit täglichem Autospeicher sowie lokale Autospeicher-Stände. Tipp: Vor einem Gerätewechsel einmal exportieren. Hinweis: Mahlzeit-Fotos sind gerätelokal und nicht Teil der Backup-Datei.</div></details>
+      <details><summary>💾 Backup</summary><div class="hb">Alle Sicherungswege liegen unter <strong>Mehr → 💾 Backup &amp; Daten</strong>: „Jetzt sichern"-Knopf, Datei-Export/-Import (JSON), OneDrive-Sync mit täglichem Autospeicher sowie lokale Autospeicher-Stände. Auf iPhone/iPad ohne OneDrive fragt die App täglich nach einer Tagessicherung als Datei (nutritrack-backup1 bis 4), denn iOS kann die App-Daten samt lokalem Autospeicher löschen. Tipp: Vor einem Gerätewechsel einmal exportieren. Hinweis: Mahlzeit-Fotos sind gerätelokal und nicht Teil der Backup-Datei.</div></details>
       <details><summary>🏃 Sport-Sync</summary><div class="hb">Unter <strong>Mehr → 🧩 Funktionen → 🏃 Sport &amp; Aktivität → Sport-Sync</strong> erzeugst du ein Token und verbindest eine iOS-Kurzbefehl-Automation („Wenn Training endet") oder einen Android-HTTP-Shortcut. Abgeschlossene Workouts erscheinen dann automatisch mit Apple-/Samsung-Badge und reduzieren dein Tagesziel.</div></details>
       <details><summary>🤖 KI</summary><div class="hb">Foto-Erkennung, Chat und das Ausformulieren des Wochenberichts laufen über einen geschützten KI-Zugang — dafür brauchst du das Proxy-Passwort (Mehr → 🤖 KI). Optional kannst du dort einen eigenen KI-Anbieter (DeepSeek, OpenAI, Gemini, …) mit eigenem API-Key hinterlegen. Ohne Passwort funktioniert alles außer den KI-Funktionen — der Wochenbericht selbst wird ohne KI berechnet.</div></details>
       <details><summary>🤰 Schwangerschaft &amp; 🤱 Stillzeit</summary><div class="hb">Unter <strong>Mehr → Profil</strong> kannst du Schwangerschaft (Trimester oder errechneter Termin) oder Stillzeit angeben — beides schließt sich gegenseitig aus. Zuschläge auf den Kalorienbedarf: 2. Trimester +300, 3. Trimester +500, ausschließliches Stillen +500, Teilstillen mit Beikost +250 kcal/Tag (Richtwerte nach DGE). Der Zuschlag greift, sobald du „🧮 Kalorienbedarf berechnen" antippst. Beim Abnehmen in der Stillzeit deckelt die App das Defizit auf 500 kcal/Tag und geht nie unter 1800 kcal — darunter leiden Milchmenge und Nährstoffdichte. Zusätzlich kannst du die <strong>Lebensmittel-Ampel</strong> einschalten: Sie bewertet eingetragene Lebensmittel und meldet sich bei gelben und roten Treffern. Die Stillzeit-Ampel ist bewusst liberaler als die Schwangerschafts-Ampel — Rohmilchkäse, Sushi und Salami sind beim Stillen unbedenklich. Die Ampel ersetzt keine Beratung durch Hebamme, Ärztin oder Arzt.</div></details>
@@ -1619,7 +1619,7 @@ body.tour-open #feedbackFab{display:flex!important;}
       <details><summary>💧 Wasser, 🌙 Fasten &amp; ⏰ Erinnerungen</summary><div class="hb"><strong>Wasser:</strong> Ein Tipp auf ein Glas oder einen Mengen-Knopf (150–500 ml) zählt mit; das Tagesziel stellst du unter Mehr → 🧩 Funktionen → Wasser → Wasserziel ein. <strong>Fasten:</strong> „⏱ Fasten starten" wählt ein Fenster (z. B. 16:8), die Kachel zeigt die Restzeit. <strong>Erinnerungen</strong> zu festen Uhrzeiten legst du unter Mehr → ⏰ Erinnerungen an. Erinnerungen und das Fastenende melden sich nur, solange die App geöffnet ist.</div></details>
       <details><summary>🔗 Verbindungen &amp; 🗣️ Alexa</summary><div class="hb">Unter <strong>Mehr → 🔗 Verbindungen</strong> koppelst du ein anderes Handy: „➕ Einladen" erzeugt einen Code, auf dem anderen Gerät „🔑 Code eingeben". Je Person schaltest du einzeln, was ihr teilt: <strong>Wochenplan</strong>, <strong>Einkaufszettel</strong>, <strong>Vorrat</strong> und <strong>Baby-Tagebuch</strong>. Mahlzeiten, Kalorien, Gewicht und Profil werden nie geteilt; alles wird auf dem Gerät verschlüsselt, der Schlüssel steckt nur im Code. Unter „Weitere Verbindungen" findest du das Partner-Postfach und <strong>Alexa</strong>: Mit dem Token aus der App trägt der Alexa-Skill Mahlzeiten, Sport, Wasser, Baby-Einträge, Fragen an Hebamme/Arzt und Einkäufe per Sprache ein; sie erscheinen beim nächsten Öffnen der App.</div></details>
       <details><summary>🐛 Feedback</summary><div class="hb">Der runde 🐛-Knopf unten rechts schickt einen Fehler oder Wunsch direkt an die Entwicklung — auf Wunsch mit Bildschirmfoto. Ist ein Dialog offen, sitzt er klein oben links.</div></details>
-      <details><summary>❓ FAQ</summary><div class="hb"><strong>Warum stimmt eine Schätzung nicht?</strong> KI-Werte sind Näherungen — Menge und Zutaten lassen sich jederzeit anpassen.<br><strong>Funktioniert die App offline?</strong> Ja, Tagebuch, Suche (lokale Datenbank) und Kochbuch laufen offline; KI und Online-Suche brauchen Netz.<br><strong>Erinnerungen kommen nicht?</strong> Technisch bedingt erscheinen sie nur, solange die App geöffnet ist.<br><strong>Daten weg?</strong> Mehr → Backup &amp; Daten → Autospeicher anzeigen — dort liegen die letzten Stände.</div></details>
+      <details><summary>❓ FAQ</summary><div class="hb"><strong>Warum stimmt eine Schätzung nicht?</strong> KI-Werte sind Näherungen — Menge und Zutaten lassen sich jederzeit anpassen.<br><strong>Funktioniert die App offline?</strong> Ja, Tagebuch, Suche (lokale Datenbank) und Kochbuch laufen offline; KI und Online-Suche brauchen Netz.<br><strong>Erinnerungen kommen nicht?</strong> Technisch bedingt erscheinen sie nur, solange die App geöffnet ist.<br><strong>Daten weg?</strong> Mehr → Backup &amp; Daten → Autospeicher anzeigen — dort liegen die letzten Stände. Sind auch die weg (iOS hat die App-Daten gelöscht): „Datei importieren“ und die neueste Tagessicherung nutritrack-backup1–4 aus „Dateien“ wählen.</div></details>
       <div style="text-align:center;margin:14px 0 6px;"><a href="nutritrack_anleitung.pdf" target="_blank" style="font-size:13px;color:var(--g2);font-weight:700;">📄 Anleitung als PDF öffnen</a></div>
     </div>
   </div>
@@ -2693,6 +2693,19 @@ body.tour-open #feedbackFab{display:flex!important;}
   </div>
 </div>
 
+<!-- ══ TAGESSICHERUNG (iOS ohne OneDrive, js/autosave.js) – bewusst ohne ✕ und ohne Grund-Klick ══ -->
+<div class="ov" id="fileSaveOv">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd"><div class="mti">💾 Tagessicherung</div></div>
+    <div class="mbd">
+      <div style="font-size:13px;color:var(--tx);line-height:1.5;">iOS kann die App-Daten ohne Vorwarnung löschen – auch den Autospeicher in der App. Darum einmal am Tag eine Datei sichern:<br>1. „Jetzt sichern“ → <b>In Dateien sichern</b><br>2. In iCloud Drive den Ordner <b>NutriTrack</b> wählen<br>3. Fragt iOS nach: <b>Ersetzen</b></div>
+      <div id="fileSaveName" style="font-size:12px;color:var(--mu);margin-top:10px;"></div>
+      <button type="button" class="seb" data-act="NTAutoSave.fileSave">💾 Jetzt sichern</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ REZEPT URL-IMPORT ══ -->
 <!-- ══ EINTRAG KURZMENÜ ══ -->
 <div class="ov" id="entryMenuOv" data-bg-close="entryMenuOv">
@@ -3710,15 +3723,15 @@ body.tour-open #feedbackFab{display:flex!important;}
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.324"></script>
-<script src="js/single-tab.js?v=0.324"></script>
-<script src="js/fooddb.js?v=0.324"></script>
-<script src="js/fooddb-usda.js?v=0.324"></script>
-<script src="js/restaurants.js?v=0.324"></script>
-<script src="js/metdb.js?v=0.324"></script>
-<script src="js/idb-photos.js?v=0.324"></script>
-<script src="js/changelog.js?v=0.324"></script>
-<script src="js/calc.js?v=0.324"></script>
+<script src="js/actions.js?v=0.325"></script>
+<script src="js/single-tab.js?v=0.325"></script>
+<script src="js/fooddb.js?v=0.325"></script>
+<script src="js/fooddb-usda.js?v=0.325"></script>
+<script src="js/restaurants.js?v=0.325"></script>
+<script src="js/metdb.js?v=0.325"></script>
+<script src="js/idb-photos.js?v=0.325"></script>
+<script src="js/changelog.js?v=0.325"></script>
+<script src="js/calc.js?v=0.325"></script>
 <script>
 // @ts-check
 // ════════════════════════════════════════
@@ -3738,7 +3751,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.324';
+var APP_VERSION='0.325';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -4372,6 +4385,7 @@ function submitProxyPw(){
 // der Upload heute nicht klappt (offline, Token abgelaufen, Graph-Fehler).
 // resume=true: App wurde nur fortgesetzt (iOS) – lokal dann höchstens 1×/Tag.
 function runAutosave(resume){
+  NTAutoSave.fileCheck();
   var local=function(){if(!resume||!NTAutoSave.savedToday())NTAutoSave.create();};
   if(!NTDrive.tokens()){local();return;}
   if(localStorage.getItem('nt_od_sync_date')===today())return;
@@ -4567,6 +4581,7 @@ function showMain(){
   setTimeout(NTDrive.checkBanner,3500);
 }
 function checkBackupReminder(){
+  if(NTAutoSave.fileActive())return; // tägliche Tagessicherung ersetzt den Wochen-Tipp
   try{
     var lastRemind=localStorage.getItem('nt_last_remind');
     var t=today();
@@ -8304,34 +8319,34 @@ function axTestSync(){
 }
 
 </script>
-<script src="js/ampel.js?v=0.324"></script>
-<script src="picker.js?v=0.324"></script>
-<script src="js/health-sync.js?v=0.324"></script>
-<script src="js/sync-core.js?v=0.324"></script>
-<script src="js/baby.js?v=0.324"></script>
-<script src="js/baby-meds.js?v=0.324"></script>
-<script src="js/baby-growth-data.js?v=0.324"></script>
-<script src="js/baby-growth.js?v=0.324"></script>
-<script src="js/baby-week.js?v=0.324"></script>
-<script src="js/baby-milestones.js?v=0.324"></script>
-<script src="js/baby-midwife.js?v=0.324"></script>
-<script src="js/shopping.js?v=0.324"></script>
-<script src="js/pantry.js?v=0.324"></script>
-<script src="js/partner.js?v=0.324"></script>
-<script src="js/alexa-sync.js?v=0.324"></script>
-<script src="js/dashboard.js?v=0.324"></script>
-<script src="js/features.js?v=0.324"></script>
-<script src="js/mealplan.js?v=0.324"></script>
-<script src="js/book-swaps.js?v=0.324"></script>
-<script src="js/cookbook.js?v=0.324"></script>
-<script src="js/onedrive.js?v=0.324"></script>
-<script src="js/autosave.js?v=0.324"></script>
-<script src="js/recurring.js?v=0.324"></script>
-<script src="js/stats.js?v=0.324"></script>
-<script src="js/reminders.js?v=0.324"></script>
-<script src="js/templates.js?v=0.324"></script>
-<script src="js/offline-queue.js?v=0.324"></script>
-<script src="js/tour.js?v=0.324"></script>
+<script src="js/ampel.js?v=0.325"></script>
+<script src="picker.js?v=0.325"></script>
+<script src="js/health-sync.js?v=0.325"></script>
+<script src="js/sync-core.js?v=0.325"></script>
+<script src="js/baby.js?v=0.325"></script>
+<script src="js/baby-meds.js?v=0.325"></script>
+<script src="js/baby-growth-data.js?v=0.325"></script>
+<script src="js/baby-growth.js?v=0.325"></script>
+<script src="js/baby-week.js?v=0.325"></script>
+<script src="js/baby-milestones.js?v=0.325"></script>
+<script src="js/baby-midwife.js?v=0.325"></script>
+<script src="js/shopping.js?v=0.325"></script>
+<script src="js/pantry.js?v=0.325"></script>
+<script src="js/partner.js?v=0.325"></script>
+<script src="js/alexa-sync.js?v=0.325"></script>
+<script src="js/dashboard.js?v=0.325"></script>
+<script src="js/features.js?v=0.325"></script>
+<script src="js/mealplan.js?v=0.325"></script>
+<script src="js/book-swaps.js?v=0.325"></script>
+<script src="js/cookbook.js?v=0.325"></script>
+<script src="js/onedrive.js?v=0.325"></script>
+<script src="js/autosave.js?v=0.325"></script>
+<script src="js/recurring.js?v=0.325"></script>
+<script src="js/stats.js?v=0.325"></script>
+<script src="js/reminders.js?v=0.325"></script>
+<script src="js/templates.js?v=0.325"></script>
+<script src="js/offline-queue.js?v=0.325"></script>
+<script src="js/tour.js?v=0.325"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

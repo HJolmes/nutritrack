@@ -2,6 +2,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.326',items:[
+    {icon:'💾',text:'<b>Datei-Sicherung wöchentlich</b>: Auf dem iPhone ohne OneDrive fragt NutriTrack jetzt einmal pro Woche statt täglich nach der Sicherung als Datei. Der Autospeicher in der App läuft unverändert weiter.',where:'iPhone/iPad · beim Öffnen der App'},
+  ]},
   {v:'0.325',items:[
     {icon:'💾',text:'<b>Tagessicherung auf dem iPhone</b>: iOS kann App-Daten ohne Vorwarnung löschen – samt Autospeicher. Ohne OneDrive fragt NutriTrack deshalb einmal am Tag nach einer Sicherung: „Jetzt sichern“ → „In Dateien sichern“ → Ordner „NutriTrack“ → „Ersetzen“. Es gibt vier Dateien (nutritrack-backup1 bis 4), jede wird alle vier Tage erneuert. Zurückholen über „Datei importieren“.',where:'iPhone/iPad · beim Öffnen der App'},
   ]},

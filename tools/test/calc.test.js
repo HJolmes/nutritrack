@@ -1143,3 +1143,22 @@ test('pantryLogTrim und pantryWaste: 90 Tage, Höchstzahl, Weggeworfenes je Mona
   assert.equal(C.pantryWaste(log, '2026-09').n, 1);
   assert.equal(C.pantryWaste(null, '2026-10').n, 0);
 });
+
+test('localTs: doppelte Stunde bei der Rückstellung nimmt die zuletzt vergangene (#345)', () => {
+  const C = load({});
+  const cest0205 = Date.UTC(2026, 9, 25, 0, 5); // 02:05 Sommerzeit
+  const cet0205 = Date.UTC(2026, 9, 25, 1, 5);  // 02:05 Winterzeit
+  // Gerade nach der Umstellung „jetzt“ eingetragen → Winterzeit, nicht vor einer Stunde
+  assert.equal(C.localTs('2026-10-25', '02:05', cet0205 + 3 * 60000), cet0205);
+  // Noch in der Sommerzeit-Stunde → die erste
+  assert.equal(C.localTs('2026-10-25', '02:05', cest0205 + 60000), cest0205);
+  // 02:50 um 02:20 Winterzeit: die zweite liegt in der Zukunft → die erste
+  assert.equal(C.localTs('2026-10-25', '02:50', Date.UTC(2026, 9, 25, 1, 20)), Date.UTC(2026, 9, 25, 0, 50));
+  // Eindeutige Zeiten unverändert, auch am Umstellungstag
+  assert.equal(C.localTs('2026-10-25', '01:30', cet0205), Date.UTC(2026, 9, 24, 23, 30));
+  assert.equal(C.localTs('2026-10-25', '03:00', cet0205), Date.UTC(2026, 9, 25, 2, 0));
+  assert.equal(C.localTs('2026-10-24', '02:05', cet0205), Date.UTC(2026, 9, 24, 0, 5));
+  // Vorstellung im März: 02:30 gibt es nicht, Verhalten wie new Date()
+  assert.equal(C.localTs('2026-03-29', '02:30', Date.UTC(2026, 2, 29, 12)), new Date(2026, 2, 29, 2, 30).getTime());
+  assert.equal(C.localTs('2026-10-25', '', cet0205), Date.UTC(2026, 9, 24, 22, 0));
+});

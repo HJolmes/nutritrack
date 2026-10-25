@@ -99,12 +99,7 @@ function sorted(key){
 function hhmm(ts){var d=new Date(ts);return pad(d.getHours())+':'+pad(d.getMinutes());}
 // Uhrzeit-String (HH:MM) auf den angezeigten Tag beziehen, nicht auf "jetzt" –
 // sonst landen Einträge beim Zurückblättern am falschen Datum.
-function tsFor(key,timeStr){
-  var p=(key||'').split('-'),t=(timeStr||'').split(':');
-  if(p.length!==3)return Date.now();
-  var d=new Date(+p[0],+p[1]-1,+p[2],parseInt(t[0],10)||0,parseInt(t[1],10)||0,0,0);
-  return d.getTime();
-}
+function tsFor(key,timeStr){return localTs(key,timeStr);}
 function nowTimeOnDay(key){
   var n=new Date();
   return (key===_today())?pad(n.getHours())+':'+pad(n.getMinutes()):'12:00';
@@ -1195,7 +1190,7 @@ function saveEntry(){
     var hit=findAnywhere(_editId);
     if(hit){
       // Eintrag bleibt an seinem Tag; nur die Felder werden ersetzt.
-      var target=hit.e;
+      var target=hit.e,oldTs=target.ts;
       // Laufende Stoppuhr bleibt laufen, solange keine Dauer eingetragen wird.
       if(t==='breast'&&target.run&&!e.min)e.run=1;
       Object.keys(target).forEach(function(k2){if(k2!=='id')delete target[k2];});
@@ -1208,6 +1203,8 @@ function saveEntry(){
         day=key;
       }
       target.ts=(t==='sleep'&&(e.from||e.to))?tsFor(day,e.from||e.to):tsFor(day,time);
+      // Unveränderte Uhrzeit in der doppelten Stunde (Zeitumstellung) bleibt, wo sie war.
+      if(oldTs&&Math.abs(target.ts-oldTs)===3600000&&hhmm(target.ts)===hhmm(oldTs))target.ts=oldTs;
       target.rev=nextRev();
       saveS();
       Sync.schedule();

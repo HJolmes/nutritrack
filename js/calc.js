@@ -28,6 +28,21 @@ function today(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)
 function pad(n){return n<10?'0'+n:String(n);}
 function addDays(s,d){var p=s.split('-');var dt=new Date(+p[0],+p[1]-1,+p[2]);dt.setDate(dt.getDate()+d);return dt.getFullYear()+'-'+pad(dt.getMonth()+1)+'-'+pad(dt.getDate());}
 function fmtDate(s){var t=today();if(s===t)return'Heute';if(s===addDays(t,-1))return'Gestern';var p=s.split('-');return new Date(+p[0],+p[1]-1,+p[2]).toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'});}
+// Ortszeit 'JJJJ-MM-TT' + 'HH:MM' → Zeitstempel. In der Nacht der Rückstellung
+// (Oktober) gibt es 02:00–02:59 zweimal; new Date() nimmt immer die erste,
+// ein „jetzt“ eingetragenes 02:05 läge dann eine Stunde zurück (#345). Von
+// beiden gilt die späteste, die nicht nach `nowMs` liegt (1 Min. Spielraum),
+// sonst die frühere.
+/** @param {string} key @param {string} timeStr @param {number} [nowMs] */
+function localTs(key,timeStr,nowMs){
+  var p=(key||'').split('-'),t=(timeStr||'').split(':');
+  if(p.length!==3)return Date.now();
+  var d=new Date(+p[0],+p[1]-1,+p[2],parseInt(t[0],10)||0,parseInt(t[1],10)||0,0,0);
+  var a=d.getTime(),b=a+3600000,db=new Date(b);
+  if(db.getHours()!==d.getHours()||db.getMinutes()!==d.getMinutes()||db.getDate()!==d.getDate())return a;
+  var now=(nowMs==null?Date.now():nowMs)+60000;
+  return b<=now?b:a;
+}
 function isoWeek(d){
   var t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
   t.setUTCDate(t.getUTCDate()+4-(t.getUTCDay()||7));

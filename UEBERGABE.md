@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie beschreibt den **aktuellen** Stand, nicht seine Geschichte — die steht in Git und in `js/changelog.js`. Der Stand vor der Kürzung (#258, 132 KB): `git show 0d69ba2:UEBERGABE.md`. Grenzen siehe „Pflege“, `tools/check.js` prüft sie.
 
-**Stand:** v0.325 (2026-10-21) — Tagessicherung iOS (#340): ohne OneDrive täglich ein Dialog ohne ✕, der `nutritrack-backup1…4.json` per Teilen nach „Dateien“ gibt; Anlass: iOS hatte App-Daten samt lokalem Autospeicher gelöscht. Davor v0.324: Vorrat (#334–#337).
+**Stand:** v0.326 (2026-10-25) — #345 Baby-Einträge in der doppelten Stunde der Rückstellung (`localTs` in `js/calc.js`, `tsFor` in `js/baby.js`). Davor v0.325: Tagessicherung iOS (#340).
 
 ## URLs
 
@@ -78,11 +78,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.321 | #329 | #297: `tools/fooddb-base.map.json` + `patchBase()` in `tools/build-fooddb.js` (b/u in `js/fooddb.js`, Abgleich kcal ±5 %, KH ±1 g+10 %), Essig → USDA 02053, neuer Balsamico-Essig, Kartoffelsalat umbenannt; `src:'db'` in `dbPer100`, `_labelCarbs` in `js/ampel.js`. |
 | v0.322 | — | Vorrat `js/pantry.js` (`NTPantry`), Topf `pantry` in `js/sync-core.js` und Worker (`SYNC_PANTRY`, `/pantry/sync`, `codeVersion` `v0.322-pantry`), `pantry*`/`parsePantryPhoto` in `js/calc.js` (Tests), Hooks in `NTShop.toggle`/`NTBook.cookDone`, Kachel/Tour/Hilfe, Smoke-Test 12b. |
 | v0.323 | — | Vorrat `mhd`/`vd` (`pantryDays`/`pantryExpiry`/`pantryExpiring`, `parsePantryPhoto` mit Daten, Tests), Filter `__exp`, Kamera-Feld `capture`; CSS `#feedbackFab` bei `.ov.open` oben links statt ausgeblendet, Hilfe-Blatt 88vh; Smoke-Test 12b erweitert. |
 | v0.324 | — | #334 `pantryShortfall` (`NTShop.addIngredients`, `NTShop.resultText`), #335 `NTPicker.scanFor` + `bc`, #336 `S.pantryLog` als Records `log:<id>` (`pantryLogTrim`/`pantryWaste`, `undo`), #337 `hd` (`pantryRefillMhd`), `checkRemind`; Tests, Smoke-Test 12b erweitert. Worker unverändert. |
 | v0.325 | — | #340 Tagessicherung iOS ohne OneDrive in `js/autosave.js` (`fileActive`/`fileCheck`/`fileSave`, `nt_file_backup_day`/`_idx`), Dialog `#fileSaveOv` ohne ✕, Aufruf in `runAutosave`, `checkBackupReminder` still, `navigator.storage.persist()`; Smoke-Test im iPhone-Kontext. |
+| v0.326 | — | #345 `localTs(key,time,now)` in `js/calc.js` (doppelte Stunde: späteste vergangene, Test), `tsFor` nutzt es; Bearbeiten behält bei unveränderter Uhrzeit den alten `ts`. |
 
 ---
 

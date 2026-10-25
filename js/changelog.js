@@ -2,6 +2,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.326',items:[
+    {icon:'🕑',text:'<b>Zeitumstellung</b>: In der Nacht, in der die Uhr von 3 auf 2 Uhr zurückspringt, stand ein gerade eingetragenes Stillen (oder Fläschchen, Windel …) zwischen 2 und 3 Uhr als „vor einer Stunde“ da. Jetzt zählt die Uhrzeit, die gerade war.',where:'👶 Baby-Tagebuch'},
+  ]},
   {v:'0.325',items:[
     {icon:'💾',text:'<b>Tagessicherung auf dem iPhone</b>: iOS kann App-Daten ohne Vorwarnung löschen – samt Autospeicher. Ohne OneDrive fragt NutriTrack deshalb einmal am Tag nach einer Sicherung: „Jetzt sichern“ → „In Dateien sichern“ → Ordner „NutriTrack“ → „Ersetzen“. Es gibt vier Dateien (nutritrack-backup1 bis 4), jede wird alle vier Tage erneuert. Zurückholen über „Datei importieren“.',where:'iPhone/iPad · beim Öffnen der App'},
   ]},

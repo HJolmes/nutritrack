@@ -248,7 +248,7 @@ async function main() {
   section('/health');
   {
     const r = await call('GET', '/health');
-    check('codeVersion ist v0.322-pantry', r.json && r.json.data && r.json.data.codeVersion === 'v0.322-pantry', r.json && r.json.data && r.json.data.codeVersion);
+    check('codeVersion ist v0.327-usage', r.json && r.json.data && r.json.data.codeVersion === 'v0.327-usage', r.json && r.json.data && r.json.data.codeVersion);
   }
 
   // ── (a) Body null / kein Objekt → 400 mit CORS, keine Ausnahme ──
@@ -448,6 +448,27 @@ async function main() {
     check('Anthropic-Fehler wird mit Status weitergereicht (529)', r.status === 529 && r.json.error.message === 'Overloaded' && cors(r), show(r));
     r = await call('POST', '/v1/messages', { headers: { 'Content-Type': 'application/json' }, body: aiBody });
     check('/v1/messages ohne Secret → 401', r.status === 401, show(r));
+
+    // Verbrauchsmessung (#347): eine Logzeile mit Zaehlwerten, ohne Inhalt.
+    const origLog = console.log;
+    const logged = [];
+    console.log = (...a) => { logged.push(a.join(' ')); };
+    const usageBody = '{"model":"claude-haiku-5-5","content":[{"type":"text","text":"GEHEIMER INHALT"}],"stop_reason":"end_turn","usage":{"input_tokens":120,"output_tokens":45,"cache_read_input_tokens":7}}';
+    upstream = async () => new Response(usageBody, { status: 200, headers: { 'Content-Type': 'application/json' } });
+    r = await call('POST', '/v1/messages', { headers: secretHdr, body: aiBody });
+    console.log = origLog;
+    const line = logged.find((l) => l.indexOf('"ai_usage"') >= 0);
+    let rec = null;
+    try { rec = line && JSON.parse(line); } catch (e) { rec = null; }
+    check('Verbrauch: Antwort byte-gleich weitergereicht', r.status === 200 && r.text === usageBody && cors(r), show(r));
+    check('Verbrauch: Logzeile mit Modell und Tokens', !!rec && rec.model === 'claude-haiku-5-5' && rec.in === 120 && rec.out === 45 && rec.cr === 7 && rec.cw === 0 && rec.img === false, line);
+    check('Verbrauch: kein Inhalt im Log', logged.every((l) => l.indexOf('GEHEIM') < 0 && l.indexOf(SECRET) < 0), logged.join(' | '));
+    console.log = (...a) => { logged.push(a.join(' ')); };
+    logged.length = 0;
+    upstream = async () => new Response('kein json', { status: 200, headers: { 'Content-Type': 'text/plain' } });
+    r = await call('POST', '/v1/messages', { headers: secretHdr, body: aiBody });
+    console.log = origLog;
+    check('Verbrauch: Antwort ohne JSON → unveraendert, keine Logzeile', r.status === 200 && r.text === 'kein json' && logged.length === 0, show(r));
   }
 
   // ── (e) Unbehandelte Ausnahmen → 500 JSON samt CORS ──

@@ -1851,7 +1851,7 @@ async function route(request, env) {
       alexaInboxConfigured: Boolean(env.SHARE_KV),
       planSyncConfigured: Boolean(env.SHARE_KV),
       decoderSecretConfigured: Boolean(env.DECODER_SECRET),
-      codeVersion: "v0.322-pantry",
+      codeVersion: "v0.327-usage",
     });
   }
 
@@ -1981,14 +1981,50 @@ async function route(request, env) {
     );
   }
 
-  return new Response(anthropicResponse.body, {
-    status: anthropicResponse.status,
-    headers: {
-      ...corsHeaders(origin, env),
-      "Content-Type": anthropicResponse.headers.get("Content-Type") || "application/json; charset=utf-8",
-      "Cache-Control": "no-store",
-    },
-  });
+  const respHeaders = {
+    ...corsHeaders(origin, env),
+    "Content-Type": anthropicResponse.headers.get("Content-Type") || "application/json; charset=utf-8",
+    "Cache-Control": "no-store",
+  };
+  if (!anthropicResponse.ok) {
+    return new Response(anthropicResponse.body, { status: anthropicResponse.status, headers: respHeaders });
+  }
+  // Erfolgreiche Antworten werden einmal gelesen, um den Verbrauch zu
+  // protokollieren (#347), und dann unveraendert weitergereicht. Die App
+  // streamt nicht, der Client liest die Antwort ohnehin vollstaendig.
+  let bodyText;
+  try {
+    bodyText = await anthropicResponse.text();
+  } catch (e) {
+    return jsonResponse(502, "upstream_error", "Failed to read Anthropic response", origin, env);
+  }
+  logAiUsage(payload, bodyText);
+  return new Response(bodyText, { status: anthropicResponse.status, headers: respHeaders });
+}
+
+// KI-Kostenmessung fuer das Abo-Kontingent (#347): eine Logzeile je Anfrage,
+// sichtbar in Cloudflare → Workers → Logs ([observability] in wrangler.toml).
+// Nur Zaehlwerte — kein Prompt, keine Antwort, kein Raum, kein Token. Wirft nie.
+function logAiUsage(payload, bodyText) {
+  try {
+    const data = JSON.parse(bodyText);
+    const u = data && data.usage;
+    if (!u) return;
+    const n = (v) => (typeof v === "number" && v >= 0 ? v : 0);
+    console.log(JSON.stringify({
+      ev: "ai_usage",
+      model: String(data.model || (payload && payload.model) || "").slice(0, 60),
+      img: payloadHasImage((payload && payload.messages) || []),
+      in: n(u.input_tokens),
+      out: n(u.output_tokens),
+      cr: n(u.cache_read_input_tokens),
+      cw: n(u.cache_creation_input_tokens),
+      max: n(payload && payload.max_tokens),
+      stop: String(data.stop_reason || "").slice(0, 20),
+    }));
+  } catch (e) {
+    // Kein JSON oder unerwartete Form: Messung entfaellt, Antwort bleibt.
+  }
 }
 
 // Hülle um den Router: Jede unbehandelte Ausnahme (z. B. KV wirft, weil das

@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Konto-Test</title>
+<style>
+:root{--bg:#f6f4ef;--card:#fff;--fg:#1d1d1b;--mut:#6b6a66;--line:#e2dfd8;--ok:#1f7a3a;--bad:#b3261e;--warn:#9a6700;--acc:#2f5d50}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#151614;--card:#1f201e;--fg:#ecebe6;--mut:#a3a29c;--line:#34352f;--ok:#5cc27a;--bad:#ff8a80;--warn:#e0b44a;--acc:#7fc4ae}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;padding:16px}
+main{max-width:640px;margin:0 auto}
+h1{font-size:20px;margin:4px 0 4px}
+.sub{color:var(--mut);font-size:13px;margin:0 0 16px}
+section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:0 0 12px}
+h2{font-size:16px;margin:0 0 6px}
+p.h{color:var(--mut);font-size:13px;margin:0 0 10px}
+button{font:inherit;font-weight:600;border:0;border-radius:9px;padding:10px 14px;background:var(--acc);color:#fff;cursor:pointer;margin:2px 6px 6px 0}
+button:disabled{opacity:.5;cursor:default}
+input{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);margin:0 0 8px}
+label{font-size:13px;color:var(--mut);display:block;margin:4px 0 2px}
+ul.r{list-style:none;padding:0;margin:6px 0 0;font-size:14px}
+ul.r li{padding:3px 0;border-top:1px dashed var(--line);overflow-wrap:anywhere}
+.ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;margin:8px 0 0;max-height:320px;overflow:auto}
+#stop{display:none;border-color:var(--bad)}
+</style>
+</head>
+<body>
+<main>
+<h1>Konto-Test</h1>
+<p class="sub">Vorab-Prüfung für Konten (#347). Speichert keine Ernährungsdaten. Jeden Test auf jedem Gerät einmal ausführen, dann „Bericht kopieren“ und in den Chat einfügen.</p>
+
+<section id="stop"><h2 class="bad">Nur im Testabzug</h2><p class="h">Diese Seite läuft absichtlich nicht auf der Live-Adresse, damit keine Test-Passkeys für die echte App entstehen.</p></section>
+
+<div id="app">
+<section>
+  <h2>1 · Gerät</h2>
+  <ul class="r" id="envOut"></ul>
+</section>
+
+<section>
+  <h2>2 · Passkey als Datenschlüssel</h2>
+  <p class="h">Prüft, ob das Gerät aus einem Passkey einen festen Geheimwert liefern kann (WebAuthn „PRF“). Daraus würde später der Schlüssel für die Daten entstehen. Erst „Anlegen“, dann zweimal „Entsperren“.</p>
+  <button data-act="pkCreate">Passkey anlegen</button>
+  <button data-act="pkGet">Entsperren</button>
+  <ul class="r" id="pkOut"></ul>
+</section>
+
+<section>
+  <h2>3 · Google Drive</h2>
+  <p class="h">Schreibt eine kleine Testdatei in den versteckten App-Ordner, liest sie zurück und löscht sie. Braucht eine OAuth-Client-ID aus der Google Cloud Console (Typ „Webanwendung“, autorisierter JavaScript-Ursprung = diese Adresse).</p>
+  <label for="gdId">OAuth-Client-ID</label>
+  <input id="gdId" autocomplete="off" spellcheck="false" placeholder="…apps.googleusercontent.com">
+  <button data-act="gdRun">Google Drive testen</button>
+  <ul class="r" id="gdOut"></ul>
+</section>
+
+<section>
+  <h2>4 · iCloud (CloudKit)</h2>
+  <p class="h">Schreibt einen Testeintrag in die private iCloud-Datenbank des Nutzers, liest ihn zurück und löscht ihn. Braucht Container-ID und API-Token aus dem CloudKit-Dashboard (Umgebung „Development“). Experimentell.</p>
+  <label for="ckId">Container-ID</label>
+  <input id="ckId" autocomplete="off" spellcheck="false" placeholder="iCloud.de.beispiel.nutritrack">
+  <label for="ckTok">API-Token</label>
+  <input id="ckTok" autocomplete="off" spellcheck="false">
+  <button data-act="ckRun">iCloud testen</button>
+  <div id="ck-signin"></div><div id="ck-signout"></div>
+  <ul class="r" id="ckOut"></ul>
+</section>
+
+<section>
+  <h2>5 · Bericht</h2>
+  <p class="h">Enthält nur Testergebnisse und Gerätetyp, keine Client-ID, kein Token, keine Schlüssel.</p>
+  <button data-act="report">Bericht kopieren</button>
+  <pre id="repOut"></pre>
+</section>
+</div>
+</main>
+
+<script>
+'use strict';
+(function () {
+  var LIVE = /(^|\.)github\.io$/i.test(location.hostname);
+  if (LIVE) {
+    document.getElementById('stop').style.display = 'block';
+    document.getElementById('app').style.display = 'none';
+    return;
+  }
+
+  var R = { env: {}, passkey: {}, gdrive: {}, icloud: {} };
+  var enc = new TextEncoder();
+  var SALT = enc.encode('nutritrack-konto-test-v1');
+
+  function $(id) { return document.getElementById(id); }
+  function line(outId, cls, text) {
+    var li = document.createElement('li');
+    if (cls) li.className = cls;
+    li.textContent = text;
+    $(outId).appendChild(li);
+  }
+  function clear(outId) { $(outId).innerHTML = ''; }
+  function rand(n) { return crypto.getRandomValues(new Uint8Array(n)); }
+  function b64u(buf) {
+    var s = '', b = new Uint8Array(buf);
+    for (var i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
+    return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function unb64u(s) {
+    s = s.replace(/-/g, '+').replace(/_/g, '/');
+    while (s.length % 4) s += '=';
+    var bin = atob(s), out = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+  function hex(buf) {
+    return Array.prototype.map.call(new Uint8Array(buf), function (x) { return ('0' + x.toString(16)).slice(-2); }).join('');
+  }
+  function errText(e) { return (e && (e.name ? e.name + ': ' : '') + (e.message || e.reason || e.ckErrorCode || '')) || String(e); }
+  function store(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { /* privat */ } }
+  function load(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function loadScript(src) {
+    return new Promise(function (res, rej) {
+      var s = document.createElement('script');
+      s.src = src; s.async = true;
+      s.onload = function () { res(); };
+      s.onerror = function () { rej(new Error('Skript nicht ladbar: ' + src)); };
+      document.head.appendChild(s);
+    });
+  }
+
+  // ── 1 · Gerät ──
+  async function envCheck() {
+    var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+    R.env = {
+      ua: navigator.userAgent,
+      platform: (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '',
+      standalone: !!standalone,
+      secure: window.isSecureContext,
+      webauthn: !!window.PublicKeyCredential,
+    };
+    if (window.PublicKeyCredential && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
+      try { R.env.platformAuth = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable(); } catch (e) { R.env.platformAuth = 'Fehler'; }
+    }
+    if (window.PublicKeyCredential && typeof PublicKeyCredential.getClientCapabilities === 'function') {
+      try {
+        var caps = await PublicKeyCredential.getClientCapabilities();
+        R.env.capPrf = caps['extension:prf'];
+      } catch (e) { R.env.capPrf = 'Fehler'; }
+    } else {
+      R.env.capPrf = 'nicht abfragbar';
+    }
+    if (navigator.storage && navigator.storage.persisted) {
+      try { R.env.persisted = await navigator.storage.persisted(); } catch (e) { R.env.persisted = 'Fehler'; }
+    }
+    clear('envOut');
+    line('envOut', '', 'Browser: ' + R.env.ua);
+    line('envOut', '', 'Als App gestartet (Home-Bildschirm): ' + (R.env.standalone ? 'ja' : 'nein'));
+    line('envOut', R.env.webauthn ? 'ok' : 'bad', 'Passkeys (WebAuthn): ' + (R.env.webauthn ? 'vorhanden' : 'fehlt'));
+    line('envOut', R.env.platformAuth ? 'ok' : 'warn', 'Face ID / Fingerabdruck / Geräte-PIN: ' + String(R.env.platformAuth));
+    line('envOut', R.env.capPrf === true ? 'ok' : 'warn', 'Browser meldet PRF-Unterstützung: ' + String(R.env.capPrf));
+  }
+
+  // ── 2 · Passkey + PRF ──
+  async function pkCreate() {
+    clear('pkOut');
+    try {
+      var cred = await navigator.credentials.create({ publicKey: {
+        rp: { name: 'NutriTrack Konto-Test' },
+        user: { id: rand(16), name: 'konto-test', displayName: 'NutriTrack Konto-Test' },
+        challenge: rand(32),
+        pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+        authenticatorSelection: { residentKey: 'required', userVerification: 'required' },
+        extensions: { prf: { eval: { first: SALT } } },
+        timeout: 120000,
+      } });
+      var ext = cred.getClientExtensionResults ? cred.getClientExtensionResults() : {};
+      var prf = ext.prf || {};
+      store('ntlab_cid', b64u(cred.rawId));
+      store('ntlab_fp', null);
+      var att = cred.response && cred.response.getTransports ? cred.response.getTransports() : [];
+      R.passkey.create = {
+        ok: true,
+        prfEnabled: prf.enabled === undefined ? 'keine Angabe' : prf.enabled,
+        prfAtCreate: !!(prf.results && prf.results.first),
+        attachment: cred.authenticatorAttachment || '',
+        transports: att.join(','),
+      };
+      line('pkOut', 'ok', 'Passkey angelegt (' + (R.passkey.create.attachment || 'Art unbekannt') + ').');
+      line('pkOut', prf.enabled ? 'ok' : 'warn', 'PRF beim Anlegen aktiviert: ' + String(R.passkey.create.prfEnabled));
+      if (R.passkey.create.prfAtCreate) line('pkOut', 'ok', 'PRF-Wert schon beim Anlegen geliefert.');
+      line('pkOut', '', 'Jetzt „Entsperren“ drücken.');
+    } catch (e) {
+      R.passkey.create = { ok: false, error: errText(e) };
+      line('pkOut', 'bad', 'Anlegen fehlgeschlagen: ' + errText(e));
+    }
+  }
+
+  async function pkGet() {
+    clear('pkOut');
+    var cid = load('ntlab_cid');
+    try {
+      var a = await navigator.credentials.get({ publicKey: {
+        challenge: rand(32),
+        userVerification: 'required',
+        allowCredentials: cid ? [{ type: 'public-key', id: unb64u(cid) }] : [],
+        extensions: { prf: { eval: { first: SALT } } },
+        timeout: 120000,
+      } });
+      var ext = a.getClientExtensionResults ? a.getClientExtensionResults() : {};
+      var first = ext.prf && ext.prf.results && ext.prf.results.first;
+      var run = { ok: true, prf: !!first };
+      if (!first) {
+        line('pkOut', 'bad', 'Entsperrt, aber KEIN PRF-Wert geliefert → Passkey kann hier nicht als Datenschlüssel dienen.');
+      } else {
+        var fp = hex(await crypto.subtle.digest('SHA-256', first)).slice(0, 16);
+        var prev = load('ntlab_fp');
+        run.stable = prev ? prev === fp : 'erster Lauf';
+        store('ntlab_fp', fp);
+        line('pkOut', 'ok', 'PRF-Wert geliefert (' + new Uint8Array(first).length + ' Byte).');
+        if (prev) line('pkOut', prev === fp ? 'ok' : 'bad', prev === fp ? 'Gleicher Wert wie beim letzten Mal → stabil.' : 'Anderer Wert als beim letzten Mal → nicht stabil!');
+        else line('pkOut', '', 'Noch einmal „Entsperren“, um die Stabilität zu prüfen.');
+        // Kette bis zum Datenschlüssel: PRF → HKDF → AES-GCM, ver- und entschlüsseln.
+        var base = await crypto.subtle.importKey('raw', first, 'HKDF', false, ['deriveKey']);
+        var key = await crypto.subtle.deriveKey(
+          { name: 'HKDF', hash: 'SHA-256', salt: SALT, info: enc.encode('nt-master-wrap') },
+          base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+        var iv = rand(12);
+        var ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, enc.encode('Testdaten'));
+        var pt = new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, key, ct));
+        run.aes = pt === 'Testdaten';
+        line('pkOut', run.aes ? 'ok' : 'bad', 'Schlüssel daraus abgeleitet, Ver-/Entschlüsseln: ' + (run.aes ? 'klappt' : 'fehlgeschlagen'));
+      }
+      R.passkey.get = (R.passkey.get || []).concat([run]).slice(-3);
+    } catch (e) {
+      R.passkey.get = (R.passkey.get || []).concat([{ ok: false, error: errText(e) }]).slice(-3);
+      line('pkOut', 'bad', 'Entsperren fehlgeschlagen: ' + errText(e));
+    }
+  }
+
+  // ── 3 · Google Drive (appDataFolder) ──
+  function gdToken(clientId) {
+    return new Promise(function (res, rej) {
+      var g = /** @type {any} */ (window).google;
+      var tc = g.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: 'https://www.googleapis.com/auth/drive.appdata',
+        callback: function (r) { if (r && r.access_token) res(r.access_token); else rej(new Error((r && r.error) || 'kein Token')); },
+        error_callback: function (e) { rej(new Error((e && (e.type || e.message)) || 'abgebrochen')); },
+      });
+      tc.requestAccessToken();
+    });
+  }
+  async function gdFetch(tok, url, init) {
+    init = init || {};
+    init.headers = Object.assign({ Authorization: 'Bearer ' + tok }, init.headers || {});
+    var r = await fetch(url, init);
+    if (!r.ok) throw new Error('HTTP ' + r.status + ' bei ' + url.split('?')[0]);
+    return r;
+  }
+  async function gdRun() {
+    clear('gdOut');
+    var cid = $('gdId').value.trim();
+    if (!cid) { line('gdOut', 'warn', 'Bitte Client-ID eintragen.'); return; }
+    store('ntlab_gd', cid);
+    R.gdrive = { steps: [] };
+    var step = function (name, ok, extra) { R.gdrive.steps.push(name + ':' + (ok ? 'ok' : 'fehler') + (extra ? ' ' + extra : '')); line('gdOut', ok ? 'ok' : 'bad', name + (ok ? ' ✓' : ' ✗') + (extra ? ' – ' + extra : '')); };
+    try {
+      await loadScript('https://accounts.google.com/gsi/client');
+      step('Google-Skript geladen', true);
+      var tok = await gdToken(cid);
+      step('Anmeldung + Freigabe', true);
+      var payload = JSON.stringify({ t: Date.now(), ct: b64u(rand(64)) });
+      var bnd = 'ntlab' + hex(rand(6));
+      var body = '--' + bnd + '\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' +
+        JSON.stringify({ name: 'nt-konto-test.json', parents: ['appDataFolder'] }) + '\r\n--' + bnd +
+        '\r\nContent-Type: application/json\r\n\r\n' + payload + '\r\n--' + bnd + '--';
+      var t0 = performance.now();
+      var up = await (await gdFetch(tok, 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
+        method: 'POST', headers: { 'Content-Type': 'multipart/related; boundary=' + bnd }, body: body })).json();
+      step('Datei geschrieben', !!up.id, Math.round(performance.now() - t0) + ' ms');
+      var back = await (await gdFetch(tok, 'https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(up.id) + '?alt=media')).text();
+      step('Datei gelesen, Inhalt gleich', back === payload);
+      var list = await (await gdFetch(tok, 'https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&fields=files(id)&pageSize=100')).json();
+      step('App-Ordner auflistbar', Array.isArray(list.files), (list.files || []).length + ' Datei(en)');
+      await gdFetch(tok, 'https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(up.id), { method: 'DELETE' });
+      step('Datei gelöscht', true);
+      R.gdrive.ok = true;
+    } catch (e) {
+      R.gdrive.ok = false;
+      R.gdrive.error = errText(e);
+      line('gdOut', 'bad', 'Abbruch: ' + errText(e));
+    }
+  }
+
+  // ── 4 · iCloud (CloudKit JS, private Datenbank) ──
+  var ckReady = null;
+  async function ckRun() {
+    clear('ckOut');
+    var cid = $('ckId').value.trim(), tok = $('ckTok').value.trim();
+    if (!cid || !tok) { line('ckOut', 'warn', 'Bitte Container-ID und API-Token eintragen.'); return; }
+    store('ntlab_ck', cid);
+    R.icloud = { steps: [] };
+    var step = function (name, ok, extra) { R.icloud.steps.push(name + ':' + (ok ? 'ok' : 'fehler') + (extra ? ' ' + extra : '')); line('ckOut', ok ? 'ok' : 'bad', name + (ok ? ' ✓' : ' ✗') + (extra ? ' – ' + extra : '')); };
+    try {
+      if (!ckReady) ckReady = loadScript('https://cdn.apple-cloudkit.com/ck/2/cloudkit.js');
+      await ckReady;
+      var CK = /** @type {any} */ (window).CloudKit;
+      step('Apple-Skript geladen', !!CK);
+      CK.configure({ containers: [{
+        containerIdentifier: cid,
+        apiTokenAuth: { apiToken: tok, persist: true, signInButton: { id: 'ck-signin', theme: 'black' }, signOutButton: { id: 'ck-signout', theme: 'black' } },
+        environment: 'development',
+      }] });
+      var c = CK.getDefaultContainer();
+      var who = await c.setUpAuth();
+      if (!who) {
+        line('ckOut', '', 'Bitte oben mit Apple-ID anmelden …');
+        who = await c.whenUserSignsIn();
+      }
+      step('Mit Apple-ID angemeldet', !!who);
+      var db = c.privateCloudDatabase;
+      var payload = JSON.stringify({ t: Date.now(), ct: b64u(rand(64)) });
+      var t0 = performance.now();
+      var saved = await db.saveRecords([{ recordType: 'NTBlob', fields: { data: { value: payload } } }]);
+      if (saved.hasErrors) throw saved.errors[0];
+      var rec = saved.records[0];
+      step('Eintrag geschrieben', !!rec, Math.round(performance.now() - t0) + ' ms');
+      var got = await db.fetchRecords([rec.recordName]);
+      if (got.hasErrors) throw got.errors[0];
+      var val = got.records[0] && got.records[0].fields && got.records[0].fields.data && got.records[0].fields.data.value;
+      step('Eintrag gelesen, Inhalt gleich', val === payload);
+      var del = await db.deleteRecords([rec.recordName]);
+      if (del.hasErrors) throw del.errors[0];
+      step('Eintrag gelöscht', true);
+      R.icloud.ok = true;
+    } catch (e) {
+      R.icloud.ok = false;
+      R.icloud.error = errText(e);
+      line('ckOut', 'bad', 'Abbruch: ' + errText(e));
+    }
+  }
+
+  async function report() {
+    var txt = JSON.stringify({ test: 'konto-test-v1', at: new Date().toISOString(), r: R }, null, 1);
+    $('repOut').textContent = txt;
+    try { await navigator.clipboard.writeText(txt); $('repOut').textContent = '(kopiert)\n' + txt; } catch (e) { /* manuell markieren */ }
+  }
+
+  var acts = { pkCreate: pkCreate, pkGet: pkGet, gdRun: gdRun, ckRun: ckRun, report: report };
+  document.addEventListener('click', function (ev) {
+    var t = ev.target && /** @type {Element} */ (ev.target).closest ? /** @type {Element} */ (ev.target).closest('[data-act]') : null;
+    if (!t) return;
+    var fn = acts[t.getAttribute('data-act') || ''];
+    if (!fn) return;
+    /** @type {HTMLButtonElement} */ (t).disabled = true;
+    Promise.resolve(fn()).finally(function () { /** @type {HTMLButtonElement} */ (t).disabled = false; });
+  });
+
+  $('gdId').value = load('ntlab_gd') || '';
+  $('ckId').value = load('ntlab_ck') || '';
+  envCheck();
+})();
+</script>
+</body>
+</html>

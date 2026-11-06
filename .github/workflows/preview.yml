@@ -57,6 +57,8 @@ jobs:
           set -eu
           mkdir -p _site/nutritrack
           cp -r index.html sw.js picker.js manifest.json icon.svg js _site/nutritrack/
+          # Testseiten (z. B. lab/konto-test.html, #347) nur im Testabzug.
+          if [ -d lab ]; then cp -r lab _site/nutritrack/; fi
           # Weiterleitung, damit die nackte Domain in der App landet.
           printf '/  /nutritrack/  302\n' > _site/_redirects
 

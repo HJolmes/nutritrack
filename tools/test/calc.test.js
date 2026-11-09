@@ -1162,3 +1162,18 @@ test('localTs: doppelte Stunde bei der Rückstellung nimmt die zuletzt vergangen
   assert.equal(C.localTs('2026-03-29', '02:30', Date.UTC(2026, 2, 29, 12)), new Date(2026, 2, 29, 2, 30).getTime());
   assert.equal(C.localTs('2026-10-25', '', cet0205), Date.UTC(2026, 9, 24, 22, 0));
 });
+
+test('feedEndTs: Stillen zählt ab dem Ende, nicht ab dem Beginn', () => {
+  const C = load({});
+  const now = Date.UTC(2026, 10, 9, 12, 0);
+  const start = now - 120 * 60000; // vor 2 h begonnen
+  // 10 Min. gestillt → Ende vor 1 h 50 Min.
+  assert.equal(C.feedEndTs({ t: 'breast', ts: start, min: 10 }, now), now - 110 * 60000);
+  assert.equal(C.feedEndTs({ t: 'breast', ts: start, min: '10' }, now), now - 110 * 60000);
+  // ohne Dauer, laufende Stoppuhr, Flasche: Beginn
+  assert.equal(C.feedEndTs({ t: 'breast', ts: start, min: 0 }, now), start);
+  assert.equal(C.feedEndTs({ t: 'breast', ts: start, min: 10, run: 1 }, now), start);
+  assert.equal(C.feedEndTs({ t: 'bottle', ts: start, min: 10 }, now), start);
+  // Ende läge in der Zukunft → höchstens jetzt
+  assert.equal(C.feedEndTs({ t: 'breast', ts: now - 5 * 60000, min: 20 }, now), now);
+});

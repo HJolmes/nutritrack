@@ -2,6 +2,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.328',items:[
+    {icon:'🤱',text:'<b>Letzte Mahlzeit ab Still-Ende</b>: „Letzte Mahlzeit vor …“ zählt beim Stillen jetzt ab dem Ende. Vor 2 Stunden angelegt und 10 Minuten getrunken → „vor 1 h 50 Min.“',where:'👶 Baby-Kachel'},
+  ]},
   {v:'0.326',items:[
     {icon:'🕑',text:'<b>Zeitumstellung</b>: In der Nacht, in der die Uhr von 3 auf 2 Uhr zurückspringt, stand ein gerade eingetragenes Stillen (oder Fläschchen, Windel …) zwischen 2 und 3 Uhr als „vor einer Stunde“ da. Jetzt zählt die Uhrzeit, die gerade war.',where:'👶 Baby-Tagebuch'},
   ]},

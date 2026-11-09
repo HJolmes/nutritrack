@@ -1172,3 +1172,15 @@ function pantryWaste(log,month){
     .sort(function(a,b){return b.count-a.count||b.q-a.q||a.n.localeCompare(b.n,'de');});
   return {n:n,q:_pantryR1(q),top:top};
 }
+
+// ── Baby: Ende einer Mahlzeit ──
+// „Letzte Mahlzeit vor …" zählt ab dem Ende: Beim Stillen liegt e.ts am Beginn,
+// e.min ist die Stilldauer – Ende = Beginn + Dauer. Laufende Stoppuhr (e.run)
+// und Einträge ohne Dauer enden am Beginn. Nie später als `now`.
+/** @param {{t?:string,ts?:number,min?:number|string,run?:number}} e @param {number} now */
+function feedEndTs(e,now){
+  var ts=Number(e&&e.ts)||0;
+  if(!e||e.t!=='breast'||e.run)return ts;
+  var min=parseInt(String(e.min),10)||0;
+  return min>0?Math.min(ts+min*60000,Math.max(ts,now)):ts;
+}

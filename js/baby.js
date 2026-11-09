@@ -355,12 +355,13 @@ function switchFeed(){
   showToast('⇄ Jetzt '+SIDES[other]+' ('+SIDES[e.side]+' '+e.min+' Min.)');
 }
 // Letzte Mahlzeit über die letzten Tage – beantwortet nachts „wann zuletzt?".
+// Maßgeblich ist das Ende (feedEndTs): Stillen zählt ab Beginn + Stilldauer.
 function lastFeed(){
   var t=_today(),now=Date.now(),best=null;
   for(var i=0;i<4;i++){
     logRO(addDayKey(t,-i)).forEach(function(e){
       if(!FEEDS[e.t]||!e.ts||e.ts>now)return;
-      if(!best||e.ts>best.ts)best=e;
+      if(!best||feedEndTs(e,now)>feedEndTs(best,now))best=e;
     });
     if(best)break;
   }
@@ -382,7 +383,7 @@ function feedLineHtml(){
   }
   var f=lastFeed();
   if(!f)return '';
-  return '<span style="color:var(--mu);">🍼 Letzte Mahlzeit </span><b>'+sinceText(f.ts)+'</b>'
+  return '<span style="color:var(--mu);">🍼 Letzte Mahlzeit </span><b>'+sinceText(feedEndTs(f,Date.now()))+'</b>'
     +'<span style="color:var(--mu);"> · '+hhmm(f.ts)+' '+esc(entryTitle(f))+'</span>';
 }
 

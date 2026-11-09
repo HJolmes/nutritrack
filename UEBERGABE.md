@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie beschreibt den **aktuellen** Stand, nicht seine Geschichte — die steht in Git und in `js/changelog.js`. Der Stand vor der Kürzung (#258, 132 KB): `git show 0d69ba2:UEBERGABE.md`. Grenzen siehe „Pflege“, `tools/check.js` prüft sie.
 
-**Stand:** v0.327 (2026-11-06) — #347 Konten Phase 1: Worker protokolliert KI-Verbrauch (`ai_usage`), Testseite `lab/konto-test.html` (nur Testabzug). Davor v0.326: Baby-Einträge in der doppelten Stunde (#345).
+**Stand:** v0.328 (2026-11-09) — Baby-Kachel „Letzte Mahlzeit vor …“ zählt beim Stillen ab Ende (Beginn + Stilldauer). Davor v0.327: #347 Konten Phase 1 (Worker protokolliert KI-Verbrauch, `lab/konto-test.html`).
 
 ## URLs
 
@@ -66,6 +66,7 @@
 
 Ältere Live-Tests stehen als Issues (Label `live-test`), zuletzt #317–#321 (v0.300–v0.308), #327 (v0.314), #330 (v0.315), #331 (v0.316), #338 (v0.317–v0.318), #341 (v0.319).
 
+- **v0.328 Letzte Mahlzeit ab Still-Ende (Android-PWA):** Stillen mit Uhrzeit vor 2 h und 10 Min. eintragen → Kachel „Letzte Mahlzeit vor 1 h 50 Min.“; Flasche vor 1 h → „vor 1 h“. Stoppuhr starten/stoppen → danach „gerade eben“. „Was ist neu“ zeigt v0.328 einmal.
 - **v0.327 KI-Verbrauch und Konto-Test (#347):** Nach Merge: Cloudflare → Workers → nutritrack-ai-proxy → Logs zeigt nach einem Foto und einer Texteingabe je eine Zeile `ai_usage` mit `model`, `in`, `out`; kein Prompt-Text. `/health` → `v0.327-usage`. Testabzug `…/nutritrack/lab/konto-test.html` auf iPhone, Android, Desktop: Passkey anlegen, 2× entsperren, Bericht in #347. Google Drive/iCloud erst mit Client-ID bzw. CloudKit-Container.
 - **v0.325 Tagessicherung (iPhone-PWA ohne OneDrive):** App öffnen → nach ~3 s Dialog „💾 Tagessicherung“ ohne ✕, Tippen daneben schließt nicht. „Jetzt sichern“ → Teilen-Menü abbrechen → Dialog bleibt. Nochmal → „In Dateien sichern“ → iCloud Drive/NutriTrack → Toast „nutritrack-backup1.json gesichert“. App in den Hintergrund und zurück → kein Dialog. Datum am iPhone +1 Tag (oder `nt_file_backup_day` löschen) → Datei 2. **Zu klären:** Bietet iOS beim gleichen Namen „Ersetzen“ an oder legt es „… 2.json“ an? Import einer Datei über „Datei importieren“ stellt den Stand her. Mit OneDrive: kein Dialog.
 - **v0.324 Vorrat: Zettel, Barcode, Verlauf, Haltbarkeit (Android-PWA und iPhone, zwei verbundene Geräte):** Vorrat „Tomaten“ 2 Stück à 400 g → Rezept mit 500 g Tomaten → 🛒 Einkaufen → Toast „… schon im Vorrat“, Tomaten nicht auf dem Zettel; mit 1000 g → Zettel „200 g“. 📅 Woche → 🛒 ebenso. 🏷️ Einbuchen → neue Packung scannen → Dialog mit Name/Gramm → 💾; dieselbe Packung nochmal → „＋ … jetzt 2“, Scanner bleibt offen; 🏷️ Verbrauchen → −1; neuer Barcode → „zuordnen“ zu einem vorhandenen Artikel. Artikel → 🗑️ Weggeworfen → 📜 Verlauf zeigt die Buchung und „Diesen Monat weggeworfen“; ↩️ → Bestand zurück; Gerät B sieht dieselben Buchungen. „Hält ca. 5 Tage“, Artikel auf 0 → ＋ → MHD heute + 5. Einstellungen → Erinnerungen → 🥫-Haken an, Artikel „morgen“ → nach 7 Uhr App öffnen → eine Meldung, beim zweiten Öffnen keine. „Was ist neu“ zeigt v0.324 einmal.
@@ -79,11 +80,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.323 | — | Vorrat `mhd`/`vd` (`pantryDays`/`pantryExpiry`/`pantryExpiring`, `parsePantryPhoto` mit Daten, Tests), Filter `__exp`, Kamera-Feld `capture`; CSS `#feedbackFab` bei `.ov.open` oben links statt ausgeblendet, Hilfe-Blatt 88vh; Smoke-Test 12b erweitert. |
 | v0.324 | — | #334 `pantryShortfall` (`NTShop.addIngredients`, `NTShop.resultText`), #335 `NTPicker.scanFor` + `bc`, #336 `S.pantryLog` als Records `log:<id>` (`pantryLogTrim`/`pantryWaste`, `undo`), #337 `hd` (`pantryRefillMhd`), `checkRemind`; Tests, Smoke-Test 12b erweitert. Worker unverändert. |
 | v0.325 | — | #340 Tagessicherung iOS ohne OneDrive in `js/autosave.js` (`fileActive`/`fileCheck`/`fileSave`, `nt_file_backup_day`/`_idx`), Dialog `#fileSaveOv` ohne ✕, Aufruf in `runAutosave`, `checkBackupReminder` still, `navigator.storage.persist()`; Smoke-Test im iPhone-Kontext. |
 | v0.326 | — | #345 `localTs(key,time,now)` in `js/calc.js` (doppelte Stunde: späteste vergangene, Test), `tsFor` nutzt es; Bearbeiten behält bei unveränderter Uhrzeit den alten `ts`. |
 | v0.327 | — | #347 Worker `logAiUsage` (Zählwerte aus `usage`, Antwort unverändert, `codeVersion` `v0.327-usage`, Test in `tools/worker-test.js`), `[observability]` in `wrangler.toml`; `lab/konto-test.html` (Passkey-PRF, Google Drive `appDataFolder`, CloudKit; sperrt sich auf github.io), `preview.yml` kopiert `lab/`. |
+| v0.328 | — | `feedEndTs(e,now)` in `js/calc.js` (Stillen: `ts`+`min`, max. jetzt; Stoppuhr/Flasche: `ts`; Test); `lastFeed()`/`feedLineHtml()` in `js/baby.js` sortieren und zählen ab Ende. |
 
 ---
 

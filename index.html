@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.328"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.329"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.328"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.329"></script>
 <script>
   // @ts-check
   (function(){
@@ -631,6 +631,12 @@ body:has(#feedbackOv.open) #feedbackFab{display:none!important;}
 
 /* HISTORY / TRENDS / MORE shared row style */
 .list-row{background:var(--card);border-radius:18px;box-shadow:var(--sh);padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;}
+/* Schnellauswahl-Leiste auf „Heute" (js/launch.js) */
+#launchBar{gap:8px;overflow-x:auto;padding:2px 2px 10px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+#launchBar::-webkit-scrollbar{display:none;}
+.lb-btn{flex:0 0 auto;display:flex;align-items:center;gap:6px;background:var(--card);border:1.5px solid var(--br);border-radius:999px;padding:8px 14px;font-size:13px;font-weight:700;color:var(--g1);box-shadow:var(--sh);font-family:inherit;cursor:pointer;}
+.lb-btn span{font-size:16px;}
+.lb-btn:active{background:var(--gl);}
 .list-row:active{background:var(--gl);}
 .list-row .lr-ic{width:40px;height:40px;border-radius:14px;background:var(--gl);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
 .list-row .lr-body{flex:1;min-width:0;}
@@ -964,6 +970,7 @@ body.tour-open #feedbackFab{display:flex!important;}
     <button type="button" data-act="dismissBackupReminder" style="background:none;border:none;font-size:18px;color:#aaa;flex-shrink:0;">✕</button>
   </div>
   <div class="main">
+    <div id="launchBar" style="display:none;"></div>
     <div class="sum">
       <div class="hero-cap">Noch übrig heute</div>
       <div class="hero-num" id="remKcal">2000</div>
@@ -1314,6 +1321,11 @@ body.tour-open #feedbackFab{display:flex!important;}
       <div class="lr-body"><div class="lr-name">Funktionen</div><div class="lr-sub">Ein- und ausschalten, Reihenfolge auf „Heute"</div></div>
       <div class="lr-arrow">›</div>
     </div>
+    <div class="list-row" data-act="NTLaunch.open">
+      <div class="lr-ic">⚡</div>
+      <div class="lr-body"><div class="lr-name">Schnellauswahl</div><div class="lr-sub">Stillen, Wickeln, Mahlzeit … mit einem Tipp</div></div>
+      <div class="lr-arrow">›</div>
+    </div>
     <div class="list-row" data-act="NTSync.open">
       <div class="lr-ic">🔗</div>
       <div class="lr-body"><div class="lr-name">Verbindungen</div><div class="lr-sub" id="linksHubSub">Personen, Partner-Postfach, Alexa</div></div>
@@ -1326,7 +1338,7 @@ body.tour-open #feedbackFab{display:flex!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.328</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.329</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -3205,6 +3217,23 @@ body.tour-open #feedbackFab{display:flex!important;}
   </div>
 </div>
 
+<!-- ══ SCHNELLAUSWAHL (js/launch.js) ══ -->
+<div class="ov" id="launchOv" data-bg-close="launchOv">
+  <div class="mod">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" data-act="closeOv" data-args='["launchOv"]'>✕</button>
+      <div class="mti">⚡ Schnellauswahl</div>
+      <div class="msu">Mit einem Tipp oben auf „Heute"</div>
+    </div>
+    <div class="mbd">
+      <div style="font-size:12px;color:var(--mu);line-height:1.5;margin-bottom:10px;">Was du hier anhakst, steht als Knopf-Leiste ganz oben auf „Heute".</div>
+      <div id="launchBody" style="display:flex;flex-direction:column;gap:8px;"></div>
+      <div style="font-size:12px;color:var(--mu);line-height:1.5;margin-top:14px;"><b>Android:</b> Lange auf das NutriTrack-Symbol tippen → Stillen, Wickeln, Mahlzeit, Foto-Mahlzeit. Einen Eintrag festhalten und auf den Startbildschirm ziehen – dann ist er ein eigenes Symbol.<br><b>iPhone:</b> Apple bietet für Web-Apps keine Kurzbefehle am App-Symbol – nutze die Leiste auf „Heute".</div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ FUNKTIONS-KATALOG ══ -->
 <div class="ov" id="featCatOv" data-bg-close="featCatOv">
   <div class="mod">
@@ -3723,15 +3752,15 @@ body.tour-open #feedbackFab{display:flex!important;}
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.328"></script>
-<script src="js/single-tab.js?v=0.328"></script>
-<script src="js/fooddb.js?v=0.328"></script>
-<script src="js/fooddb-usda.js?v=0.328"></script>
-<script src="js/restaurants.js?v=0.328"></script>
-<script src="js/metdb.js?v=0.328"></script>
-<script src="js/idb-photos.js?v=0.328"></script>
-<script src="js/changelog.js?v=0.328"></script>
-<script src="js/calc.js?v=0.328"></script>
+<script src="js/actions.js?v=0.329"></script>
+<script src="js/single-tab.js?v=0.329"></script>
+<script src="js/fooddb.js?v=0.329"></script>
+<script src="js/fooddb-usda.js?v=0.329"></script>
+<script src="js/restaurants.js?v=0.329"></script>
+<script src="js/metdb.js?v=0.329"></script>
+<script src="js/idb-photos.js?v=0.329"></script>
+<script src="js/changelog.js?v=0.329"></script>
+<script src="js/calc.js?v=0.329"></script>
 <script>
 // @ts-check
 // ════════════════════════════════════════
@@ -3745,13 +3774,13 @@ body.tour-open #feedbackFab{display:flex!important;}
 // ════════════════════════════════════════
 // SECTION: STATE
 // ════════════════════════════════════════
-var S={apiKey:'',name:'Du',goal:2000,goalManual:false,weight:0,height:0,age:0,gender:'',activity:'',pregnant:/** @type {0|'0'|'1'|'2'|'3'|'et'} */ (0),pregnantET:'',pregWarn:false,nursing:/** @type {0|'0'|'excl'|'part'} */ (0),nursWarn:false,babyOn:false,baby:{name:'',birth:''},babyLog:{},babyTomb:{},babyMiles:{},babyQs:[],babyQuick:null,babySync:null,shopList:[],shopTomb:{},shopSync:null,shopRecent:[],shopCats:[],shopCatMem:{},pantry:[],pantryTomb:{},pantryLocs:null,links:[],linksMigrated:0,planTomb:{},goalWeight:0,goalDate:'',goalAchievedShown:'',goalStart:null,dietPrefs:[],dietFree:'',savedDietFree:[],dietWarn:false,macroTargets:{protein:0,carbs:0,fat:0},macroGoalMode:'percent',macroGoalG:{protein:0,carbs:0,fat:0},reminders:[],weightLog:{},portionMemory:{},waterGoal:8,waterUnit:250,mealTemplates:[],recurringMeals:[],exerciseLibrary:[],dashOrder:null,dashHidden:null,mealPlan:{},planApplied:{},cookLog:{},currentDate:'',days:{}};
+var S={apiKey:'',name:'Du',goal:2000,goalManual:false,weight:0,height:0,age:0,gender:'',activity:'',pregnant:/** @type {0|'0'|'1'|'2'|'3'|'et'} */ (0),pregnantET:'',pregWarn:false,nursing:/** @type {0|'0'|'excl'|'part'} */ (0),nursWarn:false,babyOn:false,baby:{name:'',birth:''},babyLog:{},babyTomb:{},babyMiles:{},babyQs:[],babyQuick:null,babySync:null,shopList:[],shopTomb:{},shopSync:null,shopRecent:[],shopCats:[],shopCatMem:{},pantry:[],pantryTomb:{},pantryLocs:null,links:[],linksMigrated:0,planTomb:{},goalWeight:0,goalDate:'',goalAchievedShown:'',goalStart:null,dietPrefs:[],dietFree:'',savedDietFree:[],dietWarn:false,macroTargets:{protein:0,carbs:0,fat:0},macroGoalMode:'percent',macroGoalG:{protein:0,carbs:0,fat:0},reminders:[],weightLog:{},portionMemory:{},waterGoal:8,waterUnit:250,mealTemplates:[],recurringMeals:[],exerciseLibrary:[],dashOrder:null,dashHidden:null,launchBar:/** @type {string[]} */ ([]),mealPlan:{},planApplied:{},cookLog:{},currentDate:'',days:{}};
 // Tracking für Settings-Session: manuelle Eingabe vs. „Kalorienbedarf berechnen"
 var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.328';
+var APP_VERSION='0.329';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -4149,6 +4178,13 @@ function _bootApp(){
   if(_mainShown)NTRecur.ensureToday();
   // Auto-Import wenn die App über einen geteilten Rezept-Link geöffnet wurde
   if(_mainShown)_checkSharedItemOnBoot();
+  // Schnellauswahl: Leiste auf „Heute" und App-Kurzbefehle (?action=…, manifest.json).
+  // Wasser, Sport und Kochbuch leben hier im Monolithen und werden hineingereicht.
+  if(_mainShown&&window.NTLaunch)NTLaunch.boot({
+    wasser:function(){addWater(S.waterUnit||250);showToast('💧 1 Glas eingetragen ✓');},
+    sport:function(){openExerciseOv();},
+    kochbuch:function(){openLibrary();}
+  });
   // Service Worker
   if('serviceWorker' in navigator){
     navigator.serviceWorker.register('/nutritrack/sw.js').then(function(){
@@ -4762,6 +4798,7 @@ function ingToggle(event,id){
 
 function renderAll(){
   document.getElementById('dateLabel').textContent=fmtDate(S.currentDate);
+  if(window.NTLaunch)NTLaunch.renderBar();
   document.getElementById('btnNext').style.opacity=S.currentDate===today()?'0.3':'1';
   var day=getDay();
   var all=day.meals.breakfast.concat(day.meals.lunch,day.meals.dinner,day.meals.snack);
@@ -8319,34 +8356,35 @@ function axTestSync(){
 }
 
 </script>
-<script src="js/ampel.js?v=0.328"></script>
-<script src="picker.js?v=0.328"></script>
-<script src="js/health-sync.js?v=0.328"></script>
-<script src="js/sync-core.js?v=0.328"></script>
-<script src="js/baby.js?v=0.328"></script>
-<script src="js/baby-meds.js?v=0.328"></script>
-<script src="js/baby-growth-data.js?v=0.328"></script>
-<script src="js/baby-growth.js?v=0.328"></script>
-<script src="js/baby-week.js?v=0.328"></script>
-<script src="js/baby-milestones.js?v=0.328"></script>
-<script src="js/baby-midwife.js?v=0.328"></script>
-<script src="js/shopping.js?v=0.328"></script>
-<script src="js/pantry.js?v=0.328"></script>
-<script src="js/partner.js?v=0.328"></script>
-<script src="js/alexa-sync.js?v=0.328"></script>
-<script src="js/dashboard.js?v=0.328"></script>
-<script src="js/features.js?v=0.328"></script>
-<script src="js/mealplan.js?v=0.328"></script>
-<script src="js/book-swaps.js?v=0.328"></script>
-<script src="js/cookbook.js?v=0.328"></script>
-<script src="js/onedrive.js?v=0.328"></script>
-<script src="js/autosave.js?v=0.328"></script>
-<script src="js/recurring.js?v=0.328"></script>
-<script src="js/stats.js?v=0.328"></script>
-<script src="js/reminders.js?v=0.328"></script>
-<script src="js/templates.js?v=0.328"></script>
-<script src="js/offline-queue.js?v=0.328"></script>
-<script src="js/tour.js?v=0.328"></script>
+<script src="js/ampel.js?v=0.329"></script>
+<script src="picker.js?v=0.329"></script>
+<script src="js/health-sync.js?v=0.329"></script>
+<script src="js/sync-core.js?v=0.329"></script>
+<script src="js/baby.js?v=0.329"></script>
+<script src="js/baby-meds.js?v=0.329"></script>
+<script src="js/baby-growth-data.js?v=0.329"></script>
+<script src="js/baby-growth.js?v=0.329"></script>
+<script src="js/baby-week.js?v=0.329"></script>
+<script src="js/baby-milestones.js?v=0.329"></script>
+<script src="js/baby-midwife.js?v=0.329"></script>
+<script src="js/shopping.js?v=0.329"></script>
+<script src="js/pantry.js?v=0.329"></script>
+<script src="js/partner.js?v=0.329"></script>
+<script src="js/alexa-sync.js?v=0.329"></script>
+<script src="js/dashboard.js?v=0.329"></script>
+<script src="js/features.js?v=0.329"></script>
+<script src="js/launch.js?v=0.329"></script>
+<script src="js/mealplan.js?v=0.329"></script>
+<script src="js/book-swaps.js?v=0.329"></script>
+<script src="js/cookbook.js?v=0.329"></script>
+<script src="js/onedrive.js?v=0.329"></script>
+<script src="js/autosave.js?v=0.329"></script>
+<script src="js/recurring.js?v=0.329"></script>
+<script src="js/stats.js?v=0.329"></script>
+<script src="js/reminders.js?v=0.329"></script>
+<script src="js/templates.js?v=0.329"></script>
+<script src="js/offline-queue.js?v=0.329"></script>
+<script src="js/tour.js?v=0.329"></script>
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

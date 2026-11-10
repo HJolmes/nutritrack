@@ -2,6 +2,10 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.329',items:[
+    {icon:'⚡',text:'<b>Schnellauswahl</b>: Unter Mehr → ⚡ Schnellauswahl anhaken, was du mit einem Tipp erreichen willst – Stillen (startet die Stoppuhr, nächster Tipp stoppt), Wickeln, Schlaf, Mahlzeit, Foto-Mahlzeit, Wasser, Sport, Einkaufszettel, Vorrat, Kochbuch, Wochenplan. Die Knöpfe stehen ganz oben auf „Heute".',where:'Mehr → ⚡ Schnellauswahl'},
+    {icon:'📱',text:'<b>Kurzbefehle am App-Symbol (Android)</b>: Lange auf das NutriTrack-Symbol tippen → Stillen, Wickeln, Mahlzeit, Foto-Mahlzeit. Einen Eintrag auf den Startbildschirm ziehen, dann ist er ein eigenes Symbol.',where:'Android-Startbildschirm'}
+  ]},
   {v:'0.328',items:[
     {icon:'🤱',text:'<b>Letzte Mahlzeit ab Still-Ende</b>: „Letzte Mahlzeit vor …“ zählt beim Stillen jetzt ab dem Ende. Vor 2 Stunden angelegt und 10 Minuten getrunken → „vor 1 h 50 Min.“',where:'👶 Baby-Kachel'},
   ]},

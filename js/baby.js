@@ -142,6 +142,8 @@ function remove(id,key){
 
 function refresh(){
   renderCard();
+  // „Stillen" ↔ „Stillen stoppen" in der Schnellauswahl-Leiste (js/launch.js)
+  if(window.NTLaunch)NTLaunch.renderBar();
   if(isOpen('babyOv'))renderDiary();
 }
 function isOpen(id){
@@ -476,6 +478,17 @@ function renderQuickBtns(){
   var b=document.getElementById('babyOvQuickBtns');
   if(b)b.innerHTML=qs.map(function(q){return quickBtnHtml(q,false);}).join('');
 }
+// Schlaf-Umschalter (Schnell-Knopf und Schnellauswahl, js/launch.js).
+function toggleSleep(){
+  if(!S.babyOn)return;
+  var key=dayKey();
+  var open=openSleep(key);
+  if(open){endSleep(open.e.id);return;}
+  var n=new Date();
+  var hhmmNow=pad(n.getHours())+':'+pad(n.getMinutes());
+  add({t:'sleep',from:hhmmNow,to:'',ts:tsFor(key,hhmmNow)},key);
+  showToast('😴 Schläft seit jetzt ✓');
+}
 // Ein Tipp = fertiger Eintrag mit aktueller Uhrzeit, ohne Dialog.
 function quick(qid){
   if(!S.babyOn)return;
@@ -484,15 +497,7 @@ function quick(qid){
   var key=dayKey();
   // Schlaf ist ein Umschalter: schläft gerade niemand -> Beginn eintragen,
   // läuft ein Schlaf -> ihn beenden. Kein Dialog, kein Nachtragen.
-  if(q.t==='sleep'){
-    var open=openSleep(key);
-    if(open){endSleep(open.e.id);return;}
-    var n=new Date();
-    var hhmmNow=pad(n.getHours())+':'+pad(n.getMinutes());
-    add({t:'sleep',from:hhmmNow,to:'',ts:tsFor(key,hhmmNow)},key);
-    showToast('😴 Schläft seit jetzt ✓');
-    return;
-  }
+  if(q.t==='sleep'){toggleSleep();return;}
   // Temperatur braucht einen Messwert: Der Knopf öffnet den Eintrags-Dialog
   // (Pflichtprüfung und Fieber-Hinweis dort), statt einen Eintrag ohne Zahl
   // anzulegen.
@@ -1282,6 +1287,8 @@ window.NTBaby={
   milesStore:milesStore,setMile:setMile,
   // v0.263: Stoppuhr, Medizin-Auswahl, gemeinsame Helfer für Verlauf/Wachstum/Gaben
   startFeed:startFeed,stopFeed:stopFeed,switchFeed:switchFeed,medPicked:medPicked,
+  // Schnellauswahl (js/launch.js): laeuft eine Stoppuhr? Schlaf umschalten.
+  runningFeed:runningFeed,toggleSleep:toggleSleep,
   summary:summary,entryTitle:entryTitle,logRO:logRO,addDayKey:addDayKey,today:_today,
   fmtDur:fmtDur,fmtNum:fmtNum,isFever:isFever,fmtTemp:fmtTemp,tempC:tempC,ageText:ageText,
   REACTION:REACTION,APPT:APPT,SIDES:SIDES,

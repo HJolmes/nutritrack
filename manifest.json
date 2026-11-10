@@ -25,5 +25,59 @@
       "type": "image/svg+xml",
       "purpose": "any maskable"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "Stillen starten",
+      "short_name": "Stillen",
+      "description": "Stoppuhr starten – nächster Tipp stoppt",
+      "url": "/nutritrack/?action=stillen",
+      "icons": [
+        {
+          "src": "/nutritrack/icons/sc-stillen.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Wickeln eintragen",
+      "short_name": "Wickeln",
+      "description": "Windel eintragen",
+      "url": "/nutritrack/?action=wickeln",
+      "icons": [
+        {
+          "src": "/nutritrack/icons/sc-wickeln.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Mahlzeit hinzufügen",
+      "short_name": "Mahlzeit",
+      "description": "Per Text oder Suche eintragen",
+      "url": "/nutritrack/?action=mahlzeit",
+      "icons": [
+        {
+          "src": "/nutritrack/icons/sc-mahlzeit.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Foto-Mahlzeit",
+      "short_name": "Foto",
+      "description": "Foto machen, KI erkennt die Zutaten",
+      "url": "/nutritrack/?action=foto",
+      "icons": [
+        {
+          "src": "/nutritrack/icons/sc-foto.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
   ]
 }

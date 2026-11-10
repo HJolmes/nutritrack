@@ -1,11 +1,11 @@
 // NutriTrack Service Worker
 // Version wird bei jedem Release hochgezählt - löst automatisches Update aus
-var VERSION = '0.328';
+var VERSION = '0.329';
 var CACHE = 'nt-' + VERSION;
 var SKIP = ['workers.dev','corsproxy.io','openfoodfacts.org','fonts.googleapis.com','fonts.gstatic.com','unpkg.com','esm.sh','jsdelivr.net','is.gd','v.gd'];
 // Kern-Assets, die für den Offline-Betrieb vorab gecacht werden. Relativ zur
 // SW-Position (/nutritrack/), damit der GitHub-Pages-Pfad korrekt aufgelöst wird.
-var CORE_ASSETS = ['./','index.html','picker.js','js/health-sync.js','js/baby.js','js/baby-meds.js','js/baby-growth-data.js','js/baby-growth.js','js/baby-week.js','js/baby-milestones.js','js/baby-midwife.js','js/shopping.js','js/pantry.js','js/partner.js','js/alexa-sync.js','js/sync-core.js','js/dashboard.js','js/features.js','js/mealplan.js','js/book-swaps.js','js/cookbook.js','js/book-seed.js','js/onedrive.js','js/autosave.js','js/recurring.js','js/stats.js','js/reminders.js','js/templates.js','js/offline-queue.js','js/tour.js','js/actions.js','js/single-tab.js','tab.html','js/fooddb.js','js/fooddb-usda.js','js/restaurants.js','js/metdb.js','js/ampel.js','js/changelog.js','js/calc.js','js/idb-photos.js','js/zxing/zxing-reader.iife.js','js/zxing/zxing_reader.wasm','js/zxing/zxing-js.umd.min.js','manifest.json','icon.svg'];
+var CORE_ASSETS = ['./','index.html','picker.js','js/health-sync.js','js/baby.js','js/baby-meds.js','js/baby-growth-data.js','js/baby-growth.js','js/baby-week.js','js/baby-milestones.js','js/baby-midwife.js','js/shopping.js','js/pantry.js','js/partner.js','js/alexa-sync.js','js/sync-core.js','js/dashboard.js','js/features.js','js/launch.js','js/mealplan.js','js/book-swaps.js','js/cookbook.js','js/book-seed.js','js/onedrive.js','js/autosave.js','js/recurring.js','js/stats.js','js/reminders.js','js/templates.js','js/offline-queue.js','js/tour.js','js/actions.js','js/single-tab.js','tab.html','js/fooddb.js','js/fooddb-usda.js','js/restaurants.js','js/metdb.js','js/ampel.js','js/changelog.js','js/calc.js','js/idb-photos.js','js/zxing/zxing-reader.iife.js','js/zxing/zxing_reader.wasm','js/zxing/zxing-js.umd.min.js','manifest.json','icon.svg'];
 
 self.addEventListener('install', function(e) {
   // Sofort aktivieren ohne auf alte Tabs zu warten
@@ -75,7 +75,10 @@ self.addEventListener('fetch', function(e) {
   // sonst die neue Seite neben den alten Modulen — und offline fehlten ihr die
   // Funktionen, die mit dem Update in ein Modul gewandert sind (#257). Die neue
   // Seite cacht der neue Worker bei seiner Installation.
-  if (u.includes('index.html') || u.endsWith('/nutritrack/') || u.endsWith('/nutritrack')) {
+  // Pfad statt ganzer Adresse: App-Kurzbefehle oeffnen `/nutritrack/?action=…`
+  // (manifest.json, js/launch.js) und muessen denselben Weg nehmen wie die Startseite.
+  var path = new URL(u).pathname;
+  if (path.endsWith('/index.html') || path === '/nutritrack/' || path === '/nutritrack') {
     e.respondWith(
       fetch(e.request).then(function(r) {
         if (r.ok) {

@@ -1177,3 +1177,51 @@ test('feedEndTs: Stillen zählt ab dem Ende, nicht ab dem Beginn', () => {
   // Ende läge in der Zukunft → höchstens jetzt
   assert.equal(C.feedEndTs({ t: 'breast', ts: now - 5 * 60000, min: 20 }, now), now);
 });
+
+// ── Essen-Export (Excel) ─────────────────────────────────────────────────
+test('foodExportRows: Eintraege, Tagessummen, Archiv-Tag, Zeitraum', () => {
+  const C = load({});
+  const at = new Date(2026, 10, 12, 8, 5).getTime();
+  const days = {
+    '2026-11-10': { meals: { breakfast: [], lunch: [], dinner: [], snack: [] }, water: 0, exercise: [] }, // leer → weg
+    '2026-11-11': { _compressed: true, kcal: 1800, protein: 90, carbs: 200, fat: 60, water: 4 },
+    '2026-11-12': {
+      meals: {
+        breakfast: [{ name: 'Haferflocken', amount: 60, addedAt: at, kcal: 222.6, protein: 8.04, carbs: 35.4, fat: 4.2, sugar: 0.6, fiber: 6, salt: 0.006 }],
+        lunch: [{ name: 'Linsensuppe', isRecipe: true, portions: 1.5, kcal: 450, protein: 24, carbs: 60, fat: 9 }],
+        dinner: [null], snack: [],
+      },
+      water: 6, exercise: [{ name: 'Laufen', kcal: 300 }],
+    },
+    '2026-11-13': { meals: { breakfast: [{ name: 'Apfel', amount: 150, kcal: 78 }], lunch: [], dinner: [], snack: [] } },
+    'foo': {},
+  };
+  const r = plain(C.foodExportRows(days, '2026-11-10', '2026-11-12', { waterUnit: 250, weightLog: { '2026-11-12': 72.34 } }));
+  assert.equal(r.entries.length, 3);
+  assert.deepEqual(r.entries[1], [{ d: '2026-11-12' }, 'Frühstück', '08:05', 'Haferflocken', 60, '', 223, 8, 35.4, 4.2, 0.6, 6, 0.01]);
+  assert.deepEqual(r.entries[2].slice(1, 7), ['Mittagessen', '', 'Linsensuppe', '', 1.5, 450]);
+  assert.equal(r.days.length, 3);
+  assert.deepEqual(r.days[1], [{ d: '2026-11-11' }, 1800, 90, 200, 60, '', '', '', '', '', 1, '', '', 'archiviert – nur Summen']);
+  assert.deepEqual(r.days[2], [{ d: '2026-11-12' }, 673, 32, 95.4, 13.2, 0.6, 6, 0.01, 300, 373, 1.5, 72.3, 2, '']);
+});
+
+test('NTXlsx: gueltiges ZIP mit Blaettern, Datum als Seriennummer, Text escaped', () => {
+  const ctx = { console, TextEncoder };
+  ctx.window = ctx;
+  vm.createContext(ctx);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'js/xlsx.js'), 'utf8'), ctx);
+  const X = ctx.NTXlsx;
+  assert.equal(X.crc32(new TextEncoder().encode('123456789')), 0xCBF43926);
+  assert.equal(X.dateSerial('1900-03-01'), 61);
+  assert.equal(X.dateSerial('2026-11-13'), 46339);
+  assert.equal(X.colName(0), 'A');
+  assert.equal(X.colName(26), 'AA');
+  const b = Buffer.from(X.build([{ name: 'Einträge', rows: [['Datum', 'Name'], [{ d: '2026-11-13' }, 'Brot & <Butter>']] }]));
+  assert.equal(b.readUInt32LE(0), 0x04034b50);
+  assert.equal(b.readUInt32LE(b.length - 22), 0x06054b50);
+  assert.equal(b.readUInt16LE(b.length - 12), 6); // 5 Rahmen-Dateien + 1 Blatt
+  const txt = b.toString('utf8');
+  assert.match(txt, /<sheet name="Einträge"/);
+  assert.match(txt, /<c r="A2" s="1"><v>46339<\/v><\/c>/);
+  assert.match(txt, /Brot &amp; &lt;Butter&gt;/);
+});

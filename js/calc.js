@@ -1184,3 +1184,54 @@ function feedEndTs(e,now){
   var min=parseInt(String(e.min),10)||0;
   return min>0?Math.min(ts+min*60000,Math.max(ts,now)):ts;
 }
+
+// ── Essen-Export (Excel) ──
+// Zeilen fuer die beiden Blaetter der Excel-Datei (js/food-export.js baut sie
+// mit js/xlsx.js). Ein Datum steht als {d:'YYYY-MM-DD'} in der Zelle, damit
+// Excel es als echtes Datum liest (sortier- und filterbar). Archivierte Tage
+// (compressOldDays) haben keine Einzelposten mehr: Sie fehlen in „Einträge“
+// und stehen in „Tage“ mit ihren Summen und dem Hinweis „archiviert“.
+// Leere Tage (nichts gegessen, kein Sport, kein Wasser) fallen weg.
+var FOOD_EXPORT_MEALS=[['breakfast','Frühstück'],['lunch','Mittagessen'],['dinner','Abendessen'],['snack','Snacks']];
+/** @param {number} v @param {number} dec */
+function _fxR(v,dec){var f=Math.pow(10,dec);return Math.round((Number(v)||0)*f)/f;}
+/**
+ * @param {Record<string,any>} days S.days
+ * @param {string} from YYYY-MM-DD (inklusive)
+ * @param {string} to YYYY-MM-DD (inklusive)
+ * @param {{waterUnit?:number,weightLog?:Record<string,number>}} [opt]
+ * @returns {{entries:any[][],days:any[][]}}
+ */
+function foodExportRows(days,from,to,opt){
+  opt=opt||{};
+  var unit=opt.waterUnit||250,wlog=opt.weightLog||{};
+  var entries=/** @type {any[][]} */ ([['Datum','Mahlzeit','Uhrzeit','Lebensmittel','Menge (g)','Portionen','kcal','Eiweiß (g)','Kohlenhydrate (g)','Fett (g)','Zucker (g)','Ballaststoffe (g)','Salz (g)']]);
+  var sums=/** @type {any[][]} */ ([['Datum','kcal','Eiweiß (g)','Kohlenhydrate (g)','Fett (g)','Zucker (g)','Ballaststoffe (g)','Salz (g)','Sport (kcal)','Netto (kcal)','Wasser (l)','Gewicht (kg)','Einträge','Hinweis']]);
+  Object.keys(days||{}).filter(function(k){return /^\d{4}-\d{2}-\d{2}$/.test(k)&&k>=from&&k<=to;}).sort().forEach(function(k){
+    var d=days[k];if(!d)return;
+    var water=d.water?_fxR(d.water*unit/1000,2):'';
+    var kg=wlog[k]?_fxR(wlog[k],1):'';
+    if(d._compressed){
+      if(!(d.kcal||d.protein||d.carbs||d.fat||d.water))return;
+      sums.push([{d:k},_fxR(d.kcal,0),_fxR(d.protein,1),_fxR(d.carbs,1),_fxR(d.fat,1),'','','','','',water,kg,'','archiviert – nur Summen']);
+      return;
+    }
+    var m=d.meals||{},all=/** @type {any[]} */ ([]);
+    FOOD_EXPORT_MEALS.forEach(function(ml){
+      (m[ml[0]]||[]).filter(Boolean).forEach(function(/** @type {any} */ e){
+        all.push(e);
+        var at=Number(e.addedAt)||0,t='';
+        if(at){var dt=new Date(at);t=pad(dt.getHours())+':'+pad(dt.getMinutes());}
+        entries.push([{d:k},ml[1],t,String(e.name||''),
+          (!e.isRecipe&&e.amount)?_fxR(e.amount,0):'',e.isRecipe&&e.portions?_fxR(e.portions,2):'',
+          _fxR(e.kcal,0),_fxR(e.protein,1),_fxR(e.carbs,1),_fxR(e.fat,1),_fxR(e.sugar,1),_fxR(e.fiber,1),_fxR(e.salt,2)]);
+      });
+    });
+    var burned=(d.exercise||[]).reduce(function(/** @type {number} */ a,/** @type {any} */ x){return a+((x&&x.kcal)||0);},0);
+    if(!all.length&&!burned&&!d.water)return;
+    var t=calcM(all);
+    sums.push([{d:k},_fxR(t.kcal,0),_fxR(t.protein,1),_fxR(t.carbs,1),_fxR(t.fat,1),_fxR(t.sugar,1),_fxR(t.fiber,1),_fxR(t.salt,2),
+      _fxR(burned,0),_fxR(t.kcal-burned,0),water,kg,all.length,'']);
+  });
+  return{entries:entries,days:sums};
+}

@@ -898,6 +898,44 @@ const EXPECTED_NAMESPACES = [
     if (!tourFail) console.log('  ok  App-Tour: aus der Hilfe gestartet, alle Schritte per Weiter mit passendem Reiter, Fertig, Einstieg an einem Punkt, Esc beendet.');
   }
 
+  // 7b. Excel-Export: Mehr → Backup → 📊 Excel-Export → „Alles“ → Datei.
+  //     Der Handy-Kontext geht ueber navigator.share; geprueft wird die echte
+  //     Datei (ZIP-Kopf, Blattnamen, ein Eintrag, Datum als Seriennummer).
+  {
+    const fx = await page.evaluate(async () => {
+      const r = {};
+      S.days['2026-01-05'] = { meals: { breakfast: [{ name: 'Smoke-Müsli', amount: 80, kcal: 300, protein: 9, carbs: 50, fat: 6 }], lunch: [], dinner: [], snack: [] }, water: 2, exercise: [] };
+      saveS();
+      let file = null;
+      Object.defineProperty(navigator, 'canShare', { configurable: true, value: () => true });
+      Object.defineProperty(navigator, 'share', { configurable: true, value: (d) => { file = d.files[0]; return Promise.resolve(); } });
+      document.querySelector('[data-act="NTExport.open"]').click();
+      const ov = document.getElementById('foodExportOv');
+      r.open = ov.classList.contains('open');
+      ov.querySelector('[data-fx="0"]').click();
+      r.from = document.getElementById('fxFrom').value;
+      r.allAct = ov.querySelector('[data-fx="0"]').classList.contains('act');
+      ov.querySelector('[data-act="NTExport.run"]').click();
+      await new Promise((ok) => setTimeout(ok, 100));
+      r.closed = !ov.classList.contains('open');
+      if (file) {
+        r.name = file.name; r.type = file.type;
+        const b = new Uint8Array(await file.arrayBuffer());
+        r.zip = b[0] === 0x50 && b[1] === 0x4b;
+        const t = new TextDecoder().decode(b);
+        r.sheets = /<sheet name="Einträge"/.test(t) && /<sheet name="Tage"/.test(t);
+        r.entry = t.includes('Smoke-Müsli');
+        r.date = t.includes('<v>46027</v>');
+      }
+      delete S.days['2026-01-05']; saveS();
+      return r;
+    });
+    if (fx.open && fx.allAct && fx.from <= '2026-01-05' && fx.closed && fx.zip && fx.sheets && fx.entry && fx.date
+      && /^nutritrack-essen-.*\.xlsx$/.test(fx.name) && fx.type.includes('spreadsheetml'))
+      console.log('  ok  Excel-Export: Dialog, „Alles“ ab erstem Tag, .xlsx mit „Einträge“/„Tage“, Eintrag und Datum, Teilen schliesst den Dialog.');
+    else record('Excel-Export', JSON.stringify(fx));
+  }
+
   // 8. Zweites Fenster (#261): Es darf die App nicht starten und nichts
   //    schreiben, sondern landet auf tab.html. „Hier weiterarbeiten“ uebernimmt,
   //    und das erste Fenster pausiert. Vorher ueberschrieb der letzte Schreiber

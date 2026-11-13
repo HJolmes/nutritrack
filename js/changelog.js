@@ -2,6 +2,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.330',items:[
+    {icon:'📊',text:'<b>Essen als Excel exportieren</b>: Zeitraum wählen (7/30/90 Tage, Alles oder Von–Bis) → eine .xlsx-Datei mit zwei Blättern: „Einträge“ (jede Position mit Uhrzeit, Menge, kcal, Eiweiß, Kohlenhydraten, Fett, Zucker, Ballaststoffen, Salz) und „Tage“ (Summen, Sport, Netto, Wasser, Gewicht). Auf dem Handy über das Teilen-Menü, z. B. per Mail oder in Dateien.',where:'Mehr → 💾 Backup & Daten'},
+  ]},
   {v:'0.329',items:[
     {icon:'⚡',text:'<b>Schnellauswahl</b>: Unter Mehr → ⚡ Schnellauswahl anhaken, was du mit einem Tipp erreichen willst – Stillen (startet die Stoppuhr, nächster Tipp stoppt), Wickeln, Schlaf, Mahlzeit, Foto-Mahlzeit, Wasser, Sport, Einkaufszettel, Vorrat, Kochbuch, Wochenplan. Die Knöpfe stehen ganz oben auf „Heute".',where:'Mehr → ⚡ Schnellauswahl'},
     {icon:'📱',text:'<b>Kurzbefehle am App-Symbol (Android)</b>: Lange auf das NutriTrack-Symbol tippen → Stillen, Wickeln, Mahlzeit, Foto-Mahlzeit. Einen Eintrag auf den Startbildschirm ziehen, dann ist er ein eigenes Symbol.',where:'Android-Startbildschirm'}

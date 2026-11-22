@@ -217,7 +217,9 @@ function morning(sleeps,from,now){
   var f=new Date(from),date=new Date(f.getFullYear(),f.getMonth(),f.getDate());
   if(hour(from)>=12)date.setDate(date.getDate()+1);
   function at(mins){return new Date(date.getFullYear(),date.getMonth(),date.getDate(),0,Math.round(mins)).getTime();}
-  var lo=at(quantile(rows,0.25)),hi=at(quantile(rows,0.75));
+  // Auch identische Einträge sind keine minutengenaue Morgen-Vorhersage.
+  var med=quantile(rows,0.5),lo=at(Math.min(quantile(rows,0.25),med-30)),
+    hi=at(Math.max(quantile(rows,0.75),med+30));
   if(hi<lo)hi=lo;
   if(hi<now-30*MIN)return null;
   return {lo:lo,hi:hi,count:rows.length};
@@ -240,7 +242,9 @@ function predict(babyLog,birth,at){
       quality:dur.count>=8?'vorsichtig':'grob',n:dur.count,healthCaution:data.fever};
   }
   var bed=bedtime(sleeps,now),next='day';
-  var nightReturn=last.type==='night'&&hour(now)<8&&now-last.end<=120*MIN;
+  var nowHour=hour(now),morningHint=last.type==='night'?morning(sleeps,last.start,now):null;
+  var nightReturn=last.type==='night'&&now-last.end<=120*MIN&&
+    (nowHour>=18||nowHour<6||(nowHour<9&&morningHint&&now<morningHint.lo-20*MIN));
   if(nightReturn)next='night';
   else if(hour(now)>=16||hour(now)<3){
     // Zuerst einen Tag-Schlaf prognostizieren und prüfen, ob er an die

@@ -1210,8 +1210,9 @@ function saveEntry(){
     if(_planEntryDay){
       // Ein Vorschlag darf nicht versehentlich als bereits geschehener Schlaf gelten.
       var now=Date.now();
+      var endKey=(e.from&&e.to&&e.to<e.from)?addDayKey(key,1):key;
       if((e.from&&tsFor(key,e.from)>now+60000)||
-         (e.to&&tsFor(key,e.to)>now+60000)){
+         (e.to&&tsFor(endKey,e.to)>now+60000)){
         showToast('Zukünftige Prognosen nicht als echten Schlaf speichern. Bitte tatsächliche Zeiten verwenden.',5000);
         return;
       }

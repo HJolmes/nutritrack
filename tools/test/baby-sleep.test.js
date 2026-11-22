@@ -50,7 +50,7 @@ test('Laufender Schlaf wird erkannt und erwartetes Aufwachen angezeigt',()=>{
   const r=api.predict({'2026-11-22':[{t:'sleep',from:'09:30',to:''}]},birth,now);
   assert.equal(r.kind,'sleeping');
   assert.ok(r.wakeHigh>now);
-  assert.match(api.cardHtml({'2026-11-22':[{t:'sleep',from:'09:30'}]},birth,now),/Voraussichtlich wach/);
+  assert.match(api.cardHtml({'2026-11-22':[{t:'sleep',from:'09:30'}]},birth,now),/Nächstes Aufwachen/);
 });
 test('Schlaf über Mitternacht endet am Folgetag',()=>{
   const api=load(),r=api.predict({'2026-11-21':[{t:'sleep',from:'23:10',to:'02:10'}]},birth,date('2026-11-22','03:00'));

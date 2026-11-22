@@ -951,6 +951,7 @@ function renderDiary(){
   var list=document.getElementById('babyTimeline');
   if(!list)return;
   var rows=dayRows(key);
+  var sleepKinds=window.NTBabySleep?window.NTBabySleep.classifications(S.babyLog||{},Date.now()):{};
   if(!rows.length){
     list.innerHTML='<div style="font-size:13px;color:var(--mu);font-style:italic;padding:14px 2px;">Noch kein Eintrag für diesen Tag. Nutze die Schnell-Knöpfe oben oder „＋ Eintrag".</div>';
   }else{
@@ -972,6 +973,10 @@ function renderDiary(){
       if(e.t==='med'&&e.every)bits.push('Abstand '+esc(e.every)+' h');
       if(seg&&seg.cont)bits.push('Fortsetzung von gestern');
       if(seg&&seg.spill)bits.push('geht weiter am Folgetag');
+      if(seg&&window.NTBabySleep){
+        var k=sleepKinds[e.id]||'day';
+        bits.push((k==='night'?'🌙 Nachtschlaf':'☀️ Nickerchen')+(e.sleepType?' (manuell)':' (automatisch)'));
+      }
       if(running)bits.push('läuft seit '+fmtDur(seg.totalMin));
       else if(seg&&seg.min)bits.push(fmtDur(seg.min));
       if(e.note)bits.push(esc(e.note));
@@ -1033,6 +1038,7 @@ function openEntry(type,id){
   document.getElementById('babyTempSite').value=(e&&e.site)||'rektal';
   document.getElementById('babySleepFrom').value=(e&&e.from)||'';
   document.getElementById('babySleepTo').value=(e&&e.to)||'';
+  document.getElementById('babySleepType').value=(e&&(e.sleepType==='day'||e.sleepType==='night')&&e.sleepType)||'';
   document.getElementById('babyNoteText').value=(e&&e.t==='note'&&e.text)||'';
   document.getElementById('babyEntryTitle').textContent=id?(t==='growth'?'Messung bearbeiten':t==='appt'?'Termin bearbeiten':'Eintrag bearbeiten')
     :(t==='growth'?'Neue Messung':t==='appt'?'Neuer Termin':'Neuer Eintrag');
@@ -1151,6 +1157,9 @@ function saveEntry(){
   }else if(t==='sleep'){
     e.from=document.getElementById('babySleepFrom').value||'';
     e.to=document.getElementById('babySleepTo').value||'';
+    // Leer = automatische Einordnung; alte Einträge bleiben unverändert kompatibel.
+    var sleepType=document.getElementById('babySleepType').value;
+    if(sleepType==='day'||sleepType==='night')e.sleepType=sleepType;
     // Einsortiert wird nach dem Beginn; fehlt der, nach dem Ende.
     if(e.from||e.to)e.ts=tsFor(key,e.from||e.to);
     // Beginn ODER Ende genügt: Man trägt den Schlaf oft mitten drin ein und

@@ -2,6 +2,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.332',items:[
+    {icon:'🌙',text:'<b>Nickerchen und Nachtschlaf</b>: Im Schlafeintrag zwischen automatischer Erkennung, Tagschlaf und Nachtschlaf wählen. Die Prognose nutzt zusammenhängende Nachtabschnitte einschließlich kurzer Wachphasen statt einer starren 19-Uhr-Grenze. Beim Nachtschlaf wird das nächste nächtliche Aufwachen separat von einer vorsichtigen Morgen-Schätzung ausgewiesen, sobald genügend vollständige Nächte vorliegen. Alle Daten bleiben lokal und werden wie bisher synchronisiert.',where:'👶 Baby-Tagebuch → Schlafeintrag · Baby-Kachel'},
+  ]},
   {v:'0.331',items:[
     {icon:'😴',text:'<b>Babyschlaf-Prognose</b>: Die Baby-Kachel und das Tagebuch zeigen ein voraussichtliches nächstes Schlaffenster, die mögliche Schlafdauer und das Aufwachfenster. Aus den bisherigen Schlaf- und Wachphasen berechnet, mit Babyalter, Tageszeit, älteren Vergleichstagen und Fütterungen als vorsichtigem Kontext. Bei wenigen Daten ausdrücklich als grob markiert. Alles lokal und offline, ohne neue Speicherung.',where:'👶 Baby-Kachel · Baby-Tagebuch'},
   ]},

@@ -83,3 +83,75 @@ test('Fieber-Einträge dienen nur als Unsicherheitswarnung, nicht als Einschlaf-
   assert.equal(r.healthCaution,true);
   assert.match(api.cardHtml(log,birth,date('2026-11-22','10:10')),/Fieber/);
 });
+
+test('Tagschlaf um 18:45 wird nicht nur wegen Uhrzeit als Nacht markiert',()=>{
+  const api=load(),log={
+    '2026-11-21':[
+      {id:'early',t:'sleep',from:'18:45',to:'19:10'},
+      {id:'night',t:'sleep',from:'22:10',to:'02:00'}
+    ],
+    '2026-11-22':[
+      {id:'later',t:'sleep',from:'02:40',to:'06:35'},
+      {id:'morning',t:'sleep',from:'09:15',to:'09:50'}
+    ]
+  },types=api.classifications(log,date('2026-11-22','10:00'));
+  assert.equal(types.early,'day');
+  assert.equal(types.night,'night');
+  assert.equal(types.later,'night');
+  assert.equal(types.morning,'day');
+});
+test('Manuelle Einordnung gewinnt über nächtliche Kernzeit und Tagesuhrzeit',()=>{
+  const api=load(),log={'2026-11-22':[
+    {id:'forcedDay',t:'sleep',from:'00:30',to:'01:30',sleepType:'day'},
+    {id:'forcedNight',t:'sleep',from:'13:00',to:'13:30',sleepType:'night'}
+  ]},clone=JSON.stringify(log);
+  const types=api.classifications(log,date('2026-11-22','16:00'));
+  assert.equal(types.forcedDay,'day');
+  assert.equal(types.forcedNight,'night');
+  assert.equal(JSON.stringify(log),clone,'Klassifikation verändert keine gespeicherten Daten');
+});
+function exampleNights(){
+  const log={};
+  for(let i=1;i<=5;i++){
+    const d=new Date(2026,10,19-i);
+    const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    const next=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1);
+    const nk=next.getFullYear()+'-'+String(next.getMonth()+1).padStart(2,'0')+'-'+String(next.getDate()).padStart(2,'0');
+    log[k]=[
+      {id:'start'+i,t:'sleep',from:'20:00',to:'23:00'},
+      {id:'middle'+i,t:'sleep',from:'23:35',to:'02:10'}
+    ];
+    log[nk]=(log[nk]||[]).concat([{id:'morning'+i,t:'sleep',from:'02:40',to:'07:00'}]);
+  }
+  return log;
+}
+test('Mehrere Schlafblöcke zählen zu einer Nacht; Morgen nicht minutengenau',()=>{
+  const api=load(),log=exampleNights();
+  log['2026-11-22']=[{id:'open',t:'sleep',from:'20:10',to:''}];
+  const p=api.predict(log,birth,date('2026-11-22','21:00'));
+  assert.equal(p.kind,'sleeping');
+  assert.equal(p.sleepType,'night');
+  assert.ok(p.morning&&p.morning.count>=3);
+  assert.ok((p.morning.hi-p.morning.lo)>=60*60*1000,'mindestens eine Stunde Fenster');
+  assert.match(api.cardHtml(log,birth,date('2026-11-22','21:00')),/Morgens voraussichtlich wach/);
+});
+test('Kurzes nächtliches Aufwachen führt zu nächstem Nachtschlafblock',()=>{
+  const api=load(),log=exampleNights();
+  log['2026-11-22']=[{id:'recent',t:'sleep',from:'00:20',to:'00:40'}];
+  const p=api.predict(log,birth,date('2026-11-22','01:00'));
+  assert.equal(p.kind,'awake');
+  assert.equal(p.sleepType,'night');
+});
+test('Nach dem üblichen Morgen wird der nächste Tagschlaf statt Nachtfortsetzung geschätzt',()=>{
+  const api=load(),log=exampleNights();
+  log['2026-11-22']=[{id:'recent',t:'sleep',from:'04:00',to:'07:30'}];
+  const p=api.predict(log,birth,date('2026-11-22','08:00'));
+  assert.equal(p.kind,'awake');
+  assert.equal(p.sleepType,'day');
+});
+test('Ein Abendeinschlafen wird anhand früherer Nächte erkannt',()=>{
+  const api=load(),log=exampleNights();
+  log['2026-11-22']=[{id:'open',t:'sleep',from:'20:15',to:''}];
+  const types=api.classifications(log,date('2026-11-22','20:20'));
+  assert.equal(types.open,'night');
+});

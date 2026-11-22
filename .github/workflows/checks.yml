@@ -175,7 +175,8 @@ jobs:
 
   smoke:
     name: Rauchtest im Browser
-    runs-on: ubuntu-latest
+    # Playwright 1.56.1 unterstützt den ubuntu-26.04 Runner nicht.
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4

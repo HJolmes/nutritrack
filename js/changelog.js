@@ -2,6 +2,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.331',items:[
+    {icon:'😴',text:'<b>Babyschlaf-Prognose</b>: Die Baby-Kachel und das Tagebuch zeigen ein voraussichtliches nächstes Schlaffenster, die mögliche Schlafdauer und das Aufwachfenster. Aus den bisherigen Schlaf- und Wachphasen berechnet, mit Babyalter, Tageszeit, älteren Vergleichstagen und Fütterungen als vorsichtigem Kontext. Bei wenigen Daten ausdrücklich als grob markiert. Alles lokal und offline, ohne neue Speicherung.',where:'👶 Baby-Kachel · Baby-Tagebuch'},
+  ]},
   {v:'0.330',items:[
     {icon:'📊',text:'<b>Essen als Excel exportieren</b>: Zeitraum wählen (7/30/90 Tage, Alles oder Von–Bis) → eine .xlsx-Datei mit zwei Blättern: „Einträge“ (jede Position mit Uhrzeit, Menge, kcal, Eiweiß, Kohlenhydraten, Fett, Zucker, Ballaststoffen, Salz) und „Tage“ (Summen, Sport, Netto, Wasser, Gewicht). Auf dem Handy über das Teilen-Menü, z. B. per Mail oder in Dateien.',where:'Mehr → 💾 Backup & Daten'},
   ]},

@@ -110,7 +110,7 @@ function estimateWake(sleeps,feeds,last,now,age){
   var currentFed=fed(feeds,last.end,now);
   for(var i=1;i<sleeps.length;i++){
     var prev=sleeps[i-1],next=sleeps[i];
-    if(prev.end===null||next.end===null||next.start>now)continue;
+    if(prev.end===null||next.start>now)continue;
     var gap=(next.start-prev.end)/MIN;
     if(gap<20||gap>Math.max(480,prior[2]*2))continue;
     var sampleFed=fed(feeds,prev.end,next.start);
@@ -193,7 +193,7 @@ function cardHtml(babyLog,birth,now){
   if(r.kind==='stale'||r.kind==='uncertain')return '<div style="margin-top:7px;font-size:12px;color:var(--mu);">😴 Schlafprognose: Bitte Schlafprotokoll ergänzen – die letzten Daten reichen aktuell nicht für eine Schätzung.</div>';
   if(r.kind==='sleeping'){
     lead='😴 Voraussichtlich wach: '+clock(r.wakeLow)+'–'+clock(r.wakeHigh);
-    detail='Schlafdauer aus vergleichbaren Einträgen · '+r.n+' erfasst';
+    detail='Geschätzte Schlafdauer '+Math.round(r.duration.lo)+'–'+Math.round(r.duration.hi)+' Min. · '+r.n+' Vergleichsschläfchen';
   }else{
     lead='😴 Nächster Schlaf: '+clock(r.startLow)+'–'+clock(r.startHigh);
     detail='Vermutliche Dauer '+Math.round(r.duration.lo)+'–'+Math.round(r.duration.hi)+' Min. · Aufwachen ca. '+clock(r.wakeLow)+'–'+clock(r.wakeHigh);

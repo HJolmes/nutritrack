@@ -71,6 +71,8 @@ var QUICK_MAX=10;
 
 var _editId=null;
 var _quickEditId=null;
+// Temporäre Ziel-Datumswahl beim Übernehmen einer Tages-Prognose; keine Persistenz.
+var _planEntryDay=null;
 
 function pad(n){return n<10?'0'+n:''+n;}
 function _today(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
@@ -920,7 +922,7 @@ function closeDiary(){Sync.stopPoll();closeOv('babyOv');}
 // 'mile' (U-Heft: U-Termine, Termine, Meilensteine – js/baby-milestones.js),
 // 'mw' (Fragen an die Hebamme – js/baby-midwife.js).
 // Beim Öffnen steht immer das Tagebuch vorn.
-var TABS={log:'babyPaneLog',week:'babyPaneWeek',growth:'babyPaneGrowth',mile:'babyPaneMile',mw:'babyPaneMw'};
+var TABS={log:'babyPaneLog',sleep:'babyPaneSleep',week:'babyPaneWeek',growth:'babyPaneGrowth',mile:'babyPaneMile',mw:'babyPaneMw'};
 var _tab='log';
 function setTab(t){
   _tab=TABS[t]?t:'log';
@@ -934,7 +936,8 @@ function setTab(t){
   renderTab();
 }
 function renderTab(){
-  if(_tab==='mile'&&window.NTMile)NTMile.render();
+  if(_tab==='sleep'&&window.NTBabySleepPlan)NTBabySleepPlan.render();
+  else if(_tab==='mile'&&window.NTMile)NTMile.render();
   else if(_tab==='week'&&window.NTBabyWeek)NTBabyWeek.render();
   else if(_tab==='growth'&&window.NTGrowth)NTGrowth.render();
   else if(_tab==='mw'&&window.NTMidwife)NTMidwife.render();
@@ -1015,6 +1018,7 @@ function renderDiary(){
 
 // ════════ Eintrags-Dialog ════════
 function openEntry(type,id){
+  _planEntryDay=null;
   _editId=id||null;
   var key=dayKey();
   var hitE=id?findAnywhere(id):null;
@@ -1067,6 +1071,27 @@ function openEntry(type,id){
   openOv('babyEntryOv');
 }
 function editEntry(id){openEntry(null,id);}
+function sleepFromPlan(at,type){
+  if(!S.babyOn)return;
+  openEntry('sleep');
+  _planEntryDay=_today();
+  var start=Number(at);
+  if(Number.isFinite(start)&&start>0&&hhmm(start)){
+    var dt=new Date(start);
+    if(dt.getFullYear()===+_today().slice(0,4)&&
+       (dt.getMonth()+1)===+_today().slice(5,7)&&dt.getDate()===+_today().slice(8,10)){
+      document.getElementById('babySleepFrom').value=hhmm(start);
+    }
+  }
+  document.getElementById('babySleepTo').value='';
+  document.getElementById('babySleepType').value=type==='night'?'night':'day';
+  showToast('Vorhersage als Entwurf: Bitte echte Uhrzeit prüfen. Noch nichts gespeichert.',4500);
+}
+function startSleepFromPlanNow(){
+  if(!S.babyOn)return;
+  if(openSleep(_today())){showToast('Ein Schlaf läuft bereits – zum Beenden „Wach jetzt“ verwenden.');return;}
+  toggleSleep();
+}
 // Medizin: Auswahl aus der eigenen Liste (js/baby-meds.js) oder frei.
 function fillMedPick(sel){
   var el=document.getElementById('babyMedPick');
@@ -1146,7 +1171,7 @@ function updateDiaperFields(){
   if(k&&wrap)wrap.style.display=(k.value==='poo'||k.value==='both')?'block':'none';
 }
 function saveEntry(){
-  var key=dayKey();
+  var key=_planEntryDay||dayKey();
   var t=currentType();
   if(DATED[t]){
     key=document.getElementById('babyEntryDate').value||'';
@@ -1182,6 +1207,15 @@ function saveEntry(){
     if(sleepType==='day'||sleepType==='night')e.sleepType=sleepType;
     // Einsortiert wird nach dem Beginn; fehlt der, nach dem Ende.
     if(e.from||e.to)e.ts=tsFor(key,e.from||e.to);
+    if(_planEntryDay){
+      // Ein Vorschlag darf nicht versehentlich als bereits geschehener Schlaf gelten.
+      var now=Date.now();
+      if((e.from&&tsFor(key,e.from)>now+60000)||
+         (e.to&&tsFor(key,e.to)>now+60000)){
+        showToast('Zukünftige Prognosen nicht als echten Schlaf speichern. Bitte tatsächliche Zeiten verwenden.',5000);
+        return;
+      }
+    }
     // Beginn ODER Ende genügt: Man trägt den Schlaf oft mitten drin ein und
     // kennt das Ende noch nicht - erzwungene Vollständigkeit hieße, sich das
     // erst als Notiz zu merken und später nachzupflegen.
@@ -1250,6 +1284,7 @@ function saveEntry(){
     add(Object.assign({},e),key);
   }
   _editId=null;
+  _planEntryDay=null;
   closeOv('babyEntryOv');
   refresh();
   if(t==='solid'&&e.react!=='none')showToast('⚠️ Reaktion notiert – bei Atemnot, starker Schwellung oder Kreislaufproblemen sofort den Notruf 112 wählen.',6000);
@@ -1296,7 +1331,8 @@ function tick(){
   if(!S.babyOn)return;
   renderCard();
   if(isOpen('babyOv')){
-    if(hasRunningSleep()||runningFeed())renderDiary();
+    if(_tab==='sleep')renderTab();
+    else if(hasRunningSleep()||runningFeed())renderDiary();
     else{var hints=document.getElementById('babyOvHints');if(hints)hints.innerHTML=hintsHtml();}
   }
 }
@@ -1309,6 +1345,7 @@ window.NTBaby={
   add:add,
   openDiary:openDiary,closeDiary:closeDiary,renderDiary:renderDiary,setTab:setTab,renderCard:renderCard,
   quick:quick,openEntry:openEntry,editEntry:editEntry,setType:setType,endSleep:endSleep,saveNightWindow:saveNightWindow,
+  sleepFromPlan:sleepFromPlan,startSleepFromPlanNow:startSleepFromPlanNow,
   updateDiaperFields:updateDiaperFields,updateBreastFields:updateBreastFields,saveEntry:saveEntry,deleteEntry:deleteEntry,
   openQuickManage:openQuickManage,openQuickEdit:openQuickEdit,updateQuickTypeFields:updateQuickTypeFields,updateQuickBreastFields:updateQuickBreastFields,
   saveQuick:saveQuick,deleteQuick:deleteQuick,deleteQuickFromEdit:deleteQuickFromEdit,

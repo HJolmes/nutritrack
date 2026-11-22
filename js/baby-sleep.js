@@ -94,11 +94,10 @@ function fed(feeds,a,b){
   }
   return false;
 }
-function weight(at,now,age,typicalHour,previousLength,feedingMatch){
+function weight(at,now,typicalHour,feedingMatch){
   var ago=Math.max(0,(now-at)/DAY);
   var w=Math.exp(-ago/20)*(0.52+0.48*Math.exp(-hourDistance(hour(at),typicalHour)/4));
-  // Alterseffekte werden bereits über den Zeitabstand berücksichtigt.
-  if(previousLength!==null&&previousLength>0)w*=1;
+  // Ältere Muster schwächen wir ab, statt sie abrupt zu verwerfen.
   if(feedingMatch!==null)w*=feedingMatch?1.12:0.94;
   return w;
 }
@@ -114,7 +113,13 @@ function estimateWake(sleeps,feeds,last,now,age){
     var gap=(next.start-prev.end)/MIN;
     if(gap<20||gap>Math.max(480,prior[2]*2))continue;
     var sampleFed=fed(feeds,prev.end,next.start);
-    var w=weight(prev.end,now,age,hour(last.end),null,sampleFed===currentFed);
+    var w=weight(prev.end,now,hour(last.end),feeds.length>=6?sampleFed===currentFed:null);
+    // Ähnliche vorangehende Schlafdauer ist ein schwaches zusätzliches Signal.
+    var oldLen=(prev.end-prev.start)/MIN,lastLen=(last.end-last.start)/MIN;
+    if(oldLen>0&&lastLen>0){
+      w*=0.75+0.25*Math.min(oldLen,lastLen)/Math.max(oldLen,lastLen);
+      if((oldLen>=180)===(lastLen>=180))w*=1.1;
+    }
     if(w<0.002)continue;
     samples.push({v:gap,w:w});used++;observed+=w;
   }
@@ -124,17 +129,23 @@ function estimateWake(sleeps,feeds,last,now,age){
   hi=Math.min(600,Math.max(hi,median+10));
   return {lo:lo,mid:median,hi:hi,count:used,effective:observed};
 }
-function estimateDuration(sleeps,at,now,age){
+function estimateDuration(sleeps,at,now,age,lastWake){
   var night=hour(at)>=19||hour(at)<6;
   var prior=night?(age!==null&&age<120?[60,135,260]:[80,175,360]):[25,50,95];
   var samples=[
     {v:prior[0],w:0.55},{v:prior[1],w:1.3},{v:prior[2],w:0.55}
   ],used=0,observed=0;
-  sleeps.forEach(function(s){
+  sleeps.forEach(function(s,i){
     if(s.end===null||s.start>=now)return;
     var len=(s.end-s.start)/MIN,wasNight=hour(s.start)>=19||hour(s.start)<6;
     if(len<5||len>1080||wasNight!==night)return;
-    var w=weight(s.start,now,age,hour(at),null,null);
+    var w=weight(s.start,now,hour(at),null);
+    // Eine ähnliche Wachphase vor dem Schlaf zählt etwas stärker.
+    var previous=i>0?sleeps[i-1]:null;
+    if(lastWake!==null&&previous&&previous.end!==null){
+      var currentGap=(at-lastWake)/MIN,oldGap=(s.start-previous.end)/MIN;
+      if(currentGap>=20&&oldGap>=20&&oldGap<=600)w*=0.8+0.2*Math.exp(-Math.abs(currentGap-oldGap)/100);
+    }
     if(w<0.002)return;
     samples.push({v:len,w:w});observed+=w;used++;
   });
@@ -161,7 +172,7 @@ function predict(babyLog,birth,at){
     return {kind:'stale',ageDays:age,n:sleep.length};
   }
   if(isSleeping){
-    var dur=estimateDuration(sleep,latest.start,now,age),elapsed=(now-latest.start)/MIN;
+    var dur=estimateDuration(sleep,latest.start,now,age,null),elapsed=(now-latest.start)/MIN;
     if(elapsed>dur.hi+90)return {kind:'uncertain',ageDays:age,n:dur.count};
     return {
       kind:'sleeping',ageDays:age,from:latest.start,
@@ -177,7 +188,7 @@ function predict(babyLog,birth,at){
   var startHigh=Math.max(now+15*MIN,latest.end+w.hi*MIN);
   // Versäumte Einträge nicht mit einer erfundenen Zukunftsprognose überdecken.
   if(now>latest.end+w.hi*MIN+120*MIN)return {kind:'uncertain',ageDays:age,n:w.count};
-  var d=estimateDuration(sleep,startLow,now,age);
+  var d=estimateDuration(sleep,startLow,now,age,latest.end);
   return {
     kind:'awake',ageDays:age,from:latest.end,
     startLow:startLow,startHigh:startHigh,

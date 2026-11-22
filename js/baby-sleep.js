@@ -55,7 +55,7 @@ function coreMinutes(start,end){
   return total;
 }
 function collect(babyLog,now){
-  var sleeps=[],feeds=[],fever=false,ids={};
+  var sleeps=[],feeds=[],care=[],fever=false,ids={};
   Object.keys(babyLog||{}).forEach(function(key){
     var rows=babyLog[key];if(!Array.isArray(rows))return;
     rows.forEach(function(e){
@@ -80,7 +80,15 @@ function collect(babyLog,now){
           ids[item.id]=item;
         }else sleeps.push(item);
       }else if((e.t==='breast'||e.t==='bottle'||e.t==='solid')&&Number.isFinite(e.ts)&&e.ts>0&&e.ts<=now){
-        feeds.push(Math.min(now,e.ts+(e.t==='breast'&&!e.run?cap(Number(e.min)||0,0,90)*MIN:0)));
+        var mins=e.t==='breast'?(e.run?10:cap(Number(e.min)||10,1,90)):10;
+        var until=e.ts+mins*MIN;
+        feeds.push(Math.min(now,until));
+        // Wiederkehrende nächtliche Versorgungen als Ausschlussfenster,
+        // nicht als Beweis für Schlaf am Tag.
+        care.push({start:e.ts-3*MIN,end:until+5*MIN});
+      }else if(e.t==='diaper'&&Number.isFinite(e.ts)&&e.ts>0&&e.ts<=now){
+        // Nur Zeitpunkt bekannt, Dauer nicht: großzügiges Zeitpolster.
+        care.push({start:e.ts-5*MIN,end:e.ts+8*MIN});
       }else if(e.t==='temp'&&Number(e.c)>=38&&Number.isFinite(e.ts)&&e.ts<=now&&now-e.ts<=48*60*MIN){
         fever=true;
       }
@@ -89,8 +97,67 @@ function collect(babyLog,now){
   Object.keys(ids).forEach(function(id){sleeps.push(ids[id]);});
   sleeps.sort(function(a,b){return a.start-b.start;});
   feeds.sort(function(a,b){return a-b;});
-  return {sleeps:sleeps,feeds:feeds,fever:fever};
+  return {sleeps:sleeps,feeds:feeds,care:care,fever:fever};
 }
+
+// Grenzen ausschließlich für unbestätigte historische Nachtabschnitte.
+// Keine Ableitung einer Einschlaf- oder morgendlichen Aufwachzeit aus diesen Grenzen.
+function validNightWindow(value){
+  if(!value||typeof value!=='object')return false;
+  var a=value.start,b=value.end;
+  if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(a||'')||!/^([01]\d|2[0-3]):[0-5]\d$/.test(b||''))return false;
+  var start=(+a.slice(0,2))*60+(+a.slice(3)),end=(+b.slice(0,2))*60+(+b.slice(3));
+  return start>=17*60&&start<=23*60+30&&end>=4*60&&end<=11*60&&
+    (1440-start+end)>=6*60&&(1440-start+end)<=16*60;
+}
+function nightWindow(opts){
+  return validNightWindow(opts)?{start:opts.start,end:opts.end}:{start:'20:00',end:'07:00'};
+}
+function inferredNightHistory(data,now,opts){
+  var setting=nightWindow(opts),parts=[],nightCount=0,nightDates=[];
+  var current=new Date(now),base=new Date(current.getFullYear(),current.getMonth(),current.getDate());
+  // Maximal 30 historische Nächte; die aktuelle Nacht niemals schätzen.
+  for(var back=1;back<=30;back++){
+    var d=new Date(base.getFullYear(),base.getMonth(),base.getDate()-back);
+    var key=dateKey(d.getTime()),nightStart=localTime(key,setting.start);
+    var nightEnd=localTime(nextDay(key),setting.end);
+    if(!Number.isFinite(nightStart)||!Number.isFinite(nightEnd)||nightEnd>now-15*MIN)continue;
+    var events=data.care.filter(function(e){return e.end>nightStart&&e.start<nightEnd;});
+    // Ohne Nachtversorgung ist unklar, seit wann das Tagebuch vollständig genutzt wurde.
+    if(!events.length)continue;
+    var blocked=[];
+    events.forEach(function(e){blocked.push({start:Math.max(nightStart,e.start),end:Math.min(nightEnd,e.end),real:false});});
+    // Dokumentierter Schlaf bleibt die einzige verbindliche Messung.
+    data.sleeps.forEach(function(s){
+      var end=s.end===null?now:s.end;
+      if(end>nightStart&&s.start<nightEnd){
+        blocked.push({start:Math.max(nightStart,s.start),end:Math.min(nightEnd,end),real:true});
+      }
+    });
+    blocked.sort(function(a,b){return a.start-b.start;});
+    var merged=[];
+    blocked.forEach(function(b){
+      if(merged.length&&b.start<=merged[merged.length-1].end+12*MIN){
+        merged[merged.length-1].end=Math.max(merged[merged.length-1].end,b.end);
+      }else merged.push({start:b.start,end:b.end});
+    });
+    var cursor=nightStart,added=false;
+    merged.concat([{start:nightEnd,end:nightEnd}]).forEach(function(b){
+      if(b.start-cursor>=20*MIN){
+        parts.push({start:cursor,end:b.start,type:'night',inferred:true,
+          // Randstücke sind besonders ungewiss: Bett-/Aufstehzeiten sind Annahmen.
+          edge:cursor===nightStart||b.start===nightEnd,night:key,
+          id:'',manual:'',day:key});
+        added=true;
+      }
+      cursor=Math.max(cursor,b.end);
+    });
+    if(added){nightCount++;nightDates.push(key);}
+  }
+  parts.sort(function(a,b){return a.start-b.start;});
+  return {sleeps:parts,nights:nightCount,dates:nightDates,window:setting};
+}
+
 function inNightCorridor(ms){
   var h=hour(ms);return h>=17.5||h<9;
 }
@@ -159,7 +226,7 @@ function fed(feeds,a,b){
 }
 function duration(sleeps,type,at,now,age,previousEnd){
   var prior=type==='night'?(age!==null&&age<120?[60,135,260]:[80,175,360]):[25,50,95];
-  var rows=[{v:prior[0],w:0.55},{v:prior[1],w:1.3},{v:prior[2],w:0.55}],n=0;
+  var rows=[{v:prior[0],w:0.55},{v:prior[1],w:1.3},{v:prior[2],w:0.55}],n=0,estRows=[];
   sleeps.forEach(function(s,i){
     if(s.end===null||s.type!==type||s.start>=now)return;
     var v=(s.end-s.start)/MIN,w=weight(s.start,now,hour(at));
@@ -167,11 +234,18 @@ function duration(sleeps,type,at,now,age,previousEnd){
       var gap=(s.start-sleeps[i-1].end)/MIN,target=(at-previousEnd)/MIN;
       if(gap>=0&&gap<600&&target>=0)w*=0.8+0.2*Math.exp(-Math.abs(gap-target)/100);
     }
+    if(s.inferred){
+      // Hypothesen nur als schwache Vorinformation, insgesamt gedeckelt.
+      estRows.push({v:v,w:w*(s.edge?0.12:0.32)});return;
+    }
     if(w<0.002)return;rows.push({v:v,w:w});n++;
   });
+  var total=estRows.reduce(function(sum,r){return sum+r.w;},0);
+  var factor=total>3?3/total:1;
+  estRows.forEach(function(r){rows.push({v:r.v,w:r.w*factor});});
   var mid=quantile(rows,0.5),pad=type==='night'?25:12;
   return {lo:Math.max(10,Math.min(quantile(rows,0.25),mid-pad)),
-    mid:mid,hi:Math.min(1080,Math.max(quantile(rows,0.75),mid+pad)),count:n};
+    mid:mid,hi:Math.min(1080,Math.max(quantile(rows,0.75),mid+pad)),count:n,assumedCount:estRows.length};
 }
 function gapEstimate(sleeps,feeds,last,nextType,now,age){
   var isNightReturn=last.type==='night'&&nextType==='night';
@@ -188,14 +262,17 @@ function gapEstimate(sleeps,feeds,last,nextType,now,age){
     if(plen>0&&ll>0)w*=0.75+0.25*Math.min(plen,ll)/Math.max(plen,ll);
     if(feeds.length>=6)w*=fed(feeds,p.end,n.start)===fedNow?1.12:0.94;
     if(w<0.002)continue;
-    rows.push({v:value,w:w});count++;
+    if(p.inferred||n.inferred){
+      // Nur Rückschlüsse auf nächtliche Versorgungspausen, keine echte Wachmessung.
+      rows.push({v:value,w:w*0.15});
+    }else{rows.push({v:value,w:w});count++;}
   }
   var mid=quantile(rows,0.5);
   return {lo:Math.max(10,Math.min(quantile(rows,0.25),mid-12)),
     mid:mid,hi:Math.max(quantile(rows,0.75),mid+12),count:count};
 }
 function bedtime(sleeps,now){
-  var groups=nightGroups(sleeps),sample=[];
+  var groups=nightGroups(sleeps.filter(function(s){return !s.inferred;})),sample=[];
   groups.forEach(function(g){
     var h=hour(g.start),minutes=(h<12?h+24:h)*60;
     if((h<17.5&&h>=2)||g.end-g.start<180*MIN||coreMinutes(g.start,g.end)<20||g.end>now-8*60*MIN)return;
@@ -205,7 +282,7 @@ function bedtime(sleeps,now){
   return {minutes:quantile(sample,0.5),low:quantile(sample,0.25),high:quantile(sample,0.75),count:sample.length};
 }
 function morning(sleeps,from,now){
-  var groups=nightGroups(sleeps),rows=[];
+  var groups=nightGroups(sleeps.filter(function(s){return !s.inferred;})),rows=[];
   groups.forEach(function(g){
     var h=hour(g.start),endHour=hour(g.end);
     // Nur abgeschlossene Nachtfolgen, nicht einen einzelnen Block als "Morgen".
@@ -225,21 +302,24 @@ function morning(sleeps,from,now){
   return {lo:lo,hi:hi,count:rows.length};
 }
 function quality(w,d){return w>=12&&d>=12?'mittel':w>=5&&d>=5?'vorsichtig':'grob';}
-function predict(babyLog,birth,at){
+function predict(babyLog,birth,at,opts){
   var now=Number.isFinite(at)?at:Date.now(),age=ageInDays(birth,now);
-  var data=collect(babyLog,now),sleeps=classifySleeps(data.sleeps,now);
-  var last=sleeps.length?sleeps[sleeps.length-1]:null;
-  if(!last)return {kind:'empty',ageDays:age,n:0};
+  var data=collect(babyLog,now),real=classifySleeps(data.sleeps,now);
+  var inferred=inferredNightHistory(data,now,opts);
+  var sleeps=real.concat(inferred.sleeps).sort(function(a,b){return a.start-b.start;});
+  // Der aktuelle Zustand darf ausschließlich aus tatsächlich erfassten Schlafphasen kommen.
+  var last=real.length?real[real.length-1]:null;
+  if(!last)return {kind:'empty',ageDays:age,n:0,assumedNights:inferred.nights};
   var sleeping=last.end===null;
-  if(!sleeping&&(last.end===null||now-last.end>16*60*MIN))return {kind:'stale',ageDays:age,n:sleeps.length};
+  if(!sleeping&&(last.end===null||now-last.end>16*60*MIN))return {kind:'stale',ageDays:age,n:real.length,assumedNights:inferred.nights};
   if(sleeping){
     var dur=duration(sleeps,last.type,last.start,now,age,null),elapsed=(now-last.start)/MIN;
-    if(elapsed>dur.hi+90)return {kind:'uncertain',ageDays:age,n:dur.count};
+    if(elapsed>dur.hi+90)return {kind:'uncertain',ageDays:age,n:dur.count,assumedNights:inferred.nights};
     return {kind:'sleeping',sleepType:last.type,ageDays:age,from:last.start,
       duration:dur,wakeLow:Math.max(now,last.start+dur.lo*MIN),
       wakeHigh:Math.max(now+15*MIN,last.start+dur.hi*MIN),
       morning:last.type==='night'?morning(sleeps,last.start,now):null,
-      quality:dur.count>=8?'vorsichtig':'grob',n:dur.count,healthCaution:data.fever};
+      quality:dur.count>=8?'vorsichtig':'grob',n:dur.count,assumedNights:inferred.nights,assumedBlocks:dur.assumedCount,healthCaution:data.fever};
   }
   var bed=bedtime(sleeps,now),next='day';
   var nowHour=hour(now),morningHint=last.type==='night'?morning(sleeps,last.start,now):null;
@@ -259,7 +339,7 @@ function predict(babyLog,birth,at){
   }
   var g=gapEstimate(sleeps,data.feeds,last,next,now,age);
   var low=Math.max(now,last.end+g.lo*MIN),high=Math.max(now+15*MIN,last.end+g.hi*MIN);
-  if(now>last.end+g.hi*MIN+120*MIN)return {kind:'uncertain',ageDays:age,n:g.count};
+  if(now>last.end+g.hi*MIN+120*MIN)return {kind:'uncertain',ageDays:age,n:g.count,assumedNights:inferred.nights};
   if(next==='night'&&bed){
     var cur=new Date(now),bt=new Date(cur.getFullYear(),cur.getMonth(),cur.getDate(),0,Math.round(bed.minutes)).getTime();
     if(bt<now-120*MIN)bt+=DAY;
@@ -273,7 +353,7 @@ function predict(babyLog,birth,at){
     startLow:low,startHigh:high,duration:dur,
     wakeLow:low+dur.lo*MIN,wakeHigh:high+dur.hi*MIN,
     morning:next==='night'?morning(sleeps,low,now):null,
-    quality:quality(g.count,dur.count),n:dur.count,wakeSamples:g.count,
+    quality:quality(g.count,dur.count),n:dur.count,wakeSamples:g.count,assumedNights:inferred.nights,assumedBlocks:dur.assumedCount,
     healthCaution:data.fever,feedingObserved:data.feeds.length>0};
 }
 function classifications(babyLog,at){
@@ -281,10 +361,11 @@ function classifications(babyLog,at){
   s.forEach(function(x){if(x.id)out[x.id]=x.type;});
   return out;
 }
-function cardHtml(babyLog,birth,now){
-  var r=predict(babyLog,birth,now),lead='',detail='',night=r.sleepType==='night';
-  if(r.kind==='empty')return '<div style="margin-top:7px;font-size:12px;color:var(--mu);">😴 Schlafprognose: Beginn und Ende eintragen, um eine Schätzung zu erhalten.</div>';
-  if(r.kind==='stale'||r.kind==='uncertain')return '<div style="margin-top:7px;font-size:12px;color:var(--mu);">😴 Schlafprognose: Bitte Schlafprotokoll ergänzen – aktuell ist keine verlässliche Zuordnung möglich.</div>';
+function cardHtml(babyLog,birth,now,opts){
+  var r=predict(babyLog,birth,now,opts),lead='',detail='',night=r.sleepType==='night';
+  var assumption=r.assumedNights?(' · '+r.assumedNights+' vergangene Nächte aus Stillen/Wickeln angenommen'):'';
+  if(r.kind==='empty')return '<div style="margin-top:7px;font-size:12px;color:var(--mu);">😴 Für eine aktuelle Schlafprognose bitte Schlafbeginn und -ende erfassen.'+assumption+'</div>';
+  if(r.kind==='stale'||r.kind==='uncertain')return '<div style="margin-top:7px;font-size:12px;color:var(--mu);">😴 Schlafprognose: Aktuelle Schlafdaten fehlen.'+assumption+'</div>';
   if(r.kind==='sleeping'){
     lead=(night?'🌙 Nachtschlaf':'☀️ Nickerchen')+' · Nächstes Aufwachen ca. '+clock(r.wakeLow)+'–'+clock(r.wakeHigh);
     detail='Schlafblock ca. '+Math.round(r.duration.lo)+'–'+Math.round(r.duration.hi)+' Min. · '+r.n+' vergleichbare Schlafphasen';
@@ -296,10 +377,14 @@ function cardHtml(babyLog,birth,now){
   var sub=r.quality==='grob'?'Grobe Orientierung (wenige Vergleichsdaten)':
     r.quality==='vorsichtig'?'Vorsichtige Schätzung':'Datenbasierte Schätzung';
   if(r.healthCaution)sub+=' · Bei Fieber weniger verlässlich';
+  if(assumption&&night)sub+=assumption+' (nicht gemessen)';
   return '<div style="margin-top:7px;padding:9px 10px;background:var(--gl);border:1px solid var(--br);border-radius:11px;line-height:1.45;">'
     +'<div style="font-size:12px;font-weight:800;color:var(--g1);">'+lead+'</div>'
     +'<div style="font-size:11px;color:var(--tx);margin-top:2px;">'+detail+'</div>'
     +'<div style="font-size:10px;color:var(--mu);margin-top:3px;">'+sub+' · Automatische Einordnung im Eintrag korrigierbar</div></div>';
 }
-window.NTBabySleep={predict:predict,cardHtml:cardHtml,classifications:classifications};
+window.NTBabySleep={predict:predict,cardHtml:cardHtml,classifications:classifications,
+  validNightWindow:validNightWindow,nightHistory:function(log,at,opts){
+    return inferredNightHistory(collect(log,Number.isFinite(at)?at:Date.now()),Number.isFinite(at)?at:Date.now(),opts);
+  }};
 })();

@@ -869,10 +869,24 @@ function renderCard(){
 // Hinweise auf der Kachel: fällige Gaben (js/baby-meds.js) und anstehende
 // Termine/U-Untersuchungen (js/baby-milestones.js). Beide Module liefern HTML
 // oder '' – die Kachel bleibt leer, wenn nichts ansteht.
+function saveNightWindow(){
+  var a=document.getElementById('babyNightStart'),b=document.getElementById('babyNightEnd');
+  if(!a||!b||!window.NTBabySleep)return;
+  var windowValue={start:a.value,end:b.value};
+  if(!window.NTBabySleep.validNightWindow(windowValue)){
+    showToast('Nachtbeginn 17–23:30 Uhr, Ende 04–11 Uhr und 6–16 Stunden Dauer wählen.');
+    return;
+  }
+  S.babyNightWindow=windowValue;
+  saveS();
+  renderCard();
+  renderDiary();
+  showToast('Nachtannahme gespeichert ✓');
+}
 function hintsHtml(){
   var h='';
   // Lokal berechnet; nutzt die synchronisierten Tagebucheinträge, ohne sie zu verändern.
-  if(window.NTBabySleep)h+=window.NTBabySleep.cardHtml(S.babyLog||{},(S.baby&&S.baby.birth)||'',Date.now());
+  if(window.NTBabySleep)h+=window.NTBabySleep.cardHtml(S.babyLog||{},(S.baby&&S.baby.birth)||'',Date.now(),S.babyNightWindow);
   if(window.NTBabyMed)h+=NTBabyMed.cardHtml();
   if(window.NTMile&&NTMile.cardHtml)h+=NTMile.cardHtml();
   if(window.NTMidwife)h+=NTMidwife.cardHtml();
@@ -948,6 +962,12 @@ function renderDiary(){
   if(feed)feed.innerHTML=feedLineHtml();
   var hints=document.getElementById('babyOvHints');
   if(hints)hints.innerHTML=hintsHtml();
+  // Optionale Grenzen für historische Annahmen (kein neues Schlafprotokoll).
+  var config=S.babyNightWindow||{start:'20:00',end:'07:00'};
+  var startField=document.getElementById('babyNightStart');
+  var endField=document.getElementById('babyNightEnd');
+  if(startField&&document.activeElement!==startField)startField.value=config.start;
+  if(endField&&document.activeElement!==endField)endField.value=config.end;
   var list=document.getElementById('babyTimeline');
   if(!list)return;
   var rows=dayRows(key);
@@ -1288,7 +1308,7 @@ window.NTBaby={
   // Sync, Speichern und Neuzeichnen passieren hier drin.
   add:add,
   openDiary:openDiary,closeDiary:closeDiary,renderDiary:renderDiary,setTab:setTab,renderCard:renderCard,
-  quick:quick,openEntry:openEntry,editEntry:editEntry,setType:setType,endSleep:endSleep,
+  quick:quick,openEntry:openEntry,editEntry:editEntry,setType:setType,endSleep:endSleep,saveNightWindow:saveNightWindow,
   updateDiaperFields:updateDiaperFields,updateBreastFields:updateBreastFields,saveEntry:saveEntry,deleteEntry:deleteEntry,
   openQuickManage:openQuickManage,openQuickEdit:openQuickEdit,updateQuickTypeFields:updateQuickTypeFields,updateQuickBreastFields:updateQuickBreastFields,
   saveQuick:saveQuick,deleteQuick:deleteQuick,deleteQuickFromEdit:deleteQuickFromEdit,

@@ -356,6 +356,75 @@ function predict(babyLog,birth,at,opts){
     quality:quality(g.count,dur.count),n:dur.count,wakeSamples:g.count,assumedNights:inferred.nights,assumedBlocks:dur.assumedCount,
     healthCaution:data.fever,feedingObserved:data.feeds.length>0};
 }
+
+// Die Tagesübersicht bleibt eine VORSCHAU: Prognosen erzeugen niemals Logeinträge.
+function dayOverview(babyLog,birth,key,at,opts){
+  var now=Number.isFinite(at)?at:Date.now(),start=localTime(key,'00:00'),end=localTime(nextDay(key),'00:00');
+  if(!Number.isFinite(start)||!Number.isFinite(end)||end<=start)return {day:key,events:[],invalid:true};
+  var data=collect(babyLog,now),real=classifySleeps(data.sleeps,now);
+  var history=inferredNightHistory(data,now,opts);
+  var events=[],pred=null,actualCount=0,assumedCount=0;
+  real.forEach(function(s){
+    var finish=s.end===null?now:s.end;
+    if(s.start>=end||finish<=start)return;
+    actualCount++;
+    events.push({kind:'actual',type:s.type,id:s.id,start:Math.max(start,s.start),
+      end:Math.min(end,finish),ongoing:s.end===null,from:s.start});
+  });
+  history.sleeps.forEach(function(s){
+    if(s.start>=end||s.end<=start)return;
+    assumedCount++;
+    events.push({kind:'assumed',type:'night',start:Math.max(start,s.start),
+      end:Math.min(end,s.end),edge:s.edge});
+  });
+  // Nur HEUTE prognostizieren. Vergangene Tage sollen niemals erfundene Pläne
+  // im Rückblick anzeigen, und morgen fehlen die Beobachtungen noch.
+  if(key===dateKey(now)){
+    pred=predict(babyLog,birth,now,opts);
+    var nextWake=null;
+    if(pred.kind==='sleeping'){
+      events.push({kind:'wake',type:pred.sleepType,start:pred.wakeLow,end:pred.wakeHigh,
+        label:'Nächstes Aufwachen',quality:pred.quality});
+      nextWake=Math.max(now,(pred.wakeLow+pred.wakeHigh)/2);
+    }else if(pred.kind==='awake'){
+      var mid=(pred.startLow+pred.startHigh)/2,len=pred.duration.mid||((pred.duration.lo+pred.duration.hi)/2);
+      if(mid<end&&pred.startHigh>=now){
+        events.push({kind:'forecast',type:pred.sleepType,start:mid,end:mid+len*MIN,
+          startLow:pred.startLow,startHigh:pred.startHigh,low:pred.duration.lo,
+          high:pred.duration.hi,quality:pred.quality,stage:1});
+        nextWake=mid+len*MIN;
+      }
+    }
+    // Weitere Zeiten sind Szenario-Fortschreibungen, NICHT erneute Vorhersagen
+    // mit künstlich als real eingespeisten Daten. Keine Messqualität behaupten.
+    if(nextWake!==null&&nextWake<end){
+      var age=ageInDays(birth,now),prior=wakePrior(age,false);
+      var previousType=pred.sleepType,sourceLen=pred.kind==='awake'&&pred.sleepType==='day'?
+        pred.duration.mid:50,nightEnd=false;
+      for(var step=2;step<=5;step++){
+        if(previousType==='night'||nightEnd)break;
+        var midStart=nextWake+prior[1]*MIN;
+        if(midStart>=end)break;
+        var hh=hour(midStart);
+        var isNight=hh>=19.5||hh<4;
+        var spread=(25+18*(step-2))*MIN;
+        var durationMin=isNight?135:cap(sourceLen,30,100);
+        var low=Math.max(now,midStart-spread),high=Math.min(end,midStart+spread);
+        if(high<=low)break;
+        events.push({kind:'forecast',type:isNight?'night':'day',start:midStart,
+          end:midStart+durationMin*MIN,startLow:low,startHigh:high,
+          low:isNight?60:25,high:isNight?260:Math.max(90,durationMin+35),
+          quality:'grob',stage:step,projection:true});
+        nightEnd=isNight;previousType=isNight?'night':'day';
+        nextWake=midStart+durationMin*MIN;
+      }
+    }
+  }
+  events.sort(function(a,b){return a.start-b.start;});
+  return {day:key,events:events,now:now,dayStart:start,dayEnd:end,
+    actualCount:actualCount,assumedCount:assumedCount,forecast:pred};
+}
+
 function classifications(babyLog,at){
   var now=Number.isFinite(at)?at:Date.now(),s=classifySleeps(collect(babyLog,now).sleeps,now),out={};
   s.forEach(function(x){if(x.id)out[x.id]=x.type;});
@@ -384,7 +453,7 @@ function cardHtml(babyLog,birth,now,opts){
     +'<div style="font-size:10px;color:var(--mu);margin-top:3px;">'+sub+' · Automatische Einordnung im Eintrag korrigierbar</div></div>';
 }
 window.NTBabySleep={predict:predict,cardHtml:cardHtml,classifications:classifications,
-  validNightWindow:validNightWindow,nightHistory:function(log,at,opts){
+  validNightWindow:validNightWindow,dayOverview:dayOverview,nightHistory:function(log,at,opts){
     return inferredNightHistory(collect(log,Number.isFinite(at)?at:Date.now()),Number.isFinite(at)?at:Date.now(),opts);
   }};
 })();

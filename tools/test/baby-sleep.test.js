@@ -257,3 +257,60 @@ test('Annahme wird bei geringer Historie schwach gewichtet und zählt nicht zu e
   assert.equal(p.n,0);
   assert.ok(p.assumedNights>=0);
 });
+
+test('Tagesübersicht enthält bestätigte und angenommene Nachtphasen getrennt',()=>{
+  const api=load(),log={
+    '2026-11-20':[{t:'breast',ts:date('2026-11-20','23:00'),min:10}],
+    '2026-11-21':[{id:'realnap',t:'sleep',from:'13:00',to:'13:40',sleepType:'day'}]
+  },copy=JSON.stringify(log);
+  const p=api.dayOverview(log,birth,'2026-11-21',date('2026-11-22','13:00'));
+  assert.ok(p.events.some(e=>e.kind==='actual'&&e.id==='realnap'));
+  assert.ok(p.events.some(e=>e.kind==='assumed'&&e.type==='night'));
+  assert.ok(p.events.every(e=>e.kind!=='forecast'&&e.kind!=='wake'));
+  assert.equal(p.actualCount,1);
+  assert.ok(p.assumedCount>0);
+  assert.equal(JSON.stringify(log),copy,'Tagesübersicht darf keine neuen Schlaflogs schreiben');
+});
+test('Schlaf über Mitternacht erscheint an beiden Tagen, ohne die Daten zu verdoppeln',()=>{
+  const api=load(),log={'2026-11-21':[{id:'nightlong',t:'sleep',from:'23:30',to:'02:30',sleepType:'night'}]};
+  const now=date('2026-11-22','10:00');
+  const previous=api.dayOverview(log,birth,'2026-11-21',now);
+  const current=api.dayOverview(log,birth,'2026-11-22',now);
+  const first=previous.events.find(e=>e.kind==='actual');
+  const second=current.events.find(e=>e.kind==='actual');
+  assert.equal(first.id,'nightlong');
+  assert.equal(second.id,'nightlong');
+  assert.equal(first.end,previous.dayEnd);
+  assert.equal(second.start,current.dayStart);
+  assert.equal((first.end-first.start)+(second.end-second.start),3*60*60000);
+});
+test('Nur für heute wird eine aktuelle Prognose erstellt; zukünftige Pläne bleiben Szenarien',()=>{
+  const api=load(),log={
+    '2026-11-20':[{id:'n1',t:'sleep',from:'09:10',to:'09:55'}],
+    '2026-11-21':[{id:'n2',t:'sleep',from:'09:00',to:'09:45'}],
+    '2026-11-22':[{id:'todaynap',t:'sleep',from:'10:00',to:'10:45'}]
+  },now=date('2026-11-22','11:10'),snapshot=JSON.stringify(log);
+  const p=api.dayOverview(log,birth,'2026-11-22',now);
+  assert.equal(p.forecast.kind,'awake');
+  const forecasts=p.events.filter(e=>e.kind==='forecast');
+  assert.ok(forecasts.length>=1);
+  assert.equal(forecasts[0].stage,1);
+  assert.ok(forecasts[0].startLow>=now);
+  assert.ok(forecasts.slice(1).every(e=>e.projection===true&&e.quality==='grob'));
+  assert.equal(api.dayOverview(log,birth,'2026-11-21',now).events.filter(e=>e.kind==='forecast').length,0);
+  assert.equal(JSON.stringify(log),snapshot);
+});
+test('Während des laufenden Schlafs Tagesübersicht mit realem Block und Aufwachfenster',()=>{
+  const api=load(),log={'2026-11-22':[{id:'active',t:'sleep',from:'09:30',to:''}]};
+  const p=api.dayOverview(log,birth,'2026-11-22',date('2026-11-22','10:00'));
+  assert.ok(p.events.some(e=>e.kind==='actual'&&e.ongoing));
+  assert.ok(p.events.some(e=>e.kind==='wake'));
+  assert.ok(p.events.every(e=>e.kind!=='forecast'||e.start>=p.now));
+});
+test('Tagesplan benötigt echte aktuelle Schlafdaten und speichert keine angenommenen als Messungen',()=>{
+  const api=load(),log={'2026-11-21':[{t:'breast',ts:date('2026-11-21','23:00'),min:10}]};
+  const p=api.dayOverview(log,birth,'2026-11-22',date('2026-11-22','12:00'));
+  assert.equal(p.forecast.kind,'empty');
+  assert.equal(p.events.filter(e=>e.kind==='forecast').length,0);
+  assert.ok(p.events.some(e=>e.kind==='assumed'));
+});

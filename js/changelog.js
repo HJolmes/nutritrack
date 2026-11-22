@@ -2,6 +2,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.334',items:[
+    {icon:'😴',text:'<b>Neuer Schlafplan-Reiter</b>: 24-Stunden-Übersicht mit erfassten Schläfchen, separat gekennzeichneten angenommenen Nachtabschnitten, nächstem Schlaffenster und vorsichtigen weiteren Tagesvorschlägen. Aus der Prognose einen editierbaren Schlaf-Eintrag öffnen oder per Knopf jetzt Schlaf starten. Eine Prognose wird niemals automatisch als echter Schlaf gespeichert. Frühere Tage zeigen nur tatsächlich Erfasstes und gegebenenfalls historische Annahmen.',where:'👶 Baby-Tagebuch → 😴 Schlafplan'},
+  ]},
   {v:'0.333',items:[
     {icon:'🌙',text:'<b>Vergangene Nächte ergänzen</b>: NutriTrack nutzt jetzt die protokollierten Still- und Wickelzeiten der letzten 30 abgeschlossenen Nächte, um dazwischen nächtlichen Schlaf als Annahme zu berücksichtigen. Diese vorsichtigen Vergleichsdaten verbessern die Nachtprognose, werden jedoch nicht als echte Schlafmessungen gezählt oder gespeichert. Tagsüber wird nichts rückwirkend geschätzt. Das typische Nachtfenster (zunächst 20–07 Uhr) lässt sich im Tagebuch anpassen.',where:'👶 Baby-Tagebuch · Schlafprognose'},
   ]},

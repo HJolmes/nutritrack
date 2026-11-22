@@ -871,6 +871,8 @@ function renderCard(){
 // oder '' – die Kachel bleibt leer, wenn nichts ansteht.
 function hintsHtml(){
   var h='';
+  // Lokal berechnet; nutzt die synchronisierten Tagebucheinträge, ohne sie zu verändern.
+  if(window.NTBabySleep)h+=window.NTBabySleep.cardHtml(S.babyLog||{},(S.baby&&S.baby.birth)||'',Date.now());
   if(window.NTBabyMed)h+=NTBabyMed.cardHtml();
   if(window.NTMile&&NTMile.cardHtml)h+=NTMile.cardHtml();
   if(window.NTMidwife)h+=NTMidwife.cardHtml();
@@ -1264,7 +1266,10 @@ function hasRunningSleep(){
 function tick(){
   if(!S.babyOn)return;
   renderCard();
-  if(isOpen('babyOv')&&(hasRunningSleep()||runningFeed()))renderDiary();
+  if(isOpen('babyOv')){
+    if(hasRunningSleep()||runningFeed())renderDiary();
+    else{var hints=document.getElementById('babyOvHints');if(hints)hints.innerHTML=hintsHtml();}
+  }
 }
 
 window.NTBaby={

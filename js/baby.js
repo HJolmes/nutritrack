@@ -936,7 +936,7 @@ function setTab(t){
   renderTab();
 }
 function renderTab(){
-  if(_tab==='sleep'&&window.NTBabySleepPlan)NTBabySleepPlan.render();
+  if(_tab==='sleep'&&window.NTBabySleepPlan)window.NTBabySleepPlan.render();
   else if(_tab==='mile'&&window.NTMile)NTMile.render();
   else if(_tab==='week'&&window.NTBabyWeek)NTBabyWeek.render();
   else if(_tab==='growth'&&window.NTGrowth)NTGrowth.render();

@@ -175,7 +175,7 @@ jobs:
 
   smoke:
     name: Rauchtest im Browser
-    # Playwright 1.56.1 unterstützt den ubuntu-26.04 Runner nicht.
+    # Feste Ubuntu-Version fuer reproduzierbare Browser-Systembibliotheken.
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
@@ -228,7 +228,7 @@ jobs:
   b3_webkit:
     name: B3 Safari-Engine und iPhone-Ansicht
     runs-on: ubuntu-24.04
-    container: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+    container: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:2f05f8a734509a7b3f26a912639488ee08f58a7b292d14d62271bcff9038768f
     env:
       PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
     steps:
@@ -237,8 +237,9 @@ jobs:
         with:
           node-version: "22"
       - name: Playwright-Werkzeuge
-        # Playwright 1.57.0 fixes the WebKit 1.56.1 history/reload crash:
-        # https://github.com/microsoft/playwright/issues/43949
+        # Playwright 1.64.1 includes the fixed Linux libsoup network library:
+        # https://github.com/microsoft/playwright/issues/42803
+        # It also includes the earlier history/reload fix (#43949).
         # Matching official image already contains WebKit and its OS libraries.
         # Repeated apt installs were stalling unrelated to the application.
         run: npm ci

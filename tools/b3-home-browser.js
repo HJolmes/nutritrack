@@ -5,6 +5,12 @@ module.exports=async function home(page){
   const root=page.locator('#b3Root');
   assert.equal(await root.getByRole('heading',{name:'Gerade wichtig'}).count(),1);
   assert.equal(await root.getByText('Deine Bereiche',{exact:true}).count(),0);
+  const planHint=root.locator('[data-priority-id^="plan-"]');
+  if(await planHint.count()){
+    assert.equal(await planHint.getByRole('button',{name:'Heute ausblenden'}).isVisible(),false,'secondary hint options stay compact initially');
+    await planHint.locator('summary').click();await planHint.getByRole('button',{name:'Heute ausblenden'}).click();
+    assert.equal(await planHint.count(),0,'expanded explanation retains the real dismissal action');
+  }
   assert.match(await root.locator('.b3-next-side').textContent(),/Links/);
   assert.deepEqual(await page.evaluate(()=>S.ui.homeActions),['wickeln','foto','stillen'],'legacy launch bar imported in original order');
   await root.getByRole('button',{name:'Rechts starten',exact:true}).click();
@@ -31,6 +37,7 @@ module.exports=async function home(page){
   assert.deepEqual(await page.evaluate(()=>S.launchBar),['wickeln','foto','stillen']);
   assert.equal(await page.evaluate(()=>S.babyQuick.length),10);
   await page.evaluate(()=>closeOv('b3HomePrefsOv'));
+  assert.equal(await page.evaluate(()=>document.activeElement.id),'b3Title','closing after a home rerender restores a visible focus target');
   assert.equal(await root.locator('.b3-quick button').count(),6);
   await page.reload({waitUntil:'load'});await page.waitForFunction(()=>NTUI.enabled());
   assert.deepEqual(await page.evaluate(()=>S.ui.homeActions),['stillen','schlaf','wickeln','mahlzeit','einkauf','plan']);

@@ -1,15 +1,18 @@
 'use strict';
 const assert=require('node:assert/strict'),path=require('node:path');
 const {fixture}=require('./fixtures/b3-state');
-module.exports=async function shell(browser,width,output,base){
-  const ctx=await browser.newContext({viewport:{width,height:844},isMobile:true,hasTouch:true,timezoneId:'Europe/Berlin'});
+const {devices}=require('playwright');
+module.exports=async function shell(browser,width,output,base,origin){
+  const ctx=await browser.newContext({...(process.env.B3_BROWSER==='webkit'?devices['iPhone 13']:{}),viewport:{width,height:844},isMobile:true,hasTouch:true,timezoneId:'Europe/Berlin'});
   try{
-    await ctx.route('**/*',r=>/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/)/.test(r.request().url())?r.continue():r.abort());
-    const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+    await ctx.route('**/*',r=>(/^(data|blob):/.test(r.request().url())||/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/)/.test(r.request().url()))?r.continue():r.abort());
+    const page=await ctx.newPage(),errors=[],failures=[];
+    page.on('requestfailed',r=>{const u=new URL(r.url());failures.push({path:/^(data|blob):$/.test(u.protocol)?u.protocol:u.pathname,error:r.failure()?.errorText});});
+    page.on('pageerror',e=>{errors.push(e.stack||e.message);console.error('B3 uncaught browser error',e.stack||e.message);});
     const data=fixture(new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Berlin'}));
     await page.addInitScript(data=>{
       if(localStorage.getItem('nt_v6'))return;
-      localStorage.setItem('nt_v6',JSON.stringify(data.state));localStorage.setItem('nt_x',JSON.stringify({fc:data.foodCache,cf:data.customFoods,rc:data.recipes}));localStorage.setItem('nt_gate_skipped','1');
+      localStorage.setItem('nt_v6',JSON.stringify(data.state));localStorage.setItem('nt_x',JSON.stringify({fc:data.foodCache,cf:data.customFoods,rc:data.recipes}));localStorage.setItem('nt_gate_skipped','1');localStorage.setItem('nt_install_dismissed','1');localStorage.setItem('nt_file_backup_day',data.state.currentDate);
     },data);
     await page.goto(base+'?ui=b3',{waitUntil:'load'});
     await page.waitForFunction(()=>window.NTUI&&NTUI.enabled());
@@ -38,6 +41,13 @@ module.exports=async function shell(browser,width,output,base){
     await page.locator('#planPickOv.open').waitFor();await page.evaluate(()=>closeOv('planPickOv'));
     await page.evaluate(()=>NTUI.go('book'));await nav.getByRole('button',{name:'Erfassen: Kochbuch'}).click();
     await page.locator('#recNewOv.open').waitFor();await page.evaluate(()=>closeOv('recNewOv'));
+    // Domain pages cover the root header, so their own menu must remain usable
+    // even when none of the user's three slots is assigned to More.
+    for(const id of ['baby','shop','pantry','plan','book']){
+      await page.evaluate(id=>NTUI.go(id),id);
+      await page.locator('.ov.open[data-b3-page] .b3-page-menu').click();
+      assert.equal(await page.evaluate(()=>NTUI.context()),'more','More reachable directly from '+id);
+    }
     await page.evaluate(()=>NTUI.go('more'));
     await page.locator('#b3CatalogQuery').fill('Backup');
     assert.ok(await page.locator('#b3Catalog button').count()>0);
@@ -61,12 +71,17 @@ module.exports=async function shell(browser,width,output,base){
     await page.evaluate(async()=>{await navigator.serviceWorker.register(new URL('sw.js',location.href).href,{scope:'./'});await navigator.serviceWorker.ready;});
     await page.reload({waitUntil:'load'});await page.waitForFunction(()=>!!navigator.serviceWorker.controller&&NTUI.enabled());
     await page.waitForFunction(async()=>!!(await caches.match(location.href)));
-    await ctx.setOffline(true);await page.reload({waitUntil:'load'});
+    if(origin){
+      origin.setAvailable(false);
+      await assert.rejects(ctx.request.get(base,{timeout:2000}),'direct origin request must fail independently of service worker');
+    }else await ctx.setOffline(true);
+    const offlineResponse=await page.reload({waitUntil:'load'});
+    assert.ok(offlineResponse.fromServiceWorker(),'restart must be served by the real service worker');
     await page.waitForFunction(()=>NTUI.enabled());
     assert.deepEqual(await page.evaluate(()=>S.ui.navSlots),['shop','pantry','more'],'offline reload retains navigation');
     await page.evaluate(()=>NTUI.go('nutrition'));await nav.getByRole('button',{name:'Erfassen: Ernährung'}).click();
     await page.locator('#pickerOv.open').waitFor();await page.evaluate(()=>closeOv('pickerOv'));
-    await ctx.setOffline(false);
+    if(origin)origin.setAvailable(true);else await ctx.setOffline(false);
     if(require('node:fs').existsSync(path.resolve(__dirname,'../js/ui-home.js')))await require('./b3-home-browser')(page);
     if(require('node:fs').existsSync(path.resolve(__dirname,'b3-baby-browser.js')))await require('./b3-baby-browser')(page);
     if(require('node:fs').existsSync(path.resolve(__dirname,'../js/ui-reminder-rules.js')))await require('./b3-reminder-browser')(page);
@@ -74,7 +89,8 @@ module.exports=async function shell(browser,width,output,base){
     await page.goto(base+'?ui=classic',{waitUntil:'load'});
     assert.equal(await page.evaluate(()=>NTUI.enabled()),false,'emergency route bypasses new shell');
     assert.equal(await page.locator('#mainScreen').evaluate(el=>el.classList.contains('active')),true);
+    if(errors.length)console.error('B3 failed-request diagnostics',failures);
     assert.deepEqual(errors,[]);
     console.log('B3 shell '+width+'px: context +, eleven types, preferences, Back, feature off, classic recovery OK');
-  }finally{await ctx.close();}
+  }finally{if(origin)origin.setAvailable(true);await ctx.close();}
 };

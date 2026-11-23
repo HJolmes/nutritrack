@@ -175,7 +175,7 @@ jobs:
 
   smoke:
     name: Rauchtest im Browser
-    # Playwright 1.56.1 unterstützt den ubuntu-26.04 Runner nicht.
+    # Feste Ubuntu-Version fuer reproduzierbare Browser-Systembibliotheken.
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
@@ -211,13 +211,60 @@ jobs:
         run: node tools/smoke.js
 
       - name: B3 Bestandsschutz und mobile Referenzen
-        run: node tools/b3-browser.js
+        run: |
+          node tools/b3-rollback.js
+          node tools/b3-browser.js
 
       - name: B3 Referenzen aufbewahren
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: b3-mobile-baseline
+          path: .b3-artifacts/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30
+
+  b3_webkit:
+    name: B3 Safari-Engine und iPhone-Ansicht
+    runs-on: ubuntu-24.04
+    container: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:2f05f8a734509a7b3f26a912639488ee08f58a7b292d14d62271bcff9038768f
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Playwright-Werkzeuge
+        # Playwright 1.64.1 includes the fixed Linux libsoup network library:
+        # https://github.com/microsoft/playwright/issues/42803
+        # It also includes the earlier history/reload fix (#43949).
+        # Matching official image already contains WebKit and its OS libraries.
+        # Repeated apt installs were stalling unrelated to the application.
+        run: npm ci
+      - name: Testserver
+        run: npx --yes http-server@14.1.1 -p 8099 -s . &
+      - name: Testserver bereit
+        run: |
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8099/index.html > /dev/null && exit 0
+            sleep 1
+          done
+          exit 1
+      - name: B3 auf Safari-Engine prüfen
+        env:
+          B3_BROWSER: webkit
+          DEBUG: pw:browser
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          node tools/b3-rollback.js
+          node tools/b3-browser.js
+      - name: Safari-Referenzen aufbewahren
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: b3-webkit-mobile
           path: .b3-artifacts/
           include-hidden-files: true
           if-no-files-found: error

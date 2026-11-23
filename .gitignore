@@ -4,3 +4,4 @@ worker/.dev.vars
 node_modules/
 .typecheck/
 .b3-artifacts/
+b3-test-rollback/

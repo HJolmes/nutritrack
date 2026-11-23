@@ -34,6 +34,11 @@ module.exports=async function domains(page,output,width){
   await page.getByRole('navigation',{name:'Hauptnavigation'}).getByRole('button',{name:'Erfassen: Vorrat'}).click();
   for(const [id,value] of Object.entries({pantryItemName:'B3 Mindestvorrat',pantryItemQ:'1',pantryItemG:'100',pantryItemMin:'2'}))await page.locator('#'+id).fill(value);
   await page.locator('#pantryItemOv [data-act="NTPantry.saveItem"]').click();
+  try{await page.waitForFunction(()=>S.pantry.some(p=>p.n==='B3 Mindestvorrat'),{},{timeout:5000});}
+  catch(error){
+    console.error('Pantry save diagnostic',await page.evaluate(()=>({open:document.getElementById('pantryItemOv').classList.contains('open'),fields:['pantryItemName','pantryItemQ','pantryItemG','pantryItemMin'].map(id=>[id,document.getElementById(id).value]),toast:document.getElementById('toast')?.textContent,names:S.pantry.map(p=>p.n)})));
+    await page.screenshot({path:path.join(output,'pantry-save-failure-'+width+'.png'),fullPage:true});throw error;
+  }
   const item=await page.evaluate(()=>S.pantry.find(p=>p.n==='B3 Mindestvorrat'));assert.equal(item.q,1);
   await page.evaluate(()=>NTUI.go('shop'));await page.locator('#shopOv [data-act="NTShop.toggle"]').filter({hasText:'B3 Mindestvorrat'}).click();
   assert.equal(await page.evaluate(id=>S.pantry.find(p=>p.id===id).q,item.id),2,'buying refills the linked stock');

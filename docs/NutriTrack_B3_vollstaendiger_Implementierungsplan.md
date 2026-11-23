@@ -91,58 +91,58 @@ HAUSHALT                      MEHR / ALLE FUNKTIONEN
 
 **Legende:** E = existierendes Fachmodul/Code bleibt maßgeblich; N = neue Darstellung/Navigation; T = konkrete Regression. Die Matrix ist **Pflicht-Checkliste**; vor Abschluss mit aus `NTFeat`, `NTLaunch`, `NTActions` und tatsächlichen HTML-Aktionen generierter Inventarliste abgleichen.
 
-| ID | Zu erhaltene Funktion / Details | Neuer Einstieg | Bestehende Quelle | Abnahmetest |
-|---|---|---|---|---|
-| F01 | Einrichtung, Profil, Zielkalorien, Gewicht, Ernährungsziel, Kalorienbedarf | Mehr → Profil / Ziele; Ernährung → Einstellungen | `index.html`, `js/calc.js` | Zieländerung korrekt in Tagesbilanz |
-| F02 | Tag wechseln, alte Tage und verdichtete Tage wieder öffnen | Ernährung → Verlauf; Heute → Datum | `index.html`, `js/calc.js` | Historie >90 Tage lesbar; heute unverändert |
-| F03 | Mahlzeiten Frühstück/Mittag/Abend/Snack, Mengen, Nährwerte, Bearbeiten, Verschieben, Löschen | Ernährung → Heute; `+` | `index.html`, `picker.js` | jede Slot-Aktion, Makrosumme unverändert |
-| F04 | Text-/Chat-Eintrag mit sicherer Voranalyse und KI-Fallback | Ernährung → + → Text | `picker.js` | sichere Erkennung, Unklarheiten rückfragen |
-| F05 | Lebensmittelsuche, eigene Lebensmittel, zuletzt verwendet | Ernährung → + → Suchen / Zuletzt / Eigenes | `picker.js`, `js/fooddb*.js` | keine Einträge/Sortierung verloren |
-| F06 | Barcode via Kamera/Decoder/OFF, lokale Cache-Treffer | Ernährung → + → Barcode | `picker.js`, ZXing, Worker/Decoder | Kamera, Berechtigung, Offline-Fallback |
-| F07 | Foto-KI zur Mahlzeit, Bildverwaltung | Ernährung → + → Foto | `picker.js`, `js/idb-photos.js` | Bild-ID bleibt, keine Löschung bei Edit |
-| F08 | Rezept-/Produktlink, Import-Parser | Ernährung → + → Link; Kochbuch → Import | `picker.js`, Worker | gleiche Import-Vorschau wie vorher |
-| F09 | Lebensmittel-/Restaurant-Nährwerte DE, Datenbank, Fehlerkennzeichnung | Ernährung → Suche | `js/fooddb*.js`, `js/restaurants.js`, `js/calc.js` | Treffer und Grammanpassung korrekt |
-| F10 | Ernährungsampel für Stillzeit, Schwangerschaft, Ernährungsform, Allergien | Ernährung → Mahlzeitdetails / Profil | `js/ampel.js`, `index.html` | identische Hinweise/Schutzlogik |
-| F11 | Wiederkehrende Mahlzeiten, Pausieren, Vorlagen | Ernährung → Planung / Vorlagen | `js/recurring.js`, `js/templates.js` | Wiederholungen nicht doppelt gebucht |
-| F12 | Kalorien, Makros, Wasser, Bewegung, Fasten, Tagesbilanz | Ernährung → Heute | `index.html`, `js/calc.js` | Referenzdaten = gleiche Werte |
-| F13 | Wasserzähler, Glasgröße und Wasserziel, Trinkhinweise | Ernährung → Wasser; Home-Schnellaktion | `index.html`, `js/features.js` | `S.waterGoal` und Tageswert erhalten |
-| F14 | Sport/Bewegung, MET, eigene Bibliothek, kcal-Abzug | Ernährung → Aktivität | `index.html`, `js/metdb.js` | MET/Netto-Bilanz konstant |
-| F15 | Apple-/Samsung-Health-Import via Worker | Ernährung → Aktivität / Mehr → Integrationen | `js/health-sync.js` | mehrfaches Abholen ohne Dubletten |
-| F16 | Fasten, Lauf/Ende, Erinnerung | Ernährung → Fasten; Gerade wichtig, wenn läuft | `index.html`, `js/reminders.js` | `nt_fast` unverändert, Ende nicht falsch |
-| F17 | Gewicht, Gewichtsziel, Trend, 7-/14-/30-Tage-Daten, Wochenbericht, Streak | Ernährung → Verlauf / Trends | `js/stats.js` | Tages-/Wochen-/Gewichtsansichten stimmen |
-| F18 | Kochbuch: Grundrezepte, eigene, Favoriten, Filter, Tags | Ernährung → Kochbuch; Haushalt → Rezepte | `js/cookbook.js`, `js/book-seed.js` | keine Rezept-ID/Markierung verloren |
-| F19 | Rezepteditor, Foto-/Link-Import, Nährwerte, Portionen | Kochbuch → + / Details | `js/cookbook.js`, `picker.js` | Bearbeiten/Import und Portionen stabil |
-| F20 | Kochmodus, Rezeptanpassung nach Profil, KI, Originalansicht | Kochbuch → Rezept | `js/book-swaps.js`, `js/cookbook.js` | „Original“/„angepasst“ konsistent |
-| F21 | Rezepte kochen, Eintrag ins Tagebuch, Zutaten auf Einkaufszettel | Rezeptdetail / Kochmodus | `NTBook`, `NTPlan`, `NTShop` | Verknüpfungen durchgängig |
-| F22 | Wochenplan: Tage, Slots, Notizen, Füllen, Portionen, Übernahme, Teilen | Haushalt → Wochenplan; Ernährung → Planung | `js/mealplan.js` | Auto-Füllung, Einkauf, Sync unverändert |
-| F23 | Einkaufszettel: Kategorien, Mengen, Abhaken, Historie, Schnelleingabe | Haushalt → Einkauf / + | `js/shopping.js` | editieren, abhaken, wiederholen |
-| F24 | Einkauf: Rezeptzutaten/Mengen zusammenführen, Kategorien lernen | Einkauf / Rezept / Plan | `js/shopping.js`, `js/calc.js` | Mengen/Herkunft nicht verfälschen |
-| F25 | Vorrat: Lagerorte, Mengen/Mindestbestand, MHD/Verbrauchsdatum | Haushalt → Vorrat / + | `js/pantry.js` | Menge + MHD nach Edit identisch |
-| F26 | Vorrat: Fotoauswertung, Scanner, Verbrauch, Undo, Historie | Haushalt → Vorrat | `js/pantry.js`, `js/idb-photos.js` | Korrektur/Undo, keine Doppelbuchung |
-| F27 | Vorrat ↔ Einkauf ↔ Rezept: Mindestmengen, Nachfüllen, Kochen, „Was kochen?“ | Haushalt → Vorrat / Rezepte | `NTShop`, `NTPantry`, `NTBook` | Bestandsfluss unter allen Wegen |
-| F28 | Baby: nächste Brust, letzte Mahlzeit, Start/Stop/Wechsel der Stoppuhr | Heute und Baby → Heute, dauerhaft | `js/baby.js`, `js/launch.js` | F28-Szenarien siehe Abschnitt 8 |
-| F29 | Baby: alle 11 Eintragstypen, Datum, Zeit, Pflichtfelder, Bearbeiten/Löschen | Baby → + und Tagebuch | `js/baby.js` | jeder Typ erstellt/editiert/löscht |
-| F30 | Baby: 10 persönliche Schnellknöpfe inkl. Seite/Timer/Nacht/Windel | Baby → Schnellknöpfe bearbeiten | `js/baby.js` | alle alten Konfigurationen identisch |
-| F31 | Baby: Schlaf starten/stoppen, Nacht/Tag, über Mitternacht, historische Annahmen | Baby → Schlaf | `js/baby-sleep.js`, `js/baby.js` | echte/angenommene Zeiten getrennt |
-| F32 | Baby: Schlafprognose, Tagesplan, Qualität, Prognose als Entwurf | Baby → Schlaf | `js/baby-sleep-plan.js` | Zukunft nie automatisch als Ist-Sleep |
-| F33 | Baby: Tages-/7-/14-Tage-Verlauf, Beikost und Arztbericht | Baby → Verlauf | `js/baby-week.js` | Teilen/Kopieren und Summen stimmen |
-| F34 | Baby: Wachstum Gewicht/Länge/Kopfumfang + WHO-Kurven | Baby → Entwicklung → Wachstum | `js/baby-growth.js`, `baby-growth-data.js` | Datums- und Perzentilwerte identisch |
-| F35 | Baby: U-Untersuchungen, Termine, Impfungen, Meilensteine | Baby → Entwicklung → U-Heft | `js/baby-milestones.js` | bestehende Meilenstein-IDs beibehalten |
-| F36 | Baby: Medikamente, Dosis/Gaben, vorhandene Abstandslogik | Baby → Entwicklung → Medizin | `js/baby-meds.js` | Gabeverlauf/Abstand wie bisher |
-| F37 | Baby: Fragen an Arzt/Hebamme, Antworten, erledigte Fragen, Suche | Baby → Entwicklung → Fragen | `js/baby-midwife.js` | Empfänger/Status/Export erhalten |
-| F38 | Baby: Stammdaten, An-/Ausschalten, Sync mit weiteren Personen | Mehr → Funktionen / Verbindungen | `js/features.js`, `js/baby.js`, `js/sync-core.js` | ausgeschaltetes Tagebuch bleibt erhalten |
-| F39 | Verbindungen/Synchronisation: Baby, Einkauf, Vorrat, Plan | Mehr → Verbindungen (auch je Fachbereich) | `js/sync-core.js` + Module | Zwei-Geräte-Konflikte, Tombstones |
-| F40 | Partner-Postfach, Mahlzeit senden, Import übernehmen | Mehr → Partner; Mahlzeitdetail | `js/partner.js` | Versand/Annahme nach wie vor möglich |
-| F41 | Alexa: Familien-/Personen-Tokens, Baby/Einkauf/Ernährung/Sport/Wasser | Mehr → Alexa | `js/alexa-sync.js`, `alexa/` | gleiche Befehle, deduplizierter Import |
-| F42 | OneDrive PKCE, Autosicherung, lokale Autosaves, Backup/Restore | Mehr → Backup & Daten | `js/onedrive.js`, `js/autosave.js` | Restore alt/neu, keine Tokenlöschung |
-| F43 | Teilen per Link/Code, Import-Vorschau, iOS-Handoff | Mehr → Import/Teilen, Fachdetails | `index.html`, Worker | alle Payloadtypen funktionieren |
-| F44 | Exporte: Excel, Lebensmittel, Berichte/Teilen | Mehr → Export; Bereichs-Verlauf | `js/food-export.js`, `js/xlsx.js` | Import/Export-Ergebnis geprüft |
-| F45 | Erinnerungen: feste Zeiten, Wasser/Fasten/Vorrat | Mehr → Erinnerungen | `js/reminders.js`, `js/pantry.js` | bestehende Timer unabhängig von Lernen |
-| F46 | KI: Anbieter, eigene Schlüssel, Vision, Prompts, Proxy | Mehr → KI & Datenschutz | `index.html`, Worker | keine Tokens im Log, kein Providerwechsel |
-| F47 | Feedback: Bug/Wunsch, Screenshot, Hilfe, App-Tour, Changelog | Mehr → Hilfe & Feedback | `js/tour.js`, `js/changelog.js`, `index.html` | Feedback/Schritte erreichbar |
-| F48 | PWA: Installieren, Updates, Offline, Manifest-Shortcuts, Single-Tab | Unverändert + Einstellungen/Info | `sw.js`, `manifest.json`, `js/single-tab.js` | Update, wieder online, zweiter Tab |
-| F49 | Anpassung: Features an/aus, Kacheln, bisherige Schnellauswahl | Mehr → Funktionen / Ansicht | `js/features.js`, `dashboard.js`, `launch.js` | Altpräferenzen nicht überschreiben |
-| F50 | Persistenz: lokale Fotos, Offline-Queue, historische Verdichtung, Tageswechsel | Querschnitt, keine sichtbare Verlustrisiko-Stelle | `js/idb-photos.js`, `offline-queue.js`, `calc.js` | Daten vor/nach Umbau byte-/semantisch verglichen |
+| ID | Zu erhaltene Funktion / Details | Neuer Einstieg | Bestehende Quelle | Abnahmetest | Automatischer B3-Nachweis / Restprüfung |
+|---|---|---|---|---|---|
+| F01 | Einrichtung, Profil, Zielkalorien, Gewicht, Ernährungsziel, Kalorienbedarf | Mehr → Profil / Ziele; Ernährung → Einstellungen | `index.html`, `js/calc.js` | Zieländerung korrekt in Tagesbilanz | Mehr/Profil und Ziele; bestehende calc-/Smoke-Regression |
+| F02 | Tag wechseln, alte Tage und verdichtete Tage wieder öffnen | Ernährung → Verlauf; Heute → Datum | `index.html`, `js/calc.js` | Historie >90 Tage lesbar; heute unverändert | G4: Archiv-Reaktivierung mit 650 kcal, Detail-Back |
+| F03 | Mahlzeiten Frühstück/Mittag/Abend/Snack, Mengen, Nährwerte, Bearbeiten, Verschieben, Löschen | Ernährung → Heute; `+` | `index.html`, `picker.js` | jede Slot-Aktion, Makrosumme unverändert | G4: echter Picker/Details; bestehende Bearbeitungs-Smoke-Tests |
+| F04 | Text-/Chat-Eintrag mit sicherer Voranalyse und KI-Fallback | Ernährung → + → Text | `picker.js` | sichere Erkennung, Unklarheiten rückfragen | Picker-Smoke: Chat, sichere Voranalyse |
+| F05 | Lebensmittelsuche, eigene Lebensmittel, zuletzt verwendet | Ernährung → + → Suchen / Zuletzt / Eigenes | `picker.js`, `js/fooddb*.js` | keine Einträge/Sortierung verloren | G4: Suche/Zuletzt/Eigenes, echter eigener Eintrag |
+| F06 | Barcode via Kamera/Decoder/OFF, lokale Cache-Treffer | Ernährung → + → Barcode | `picker.js`, ZXing, Worker/Decoder | Kamera, Berechtigung, Offline-Fallback | Picker-Smoke und Worker-/Decoder-Regression; Kamera-Gerätetest offen |
+| F07 | Foto-KI zur Mahlzeit, Bildverwaltung | Ernährung → + → Foto | `picker.js`, `js/idb-photos.js` | Bild-ID bleibt, keine Löschung bei Edit | G4: Foto-ID und IndexedDB nach Backup-Restore; Foto-Picker erreichbar |
+| F08 | Rezept-/Produktlink, Import-Parser | Ernährung → + → Link; Kochbuch → Import | `picker.js`, Worker | gleiche Import-Vorschau wie vorher | G4: Link-Reiter und Import-Dialog, bestehende Parser-Tests |
+| F09 | Lebensmittel-/Restaurant-Nährwerte DE, Datenbank, Fehlerkennzeichnung | Ernährung → Suche | `js/fooddb*.js`, `js/restaurants.js`, `js/calc.js` | Treffer und Grammanpassung korrekt | Suche im Vollkatalog/Picker; DB-/Restaurant-Regression |
+| F10 | Ernährungsampel für Stillzeit, Schwangerschaft, Ernährungsform, Allergien | Ernährung → Mahlzeitdetails / Profil | `js/ampel.js`, `index.html` | identische Hinweise/Schutzlogik | Bestehende Ampel-Smoke- und 158 feste Stillzeit-Fälle |
+| F11 | Wiederkehrende Mahlzeiten, Pausieren, Vorlagen | Ernährung → Planung / Vorlagen | `js/recurring.js`, `js/templates.js` | Wiederholungen nicht doppelt gebucht | Ernährung/Planung/Vorlagen, bestehende Wiederkehrend-Regression |
+| F12 | Kalorien, Makros, Wasser, Bewegung, Fasten, Tagesbilanz | Ernährung → Heute | `index.html`, `js/calc.js` | Referenzdaten = gleiche Werte | G4: unveränderte Tageswerte, bestehende Rechenkern-Tests |
+| F13 | Wasserzähler, Glasgröße und Wasserziel, Trinkhinweise | Ernährung → Wasser; Home-Schnellaktion | `index.html`, `js/features.js` | `S.waterGoal` und Tageswert erhalten | G4: Wasserknopf erhöht Originalzähler |
+| F14 | Sport/Bewegung, MET, eigene Bibliothek, kcal-Abzug | Ernährung → Aktivität | `index.html`, `js/metdb.js` | MET/Netto-Bilanz konstant | Ernährung/Aktivität, MET-/Netto-Tests |
+| F15 | Apple-/Samsung-Health-Import via Worker | Ernährung → Aktivität / Mehr → Integrationen | `js/health-sync.js` | mehrfaches Abholen ohne Dubletten | G4: tatsächlicher Health-Konfigurationsdialog; externe Health-Geräte offen |
+| F16 | Fasten, Lauf/Ende, Erinnerung | Ernährung → Fasten; Gerade wichtig, wenn läuft | `index.html`, `js/reminders.js` | `nt_fast` unverändert, Ende nicht falsch | Fastenstatus/-Aktionen und vorhandene Timer-Regression |
+| F17 | Gewicht, Gewichtsziel, Trend, 7-/14-/30-Tage-Daten, Wochenbericht, Streak | Ernährung → Verlauf / Trends | `js/stats.js` | Tages-/Wochen-/Gewichtsansichten stimmen | Ernährung/Trends/Gewicht, vorhandene Statistik-/Exporttests |
+| F18 | Kochbuch: Grundrezepte, eigene, Favoriten, Filter, Tags | Ernährung → Kochbuch; Haushalt → Rezepte | `js/cookbook.js`, `js/book-seed.js` | keine Rezept-ID/Markierung verloren | G4: Kochbuch und neuer Rezeptbestand |
+| F19 | Rezepteditor, Foto-/Link-Import, Nährwerte, Portionen | Kochbuch → + / Details | `js/cookbook.js`, `picker.js` | Bearbeiten/Import und Portionen stabil | G4: echter Rezepteditor und Portion-Zutat |
+| F20 | Kochmodus, Rezeptanpassung nach Profil, KI, Originalansicht | Kochbuch → Rezept | `js/book-swaps.js`, `js/cookbook.js` | „Original“/„angepasst“ konsistent | Kochbuch-Adapter unverändert; bestehende Kochmodus-/Anpassungs-Smoke-Tests |
+| F21 | Rezepte kochen, Eintrag ins Tagebuch, Zutaten auf Einkaufszettel | Rezeptdetail / Kochmodus | `NTBook`, `NTPlan`, `NTShop` | Verknüpfungen durchgängig | G4: Rezept → Plan → Einkauf/Tagebuch |
+| F22 | Wochenplan: Tage, Slots, Notizen, Füllen, Portionen, Übernahme, Teilen | Haushalt → Wochenplan; Ernährung → Planung | `js/mealplan.js` | Auto-Füllung, Einkauf, Sync unverändert | G4: Planung, Einkauf, wiederholte Tagebuchübernahme abgebrochen |
+| F23 | Einkaufszettel: Kategorien, Mengen, Abhaken, Historie, Schnelleingabe | Haushalt → Einkauf / + | `js/shopping.js` | editieren, abhaken, wiederholen | G4: Einkauf abhaken und gekoppelter Vorrat |
+| F24 | Einkauf: Rezeptzutaten/Mengen zusammenführen, Kategorien lernen | Einkauf / Rezept / Plan | `js/shopping.js`, `js/calc.js` | Mengen/Herkunft nicht verfälschen | G4 + vorhandene Mengen-/Kategorie-Regression |
+| F25 | Vorrat: Lagerorte, Mengen/Mindestbestand, MHD/Verbrauchsdatum | Haushalt → Vorrat / + | `js/pantry.js` | Menge + MHD nach Edit identisch | G4: echter Vorratseditor, Mindestbestand |
+| F26 | Vorrat: Fotoauswertung, Scanner, Verbrauch, Undo, Historie | Haushalt → Vorrat | `js/pantry.js`, `js/idb-photos.js` | Korrektur/Undo, keine Doppelbuchung | G4: Verbrauch und Undo; Scanner-/Foto-Smoke vorhanden |
+| F27 | Vorrat ↔ Einkauf ↔ Rezept: Mindestmengen, Nachfüllen, Kochen, „Was kochen?“ | Haushalt → Vorrat / Rezepte | `NTShop`, `NTPantry`, `NTBook` | Bestandsfluss unter allen Wegen | G4: Mindestbestand → Einkauf → Wiederauffüllen |
+| F28 | Baby: nächste Brust, letzte Mahlzeit, Start/Stop/Wechsel der Stoppuhr | Heute und Baby → Heute, dauerhaft | `js/baby.js`, `js/launch.js` | F28-Szenarien siehe Abschnitt 8 | Home/Baby und Brust-Tests: ID, Wechsel, Reopen, stale stop |
+| F29 | Baby: alle 11 Eintragstypen, Datum, Zeit, Pflichtfelder, Bearbeiten/Löschen | Baby → + und Tagebuch | `js/baby.js` | jeder Typ erstellt/editiert/löscht | Baby-Browser: alle elf Typen über Plus erstellen/bearbeiten/löschen |
+| F30 | Baby: 10 persönliche Schnellknöpfe inkl. Seite/Timer/Nacht/Windel | Baby → Schnellknöpfe bearbeiten | `js/baby.js` | alle alten Konfigurationen identisch | Home/Baby: zehn individuelle Knöpfe und getrennter Sechser-Favoritensatz |
+| F31 | Baby: Schlaf starten/stoppen, Nacht/Tag, über Mitternacht, historische Annahmen | Baby → Schlaf | `js/baby-sleep.js`, `js/baby.js` | echte/angenommene Zeiten getrennt | Schlafplan-/Nachtannahmen-Tests, keine heimliche Buchung |
+| F32 | Baby: Schlafprognose, Tagesplan, Qualität, Prognose als Entwurf | Baby → Schlaf | `js/baby-sleep-plan.js` | Zukunft nie automatisch als Ist-Sleep | Baby-Browser: Entwurf und abgewiesener Zukunfts-Schlaf |
+| F33 | Baby: Tages-/7-/14-Tage-Verlauf, Beikost und Arztbericht | Baby → Verlauf | `js/baby-week.js` | Teilen/Kopieren und Summen stimmen | Baby-Browser: 14-Tage-Verlauf und Bericht |
+| F34 | Baby: Wachstum Gewicht/Länge/Kopfumfang + WHO-Kurven | Baby → Entwicklung → Wachstum | `js/baby-growth.js`, `baby-growth-data.js` | Datums- und Perzentilwerte identisch | Entwicklung/WHO erreichbar; bestehende WHO-Daten unverändert |
+| F35 | Baby: U-Untersuchungen, Termine, Impfungen, Meilensteine | Baby → Entwicklung → U-Heft | `js/baby-milestones.js` | bestehende Meilenstein-IDs beibehalten | Baby-Browser: tatsächliches U-Heft und Meilenstein-IDs erhalten |
+| F36 | Baby: Medikamente, Dosis/Gaben, vorhandene Abstandslogik | Baby → Entwicklung → Medizin | `js/baby-meds.js` | Gabeverlauf/Abstand wie bisher | Baby-Browser: Medizin-Dialog und Med-Eintrag/Gabe |
+| F37 | Baby: Fragen an Arzt/Hebamme, Antworten, erledigte Fragen, Suche | Baby → Entwicklung → Fragen | `js/baby-midwife.js` | Empfänger/Status/Export erhalten | Baby-Browser: Fragenansicht, bestehende Empfänger-Logik erhalten |
+| F38 | Baby: Stammdaten, An-/Ausschalten, Sync mit weiteren Personen | Mehr → Funktionen / Verbindungen | `js/features.js`, `js/baby.js`, `js/sync-core.js` | ausgeschaltetes Tagebuch bleibt erhalten | Shell-Feature-Off und unveränderte Baby-Daten |
+| F39 | Verbindungen/Synchronisation: Baby, Einkauf, Vorrat, Plan | Mehr → Verbindungen (auch je Fachbereich) | `js/sync-core.js` + Module | Zwei-Geräte-Konflikte, Tombstones | Release-Test: reale AES-GCM-Engines, getrennte Browserstores und simulierter HTTP-Transport; physische Geräte offen |
+| F40 | Partner-Postfach, Mahlzeit senden, Import übernehmen | Mehr → Partner; Mahlzeitdetail | `js/partner.js` | Versand/Annahme nach wie vor möglich | Vollkatalog/Partner und vorhandener Import; externe Partner-Kopplung offen |
+| F41 | Alexa: Familien-/Personen-Tokens, Baby/Einkauf/Ernährung/Sport/Wasser | Mehr → Alexa | `js/alexa-sync.js`, `alexa/` | gleiche Befehle, deduplizierter Import | G4: Alexa-Dialog; Alexa-/Worker-Tests und bestehende Dedup-Logik |
+| F42 | OneDrive PKCE, Autosicherung, lokale Autosaves, Backup/Restore | Mehr → Backup & Daten | `js/onedrive.js`, `js/autosave.js` | Restore alt/neu, keine Tokenlöschung | Classic und G4: echte Backup-Datei-Roundtrips, unbekannte UI-Felder; externer OneDrive-Login offen |
+| F43 | Teilen per Link/Code, Import-Vorschau, iOS-Handoff | Mehr → Import/Teilen, Fachdetails | `index.html`, Worker | alle Payloadtypen funktionieren | G4: Code-/Link-Importdialog, bisherige Share-/Parserpfade erhalten |
+| F44 | Exporte: Excel, Lebensmittel, Berichte/Teilen | Mehr → Export; Bereichs-Verlauf | `js/food-export.js`, `js/xlsx.js` | Import/Export-Ergebnis geprüft | G4: Excel-Dialog, bestehender echter XLSX-Smoke |
+| F45 | Erinnerungen: feste Zeiten, Wasser/Fasten/Vorrat | Mehr → Erinnerungen | `js/reminders.js`, `js/pantry.js` | bestehende Timer unabhängig von Lernen | 153 Node-Tests inkl. fester Timer/due-Adapter, neue Regeln unabhängig |
+| F46 | KI: Anbieter, eigene Schlüssel, Vision, Prompts, Proxy | Mehr → KI & Datenschutz | `index.html`, Worker | keine Tokens im Log, kein Providerwechsel | G4: KI-Prompts und Profil-KI erreichbar; alte Anbieter-/Schlüsselpfade unverändert |
+| F47 | Feedback: Bug/Wunsch, Screenshot, Hilfe, App-Tour, Changelog | Mehr → Hilfe & Feedback | `js/tour.js`, `js/changelog.js`, `index.html` | Feedback/Schritte erreichbar | G4: vollständige angepasste Tour, Hilfe/Feedback im Katalog |
+| F48 | PWA: Installieren, Updates, Offline, Manifest-Shortcuts, Single-Tab | Unverändert + Einstellungen/Info | `sw.js`, `manifest.json`, `js/single-tab.js` | Update, wieder online, zweiter Tab | Shell: echter SW-Offline-Neustart und Classic-Recovery; Release: Single-Tab/Ladefehler |
+| F49 | Anpassung: Features an/aus, Kacheln, bisherige Schnellauswahl | Mehr → Funktionen / Ansicht | `js/features.js`, `dashboard.js`, `launch.js` | Altpräferenzen nicht überschreiben | Home/Nav-Persistenz, zehn Babyknöpfe und idempotenter Classic-Snapshot |
+| F50 | Persistenz: lokale Fotos, Offline-Queue, historische Verdichtung, Tageswechsel | Querschnitt, keine sichtbare Verlustrisiko-Stelle | `js/idb-photos.js`, `offline-queue.js`, `calc.js` | Daten vor/nach Umbau byte-/semantisch verglichen | G4: echter Gesamt-Roundtrip, lokale Fotos und Archiv; Release: Original-Rollback/Synchronisation |
 
 **Bei jeder Zeile:** Code-Referenz verifizieren → Ziel-Einstieg implementieren → funktionalen Test schreiben → manuellen Mobile-Test dokumentieren → Haken erst setzen, wenn der Klick im neuen UI den **echten** alten Fachworkflow auslöst. Nicht bei einer Demo-Ansicht abhaken.
 
@@ -304,8 +304,9 @@ Stand 23.11.2026, geprüftes `main`: `88eeb9846e8646270a1c6a7c155e10b18317112e`,
 | 05–07 | Abgeschlossen, PR [#365](https://github.com/HJolmes/nutritrack/pull/365) gemergt | Neue Startseite, sechs unabhängige Schnellaktionen, dauerhafter Bruststatus auf Heute/Baby, ID-sicheres Stoppen/Wechseln |
 | 08–10 | Abgeschlossen, PR [#366](https://github.com/HJolmes/nutritrack/pull/366) gemergt | Vier Baby-Unterbereiche auf vorhandenen Paneelen; echte elf Editorabläufe, Verlauf/Bericht, WHO/U-Heft/Fragen/Medizin; Nachtfenster im Schlafbereich |
 | 11–12 | Abgeschlossen, PR [#367](https://github.com/HJolmes/nutritrack/pull/367) gemergt | Lokale erklärbare Prioritäten, vier Mahlzeiten-Modi, robuste Zeitfenster, Snooze/Ausblenden, getrenntes OS-Opt-in |
-| 13–20 | In Prüfung | Ernährung/Haushalt/Mehr integrieren reale vorhandene Screens/Editoren, vollständiger Katalog, Daten-/Rezept-/Plan-/Bestandsketten und Tour |
-| 21–22 | Offen | Reihenfolge und Abnahmen gemäß Abschnitt 7 |
+| 13–20 | Abgeschlossen, PR [#368](https://github.com/HJolmes/nutritrack/pull/368) gemergt | Ernährung/Haushalt/Mehr integrieren reale vorhandene Screens/Editoren, vollständiger Katalog, Daten-/Rezept-/Plan-/Bestandsketten und Tour |
+| 21 | In Prüfung | Große Schrift/Touchflächen, dynamische Nav-Höhe, Safari-Engine, unabhängige Sync-Kontexte, Original-Rollback und Assets-Ausfall |
+| 22 | Offen | Standardaktivierung nach grünen automatischen Release-Prüfungen, Classic-Fallback bleibt | Reihenfolge und Abnahmen gemäß Abschnitt 7 |
 
 **PR 00 / G0:** Das Inventar erfasst auch generiertes HTML, `tab.html`, Feature-Aktionen, Startkurzbefehle, Namespace-Exports und die 50 Zeilen der verbindlichen Matrix. Es ist ein Reichweiteninventar, keine Behauptung, dass alle Fachabläufe bereits getestet wurden. `npm test` prüft den Fortbestand seiner Einstiege/APIs. Der Snapshot bleibt unverändert; begründete Ablösungen benötigen später eine explizite, getestete Zuordnung.
 
@@ -339,3 +340,10 @@ Prioritäten gemäß Abschnitt 6.1: laufende Vorgänge, vorhandene feste Erinner
 **PR 13–20:** Gemeinsames Integrationspaket ohne neue Fachberechnungen: Ernährung ordnet Heute/Planung/Kochbuch/Verlauf und Aktivität/Wasser/Fasten/Ziele; Haushalt verwendet Einkauf/Vorrat/Plan/Kochbuch samt vollständigen bestehenden Fachdialogen. Mehr bietet den deduplizierten Katalog aus `NTFeat`, vorhandenen Menüs und benannten versteckten Integrationen (Alexa, Health, OneDrive/Backup, Partner, KI-Prompts, Exporte, Import, Hilfe). Die bisherigen Kachelpräferenzen werden additiv als Classic-Layout-Snapshot übernommen, Originale bleiben erhalten. Navigation merkt auch Mahlzeitdetails; die Tour verwendet dieselben Erklärungen mit passenden B3-Zielen.
 
 G4-Browserreise prüft die sieben Picker-Wege, Tageswerte, Archiv-Reaktivierung, Wasser, neuen Rezepteditor → Wochenplan → Einkauf/Tagebuch, Wiederholungs-Abbruch, Mindestvorrat → Einkauf → Wiederauffüllen → Verbrauch/Undo sowie tatsächliche Katalog-Einstiege. Anschließend echte Datei-Aus-/Einfuhr mit neuen UI-Präferenzen, Logs und Küchenbeständen, gerätelokalem Testfoto und vollständiger Tour. Externe Live-OAuth-/Partner-Accounts werden nicht mit privaten Daten verändert. Bestehende Fachregressionsprüfungen bleiben zusätzlich aktiv.
+
+
+**PR 21 / Stabilisierung:** Größere Schrift reserviert die tatsächlich gemessene Höhe der Bottom-Navigation; Fachseiten und Toasts bleiben oberhalb, Touchflächen und Bloom-Kontraste sind nachgezogen. Fehlt ein neues UI-Asset, startet die vollständige klassische Ansicht mit unveränderten Daten. Zusätzlich zur Chromium-Reise prüft ein WebKit-Job die Safari-Engine mit iPhone-Ansicht, 320/390/430 px und 200 % Schrift.
+
+Ein isolierter Zwei-Kontext-Test verwendet die echten Sync-Engines samt AES-GCM gegen einen lokalen In-Memory-HTTP-Vertrag: Remote-Stopp, alte IDs, Löschmarken/verspätete Revisionen, Einkauf/Vorrat/Plan, Offline-Nachlieferung und strikt lokale UI-Präferenzen. Dabei erreicht keine Anfrage den produktiven Worker. Die Rollbackprobe lädt den unveränderten ursprünglichen Code aus Git-Revision `88eeb9846e8646270a1c6a7c155e10b18317112e` (v0.334), importiert einen neuen Backup-Export und kehrt mit vollständigen Daten zu B3 zurück. Test-Snapshot wird nur in CI erzeugt und nie ausgeliefert.
+
+**Grenze der Nachweise:** Playwright mit Chromium und WebKit prüft echte Browser-Engines, keine physischen Android-/iOS-Geräte. Geräteinstallation, OS-Datei-/Teilen-Dialoge, reale Hintergrundbeschränkungen und bereits bestehende externe Kontokopplungen bleiben als manuelle Release-Prüfungen offen. Sie werden weder durch Screenshots noch durch Mock-Transport als erledigt dargestellt. Testmatrix-Spalte unterscheidet daher angebundene Funktion, automatischen Beleg und offene externe Prüfung. G5 wird erst nach diesen Restprüfungen vollständig geschlossen.

@@ -2,20 +2,41 @@
 'use strict';
 // Classic baseline, restore round-trip and mobile reference images. Local-only
 // synthetic data. These images are evidence, not a claim of visual approval.
-const {chromium}=require('playwright');
+const {chromium,webkit,devices}=require('playwright');
+const engine=process.env.B3_BROWSER==='webkit'?webkit:chromium;
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const {fixture}=require('./fixtures/b3-state');
-const BASE=process.env.SMOKE_URL||'http://127.0.0.1:8099/index.html';
+let BASE=process.env.SMOKE_URL||'http://127.0.0.1:8099/index.html';
 const output=path.resolve(__dirname,'../.b3-artifacts');
 (async()=>{
   fs.mkdirSync(output,{recursive:true});
-  const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||undefined});
+  let origin=null,serverControl=null;
+  {
+    // WebKit's offline emulation rejects even literal SW responses (#42775).
+    // Cut the actual local origin instead, with a direct-request negative
+    // control. The production worker and its cache stay completely unchanged.
+    const http=require('node:http'),upstream=new URL(BASE),upstreamDir=new URL('.',upstream).pathname;let available=true;
+    const server=http.createServer((req,res)=>{
+      if(!available){req.socket.destroy();return;}
+      // Match production's /nutritrack/ scope, including absolute manifest/icon
+      // URLs. A root-only fixture falsely leaves those assets uncached offline.
+      const address=new URL(req.url,upstream.origin);
+      if(address.pathname.startsWith('/nutritrack/'))address.pathname=upstreamDir+address.pathname.slice('/nutritrack/'.length);
+      const target=http.request(address,{method:req.method,headers:req.headers},response=>{res.writeHead(response.statusCode,response.headers);response.pipe(res);});
+      target.on('error',()=>{if(!res.headersSent)res.writeHead(502);res.end();});req.pipe(target);
+    });
+    await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+    BASE='http://127.0.0.1:'+server.address().port+'/nutritrack/index.html'+upstream.search;
+    serverControl={setAvailable(value){available=value;},close(){server.closeAllConnections();return new Promise(resolve=>server.close(resolve));}};
+    if(process.env.B3_BROWSER==='webkit')origin=serverControl;
+  }
+  const browser=await engine.launch({executablePath:process.env.CHROMIUM_PATH||undefined});
   try {
     for(const width of [320,390,430]) {
-      const context=await browser.newContext({viewport:{width,height:844},isMobile:true,hasTouch:true,timezoneId:'Europe/Berlin',acceptDownloads:true});
-      await context.route('**/*',route=>/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/)/.test(route.request().url())?route.continue():route.abort());
+      const context=await browser.newContext({...(process.env.B3_BROWSER==='webkit'?devices['iPhone 13']:{}),viewport:{width,height:844},isMobile:true,hasTouch:true,timezoneId:'Europe/Berlin',acceptDownloads:true});
+      await context.route('**/*',route=>(/^(data|blob):/.test(route.request().url())||/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/)/.test(route.request().url()))?route.continue():route.abort());
       const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
       const day=new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Berlin'}),data=fixture(day);
       await page.addInitScript(({data,day})=>{
@@ -55,7 +76,10 @@ const output=path.resolve(__dirname,'../.b3-artifacts');
       assert.deepEqual(await page.evaluate(()=>S.babyQuick),before.babyQuick,'reload retains all ten custom buttons');
       assert.deepEqual(errors,[],'no uncaught browser errors');
       await context.close();console.log('B3 classic '+width+'px: eleven editors, export/import, reload, screenshots OK');
-      if(fs.existsSync(path.resolve(__dirname,'../js/ui-shell.js')))await require('./b3-shell-browser')(browser,width,output,BASE);
+      if(fs.existsSync(path.resolve(__dirname,'../js/ui-shell.js')))await require('./b3-shell-browser')(browser,width,output,BASE,origin);
     }
-  } finally {await browser.close();}
+    if(fs.existsSync(path.resolve(__dirname,'b3-release-browser.js')))await require('./b3-release-browser')(browser,output,BASE,origin);
+    if(fs.existsSync(path.resolve(__dirname,'b3-sync-browser.js')))await require('./b3-sync-browser')(browser,BASE);
+    if(fs.existsSync(path.resolve(__dirname,'../b3-test-rollback/index.html')))await require('./b3-rollback-browser')(browser,output,BASE);
+  } finally {await browser.close();if(serverControl)await serverControl.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

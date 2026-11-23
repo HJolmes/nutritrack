@@ -2,6 +2,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.341',items:[
+    {icon:'🔎',text:'<b>Besser lesbar</b>: Die neue Ansicht passt die Navigation und Fachseiten auch bei größerer Schrift an. Touchflächen und Kontraste sind verbessert. Bei einem Ladefehler bleibt die klassische Ansicht automatisch nutzbar.',where:'Neue Ansicht'},
+  ]},
   {v:'0.340',items:[
     {icon:'🍽',text:'<b>Alle Bereiche verbunden</b>: Ernährung mit Planung, Kochbuch, Verlauf, Wasser, Aktivität und Fasten. Haushalt bündelt Einkauf, Vorrat und Wochenplan. Unter Mehr findest du auch versteckte Integrationen wie Alexa, Health, OneDrive und KI-Prompts über die Suche. Die App-Tour führt durch die neue Ansicht; alle bisherigen Editoren und Datenwege bleiben erhalten.',where:'Neue Ansicht → Ernährung / Haushalt / Mehr'},
   ]},

@@ -43,7 +43,7 @@ function inventory() {
   const features=JSON.parse(JSON.stringify(ctx.window.NTFeat.list()));
   const launch=JSON.parse(JSON.stringify(ctx.window.NTLaunch.ACTIONS));
   const plan=read('docs/NutriTrack_B3_vollstaendiger_Implementierungsplan.md');
-  const matrix=[...plan.matchAll(/^\| (F\d\d) \| (.*?) \| (.*?) \| (.*?) \| (.*?) \|$/gm)].map(m=>({id:m[1],capability:m[2],target:m[3],source:m[4],acceptance:m[5]}));
+  const matrix=[...plan.matchAll(/^\| (F\d\d) \| (.*?) \| (.*?) \| (.*?) \| (.*?) \|(?: (.*?) \|)?$/gm)].map(m=>({id:m[1],capability:m[2],target:m[3],source:m[4],acceptance:m[5],evidence:m[6]||''}));
   return {schema:1,version:(index.match(/APP_VERSION='([^']+)'/)||[])[1],features,launch,exports,actions,matrix};
 }
 if (require.main === module) {

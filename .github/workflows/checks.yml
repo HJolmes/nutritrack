@@ -228,17 +228,20 @@ jobs:
   b3_webkit:
     name: B3 Safari-Engine und iPhone-Ansicht
     runs-on: ubuntu-24.04
+    container: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Playwright und WebKit
+      - name: Playwright-Werkzeuge
         # Playwright 1.57.0 fixes the WebKit 1.56.1 history/reload crash:
         # https://github.com/microsoft/playwright/issues/43949
-        run: |
-          npm ci
-          npx playwright install --with-deps webkit
+        # Matching official image already contains WebKit and its OS libraries.
+        # Repeated apt installs were stalling unrelated to the application.
+        run: npm ci
       - name: Testserver
         run: npx --yes http-server@14.1.1 -p 8099 -s . &
       - name: B3 auf Safari-Engine prüfen

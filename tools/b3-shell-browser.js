@@ -2,6 +2,33 @@
 const assert=require('node:assert/strict'),path=require('node:path');
 const {fixture}=require('./fixtures/b3-state');
 const {devices}=require('playwright');
+
+async function checkMobileScroll(page,selector,label){
+  const scroller=page.locator(selector);
+  await scroller.evaluate(el=>{el.scrollTop=0;});
+  await page.waitForFunction(sel=>{
+    const el=document.querySelector(sel);
+    return el.scrollHeight>el.clientHeight;
+  },selector);
+  const chrome=()=>page.evaluate(()=>['b3Header','b3Nav'].map(id=>document.getElementById(id).getBoundingClientRect().top));
+  const before=await chrome();
+  if(page.context().browser().browserType().name()==='chromium'){
+    const session=await page.context().newCDPSession(page);
+    try{
+      for(let y=385;y>=185;y-=20){
+        await session.send('Input.dispatchTouchEvent',{type:y===385?'touchStart':'touchMove',touchPoints:[{x:150,y}]});
+        await page.waitForTimeout(12);
+      }
+      await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+    }finally{await session.detach();}
+  }else{
+    // Playwright's mobile WebKit driver exposes taps but no swipe or wheel.
+    await scroller.evaluate(el=>{el.scrollTop=180;});
+  }
+  await page.waitForFunction(sel=>document.querySelector(sel).scrollTop>0,selector,{timeout:5000});
+  assert.deepEqual(await chrome(),before,label+' keeps the header and navigation in place');
+}
+
 module.exports=async function shell(browser,width,output,base,origin){
   const ctx=await browser.newContext({...(process.env.B3_BROWSER==='webkit'?devices['iPhone 13']:{}),viewport:{width,height:844},isMobile:true,hasTouch:true,timezoneId:'Europe/Berlin'});
   try{
@@ -58,6 +85,12 @@ module.exports=async function shell(browser,width,output,base,origin){
     assert.equal(await page.locator('#pickerOv .picker-tab').count(),7);
     await page.evaluate(()=>closeOv('pickerOv'));
     await nav.getByRole('button',{name:'Baby-Tagebuch',exact:true}).click();
+    if(width===320){
+      await page.setViewportSize({width,height:568});
+      await page.locator('#babyOv.open').waitFor();
+      await checkMobileScroll(page,'#babyOv .mod','Baby diary');
+      await page.setViewportSize({width,height:844});
+    }
     await nav.getByRole('button',{name:'Erfassen: Baby-Tagebuch'}).click();
     assert.equal(await page.locator('#b3ActionBody button').count(),11);
     await page.locator('#b3ActionBody button').filter({hasText:'Flasche'}).click();
@@ -84,12 +117,22 @@ module.exports=async function shell(browser,width,output,base,origin){
       assert.equal(await page.evaluate(()=>NTUI.context()),'more','More reachable directly from '+id);
     }
     await page.evaluate(()=>NTUI.go('more'));
+    if(width===320){
+      await page.setViewportSize({width,height:568});
+      const details=page.locator('.b3-menu-details');
+      await details.evaluate(el=>{el.open=true;});
+      await checkMobileScroll(page,'html','More');
+    }
     await page.getByRole('button',{name:'Alle Funktionen',exact:true}).click();
     const groups=page.locator('#b3Catalog details');
     assert.equal(await groups.count(),6);
     assert.equal(await page.locator('#b3Catalog details[open]').count(),0,'catalogue starts with topics, not a long action list');
     await page.locator('#b3Catalog summary').getByText('Baby',{exact:true}).click();
     assert.equal(await page.getByRole('button',{name:'Tagebuch öffnen',exact:true}).isVisible(),true);
+    if(width===320){
+      await checkMobileScroll(page,'html','All features');
+      await page.setViewportSize({width,height:844});
+    }
     await page.locator('#b3CatalogQuery').fill('Backup');
     assert.equal(await page.getByRole('button',{name:'Backup & Daten',exact:true}).count(),1,'deduplicated settings action');
     await page.locator('#b3CatalogQuery').fill('ernaehrung ampel');
@@ -98,7 +141,8 @@ module.exports=async function shell(browser,width,output,base,origin){
     assert.match(await page.locator('#b3CatalogStatus').textContent(),/Keine passende/);
     await page.goBack();
     await page.locator('.b3-more-entry button').waitFor();
-    await page.locator('.b3-menu-details summary').filter({hasText:'Ansicht & Hinweise'}).click();
+    const viewSettings=page.locator('.b3-menu-details');
+    if(!await viewSettings.evaluate(el=>el.open))await viewSettings.locator('summary').click();
     await page.getByRole('button',{name:'Navigation anpassen',exact:true}).click();
     await page.locator('#b3Slot0').selectOption('shop');await page.locator('#b3Slot1').selectOption('shop');
     await page.locator('#b3PrefsOv [data-act="NTUI.savePreferences"]').click();

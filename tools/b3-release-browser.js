@@ -20,6 +20,7 @@ module.exports=async function release(browser,output,base){
     assert.ok(dimensions.scroll<=dimensions.width+1,'200% text does not overflow the document');
     for(const b of dimensions.buttons){assert.ok(b.width>=44&&b.height>=44,'navigation touch target');assert.ok(b.x>=-1&&b.right<=321,'navigation stays in viewport');assert.ok(b.label);}
     await page.evaluate(()=>{S.babyOn=true;NTUI.go('baby');NTUIBaby.select('history');});
+    await page.locator('#babyOv .mod').evaluate(async el=>{await Promise.all(el.getAnimations().map(a=>a.finished.catch(()=>{})));});
     const layout=await page.evaluate(()=>({pageBottom:document.querySelector('#babyOv .mod').getBoundingClientRect().bottom,navTop:document.getElementById('b3Nav').getBoundingClientRect().top}));
     assert.ok(layout.pageBottom<=layout.navTop+1,'feature content ends above the enlarged navigation');
     await page.locator('#babyPaneWeek [data-act="NTBabyWeek.openReport"]').click();

@@ -1,12 +1,14 @@
 'use strict';
 // Two independent browser stores, real NT sync engines and AES-GCM, isolated
-// in-memory HTTP contract. No request reaches the production worker.
+// in-memory HTTP contract. Service workers are blocked in these transport-mock
+// contexts so every sync request is intercepted; offline SW coverage runs in
+// the separate shell/release journeys. No production worker is contacted.
 const assert=require('node:assert/strict');
 module.exports=async function sync(browser,base){
   const records=new Map(),contexts=[];let offlineA=false;
   const room='b3-test-room-12345678901234567890',key='synthetic-browser-test-key-only';
   async function device(which){
-    const ctx=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,timezoneId:'Europe/Berlin'});contexts.push(ctx);
+    const ctx=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,timezoneId:'Europe/Berlin',serviceWorkers:'block'});contexts.push(ctx);
     await ctx.route('**/*',async route=>{
       const request=route.request(),u=new URL(request.url());
       if(/^\/(baby|shop|pantry|plan)\/sync$/.test(u.pathname)){
@@ -33,7 +35,9 @@ module.exports=async function sync(browser,base){
     const uiA=await A.page.evaluate(()=>({nav:S.ui.navSlots,actions:S.ui.homeActions})),uiB=await B.page.evaluate(()=>({nav:S.ui.navSlots,actions:S.ui.homeActions}));
     const run=await A.page.evaluate(()=>{NTBaby.startFeed('r');return NTBaby.runningFeed();});
     await A.page.evaluate(()=>NTBaby.Sync.run(true));await B.page.evaluate(()=>NTBaby.Sync.run(true));
-    assert.equal(await B.page.evaluate(()=>NTBaby.runningFeed().id),run.id);
+    assert.ok(records.get('/baby/sync')?.has(run.id),'first device uploaded the encrypted timer');
+    assert.equal(await B.page.evaluate(()=>{const e=NTBaby.runningFeed();return e&&e.id;}),run.id,
+      'remote timer: '+await B.page.evaluate(()=>NTBaby.Sync.statusText()));
     await B.page.evaluate(id=>NTBaby.stopFeed(true,id),run.id);await B.page.evaluate(()=>NTBaby.Sync.run(true));await A.page.evaluate(()=>NTBaby.Sync.run(true));
     assert.equal(await A.page.evaluate(()=>NTBaby.runningFeed()),null,'remote stop reaches first device');
     const second=await B.page.evaluate(()=>{NTBaby.startFeed('l');return NTBaby.runningFeed();});await B.page.evaluate(()=>NTBaby.Sync.run(true));await A.page.evaluate(()=>NTBaby.Sync.run(true));

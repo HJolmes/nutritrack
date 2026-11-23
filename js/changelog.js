@@ -2,6 +2,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.337',items:[
+    {icon:'⌂',text:'<b>Neue Startseite</b>: Gerade wichtig, bis zu sechs frei wählbare Schnellaktionen und ein kompakter Tagesüberblick. Die nächste Brust steht dauerhaft im Baby-Kurzstatus. Laufende Stillvorgänge direkt stoppen oder die Seite wechseln. Deine bisherigen Baby-Schnellknöpfe bleiben erhalten.',where:'Neue Ansicht → Heute / Baby'},
+  ]},
   {v:'0.336',items:[
     {icon:'☰',text:'<b>Neue Navigation ausprobieren</b>: Unter Mehr lässt sich die neue Ansicht einschalten. Drei frei belegbare Plätze und Erfassen passend zu Ernährung, Baby oder Haushalt. Die klassische Ansicht bleibt jederzeit erreichbar.',where:'Mehr → Neue Ansicht ausprobieren'},
   ]},

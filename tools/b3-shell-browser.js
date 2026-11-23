@@ -66,6 +66,7 @@ module.exports=async function shell(browser,width,output,base){
     await page.evaluate(()=>NTUI.go('nutrition'));await nav.getByRole('button',{name:'Erfassen: Ernährung'}).click();
     await page.locator('#pickerOv.open').waitFor();await page.evaluate(()=>closeOv('pickerOv'));
     await ctx.setOffline(false);
+    if(require('node:fs').existsSync(path.resolve(__dirname,'../js/ui-home.js')))await require('./b3-home-browser')(page);
     await page.goto(base+'?ui=classic',{waitUntil:'load'});
     assert.equal(await page.evaluate(()=>NTUI.enabled()),false,'emergency route bypasses new shell');
     assert.equal(await page.locator('#mainScreen').evaluate(el=>el.classList.contains('active')),true);

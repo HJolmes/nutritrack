@@ -33,3 +33,7 @@ interface Navigator { standalone?: boolean; }
 interface EventTarget { tagName?: string; }
 
 declare var NTUI: any; declare var NTUICatalog: any; declare var NTUIActions: any;
+
+declare var NTUIHome: any;
+
+declare var NTUIBaby: any;

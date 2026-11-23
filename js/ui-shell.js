@@ -36,6 +36,7 @@ function render(){
   if(!active)return;
   var t=NTUICatalog.target(section);document.getElementById('b3Title').textContent=t?t.label:'Heute';
   var body=document.getElementById('b3Content');body.innerHTML='';
+  if(section==='home'&&window.NTUIHome)NTUIHome.render();
   if(section==='household')body.innerHTML='<div class="b3-grid">'+['shop','pantry','plan','book'].map(function(id){var f=NTFeat.byId(id);return '<button type="button" data-act="NTUI.go" data-args="'+esc(JSON.stringify([id]))+'">'+f.ic+' '+esc(f.label)+'</button>';}).join('')+'</div>';
   if(section==='more')body.innerHTML='<div class="b3-row"><button type="button" data-act="NTUI.openPreferences">Navigation anpassen</button><button type="button" data-act="NTUI.classic">Klassische Ansicht</button></div><label for="b3CatalogQuery">Alle Funktionen durchsuchen</label><input id="b3CatalogQuery" type="search" placeholder="Funktion oder Einstellung"><div id="b3Catalog"></div>';
   if(section==='more')catalog();
@@ -52,7 +53,7 @@ function go(id,replace){
   if(!NTUICatalog.target(id))id='home';
   if(!NTUICatalog.available(id)){showToast('Dieser Bereich ist ausgeschaltet. Unter Mehr → Funktionen aktivieren.');id='more';}
   positions[section]=window.scrollY;closeAll();section=id;
-  document.body.classList.toggle('b3-classic-screen',['home','nutrition','history','trends'].indexOf(id)>=0);
+  document.body.classList.toggle('b3-classic-screen',['nutrition','history','trends'].indexOf(id)>=0||(id==='home'&&!window.NTUIHome));
   document.body.classList.toggle('b3-nutrition',id==='nutrition');
   var map={home:'main',nutrition:'main',history:'history',trends:'trends'};
   if(map[id]&&adapters.screen)adapters.screen(map[id]);
@@ -77,9 +78,10 @@ function opened(id){
   el.setAttribute('data-ui','b3');el.setAttribute('role',isPage(id)?'region':'dialog');
   el.setAttribute('aria-modal',isPage(id)?'false':'true');
   if(isPage(id))el.setAttribute('data-b3-page','');
+  if(id==='babyOv'&&window.NTUIBaby)NTUIBaby.mount();
   var heading=el.querySelector('.mti');if(heading){if(!heading.id)heading.id=id+'B3Title';el.setAttribute('aria-labelledby',heading.id);}
   status();
-  setTimeout(function(){var input=/** @type {HTMLElement} */ (el.querySelector('input:not([type="hidden"]),textarea,select,button'));if(input)input.focus({preventScroll:true});},0);
+  setTimeout(function(){var input=/** @type {HTMLElement} */ (el.querySelector('input:not([type="hidden"]),textarea,select,button'));if(input&&el.classList.contains('open'))input.focus({preventScroll:true});},0);
 }
 function closed(id){
   if(!active)return;
@@ -108,6 +110,8 @@ function savePreferences(){
   if(new Set(ids).size!==3){showToast('Bitte drei unterschiedliche Bereiche auswählen.');return;}
   prefs().navSlots=ids;saveS();closeOv('b3PrefsOv');nav();
 }
+function refresh(){if(!active)return;if(section==='home'&&window.NTUIHome)NTUIHome.render();if(section==='baby'&&window.NTUIBaby)NTUIBaby.refresh();nav();}
+function changeDay(dir){if(adapters.date)adapters.date(dir);refresh();}
 function classic(){prefs().enabled=false;saveS();var u=new URL(location.href);u.searchParams.set('ui','classic');location.href=u.href;}
 function enable(){prefs().enabled=true;saveS();var u=new URL(location.href);u.searchParams.set('ui','b3');location.href=u.href;}
 function boot(ext){
@@ -137,5 +141,5 @@ window.addEventListener('popstate',function(e){
   (desired.overlays||[]).forEach(function(id){if(overlays.indexOf(id)<0)openOv(id);});
   restoring=false;status();
 });
-window.NTUI={boot:boot,enabled:enabled,prefs:prefs,context:context,go:go,back:back,render:render,opened:opened,closed:closed,legacy:legacy,dispatch:dispatch,openPreferences:openPreferences,savePreferences:savePreferences,classic:classic,enable:enable};
+window.NTUI={refresh:refresh,changeDay:changeDay,boot:boot,enabled:enabled,prefs:prefs,context:context,go:go,back:back,render:render,opened:opened,closed:closed,legacy:legacy,dispatch:dispatch,openPreferences:openPreferences,savePreferences:savePreferences,classic:classic,enable:enable};
 })();

@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.347"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.348"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.347"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.348"></script>
 <script>
   // @ts-check
   (function(){
@@ -898,6 +898,22 @@ body.b3-on .ov[data-ui="b3"] .mod{color:var(--b3-ink);}
 body.b3-on #b3BabyDevelopment{margin-bottom:1rem;}
 body.b3-on #babyTimeline{max-height:none!important;overflow:visible!important;}
 body.b3-on #babySleepPlanBody{max-height:none!important;overflow:visible!important;}
+.baby-sleep-stats{margin:0 0 10px;padding:12px;border:1px solid var(--br);border-radius:12px;background:var(--card);}
+.baby-sleep-stats h3{font-size:1rem;margin:0 0 8px;}
+.baby-sleep-totals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}
+.baby-sleep-totals>div{padding:7px;background:var(--gl);border-radius:8px;overflow-wrap:anywhere;}
+.baby-sleep-totals strong,.baby-sleep-totals small{display:block;}
+.baby-sleep-stats summary{min-height:44px;align-content:center;cursor:pointer;}
+.baby-sleep-week{display:grid;grid-template-columns:5.5em minmax(0,1fr) 6em;align-items:center;gap:5px;font-size:.75rem;margin:5px 0;}
+.baby-sleep-bar{display:block;background:var(--gl);border-radius:5px;overflow:hidden;}
+.baby-sleep-bar i{display:block;height:8px;background:var(--g1);}
+.pantry-charge{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 8px;margin:8px 0;padding:8px;border:1px solid var(--br);border-radius:10px;}
+.pantry-charge>strong,.pantry-charge>button,.pantry-charge>label:has(.pantry-charge-qty){grid-column:1/-1;}
+.pantry-charge label,.pantry-meal-row{font-size:.8rem;}
+.pantry-charge .sinp,.pantry-meal-row .sinp{min-width:0;width:100%;box-sizing:border-box;}
+.pantry-meal-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(100px,.7fr);align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--br);}
+.pantry-meal-row small,.pantry-meal-row strong{display:block;}
+.pantry-meal-row small{color:var(--mu);}
 
 body.b3-on #mainScreen .main{--mu:#685e55;}
 body.b3-on #mainScreen button{min-height:44px;}
@@ -1078,10 +1094,13 @@ body.b3-nutrition .b3-card-action{display:inline-flex;margin-top:8px;align-items
 #b3Nav{
   box-sizing:border-box;width:min(100%,480px);max-width:480px;
   bottom:var(--kbh,0px);
+  grid-template-columns:minmax(0,2fr) minmax(44px,1fr) minmax(0,2fr);
   padding:7px 7px calc(8px + env(safe-area-inset-bottom,0px));
   background:rgba(255,253,251,.98);border-top:1px solid var(--b3-line,#eadfd3);
   box-shadow:0 -9px 28px rgba(60,36,22,.08);gap:3px;
 }
+#b3Nav .b3-nav-side{display:flex;gap:3px;min-width:0;}
+#b3Nav .b3-nav-side button{flex:1;}
 #b3Nav button{
   box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:4px;min-height:59px;min-width:0;padding:5px 2px;border:0;border-radius:15px;
@@ -1135,6 +1154,11 @@ body.b3-on #b3ActionBody.b3-action-grid{grid-template-columns:repeat(2,minmax(0,
 body.b3-on #b3ActionBody button{text-align:left;line-height:1.3;overflow-wrap:anywhere;}
 body.b3-on #b3ActionBody select{width:100%;padding:.6rem;border:1px solid var(--b3-line);border-radius:.8rem;background:white;color:var(--b3-ink);}
 #b3MealPrefsOv>.mod{display:flex;flex-direction:column;overflow:hidden;}
+#whatsNewOv>.mod{display:flex;flex-direction:column;overflow:hidden;}
+#whatsNewOv .mhd{flex:none;}
+#whatsNewBody{min-height:0;overflow:auto;flex:1;overscroll-behavior:contain;}
+#whatsNewOv .whats-new-footer{flex:none;padding:8px 16px 12px;border-top:1px solid var(--br);}
+#whatsNewOv .whats-new-footer button{width:100%;}
 #b3MealPrefsOv .mhd{flex:none;}
 #b3MealPrefsOv .mbd{display:flex;flex-direction:column;flex:1;min-height:0;padding:0;overflow:hidden;}
 #b3MealPrefsBody{flex:1;overflow:auto;padding:14px clamp(10px,4vw,20px);}
@@ -1778,7 +1802,7 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.347</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.348</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -2983,20 +3007,23 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
       <label class="lbl">Immer da: mindestens … Stück <span style="text-transform:none;font-weight:600;">(leer = egal)</span></label>
       <div class="sf"><input type="text" class="sinp" id="pantryItemMin" inputmode="decimal" placeholder="z. B. 2" autocomplete="off"></div>
       <div style="font-size:11px;color:var(--mu);line-height:1.5;margin:-2px 2px 8px;">Fällt der Bestand darunter, kommt der Artikel auf den Einkaufszettel. Mit Gramm je Stück zieht „Fertig gekocht“ im Kochbuch die verbrauchte Menge ab.</div>
+      <div id="pantryFirstCharge" class="lbl">Haltbarkeit</div>
       <div style="display:flex;gap:8px;">
         <div style="flex:1;min-width:0;">
-          <label class="lbl">Mindestens haltbar bis</label>
+          <label class="lbl" for="pantryItemMhd">Mindestens haltbar bis</label>
           <div class="sf"><input type="date" class="sinp" id="pantryItemMhd"></div>
         </div>
         <div style="flex:1;min-width:0;">
-          <label class="lbl">Zu verbrauchen bis</label>
+          <label class="lbl" for="pantryItemVd">Zu verbrauchen bis</label>
           <div class="sf"><input type="date" class="sinp" id="pantryItemVd"></div>
         </div>
       </div>
-      <div style="font-size:11px;color:var(--mu);line-height:1.5;margin:-2px 2px 8px;">Beides optional, bei mehreren Packungen das früheste Datum. Ab 3 Tagen vorher erscheint der Artikel unter „⏰ Läuft ab“ und auf der Kachel.</div>
+      <div id="pantryCharges"></div>
+      <button type="button" class="seb" data-act="NTPantry.addChargeRow">＋ Charge mit eigenem Datum</button>
+      <div style="font-size:11px;color:var(--mu);margin:8px 0;">Weitere Chargen erhöhen den Bestand. Beim Abziehen wird die früheste Charge zuerst verwendet.</div>
       <label class="lbl">Hält nach dem Kauf ca. … Tage <span style="text-transform:none;font-weight:600;">(leer = egal)</span></label>
       <div class="sf"><input type="text" class="sinp" id="pantryItemHd" inputmode="numeric" placeholder="z. B. 7" autocomplete="off"></div>
-      <div style="font-size:11px;color:var(--mu);line-height:1.5;margin:-2px 2px 8px;">Wird der Artikel aufgefüllt, setzt NutriTrack „Mindestens haltbar bis“ auf heute + diese Tage – ist noch eine ältere Packung da, bleibt deren früheres Datum.</div>
+      <div style="font-size:11px;color:var(--mu);line-height:1.5;margin:-2px 2px 8px;">Für neue Packungen ohne Datum gilt die eingetragene Dauer oder eine Produktschätzung. Das Datum auf der Packung hat Vorrang.</div>
       <div id="pantryItemUse" style="display:none;">
         <label class="lbl">Aus dem Vorrat nehmen</label>
         <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
@@ -3007,6 +3034,16 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
       </div>
       <button type="button" class="svb" data-act="NTPantry.saveItem">Speichern ✓</button>
       <button type="button" class="seb" id="pantryItemDel" style="color:#c62828;" data-act="NTPantry.deleteItem">🗑 Aus dem Vorrat löschen</button>
+    </div>
+  </div>
+</div>
+<div class="ov" id="pantryMealOv" data-bg-close="pantryMealOv">
+  <div class="mod">
+    <div class="mhd"><button type="button" class="mcl" data-act="closeOv" data-args='["pantryMealOv"]' aria-label="Vorratsabzug schließen">✕</button><h2 class="mti">Vom Vorrat abziehen?</h2><div class="msu">Der Eintrag ist im Tagebuch gespeichert.</div></div>
+    <div class="mbd">
+      <div id="pantryMealRows"></div>
+      <button type="button" class="svb" data-act="NTPantry.confirmMeal">Vom Vorrat abziehen</button>
+      <button type="button" class="seb" data-act="closeOv" data-args='["pantryMealOv"]'>Nur im Tagebuch lassen</button>
     </div>
   </div>
 </div>
@@ -3160,7 +3197,8 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
       <div class="mti">🆕 Was ist neu?</div>
       <div class="msu" id="whatsNewVersion"></div>
     </div>
-    <div class="mbd" id="whatsNewBody"></div>
+    <div class="mbd" id="whatsNewBody" tabindex="0" aria-label="Versionsverlauf"></div>
+    <div class="whats-new-footer"><button type="button" class="cb2" onclick="closeWhatsNew()">Alles klar ✓</button></div>
   </div>
 </div>
 
@@ -4216,15 +4254,15 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.347"></script>
-<script src="js/single-tab.js?v=0.347"></script>
-<script src="js/fooddb.js?v=0.347"></script>
-<script src="js/fooddb-usda.js?v=0.347"></script>
-<script src="js/restaurants.js?v=0.347"></script>
-<script src="js/metdb.js?v=0.347"></script>
-<script src="js/idb-photos.js?v=0.347"></script>
-<script src="js/changelog.js?v=0.347"></script>
-<script src="js/calc.js?v=0.347"></script>
+<script src="js/actions.js?v=0.348"></script>
+<script src="js/single-tab.js?v=0.348"></script>
+<script src="js/fooddb.js?v=0.348"></script>
+<script src="js/fooddb-usda.js?v=0.348"></script>
+<script src="js/restaurants.js?v=0.348"></script>
+<script src="js/metdb.js?v=0.348"></script>
+<script src="js/idb-photos.js?v=0.348"></script>
+<script src="js/changelog.js?v=0.348"></script>
+<script src="js/calc.js?v=0.348"></script>
 <script>
 // @ts-check
 // ════════════════════════════════════════
@@ -4244,7 +4282,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.347';
+var APP_VERSION='0.348';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -5111,8 +5149,8 @@ function checkWhatsNew(){
         +(item.where?'<div style="font-size:11px;color:var(--g1);">📍 '+item.where+'</div>':'')+'</div></div>';
     });
   });
-  html+='<button type="button" class="cb2" onclick="closeWhatsNew()" style="width:100%;margin-top:12px;">Alles klar ✓</button>';
   document.getElementById('whatsNewBody').innerHTML=html;
+  document.getElementById('whatsNewBody').scrollTop=0;
   document.getElementById('whatsNewVersion').textContent='Beta v'+APP_VERSION;
   setTimeout(function(){openOv('whatsNewOv');},1000);
 }
@@ -5128,8 +5166,8 @@ function showWhatsNew(){
         +(item.where?'<div style="font-size:11px;color:var(--g1);">📍 '+item.where+'</div>':'')+'</div></div>';
     });
   });
-  html+='<button type="button" class="cb2" onclick="closeWhatsNew()" style="width:100%;margin-top:12px;">Alles klar ✓</button>';
   document.getElementById('whatsNewBody').innerHTML=html;
+  document.getElementById('whatsNewBody').scrollTop=0;
   document.getElementById('whatsNewVersion').textContent='Beta v'+APP_VERSION;
   openOv('whatsNewOv');
 }
@@ -8837,49 +8875,49 @@ function axTestSync(){
 }
 
 </script>
-<script src="js/ampel.js?v=0.347"></script>
-<script src="picker.js?v=0.347"></script>
-<script src="js/health-sync.js?v=0.347"></script>
-<script src="js/sync-core.js?v=0.347"></script>
-<script src="js/baby.js?v=0.347"></script>
-<script src="js/baby-sleep.js?v=0.347"></script>
-<script src="js/baby-sleep-plan.js?v=0.347"></script>
-<script src="js/baby-meds.js?v=0.347"></script>
-<script src="js/baby-growth-data.js?v=0.347"></script>
-<script src="js/baby-growth.js?v=0.347"></script>
-<script src="js/baby-week.js?v=0.347"></script>
-<script src="js/baby-milestones.js?v=0.347"></script>
-<script src="js/baby-midwife.js?v=0.347"></script>
-<script src="js/shopping.js?v=0.347"></script>
-<script src="js/pantry.js?v=0.347"></script>
-<script src="js/partner.js?v=0.347"></script>
-<script src="js/alexa-sync.js?v=0.347"></script>
-<script src="js/dashboard.js?v=0.347"></script>
-<script src="js/features.js?v=0.347"></script>
-<script src="js/launch.js?v=0.347"></script>
-<script src="js/xlsx.js?v=0.347"></script>
-<script src="js/food-export.js?v=0.347"></script>
-<script src="js/mealplan.js?v=0.347"></script>
-<script src="js/book-swaps.js?v=0.347"></script>
-<script src="js/cookbook.js?v=0.347"></script>
-<script src="js/onedrive.js?v=0.347"></script>
-<script src="js/autosave.js?v=0.347"></script>
-<script src="js/recurring.js?v=0.347"></script>
-<script src="js/stats.js?v=0.347"></script>
-<script src="js/reminders.js?v=0.347"></script>
-<script src="js/templates.js?v=0.347"></script>
-<script src="js/offline-queue.js?v=0.347"></script>
-<script src="js/tour.js?v=0.347"></script>
-<script src="js/ui-catalog.js?v=0.347"></script>
-<script src="js/ui-actions.js?v=0.347"></script>
-<script src="js/ui-shell.js?v=0.347"></script>
-<script src="js/ui-home.js?v=0.347"></script>
-<script src="js/ui-baby.js?v=0.347"></script>
-<script src="js/ui-reminder-rules.js?v=0.347"></script>
-<script src="js/ui-priority.js?v=0.347"></script>
-<script src="js/ui-nutrition.js?v=0.347"></script>
-<script src="js/ui-household.js?v=0.347"></script>
-<script src="js/ui-settings.js?v=0.347"></script>
+<script src="js/ampel.js?v=0.348"></script>
+<script src="picker.js?v=0.348"></script>
+<script src="js/health-sync.js?v=0.348"></script>
+<script src="js/sync-core.js?v=0.348"></script>
+<script src="js/baby.js?v=0.348"></script>
+<script src="js/baby-sleep.js?v=0.348"></script>
+<script src="js/baby-sleep-plan.js?v=0.348"></script>
+<script src="js/baby-meds.js?v=0.348"></script>
+<script src="js/baby-growth-data.js?v=0.348"></script>
+<script src="js/baby-growth.js?v=0.348"></script>
+<script src="js/baby-week.js?v=0.348"></script>
+<script src="js/baby-milestones.js?v=0.348"></script>
+<script src="js/baby-midwife.js?v=0.348"></script>
+<script src="js/shopping.js?v=0.348"></script>
+<script src="js/pantry.js?v=0.348"></script>
+<script src="js/partner.js?v=0.348"></script>
+<script src="js/alexa-sync.js?v=0.348"></script>
+<script src="js/dashboard.js?v=0.348"></script>
+<script src="js/features.js?v=0.348"></script>
+<script src="js/launch.js?v=0.348"></script>
+<script src="js/xlsx.js?v=0.348"></script>
+<script src="js/food-export.js?v=0.348"></script>
+<script src="js/mealplan.js?v=0.348"></script>
+<script src="js/book-swaps.js?v=0.348"></script>
+<script src="js/cookbook.js?v=0.348"></script>
+<script src="js/onedrive.js?v=0.348"></script>
+<script src="js/autosave.js?v=0.348"></script>
+<script src="js/recurring.js?v=0.348"></script>
+<script src="js/stats.js?v=0.348"></script>
+<script src="js/reminders.js?v=0.348"></script>
+<script src="js/templates.js?v=0.348"></script>
+<script src="js/offline-queue.js?v=0.348"></script>
+<script src="js/tour.js?v=0.348"></script>
+<script src="js/ui-catalog.js?v=0.348"></script>
+<script src="js/ui-actions.js?v=0.348"></script>
+<script src="js/ui-shell.js?v=0.348"></script>
+<script src="js/ui-home.js?v=0.348"></script>
+<script src="js/ui-baby.js?v=0.348"></script>
+<script src="js/ui-reminder-rules.js?v=0.348"></script>
+<script src="js/ui-priority.js?v=0.348"></script>
+<script src="js/ui-nutrition.js?v=0.348"></script>
+<script src="js/ui-household.js?v=0.348"></script>
+<script src="js/ui-settings.js?v=0.348"></script>
 
 <div class="ov" id="b3HomePrefsOv" data-ui="b3" data-bg-close="b3HomePrefsOv"><div class="mod"><div class="mhd"><button type="button" class="mcl" data-act="closeOv" data-args='["b3HomePrefsOv"]' aria-label="Schnellaktionen schließen">✕</button><h2 class="mti">Schnellaktionen anpassen</h2></div><div class="mbd"><div id="b3HomePrefsBody"></div><button type="button" class="b3-primary" data-act="closeOv" data-args='["b3HomePrefsOv"]'>Fertig</button></div></div></div>
 <div class="ov" id="b3MealPrefsOv" data-ui="b3" data-bg-close="b3MealPrefsOv"><div class="mod"><div class="mhd"><button type="button" class="mcl" data-act="closeOv" data-args='["b3MealPrefsOv"]' aria-label="Hinweise schließen">✕</button><h2 class="mti">Mahlzeiten-Hinweise</h2></div><div class="mbd"><div id="b3MealPrefsBody"></div><div class="b3-reminder-save"><button type="button" class="b3-primary" data-act="NTUIReminders.save">Einstellungen speichern</button></div></div></div></div>

@@ -36,7 +36,7 @@ function nav(){
     if(['history','trends'].includes(current)||nutritionPanels[section])current='nutrition';
     if(['shop','pantry','plan','book'].includes(current))current=section==='nutrition'?'nutrition':'household';
   }
-  var markup=ids.map(function(id){
+  function navButton(id){
     if(id==='+'){
       var label=(NTUICatalog.target(owner)||{}).label||'Alle Bereiche';
       var visible=({nutrition:'Lebensmittel',baby:'Eintrag',shop:'Artikel',pantry:'Vorrat',book:'Rezept',plan:'Planen'})[owner]||'Erfassen';
@@ -44,7 +44,9 @@ function nav(){
     }
     var t=NTUICatalog.target(id),on=id===current,short=({baby:'Baby',shop:'Einkauf'})[id]||t.label;
     return '<button type="button" aria-label="'+esc(t.label)+'"'+(on?' aria-current="page"':'')+' data-act="NTUI.go" data-args="'+esc(JSON.stringify([id]))+'"><span aria-hidden="true">'+t.ic+'</span><small>'+esc(short)+'</small></button>';
-  }).join('');
+  }
+  function side(list){return '<div class="b3-nav-side">'+list.filter(NTUICatalog.available).map(navButton).join('')+'</div>';}
+  var markup=side(ids.slice(0,2))+navButton('+')+side(ids.slice(3));
   if(markup!==navMarkup){el.innerHTML=markup;navMarkup=markup;}
   measureChrome();
 }

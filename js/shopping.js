@@ -349,9 +349,9 @@ function toggle(id){
   it.d=it.d?0:1;
   if(it.d)it.da=Date.now();else delete it.da;
   it.rev=nextRev();
-  saveS();Sync.schedule();render();
-  // Gekauft heißt: im Vorrat aufgefüllt (nur Artikel, die dort stehen).
+  // Vorrat und Einkaufsstatus mit derselben Bestandsbuchung speichern.
   if(window.NTPantry)NTPantry.onBought(it,!!it.d);
+  saveS();Sync.schedule();render();
 }
 function remove(id){
   var a=list();

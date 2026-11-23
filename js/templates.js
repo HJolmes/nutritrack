@@ -41,6 +41,7 @@ function applyMealTemplate(id,meal){
   saveS();renderAll();
   showToast('✓ Vorlage eingetragen');
   closeOv('templateOv');
+  if(window.NTPantry)copies.forEach(function(entry){NTPantry.offerMeal(entry);});
 }
 
 function openTemplateOv(meal){

@@ -10,6 +10,7 @@ const path=require('node:path');
 function setup(log){
   const body={innerHTML:''},context={window:{},S:{babyLog:log||{},baby:{birth:'2026-09-12'}}};
   context.document={getElementById:id=>id==='babySleepPlanBody'?body:null};
+  context.NTBaby={summary:()=>({sleepMin:0})};
   vm.createContext(context);
   for(const file of ['js/baby-sleep.js','js/baby-sleep-plan.js']){
     vm.runInContext(fs.readFileSync(path.resolve(__dirname,'../..',file),'utf8'),context,{filename:file});
@@ -23,6 +24,9 @@ test('Tagesübersicht hat Schlafplan, Zeitachsen-Legende, Startknopf und Sicherh
   assert.match(app.body.innerHTML,/Erfasst/);
   assert.match(app.body.innerHTML,/Angenommen/);
   assert.match(app.body.innerHTML,/Prognose/);
+  assert.match(app.body.innerHTML,/Erfasster Schlaf/);
+  assert.match(app.body.innerHTML,/Letzte 7 Tage/);
+  assert.doesNotMatch(app.body.innerHTML,/Erfasst =/);
   assert.match(app.body.innerHTML,/NTBaby.startSleepFromPlanNow/);
   assert.match(app.body.innerHTML,/erst nach deinem Speichern/);
   assert.deepEqual(app.log,{});
@@ -42,5 +46,6 @@ test('Das Lesen der Tagesübersicht fügt keine Schläfchen hinzu',()=>{
   const snapshot=JSON.stringify(log);
   const app=setup(log);app.api.render();
   assert.match(app.body.innerHTML,/Bearbeiten/);
+  assert.match(app.body.innerHTML,/<strong>40 Min\.<\/strong><small>Gesamt/);
   assert.equal(JSON.stringify(log),snapshot);
 });

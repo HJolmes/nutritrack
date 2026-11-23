@@ -59,7 +59,12 @@ module.exports=async function release(browser,output,base,origin){
     await page.getByRole('button',{name:'Erfassen: Baby-Tagebuch'}).click();await page.locator('#b3ActionBody button').filter({hasText:'Notiz'}).click();
     await page.locator('#babyNoteText').fill('Offline nach Mitternacht');await page.locator('#babyEntryOv [data-act="NTBaby.saveEntry"]').click();
     await page.waitForFunction(()=>(S.babyLog[S.currentDate]||[]).some(e=>e.text==='Offline nach Mitternacht'),{},{timeout:5000});
-    await page.evaluate(()=>{NTUI.go('nutrition');NTPicker.openPicker('breakfast','own');});
+    assert.equal(await page.evaluate(async()=>{
+      NTUI.go('nutrition');NTPicker.openPicker('breakfast','own');
+      var field=document.getElementById('ownName');field.focus();
+      await new Promise(resolve=>setTimeout(resolve,0));
+      return document.activeElement===field;
+    }),true,'deferred dialog focus must preserve an already selected input');
     await page.locator('#ownName').fill('Offline-Mahlzeit');await page.locator('#ownKcal').fill('123');await page.locator('#ownOnce').check();
     await page.locator('[data-act="NTPicker.pickerSaveOwn"]').click();
     try{

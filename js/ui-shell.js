@@ -93,7 +93,7 @@ function opened(id){
   if(id==='babyOv'&&window.NTUIBaby)NTUIBaby.mount();
   var heading=el.querySelector('.mti');if(heading){if(!heading.id)heading.id=id+'B3Title';el.setAttribute('aria-labelledby',heading.id);}
   status();
-  setTimeout(function(){var input=/** @type {HTMLElement} */ (el.querySelector('input:not([type="hidden"]),textarea,select,button'));if(input&&el.classList.contains('open'))input.focus({preventScroll:true});},0);
+  setTimeout(function(){var input=/** @type {HTMLElement} */ (el.querySelector('input:not([type="hidden"]),textarea,select,button'));if(input&&el.classList.contains('open')&&overlays[overlays.length-1]===id&&!el.contains(document.activeElement))input.focus({preventScroll:true});},0);
 }
 function closed(id){
   if(!active)return;

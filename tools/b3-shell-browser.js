@@ -56,6 +56,16 @@ module.exports=async function shell(browser,width,output,base){
     await page.waitForFunction(()=>NTUI.context()==='nutrition');
     await page.evaluate(()=>{S.babyOn=false;NTUI.go('baby');});
     assert.equal(await page.evaluate(()=>NTUI.context()),'more','disabled feature goes to More');
+    // Use the actual service worker and caches, not a synthetic fetch fallback.
+    await page.evaluate(async()=>{await navigator.serviceWorker.register(new URL('sw.js',location.href).href,{scope:'./'});await navigator.serviceWorker.ready;});
+    await page.reload({waitUntil:'load'});await page.waitForFunction(()=>!!navigator.serviceWorker.controller&&NTUI.enabled());
+    await page.waitForFunction(async()=>!!(await caches.match(location.href)));
+    await ctx.setOffline(true);await page.reload({waitUntil:'load'});
+    await page.waitForFunction(()=>NTUI.enabled());
+    assert.deepEqual(await page.evaluate(()=>S.ui.navSlots),['shop','pantry','more'],'offline reload retains navigation');
+    await page.evaluate(()=>NTUI.go('nutrition'));await nav.getByRole('button',{name:'Erfassen: Ernährung'}).click();
+    await page.locator('#pickerOv.open').waitFor();await page.evaluate(()=>closeOv('pickerOv'));
+    await ctx.setOffline(false);
     await page.goto(base+'?ui=classic',{waitUntil:'load'});
     assert.equal(await page.evaluate(()=>NTUI.enabled()),false,'emergency route bypasses new shell');
     assert.equal(await page.locator('#mainScreen').evaluate(el=>el.classList.contains('active')),true);

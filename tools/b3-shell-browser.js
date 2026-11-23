@@ -6,7 +6,9 @@ module.exports=async function shell(browser,width,output,base,origin){
   const ctx=await browser.newContext({...(process.env.B3_BROWSER==='webkit'?devices['iPhone 13']:{}),viewport:{width,height:844},isMobile:true,hasTouch:true,timezoneId:'Europe/Berlin'});
   try{
     await ctx.route('**/*',r=>/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/)/.test(r.request().url())?r.continue():r.abort());
-    const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+    const page=await ctx.newPage(),errors=[],failures=[];
+    page.on('requestfailed',r=>failures.push({path:new URL(r.url()).pathname,error:r.failure()?.errorText}));
+    page.on('pageerror',e=>{errors.push(e.stack||e.message);console.error('B3 uncaught browser error',e.stack||e.message);});
     const data=fixture(new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Berlin'}));
     await page.addInitScript(data=>{
       if(localStorage.getItem('nt_v6'))return;
@@ -87,6 +89,7 @@ module.exports=async function shell(browser,width,output,base,origin){
     await page.goto(base+'?ui=classic',{waitUntil:'load'});
     assert.equal(await page.evaluate(()=>NTUI.enabled()),false,'emergency route bypasses new shell');
     assert.equal(await page.locator('#mainScreen').evaluate(el=>el.classList.contains('active')),true);
+    if(errors.length)console.error('B3 failed-request diagnostics',failures);
     assert.deepEqual(errors,[]);
     console.log('B3 shell '+width+'px: context +, eleven types, preferences, Back, feature off, classic recovery OK');
   }finally{if(origin)origin.setAvailable(true);await ctx.close();}

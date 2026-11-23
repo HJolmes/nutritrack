@@ -35,8 +35,20 @@ module.exports=async function release(browser,output,base,origin){
     await page.reload({waitUntil:'load'});await page.waitForFunction(()=>!!navigator.serviceWorker.controller&&NTUI.enabled());
     await page.waitForFunction(async()=>!!(await caches.match(location.href)));
     const next=await page.evaluate(()=>NTBaby.addDayKey(S.currentDate,1));
-    await page.clock.setFixedTime(new Date(next+'T00:05:00+01:00'));await page.evaluate(()=>checkDayRollover());
+    await page.clock.setFixedTime(await page.evaluate(next=>new Date(next+'T00:05:00').getTime(),next));await page.evaluate(()=>checkDayRollover());
     assert.equal(await page.evaluate(()=>S.currentDate),next,'midnight selects the new local day');
+    if(await page.evaluate(()=>NTAutoSave.fileActive())){
+      await page.evaluate(()=>{Object.defineProperty(navigator,'canShare',{configurable:true,value:()=>true});Object.defineProperty(navigator,'share',{configurable:true,value:async data=>{window._b3FileSaved=data.files[0].name;}});NTAutoSave.fileCheck();});
+      await page.locator('#fileSaveOv.open').waitFor();await page.keyboard.press('Escape');
+      assert.equal(await page.locator('#fileSaveOv').evaluate(el=>el.classList.contains('open')),true,'Escape cannot bypass the existing daily file backup');
+      await page.evaluate(()=>NTUI.back());await page.goBack();
+      await page.waitForFunction(()=>history.state?.overlays?.includes('fileSaveOv'));
+      assert.equal(await page.locator('#fileSaveOv').evaluate(el=>el.classList.contains('open')),true,'internal Back preserves the backup dialog');
+      await page.locator('#fileSaveOv [data-act="NTAutoSave.fileSave"]').click();
+      await page.waitForFunction(()=>!document.getElementById('fileSaveOv').classList.contains('open'));
+      assert.match(await page.evaluate(()=>window._b3FileSaved),/^nutritrack-backup[1-4]\.json$/);
+      assert.equal(await page.evaluate(()=>localStorage.getItem('nt_file_backup_day')),next);
+    }
     if(origin){origin.setAvailable(false);await assert.rejects(ctx.request.get(base,{timeout:2000}));}else await ctx.setOffline(true);
     await page.evaluate(()=>NTUI.go('baby'));
     await page.getByRole('button',{name:'Erfassen: Baby-Tagebuch'}).click();await page.locator('#b3ActionBody button').filter({hasText:'Notiz'}).click();

@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie beschreibt den **aktuellen** Stand, nicht seine Geschichte — die steht in Git und in `js/changelog.js`. Der Stand vor der Kürzung (#258, 132 KB): `git show 0d69ba2:UEBERGABE.md`. Grenzen siehe „Pflege“, `tools/check.js` prüft sie.
 
-**Stand:** v0.339 (23.11.2026) — Schlafplan mit Erfasst/Angenommen/Prognose; seit v0.331 lokale Schlafprognose, manuelle Tag-/Nachteinordnung und Nachtannahmen. B3-Bestandsabsicherung #362 gemergt; gekapselte B3-Design-Tokens, Smartphone-Zoom freigegeben; verbindlicher Fortschritt in `docs/NutriTrack_B3_vollstaendiger_Implementierungsplan.md`, Abschnitt 11. Neue Heute-Ansicht mit sechs Favoriten/Bruststatus; Baby in vier Unterbereiche geordnet, Nachtfenster bei Schlaf, Arztbericht 7/14 Tage; klassisch bleibt Standard, neue Shell optional unter Mehr oder `?ui=b3`; Notfallroute `?ui=classic`.
+**Stand:** v0.340 (23.11.2026) — Schlafplan mit Erfasst/Angenommen/Prognose; seit v0.331 lokale Schlafprognose, manuelle Tag-/Nachteinordnung und Nachtannahmen. B3-Bestandsabsicherung #362 gemergt; gekapselte B3-Design-Tokens, Smartphone-Zoom freigegeben; verbindlicher Fortschritt in `docs/NutriTrack_B3_vollstaendiger_Implementierungsplan.md`, Abschnitt 11. B3-Bereiche Ernährung/Haushalt/Mehr und Suchkatalog integriert; neue Heute-Ansicht mit sechs Favoriten/Bruststatus; Baby in vier Unterbereiche geordnet, Nachtfenster bei Schlaf, Arztbericht 7/14 Tage; klassisch bleibt Standard, neue Shell optional unter Mehr oder `?ui=b3`; Notfallroute `?ui=classic`.
 
 ## URLs
 
@@ -76,11 +76,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.335 | — | B3-Design-Tokens unter `[data-ui="b3"]`; klassische Ansicht unverändert. Smartphone-Zoom freigegeben, gemeinsame App-/Cacheversion. #362 schützt das Ausgangsinventar und synthetische Wiederherstellung. |
 | v0.336 | — | Optionale B3-Shell/Katalog/Aktionsrouter: Heute fix, drei Nav-Slots, Kontext-Plus und elf Babytypen; gemeinsame Daten, Back/Fokus, klassische Recovery-URL. |
 | v0.337 | — | B3-Heute, sechs freie Home-Aktionen getrennt von Altwerten, Bruststatus auf Heute/Baby; bestehendes Still-Widget nutzt ID-sichere Stopp-/Wechselaktionen. |
 | v0.338 | — | Vier Baby-Unterbereiche mit bestehenden Paneelen, Nachtfenster unter Schlaf, Back für Entwicklung; Arztbericht folgt ausgewähltem 7-/14-Tage-Zeitraum. |
 | v0.339 | — | Erklärbare Prioritäten und Auto/Immer/Nie je Mahlzeit, Snooze, Ausblenden und optionales OS-Opt-in; reine Regeln plus neue bestätigte Picker-Zeitstempel, Alt-Timer unverändert. |
+| v0.340 | — | Ernährung/Haushalt/Mehr über bestehende Fachscreens, vollständiger Suchkatalog mit Integrationen, Vorlagen/Import/Teilen; Detail-Back und angepasste Tour, Classic-Präferenzen additiv übernommen. |
 
 ---
 

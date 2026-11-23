@@ -11,6 +11,7 @@ test('B3 preferences are additive, normalize invalid slots and leave ten Baby bu
   const a=app({navSlots:['home','baby','baby'],futureKey:'keep'}),before=JSON.stringify(a.S.babyQuick);
   const p=a.window.NTUI.prefs();
   assert.equal(new Set(p.navSlots).size,3);assert.ok(!p.navSlots.includes('home'));assert.equal(p.futureKey,'keep');
+  assert.deepEqual(JSON.parse(JSON.stringify(p.classicLayout)),{order:a.S.dashOrder,hidden:a.S.dashHidden});
   assert.equal(JSON.stringify(a.S.babyQuick),before);assert.equal(a.S.babyQuick.length,10);
   assert.equal(JSON.stringify(a.window.NTUI.prefs()),JSON.stringify(p));
 });

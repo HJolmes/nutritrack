@@ -303,8 +303,9 @@ Stand 23.11.2026, geprüftes `main`: `88eeb9846e8646270a1c6a7c155e10b18317112e`,
 | 02–04 | Abgeschlossen, PR [#364](https://github.com/HJolmes/nutritrack/pull/364) gemergt | Gemeinsames Funktionsregister, optionale Shell, freie Slots, Kontext-Plus, Back/Fokus und Notfallroute; echte vorhandene Editoren |
 | 05–07 | Abgeschlossen, PR [#365](https://github.com/HJolmes/nutritrack/pull/365) gemergt | Neue Startseite, sechs unabhängige Schnellaktionen, dauerhafter Bruststatus auf Heute/Baby, ID-sicheres Stoppen/Wechseln |
 | 08–10 | Abgeschlossen, PR [#366](https://github.com/HJolmes/nutritrack/pull/366) gemergt | Vier Baby-Unterbereiche auf vorhandenen Paneelen; echte elf Editorabläufe, Verlauf/Bericht, WHO/U-Heft/Fragen/Medizin; Nachtfenster im Schlafbereich |
-| 11–12 | In Prüfung | Lokale erklärbare Prioritäten, vier Mahlzeiten-Modi, robuste Zeitfenster, Snooze/Ausblenden, getrenntes OS-Opt-in |
-| 13–22 | Offen | Reihenfolge und Abnahmen gemäß Abschnitt 7 |
+| 11–12 | Abgeschlossen, PR [#367](https://github.com/HJolmes/nutritrack/pull/367) gemergt | Lokale erklärbare Prioritäten, vier Mahlzeiten-Modi, robuste Zeitfenster, Snooze/Ausblenden, getrenntes OS-Opt-in |
+| 13–20 | In Prüfung | Ernährung/Haushalt/Mehr integrieren reale vorhandene Screens/Editoren, vollständiger Katalog, Daten-/Rezept-/Plan-/Bestandsketten und Tour |
+| 21–22 | Offen | Reihenfolge und Abnahmen gemäß Abschnitt 7 |
 
 **PR 00 / G0:** Das Inventar erfasst auch generiertes HTML, `tab.html`, Feature-Aktionen, Startkurzbefehle, Namespace-Exports und die 50 Zeilen der verbindlichen Matrix. Es ist ein Reichweiteninventar, keine Behauptung, dass alle Fachabläufe bereits getestet wurden. `npm test` prüft den Fortbestand seiner Einstiege/APIs. Der Snapshot bleibt unverändert; begründete Ablösungen benötigen später eine explizite, getestete Zuordnung.
 
@@ -333,3 +334,8 @@ Prioritäten gemäß Abschnitt 6.1: laufende Vorgänge, vorhandene feste Erinner
 153 Node-Tests prüfen u.a. 21 Tage ohne Frühstück, Always/Never, genutzte Tage, verlässliche Zeiten, robuste Fenster, Snooze, feste Timer und unverdrängbare laufende Vorgänge. Browserprüfung ergänzt die tatsächlichen Einstellungsfelder, fehlendes ungefragtes Berechtigungs-Prompt, Bestand der festen Erinnerungen und Picker-Zeitstempel.
 
 **Baby-Browsernachweis:** PR #366 besteht nach Korrektur der Fachseiten-Höhe oberhalb der Bottom-Navigation. Alle elf Typen wurden bei 320/390/430 px über Plus angelegt, bearbeitet und gelöscht, einschließlich Tombstones; Schlaf-Entwurfs-/Zukunftsschutz, Nachtfenster, Bericht/14 Tage und Entwicklung sind grün. G2 ist automatisiert abgesichert, reale Zwei-Geräte-/Gerätetests bleiben offen wie in Abschnitt 9 festgelegt.
+
+
+**PR 13–20:** Gemeinsames Integrationspaket ohne neue Fachberechnungen: Ernährung ordnet Heute/Planung/Kochbuch/Verlauf und Aktivität/Wasser/Fasten/Ziele; Haushalt verwendet Einkauf/Vorrat/Plan/Kochbuch samt vollständigen bestehenden Fachdialogen. Mehr bietet den deduplizierten Katalog aus `NTFeat`, vorhandenen Menüs und benannten versteckten Integrationen (Alexa, Health, OneDrive/Backup, Partner, KI-Prompts, Exporte, Import, Hilfe). Die bisherigen Kachelpräferenzen werden additiv als Classic-Layout-Snapshot übernommen, Originale bleiben erhalten. Navigation merkt auch Mahlzeitdetails; die Tour verwendet dieselben Erklärungen mit passenden B3-Zielen.
+
+G4-Browserreise prüft die sieben Picker-Wege, Tageswerte, Archiv-Reaktivierung, Wasser, neuen Rezepteditor → Wochenplan → Einkauf/Tagebuch, Wiederholungs-Abbruch, Mindestvorrat → Einkauf → Wiederauffüllen → Verbrauch/Undo sowie tatsächliche Katalog-Einstiege. Anschließend echte Datei-Aus-/Einfuhr mit neuen UI-Präferenzen, Logs und Küchenbeständen, gerätelokalem Testfoto und vollständiger Tour. Externe Live-OAuth-/Partner-Accounts werden nicht mit privaten Daten verändert. Bestehende Fachregressionsprüfungen bleiben zusätzlich aktiv.

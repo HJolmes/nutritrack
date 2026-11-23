@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie beschreibt den **aktuellen** Stand, nicht seine Geschichte — die steht in Git und in `js/changelog.js`. Der Stand vor der Kürzung (#258, 132 KB): `git show 0d69ba2:UEBERGABE.md`. Grenzen siehe „Pflege“, `tools/check.js` prüft sie.
 
-**Stand:** v0.347 (23.11.2026) — B3 ist Standard, eine ausdrückliche Classic-Wahl bleibt gespeichert. Übersicht bündelt laufende Vorgänge und Schnellaktionen. Ernährung behält Kopfzeile und Reiter für Heute, Planung, Kochbuch und Verlauf. Teilen ist direkt erreichbar. Dialoge liegen zwischen Kopfzeile und Navigation, der Picker zeigt alle sieben Methoden. Mehr führt zum gruppierten Funktionskatalog. Mahlzeitenhinweise lernen lokal, Systemmeldungen sind freiwillig. Recovery: `?ui=classic`, B3: `?ui=b3`. Die Paket-/F01–F50-Nachweise und offenen manuellen Release-Prüfungen stehen im B3-Implementierungsplan, Abschnitt 11.
+**Stand:** v0.348 (23.11.2026) — B3 zeigt nur aktive Bereiche in der Navigation. Dialoge lassen die Kopf- und Fußleiste sichtbar. „Was ist neu?“ hat einen scrollbaren Verlauf. Die Baby-Schlafansicht zeigt Tageswerte und die letzten sieben Tage erfassten Schlaf. Abhaken im Einkauf übernimmt Artikel in den aktiven Vorrat. Einzelne Chargen behalten ihre Daten, ein Vorratsabzug bei manuellen Tagebucheinträgen braucht Bestätigung. Mehr führt zum gruppierten Funktionskatalog. Recovery: `?ui=classic`, B3: `?ui=b3`. Die offenen manuellen Release-Prüfungen stehen im B3-Implementierungsplan, Abschnitt 11.
 
 ## URLs
 
@@ -76,11 +76,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.343 | B3-Bloom-Polish | Farben und Raster an Bloom angeglichen, Schnellaktionen und Tageskarten neu formatiert; 320/390/430-px-Layoutprüfungen und Screenshots, Classic unverändert. |
 | v0.344 | Mobile-Reiter | Einstellungen/Picker/Baby-Reiter als horizontale Wischleiste statt schrumpfender Spalten; aktive Einstellungen automatisch sichtbar, ARIA-Status und mobile Browserprüfungen. |
 | v0.345 | B3-Konzeptabgleich | Kompakte Bloom-Oberfläche, fortlaufende Timer-Aktionen, sichtbare Starthinweise, kontextbezogenes Plus und direkter Vorratszugriff. Zusammengefasste Dialogwechsel verhindern unnötige Browserverlaufseinträge. |
 | v0.346 | Mehr aufgeräumt | Kompakter Einstieg für Einstellungen, eigene Themenseite und Suchfilter mit Begriffen aus den vorhandenen Funktionsbeschreibungen. |
 | v0.347 | Browserkommentare | Einheitliche Ernährungsreiter, direkte Teilen-Aktion, sichtbare Kopf- und Fußleiste, Erfassungsraster und gestaltete Mahlzeiten-Hinweise. |
+| v0.348 | Vorrat und Schlaf | Einkauf erzeugt Chargen mit tatsächlichem oder geschätztem Datum. Tagebuch bietet einen bestätigten Abzug an. Schlafstatistik, übersichtliche Hinweise und scrollbarer Versionsverlauf. |
 
 ---
 

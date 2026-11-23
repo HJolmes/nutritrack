@@ -1046,7 +1046,7 @@ function pantryBought(qty,it){
   if(PANTRY_COUNT_UNITS.indexOf(u)>=0)return v>0?v:1;
   var g=+(it&&it.g)||0;
   var grams=u==='g'||u==='ml'?v:(u==='kg'||u==='l'||u==='liter'?v*1000:0);
-  if(grams>0&&g>0)return Math.max(1,Math.round(grams/g));
+  if(grams>0&&g>0)return grams/g;
   return need||1;
 }
 // Grundzutaten, die fast jeder zu Hause hat — sie zählen bei den

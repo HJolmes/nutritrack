@@ -32,12 +32,12 @@ function html(){
   shown=sorted[0]&&sorted[0].kind==='running'?sorted.filter(function(c){return c.kind==='running';}):sorted.slice(0,1);
   if(!shown.length)return '<article class="b3-card b3-priority-idle"><h3>Nichts Dringendes</h3>'+btn('Etwas erfassen','NTUIActions.all')+'</article>';
   if(shown[0].kind==='running')return '<article class="b3-card b3-active" data-priority-id="'+esc(shown[0].id)+'">'+shown.map(function(c){
-    return '<div class="b3-running"><h3>'+esc(c.title)+'</h3>'+c.html+'<details><summary>Warum sehe ich das?</summary><p class="b3-muted">'+esc(c.reason)+'</p></details></div>';
+    return '<div class="b3-running"><h3>'+esc(c.title)+'</h3>'+c.html+'</div>';
   }).join('')+'</article>';
   return shown.map(function(c){
     NTUIReminders.delivered(c);
     var options=c.source==='meal'?'':'<div class="b3-row">'+btn('Heute ausblenden','NTUIPriority.hide',[c.id])+(c.source==='fixed'?'':btn('Solche Hinweise ausschalten','NTUIPriority.mute',[c.source]))+'</div>';
-    return '<article class="b3-card b3-active" data-priority-id="'+esc(c.id)+'"><h3>'+esc(c.title)+'</h3>'+(c.detail?'<p>'+esc(c.detail)+'</p>':'')+(c.html||'')+(c.source==='meal'?btn('Eintragen','NTUIPriority.meal',[c.slot]):'')+'<details><summary>Warum sehe ich das?</summary><p class="b3-muted">'+esc(c.reason)+'</p>'+options+'</details>'+(c.source==='meal'?'<div class="b3-row">'+btn('30 Min. später','NTUIReminders.dismiss',[c.slot,'snooze'])+btn('Heute ausblenden','NTUIReminders.dismiss',[c.slot,'today'])+btn('Nicht relevant','NTUIReminders.dismiss',[c.slot,'irrelevant'])+'</div>':'')+'</article>';
+    return '<article class="b3-card b3-active" data-priority-id="'+esc(c.id)+'"><h3>'+esc(c.title)+'</h3>'+(c.detail?'<p>'+esc(c.detail)+'</p>':'')+(c.html||'')+(c.source==='meal'?btn('Eintragen','NTUIPriority.meal',[c.slot]):'<details><summary>Optionen</summary>'+options+'</details>')+(c.source==='meal'?'<div class="b3-row">'+btn('30 Min. später','NTUIReminders.dismiss',[c.slot,'snooze'])+btn('Heute ausblenden','NTUIReminders.dismiss',[c.slot,'today'])+btn('Nicht relevant','NTUIReminders.dismiss',[c.slot,'irrelevant'])+'</div>':'')+'</article>';
   }).join('');
 }
 function hide(id){var c=shown.find(function(x){return x.id===id;});if(!c||c.kind==='running')return;var end=new Date();end.setHours(24,0,0,0);NTUI.prefs().priorityHidden[id]=end.getTime();saveS();NTUI.refresh();}

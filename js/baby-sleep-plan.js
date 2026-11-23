@@ -8,7 +8,7 @@ function localDay(ms){var d=new Date(ms);return d.getFullYear()+'-'+('0'+(d.getM
 function shiftDate(key,offset){var p=key.split('-').map(Number),d=new Date(p[0],p[1]-1,p[2]+offset);return localDay(d.getTime());}
 function clock(ms){var d=new Date(ms);return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);}
 function args(data){return escHtml(JSON.stringify(data));}
-function fmtMinutes(m){var h=Math.floor(m/60);return h?(h+' Std. '+Math.round(m%60)+' Min.'):(Math.round(m)+' Min.');}
+function fmtMinutes(m){m=Math.round(m);var h=Math.floor(m/60);return h?(h+' Std. '+m%60+' Min.'):(m+' Min.');}
 function row(title,meta,color,action){
   return '<div style="border-left:4px solid '+color+';border-radius:9px;background:var(--gl);padding:9px 10px;margin-bottom:7px;">'
     +'<div style="font-size:13px;font-weight:700;color:var(--tx);">'+title+'</div>'
@@ -31,6 +31,26 @@ function barTrack(plan,kind,title,color,opacity){
     +'<div style="flex:1;position:relative;height:22px;background:var(--gl);border:1px solid var(--br);border-radius:5px;overflow:hidden;">'
     +bars+'</div></div>';
 }
+function statistics(plan,key){
+  var night=0,nap=0,count=0;
+  plan.events.filter(function(e){return e.kind==='actual';}).forEach(function(e){
+    var minutes=Math.max(0,Math.min(plan.dayEnd,e.end)-Math.max(plan.dayStart,e.start))/60000;
+    if(!minutes)return;
+    if(e.type==='night')night+=minutes;
+    else{nap+=minutes;count++;}
+  });
+  var days=Array.from({length:7},function(_,i){
+    var date=shiftDate(key,i-6);
+    return {date:date,min:NTBaby.summary(date).sleepMin};
+  });
+  var max=Math.max(60,...days.map(function(d){return d.min;}));
+  return '<section class="baby-sleep-stats" aria-label="Erfasste Schlafzeiten"><h3>Erfasster Schlaf</h3><div class="baby-sleep-totals">'
+    +[['Gesamt',night+nap],['Nachtschlaf',night],['Nickerchen ('+count+')',nap]].map(function(v){return '<div><strong>'+fmtMinutes(v[1])+'</strong><small>'+v[0]+'</small></div>';}).join('')
+    +'</div><details><summary>Letzte 7 Tage</summary>'+days.map(function(d){
+      var date=new Date(d.date+'T12:00:00').toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'numeric'});
+      return '<div class="baby-sleep-week"><span>'+escHtml(date)+'</span><span class="baby-sleep-bar" aria-hidden="true"><i style="width:'+Math.round(100*d.min/max)+'%"></i></span><span>'+(d.min?fmtMinutes(d.min):'—')+'</span></div>';
+    }).join('')+'</details></section>';
+}
 function render(){
   var root=document.getElementById('babySleepPlanBody');
   if(!root||!window.NTBabySleep)return;
@@ -45,18 +65,17 @@ function render(){
     +'<div style="flex:1;text-align:center;font-size:12px;font-weight:800;">'+escHtml(label)+(isToday?' · Heute':'')+'</div>'
     +action('Heute','NTBabySleepPlan.today',[])
     +action('›','NTBabySleepPlan.shift',[1])+'</div>';
+  html+=statistics(plan,selected);
   html+='<div style="padding:10px;border:1px solid var(--br);border-radius:12px;margin-bottom:10px;">'
     +'<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--mu);padding-left:80px;"><span>00</span><span>06</span><span>12</span><span>18</span><span>24 Uhr</span></div>'
     +barTrack(plan,'actual','Erfasst','var(--g1)',1)
     +barTrack(plan,'assumed','Angenommen','#9AA5B2',0.75)
     +barTrack(plan,'forecast','Prognose','var(--g3)',0.88)
-    +'<div style="font-size:10px;color:var(--mu);margin-top:7px;">Erfasst = wirklich dokumentiert · Angenommen = nur aus nächtlichen Versorgungen abgeleitet · Prognose = noch nicht eingetragen</div>'
     +'</div>';
   html+='<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:8px;">'
     +'<span style="font-size:13px;font-weight:800;">Schlaf im Tagesverlauf</span>'
     +(isToday?action('😴 Schlaf jetzt starten','NTBaby.startSleepFromPlanNow',[]):'')
     +'</div>';
-  if(!plan.events.length)html+='<div style="color:var(--mu);font-size:12px;padding:10px;">Für diesen Tag liegen noch keine Schlafphasen vor.</div>';
   var shown=0;
   plan.events.forEach(function(e){
     if(e.kind==='wake'){

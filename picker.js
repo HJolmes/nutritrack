@@ -291,6 +291,7 @@ function _pickerAppendToEditEntry(items,beforeClose){
   if(beforeClose)beforeClose();
   closePicker();
   openEditEntry(meal,idx);
+  if(window.NTPantry)NTPantry.offerMeal({ingredients:items,portions:e.portions});
   showToast(items.length===1?((items[0].emoji||'🍽')+' '+items[0].name+' hinzugefügt'):(items.length+' Zutat(en) hinzugefügt'));
   return true;
 }
@@ -299,6 +300,7 @@ function _pickerAppendToEditEntry(items,beforeClose){
 // recurring entries and old logs never acquire an invented tracking time.
 function _pickerRecord(meal,entry){
   if(S.currentDate===today()&&!entry.addedAt)entry.addedAt=Date.now();
+  if(window.NTPantry)NTPantry.offerMeal(entry);
   return getDay().meals[meal].push(entry);
 }
 

@@ -19,6 +19,22 @@ module.exports=async function shell(browser,width,output,base,origin){
     await page.screenshot({path:path.join(output,'b3-home-'+width+'.png'),fullPage:true});
     const nav=page.getByRole('navigation',{name:'Hauptnavigation'});
     assert.equal(await nav.locator('button').count(),5);
+    await page.evaluate(()=>{S.babyOn=false;NTUI.refresh();});
+    assert.equal(await nav.getByRole('button',{name:'Baby-Tagebuch',exact:true}).count(),0);
+    await page.evaluate(()=>{S.babyOn=true;NTUI.refresh();showWhatsNew();});
+    const history=page.locator('#whatsNewBody');
+    if(process.env.B3_BROWSER==='webkit'){
+      await history.evaluate(el=>{
+        if(getComputedStyle(el).overflowY!=='auto')throw new Error('Versionsverlauf ist kein Scrollbereich');
+        el.scrollTop=850;
+      });
+    }else{
+      await history.hover();
+      await page.mouse.wheel(0,850);
+    }
+    await page.waitForFunction(()=>document.getElementById('whatsNewBody').scrollTop>0);
+    await page.getByRole('button',{name:'Alles klar ✓'}).click();
+    assert.equal(await nav.getByRole('button',{name:'Baby-Tagebuch',exact:true}).count(),1);
     assert.equal(await page.locator('#b3Back').isVisible(),false,'overview has no unused Back button');
     assert.equal(await page.locator('#b3Title').textContent(),'Übersicht');
     await nav.getByRole('button',{name:'Ernährung',exact:true}).click();

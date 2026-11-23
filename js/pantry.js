@@ -55,14 +55,13 @@ var EXP='__exp';
 var EXP_DAYS=3;
 var _photos=[];      // komprimierte Fotos als base64, nur im Speicher
 var _found=[];       // Ergebnis der Foto-Auswertung bis zur Bestätigung
-var _refill={};      // Einkaufs-ID → {pid,n,log}: was ein Abhaken aufgefüllt hat
 var _pendingBc='';   // gescannter, noch unbekannter Barcode für den Artikel-Dialog
 var _scanMode='in';  // Scanner: 'in' = einbuchen, 'out' = verbrauchen
 
 function uid(p){return p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 var _lastRev=0;
 function nextRev(){var r=Math.max(Date.now(),_lastRev+1);_lastRev=r;return r;}
-function fmtN(v){return String(Math.round((+v||0)*10)/10).replace('.',',');}
+function fmtN(v){return String(roundQty(+v||0)).replace('.',',');}
 function isOpen(id){var el=document.getElementById(id);return !!(el&&el.classList.contains('open'));}
 function args(a){return esc(JSON.stringify(a));}
 
@@ -82,15 +81,23 @@ function byId(id){var a=items();for(var i=0;i<a.length;i++)if(a[i].id===id)retur
 function findByName(n){var k=pantryKey(n);if(!k)return null;var a=items();for(var i=0;i<a.length;i++)if(pantryKey(a[i].n)===k)return a[i];return null;}
 function low(it){return pantryNeed(it.q,it.min)>0;}
 function findByBc(code){var a=items();for(var i=0;i<a.length;i++)if(Array.isArray(a[i].bc)&&a[i].bc.indexOf(code)>=0)return a[i];return null;}
-function r1(v){return Math.round(v*10)/10;}
+function roundQty(v){return Math.round(v*1000)/1000;}
 function guessIc(n){return (window.NTShop&&NTShop.guess)?NTShop.guess(n).ic:'🥫';}
 function fmtD(d){var p=String(d||'').split('-');return p.length===3?(p[2]+'.'+p[1]+'.'+p[0].slice(2)):'';}
-function expiry(it){return pantryExpiry(it,today());}
+function expiry(it){
+  var e=pantryExpiry(it,today());
+  if(e&&e.k==='mhd'){
+    var dated=stockLots(it).filter(function(lot){return lot.mhd===e.d;});
+    return Object.assign({},e,{estimated:dated.length>0&&dated.every(function(lot){return lot.estimated;})});
+  }
+  return e;
+}
 function expiring(){return pantryExpiring(items(),today(),EXP_DAYS);}
 // „MHD 02.11.26“ bzw. „Verbrauchen bis …“, abgelaufen/bald mit Hinweis.
 function expiryText(e){
   if(!e)return '';
   var t=(e.k==='vd'?'Verbr. bis ':'MHD ')+fmtD(e.d);
+  if(e.estimated)t+=' · geschätzt';
   if(e.lvl==='over')t+=e.k==='vd'?' ⛔ abgelaufen':' ⚠️ abgelaufen';
   else if(e.days===0)t+=' ⏰ heute';
   else if(e.days===1)t+=' ⏰ morgen';
@@ -101,6 +108,60 @@ function expiryColor(e){return !e||e.lvl==='ok'?'var(--mu)':(e.lvl==='over'?'var
 // Ein späteres Datum ersetzt kein früheres: steht schon etwas da, gilt das,
 // was zuerst abläuft (die ältere Packung wird zuerst gegessen).
 function earlier(a,b){if(!a)return b||'';if(!b)return a;return a<b?a:b;}
+function stockLots(it){
+  var qty=roundQty(+it.q||0);
+  if(qty<=0)return [];
+  if(Array.isArray(it.lots)){
+    var lots=it.lots.filter(function(lot){return lot&&+lot.q>0;}).map(function(lot){return Object.assign({},lot,{q:+lot.q});});
+    // Ein älterer Client kann die Gesamtmenge ohne Chargen ändern.
+    var sum=roundQty(lots.reduce(function(n,lot){return n+lot.q;},0));
+    if(sum===qty)return lots;
+    if(sum<qty)return lots.concat({id:'bestand-'+it.id,q:roundQty(qty-sum),mhd:'',vd:''});
+    var difference=roundQty(sum-qty);
+    return lots.sort(function(a,b){return dateOf(a).localeCompare(dateOf(b));}).filter(function(lot){
+      var consumed=Math.min(difference,lot.q);
+      difference=roundQty(difference-consumed);lot.q=roundQty(lot.q-consumed);
+      return lot.q>0;
+    });
+  }
+  return [{id:'bestand-'+it.id,q:qty,mhd:it.mhd||'',vd:it.vd||''}];
+}
+function writeLots(it,lots){
+  it.lots=lots.filter(function(lot){return lot.q>0;});
+  it.q=roundQty(it.lots.reduce(function(sum,lot){return sum+lot.q;},0));
+  it.mhd=it.lots.reduce(function(d,lot){return earlier(d,lot.mhd);},'');
+  it.vd=it.lots.reduce(function(d,lot){return earlier(d,lot.vd);},'');
+}
+function defaultDays(it){
+  if(+it.hd>0)return +it.hd;
+  var n=String(it.n||'').toLocaleLowerCase('de');
+  if(/\bh[\s-]?(?:voll|mager)?milch\b|haltbare.*milch|ultrahocherhitzt.*milch|\buht\b.*milch/.test(n))return 90;
+  if(/\b(haferflocken|mehl|reis|nudeln|pasta|konserven?)\b/.test(n))return 90;
+  return 0;
+}
+function dateOf(lot){return earlier(lot.mhd,lot.vd)||'9999-12-31';}
+function debit(it,n,lotId){
+  var lots=stockLots(it).map(function(lot){return Object.assign({},lot);});
+  var removed=[];
+  lots.slice().sort(function(a,b){return dateOf(a).localeCompare(dateOf(b));}).forEach(function(lot){
+    if(n<=0||(lotId&&lot.id!==lotId))return;
+    var amount=roundQty(Math.min(n,lot.q));
+    if(!amount)return;
+    removed.push(Object.assign({},lot,{q:amount}));
+    lot.q=roundQty(lot.q-amount);n=roundQty(n-amount);
+  });
+  writeLots(it,lots);
+  return removed;
+}
+function appendLots(it,added){
+  var lots=stockLots(it).map(function(lot){return Object.assign({},lot);});
+  added.forEach(function(lot){
+    var current=lots.find(function(x){return x.id===lot.id;});
+    if(current)current.q=roundQty(current.q+lot.q);
+    else lots.push(Object.assign({},lot));
+  });
+  writeLots(it,lots);
+}
 function amountText(it){
   var t=fmtN(it.q)+' Stück';
   if(+it.g>0)t+=' à '+fmtN(it.g)+' g';
@@ -125,7 +186,7 @@ function touch(it){it.rev=nextRev();saveS();Sync.schedule();render();}
 // Artikel (touch), deshalb hier nur anlegen.
 /** @param {any} it @param {number} d @param {string} k @param {string} [src] */
 function log(it,d,k,src){
-  d=r1(d);
+  d=roundQty(d);
   if(!d)return null;
   var e={id:uid('l'),t:Date.now(),pid:it.id,n:it.n,ic:it.ic||'',d:d,k:k,src:src||'hand',u:0,rev:nextRev()};
   logArr().unshift(e);
@@ -137,21 +198,20 @@ function trimLog(){
   if(t.length!==a.length)S.pantryLog=t;
 }
 // Auffüllen um `n` Stück: Menge, MHD aus der Standard-Haltbarkeit, Verlauf.
-/** @param {any} it @param {number} n @param {string} src @param {string} [mhd] */
-function refill(it,n,src,mhd){
-  var qb=+it.q||0;
-  if(!(n>0)){if(mhd)it.mhd=earlier(it.mhd,mhd);return null;}
-  it.q=r1(qb+n);
-  if(mhd)it.mhd=qb>0?earlier(it.mhd,mhd):mhd;
-  else it.mhd=pantryRefillMhd(it,qb,today());
-  return log(it,it.q-qb,'kauf',src);
+/** @param {any} it @param {number} n @param {string} src @param {string} [mhd] @param {string} [vd] */
+function refill(it,n,src,mhd,vd){
+  n=roundQty(n);
+  if(!(n>0))return null;
+  var days=!mhd&&!vd&&defaultDays(it);
+  var lot={id:uid('charge'),q:n,mhd:mhd||(days?addDays(today(),days):''),vd:vd||'',estimated:!!days};
+  appendLots(it,[lot]);
+  var e=log(it,n,'kauf',src);e.lots=[lot];return e;
 }
 // Abziehen um `n` Stück (nie unter 0).
 /** @param {any} it @param {number} n @param {string} k @param {string} [src] */
 function take(it,n,k,src){
-  var qb=+it.q||0;
-  it.q=Math.max(0,r1(qb-n));
-  return log(it,it.q-qb,k,src);
+  var qb=+it.q||0,removed=debit(it,n);
+  var e=log(it,it.q-qb,k,src);if(e)e.lots=removed;return e;
 }
 
 /** @param {any} [dates] {mhd,vd} @param {string} [src] Herkunft für den Verlauf */
@@ -164,14 +224,13 @@ function add(n,q,g,locId,ic,min,dates,src){
     var before=pantryNeed(ex.q,ex.min);
     if(+g>0&&!(+ex.g>0))ex.g=+g;
     if(locId&&!ex.loc)ex.loc=locId;
-    refill(ex,+q||0,src||'hand',mhd);
-    if(vd)ex.vd=earlier(ex.vd,vd);
+    refill(ex,+q||0,src||'hand',mhd,vd);
     touch(ex);afterChange(ex,before);
     return ex;
   }
-  var it={id:uid('p'),n:n,ic:ic||guessIc(n),loc:locId||'',q:0,g:+g>0?+g:0,min:+min>0?+min:0,mhd:'',vd:vd,ts:Date.now(),rev:nextRev()};
+  var it={id:uid('p'),n:n,ic:ic||guessIc(n),loc:locId||'',q:0,g:+g>0?+g:0,min:+min>0?+min:0,mhd:'',vd:'',ts:Date.now(),rev:nextRev()};
   items().push(it);
-  refill(it,+q>0?+q:0,src||'hand',mhd);
+  refill(it,+q>0?+q:0,src||'hand',mhd,vd);
   touch(it);afterChange(it,0);
   return it;
 }
@@ -192,6 +251,7 @@ function consume(spoiled){
   var e=take(it,n,spoiled?'verderb':'verbrauch','hand');
   touch(it);afterChange(it,before);
   setVal('pantryItemQ',fmtN(it.q));
+  renderCharges(it);
   renderItemExtras(it);
   if(e)showToast((spoiled?'🗑️ ':'🍽️ ')+fmtN(-e.d)+' '+it.n+(spoiled?' weggeworfen':' verbraucht')+' · ↩️ im Verlauf');
 }
@@ -201,32 +261,38 @@ function remove(id){
 }
 
 // ── Einkaufszettel: abgehakt = gekauft = aufgefüllt ───────────────────────
-// Nur Artikel, die im Vorrat stehen. Wieder ent-hakt nimmt genau das zurück,
-// was das Abhaken in dieser Sitzung aufgefüllt hat.
+// Der Einkauf speichert die Chargenreferenz auch für ein späteres Enthaken.
 /** @param {any} shopItem @param {boolean} done */
 function onBought(shopItem,done){
   if(!shopItem)return;
   if(!done){
-    var m=_refill[shopItem.id];
+    var m=shopItem.stock;
     if(!m)return;
-    delete _refill[shopItem.id];
+    delete shopItem.stock;
     var le=m.log?logById(m.log):null;
     if(le&&le.u)return;// im Verlauf schon rückgängig gemacht
     var back=byId(m.pid);
     if(back){
-      back.q=Math.max(0,r1((+back.q||0)-m.n));
+      debit(back,m.n,m.lot);
       if(le){le.u=1;le.rev=nextRev();}
       touch(back);
     }
     return;
   }
-  var it=pantryFind(items(),shopItem.n);
-  if(!it)return;
+  var feature=NTFeat.byId('pantry');
+  if(!shopItem.n||shopItem.stock||(feature&&NTFeat.isOff(feature)))return;
+  var it=findByName(shopItem.n);
+  if(!it){
+    var weight=/^(\d+(?:[.,]\d+)?)\s*(g|kg)$/i.exec(String(shopItem.q||'').trim());
+    it={id:'einkauf-'+shopItem.id,n:shopItem.n,ic:shopItem.ic||guessIc(shopItem.n),loc:'',q:0,g:weight?num(weight[1])*(weight[2].toLowerCase()==='kg'?1000:1):0,min:0,ts:Date.now()};
+    delete tomb()[it.id];
+    items().push(it);
+  }
   var n=pantryBought(shopItem.q,it);
   var e=refill(it,n,'zettel');
-  _refill[shopItem.id]={pid:it.id,n:n,log:e?e.id:''};
+  if(e)shopItem.stock={pid:it.id,n:e.d,log:e.id,lot:e.lots[0].id};
   touch(it);
-  showToast('Vorrat: '+(it.ic||'')+' '+it.n+' +'+fmtN(n));
+  if(e)showToast('Vorrat: '+(it.ic||'')+' '+it.n+' +'+fmtN(e.d));
 }
 
 // ── Kochbuch: „Fertig gekocht“ zieht ab ───────────────────────────────────
@@ -238,11 +304,11 @@ function useRecipe(ings,portions,recName){
     var name=bookIngShort(ing)||ing.name;
     var it=pantryFind(items(),name);
     if(!it)return;
-    var nq=pantryUse(it,(+ing.amount||0)*p);
-    if(nq===null){skipped++;return;}
+    var grams=(+ing.amount||0)*p;
+    if(!(it.g>0)||!(grams>0)){skipped++;return;}
     var before=pantryNeed(it.q,it.min);
-    log(it,nq-(+it.q||0),'kochen',recName||'Rezept');
-    it.q=nq;it.rev=nextRev();
+    if(!take(it,grams/it.g,'kochen',recName||'Rezept'))return;
+    it.rev=nextRev();
     used.push(it);
     afterChange(it,before);
   });
@@ -252,6 +318,52 @@ function useRecipe(ings,portions,recName){
       +(skipped?' · '+skipped+' ohne Gramm je Stück':''));
   }
   return used.length;
+}
+
+var mealStock=new Map(),mealPending=false;
+function offerMeal(entry){
+  var feature=NTFeat.byId('pantry');
+  if(feature&&NTFeat.isOff(feature))return;
+  var ingredients=Array.isArray(entry.ingredients)&&entry.ingredients.length?entry.ingredients:[entry];
+  var portions=ingredients===entry.ingredients?(+entry.portions||1):1;
+  ingredients.forEach(function(ing){
+    var name=bookIngShort(ing)||ing.name,item=pantryFind(items(),name);
+    if(!item&&pantryKey(name)){
+      var token=' '+pantryKey(name)+' ';
+      var matches=items().filter(function(it){return it.q>0&&(' '+pantryKey(it.n)+' ').includes(token);});
+      if(matches.length===1)item=matches[0];
+    }
+    if(!item||!(item.q>0))return;
+    var known=item.g>0&&ing.amount>0&&!ing.pu&&!entry.pu;
+    var previous=mealStock.get(item.id);
+    mealStock.set(item.id,{item:item,known:known&&(!previous||previous.known),qty:(previous?previous.qty:0)+(known?ing.amount*portions/item.g:0)});
+  });
+  if(!mealStock.size||mealPending)return;
+  mealPending=true;
+  queueMicrotask(function(){
+    mealPending=false;
+    var body=document.getElementById('pantryMealRows');
+    body.innerHTML=Array.from(mealStock.values()).map(function(match){
+      var item=match.item,qty=match.known?fmtN(Math.min(item.q,match.qty)):'';
+      return '<label class="pantry-meal-row" data-pantry-id="'+esc(item.id)+'"><span><strong>'+esc(item.n)+'</strong><small>'+fmtN(item.q)+' Stück vorhanden</small></span>'
+        +'<span>Abziehen (Stück)<input class="sinp" inputmode="decimal" value="'+esc(qty)+'" placeholder="0" aria-label="'+esc(item.n)+' abziehen, Stück"></span></label>';
+    }).join('');
+    mealStock.clear();
+    openOv('pantryMealOv');
+  });
+}
+function confirmMeal(){
+  var used=[];
+  document.querySelectorAll('#pantryMealRows [data-pantry-id]').forEach(function(row){
+    var item=byId(row.getAttribute('data-pantry-id'));
+    var qty=num(/** @type {HTMLInputElement} */ (row.querySelector('input')).value);
+    if(!item||!qty)return;
+    var before=pantryNeed(item.q,item.min);
+    if(!take(item,qty,'verbrauch','Mahlzeit'))return;
+    item.rev=nextRev();used.push(item);afterChange(item,before);
+  });
+  if(used.length){saveS();Sync.schedule();render();showToast('Vorrat aktualisiert ✓');}
+  closeOv('pantryMealOv');
 }
 
 // ════════ Sync ════════
@@ -434,6 +546,26 @@ function locOptions(sel){
     return '<option value="'+esc(l.id)+'"'+(l.id===sel?' selected':'')+'>'+esc(l.ic+' '+l.label)+'</option>';
   }).join('');
 }
+function chargeRow(lot){
+  var id=lot?'':uid('charge-row');
+  return '<div class="pantry-charge"'+(id?' id="'+id+'"':'')+' data-lot-id="'+esc(lot?lot.id:'')+'">'
+    +(lot?'<strong>'+fmtN(lot.q)+' Stück'+(lot.estimated?' · geschätzt':'')+'</strong>':'<label>Stück<input class="sinp pantry-charge-qty" inputmode="decimal" value="1"></label>')
+    +'<label>MHD<input type="date" class="sinp pantry-charge-mhd" value="'+esc(lot&&lot.mhd||'')+'"></label>'
+    +'<label>Verbrauchsdatum<input type="date" class="sinp pantry-charge-vd" value="'+esc(lot&&lot.vd||'')+'"></label>'
+    +(!lot?'<button type="button" class="seb" data-act="NTPantry.removeChargeRow" data-args="'+args([id])+'">Zeile entfernen</button>':'')+'</div>';
+}
+function renderCharges(it){
+  var lots=it?stockLots(it):[],first=lots[0];
+  setVal('pantryItemMhd',first&&first.mhd||'');
+  setVal('pantryItemVd',first&&first.vd||'');
+  document.getElementById('pantryFirstCharge').textContent=first?'Erste Charge · '+fmtN(first.q)+' Stück'+(first.estimated?' · geschätzt':''):'Haltbarkeit';
+  document.getElementById('pantryCharges').innerHTML=lots.slice(1).map(chargeRow).join('');
+}
+function addChargeRow(){document.getElementById('pantryCharges').insertAdjacentHTML('beforeend',chargeRow(null));}
+function removeChargeRow(id){
+  var row=document.getElementById(id);
+  if(row&&row.classList.contains('pantry-charge')&&!row.getAttribute('data-lot-id'))row.remove();
+}
 function openItem(id){
   var it=id?byId(id):null;
   _editId=it?it.id:null;
@@ -442,8 +574,7 @@ function openItem(id){
   setVal('pantryItemQ',it?fmtN(it.q):'1');
   setVal('pantryItemG',it&&+it.g>0?fmtN(it.g):'');
   setVal('pantryItemMin',it&&+it.min>0?fmtN(it.min):'');
-  setVal('pantryItemMhd',it&&it.mhd||'');
-  setVal('pantryItemVd',it&&it.vd||'');
+  renderCharges(it);
   setVal('pantryItemHd',it&&+it.hd>0?String(Math.round(it.hd)):'');
   setVal('pantryItemUseQ','1');
   _pendingBc='';
@@ -514,21 +645,30 @@ function saveItem(){
   var isNew=!it;
   if(!it){it={id:uid('p'),n:n,q:0,ts:Date.now()};items().push(it);}
   var before=it.rev?pantryNeed(it.q,it.min):0;
-  var qb=+it.q||0,mhdOld=it.mhd||'';
+  var qb=+it.q||0,wanted=num(val('pantryItemQ'));
   it.n=n;
   it.ic=val('pantryItemIcon').trim()||guessIc(n);
   it.loc=val('pantryItemLoc');
-  it.q=num(val('pantryItemQ'));
   it.g=num(val('pantryItemG'));
   it.min=num(val('pantryItemMin'));
   it.hd=Math.round(num(val('pantryItemHd')));
   if(!it.hd)delete it.hd;
-  it.mhd=pantryDays(val('pantryItemMhd'),today())===null?'':val('pantryItemMhd');
-  it.vd=pantryDays(val('pantryItemVd'),today())===null?'':val('pantryItemVd');
-  // Aufgefüllt, Datum nicht angefasst → MHD aus „Hält ca. … Tage“.
-  if(it.q>qb&&it.mhd===mhdOld)it.mhd=pantryRefillMhd(it,qb,today());
+  var lots=stockLots(it).map(function(lot){return Object.assign({},lot);}),first=lots[0],newRows=[];
+  var mhd=val('pantryItemMhd'),vd=val('pantryItemVd');
+  var explicit=!first||mhd!==first.mhd||vd!==first.vd;
+  if(first&&explicit)Object.assign(first,{mhd:mhd,vd:vd,estimated:false});
+  document.querySelectorAll('#pantryCharges .pantry-charge').forEach(function(row){
+    var d=/** @type {HTMLInputElement} */ (row.querySelector('.pantry-charge-mhd')).value;
+    var v=/** @type {HTMLInputElement} */ (row.querySelector('.pantry-charge-vd')).value;
+    var existing=lots.find(function(lot){return lot.id===row.getAttribute('data-lot-id');});
+    if(existing){if(existing.mhd!==d||existing.vd!==v)Object.assign(existing,{mhd:d,vd:v,estimated:false});}
+    else newRows.push({q:num(/** @type {HTMLInputElement} */ (row.querySelector('.pantry-charge-qty')).value),mhd:d,vd:v});
+  });
+  writeLots(it,lots);
+  if(wanted>qb)refill(it,wanted-qb,isNew&&_pendingBc?'scan':'hand',explicit?mhd:'',explicit?vd:'');
+  if(wanted<qb)take(it,qb-wanted,'korrektur','hand');
+  newRows.forEach(function(lot){refill(it,lot.q,'hand',lot.mhd,lot.vd);});
   if(_pendingBc&&isNew){addBc(it,_pendingBc);_pendingBc='';}
-  log(it,it.q-qb,isNew?'kauf':'korrektur',isNew&&it.bc?'scan':'hand');
   touch(it);
   _editId=null;
   closeOv('pantryItemOv');
@@ -622,9 +762,12 @@ function undo(id){
   var it=byId(e.pid);
   if(!it){showToast('„'+e.n+'“ steht nicht mehr im Vorrat');return;}
   var before=pantryNeed(it.q,it.min);
-  it.q=Math.max(0,r1((+it.q||0)-(+e.d||0)));
+  if(e.d>0){
+    if(Array.isArray(e.lots))e.lots.forEach(function(lot){debit(it,lot.q,lot.id);});
+    else debit(it,e.d);
+  }else if(Array.isArray(e.lots))appendLots(it,e.lots);
+  else appendLots(it,[{id:uid('charge'),q:-e.d,mhd:it.mhd||'',vd:it.vd||''}]);
   e.u=1;e.rev=nextRev();
-  Object.keys(_refill).forEach(function(k){if(_refill[k].log===e.id)delete _refill[k];});
   touch(it);afterChange(it,before);
   renderLog();
   showToast('↩️ '+(it.ic||'')+' '+it.n+' · jetzt '+fmtN(it.q));
@@ -928,12 +1071,12 @@ document.addEventListener('visibilitychange',function(){if(!document.hidden){Syn
 window.NTPantry={
   boot:boot,open:open,close:close,render:render,renderCard:renderCard,setFilter:setFilter,
   add:add,step:step,remove:remove,submitInput:submitInput,inputKey:inputKey,
-  openItem:openItem,saveItem:saveItem,deleteItem:deleteItem,
+  openItem:openItem,saveItem:saveItem,deleteItem:deleteItem,addChargeRow:addChargeRow,removeChargeRow:removeChargeRow,
   openLocs:openLocs,locAdd:locAdd,locSave:locSave,locMove:locMove,locDelete:locDelete,
   openPhotos:openPhotos,pickPhotos:pickPhotos,takePhoto:takePhoto,photosChosen:photosChosen,dropPhoto:dropPhoto,
   analyzePhotos:analyzePhotos,foundSet:foundSet,foundApply:foundApply,
   openCook:openCook,openRecipe:openRecipe,aiIdeas:aiIdeas,openExpiring:openExpiring,expiring:expiring,
-  onBought:onBought,useRecipe:useRecipe,shortfall:shortfall,
+  onBought:onBought,useRecipe:useRecipe,offerMeal:offerMeal,confirmMeal:confirmMeal,shortfall:shortfall,
   consume:consume,dropBarcodes:dropBarcodes,scan:scan,openLog:openLog,undo:undo,
   remindOn:remindOn,setRemind:setRemind,checkRemind:checkRemind,
   count:function(){return items().length;},lowCount:function(){return items().filter(low).length;},

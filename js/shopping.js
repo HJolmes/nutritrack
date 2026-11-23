@@ -328,7 +328,7 @@ function add(name,qty,c,ic,opts){
     // Abgehakt heisst gekauft: der alte Bedarf ist erledigt, es gilt nur die
     // neue Menge — sonst stuenden gekaufte 500 g + neue 400 g als 900 g da (#243).
     var bought=!!ex.d;
-    if(bought){ex.d=0;delete ex.da;delete ex.rc;delete ex.pre;}
+    if(bought){ex.d=0;delete ex.da;delete ex.rc;delete ex.pre;delete ex.stock;}
     if(qty)ex.q=(opts.mergeQty&&!bought)?mergeQty(ex.q,qty):qty;
     if(opts.recipe)tagSource(ex,opts.recipe,!bought);
     ex.rev=nextRev();
@@ -349,9 +349,9 @@ function toggle(id){
   it.d=it.d?0:1;
   if(it.d)it.da=Date.now();else delete it.da;
   it.rev=nextRev();
-  saveS();Sync.schedule();render();
-  // Gekauft heißt: im Vorrat aufgefüllt (nur Artikel, die dort stehen).
+  // Vorrat und Einkaufsstatus mit derselben Bestandsbuchung speichern.
   if(window.NTPantry)NTPantry.onBought(it,!!it.d);
+  saveS();Sync.schedule();render();
 }
 function remove(id){
   var a=list();

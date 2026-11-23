@@ -832,11 +832,13 @@ function toDiary(date){
       var r=resolve(it);if(!r)return;
       if(r.own)markUsed(rec(it.r));
       var p=it.p||1,t=ingTotal(r.ingredients);
-      day.meals[s.id].push(Object.assign({
+      var entry=Object.assign({
         name:r.name,emoji:r.emoji||'📋',isRecipe:true,recipeId:r.own?it.r:null,
         portions:p,ingredients:JSON.parse(JSON.stringify(r.ingredients)),
         addedAt:new Date().toISOString(),_fromPlan:true
-      },scaleNutrients(t,p)));
+      },scaleNutrients(t,p));
+      day.meals[s.id].push(entry);
+      if(window.NTPantry)NTPantry.offerMeal(entry);
       n++;
     });
   });

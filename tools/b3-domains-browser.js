@@ -61,6 +61,53 @@ module.exports=async function domains(page,output,width){
   await page.evaluate(()=>{NTPantry.setFilter('');NTUI.go('household');});
   await page.getByRole('button',{name:'Rezepte aus dem Vorrat finden'}).click();
   await page.locator('#pantryCookOv.open').waitFor();
+  const milk=await page.evaluate(()=>{
+    closeOv('pantryCookOv');
+    const shop=NTShop.add('H-Milch','2 Stück','','🥛');NTShop.toggle(shop.id);
+    const stock=S.pantry.find(p=>p.n==='H-Milch');
+    return {shop:shop.id,id:stock.id,q:stock.q,mhd:stock.mhd,estimate:addDays(NTBaby.today(),90)};
+  });
+  assert.equal(milk.q,2,'an item absent from pantry is created at checkout');
+  assert.equal(milk.mhd,milk.estimate);
+  await page.evaluate(id=>NTPantry.openItem(id),milk.id);
+  await page.locator('#pantryItemG').fill('1000');
+  for(const offset of [7,21]){
+    await page.getByRole('button',{name:'＋ Charge mit eigenem Datum'}).click();
+    const date=await page.evaluate(offset=>addDays(NTBaby.today(),offset),offset);
+    await page.locator('#pantryCharges .pantry-charge-mhd').last().fill(date);
+  }
+  await page.locator('#pantryItemOv [data-act="NTPantry.saveItem"]').click();
+  const undoCheck=await page.evaluate(milk=>{
+    S.shopList=JSON.parse(localStorage.getItem('nt_v6')).shopList;
+    NTShop.toggle(milk.shop);
+    const stock=S.pantry.find(p=>p.id===milk.id);
+    const remaining=stock.lots.map(lot=>lot.mhd);
+    NTShop.toggle(milk.shop);
+    return {remaining,after:stock.q,lots:stock.lots.length,first:stock.mhd};
+  },milk);
+  assert.equal(undoCheck.remaining.length,2,'stored undo removes only the purchased lot');
+  assert.equal(undoCheck.after,4);assert.equal(undoCheck.lots,3);
+  for(const accept of [false,true]){
+    await page.evaluate(()=>{
+      NTUI.go('nutrition');NTPicker.openPicker('breakfast','own');
+      document.getElementById('ownName').value='H-Milch';
+      document.getElementById('ownKcal').value='65';document.getElementById('ownOnce').checked=true;NTPicker.pickerSaveOwn();
+    });
+    await page.locator('#pantryMealOv.open').waitFor();
+    assert.equal(await page.locator('#pantryMealRows input').inputValue(),'0,1');
+    await page.getByRole('button',{name:accept?'Vom Vorrat abziehen':'Nur im Tagebuch lassen',exact:true}).click();
+    const state=await page.evaluate(id=>S.pantry.find(p=>p.id===id),milk.id);
+    assert.equal(state.q,accept?3.9:4);
+    assert.equal(state.lots.find(lot=>lot.mhd===undoCheck.first).q,accept?0.9:1,'earliest lot is used first');
+  }
+  const repeat=await page.evaluate(()=>{
+    const first=NTShop.add('B3 Haferflocken','500 g','','');NTShop.toggle(first.id);
+    const second=NTShop.add('B3 Haferflocken','200 g','','');NTShop.toggle(second.id);
+    const stock=S.pantry.find(p=>p.n==='B3 Haferflocken'),bought=stock.q;
+    NTShop.toggle(second.id);
+    return {bought,remaining:stock.q};
+  });
+  assert.deepEqual(repeat,{bought:1.4,remaining:1},'reopening a completed list item starts a new purchase and keeps its previous lot');
   // Every settings/integration entry is reached through the searchable catalogue.
   await page.evaluate(()=>NTUI.go('more'));
   await page.getByRole('button',{name:'Alle Funktionen',exact:true}).click();

@@ -2,6 +2,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.351',items:[
+    {icon:'➕',text:'<b>Erfassen ist übersichtlicher</b>. Der Plus-Dialog zeigt Lebensmittel, Baby, Haushalt, Wasser und Sport als kompakte Auswahl. Die Seite dahinter bleibt sichtbar.',where:'Übersicht · Erfassen'},
+  ]},
   {v:'0.350',items:[
     {icon:'💾',text:'<b>Wöchentliche Dateisicherung auf dem iPhone und iPad</b>. Ohne OneDrive erscheint der Sicherungsdialog sieben Tage nach der letzten gespeicherten Datei.',where:'Backup & Daten'},
   ]},

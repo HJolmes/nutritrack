@@ -64,6 +64,18 @@ module.exports=async function shell(browser,width,output,base,origin){
     assert.equal(await nav.getByRole('button',{name:'Baby-Tagebuch',exact:true}).count(),1);
     assert.equal(await page.locator('#b3Back').isVisible(),false,'overview has no unused Back button');
     assert.equal(await page.locator('#b3Title').textContent(),'Übersicht');
+    await nav.locator('.b3-plus').click();
+    const capture=page.getByRole('dialog',{name:'Was erfassen?'});
+    const captureFood=capture.getByRole('button',{name:/Lebensmittel erfassen/});
+    const captureBaby=capture.getByRole('button',{name:'Baby-Eintrag',exact:true});
+    const [sheet,frame,food,baby]=await Promise.all([
+      capture.locator('.mod').boundingBox(),capture.boundingBox(),captureFood.boundingBox(),captureBaby.boundingBox()
+    ]);
+    assert.ok(sheet.height<frame.height,'capture fits its content and keeps the overview visible');
+    assert.ok(food.width>baby.width,'food capture spans both columns');
+    await captureFood.click();
+    await page.locator('#pickerOv.open').waitFor();
+    await page.evaluate(()=>closeOv('pickerOv'));
     await nav.getByRole('button',{name:'Ernährung',exact:true}).click();
     const nutrition=page.getByRole('navigation',{name:'Ernährungsbereiche'});
     assert.equal(await page.getByRole('button',{name:'Tag teilen',exact:true}).isVisible(),true);

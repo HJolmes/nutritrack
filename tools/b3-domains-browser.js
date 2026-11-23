@@ -21,6 +21,14 @@ module.exports=async function domains(page,output,width){
   await page.evaluate(()=>NTBook.toggleMeal('lunch'));
   await page.locator('#recEditOv [data-act="NTBook.editSave"]').click();
   const recipe=await page.evaluate(()=>recipes.find(r=>r.name==='B3 Testbrei'));assert.ok(recipe);assert.equal(recipe.ingredients.length,1);
+  await page.evaluate(()=>{NTUI.go('plan');NTPlan.shiftWeek(1);});
+  await page.getByRole('navigation',{name:'Hauptnavigation'}).getByRole('button',{name:'Erfassen: Wochenplan'}).click();
+  const nextDay=await page.evaluate(()=>NTPlan.visibleDates()[2]);
+  await page.locator('#b3PlanDate').selectOption(nextDay);
+  await page.locator('#b3ActionBody button').filter({hasText:'Mittagessen'}).click();
+  await page.locator('#planPickQ').fill('B3 Testbrei');
+  await page.locator('#planPickList [onclick^="NTPlan.addToSlot"]').click();
+  assert.ok(await page.evaluate(({day,id})=>S.mealPlan[day].lunch.some(e=>e.r===id),{day:nextDay,id:recipe.id}),'plus inserts into the selected day of the visible week');
   await page.evaluate(()=>NTUI.go('plan'));await page.getByRole('navigation',{name:'Hauptnavigation'}).getByRole('button',{name:'Erfassen: Wochenplan'}).click();
   await page.locator('#b3ActionBody button').filter({hasText:'Mittagessen'}).click();await page.locator('#planPickQ').fill('B3 Testbrei');
   await page.locator('#planPickList [onclick^="NTPlan.addToSlot"]').click();
@@ -30,7 +38,7 @@ module.exports=async function domains(page,output,width){
   page.removeAllListeners('dialog');page.on('dialog',d=>d.message().includes('schon im Tagebuch')?d.dismiss():d.accept());
   await page.evaluate(()=>NTPlan.toDiary(S.currentDate));const count=await page.evaluate(()=>getDay().meals.lunch.length);
   await page.evaluate(()=>NTPlan.toDiary(S.currentDate));assert.equal(await page.evaluate(()=>getDay().meals.lunch.length),count,'confirmed plan is not duplicated after rejected repeat');
-  await page.evaluate(()=>NTUI.go('household'));await page.locator('#b3Content button').filter({hasText:'Vorrat öffnen'}).click();
+  await page.evaluate(()=>NTUI.go('household'));await page.locator('#b3Content .b3-feature-row[data-args=\'["pantry"]\']').click();
   await page.getByRole('navigation',{name:'Hauptnavigation'}).getByRole('button',{name:'Erfassen: Vorrat'}).click();
   for(const [id,value] of Object.entries({pantryItemName:'B3 Mindestvorrat',pantryItemQ:'1',pantryItemG:'100',pantryItemMin:'2'}))await page.locator('#'+id).fill(value);
   await page.locator('#pantryItemOv [data-act="NTPantry.saveItem"]').click();
@@ -46,6 +54,13 @@ module.exports=async function domains(page,output,width){
   assert.equal(await page.evaluate(id=>S.pantry.find(p=>p.id===id).q,item.id),1);
   await page.evaluate(id=>{const e=S.pantryLog.find(e=>e.pid===id&&e.k==='verbrauch');NTPantry.undo(e.id);closeOv('pantryItemOv');},item.id);
   assert.equal(await page.evaluate(id=>S.pantry.find(p=>p.id===id).q,item.id),2,'Undo restores the quantity');
+  await page.evaluate(id=>{S.pantry.find(p=>p.id===id).mhd=NTBaby.today();NTUI.go('household');},item.id);
+  await page.locator('.b3-expiry').getByRole('button',{name:'Artikel anzeigen'}).click();
+  assert.match(await page.locator('#pantryOv.open .stab.act').textContent(),/Läuft ab/);
+  assert.ok(await page.locator('#pantryOv.open').getByText('B3 Mindestvorrat',{exact:true}).isVisible());
+  await page.evaluate(()=>{NTPantry.setFilter('');NTUI.go('household');});
+  await page.getByRole('button',{name:'Rezepte aus dem Vorrat finden'}).click();
+  await page.locator('#pantryCookOv.open').waitFor();
   // Every settings/integration entry is reached through the searchable catalogue.
   for(const [query,label,id] of [['Alexa','Alexa-Verbindung','alexaOv'],['Samsung','Apple / Samsung Health','healthSyncOv'],['Excel','Excel-Export','foodExportOv'],['Prompts','KI-Prompts','promptOv'],['Link importieren','Code / Link importieren','importPasteOv'],['Backup','OneDrive, Autosicherung, Backup & Datei-Import','settOv'],['Hilfe','Hilfe und App-Tour','helpOv']]){
     await page.evaluate(()=>NTUI.go('more'));await page.locator('#b3CatalogQuery').fill(query);

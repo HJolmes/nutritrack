@@ -2,6 +2,10 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.345',items:[
+    {icon:'🎨',text:'<b>Bloom-Übersicht</b>: Schnellaktionen, Ernährungsnavigation und Haushaltsbereiche sind kompakter. Das Plus zeigt seinen aktuellen Zweck. Update-, Offline- und Sicherungshinweise sind auf der Startseite wieder sichtbar.',where:'Heute · Ernährung · Haushalt'},
+    {icon:'✓',text:'<b>Direkter zum richtigen Eintrag</b>: Laufende Vorgänge bleiben gemeinsam bedienbar. Das Plus im Wochenplan übernimmt die sichtbare Woche. Im Haushalt führen Haltbarkeit und „Was kochen?“ direkt zu den vorhandenen Funktionen.',where:'Gerade wichtig · Wochenplan · Haushalt'},
+  ]},
   {v:'0.344',items:[
     {icon:'📱',text:'<b>Mobile Reiter repariert</b>: Einstellungen, Baby-Erfassung und Lebensmittelauswahl zeigen ihre Kategorien jetzt in einer horizontal wischbaren Leiste. Keine Buchstaben-Spalten mehr, ausgewählte Reiter werden automatisch sichtbar – auch bei größerer Schrift.',where:'Einstellungen · Baby · Lebensmittel hinzufügen'},
   ]},

@@ -17,6 +17,12 @@ module.exports=async function home(page){
   const first=await page.evaluate(()=>NTBaby.runningFeed());assert.equal(first.side,'r');
   await page.reload({waitUntil:'load'});await page.waitForFunction(()=>NTUI.enabled());
   assert.equal(await page.evaluate(()=>NTBaby.runningFeed().id),first.id,'running timer survives reopening');
+  await page.evaluate(()=>NTBaby.toggleSleep());
+  assert.equal(await root.locator('.b3-active').count(),1,'simultaneous activity stays in one priority card');
+  const wake=root.locator('.b3-active').getByRole('button',{name:'Wach jetzt'});
+  assert.equal(await wake.isVisible(),true,'sleep stays actionable beside active feeding');
+  await wake.click();
+  assert.equal(await page.evaluate(()=>NTBaby.runningFeed().id),first.id,'ending sleep leaves the feeding timer running');
   await root.locator('.b3-active [data-act="NTBaby.switchFeed"]').click();
   const second=await page.evaluate(()=>NTBaby.runningFeed());assert.equal(second.side,'l');assert.notEqual(second.id,first.id);
   await page.evaluate(id=>NTBaby.stopFeed(true,id),first.id);
@@ -39,6 +45,11 @@ module.exports=async function home(page){
   await page.evaluate(()=>closeOv('b3HomePrefsOv'));
   assert.equal(await page.evaluate(()=>document.activeElement.id),'b3Title','closing after a home rerender restores a visible focus target');
   assert.equal(await root.locator('.b3-quick button').count(),6);
+  await page.evaluate(()=>{S.babyOn=false;NTUI.refresh();});
+  const unavailable=root.getByRole('button',{name:'Stillen · Funktion einschalten'});
+  assert.equal(await unavailable.isVisible(),true,'existing quick actions keep their places when a module is disabled');
+  await unavailable.click();await page.locator('#featSheetOv.open').waitFor();
+  await page.evaluate(()=>{closeOv('featSheetOv');S.babyOn=true;saveS();NTUI.refresh();});
   await page.reload({waitUntil:'load'});await page.waitForFunction(()=>NTUI.enabled());
   assert.deepEqual(await page.evaluate(()=>S.ui.homeActions),['stillen','schlaf','wickeln','mahlzeit','einkauf','plan']);
   await page.evaluate(()=>{S.babyLog={};saveS();NTUI.refresh();});

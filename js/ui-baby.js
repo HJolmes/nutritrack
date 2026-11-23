@@ -10,12 +10,14 @@ function mount(){
   if(!document.getElementById('b3BabyTabs')){
     var nav=document.createElement('nav');nav.id='b3BabyTabs';nav.className='b3-baby-tabs';nav.setAttribute('aria-label','Baby-Bereiche');
     nav.innerHTML=[['today','Heute'],['sleep','Schlaf'],['history','Verlauf'],['development','Entwicklung']].map(function(x){return '<button type="button" data-act="NTUIBaby.select" data-args="'+esc(JSON.stringify([x[0]]))+'" data-baby-section="'+x[0]+'">'+x[1]+'</button>';}).join('');
-    tabs.parentNode.insertBefore(nav,tabs);tabs.hidden=true;
+    tabs.parentNode.insertBefore(nav,el);tabs.hidden=true;
     var dev=document.createElement('div');dev.id='b3BabyDevelopment';dev.className='b3-grid';dev.hidden=true;
     dev.innerHTML=[['Wachstum / WHO','growth'],['U-Heft & Meilensteine','mile'],['Fragen an Arzt / Hebamme','mw']].map(function(x){return '<button type="button" data-act="NTUIBaby.development" data-args="'+esc(JSON.stringify([x[1]]))+'">'+x[0]+'</button>';}).join('')+'<button type="button" data-act="NTBabyMed.open">Medizin & Gaben</button>';
     tabs.parentNode.insertBefore(dev,tabs);
     var settings=document.getElementById('babyNightAssumptions');document.getElementById('babyPaneSleep').appendChild(settings);
     settings.querySelector('summary').textContent='Einstellungen für Nachtannahmen';
+    var add=document.getElementById('babyDiaryAdd');
+    add.setAttribute('data-act','NTUIActions.baby');add.removeAttribute('data-args');
   }
   current='today';select('today',false);
   refresh();

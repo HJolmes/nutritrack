@@ -2,7 +2,7 @@
 // Presentation targets derive from the existing feature registry. No domain data.
 (function(){
 'use strict';
-var fixed=[{id:'home',label:'Heute',ic:'⌂'},{id:'nutrition',label:'Ernährung',ic:'🍽'},{id:'household',label:'Haushalt',ic:'⌂'},{id:'history',label:'Verlauf',ic:'📅'},{id:'trends',label:'Trends',ic:'📈'},{id:'more',label:'Mehr',ic:'☰'}];
+var fixed=[{id:'home',label:'Heute',ic:'⌂'},{id:'nutrition',label:'Ernährung',ic:'🍽'},{id:'household',label:'Haushalt',ic:'🏡'},{id:'history',label:'Verlauf',ic:'📅'},{id:'trends',label:'Trends',ic:'📈'},{id:'more',label:'Mehr',ic:'☰'}];
 function targets(){
   return fixed.concat(NTFeat.list().filter(function(f){return ['baby','shop','pantry','plan','book'].indexOf(f.id)>=0;}).map(function(f){return {id:f.id,label:f.label,ic:f.ic};}));
 }

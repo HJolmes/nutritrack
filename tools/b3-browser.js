@@ -73,6 +73,7 @@ const output=path.resolve(__dirname,'../.b3-artifacts');
         await page.evaluate(()=>closeOv('babyEntryOv'));
       }
       await page.reload({waitUntil:'load'});
+      await page.locator('#mainScreen.active').waitFor();
       assert.deepEqual(await page.evaluate(()=>S.babyQuick),before.babyQuick,'reload retains all ten custom buttons');
       assert.deepEqual(errors,[],'no uncaught browser errors');
       await context.close();console.log('B3 classic '+width+'px: eleven editors, export/import, reload, screenshots OK');

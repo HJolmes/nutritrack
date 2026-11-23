@@ -346,6 +346,7 @@ function open(){
   Sync.run();
   Sync.startPoll(function(){return isOpen('pantryOv')||isOpen('pantryItemOv')||isOpen('pantryLocsOv');});
 }
+function openExpiring(){open();setFilter(EXP);}
 function close(){Sync.stopPoll();closeOv('pantryOv');}
 function render(){
   renderCard();
@@ -931,7 +932,7 @@ window.NTPantry={
   openLocs:openLocs,locAdd:locAdd,locSave:locSave,locMove:locMove,locDelete:locDelete,
   openPhotos:openPhotos,pickPhotos:pickPhotos,takePhoto:takePhoto,photosChosen:photosChosen,dropPhoto:dropPhoto,
   analyzePhotos:analyzePhotos,foundSet:foundSet,foundApply:foundApply,
-  openCook:openCook,openRecipe:openRecipe,aiIdeas:aiIdeas,
+  openCook:openCook,openRecipe:openRecipe,aiIdeas:aiIdeas,openExpiring:openExpiring,expiring:expiring,
   onBought:onBought,useRecipe:useRecipe,shortfall:shortfall,
   consume:consume,dropBarcodes:dropBarcodes,scan:scan,openLog:openLog,undo:undo,
   remindOn:remindOn,setRemind:setRemind,checkRemind:checkRemind,

@@ -482,9 +482,9 @@ function renderQuickBtns(){
   if(b)b.innerHTML=qs.map(function(q){return quickBtnHtml(q,false);}).join('');
 }
 // Schlaf-Umschalter (Schnell-Knopf und Schnellauswahl, js/launch.js).
-function toggleSleep(){
+function toggleSleep(key){
   if(!S.babyOn)return;
-  var key=dayKey();
+  key=key||dayKey();
   var open=openSleep(key);
   if(open){endSleep(open.e.id);return;}
   var n=new Date();

@@ -62,9 +62,55 @@ module.exports=async function bloomLayout(page,output,width){
       assert.ok(tab.h>=44,'Baby tab has a 44px touch target');
     }
     await page.screenshot({path:path.join(output,'b3-bloom-baby-'+width+'.png'),fullPage:true});
+    // Regression from a real Android screenshot: six settings buttons used to
+    // shrink until even "Erinnerungen" wrapped one character per line.
+    await page.evaluate(()=>{NTUI.go('home');openSettings('ziele');});
+    await page.locator('#settOv.open #settTabs').waitFor();
+    async function assertStrip(selector,count,label){
+      const metrics=await page.locator(selector).evaluate(el=>{
+        const frame=el.getBoundingClientRect();
+        return {
+          client:el.clientWidth,scroll:el.scrollWidth,left:el.scrollLeft,
+          width:frame.width,buttons:[...el.querySelectorAll('button')].map(b=>{
+            const r=b.getBoundingClientRect(),style=getComputedStyle(b);
+            return {width:r.width,scroll:b.scrollWidth,height:r.height,wrap:style.whiteSpace,shrink:style.flexShrink};
+          })
+        };
+      });
+      assert.equal(metrics.buttons.length,count,label+' button count');
+      assert.ok(metrics.width<=width+1,label+' stays inside mobile viewport');
+      assert.ok(metrics.scroll>metrics.client+20,label+' scrolls horizontally at '+width+'px');
+      for(const b of metrics.buttons){
+        assert.equal(b.wrap,'nowrap',label+' labels stay on one line');
+        assert.equal(b.shrink,'0',label+' buttons never shrink');
+        assert.ok(b.width>=b.scroll-2,label+' labels are not clipped');
+        assert.ok(b.height>=44,label+' touch target is at least 44px high');
+      }
+      return metrics;
+    }
+    await assertStrip('#settTabs',6,'Settings tabs');
+    await page.locator('#stab-backup').click();
+    const selected=await page.locator('#settTabs').evaluate(el=>{
+      const box=el.getBoundingClientRect(),tab=el.querySelector('#stab-backup').getBoundingClientRect();
+      return {left:el.scrollLeft,visible:tab.left>=box.left-2&&tab.right<=box.right+2,pressed:el.querySelector('#stab-backup').getAttribute('aria-pressed')};
+    });
+    assert.ok(selected.left>0,'Backup tab can be reached by horizontal scrolling');
+    assert.ok(selected.visible,'selected settings tab is scrolled into view');
+    assert.equal(selected.pressed,'true','active tab is marked accessibly');
+    await page.screenshot({path:path.join(output,'b3-mobile-settings-'+width+'.png'),fullPage:true});
+    await page.evaluate(()=>{document.documentElement.style.fontSize='150%';});
+    await assertStrip('#settTabs',6,'Settings tabs with larger text');
+    await page.evaluate(()=>{document.documentElement.style.removeProperty('font-size');closeOv('settOv');NTBaby.openEntry('bottle');});
+    await page.locator('#babyEntryOv.open #babyTypeTabs').waitFor();
+    await assertStrip('#babyTypeTabs',9,'Baby entry tabs');
+    await page.evaluate(()=>{closeOv('babyEntryOv');NTPicker.openPicker('breakfast','chat');});
+    await page.locator('#pickerOv.open .picker-tabs.nt-tab-strip').waitFor();
+    await assertStrip('#pickerOv .picker-tabs.nt-tab-strip',7,'Food picker tabs');
+    await page.evaluate(()=>closeOv('pickerOv'));
     console.log('B3 Bloom '+width+'px: homepage, card widths, four Baby tabs, navigation and responsive sections OK');
   }finally{
     await page.evaluate(previous=>{
+      document.documentElement.style.removeProperty('font-size');
       S.babyOn=previous.babyOn;
       if(previous.actions)NTUI.prefs().homeActions=previous.actions;
       else delete NTUI.prefs().homeActions;

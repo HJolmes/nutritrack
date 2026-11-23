@@ -19,7 +19,24 @@ module.exports=async function shell(browser,width,output,base,origin){
     await page.screenshot({path:path.join(output,'b3-home-'+width+'.png'),fullPage:true});
     const nav=page.getByRole('navigation',{name:'Hauptnavigation'});
     assert.equal(await nav.locator('button').count(),5);
+    assert.equal(await page.locator('#b3Back').isVisible(),false,'overview has no unused Back button');
+    assert.equal(await page.locator('#b3Title').textContent(),'Übersicht');
     await nav.getByRole('button',{name:'Ernährung',exact:true}).click();
+    const nutrition=page.getByRole('navigation',{name:'Ernährungsbereiche'});
+    assert.equal(await page.getByRole('button',{name:'Tag teilen',exact:true}).isVisible(),true);
+    for(const [label,id] of [['Planung','planOv'],['Kochbuch','libraryOv']]){
+      const tab=nutrition.getByRole('button',{name:label,exact:true});
+      await tab.click();
+      await page.locator('#'+id+'.open[data-b3-inline]').waitFor();
+      assert.equal(await tab.getAttribute('aria-current'),'page');
+      assert.equal(await page.locator('#b3Title').textContent(),'Ernährung');
+      assert.equal(await nav.getByRole('button',{name:'Ernährung',exact:true}).getAttribute('aria-current'),'page');
+    }
+    await page.goBack();
+    await page.locator('#planOv.open[data-b3-inline]').waitFor();
+    await nutrition.getByRole('button',{name:'Verlauf',exact:true}).click();
+    assert.equal(await nutrition.getByRole('button',{name:'Verlauf',exact:true}).getAttribute('aria-current'),'page');
+    await nutrition.getByRole('button',{name:'Heute',exact:true}).click();
     await nav.getByRole('button',{name:'Erfassen: Ernährung'}).click();
     await page.locator('#pickerOv.open').waitFor();
     assert.equal(await page.locator('#pickerOv .picker-tab').count(),7);
@@ -44,11 +61,10 @@ module.exports=async function shell(browser,width,output,base,origin){
     await page.locator('#planPickOv.open').waitFor();await page.evaluate(()=>closeOv('planPickOv'));
     await page.evaluate(()=>NTUI.go('book'));await nav.getByRole('button',{name:'Erfassen: Kochbuch'}).click();
     await page.locator('#recNewOv.open').waitFor();await page.evaluate(()=>closeOv('recNewOv'));
-    // Domain pages cover the root header, so their own menu must remain usable
-    // even when none of the user's three slots is assigned to More.
+    // The same header menu stays usable on every domain page.
     for(const id of ['baby','shop','pantry','plan','book']){
       await page.evaluate(id=>NTUI.go(id),id);
-      await page.locator('.ov.open[data-b3-page] .b3-page-menu').click();
+      await page.locator('#b3Header').getByRole('button',{name:'Mehr und alle Funktionen'}).click();
       assert.equal(await page.evaluate(()=>NTUI.context()),'more','More reachable directly from '+id);
     }
     await page.evaluate(()=>NTUI.go('more'));

@@ -2,6 +2,10 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.347',items:[
+    {icon:'🍽',text:'<b>Ernährung aus einem Guss</b>: Planung, Kochbuch und Verlauf bleiben in derselben Reiterleiste. „Tag teilen“ ist direkt erreichbar. Wasserziel und Health stehen bei den zugehörigen Karten.',where:'Ernährung'},
+    {icon:'📱',text:'<b>Mehr Platz für die Bedienung</b>: Die Kopfzeile und die Navigation bleiben bei Dialogen sichtbar. Alle sieben Erfassungsarten sind auf einmal zu sehen. Mahlzeiten-Hinweise, Übersicht und „Nächste Seite“ sind überarbeitet.',where:'Übersicht · Erfassen · Hinweise'},
+  ]},
   {v:'0.346',items:[
     {icon:'🧩',text:'<b>Mehr ist übersichtlicher</b>: Profil, Backup, Verbindungen und Hilfe sind direkt erreichbar. „Alle Funktionen“ hat eine eigene Suche und aufklappbare Themenbereiche.',where:'Mehr → Alle Funktionen'},
   ]},

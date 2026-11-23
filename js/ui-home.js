@@ -26,7 +26,7 @@ function breast(openLink){
   if(!S.babyOn)return '';
   var today=S.currentDate===NTBaby.today(),n=NTBaby.nextSide(S.currentDate),run=NTBaby.runningFeed();
   var h='<section class="b3-card b3-baby-card" aria-label="Baby-Kurzstatus"><h2><span aria-hidden="true">👶</span> '+esc((S.baby&&S.baby.name)||'Baby')+'</h2>';
-  h+='<p class="b3-next-side">Nächste Brust: '+(n?esc(NTBaby.SIDES[n]):'Noch kein Vorschlag')+'</p><p class="b3-muted">'+(n?'Vorschlag aus letztem Stillen':'Links oder rechts selbst auswählen')+'</p>';
+  h+='<p class="b3-next-side">Nächste Seite: '+(n?esc(NTBaby.SIDES[n]):'Noch kein Vorschlag')+'</p><p class="b3-muted">'+(n?'Vorschlag aus letztem Stillen':'Links oder rechts selbst auswählen')+'</p>';
   h+='<div class="b3-row">';
   if(today&&!run)h+=n
     ?btn('Stillen '+NTBaby.SIDES[n],'NTBaby.startFeed',[n],true)+btn((n==='l'?'Rechts':'Links')+' starten','NTBaby.startFeed',[n==='l'?'r':'l'])

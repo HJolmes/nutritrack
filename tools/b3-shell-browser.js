@@ -69,6 +69,7 @@ module.exports=async function shell(browser,width,output,base){
     await ctx.setOffline(false);
     if(require('node:fs').existsSync(path.resolve(__dirname,'../js/ui-home.js')))await require('./b3-home-browser')(page);
     if(require('node:fs').existsSync(path.resolve(__dirname,'b3-baby-browser.js')))await require('./b3-baby-browser')(page);
+    if(require('node:fs').existsSync(path.resolve(__dirname,'../js/ui-reminder-rules.js')))await require('./b3-reminder-browser')(page);
     await page.goto(base+'?ui=classic',{waitUntil:'load'});
     assert.equal(await page.evaluate(()=>NTUI.enabled()),false,'emergency route bypasses new shell');
     assert.equal(await page.locator('#mainScreen').evaluate(el=>el.classList.contains('active')),true);

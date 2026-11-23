@@ -207,6 +207,12 @@ function notify(title,opts){
   }).catch(function(e){console.warn('showNotification:',e);direct();});
 }
 
+// Read-only home presentation uses the same validated scheduling helper and
+// lateness window as existing notifications. It does not arm another timer.
+function due(now){
+  return (S.reminders||[]).filter(function(r){return r&&r.active;}).map(function(r){var at=nextAt(r.time,now-LATE_MS-1);return at&&at.getTime()<=now?{reminder:r,at:at.getTime()}:null;}).filter(function(x){return !!x;});
+}
+
 // Warum keine Meldung kommen kann – '' wenn sie kommen kann oder noch gefragt
 // wird. Ein fester Text, keine Nutzerdaten (#249). Die API fehlt in iOS-Safari-
 // Tabs ohne Home-Screen-App, in In-App-Browsern und in alten Browsern.
@@ -313,6 +319,7 @@ window.NTRemind={
   add:addReminder,
   del:deleteReminder,
   notify:notify,
+  due:due,
   planFast:planFast,
   hint:notifyHint
 };

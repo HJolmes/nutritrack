@@ -113,6 +113,8 @@ function savePreferences(){
 }
 function refresh(){if(!active)return;if(section==='home'&&window.NTUIHome)NTUIHome.render();if(window.NTUIBaby&&document.getElementById('babyOv').classList.contains('open'))NTUIBaby.refresh();nav();}
 function changeDay(dir){if(adapters.date)adapters.date(dir);refresh();}
+function fast(){return adapters.fast?adapters.fast():null;}
+function stopFast(){if(adapters.stopFast)adapters.stopFast();refresh();}
 function classic(){prefs().enabled=false;saveS();var u=new URL(location.href);u.searchParams.set('ui','classic');location.href=u.href;}
 function enable(){prefs().enabled=true;saveS();var u=new URL(location.href);u.searchParams.set('ui','b3');location.href=u.href;}
 function boot(ext){
@@ -143,5 +145,5 @@ window.addEventListener('popstate',function(e){
   if(desired.overlays.indexOf('babyOv')>=0&&window.NTUIBaby){NTUIBaby.select(desired.babyTab||'today',false);if(desired.babyTab==='development')NTUIBaby.development(desired.babyDetail||'growth',false);}
   restoring=false;status();
 });
-window.NTUI={noteView:noteView,refresh:refresh,changeDay:changeDay,boot:boot,enabled:enabled,prefs:prefs,context:context,go:go,back:back,render:render,opened:opened,closed:closed,legacy:legacy,dispatch:dispatch,openPreferences:openPreferences,savePreferences:savePreferences,classic:classic,enable:enable};
+window.NTUI={fast:fast,stopFast:stopFast,noteView:noteView,refresh:refresh,changeDay:changeDay,boot:boot,enabled:enabled,prefs:prefs,context:context,go:go,back:back,render:render,opened:opened,closed:closed,legacy:legacy,dispatch:dispatch,openPreferences:openPreferences,savePreferences:savePreferences,classic:classic,enable:enable};
 })();

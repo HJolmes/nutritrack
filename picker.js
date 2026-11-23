@@ -295,6 +295,13 @@ function _pickerAppendToEditEntry(items,beforeClose){
   return true;
 }
 
+// Record only a confirmed current-day addition. Backfilled meals, imports,
+// recurring entries and old logs never acquire an invented tracking time.
+function _pickerRecord(meal,entry){
+  if(S.currentDate===today()&&!entry.addedAt)entry.addedAt=Date.now();
+  return getDay().meals[meal].push(entry);
+}
+
 function pickerConfirmAdd(){
   if(!pickerSelFood)return;
   var amt=parseFloat(document.getElementById('pickerAmt').value)||1;
@@ -302,7 +309,7 @@ function pickerConfirmAdd(){
   if(f.pu){
     // Ketten-Produkt ohne Gewicht: amt sind Portionen (#307)
     if(window._editEntryMode){_pickerAppendToEditEntry([{name:f.name,emoji:f.emoji,amount:100*amt,per100:f.per100,pu:true}]);return;}
-    getDay().meals[pickerMeal].push(chainPortionEntry(f.name,f.emoji,f.per100,amt));
+    _pickerRecord(pickerMeal,chainPortionEntry(f.name,f.emoji,f.per100,amt));
     saveS();renderAll();closePicker();
     animateAdd(pickerMeal);
     _pickerRateEntry(pickerMeal,getDay().meals[pickerMeal].length-1);
@@ -331,12 +338,12 @@ function pickerConfirmAdd(){
     _pickerMarkUsed(rec);
     /** @type {Record<string, any>} */
     var entry=Object.assign({name:rec.name,emoji:rec.emoji||'📋',isRecipe:true,recipeId:rec.id,portions:amt,ingredients:JSON.parse(JSON.stringify(rIngs))},scaleNutrients(t,amt));
-    getDay().meals[pickerMeal].push(entry);
+    _pickerRecord(pickerMeal,entry);
   } else {
     var r=amt/100;
     /** @type {Record<string, any>} */
     var entry=Object.assign({name:f.name,emoji:f.emoji,amount:amt,per100:f.per100},scaleNutrients(f.per100,r));
-    getDay().meals[pickerMeal].push(entry);
+    _pickerRecord(pickerMeal,entry);
     cacheFood(f);
   }
   var _idx=getDay().meals[pickerMeal].length-1;
@@ -1293,7 +1300,7 @@ function pickerBarcodeAdd(){
   var amt=parseFloat(document.getElementById('pickerBcAmt').value)||100;
   var r=amt/100;
   if(window._editEntryMode){_pickerAppendToEditEntry([{name:food.name,emoji:food.emoji,amount:amt,per100:food.per100}]);return;}
-  getDay().meals[pickerMeal].push(Object.assign({name:food.name,emoji:food.emoji,amount:amt,per100:food.per100},scaleNutrients(food.per100,r)));
+  _pickerRecord(pickerMeal,Object.assign({name:food.name,emoji:food.emoji,amount:amt,per100:food.per100},scaleNutrients(food.per100,r)));
   var _bidx=getDay().meals[pickerMeal].length-1;
   saveS();renderAll();closePicker();
   animateAdd(pickerMeal);
@@ -1481,10 +1488,10 @@ function _pickerAdd(emoji,nameId,portionsId,defaultName,saveAsRecipe,hasEditMode
     // Zutaten, und mit demselben Array landeten sie im Bibliotheksrezept – und
     // von dort als alter Stand in jeden spaeteren Eintrag daraus (#205).
     ings=JSON.parse(JSON.stringify(ings));
-    getDay().meals[pickerMeal].push(Object.assign({name:name,emoji:emoji,isRecipe:true,recipeId:createdRec.id,portions:portions,ingredients:ings},scaled));
+    _pickerRecord(pickerMeal,Object.assign({name:name,emoji:emoji,isRecipe:true,recipeId:createdRec.id,portions:portions,ingredients:ings},scaled));
     showToast(emoji+' '+name+' als Rezept gespeichert');
   } else {
-    getDay().meals[pickerMeal].push(Object.assign({name:name,emoji:emoji,isRecipe:true,recipeId:null,portions:portions,ingredients:ings},scaled));
+    _pickerRecord(pickerMeal,Object.assign({name:name,emoji:emoji,isRecipe:true,recipeId:null,portions:portions,ingredients:ings},scaled));
     showToast(emoji+' '+name+' eingetragen');
   }
   var _idx=getDay().meals[pickerMeal].length-1;
@@ -1772,7 +1779,7 @@ function pickerChatAddLocal(i){
     var cIngs=_pickerRecIngs(rec),t=ingTotal(cIngs);
     var portions=_pickerQtyPortions(p.qty)||rec.portions||1;
     _pickerMarkUsed(rec);
-    getDay().meals[pickerMeal].push(Object.assign({name:rec.name,emoji:rec.emoji||'📋',isRecipe:true,recipeId:rec.id,portions:portions,ingredients:JSON.parse(JSON.stringify(cIngs))},scaleNutrients(t,portions)));
+    _pickerRecord(pickerMeal,Object.assign({name:rec.name,emoji:rec.emoji||'📋',isRecipe:true,recipeId:rec.id,portions:portions,ingredients:JSON.parse(JSON.stringify(cIngs))},scaleNutrients(t,portions)));
     saveS();renderAll();closePicker();
     _pickerRateEntry(pickerMeal,getDay().meals[pickerMeal].length-1);
     showToast('📋 '+rec.name+' eingetragen');
@@ -1782,7 +1789,7 @@ function pickerChatAddLocal(i){
     // Ketten-Produkt ohne Gewicht: in Portionen buchen (#307)
     var np=_pickerChainGrams(p,p.qty)/100;
     if(window._editEntryMode){_pickerAppendToEditEntry([{name:p.name,emoji:p.emoji,amount:100*np,per100:p.per100,pu:true}]);return;}
-    getDay().meals[pickerMeal].push(chainPortionEntry(p.name,p.emoji,p.per100,np));
+    _pickerRecord(pickerMeal,chainPortionEntry(p.name,p.emoji,p.per100,np));
     saveS();renderAll();closePicker();
     _pickerRateEntry(pickerMeal,getDay().meals[pickerMeal].length-1);
     showToast((p.emoji||'🍽')+' '+p.name+' eingetragen');
@@ -2517,7 +2524,7 @@ function pickerSaveOwn(){
     // Einmalig eintragen: Werte gelten als Gesamtwerte der Portion (nicht pro 100 g).
     if(!kcal){showToast('Kalorien eingeben');return;}
     if(window._editEntryMode){_pickerAppendToEditEntry([{name:name,emoji:emoji,amount:100,per100:{kcal:kcal,protein:p,carbs:c,fat:f,sugar:0,fiber:0,salt:0}}]);return;}
-    getDay().meals[pickerMeal].push({name:name,emoji:emoji,amount:100,per100:{kcal:kcal,protein:p,carbs:c,fat:f,sugar:0,fiber:0,salt:0},kcal:kcal,protein:p,carbs:c,fat:f,sugar:0,fiber:0,salt:0});
+    _pickerRecord(pickerMeal,{name:name,emoji:emoji,amount:100,per100:{kcal:kcal,protein:p,carbs:c,fat:f,sugar:0,fiber:0,salt:0},kcal:kcal,protein:p,carbs:c,fat:f,sugar:0,fiber:0,salt:0});
     saveS();renderAll();closePicker();
     showToast(emoji+' '+name+' eingetragen');
     return;
@@ -2587,11 +2594,11 @@ function pickerAddRecent(i){
   if(item.isRecipe||item.ingredients){
     var t=ingTotal(item.ingredients||[]);
     var portions=item.portions||1;
-    getDay().meals[pickerMeal].push(Object.assign({name:item.name,emoji:item.emoji,isRecipe:true,recipeId:item.recipeId||null,portions:portions,ingredients:JSON.parse(JSON.stringify(item.ingredients||[]))},scaleNutrients(t,portions)));
+    _pickerRecord(pickerMeal,Object.assign({name:item.name,emoji:item.emoji,isRecipe:true,recipeId:item.recipeId||null,portions:portions,ingredients:JSON.parse(JSON.stringify(item.ingredients||[]))},scaleNutrients(t,portions)));
   } else {
     var recalled=recallPortion(item.name)||item.amount||100;
     var r=recalled/100;
-    getDay().meals[pickerMeal].push({name:item.name,emoji:item.emoji,amount:recalled,per100:item.per100,kcal:(item.per100.kcal||0)*r,protein:(item.per100.protein||0)*r,carbs:(item.per100.carbs||0)*r,fat:(item.per100.fat||0)*r,sugar:(item.per100.sugar||0)*r,fiber:(item.per100.fiber||0)*r,salt:(item.per100.salt||0)*r});
+    _pickerRecord(pickerMeal,{name:item.name,emoji:item.emoji,amount:recalled,per100:item.per100,kcal:(item.per100.kcal||0)*r,protein:(item.per100.protein||0)*r,carbs:(item.per100.carbs||0)*r,fat:(item.per100.fat||0)*r,sugar:(item.per100.sugar||0)*r,fiber:(item.per100.fiber||0)*r,salt:(item.per100.salt||0)*r});
   }
   saveS();renderAll();closePicker();
   _pickerRateEntry(pickerMeal,getDay().meals[pickerMeal].length-1);
@@ -2746,7 +2753,7 @@ function addRecipeEntry(id,meal,portions,orig){
   var list=getDay().meals[m];
   var nm=(window.NTBook&&NTBook.view)?NTBook.view(rec,!!orig).name:rec.name;
   _pickerMarkUsed(rec);
-  list.push(Object.assign({name:nm,emoji:rec.emoji||'📋',isRecipe:true,recipeId:rec.id,portions:p,
+  _pickerRecord(m,Object.assign({name:nm,emoji:rec.emoji||'📋',isRecipe:true,recipeId:rec.id,portions:p,
     ingredients:JSON.parse(JSON.stringify(ings))},scaleNutrients(t,p)));
   saveS();renderAll();
   _pickerRateEntry(m,list.length-1);

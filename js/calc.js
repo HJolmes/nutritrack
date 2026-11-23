@@ -23,6 +23,55 @@
 // es heute, die Tests halten es fest.
 function mergeState(state,saved){Object.assign(state,saved);return state;}
 
+// B3 learning: absence means "not tracked", never "not eaten". Historical
+// imports without trustworthy local-day timestamps cannot teach meal times.
+function uiMealPattern(days,slot,key,options){
+  var opts=options||{},keys=[],seen=0,times=[],recent=0;
+  for(var i=1;i<=28;i++){
+    var date=addDays(key,-i),day=days&&days[date];
+    if(opts.since&&date<opts.since)continue;
+    if(!day||day._compressed||!day.meals)continue;
+    var used=['breakfast','lunch','dinner','snack'].some(function(m){return (day.meals[m]||[]).some(function(e){return e&&Number(e.kcal)>0;});});
+    if(!used)continue;
+    keys.push(date);
+    var entries=(day.meals[slot]||[]).filter(function(e){return !!e;});
+    if(!entries.length)continue;
+    seen++;if(keys.length<=7)recent++;
+    var at=entries.filter(function(e){return !e._fromPlan&&!e._recurId;}).map(function(e){
+      var t=typeof e.addedAt==='number'?e.addedAt:Date.parse(e.addedAt||'');
+      var d=new Date(t);if(!Number.isFinite(t))return null;
+      var k=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+      return k===date?d.getHours()*60+d.getMinutes():null;
+    }).filter(function(t){return t!==null;});
+    if(at.length)times.push(Math.min.apply(null,at));
+  }
+  var median=function(values){var a=values.slice().sort(function(a,b){return a-b;});return a.length?(a[Math.floor((a.length-1)/2)]+a[Math.ceil((a.length-1)/2)])/2:null;};
+  var center=median(times),spread=center===null?null:median(times.map(function(t){return Math.abs(t-center);}));
+  var enough=keys.length>=14,regular=enough&&seen/keys.length>=0.65&&recent>=Math.min(4,keys.length);
+  return {days:keys.length,observed:seen,timed:times.length,regular:regular,minute:center,window:spread===null?30:Math.max(20,Math.min(90,Math.round(spread*2+20))),reason:!enough?'Noch zu wenige genutzte Ernährungstage':!regular?'Diese Mahlzeit wird gewöhnlich nicht regelmäßig erfasst':times.length<5?'Noch zu wenige verlässliche Erfassungszeiten':'Aus genutzten Ernährungstagen und üblichen Erfassungszeiten gelernt'};
+}
+function uiMealReminder(days,slot,key,now,preference,pattern){
+  var p=preference||{},mode=p.mode||'auto';
+  if(mode==='never'||p.dismissedDay===key||Number(p.snoozeUntil)>now)return null;
+  if(days&&days[key]&&days[key].meals&&(days[key].meals[slot]||[]).length)return null;
+  var minute,window=30,reason;
+  if(mode==='always'){
+    var match=/^([01]\d|2[0-3]):([0-5]\d)$/.exec(p.time||'');
+    if(!match)return null;minute=Number(match[1])*60+Number(match[2]);reason='Du hast „Immer erinnern“ für diese Uhrzeit gewählt';
+  }else{
+    if(!pattern||!pattern.regular||pattern.timed<5||pattern.minute===null)return null;
+    minute=pattern.minute;window=pattern.window;reason=pattern.reason+' ('+pattern.observed+'/'+pattern.days+' Tage)';
+  }
+  var date=new Date(now),startAt=new Date(date.getFullYear(),date.getMonth(),date.getDate(),0,minute).getTime();
+  var snooze=new Date(Number(p.snoozeUntil)||0),snoozeKey=snooze.getFullYear()+'-'+pad(snooze.getMonth()+1)+'-'+pad(snooze.getDate());
+  if(snoozeKey===key)startAt=Math.max(startAt,Number(p.snoozeUntil));
+  if(now<startAt||now>startAt+window*60000)return null;
+  return {id:'meal-'+slot+'-'+key,source:'meal',slot:slot,priority:3,title:({breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'})[slot]+' erfassen?',detail:'Falls du etwas eintragen möchtest.',reason:reason,kind:'hint',expiresAt:startAt+window*60000};
+}
+function uiPrioritySort(candidates,hidden,now){
+  return (candidates||[]).filter(function(c){return c&&(c.kind==='running'||(!(hidden&&Number(hidden[c.id])>now)&&(!c.expiresAt||c.expiresAt>=now)));}).slice().sort(function(a,b){return a.priority-b.priority||String(a.id).localeCompare(String(b.id));}).slice(0,2);
+}
+
 // ── Datum ──
 function today(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
 function pad(n){return n<10?'0'+n:String(n);}

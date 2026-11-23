@@ -302,8 +302,9 @@ Stand 23.11.2026, geprüftes `main`: `88eeb9846e8646270a1c6a7c155e10b18317112e`,
 | 01 | Abgeschlossen, PR [#363](https://github.com/HJolmes/nutritrack/pull/363) gemergt | Gekapselte B3-Design-Tokens, zugängliche Touchflächen, Zoom freigegeben |
 | 02–04 | Abgeschlossen, PR [#364](https://github.com/HJolmes/nutritrack/pull/364) gemergt | Gemeinsames Funktionsregister, optionale Shell, freie Slots, Kontext-Plus, Back/Fokus und Notfallroute; echte vorhandene Editoren |
 | 05–07 | Abgeschlossen, PR [#365](https://github.com/HJolmes/nutritrack/pull/365) gemergt | Neue Startseite, sechs unabhängige Schnellaktionen, dauerhafter Bruststatus auf Heute/Baby, ID-sicheres Stoppen/Wechseln |
-| 08–10 | In Prüfung | Vier Baby-Unterbereiche auf vorhandenen Paneelen; echte elf Editorabläufe, Verlauf/Bericht, WHO/U-Heft/Fragen/Medizin; Nachtfenster im Schlafbereich |
-| 11–22 | Offen | Reihenfolge und Abnahmen gemäß Abschnitt 7 |
+| 08–10 | Abgeschlossen, PR [#366](https://github.com/HJolmes/nutritrack/pull/366) gemergt | Vier Baby-Unterbereiche auf vorhandenen Paneelen; echte elf Editorabläufe, Verlauf/Bericht, WHO/U-Heft/Fragen/Medizin; Nachtfenster im Schlafbereich |
+| 11–12 | In Prüfung | Lokale erklärbare Prioritäten, vier Mahlzeiten-Modi, robuste Zeitfenster, Snooze/Ausblenden, getrenntes OS-Opt-in |
+| 13–22 | Offen | Reihenfolge und Abnahmen gemäß Abschnitt 7 |
 
 **PR 00 / G0:** Das Inventar erfasst auch generiertes HTML, `tab.html`, Feature-Aktionen, Startkurzbefehle, Namespace-Exports und die 50 Zeilen der verbindlichen Matrix. Es ist ein Reichweiteninventar, keine Behauptung, dass alle Fachabläufe bereits getestet wurden. `npm test` prüft den Fortbestand seiner Einstiege/APIs. Der Snapshot bleibt unverändert; begründete Ablösungen benötigen später eine explizite, getestete Zuordnung.
 
@@ -323,3 +324,12 @@ Stand 23.11.2026, geprüftes `main`: `88eeb9846e8646270a1c6a7c155e10b18317112e`,
 
 
 **PR 08–10:** Vier Baby-Unterbereiche ordnen dieselben vorhandenen Diary-Panes; keine Datenmigration und keine parallele Prognose. Entwicklung führt zu WHO, U-Heft, Meilensteinen, Fragen und Medikamenten; die Nachtfenster-Einstellung liegt bei Schlaf. Browser-Back merkt Bereich und Entwicklungs-Unterseite. Alle elf Typen werden im Browser über das neue Plus geöffnet, erzeugt, bearbeitet und mit den bestehenden Tombstones gelöscht. Schlafprognosen bleiben editierbare Entwürfe; ein Zukunfts-Speicherversuch wird geprüft. Der vorhandene Arztbericht verwendet nun den explizit gewählten 7-/14-Tage-Zeitraum statt immer sieben Tagen. Reale Geräte und Zwei-Geräte-Transporte bleiben im Release-Gate offen.
+
+
+**PR 11–12:** Neue reine Regeln in `js/calc.js` mit Tests: maximal 28 Kalendertage, mindestens 14 tatsächlich genutzte Ernährungstage, Regelmäßigkeit ≥65 % und mindestens fünf verlässliche Erfassungszeiten; Zeitfenster aus Median und robuster Streuung. Archivierte/ungenutzte Tage lehren keine Auslassung; geplante/wiederkehrende oder nicht zum Ernährungstag passende Zeitstempel lehren keine übliche Uhrzeit. Bei fehlender Zeit-Historie bleibt Auto still. Neu bestätigte heutige Picker-Einträge erhalten additiv `addedAt`; Alt-/Nachtragsdaten werden nicht gestempelt. Das ist ein Erfassungszeitpunkt, keine Behauptung der tatsächlichen Essenszeit.
+
+Prioritäten gemäß Abschnitt 6.1: laufende Vorgänge, vorhandene feste Erinnerungen/Vorsorge, ausreichend belegte nahe Schlafprognose, Mahlzeitenhinweise, tatsächliche Vorrats-/Planpositionen. Maximal zwei Karten, eine prominent; laufende Vorgänge können nicht ausgeblendet werden. Erklärungen, Tages-Ausblenden und kategorieweises Ausschalten sind lokal. Mahlzeitenmodi, Snooze, manuelles „Nie“ und freiwilliges Systemmeldungs-Opt-in stehen getrennt von unveränderten `S.reminders`. Dreimal „Nicht relevant“ führt zu einem Vorschlag, niemals zur stillen Änderung. Systemmeldungen werden ausschließlich nach ausdrücklicher Auswahl und Browserzustimmung und höchstens einmal je Mahlzeit/Tag ausgelöst; keine Hintergrund-Push-Infrastruktur wird behauptet.
+
+153 Node-Tests prüfen u.a. 21 Tage ohne Frühstück, Always/Never, genutzte Tage, verlässliche Zeiten, robuste Fenster, Snooze, feste Timer und unverdrängbare laufende Vorgänge. Browserprüfung ergänzt die tatsächlichen Einstellungsfelder, fehlendes ungefragtes Berechtigungs-Prompt, Bestand der festen Erinnerungen und Picker-Zeitstempel.
+
+**Baby-Browsernachweis:** PR #366 besteht nach Korrektur der Fachseiten-Höhe oberhalb der Bottom-Navigation. Alle elf Typen wurden bei 320/390/430 px über Plus angelegt, bearbeitet und gelöscht, einschließlich Tombstones; Schlaf-Entwurfs-/Zukunftsschutz, Nachtfenster, Bericht/14 Tage und Entwicklung sind grün. G2 ist automatisiert abgesichert, reale Zwei-Geräte-/Gerätetests bleiben offen wie in Abschnitt 9 festgelegt.

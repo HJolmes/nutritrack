@@ -2,6 +2,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.339',items:[
+    {icon:'💡',text:'<b>Zurückhaltende Hinweise</b>: Gerade wichtig priorisiert laufende Vorgänge, vorhandene Termine, vorsichtige Schlafprognosen und echte Tagesaufgaben. Jeder Hinweis lässt sich erklären und ausblenden. Pro Mahlzeit: automatisch lernen, immer oder nie erinnern; später erinnern und für heute ausblenden. Feste Erinnerungen bleiben separat erhalten. Systemmeldungen sind standardmäßig aus.',where:'Neue Ansicht → Hinweise anpassen'},
+  ]},
   {v:'0.338',items:[
     {icon:'👶',text:'<b>Baby übersichtlich gegliedert</b>: Heute, Schlaf, Verlauf und Entwicklung. Alle elf Eintragstypen, persönliche Schnellknöpfe, WHO-Kurven, U-Heft, Fragen und Medizin bleiben erreichbar. Nachtannahmen findest du bei Schlaf. Der Arztbericht folgt jetzt dem gewählten Zeitraum von 7 oder 14 Tagen.',where:'Neue Ansicht → Baby'},
   ]},

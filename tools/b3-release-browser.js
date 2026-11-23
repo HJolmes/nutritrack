@@ -59,10 +59,28 @@ module.exports=async function release(browser,output,base,origin){
     await page.getByRole('button',{name:'Erfassen: Baby-Tagebuch'}).click();await page.locator('#b3ActionBody button').filter({hasText:'Notiz'}).click();
     await page.locator('#babyNoteText').fill('Offline nach Mitternacht');await page.locator('#babyEntryOv [data-act="NTBaby.saveEntry"]').click();
     await page.waitForFunction(()=>(S.babyLog[S.currentDate]||[]).some(e=>e.text==='Offline nach Mitternacht'),{},{timeout:5000});
-    await page.evaluate(()=>{NTUI.go('nutrition');NTPicker.openPicker('breakfast','own');});
+    assert.equal(await page.evaluate(async()=>{
+      NTUI.go('nutrition');NTPicker.openPicker('breakfast','own');
+      var field=document.getElementById('ownName');field.focus();
+      await new Promise(resolve=>setTimeout(resolve,0));
+      return document.activeElement===field;
+    }),true,'deferred dialog focus must preserve an already selected input');
     await page.locator('#ownName').fill('Offline-Mahlzeit');await page.locator('#ownKcal').fill('123');await page.locator('#ownOnce').check();
     await page.locator('[data-act="NTPicker.pickerSaveOwn"]').click();
-    await page.waitForFunction(()=>S.days[S.currentDate].meals.breakfast.some(e=>e.name==='Offline-Mahlzeit'),{},{timeout:5000});
+    try{
+      await page.waitForFunction(()=>S.days[S.currentDate].meals.breakfast.some(e=>e.name==='Offline-Mahlzeit'),{},{timeout:5000});
+    }catch(error){
+      await page.screenshot({path:path.join(output,'b3-offline-meal-failure.png'),fullPage:true});
+      console.error('B3 offline meal editor state',await page.evaluate(()=>({
+        date:S.currentDate,meals:S.days[S.currentDate].meals,
+        custom:customFoods.filter(e=>e.name==='Offline-Mahlzeit'),
+        name:document.getElementById('ownName').value,kcal:document.getElementById('ownKcal').value,
+        once:document.getElementById('ownOnce').checked,edit:window._editEntryMode,
+        overlays:Array.from(document.querySelectorAll('.ov.open')).map(e=>e.id),
+        toast:document.getElementById('toast')?.textContent
+      })));
+      throw error;
+    }
     const persisted=await page.evaluate(()=>({day:S.currentDate,meals:S.days[S.currentDate].meals,baby:S.babyLog[S.currentDate]}));
     assert.ok(persisted.meals.breakfast.some(e=>e.name==='Offline-Mahlzeit'));assert.ok(persisted.baby.some(e=>e.text==='Offline nach Mitternacht'));
     const offline=await page.reload({waitUntil:'load'});assert.ok(offline.fromServiceWorker());await page.waitForFunction(()=>NTUI.enabled());

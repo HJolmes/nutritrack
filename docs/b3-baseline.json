@@ -1,0 +1,5274 @@
+{
+  "schema": 1,
+  "version": "0.334",
+  "features": [
+    {
+      "id": "meals",
+      "ic": "🍽",
+      "label": "Mahlzeiten",
+      "card": "mealsCard",
+      "fixed": true,
+      "sub": "Frühstück, Mittag, Abend, Snack",
+      "actions": [
+        {
+          "ic": "🔁",
+          "label": "Wiederkehrende Mahlzeiten",
+          "hint": "Automatisch an festen Wochentagen",
+          "act": "NTRecur.openManage"
+        },
+        {
+          "ic": "📥",
+          "label": "Code / Link einlösen",
+          "hint": "Geteiltes Rezept übernehmen",
+          "act": "openImportPaste"
+        }
+      ]
+    },
+    {
+      "id": "plan",
+      "ic": "📅",
+      "label": "Wochenplan",
+      "card": "planCard",
+      "sub": "Rezepte und Notizen auf die Woche verteilen",
+      "actions": [
+        {
+          "ic": "📅",
+          "label": "Wochenplan öffnen",
+          "hint": "Woche planen, füllen, übernehmen",
+          "act": "NTPlan.open"
+        },
+        {
+          "ic": "🔗",
+          "label": "Verbindungen",
+          "hint": "Plan mit jemandem teilen",
+          "act": "NTSync.open"
+        }
+      ]
+    },
+    {
+      "id": "book",
+      "ic": "📖",
+      "label": "Kochbuch",
+      "card": "bookCard",
+      "sub": "Rezepte sammeln, nachkochen, einplanen",
+      "actions": [
+        {
+          "ic": "📖",
+          "label": "Kochbuch öffnen",
+          "hint": "Suchen, filtern, Kochmodus",
+          "act": "openLibrary"
+        },
+        {
+          "ic": "＋",
+          "label": "Neues Rezept",
+          "hint": "Selbst, per Foto oder per Link",
+          "act": "NTPlan.newRecipe"
+        }
+      ]
+    },
+    {
+      "id": "shop",
+      "ic": "🛒",
+      "label": "Einkaufszettel",
+      "card": "shopCard",
+      "sub": "Was noch gekauft werden muss",
+      "actions": [
+        {
+          "ic": "🛒",
+          "label": "Zettel öffnen",
+          "hint": "Artikel abhaken und ergänzen",
+          "act": "NTShop.open"
+        },
+        {
+          "ic": "🔗",
+          "label": "Verbindungen",
+          "hint": "Zettel mit jemandem teilen",
+          "act": "NTSync.open"
+        }
+      ]
+    },
+    {
+      "id": "pantry",
+      "ic": "🥫",
+      "label": "Vorrat",
+      "card": "pantryCard",
+      "sub": "Was zu Hause da ist und was immer da sein soll",
+      "actions": [
+        {
+          "ic": "🥫",
+          "label": "Vorrat öffnen",
+          "hint": "Artikel, Lagerorte, Mindestmengen",
+          "act": "NTPantry.open"
+        },
+        {
+          "ic": "📷",
+          "label": "Fotos auswerten",
+          "hint": "Kühlschrank und Schrank fotografieren",
+          "act": "NTPantry.openPhotos"
+        },
+        {
+          "ic": "👨‍🍳",
+          "label": "Was kann ich kochen?",
+          "hint": "Passende Rezepte, dann Ideen der KI",
+          "act": "NTPantry.openCook"
+        },
+        {
+          "ic": "🔗",
+          "label": "Verbindungen",
+          "hint": "Vorrat mit jemandem teilen",
+          "act": "NTSync.open"
+        }
+      ]
+    },
+    {
+      "id": "exercise",
+      "ic": "🏃",
+      "label": "Sport & Aktivität",
+      "card": "exerciseCard",
+      "sub": "Verbrannte Kalorien",
+      "actions": [
+        {
+          "ic": "🏃",
+          "label": "Aktivität eintragen",
+          "hint": "Sport von Hand erfassen",
+          "act": "openExerciseOv"
+        },
+        {
+          "ic": "⌚",
+          "label": "Sport-Sync",
+          "hint": "Apple Health · Samsung Health",
+          "act": "openHealthSync"
+        }
+      ]
+    },
+    {
+      "id": "water",
+      "ic": "💧",
+      "label": "Wasser",
+      "card": "waterCard",
+      "sub": "Gläser und Schnell-Knöpfe",
+      "actions": [
+        {
+          "ic": "🎯",
+          "label": "Wasserziel",
+          "hint": "Gläser pro Tag und Glasgröße",
+          "act": "NTFeat.openWaterGoal"
+        },
+        {
+          "ic": "⏰",
+          "label": "Erinnerung",
+          "hint": "Zu festen Uhrzeiten, z. B. „Wasser trinken“",
+          "act": "openSettings",
+          "args": [
+            "erinnerungen"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fast",
+      "ic": "🌙",
+      "label": "Fasten",
+      "card": "fastCard",
+      "sub": "Fastenfenster im Blick",
+      "actions": []
+    },
+    {
+      "id": "baby",
+      "ic": "👶",
+      "label": "Baby-Tagebuch",
+      "card": "babyCard",
+      "flag": "babyOn",
+      "sub": "Stillen, Flasche, Beikost, Windeln, Schlaf, Wachstum",
+      "actions": [
+        {
+          "ic": "👶",
+          "label": "Tagebuch öffnen",
+          "hint": "Einträge sehen und ergänzen",
+          "act": "NTBaby.openDiary"
+        },
+        {
+          "ic": "⭐",
+          "label": "U-Heft",
+          "hint": "U-Termine, Impftermine, Meilensteine",
+          "act": "NTMile.open"
+        },
+        {
+          "ic": "❓",
+          "label": "Fragen an Hebamme & Arzt",
+          "hint": "Notieren, abhaken, Antworten suchen",
+          "act": "NTMidwife.open"
+        },
+        {
+          "ic": "💊",
+          "label": "Medizin & Gaben",
+          "hint": "Vitamin D, Fiebermittel mit Abstand",
+          "act": "NTBabyMed.open"
+        },
+        {
+          "ic": "📝",
+          "label": "Angaben zum Baby",
+          "hint": "Name, Geburtsdatum, ein/aus",
+          "act": "NTFeat.openBabySettings"
+        },
+        {
+          "ic": "🔗",
+          "label": "Verbindungen",
+          "hint": "Tagebuch mit jemandem teilen",
+          "act": "NTSync.open"
+        }
+      ]
+    },
+    {
+      "id": "partner",
+      "ic": "📬",
+      "label": "Vom Partner",
+      "card": "partnerCard",
+      "sub": "Mahlzeiten direkt zugeschickt bekommen",
+      "note": "Erscheint nach der Kopplung (Mehr → 🔗 Verbindungen)",
+      "actions": [
+        {
+          "ic": "📬",
+          "label": "Postfach",
+          "hint": "Empfangene Sendungen übernehmen",
+          "act": "NTPartner.openInbox"
+        }
+      ]
+    }
+  ],
+  "launch": [
+    {
+      "id": "stillen",
+      "ic": "⏱",
+      "label": "Stillen",
+      "sub": "Stoppuhr starten, nächster Tipp stoppt",
+      "baby": true
+    },
+    {
+      "id": "wickeln",
+      "ic": "👶",
+      "label": "Wickeln",
+      "sub": "Windel eintragen",
+      "baby": true
+    },
+    {
+      "id": "schlaf",
+      "ic": "😴",
+      "label": "Schlaf",
+      "sub": "Beginn, nächster Tipp beendet",
+      "baby": true
+    },
+    {
+      "id": "mahlzeit",
+      "ic": "➕",
+      "label": "Mahlzeit",
+      "sub": "Per Text oder Suche eintragen"
+    },
+    {
+      "id": "foto",
+      "ic": "📷",
+      "label": "Foto-Mahlzeit",
+      "sub": "Foto machen, KI erkennt die Zutaten"
+    },
+    {
+      "id": "wasser",
+      "ic": "💧",
+      "label": "Wasser",
+      "sub": "Ein Glas eintragen"
+    },
+    {
+      "id": "sport",
+      "ic": "🏃",
+      "label": "Sport",
+      "sub": "Aktivität eintragen"
+    },
+    {
+      "id": "einkauf",
+      "ic": "🛒",
+      "label": "Einkaufszettel",
+      "sub": "Zettel öffnen"
+    },
+    {
+      "id": "vorrat",
+      "ic": "🥫",
+      "label": "Vorrat",
+      "sub": "Vorrat öffnen"
+    },
+    {
+      "id": "kochbuch",
+      "ic": "📖",
+      "label": "Kochbuch",
+      "sub": "Rezepte öffnen"
+    },
+    {
+      "id": "plan",
+      "ic": "📅",
+      "label": "Wochenplan",
+      "sub": "Woche planen"
+    }
+  ],
+  "exports": [
+    {
+      "file": "picker.js",
+      "namespace": "NTPicker",
+      "members": [
+        "_pickerRecipeOnlyUI",
+        "_pickerRefreshPhotoSaveHint",
+        "addRecipeEntry",
+        "closePicker",
+        "openPicker",
+        "pickerAddRecent",
+        "pickerAnalyze",
+        "pickerBarcodeAdd",
+        "pickerBarcodeManualSave",
+        "pickerBcNo",
+        "pickerBcYes",
+        "pickerChatAdd",
+        "pickerChatAddLocal",
+        "pickerChatKiFallback",
+        "pickerConfirmAdd",
+        "pickerFriendlyAiError",
+        "pickerHandlePhoto",
+        "pickerIngAmtChange",
+        "pickerIngDel",
+        "pickerLinkAdd",
+        "pickerLinkDetect",
+        "pickerLinkImport",
+        "pickerLinkOpenShop",
+        "pickerLinkToBook",
+        "pickerLinkToShop",
+        "pickerOpenManualBarcode",
+        "pickerPhotoAdd",
+        "pickerPhotoAddFromResult",
+        "pickerPhotoAddSearch",
+        "pickerRenderIngList",
+        "pickerResetPhoto",
+        "pickerSaveOwn",
+        "pickerScanFromPhoto",
+        "pickerSearch",
+        "pickerSearchLocalLive",
+        "pickerSelResult",
+        "pickerSendChat",
+        "pickerSetTab",
+        "pickerStartScan",
+        "pickerStopScan",
+        "pickerSubmitManualBarcode",
+        "pickerToggleTorch",
+        "pickerUpdateLinkTotal",
+        "scanFor"
+      ]
+    },
+    {
+      "file": "js/actions.js",
+      "namespace": "NTActions",
+      "members": [
+        "register",
+        "resolve",
+        "run"
+      ]
+    },
+    {
+      "file": "js/alexa-sync.js",
+      "namespace": "NTAlexa",
+      "members": [
+        "clearFamilyToken",
+        "clearToken",
+        "endpointInfo",
+        "generateToken",
+        "getFamilyToken",
+        "getToken",
+        "getWorkerBase",
+        "onMutation",
+        "parseAmount",
+        "pieceGrams",
+        "pieceGramsStrict",
+        "setFamilyToken",
+        "setToken",
+        "setWorkerBase",
+        "splitItems",
+        "sync"
+      ]
+    },
+    {
+      "file": "js/ampel.js",
+      "namespace": "NTAmpel",
+      "members": [
+        "DIET_LOCAL",
+        "NOHIT",
+        "RULES",
+        "combine",
+        "isLiquid",
+        "match",
+        "normalize",
+        "rate"
+      ]
+    },
+    {
+      "file": "js/autosave.js",
+      "namespace": "NTAutoSave",
+      "members": [
+        "create",
+        "fileActive",
+        "fileCheck",
+        "fileSave",
+        "list",
+        "load",
+        "rowsHtml",
+        "savedToday"
+      ]
+    },
+    {
+      "file": "js/baby-growth-data.js",
+      "namespace": "NT_WHO_GROWTH",
+      "members": []
+    },
+    {
+      "file": "js/baby-growth.js",
+      "namespace": "NTGrowth",
+      "members": [
+        "pctFor",
+        "pctLabel",
+        "pctText",
+        "render",
+        "setKind",
+        "z"
+      ]
+    },
+    {
+      "file": "js/baby-meds.js",
+      "namespace": "NTBabyMed",
+      "members": [
+        "byId",
+        "cancelEdit",
+        "cardHtml",
+        "del",
+        "edit",
+        "give",
+        "list",
+        "open",
+        "render",
+        "save"
+      ]
+    },
+    {
+      "file": "js/baby-midwife.js",
+      "namespace": "NTMidwife",
+      "members": [
+        "add",
+        "addExternal",
+        "answerInput",
+        "cardHtml",
+        "clearSearch",
+        "closeEdit",
+        "del",
+        "edit",
+        "editToChanged",
+        "list",
+        "open",
+        "openCount",
+        "render",
+        "save",
+        "search",
+        "setFilter",
+        "setTo",
+        "setWho",
+        "toOf",
+        "toggle"
+      ]
+    },
+    {
+      "file": "js/baby-milestones.js",
+      "namespace": "NTMile",
+      "members": [
+        "STAGES",
+        "ageMonths",
+        "cardHtml",
+        "check",
+        "open",
+        "render",
+        "resetView",
+        "showAllU",
+        "toggle",
+        "toggleU",
+        "uWindows"
+      ]
+    },
+    {
+      "file": "js/baby-sleep-plan.js",
+      "namespace": "NTBabySleepPlan",
+      "members": [
+        "render",
+        "shift",
+        "today"
+      ]
+    },
+    {
+      "file": "js/baby-sleep.js",
+      "namespace": "NTBabySleep",
+      "members": [
+        "cardHtml",
+        "classifications",
+        "dayOverview",
+        "nightHistory",
+        "predict",
+        "validNightWindow"
+      ]
+    },
+    {
+      "file": "js/baby-week.js",
+      "namespace": "NTBabyWeek",
+      "members": [
+        "copyReport",
+        "openReport",
+        "render",
+        "reportText",
+        "setRange",
+        "shareReport"
+      ]
+    },
+    {
+      "file": "js/baby.js",
+      "namespace": "NTBaby",
+      "members": [
+        "APPT",
+        "REACTION",
+        "SIDES",
+        "Sync",
+        "TYPES",
+        "_bumpRev",
+        "_nextRev",
+        "_schedule",
+        "add",
+        "addDayKey",
+        "ageText",
+        "boot",
+        "closeDiary",
+        "deleteEntry",
+        "deleteQuick",
+        "deleteQuickFromEdit",
+        "editEntry",
+        "endSleep",
+        "entryTitle",
+        "fmtDur",
+        "fmtNum",
+        "fmtTemp",
+        "hasRunningSleep",
+        "isFever",
+        "logRO",
+        "medPicked",
+        "milesStore",
+        "moveQuick",
+        "nextSide",
+        "openDiary",
+        "openEntry",
+        "openLinks",
+        "openQuickEdit",
+        "openQuickManage",
+        "openSync",
+        "quick",
+        "refresh",
+        "renderCard",
+        "renderDiary",
+        "renderQuickBtns",
+        "renderSyncUI",
+        "resetQuick",
+        "runningFeed",
+        "saveEntry",
+        "saveNightWindow",
+        "saveQuick",
+        "setMile",
+        "setTab",
+        "setType",
+        "sleepFromPlan",
+        "startFeed",
+        "startSleepFromPlanNow",
+        "stopFeed",
+        "summary",
+        "summaryText",
+        "switchFeed",
+        "syncNow",
+        "tempC",
+        "tick",
+        "today",
+        "toggleSleep",
+        "updateBreastFields",
+        "updateDiaperFields",
+        "updateQuickBreastFields",
+        "updateQuickTypeFields"
+      ]
+    },
+    {
+      "file": "js/cookbook.js",
+      "namespace": "NTBook",
+      "members": [
+        "addCat",
+        "aiCheck",
+        "boot",
+        "closeDetail",
+        "cook",
+        "cookClose",
+        "cookDone",
+        "cookGo",
+        "cookIngs",
+        "cookPortions",
+        "detail",
+        "duplicate",
+        "eatNow",
+        "edit",
+        "editAdd",
+        "editClosed",
+        "editCur",
+        "editDelete",
+        "editDraft",
+        "editSave",
+        "editSearch",
+        "editTotal",
+        "loadSeed",
+        "mergeSeed",
+        "planNow",
+        "render",
+        "renderCard",
+        "renderCatChips",
+        "renderList",
+        "setPortions",
+        "setSort",
+        "setTag",
+        "timerDrop",
+        "timerStart",
+        "toShop",
+        "toggleFav",
+        "toggleMeal",
+        "toggleOrig",
+        "togglePanel",
+        "view"
+      ]
+    },
+    {
+      "file": "js/dashboard.js",
+      "namespace": "NTDash",
+      "members": [
+        "apply",
+        "boot",
+        "cards",
+        "isHidden",
+        "move",
+        "orderOf",
+        "reset",
+        "toggle"
+      ]
+    },
+    {
+      "file": "js/features.js",
+      "namespace": "NTFeat",
+      "members": [
+        "act",
+        "byId",
+        "closeCatalog",
+        "closeSheet",
+        "isOff",
+        "list",
+        "move",
+        "openBabySettings",
+        "openCatalog",
+        "openWaterGoal",
+        "renderCatalog",
+        "saveBaby",
+        "saveWaterGoal",
+        "sheet",
+        "toggle",
+        "toggleInCatalog"
+      ]
+    },
+    {
+      "file": "js/food-export.js",
+      "namespace": "NTExport",
+      "members": [
+        "open",
+        "range",
+        "run"
+      ]
+    },
+    {
+      "file": "js/health-sync.js",
+      "namespace": "NTHealth",
+      "members": [
+        "clearToken",
+        "generateToken",
+        "getToken",
+        "getWorkerBase",
+        "onMutation",
+        "setToken",
+        "setWorkerBase",
+        "shortcutInstructions",
+        "sync"
+      ]
+    },
+    {
+      "file": "js/idb-photos.js",
+      "namespace": "NTPhotos",
+      "members": [
+        "del",
+        "get",
+        "ok",
+        "put"
+      ]
+    },
+    {
+      "file": "js/launch.js",
+      "namespace": "NTLaunch",
+      "members": [
+        "ACTIONS",
+        "boot",
+        "open",
+        "renderBar",
+        "run",
+        "runFromUrl",
+        "toggle"
+      ]
+    },
+    {
+      "file": "js/mealplan.js",
+      "namespace": "NTPlan",
+      "members": [
+        "Sync",
+        "addNote",
+        "addSnapshot",
+        "addToSlot",
+        "analyze",
+        "autoFill",
+        "backToOrigin",
+        "boot",
+        "cancelNew",
+        "clearDay",
+        "clearWeek",
+        "close",
+        "closeNew",
+        "closePhoto",
+        "confirmNotDuplicate",
+        "dayRecipes",
+        "deleteItem",
+        "handlePhoto",
+        "itemToBook",
+        "itemToShop",
+        "newBlank",
+        "newFromLink",
+        "newFromPhoto",
+        "newRecipe",
+        "noteRecipeCreated",
+        "noteToRecipe",
+        "open",
+        "openItem",
+        "openLinks",
+        "openSync",
+        "pick",
+        "planItemTotal",
+        "planRecipe",
+        "refreshCard",
+        "removeItem",
+        "render",
+        "renderPick",
+        "renderSyncUI",
+        "resetPhoto",
+        "saveItem",
+        "saveNote",
+        "shiftWeek",
+        "similarRecipe",
+        "syncNow",
+        "toDiary",
+        "weekToShop"
+      ]
+    },
+    {
+      "file": "js/offline-queue.js",
+      "namespace": "NTQueue",
+      "members": [
+        "add",
+        "done",
+        "process",
+        "renderPanel"
+      ]
+    },
+    {
+      "file": "js/onedrive.js",
+      "namespace": "NTDrive",
+      "members": [
+        "SLOTS",
+        "checkBanner",
+        "connect",
+        "disconnect",
+        "folder",
+        "handleCallback",
+        "renderStatus",
+        "saveFolder",
+        "slotLoad",
+        "slotsMeta",
+        "syncDown",
+        "syncSlot",
+        "syncUp",
+        "tokens"
+      ]
+    },
+    {
+      "file": "js/pantry.js",
+      "namespace": "NTPantry",
+      "members": [
+        "Sync",
+        "add",
+        "aiIdeas",
+        "analyzePhotos",
+        "boot",
+        "checkRemind",
+        "close",
+        "consume",
+        "count",
+        "deleteItem",
+        "dropBarcodes",
+        "dropPhoto",
+        "foundApply",
+        "foundSet",
+        "inputKey",
+        "locAdd",
+        "locDelete",
+        "locMove",
+        "locSave",
+        "lowCount",
+        "onBought",
+        "open",
+        "openCook",
+        "openItem",
+        "openLocs",
+        "openLog",
+        "openPhotos",
+        "openRecipe",
+        "photosChosen",
+        "pickPhotos",
+        "remindOn",
+        "remove",
+        "render",
+        "renderCard",
+        "saveItem",
+        "scan",
+        "setFilter",
+        "setRemind",
+        "shortfall",
+        "step",
+        "submitInput",
+        "takePhoto",
+        "undo",
+        "useRecipe"
+      ]
+    },
+    {
+      "file": "js/partner.js",
+      "namespace": "NTPartner",
+      "members": [
+        "active",
+        "boot",
+        "clearInbox",
+        "close",
+        "closeInbox",
+        "code",
+        "copyCode",
+        "createPair",
+        "cryptoOk",
+        "disconnect",
+        "joinPair",
+        "markDone",
+        "newCount",
+        "newForMeal",
+        "open",
+        "openForMeal",
+        "openInbox",
+        "openPacket",
+        "packetTitle",
+        "peerName",
+        "refreshBadges",
+        "renderInbox",
+        "renderUI",
+        "run",
+        "saveMyName",
+        "send",
+        "shareCode",
+        "statusText",
+        "syncNow"
+      ]
+    },
+    {
+      "file": "js/recurring.js",
+      "namespace": "NTRecur",
+      "members": [
+        "apply",
+        "deleteRule",
+        "ensureToday",
+        "openCreate",
+        "openManage",
+        "save",
+        "toggleRule",
+        "toggleWeekday"
+      ]
+    },
+    {
+      "file": "js/reminders.js",
+      "namespace": "NTRemind",
+      "members": [
+        "add",
+        "del",
+        "hint",
+        "notify",
+        "planFast",
+        "render",
+        "schedule"
+      ]
+    },
+    {
+      "file": "js/shopping.js",
+      "namespace": "NTShop",
+      "members": [
+        "CATS",
+        "Sync",
+        "add",
+        "addCatQuery",
+        "addFromSuggest",
+        "addIngredients",
+        "addMany",
+        "addRecipe",
+        "allCats",
+        "boot",
+        "catAdd",
+        "catDelete",
+        "catMove",
+        "catSave",
+        "catalogQuery",
+        "clearDone",
+        "close",
+        "deleteItem",
+        "guess",
+        "inputKey",
+        "open",
+        "openCatalog",
+        "openCats",
+        "openCount",
+        "openItem",
+        "openLinks",
+        "openSync",
+        "rememberCat",
+        "remove",
+        "render",
+        "renderCard",
+        "renderCats",
+        "renderHubRow",
+        "renderSyncUI",
+        "resultText",
+        "saveItem",
+        "submitInput",
+        "suggest",
+        "syncNow",
+        "tileTap",
+        "toggle",
+        "toggleDone"
+      ]
+    },
+    {
+      "file": "js/single-tab.js",
+      "namespace": "NTTab",
+      "members": [
+        "canWrite",
+        "start"
+      ]
+    },
+    {
+      "file": "js/stats.js",
+      "namespace": "NTStats",
+      "members": [
+        "checkGoal",
+        "logWeight",
+        "renderPanel",
+        "setGoalStart",
+        "setRange",
+        "switchTab",
+        "weekReport"
+      ]
+    },
+    {
+      "file": "js/sync-core.js",
+      "namespace": "NTSync",
+      "members": [
+        "TOPICS",
+        "ack",
+        "ackOf",
+        "anyFor",
+        "b64",
+        "b64d",
+        "close",
+        "codeOf",
+        "crypto",
+        "cryptoOk",
+        "decRec",
+        "dropKeys",
+        "encRec",
+        "engine",
+        "errText",
+        "forTopic",
+        "isOpen",
+        "keyFor",
+        "linkById",
+        "links",
+        "migrate",
+        "ok",
+        "open",
+        "openAdd",
+        "openOther",
+        "pause",
+        "rand",
+        "remove",
+        "rename",
+        "render",
+        "renderIfOpen",
+        "runAll",
+        "runTopic",
+        "shareCode",
+        "submitAdd",
+        "toggle"
+      ]
+    },
+    {
+      "file": "js/templates.js",
+      "namespace": "NTTpl",
+      "members": [
+        "apply",
+        "del",
+        "open",
+        "saveFromMeal"
+      ]
+    },
+    {
+      "file": "js/tour.js",
+      "namespace": "NTTour",
+      "members": [
+        "active",
+        "end",
+        "next",
+        "prev",
+        "start",
+        "steps"
+      ]
+    },
+    {
+      "file": "js/xlsx.js",
+      "namespace": "NTXlsx",
+      "members": [
+        "MIME",
+        "build",
+        "colName",
+        "crc32",
+        "dateSerial"
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "file": "index.html",
+      "line": 491,
+      "kind": "data-act",
+      "target": "openExerciseOv"
+    },
+    {
+      "file": "index.html",
+      "line": 837,
+      "kind": "data-act",
+      "target": "submitProxyPw"
+    },
+    {
+      "file": "index.html",
+      "line": 841,
+      "kind": "data-act",
+      "target": "skipProxyPwGate"
+    },
+    {
+      "file": "index.html",
+      "line": 852,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 861,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 866,
+      "kind": "data-act",
+      "target": "NTExport.range"
+    },
+    {
+      "file": "index.html",
+      "line": 867,
+      "kind": "data-act",
+      "target": "NTExport.range"
+    },
+    {
+      "file": "index.html",
+      "line": 868,
+      "kind": "data-act",
+      "target": "NTExport.range"
+    },
+    {
+      "file": "index.html",
+      "line": 869,
+      "kind": "data-act",
+      "target": "NTExport.range"
+    },
+    {
+      "file": "index.html",
+      "line": 875,
+      "kind": "data-act",
+      "target": "NTExport.run"
+    },
+    {
+      "file": "index.html",
+      "line": 898,
+      "kind": "data-act",
+      "target": "onbNext"
+    },
+    {
+      "file": "index.html",
+      "line": 899,
+      "kind": "data-act",
+      "target": "onbSkip"
+    },
+    {
+      "file": "index.html",
+      "line": 912,
+      "kind": "data-act",
+      "target": "onbNext"
+    },
+    {
+      "file": "index.html",
+      "line": 913,
+      "kind": "data-act",
+      "target": "onbSkip"
+    },
+    {
+      "file": "index.html",
+      "line": 926,
+      "kind": "data-act",
+      "target": "onbNext"
+    },
+    {
+      "file": "index.html",
+      "line": 927,
+      "kind": "data-act",
+      "target": "onbSkip"
+    },
+    {
+      "file": "index.html",
+      "line": 956,
+      "kind": "data-act",
+      "target": "showWhatsNew"
+    },
+    {
+      "file": "index.html",
+      "line": 962,
+      "kind": "data-act",
+      "target": "openHelp"
+    },
+    {
+      "file": "index.html",
+      "line": 963,
+      "kind": "data-act",
+      "target": "NTPartner.openInbox"
+    },
+    {
+      "file": "index.html",
+      "line": 964,
+      "kind": "data-act",
+      "target": "shareDay"
+    },
+    {
+      "file": "index.html",
+      "line": 969,
+      "kind": "data-act",
+      "target": "openBackupSettings"
+    },
+    {
+      "file": "index.html",
+      "line": 970,
+      "kind": "data-act",
+      "target": "dismissOdBanner"
+    },
+    {
+      "file": "index.html",
+      "line": 973,
+      "kind": "data-act",
+      "target": "changeDay"
+    },
+    {
+      "file": "index.html",
+      "line": 975,
+      "kind": "data-act",
+      "target": "changeDay"
+    },
+    {
+      "file": "index.html",
+      "line": 981,
+      "kind": "data-act",
+      "target": "dismissInstall"
+    },
+    {
+      "file": "index.html",
+      "line": 986,
+      "kind": "data-act",
+      "target": "reloadForUpdate"
+    },
+    {
+      "file": "index.html",
+      "line": 993,
+      "kind": "data-act",
+      "target": "dismissBackupReminder"
+    },
+    {
+      "file": "index.html",
+      "line": 1012,
+      "kind": "data-act",
+      "target": "toggleNutrientAmpel"
+    },
+    {
+      "file": "index.html",
+      "line": 1021,
+      "kind": "data-act",
+      "target": "openMealDetail"
+    },
+    {
+      "file": "index.html",
+      "line": 1029,
+      "kind": "data-act",
+      "target": "NTPartner.openForMeal"
+    },
+    {
+      "file": "index.html",
+      "line": 1033,
+      "kind": "data-act",
+      "target": "openMealDetail"
+    },
+    {
+      "file": "index.html",
+      "line": 1041,
+      "kind": "data-act",
+      "target": "NTPartner.openForMeal"
+    },
+    {
+      "file": "index.html",
+      "line": 1045,
+      "kind": "data-act",
+      "target": "openMealDetail"
+    },
+    {
+      "file": "index.html",
+      "line": 1053,
+      "kind": "data-act",
+      "target": "NTPartner.openForMeal"
+    },
+    {
+      "file": "index.html",
+      "line": 1057,
+      "kind": "data-act",
+      "target": "openMealDetail"
+    },
+    {
+      "file": "index.html",
+      "line": 1065,
+      "kind": "data-act",
+      "target": "NTPartner.openForMeal"
+    },
+    {
+      "file": "index.html",
+      "line": 1074,
+      "kind": "data-act",
+      "target": "NTPlan.open"
+    },
+    {
+      "file": "index.html",
+      "line": 1081,
+      "kind": "data-act",
+      "target": "openLibrary"
+    },
+    {
+      "file": "index.html",
+      "line": 1088,
+      "kind": "data-act",
+      "target": "openExerciseOv"
+    },
+    {
+      "file": "index.html",
+      "line": 1096,
+      "kind": "data-act",
+      "target": "addWater"
+    },
+    {
+      "file": "index.html",
+      "line": 1097,
+      "kind": "data-act",
+      "target": "addWater"
+    },
+    {
+      "file": "index.html",
+      "line": 1098,
+      "kind": "data-act",
+      "target": "addWater"
+    },
+    {
+      "file": "index.html",
+      "line": 1099,
+      "kind": "data-act",
+      "target": "addWater"
+    },
+    {
+      "file": "index.html",
+      "line": 1105,
+      "kind": "data-act",
+      "target": "NTBaby.openDiary"
+    },
+    {
+      "file": "index.html",
+      "line": 1116,
+      "kind": "data-act",
+      "target": "NTPartner.openInbox"
+    },
+    {
+      "file": "index.html",
+      "line": 1123,
+      "kind": "data-act",
+      "target": "NTShop.open"
+    },
+    {
+      "file": "index.html",
+      "line": 1130,
+      "kind": "data-act",
+      "target": "NTPantry.open"
+    },
+    {
+      "file": "index.html",
+      "line": 1137,
+      "kind": "data-act",
+      "target": "openFastOv"
+    },
+    {
+      "file": "index.html",
+      "line": 1142,
+      "kind": "data-act",
+      "target": "switchTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1143,
+      "kind": "data-act",
+      "target": "switchTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1144,
+      "kind": "data-act",
+      "target": "NTPicker.openPicker"
+    },
+    {
+      "file": "index.html",
+      "line": 1145,
+      "kind": "data-act",
+      "target": "switchTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1146,
+      "kind": "data-act",
+      "target": "switchTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1159,
+      "kind": "data-act",
+      "target": "openHelp"
+    },
+    {
+      "file": "index.html",
+      "line": 1160,
+      "kind": "data-act",
+      "target": "openImportPaste"
+    },
+    {
+      "file": "index.html",
+      "line": 1165,
+      "kind": "data-act",
+      "target": "NTStats.switchTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1170,
+      "kind": "data-act",
+      "target": "NTStats.setRange"
+    },
+    {
+      "file": "index.html",
+      "line": 1171,
+      "kind": "data-act",
+      "target": "NTStats.setRange"
+    },
+    {
+      "file": "index.html",
+      "line": 1193,
+      "kind": "data-act",
+      "target": "NTStats.logWeight"
+    },
+    {
+      "file": "index.html",
+      "line": 1201,
+      "kind": "data-act",
+      "target": "NTStats.weekReport"
+    },
+    {
+      "file": "index.html",
+      "line": 1210,
+      "kind": "data-act",
+      "target": "NTQueue.process"
+    },
+    {
+      "file": "index.html",
+      "line": 1215,
+      "kind": "data-act",
+      "target": "switchTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1216,
+      "kind": "data-act",
+      "target": "switchTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1217,
+      "kind": "data-act",
+      "target": "NTPicker.openPicker"
+    },
+    {
+      "file": "index.html",
+      "line": 1218,
+      "kind": "data-act",
+      "target": "switchTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1219,
+      "kind": "data-act",
+      "target": "switchTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1232,
+      "kind": "data-act",
+      "target": "openShareRange"
+    },
+    {
+      "file": "index.html",
+      "line": 1233,
+      "kind": "data-act",
+      "target": "openSettings"
+    },
+    {
+      "file": "index.html",
+      "line": 1241,
+      "kind": "data-act",
+      "target": "switchTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1242,
+      "kind": "data-act",
+      "target": "switchTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1243,
+      "kind": "data-act",
+      "target": "NTPicker.openPicker"
+    },
+    {
+      "file": "index.html",
+      "line": 1244,
+      "kind": "data-act",
+      "target": "switchTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1245,
+      "kind": "data-act",
+      "target": "switchTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1252,
+      "kind": "data-act",
+      "target": "closeMealDetail"
+    },
+    {
+      "file": "index.html",
+      "line": 1280,
+      "kind": "data-act",
+      "target": "switchTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1281,
+      "kind": "data-act",
+      "target": "switchTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1282,
+      "kind": "data-act",
+      "target": "openPickerForOpenMeal"
+    },
+    {
+      "file": "index.html",
+      "line": 1283,
+      "kind": "data-act",
+      "target": "switchTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1284,
+      "kind": "data-act",
+      "target": "switchTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1300,
+      "kind": "data-act",
+      "target": "openSettings"
+    },
+    {
+      "file": "index.html",
+      "line": 1305,
+      "kind": "data-act",
+      "target": "openSettings"
+    },
+    {
+      "file": "index.html",
+      "line": 1310,
+      "kind": "data-act",
+      "target": "openSettings"
+    },
+    {
+      "file": "index.html",
+      "line": 1315,
+      "kind": "data-act",
+      "target": "openSettings"
+    },
+    {
+      "file": "index.html",
+      "line": 1320,
+      "kind": "data-act",
+      "target": "openSettings"
+    },
+    {
+      "file": "index.html",
+      "line": 1325,
+      "kind": "data-act",
+      "target": "openSettings"
+    },
+    {
+      "file": "index.html",
+      "line": 1331,
+      "kind": "data-act",
+      "target": "openLibrary"
+    },
+    {
+      "file": "index.html",
+      "line": 1336,
+      "kind": "data-act",
+      "target": "NTPlan.open"
+    },
+    {
+      "file": "index.html",
+      "line": 1342,
+      "kind": "data-act",
+      "target": "NTFeat.openCatalog"
+    },
+    {
+      "file": "index.html",
+      "line": 1347,
+      "kind": "data-act",
+      "target": "NTLaunch.open"
+    },
+    {
+      "file": "index.html",
+      "line": 1352,
+      "kind": "data-act",
+      "target": "NTSync.open"
+    },
+    {
+      "file": "index.html",
+      "line": 1357,
+      "kind": "data-act",
+      "target": "openHelp"
+    },
+    {
+      "file": "index.html",
+      "line": 1369,
+      "kind": "data-act",
+      "target": "switchTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1370,
+      "kind": "data-act",
+      "target": "switchTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1371,
+      "kind": "data-act",
+      "target": "NTPicker.openPicker"
+    },
+    {
+      "file": "index.html",
+      "line": 1372,
+      "kind": "data-act",
+      "target": "switchTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1373,
+      "kind": "data-act",
+      "target": "switchTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1382,
+      "kind": "data-act",
+      "target": "NTPicker.closePicker"
+    },
+    {
+      "file": "index.html",
+      "line": 1389,
+      "kind": "data-act",
+      "target": "NTPicker.pickerSetTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1390,
+      "kind": "data-act",
+      "target": "NTPicker.pickerSetTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1391,
+      "kind": "data-act",
+      "target": "NTPicker.pickerSetTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1392,
+      "kind": "data-act",
+      "target": "NTPicker.pickerSetTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1393,
+      "kind": "data-act",
+      "target": "NTPicker.pickerSetTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1394,
+      "kind": "data-act",
+      "target": "NTPicker.pickerSetTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1395,
+      "kind": "data-act",
+      "target": "NTPicker.pickerSetTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1406,
+      "kind": "data-act",
+      "target": "NTPicker.pickerSearch"
+    },
+    {
+      "file": "index.html",
+      "line": 1412,
+      "kind": "data-act",
+      "target": "NTPicker.pickerConfirmAdd"
+    },
+    {
+      "file": "index.html",
+      "line": 1427,
+      "kind": "data-act",
+      "target": "NTPicker.pickerResetPhoto"
+    },
+    {
+      "file": "index.html",
+      "line": 1429,
+      "kind": "data-act",
+      "target": "openSettings"
+    },
+    {
+      "file": "index.html",
+      "line": 1434,
+      "kind": "data-act",
+      "target": "NTPicker.pickerBcYes"
+    },
+    {
+      "file": "index.html",
+      "line": 1435,
+      "kind": "data-act",
+      "target": "NTPicker.pickerBcNo"
+    },
+    {
+      "file": "index.html",
+      "line": 1439,
+      "kind": "data-act",
+      "target": "NTPicker.pickerAnalyze"
+    },
+    {
+      "file": "index.html",
+      "line": 1456,
+      "kind": "data-act",
+      "target": "NTPicker.pickerPhotoAddSearch"
+    },
+    {
+      "file": "index.html",
+      "line": 1461,
+      "kind": "data-act",
+      "target": "NTPicker.pickerPhotoAdd"
+    },
+    {
+      "file": "index.html",
+      "line": 1462,
+      "kind": "data-act",
+      "target": "NTPicker.pickerPhotoAdd"
+    },
+    {
+      "file": "index.html",
+      "line": 1475,
+      "kind": "data-act",
+      "target": "NTPicker.pickerToggleTorch"
+    },
+    {
+      "file": "index.html",
+      "line": 1477,
+      "kind": "data-act",
+      "target": "NTPicker.pickerStartScan"
+    },
+    {
+      "file": "index.html",
+      "line": 1478,
+      "kind": "data-act",
+      "target": "NTPicker.pickerStopScan"
+    },
+    {
+      "file": "index.html",
+      "line": 1480,
+      "kind": "data-act",
+      "target": "NTPicker.pickerOpenManualBarcode"
+    },
+    {
+      "file": "index.html",
+      "line": 1500,
+      "kind": "data-act",
+      "target": "NTPicker.pickerChatAdd"
+    },
+    {
+      "file": "index.html",
+      "line": 1501,
+      "kind": "data-act",
+      "target": "NTPicker.pickerChatAdd"
+    },
+    {
+      "file": "index.html",
+      "line": 1507,
+      "kind": "data-act",
+      "target": "NTPicker.pickerSendChat"
+    },
+    {
+      "file": "index.html",
+      "line": 1525,
+      "kind": "data-act",
+      "target": "NTPicker.pickerSaveOwn"
+    },
+    {
+      "file": "index.html",
+      "line": 1536,
+      "kind": "data-act",
+      "target": "NTPicker.pickerLinkImport"
+    },
+    {
+      "file": "index.html",
+      "line": 1549,
+      "kind": "data-act",
+      "target": "NTPicker.pickerLinkAdd"
+    },
+    {
+      "file": "index.html",
+      "line": 1550,
+      "kind": "data-act",
+      "target": "NTPicker.pickerLinkToBook"
+    },
+    {
+      "file": "index.html",
+      "line": 1552,
+      "kind": "data-act",
+      "target": "NTPicker.pickerLinkToShop"
+    },
+    {
+      "file": "index.html",
+      "line": 1554,
+      "kind": "data-act",
+      "target": "NTPicker.pickerLinkOpenShop"
+    },
+    {
+      "file": "index.html",
+      "line": 1568,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 1578,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 1593,
+      "kind": "data-act",
+      "target": "saveOwnFoodEdit"
+    },
+    {
+      "file": "index.html",
+      "line": 1594,
+      "kind": "data-act",
+      "target": "deleteOwnFoodEdit"
+    },
+    {
+      "file": "index.html",
+      "line": 1604,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 1634,
+      "kind": "data-act",
+      "target": "NTTour.start"
+    },
+    {
+      "file": "index.html",
+      "line": 1668,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 1687,
+      "kind": "data-act",
+      "target": "NTBaby.closeDiary"
+    },
+    {
+      "file": "index.html",
+      "line": 1693,
+      "kind": "data-act",
+      "target": "NTBaby.setTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1694,
+      "kind": "data-act",
+      "target": "NTBaby.setTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1695,
+      "kind": "data-act",
+      "target": "NTBaby.setTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1696,
+      "kind": "data-act",
+      "target": "NTBaby.setTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1697,
+      "kind": "data-act",
+      "target": "NTBaby.setTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1698,
+      "kind": "data-act",
+      "target": "NTBaby.setTab"
+    },
+    {
+      "file": "index.html",
+      "line": 1714,
+      "kind": "data-act",
+      "target": "NTBaby.saveNightWindow"
+    },
+    {
+      "file": "index.html",
+      "line": 1718,
+      "kind": "data-act",
+      "target": "NTBaby.openEntry"
+    },
+    {
+      "file": "index.html",
+      "line": 1719,
+      "kind": "data-act",
+      "target": "NTBaby.startFeed"
+    },
+    {
+      "file": "index.html",
+      "line": 1722,
+      "kind": "data-act",
+      "target": "NTBaby.openQuickManage"
+    },
+    {
+      "file": "index.html",
+      "line": 1723,
+      "kind": "data-act",
+      "target": "NTBabyMed.open"
+    },
+    {
+      "file": "index.html",
+      "line": 1724,
+      "kind": "data-act",
+      "target": "NTBaby.openSync"
+    },
+    {
+      "file": "index.html",
+      "line": 1737,
+      "kind": "data-act",
+      "target": "NTBabyWeek.setRange"
+    },
+    {
+      "file": "index.html",
+      "line": 1738,
+      "kind": "data-act",
+      "target": "NTBabyWeek.setRange"
+    },
+    {
+      "file": "index.html",
+      "line": 1744,
+      "kind": "data-act",
+      "target": "NTBabyWeek.openReport"
+    },
+    {
+      "file": "index.html",
+      "line": 1748,
+      "kind": "data-act",
+      "target": "NTGrowth.setKind"
+    },
+    {
+      "file": "index.html",
+      "line": 1749,
+      "kind": "data-act",
+      "target": "NTGrowth.setKind"
+    },
+    {
+      "file": "index.html",
+      "line": 1750,
+      "kind": "data-act",
+      "target": "NTGrowth.setKind"
+    },
+    {
+      "file": "index.html",
+      "line": 1754,
+      "kind": "data-act",
+      "target": "NTBaby.openEntry"
+    },
+    {
+      "file": "index.html",
+      "line": 1770,
+      "kind": "data-act",
+      "target": "NTMidwife.setTo"
+    },
+    {
+      "file": "index.html",
+      "line": 1771,
+      "kind": "data-act",
+      "target": "NTMidwife.setTo"
+    },
+    {
+      "file": "index.html",
+      "line": 1774,
+      "kind": "data-act",
+      "target": "NTMidwife.add"
+    },
+    {
+      "file": "index.html",
+      "line": 1777,
+      "kind": "data-act",
+      "target": "NTMidwife.setFilter"
+    },
+    {
+      "file": "index.html",
+      "line": 1778,
+      "kind": "data-act",
+      "target": "NTMidwife.setFilter"
+    },
+    {
+      "file": "index.html",
+      "line": 1779,
+      "kind": "data-act",
+      "target": "NTMidwife.setFilter"
+    },
+    {
+      "file": "index.html",
+      "line": 1782,
+      "kind": "data-act",
+      "target": "NTMidwife.setWho"
+    },
+    {
+      "file": "index.html",
+      "line": 1783,
+      "kind": "data-act",
+      "target": "NTMidwife.setWho"
+    },
+    {
+      "file": "index.html",
+      "line": 1784,
+      "kind": "data-act",
+      "target": "NTMidwife.setWho"
+    },
+    {
+      "file": "index.html",
+      "line": 1798,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 1804,
+      "kind": "data-act",
+      "target": "NTBaby.openQuickEdit"
+    },
+    {
+      "file": "index.html",
+      "line": 1805,
+      "kind": "data-act",
+      "target": "NTBaby.resetQuick"
+    },
+    {
+      "file": "index.html",
+      "line": 1816,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 1899,
+      "kind": "data-act",
+      "target": "NTBaby.saveQuick"
+    },
+    {
+      "file": "index.html",
+      "line": 1900,
+      "kind": "data-act",
+      "target": "NTBaby.deleteQuickFromEdit"
+    },
+    {
+      "file": "index.html",
+      "line": 1910,
+      "kind": "data-act",
+      "target": "NTMidwife.closeEdit"
+    },
+    {
+      "file": "index.html",
+      "line": 1924,
+      "kind": "data-act",
+      "target": "NTMidwife.save"
+    },
+    {
+      "file": "index.html",
+      "line": 1925,
+      "kind": "data-act",
+      "target": "NTMidwife.del"
+    },
+    {
+      "file": "index.html",
+      "line": 1935,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 1948,
+      "kind": "data-act",
+      "target": "NTBabyMed.save"
+    },
+    {
+      "file": "index.html",
+      "line": 1949,
+      "kind": "data-act",
+      "target": "NTBabyMed.del"
+    },
+    {
+      "file": "index.html",
+      "line": 1960,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 1967,
+      "kind": "data-act",
+      "target": "NTBabyWeek.shareReport"
+    },
+    {
+      "file": "index.html",
+      "line": 1968,
+      "kind": "data-act",
+      "target": "NTBabyWeek.copyReport"
+    },
+    {
+      "file": "index.html",
+      "line": 1980,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 1990,
+      "kind": "data-act",
+      "target": "NTBaby.openLinks"
+    },
+    {
+      "file": "index.html",
+      "line": 1991,
+      "kind": "data-act",
+      "target": "NTBaby.syncNow"
+    },
+    {
+      "file": "index.html",
+      "line": 2002,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 2008,
+      "kind": "data-act",
+      "target": "NTBaby.setType"
+    },
+    {
+      "file": "index.html",
+      "line": 2009,
+      "kind": "data-act",
+      "target": "NTBaby.setType"
+    },
+    {
+      "file": "index.html",
+      "line": 2010,
+      "kind": "data-act",
+      "target": "NTBaby.setType"
+    },
+    {
+      "file": "index.html",
+      "line": 2011,
+      "kind": "data-act",
+      "target": "NTBaby.setType"
+    },
+    {
+      "file": "index.html",
+      "line": 2012,
+      "kind": "data-act",
+      "target": "NTBaby.setType"
+    },
+    {
+      "file": "index.html",
+      "line": 2013,
+      "kind": "data-act",
+      "target": "NTBaby.setType"
+    },
+    {
+      "file": "index.html",
+      "line": 2014,
+      "kind": "data-act",
+      "target": "NTBaby.setType"
+    },
+    {
+      "file": "index.html",
+      "line": 2015,
+      "kind": "data-act",
+      "target": "NTBaby.setType"
+    },
+    {
+      "file": "index.html",
+      "line": 2016,
+      "kind": "data-act",
+      "target": "NTBaby.setType"
+    },
+    {
+      "file": "index.html",
+      "line": 2197,
+      "kind": "data-act",
+      "target": "NTBaby.saveEntry"
+    },
+    {
+      "file": "index.html",
+      "line": 2198,
+      "kind": "data-act",
+      "target": "NTBaby.deleteEntry"
+    },
+    {
+      "file": "index.html",
+      "line": 2207,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 2216,
+      "kind": "data-act",
+      "target": "toggleExerciseSugg"
+    },
+    {
+      "file": "index.html",
+      "line": 2236,
+      "kind": "data-act",
+      "target": "estimateExercise"
+    },
+    {
+      "file": "index.html",
+      "line": 2237,
+      "kind": "data-act",
+      "target": "saveExercise"
+    },
+    {
+      "file": "index.html",
+      "line": 2248,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 2260,
+      "kind": "data-act",
+      "target": "hsCopyToken"
+    },
+    {
+      "file": "index.html",
+      "line": 2263,
+      "kind": "data-act",
+      "target": "hsGenerateToken"
+    },
+    {
+      "file": "index.html",
+      "line": 2264,
+      "kind": "data-act",
+      "target": "hsSaveToken"
+    },
+    {
+      "file": "index.html",
+      "line": 2299,
+      "kind": "data-act",
+      "target": "hsTestSync"
+    },
+    {
+      "file": "index.html",
+      "line": 2300,
+      "kind": "data-act",
+      "target": "hsClearToken"
+    },
+    {
+      "file": "index.html",
+      "line": 2312,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 2326,
+      "kind": "data-act",
+      "target": "axCopyToken"
+    },
+    {
+      "file": "index.html",
+      "line": 2329,
+      "kind": "data-act",
+      "target": "axGenerateToken"
+    },
+    {
+      "file": "index.html",
+      "line": 2330,
+      "kind": "data-act",
+      "target": "axSaveToken"
+    },
+    {
+      "file": "index.html",
+      "line": 2336,
+      "kind": "data-act",
+      "target": "axCopyFamToken"
+    },
+    {
+      "file": "index.html",
+      "line": 2339,
+      "kind": "data-act",
+      "target": "axGenerateFamToken"
+    },
+    {
+      "file": "index.html",
+      "line": 2340,
+      "kind": "data-act",
+      "target": "axSaveFamToken"
+    },
+    {
+      "file": "index.html",
+      "line": 2426,
+      "kind": "data-act",
+      "target": "axTestSync"
+    },
+    {
+      "file": "index.html",
+      "line": 2427,
+      "kind": "data-act",
+      "target": "axClearToken"
+    },
+    {
+      "file": "index.html",
+      "line": 2439,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 2452,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 2460,
+      "kind": "data-act",
+      "target": "NTRecur.save"
+    },
+    {
+      "file": "index.html",
+      "line": 2470,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 2483,
+      "kind": "data-act",
+      "target": "NTShop.close"
+    },
+    {
+      "file": "index.html",
+      "line": 2490,
+      "kind": "data-act",
+      "target": "NTShop.submitInput"
+    },
+    {
+      "file": "index.html",
+      "line": 2494,
+      "kind": "data-act",
+      "target": "NTShop.openCatalog"
+    },
+    {
+      "file": "index.html",
+      "line": 2495,
+      "kind": "data-act",
+      "target": "NTShop.openCats"
+    },
+    {
+      "file": "index.html",
+      "line": 2496,
+      "kind": "data-act",
+      "target": "NTShop.openSync"
+    },
+    {
+      "file": "index.html",
+      "line": 2508,
+      "kind": "data-act",
+      "target": "NTPantry.close"
+    },
+    {
+      "file": "index.html",
+      "line": 2515,
+      "kind": "data-act",
+      "target": "NTPantry.submitInput"
+    },
+    {
+      "file": "index.html",
+      "line": 2518,
+      "kind": "data-act",
+      "target": "NTPantry.openPhotos"
+    },
+    {
+      "file": "index.html",
+      "line": 2519,
+      "kind": "data-act",
+      "target": "NTPantry.openCook"
+    },
+    {
+      "file": "index.html",
+      "line": 2520,
+      "kind": "data-act",
+      "target": "NTPantry.openLocs"
+    },
+    {
+      "file": "index.html",
+      "line": 2521,
+      "kind": "data-act",
+      "target": "NTSync.open"
+    },
+    {
+      "file": "index.html",
+      "line": 2524,
+      "kind": "data-act",
+      "target": "NTPantry.scan"
+    },
+    {
+      "file": "index.html",
+      "line": 2525,
+      "kind": "data-act",
+      "target": "NTPantry.scan"
+    },
+    {
+      "file": "index.html",
+      "line": 2526,
+      "kind": "data-act",
+      "target": "NTPantry.openLog"
+    },
+    {
+      "file": "index.html",
+      "line": 2530,
+      "kind": "data-act",
+      "target": "NTPantry.openItem"
+    },
+    {
+      "file": "index.html",
+      "line": 2539,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 2587,
+      "kind": "data-act",
+      "target": "NTPantry.consume"
+    },
+    {
+      "file": "index.html",
+      "line": 2588,
+      "kind": "data-act",
+      "target": "NTPantry.consume"
+    },
+    {
+      "file": "index.html",
+      "line": 2591,
+      "kind": "data-act",
+      "target": "NTPantry.saveItem"
+    },
+    {
+      "file": "index.html",
+      "line": 2592,
+      "kind": "data-act",
+      "target": "NTPantry.deleteItem"
+    },
+    {
+      "file": "index.html",
+      "line": 2601,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 2616,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 2626,
+      "kind": "data-act",
+      "target": "NTPantry.locAdd"
+    },
+    {
+      "file": "index.html",
+      "line": 2635,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 2643,
+      "kind": "data-act",
+      "target": "NTPantry.analyzePhotos"
+    },
+    {
+      "file": "index.html",
+      "line": 2655,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 2662,
+      "kind": "data-act",
+      "target": "NTPantry.aiIdeas"
+    },
+    {
+      "file": "index.html",
+      "line": 2673,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 2689,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 2705,
+      "kind": "data-act",
+      "target": "NTShop.openCats"
+    },
+    {
+      "file": "index.html",
+      "line": 2709,
+      "kind": "data-act",
+      "target": "NTShop.saveItem"
+    },
+    {
+      "file": "index.html",
+      "line": 2710,
+      "kind": "data-act",
+      "target": "NTShop.deleteItem"
+    },
+    {
+      "file": "index.html",
+      "line": 2720,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 2730,
+      "kind": "data-act",
+      "target": "NTShop.openLinks"
+    },
+    {
+      "file": "index.html",
+      "line": 2731,
+      "kind": "data-act",
+      "target": "NTShop.syncNow"
+    },
+    {
+      "file": "index.html",
+      "line": 2758,
+      "kind": "data-act",
+      "target": "NTAutoSave.fileSave"
+    },
+    {
+      "file": "index.html",
+      "line": 2769,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 2781,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 2788,
+      "kind": "data-act",
+      "target": "importPasted"
+    },
+    {
+      "file": "index.html",
+      "line": 2798,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 2811,
+      "kind": "data-act",
+      "target": "iosCopyShareUrl"
+    },
+    {
+      "file": "index.html",
+      "line": 2812,
+      "kind": "data-act",
+      "target": "iosImportInBrowser"
+    },
+    {
+      "file": "index.html",
+      "line": 2825,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 2869,
+      "kind": "data-act",
+      "target": "importConfirmTo"
+    },
+    {
+      "file": "index.html",
+      "line": 2870,
+      "kind": "data-act",
+      "target": "importConfirmTo"
+    },
+    {
+      "file": "index.html",
+      "line": 2871,
+      "kind": "data-act",
+      "target": "importConfirmTo"
+    },
+    {
+      "file": "index.html",
+      "line": 2873,
+      "kind": "data-act",
+      "target": "importConfirm"
+    },
+    {
+      "file": "index.html",
+      "line": 2874,
+      "kind": "data-act",
+      "target": "importCancel"
+    },
+    {
+      "file": "index.html",
+      "line": 2884,
+      "kind": "data-act",
+      "target": "NTPartner.close"
+    },
+    {
+      "file": "index.html",
+      "line": 2896,
+      "kind": "data-act",
+      "target": "NTPartner.createPair"
+    },
+    {
+      "file": "index.html",
+      "line": 2900,
+      "kind": "data-act",
+      "target": "NTPartner.joinPair"
+    },
+    {
+      "file": "index.html",
+      "line": 2905,
+      "kind": "data-act",
+      "target": "NTPartner.openInbox"
+    },
+    {
+      "file": "index.html",
+      "line": 2912,
+      "kind": "data-act",
+      "target": "NTPartner.saveMyName"
+    },
+    {
+      "file": "index.html",
+      "line": 2916,
+      "kind": "data-act",
+      "target": "NTPartner.copyCode"
+    },
+    {
+      "file": "index.html",
+      "line": 2917,
+      "kind": "data-act",
+      "target": "NTPartner.shareCode"
+    },
+    {
+      "file": "index.html",
+      "line": 2922,
+      "kind": "data-act",
+      "target": "NTPartner.syncNow"
+    },
+    {
+      "file": "index.html",
+      "line": 2923,
+      "kind": "data-act",
+      "target": "openShareRange"
+    },
+    {
+      "file": "index.html",
+      "line": 2924,
+      "kind": "data-act",
+      "target": "NTPartner.disconnect"
+    },
+    {
+      "file": "index.html",
+      "line": 2935,
+      "kind": "data-act",
+      "target": "NTPartner.closeInbox"
+    },
+    {
+      "file": "index.html",
+      "line": 2940,
+      "kind": "data-act",
+      "target": "NTPartner.syncNow"
+    },
+    {
+      "file": "index.html",
+      "line": 2951,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 2957,
+      "kind": "data-act",
+      "target": "shareRangePreset"
+    },
+    {
+      "file": "index.html",
+      "line": 2958,
+      "kind": "data-act",
+      "target": "shareRangePreset"
+    },
+    {
+      "file": "index.html",
+      "line": 2959,
+      "kind": "data-act",
+      "target": "shareRangePreset"
+    },
+    {
+      "file": "index.html",
+      "line": 2966,
+      "kind": "data-act",
+      "target": "shareRangeGo"
+    },
+    {
+      "file": "index.html",
+      "line": 2976,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 2982,
+      "kind": "data-act",
+      "target": "_setFeedbackType"
+    },
+    {
+      "file": "index.html",
+      "line": 2983,
+      "kind": "data-act",
+      "target": "_setFeedbackType"
+    },
+    {
+      "file": "index.html",
+      "line": 2987,
+      "kind": "data-act",
+      "target": "submitFeedback"
+    },
+    {
+      "file": "index.html",
+      "line": 2991,
+      "kind": "data-act",
+      "target": "attachFeedbackScreenshot"
+    },
+    {
+      "file": "index.html",
+      "line": 2994,
+      "kind": "data-act",
+      "target": "_clearFeedbackScreenshot"
+    },
+    {
+      "file": "index.html",
+      "line": 3005,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 3018,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 3024,
+      "kind": "data-act",
+      "target": "startFast"
+    },
+    {
+      "file": "index.html",
+      "line": 3025,
+      "kind": "data-act",
+      "target": "startFast"
+    },
+    {
+      "file": "index.html",
+      "line": 3026,
+      "kind": "data-act",
+      "target": "startFast"
+    },
+    {
+      "file": "index.html",
+      "line": 3027,
+      "kind": "data-act",
+      "target": "startFast"
+    },
+    {
+      "file": "index.html",
+      "line": 3032,
+      "kind": "data-act",
+      "target": "startFastCustom"
+    },
+    {
+      "file": "index.html",
+      "line": 3043,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 3053,
+      "kind": "data-act",
+      "target": "NTShop.catAdd"
+    },
+    {
+      "file": "index.html",
+      "line": 3064,
+      "kind": "data-act",
+      "target": "NTSync.close"
+    },
+    {
+      "file": "index.html",
+      "line": 3072,
+      "kind": "data-act",
+      "target": "NTSync.openAdd"
+    },
+    {
+      "file": "index.html",
+      "line": 3073,
+      "kind": "data-act",
+      "target": "NTSync.openAdd"
+    },
+    {
+      "file": "index.html",
+      "line": 3092,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 3103,
+      "kind": "data-act",
+      "target": "NTSync.submitAdd"
+    },
+    {
+      "file": "index.html",
+      "line": 3114,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 3124,
+      "kind": "data-act",
+      "target": "NTPlan.openLinks"
+    },
+    {
+      "file": "index.html",
+      "line": 3125,
+      "kind": "data-act",
+      "target": "NTPlan.syncNow"
+    },
+    {
+      "file": "index.html",
+      "line": 3135,
+      "kind": "data-act",
+      "target": "NTPlan.close"
+    },
+    {
+      "file": "index.html",
+      "line": 3141,
+      "kind": "data-act",
+      "target": "NTPlan.shiftWeek"
+    },
+    {
+      "file": "index.html",
+      "line": 3143,
+      "kind": "data-act",
+      "target": "NTPlan.shiftWeek"
+    },
+    {
+      "file": "index.html",
+      "line": 3146,
+      "kind": "data-act",
+      "target": "NTPlan.autoFill"
+    },
+    {
+      "file": "index.html",
+      "line": 3147,
+      "kind": "data-act",
+      "target": "NTPlan.weekToShop"
+    },
+    {
+      "file": "index.html",
+      "line": 3148,
+      "kind": "data-act",
+      "target": "NTPlan.openSync"
+    },
+    {
+      "file": "index.html",
+      "line": 3149,
+      "kind": "data-act",
+      "target": "NTPlan.clearWeek"
+    },
+    {
+      "file": "index.html",
+      "line": 3151,
+      "kind": "data-act",
+      "target": "NTPlan.newRecipe"
+    },
+    {
+      "file": "index.html",
+      "line": 3162,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 3179,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 3188,
+      "kind": "data-act",
+      "target": "NTPlan.saveNote"
+    },
+    {
+      "file": "index.html",
+      "line": 3189,
+      "kind": "data-act",
+      "target": "NTPlan.noteToRecipe"
+    },
+    {
+      "file": "index.html",
+      "line": 3190,
+      "kind": "data-act",
+      "target": "NTPlan.deleteItem"
+    },
+    {
+      "file": "index.html",
+      "line": 3198,
+      "kind": "data-act",
+      "target": "NTPlan.saveItem"
+    },
+    {
+      "file": "index.html",
+      "line": 3199,
+      "kind": "data-act",
+      "target": "NTPlan.itemToBook"
+    },
+    {
+      "file": "index.html",
+      "line": 3200,
+      "kind": "data-act",
+      "target": "NTPlan.itemToShop"
+    },
+    {
+      "file": "index.html",
+      "line": 3201,
+      "kind": "data-act",
+      "target": "NTPlan.deleteItem"
+    },
+    {
+      "file": "index.html",
+      "line": 3212,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 3244,
+      "kind": "data-act",
+      "target": "NTFeat.saveBaby"
+    },
+    {
+      "file": "index.html",
+      "line": 3254,
+      "kind": "data-act",
+      "target": "NTFeat.closeSheet"
+    },
+    {
+      "file": "index.html",
+      "line": 3267,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 3284,
+      "kind": "data-act",
+      "target": "NTFeat.closeCatalog"
+    },
+    {
+      "file": "index.html",
+      "line": 3291,
+      "kind": "data-act",
+      "target": "NTDash.reset"
+    },
+    {
+      "file": "index.html",
+      "line": 3301,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 3310,
+      "kind": "data-act",
+      "target": "NTFeat.saveWaterGoal"
+    },
+    {
+      "file": "index.html",
+      "line": 3326,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 3333,
+      "kind": "data-act",
+      "target": "libSetTab"
+    },
+    {
+      "file": "index.html",
+      "line": 3334,
+      "kind": "data-act",
+      "target": "libSetTab"
+    },
+    {
+      "file": "index.html",
+      "line": 3335,
+      "kind": "data-act",
+      "target": "libImportPaste"
+    },
+    {
+      "file": "index.html",
+      "line": 3337,
+      "kind": "data-act",
+      "target": "NTPlan.newRecipe"
+    },
+    {
+      "file": "index.html",
+      "line": 3365,
+      "kind": "data-act",
+      "target": "NTBook.closeDetail"
+    },
+    {
+      "file": "index.html",
+      "line": 3378,
+      "kind": "data-act",
+      "target": "NTPlan.closeNew"
+    },
+    {
+      "file": "index.html",
+      "line": 3383,
+      "kind": "data-act",
+      "target": "NTPlan.newBlank"
+    },
+    {
+      "file": "index.html",
+      "line": 3388,
+      "kind": "data-act",
+      "target": "NTPlan.newFromPhoto"
+    },
+    {
+      "file": "index.html",
+      "line": 3393,
+      "kind": "data-act",
+      "target": "NTPlan.newFromLink"
+    },
+    {
+      "file": "index.html",
+      "line": 3407,
+      "kind": "data-act",
+      "target": "NTPlan.closePhoto"
+    },
+    {
+      "file": "index.html",
+      "line": 3422,
+      "kind": "data-act",
+      "target": "NTPlan.resetPhoto"
+    },
+    {
+      "file": "index.html",
+      "line": 3424,
+      "kind": "data-act",
+      "target": "NTPlan.analyze"
+    },
+    {
+      "file": "index.html",
+      "line": 3434,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 3466,
+      "kind": "data-act",
+      "target": "NTBook.editSave"
+    },
+    {
+      "file": "index.html",
+      "line": 3467,
+      "kind": "data-act",
+      "target": "NTBook.editDelete"
+    },
+    {
+      "file": "index.html",
+      "line": 3476,
+      "kind": "data-act",
+      "target": "NTBook.cookClose"
+    },
+    {
+      "file": "index.html",
+      "line": 3489,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 3502,
+      "kind": "data-act",
+      "target": "shareItemSendToPartner"
+    },
+    {
+      "file": "index.html",
+      "line": 3508,
+      "kind": "data-act",
+      "target": "shareItemDoShare"
+    },
+    {
+      "file": "index.html",
+      "line": 3509,
+      "kind": "data-act",
+      "target": "shareItemDoCopy"
+    },
+    {
+      "file": "index.html",
+      "line": 3515,
+      "kind": "data-act",
+      "target": "shareItemDoCopyCode"
+    },
+    {
+      "file": "index.html",
+      "line": 3524,
+      "kind": "data-act",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 3527,
+      "kind": "data-act",
+      "target": "settSetTab"
+    },
+    {
+      "file": "index.html",
+      "line": 3528,
+      "kind": "data-act",
+      "target": "settSetTab"
+    },
+    {
+      "file": "index.html",
+      "line": 3529,
+      "kind": "data-act",
+      "target": "settSetTab"
+    },
+    {
+      "file": "index.html",
+      "line": 3530,
+      "kind": "data-act",
+      "target": "settSetTab"
+    },
+    {
+      "file": "index.html",
+      "line": 3531,
+      "kind": "data-act",
+      "target": "settSetTab"
+    },
+    {
+      "file": "index.html",
+      "line": 3532,
+      "kind": "data-act",
+      "target": "settSetTab"
+    },
+    {
+      "file": "index.html",
+      "line": 3600,
+      "kind": "data-act",
+      "target": "applyNursWaterGoal"
+    },
+    {
+      "file": "index.html",
+      "line": 3624,
+      "kind": "data-act",
+      "target": "saveSettings"
+    },
+    {
+      "file": "index.html",
+      "line": 3636,
+      "kind": "data-act",
+      "target": "calcGoal"
+    },
+    {
+      "file": "index.html",
+      "line": 3643,
+      "kind": "data-act",
+      "target": "setMacroMode"
+    },
+    {
+      "file": "index.html",
+      "line": 3644,
+      "kind": "data-act",
+      "target": "setMacroMode"
+    },
+    {
+      "file": "index.html",
+      "line": 3655,
+      "kind": "data-act",
+      "target": "saveSettings"
+    },
+    {
+      "file": "index.html",
+      "line": 3662,
+      "kind": "data-act",
+      "target": "toggleDietPreset"
+    },
+    {
+      "file": "index.html",
+      "line": 3663,
+      "kind": "data-act",
+      "target": "toggleDietPreset"
+    },
+    {
+      "file": "index.html",
+      "line": 3664,
+      "kind": "data-act",
+      "target": "toggleDietPreset"
+    },
+    {
+      "file": "index.html",
+      "line": 3665,
+      "kind": "data-act",
+      "target": "toggleDietPreset"
+    },
+    {
+      "file": "index.html",
+      "line": 3666,
+      "kind": "data-act",
+      "target": "toggleDietPreset"
+    },
+    {
+      "file": "index.html",
+      "line": 3667,
+      "kind": "data-act",
+      "target": "toggleDietPreset"
+    },
+    {
+      "file": "index.html",
+      "line": 3668,
+      "kind": "data-act",
+      "target": "toggleDietPreset"
+    },
+    {
+      "file": "index.html",
+      "line": 3669,
+      "kind": "data-act",
+      "target": "toggleDietPreset"
+    },
+    {
+      "file": "index.html",
+      "line": 3674,
+      "kind": "data-act",
+      "target": "addDietFree"
+    },
+    {
+      "file": "index.html",
+      "line": 3702,
+      "kind": "data-act",
+      "target": "saveSettings"
+    },
+    {
+      "file": "index.html",
+      "line": 3715,
+      "kind": "data-act",
+      "target": "NTRemind.add"
+    },
+    {
+      "file": "index.html",
+      "line": 3731,
+      "kind": "data-act",
+      "target": "saveProxyPwFromSettings"
+    },
+    {
+      "file": "index.html",
+      "line": 3744,
+      "kind": "data-act",
+      "target": "saveAiProviderSettings"
+    },
+    {
+      "file": "index.html",
+      "line": 3757,
+      "kind": "data-act",
+      "target": "saveAiVisionSettings"
+    },
+    {
+      "file": "index.html",
+      "line": 3762,
+      "kind": "data-act",
+      "target": "openPromptSettings"
+    },
+    {
+      "file": "index.html",
+      "line": 3769,
+      "kind": "data-act",
+      "target": "backupNow"
+    },
+    {
+      "file": "index.html",
+      "line": 3775,
+      "kind": "data-act",
+      "target": "openAutoSaves"
+    },
+    {
+      "file": "index.html",
+      "line": 3780,
+      "kind": "data-act",
+      "target": "exportData"
+    },
+    {
+      "file": "index.html",
+      "line": 3787,
+      "kind": "data-act",
+      "target": "NTExport.open"
+    },
+    {
+      "file": "index.html",
+      "line": 4499,
+      "kind": "data-act",
+      "target": "NTDrive.slotLoad"
+    },
+    {
+      "file": "index.html",
+      "line": 5424,
+      "kind": "data-act",
+      "target": "openMoveEntry"
+    },
+    {
+      "file": "index.html",
+      "line": 5433,
+      "kind": "data-act",
+      "target": "moveEntry"
+    },
+    {
+      "file": "index.html",
+      "line": 5434,
+      "kind": "data-act",
+      "target": "moveEntry"
+    },
+    {
+      "file": "index.html",
+      "line": 5480,
+      "kind": "data-act",
+      "target": "openEntryInBook"
+    },
+    {
+      "file": "index.html",
+      "line": 6947,
+      "kind": "data-act",
+      "target": "closeAmpelBanner"
+    },
+    {
+      "file": "index.html",
+      "line": 7375,
+      "kind": "data-act",
+      "target": "pickExerciseSugg"
+    },
+    {
+      "file": "index.html",
+      "line": 7866,
+      "kind": "data-act",
+      "target": "NTPartner.openForMeal"
+    },
+    {
+      "file": "index.html",
+      "line": 835,
+      "kind": "onkeydown",
+      "target": "submitProxyPw"
+    },
+    {
+      "file": "index.html",
+      "line": 992,
+      "kind": "onclick",
+      "target": "openBackupSettings"
+    },
+    {
+      "file": "index.html",
+      "line": 992,
+      "kind": "onclick",
+      "target": "dismissBackupReminder"
+    },
+    {
+      "file": "index.html",
+      "line": 1362,
+      "kind": "onclick",
+      "target": "showWhatsNew"
+    },
+    {
+      "file": "index.html",
+      "line": 1362,
+      "kind": "onclick",
+      "target": "openOv"
+    },
+    {
+      "file": "index.html",
+      "line": 1405,
+      "kind": "oninput",
+      "target": "NTPicker.pickerSearchLocalLive"
+    },
+    {
+      "file": "index.html",
+      "line": 1405,
+      "kind": "onkeydown",
+      "target": "NTPicker.pickerSearch"
+    },
+    {
+      "file": "index.html",
+      "line": 1424,
+      "kind": "onchange",
+      "target": "NTPicker.pickerHandlePhoto"
+    },
+    {
+      "file": "index.html",
+      "line": 1425,
+      "kind": "onchange",
+      "target": "NTPicker.pickerHandlePhoto"
+    },
+    {
+      "file": "index.html",
+      "line": 1455,
+      "kind": "onkeydown",
+      "target": "NTPicker.pickerPhotoAddSearch"
+    },
+    {
+      "file": "index.html",
+      "line": 1474,
+      "kind": "onchange",
+      "target": "NTPicker.pickerScanFromPhoto"
+    },
+    {
+      "file": "index.html",
+      "line": 1505,
+      "kind": "onkeydown",
+      "target": "NTPicker.pickerSendChat"
+    },
+    {
+      "file": "index.html",
+      "line": 1534,
+      "kind": "oninput",
+      "target": "NTPicker.pickerLinkDetect"
+    },
+    {
+      "file": "index.html",
+      "line": 1544,
+      "kind": "onchange",
+      "target": "NTPicker.pickerUpdateLinkTotal"
+    },
+    {
+      "file": "index.html",
+      "line": 1775,
+      "kind": "oninput",
+      "target": "NTMidwife.search"
+    },
+    {
+      "file": "index.html",
+      "line": 1826,
+      "kind": "onchange",
+      "target": "NTBaby.updateQuickTypeFields"
+    },
+    {
+      "file": "index.html",
+      "line": 1839,
+      "kind": "onchange",
+      "target": "NTBaby.updateQuickBreastFields"
+    },
+    {
+      "file": "index.html",
+      "line": 1916,
+      "kind": "onchange",
+      "target": "NTMidwife.editToChanged"
+    },
+    {
+      "file": "index.html",
+      "line": 1922,
+      "kind": "oninput",
+      "target": "NTMidwife.answerInput"
+    },
+    {
+      "file": "index.html",
+      "line": 2026,
+      "kind": "onchange",
+      "target": "NTBaby.updateBreastFields"
+    },
+    {
+      "file": "index.html",
+      "line": 2059,
+      "kind": "onchange",
+      "target": "NTBaby.updateDiaperFields"
+    },
+    {
+      "file": "index.html",
+      "line": 2161,
+      "kind": "onchange",
+      "target": "NTBaby.medPicked"
+    },
+    {
+      "file": "index.html",
+      "line": 2489,
+      "kind": "onkeydown",
+      "target": "NTShop.inputKey"
+    },
+    {
+      "file": "index.html",
+      "line": 2489,
+      "kind": "oninput",
+      "target": "NTShop.suggest"
+    },
+    {
+      "file": "index.html",
+      "line": 2514,
+      "kind": "onkeydown",
+      "target": "NTPantry.inputKey"
+    },
+    {
+      "file": "index.html",
+      "line": 2640,
+      "kind": "onchange",
+      "target": "NTPantry.photosChosen"
+    },
+    {
+      "file": "index.html",
+      "line": 2641,
+      "kind": "onchange",
+      "target": "NTPantry.photosChosen"
+    },
+    {
+      "file": "index.html",
+      "line": 2678,
+      "kind": "oninput",
+      "target": "NTShop.catalogQuery"
+    },
+    {
+      "file": "index.html",
+      "line": 2863,
+      "kind": "oninput",
+      "target": "importAmtPreview"
+    },
+    {
+      "file": "index.html",
+      "line": 2911,
+      "kind": "onblur",
+      "target": "NTPartner.saveMyName"
+    },
+    {
+      "file": "index.html",
+      "line": 2962,
+      "kind": "onchange",
+      "target": "renderShareRangeInfo"
+    },
+    {
+      "file": "index.html",
+      "line": 2964,
+      "kind": "onchange",
+      "target": "renderShareRangeInfo"
+    },
+    {
+      "file": "index.html",
+      "line": 2993,
+      "kind": "onchange",
+      "target": "attachFeedbackPhoto"
+    },
+    {
+      "file": "index.html",
+      "line": 3052,
+      "kind": "onkeydown",
+      "target": "NTShop.catAdd"
+    },
+    {
+      "file": "index.html",
+      "line": 3167,
+      "kind": "oninput",
+      "target": "NTPlan.renderPick"
+    },
+    {
+      "file": "index.html",
+      "line": 3169,
+      "kind": "onclick",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 3169,
+      "kind": "onclick",
+      "target": "NTPlan.newRecipe"
+    },
+    {
+      "file": "index.html",
+      "line": 3195,
+      "kind": "oninput",
+      "target": "NTPlan.planItemTotal"
+    },
+    {
+      "file": "index.html",
+      "line": 3224,
+      "kind": "onchange",
+      "target": "updateBabyUI"
+    },
+    {
+      "file": "index.html",
+      "line": 3331,
+      "kind": "oninput",
+      "target": "renderLibrary"
+    },
+    {
+      "file": "index.html",
+      "line": 3342,
+      "kind": "onchange",
+      "target": "NTBook.setSort"
+    },
+    {
+      "file": "index.html",
+      "line": 3374,
+      "kind": "onclick",
+      "target": "NTPlan.closeNew"
+    },
+    {
+      "file": "index.html",
+      "line": 3403,
+      "kind": "onclick",
+      "target": "NTPlan.closePhoto"
+    },
+    {
+      "file": "index.html",
+      "line": 3414,
+      "kind": "onchange",
+      "target": "NTPlan.handlePhoto"
+    },
+    {
+      "file": "index.html",
+      "line": 3417,
+      "kind": "onchange",
+      "target": "NTPlan.handlePhoto"
+    },
+    {
+      "file": "index.html",
+      "line": 3441,
+      "kind": "oninput",
+      "target": "NTBook.editTotal"
+    },
+    {
+      "file": "index.html",
+      "line": 3447,
+      "kind": "oninput",
+      "target": "NTBook.renderCatChips"
+    },
+    {
+      "file": "index.html",
+      "line": 3454,
+      "kind": "oninput",
+      "target": "NTBook.editSearch"
+    },
+    {
+      "file": "index.html",
+      "line": 3564,
+      "kind": "onchange",
+      "target": "updatePregnantUI"
+    },
+    {
+      "file": "index.html",
+      "line": 3583,
+      "kind": "onchange",
+      "target": "updatePregnantUI"
+    },
+    {
+      "file": "index.html",
+      "line": 3591,
+      "kind": "onchange",
+      "target": "updateNursingUI"
+    },
+    {
+      "file": "index.html",
+      "line": 3612,
+      "kind": "onchange",
+      "target": "updateNursingUI"
+    },
+    {
+      "file": "index.html",
+      "line": 3637,
+      "kind": "oninput",
+      "target": "_updateGoalManualHint"
+    },
+    {
+      "file": "index.html",
+      "line": 3683,
+      "kind": "onchange",
+      "target": "updateDietWarnToggle"
+    },
+    {
+      "file": "index.html",
+      "line": 3696,
+      "kind": "onchange",
+      "target": "updateSavePickerPhotosToggle"
+    },
+    {
+      "file": "index.html",
+      "line": 3718,
+      "kind": "onchange",
+      "target": "NTPantry.setRemind"
+    },
+    {
+      "file": "index.html",
+      "line": 3730,
+      "kind": "onkeydown",
+      "target": "saveProxyPwFromSettings"
+    },
+    {
+      "file": "index.html",
+      "line": 3736,
+      "kind": "onchange",
+      "target": "onAiProviderChange"
+    },
+    {
+      "file": "index.html",
+      "line": 3741,
+      "kind": "onkeydown",
+      "target": "saveAiProviderSettings"
+    },
+    {
+      "file": "index.html",
+      "line": 3749,
+      "kind": "onchange",
+      "target": "onAiVisionChange"
+    },
+    {
+      "file": "index.html",
+      "line": 3754,
+      "kind": "onkeydown",
+      "target": "saveAiVisionSettings"
+    },
+    {
+      "file": "index.html",
+      "line": 3782,
+      "kind": "onchange",
+      "target": "importData"
+    },
+    {
+      "file": "index.html",
+      "line": 4694,
+      "kind": "onclick",
+      "target": "closeWhatsNew"
+    },
+    {
+      "file": "index.html",
+      "line": 4711,
+      "kind": "onclick",
+      "target": "closeWhatsNew"
+    },
+    {
+      "file": "index.html",
+      "line": 5041,
+      "kind": "onclick",
+      "target": "openFastOv"
+    },
+    {
+      "file": "index.html",
+      "line": 5053,
+      "kind": "onclick",
+      "target": "stopFast"
+    },
+    {
+      "file": "index.html",
+      "line": 5069,
+      "kind": "onclick",
+      "target": "stopFast"
+    },
+    {
+      "file": "index.html",
+      "line": 5304,
+      "kind": "onclick",
+      "target": "ingToggle"
+    },
+    {
+      "file": "index.html",
+      "line": 5305,
+      "kind": "onclick",
+      "target": "ingToggle"
+    },
+    {
+      "file": "index.html",
+      "line": 5306,
+      "kind": "onchange",
+      "target": "editIngAmt"
+    },
+    {
+      "file": "index.html",
+      "line": 5308,
+      "kind": "onclick",
+      "target": "editIngDel"
+    },
+    {
+      "file": "index.html",
+      "line": 5316,
+      "kind": "onchange",
+      "target": "editUpdateTotal"
+    },
+    {
+      "file": "index.html",
+      "line": 5320,
+      "kind": "onclick",
+      "target": "editAddIng"
+    },
+    {
+      "file": "index.html",
+      "line": 5321,
+      "kind": "onclick",
+      "target": "editSaveAsRecipe"
+    },
+    {
+      "file": "index.html",
+      "line": 5326,
+      "kind": "onclick",
+      "target": "saveEditEntry"
+    },
+    {
+      "file": "index.html",
+      "line": 5327,
+      "kind": "onclick",
+      "target": "NTTpl.saveFromMeal"
+    },
+    {
+      "file": "index.html",
+      "line": 5329,
+      "kind": "onclick",
+      "target": "deleteEntry"
+    },
+    {
+      "file": "index.html",
+      "line": 5339,
+      "kind": "onchange",
+      "target": "handleEditMealPhoto"
+    },
+    {
+      "file": "index.html",
+      "line": 5341,
+      "kind": "onclick",
+      "target": "saveEditEntry"
+    },
+    {
+      "file": "index.html",
+      "line": 5343,
+      "kind": "onclick",
+      "target": "deleteEntry"
+    },
+    {
+      "file": "index.html",
+      "line": 5478,
+      "kind": "onclick",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 5478,
+      "kind": "onclick",
+      "target": "openEditEntry"
+    },
+    {
+      "file": "index.html",
+      "line": 5479,
+      "kind": "onclick",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 5481,
+      "kind": "onclick",
+      "target": "showEntryInstructions"
+    },
+    {
+      "file": "index.html",
+      "line": 7042,
+      "kind": "onclick",
+      "target": "selectDietFree"
+    },
+    {
+      "file": "index.html",
+      "line": 7044,
+      "kind": "onclick",
+      "target": "deleteDietFree"
+    },
+    {
+      "file": "index.html",
+      "line": 7412,
+      "kind": "onclick",
+      "target": "deleteExerciseFromLibrary"
+    },
+    {
+      "file": "index.html",
+      "line": 7413,
+      "kind": "onclick",
+      "target": "selectExercisePreset"
+    },
+    {
+      "file": "index.html",
+      "line": 7600,
+      "kind": "onclick",
+      "target": "deleteExercise"
+    },
+    {
+      "file": "index.html",
+      "line": 7726,
+      "kind": "onclick",
+      "target": "openOwnFoodEdit"
+    },
+    {
+      "file": "index.html",
+      "line": 7727,
+      "kind": "onclick",
+      "target": "shareLibFood"
+    },
+    {
+      "file": "index.html",
+      "line": 7736,
+      "kind": "onclick",
+      "target": "libAddFood"
+    },
+    {
+      "file": "index.html",
+      "line": 7918,
+      "kind": "onclick",
+      "target": "goToDay"
+    },
+    {
+      "file": "index.html",
+      "line": 7922,
+      "kind": "onclick",
+      "target": "shareDay"
+    },
+    {
+      "file": "index.html",
+      "line": 8439,
+      "kind": "onclick",
+      "target": "openFeedback"
+    },
+    {
+      "file": "index.html",
+      "line": 8440,
+      "kind": "onclick",
+      "target": "bgClose"
+    },
+    {
+      "file": "index.html",
+      "line": 8445,
+      "kind": "onclick",
+      "target": "closeOv"
+    },
+    {
+      "file": "index.html",
+      "line": 8445,
+      "kind": "onclick",
+      "target": "NTDrive.connect"
+    },
+    {
+      "file": "index.html",
+      "line": 8446,
+      "kind": "onclick",
+      "target": "closeOv"
+    },
+    {
+      "file": "picker.js",
+      "line": 1101,
+      "kind": "data-act",
+      "target": "NTPicker.pickerSubmitManualBarcode"
+    },
+    {
+      "file": "picker.js",
+      "line": 1867,
+      "kind": "data-act",
+      "target": "NTPicker.pickerChatKiFallback"
+    },
+    {
+      "file": "picker.js",
+      "line": 229,
+      "kind": "onclick",
+      "target": "NTPicker.pickerSelResult"
+    },
+    {
+      "file": "picker.js",
+      "line": 984,
+      "kind": "onclick",
+      "target": "NTPicker.pickerOpenManualBarcode"
+    },
+    {
+      "file": "picker.js",
+      "line": 1286,
+      "kind": "onclick",
+      "target": "NTPicker.pickerBarcodeAdd"
+    },
+    {
+      "file": "picker.js",
+      "line": 1321,
+      "kind": "onclick",
+      "target": "NTPicker.pickerBarcodeManualSave"
+    },
+    {
+      "file": "picker.js",
+      "line": 1419,
+      "kind": "onclick",
+      "target": "NTPicker.pickerPhotoAddFromResult"
+    },
+    {
+      "file": "picker.js",
+      "line": 1907,
+      "kind": "onclick",
+      "target": "NTPicker.pickerChatAddLocal"
+    },
+    {
+      "file": "picker.js",
+      "line": 1910,
+      "kind": "onclick",
+      "target": "NTPicker.pickerChatKiFallback"
+    },
+    {
+      "file": "picker.js",
+      "line": 2554,
+      "kind": "onclick",
+      "target": "ingToggle"
+    },
+    {
+      "file": "picker.js",
+      "line": 2555,
+      "kind": "onclick",
+      "target": "ingToggle"
+    },
+    {
+      "file": "picker.js",
+      "line": 2556,
+      "kind": "onchange",
+      "target": "NTPicker.pickerIngAmtChange"
+    },
+    {
+      "file": "picker.js",
+      "line": 2559,
+      "kind": "onclick",
+      "target": "NTPicker.pickerIngDel"
+    },
+    {
+      "file": "picker.js",
+      "line": 2645,
+      "kind": "onclick",
+      "target": "NTPicker.pickerAddRecent"
+    },
+    {
+      "file": "js/autosave.js",
+      "line": 121,
+      "kind": "data-act",
+      "target": "NTAutoSave.load"
+    },
+    {
+      "file": "js/baby-growth.js",
+      "line": 121,
+      "kind": "data-act",
+      "target": "NTFeat.openBabySettings"
+    },
+    {
+      "file": "js/baby-growth.js",
+      "line": 140,
+      "kind": "data-act",
+      "target": "NTBaby.editEntry"
+    },
+    {
+      "file": "js/baby-meds.js",
+      "line": 82,
+      "kind": "data-act",
+      "target": "NTBabyMed.give"
+    },
+    {
+      "file": "js/baby-meds.js",
+      "line": 129,
+      "kind": "data-act",
+      "target": "NTBabyMed.edit"
+    },
+    {
+      "file": "js/baby-meds.js",
+      "line": 131,
+      "kind": "data-act",
+      "target": "NTBabyMed.give"
+    },
+    {
+      "file": "js/baby-midwife.js",
+      "line": 101,
+      "kind": "data-act",
+      "target": "NTMidwife.toggle"
+    },
+    {
+      "file": "js/baby-midwife.js",
+      "line": 102,
+      "kind": "data-act",
+      "target": "NTMidwife.edit"
+    },
+    {
+      "file": "js/baby-midwife.js",
+      "line": 220,
+      "kind": "data-act",
+      "target": "NTMidwife.open"
+    },
+    {
+      "file": "js/baby-milestones.js",
+      "line": 214,
+      "kind": "data-act",
+      "target": "NTFeat.openBabySettings"
+    },
+    {
+      "file": "js/baby-milestones.js",
+      "line": 229,
+      "kind": "data-act",
+      "target": "NTMile.toggle"
+    },
+    {
+      "file": "js/baby-milestones.js",
+      "line": 236,
+      "kind": "data-act",
+      "target": "NTMile.check"
+    },
+    {
+      "file": "js/baby-milestones.js",
+      "line": 311,
+      "kind": "data-act",
+      "target": "NTMile.toggleU"
+    },
+    {
+      "file": "js/baby-milestones.js",
+      "line": 315,
+      "kind": "data-act",
+      "target": "NTMile.showAllU"
+    },
+    {
+      "file": "js/baby-milestones.js",
+      "line": 320,
+      "kind": "data-act",
+      "target": "NTBaby.openEntry"
+    },
+    {
+      "file": "js/baby-milestones.js",
+      "line": 323,
+      "kind": "data-act",
+      "target": "NTBaby.editEntry"
+    },
+    {
+      "file": "js/baby-sleep-plan.js",
+      "line": 19,
+      "kind": "data-act",
+      "target": "'+fn+'"
+    },
+    {
+      "file": "js/baby.js",
+      "line": 385,
+      "kind": "data-act",
+      "target": "NTBaby.switchFeed"
+    },
+    {
+      "file": "js/baby.js",
+      "line": 386,
+      "kind": "data-act",
+      "target": "NTBaby.stopFeed"
+    },
+    {
+      "file": "js/baby.js",
+      "line": 989,
+      "kind": "data-act",
+      "target": "NTBaby.endSleep"
+    },
+    {
+      "file": "js/baby.js",
+      "line": 991,
+      "kind": "data-act",
+      "target": "NTBaby.stopFeed"
+    },
+    {
+      "file": "js/baby.js",
+      "line": 1006,
+      "kind": "data-act",
+      "target": "NTBaby.editEntry"
+    },
+    {
+      "file": "js/baby.js",
+      "line": 472,
+      "kind": "onclick",
+      "target": "NTBaby.quick"
+    },
+    {
+      "file": "js/baby.js",
+      "line": 533,
+      "kind": "onclick",
+      "target": "NTBaby.openQuickEdit"
+    },
+    {
+      "file": "js/baby.js",
+      "line": 537,
+      "kind": "onclick",
+      "target": "NTBaby.moveQuick"
+    },
+    {
+      "file": "js/baby.js",
+      "line": 538,
+      "kind": "onclick",
+      "target": "NTBaby.moveQuick"
+    },
+    {
+      "file": "js/baby.js",
+      "line": 539,
+      "kind": "onclick",
+      "target": "NTBaby.openQuickEdit"
+    },
+    {
+      "file": "js/baby.js",
+      "line": 540,
+      "kind": "onclick",
+      "target": "NTBaby.deleteQuick"
+    },
+    {
+      "file": "js/cookbook.js",
+      "line": 292,
+      "kind": "data-act",
+      "target": "NTBook.setTag"
+    },
+    {
+      "file": "js/cookbook.js",
+      "line": 315,
+      "kind": "data-act",
+      "target": "NTBook.detail"
+    },
+    {
+      "file": "js/cookbook.js",
+      "line": 363,
+      "kind": "data-act",
+      "target": "NTBook.toggleOrig"
+    },
+    {
+      "file": "js/cookbook.js",
+      "line": 377,
+      "kind": "data-act",
+      "target": "NTBook.toggleOrig"
+    },
+    {
+      "file": "js/cookbook.js",
+      "line": 394,
+      "kind": "data-act",
+      "target": "NTBook.eatNow"
+    },
+    {
+      "file": "js/cookbook.js",
+      "line": 417,
+      "kind": "data-act",
+      "target": "NTBook.planNow"
+    },
+    {
+      "file": "js/cookbook.js",
+      "line": 467,
+      "kind": "data-act",
+      "target": "'+act+'"
+    },
+    {
+      "file": "js/cookbook.js",
+      "line": 472,
+      "kind": "data-act",
+      "target": "NTBook.cook"
+    },
+    {
+      "file": "js/cookbook.js",
+      "line": 474,
+      "kind": "data-act",
+      "target": "NTBook.togglePanel"
+    },
+    {
+      "file": "js/cookbook.js",
+      "line": 475,
+      "kind": "data-act",
+      "target": "NTBook.toShop"
+    },
+    {
+      "file": "js/cookbook.js",
+      "line": 476,
+      "kind": "data-act",
+      "target": "NTBook.togglePanel"
+    },
+    {
+      "file": "js/cookbook.js",
+      "line": 477,
+      "kind": "data-act",
+      "target": "NTBook.toggleFav"
+    },
+    {
+      "file": "js/cookbook.js",
+      "line": 483,
+      "kind": "data-act",
+      "target": "NTBook.setPortions"
+    },
+    {
+      "file": "js/cookbook.js",
+      "line": 485,
+      "kind": "data-act",
+      "target": "NTBook.setPortions"
+    },
+    {
+      "file": "js/cookbook.js",
+      "line": 501,
+      "kind": "data-act",
+      "target": "shareRecipe"
+    },
+    {
+      "file": "js/cookbook.js",
+      "line": 590,
+      "kind": "data-act",
+      "target": "NTBook.addCat"
+    },
+    {
+      "file": "js/cookbook.js",
+      "line": 597,
+      "kind": "data-act",
+      "target": "NTBook.toggleMeal"
+    },
+    {
+      "file": "js/cookbook.js",
+      "line": 628,
+      "kind": "data-act",
+      "target": "NTBook.editAdd"
+    },
+    {
+      "file": "js/cookbook.js",
+      "line": 776,
+      "kind": "data-act",
+      "target": "NTBook.timerDrop"
+    },
+    {
+      "file": "js/cookbook.js",
+      "line": 865,
+      "kind": "data-act",
+      "target": "NTBook.cookClose"
+    },
+    {
+      "file": "js/cookbook.js",
+      "line": 875,
+      "kind": "data-act",
+      "target": "NTBook.cookIngs"
+    },
+    {
+      "file": "js/cookbook.js",
+      "line": 876,
+      "kind": "data-act",
+      "target": "NTBook.cookPortions"
+    },
+    {
+      "file": "js/cookbook.js",
+      "line": 876,
+      "kind": "data-act",
+      "target": "NTBook.cookPortions"
+    },
+    {
+      "file": "js/cookbook.js",
+      "line": 882,
+      "kind": "data-act",
+      "target": "NTBook.timerStart"
+    },
+    {
+      "file": "js/cookbook.js",
+      "line": 885,
+      "kind": "data-act",
+      "target": "NTBook.cookGo"
+    },
+    {
+      "file": "js/cookbook.js",
+      "line": 887,
+      "kind": "data-act",
+      "target": "NTBook.cookGo"
+    },
+    {
+      "file": "js/cookbook.js",
+      "line": 888,
+      "kind": "data-act",
+      "target": "NTBook.cookDone"
+    },
+    {
+      "file": "js/cookbook.js",
+      "line": 904,
+      "kind": "data-act",
+      "target": "NTPlan.newRecipe"
+    },
+    {
+      "file": "js/cookbook.js",
+      "line": 913,
+      "kind": "data-act",
+      "target": "NTBook.detail"
+    },
+    {
+      "file": "js/cookbook.js",
+      "line": 914,
+      "kind": "data-act",
+      "target": "NTBook.cook"
+    },
+    {
+      "file": "js/cookbook.js",
+      "line": 922,
+      "kind": "data-act",
+      "target": "NTBook.detail"
+    },
+    {
+      "file": "js/features.js",
+      "line": 155,
+      "kind": "data-act",
+      "target": "NTFeat.act"
+    },
+    {
+      "file": "js/features.js",
+      "line": 171,
+      "kind": "data-act",
+      "target": "NTFeat.toggle"
+    },
+    {
+      "file": "js/features.js",
+      "line": 177,
+      "kind": "data-act",
+      "target": "NTFeat.openCatalog"
+    },
+    {
+      "file": "js/features.js",
+      "line": 273,
+      "kind": "data-act",
+      "target": "NTFeat.sheet"
+    },
+    {
+      "file": "js/features.js",
+      "line": 280,
+      "kind": "data-act",
+      "target": "NTFeat.move"
+    },
+    {
+      "file": "js/features.js",
+      "line": 281,
+      "kind": "data-act",
+      "target": "NTFeat.move"
+    },
+    {
+      "file": "js/features.js",
+      "line": 283,
+      "kind": "data-act",
+      "target": "NTFeat.toggleInCatalog"
+    },
+    {
+      "file": "js/launch.js",
+      "line": 114,
+      "kind": "data-act",
+      "target": "NTLaunch.run"
+    },
+    {
+      "file": "js/launch.js",
+      "line": 128,
+      "kind": "data-act",
+      "target": "NTLaunch.toggle"
+    },
+    {
+      "file": "js/mealplan.js",
+      "line": 237,
+      "kind": "onclick",
+      "target": "NTPlan.newRecipe"
+    },
+    {
+      "file": "js/mealplan.js",
+      "line": 276,
+      "kind": "onclick",
+      "target": "NTPlan.openItem"
+    },
+    {
+      "file": "js/mealplan.js",
+      "line": 280,
+      "kind": "onclick",
+      "target": "NTPlan.removeItem"
+    },
+    {
+      "file": "js/mealplan.js",
+      "line": 282,
+      "kind": "onclick",
+      "target": "NTPlan.openItem"
+    },
+    {
+      "file": "js/mealplan.js",
+      "line": 285,
+      "kind": "onclick",
+      "target": "NTPlan.pick"
+    },
+    {
+      "file": "js/mealplan.js",
+      "line": 289,
+      "kind": "onclick",
+      "target": "NTPlan.toDiary"
+    },
+    {
+      "file": "js/mealplan.js",
+      "line": 290,
+      "kind": "onclick",
+      "target": "NTPlan.clearDay"
+    },
+    {
+      "file": "js/mealplan.js",
+      "line": 319,
+      "kind": "onclick",
+      "target": "NTPlan.addNote"
+    },
+    {
+      "file": "js/mealplan.js",
+      "line": 332,
+      "kind": "onclick",
+      "target": "NTPlan.addToSlot"
+    },
+    {
+      "file": "js/mealplan.js",
+      "line": 874,
+      "kind": "onclick",
+      "target": "NTPlan.toDiary"
+    },
+    {
+      "file": "js/onedrive.js",
+      "line": 305,
+      "kind": "onclick",
+      "target": "NTDrive.saveFolder"
+    },
+    {
+      "file": "js/onedrive.js",
+      "line": 308,
+      "kind": "onclick",
+      "target": "NTDrive.syncUp"
+    },
+    {
+      "file": "js/onedrive.js",
+      "line": 309,
+      "kind": "onclick",
+      "target": "NTDrive.syncDown"
+    },
+    {
+      "file": "js/onedrive.js",
+      "line": 310,
+      "kind": "onclick",
+      "target": "NTDrive.disconnect"
+    },
+    {
+      "file": "js/onedrive.js",
+      "line": 313,
+      "kind": "onclick",
+      "target": "NTDrive.connect"
+    },
+    {
+      "file": "js/pantry.js",
+      "line": 360,
+      "kind": "data-act",
+      "target": "NTPantry.openItem"
+    },
+    {
+      "file": "js/pantry.js",
+      "line": 366,
+      "kind": "data-act",
+      "target": "NTPantry.step"
+    },
+    {
+      "file": "js/pantry.js",
+      "line": 367,
+      "kind": "data-act",
+      "target": "NTPantry.step"
+    },
+    {
+      "file": "js/pantry.js",
+      "line": 379,
+      "kind": "data-act",
+      "target": "NTPantry.setFilter"
+    },
+    {
+      "file": "js/pantry.js",
+      "line": 380,
+      "kind": "data-act",
+      "target": "NTPantry.setFilter"
+    },
+    {
+      "file": "js/pantry.js",
+      "line": 382,
+      "kind": "data-act",
+      "target": "NTPantry.setFilter"
+    },
+    {
+      "file": "js/pantry.js",
+      "line": 471,
+      "kind": "data-act",
+      "target": "NTPantry.dropBarcodes"
+    },
+    {
+      "file": "js/pantry.js",
+      "line": 611,
+      "kind": "data-act",
+      "target": "NTPantry.undo"
+    },
+    {
+      "file": "js/pantry.js",
+      "line": 676,
+      "kind": "data-act",
+      "target": "NTPantry.locMove"
+    },
+    {
+      "file": "js/pantry.js",
+      "line": 677,
+      "kind": "data-act",
+      "target": "NTPantry.locMove"
+    },
+    {
+      "file": "js/pantry.js",
+      "line": 678,
+      "kind": "data-act",
+      "target": "NTPantry.locDelete"
+    },
+    {
+      "file": "js/pantry.js",
+      "line": 766,
+      "kind": "data-act",
+      "target": "NTPantry.'+act+'"
+    },
+    {
+      "file": "js/pantry.js",
+      "line": 775,
+      "kind": "data-act",
+      "target": "NTPantry.dropPhoto"
+    },
+    {
+      "file": "js/pantry.js",
+      "line": 834,
+      "kind": "data-act",
+      "target": "NTPantry.foundApply"
+    },
+    {
+      "file": "js/pantry.js",
+      "line": 866,
+      "kind": "data-act",
+      "target": "NTPantry.openRecipe"
+    },
+    {
+      "file": "js/pantry.js",
+      "line": 674,
+      "kind": "onchange",
+      "target": "NTPantry.locSave"
+    },
+    {
+      "file": "js/pantry.js",
+      "line": 675,
+      "kind": "onchange",
+      "target": "NTPantry.locSave"
+    },
+    {
+      "file": "js/pantry.js",
+      "line": 827,
+      "kind": "onchange",
+      "target": "NTPantry.foundSet"
+    },
+    {
+      "file": "js/pantry.js",
+      "line": 828,
+      "kind": "onchange",
+      "target": "NTPantry.foundSet"
+    },
+    {
+      "file": "js/pantry.js",
+      "line": 829,
+      "kind": "onchange",
+      "target": "NTPantry.foundSet"
+    },
+    {
+      "file": "js/pantry.js",
+      "line": 830,
+      "kind": "onchange",
+      "target": "NTPantry.foundSet"
+    },
+    {
+      "file": "js/partner.js",
+      "line": 377,
+      "kind": "data-act",
+      "target": "NTPartner.openPacket"
+    },
+    {
+      "file": "js/partner.js",
+      "line": 386,
+      "kind": "onclick",
+      "target": "NTPartner.clearInbox"
+    },
+    {
+      "file": "js/recurring.js",
+      "line": 119,
+      "kind": "onclick",
+      "target": "NTRecur.toggleWeekday"
+    },
+    {
+      "file": "js/recurring.js",
+      "line": 162,
+      "kind": "onclick",
+      "target": "NTRecur.toggleRule"
+    },
+    {
+      "file": "js/recurring.js",
+      "line": 163,
+      "kind": "onclick",
+      "target": "NTRecur.deleteRule"
+    },
+    {
+      "file": "js/reminders.js",
+      "line": 234,
+      "kind": "data-act",
+      "target": "NTRemind.del"
+    },
+    {
+      "file": "js/shopping.js",
+      "line": 587,
+      "kind": "data-act",
+      "target": "NTShop.toggle"
+    },
+    {
+      "file": "js/shopping.js",
+      "line": 596,
+      "kind": "data-act",
+      "target": "NTShop.openItem"
+    },
+    {
+      "file": "js/shopping.js",
+      "line": 628,
+      "kind": "onclick",
+      "target": "NTShop.toggleDone"
+    },
+    {
+      "file": "js/shopping.js",
+      "line": 632,
+      "kind": "onclick",
+      "target": "NTShop.clearDone"
+    },
+    {
+      "file": "js/shopping.js",
+      "line": 692,
+      "kind": "onclick",
+      "target": "NTShop.addFromSuggest"
+    },
+    {
+      "file": "js/shopping.js",
+      "line": 726,
+      "kind": "onclick",
+      "target": "NTShop.tileTap"
+    },
+    {
+      "file": "js/shopping.js",
+      "line": 749,
+      "kind": "onclick",
+      "target": "NTShop.addCatQuery"
+    },
+    {
+      "file": "js/shopping.js",
+      "line": 794,
+      "kind": "onchange",
+      "target": "NTShop.catSave"
+    },
+    {
+      "file": "js/shopping.js",
+      "line": 795,
+      "kind": "onchange",
+      "target": "NTShop.catSave"
+    },
+    {
+      "file": "js/shopping.js",
+      "line": 796,
+      "kind": "onclick",
+      "target": "NTShop.catMove"
+    },
+    {
+      "file": "js/shopping.js",
+      "line": 797,
+      "kind": "onclick",
+      "target": "NTShop.catMove"
+    },
+    {
+      "file": "js/shopping.js",
+      "line": 798,
+      "kind": "onclick",
+      "target": "NTShop.catDelete"
+    },
+    {
+      "file": "js/sync-core.js",
+      "line": 406,
+      "kind": "data-act",
+      "target": "NTSync.openOther"
+    },
+    {
+      "file": "js/sync-core.js",
+      "line": 451,
+      "kind": "onchange",
+      "target": "NTSync.rename"
+    },
+    {
+      "file": "js/sync-core.js",
+      "line": 452,
+      "kind": "onclick",
+      "target": "NTSync.remove"
+    },
+    {
+      "file": "js/sync-core.js",
+      "line": 457,
+      "kind": "onclick",
+      "target": "NTSync.toggle"
+    },
+    {
+      "file": "js/sync-core.js",
+      "line": 464,
+      "kind": "onclick",
+      "target": "NTSync.shareCode"
+    },
+    {
+      "file": "js/sync-core.js",
+      "line": 465,
+      "kind": "onclick",
+      "target": "NTSync.pause"
+    },
+    {
+      "file": "js/sync-core.js",
+      "line": 505,
+      "kind": "onclick",
+      "target": "NTSync.shareCode"
+    },
+    {
+      "file": "js/templates.js",
+      "line": 57,
+      "kind": "onclick",
+      "target": "NTTpl.apply"
+    },
+    {
+      "file": "js/templates.js",
+      "line": 58,
+      "kind": "onclick",
+      "target": "NTTpl.del"
+    },
+    {
+      "file": "js/tour.js",
+      "line": 55,
+      "kind": "data-act",
+      "target": "NTFeat.openCatalog"
+    },
+    {
+      "file": "js/tour.js",
+      "line": 57,
+      "kind": "data-act",
+      "target": "NTSync.open"
+    },
+    {
+      "file": "js/tour.js",
+      "line": 74,
+      "kind": "data-act",
+      "target": "NTTour.end"
+    },
+    {
+      "file": "js/tour.js",
+      "line": 76,
+      "kind": "data-act",
+      "target": "NTTour.end"
+    },
+    {
+      "file": "js/tour.js",
+      "line": 78,
+      "kind": "data-act",
+      "target": "NTTour.prev"
+    },
+    {
+      "file": "js/tour.js",
+      "line": 79,
+      "kind": "data-act",
+      "target": "NTTour.next"
+    },
+    {
+      "file": "js/tour.js",
+      "line": 190,
+      "kind": "data-act",
+      "target": "NTTour.start"
+    }
+  ],
+  "matrix": [
+    {
+      "id": "F01",
+      "capability": "Einrichtung, Profil, Zielkalorien, Gewicht, Ernährungsziel, Kalorienbedarf",
+      "target": "Mehr → Profil / Ziele; Ernährung → Einstellungen",
+      "source": "`index.html`, `js/calc.js`",
+      "acceptance": "Zieländerung korrekt in Tagesbilanz"
+    },
+    {
+      "id": "F02",
+      "capability": "Tag wechseln, alte Tage und verdichtete Tage wieder öffnen",
+      "target": "Ernährung → Verlauf; Heute → Datum",
+      "source": "`index.html`, `js/calc.js`",
+      "acceptance": "Historie >90 Tage lesbar; heute unverändert"
+    },
+    {
+      "id": "F03",
+      "capability": "Mahlzeiten Frühstück/Mittag/Abend/Snack, Mengen, Nährwerte, Bearbeiten, Verschieben, Löschen",
+      "target": "Ernährung → Heute; `+`",
+      "source": "`index.html`, `picker.js`",
+      "acceptance": "jede Slot-Aktion, Makrosumme unverändert"
+    },
+    {
+      "id": "F04",
+      "capability": "Text-/Chat-Eintrag mit sicherer Voranalyse und KI-Fallback",
+      "target": "Ernährung → + → Text",
+      "source": "`picker.js`",
+      "acceptance": "sichere Erkennung, Unklarheiten rückfragen"
+    },
+    {
+      "id": "F05",
+      "capability": "Lebensmittelsuche, eigene Lebensmittel, zuletzt verwendet",
+      "target": "Ernährung → + → Suchen / Zuletzt / Eigenes",
+      "source": "`picker.js`, `js/fooddb*.js`",
+      "acceptance": "keine Einträge/Sortierung verloren"
+    },
+    {
+      "id": "F06",
+      "capability": "Barcode via Kamera/Decoder/OFF, lokale Cache-Treffer",
+      "target": "Ernährung → + → Barcode",
+      "source": "`picker.js`, ZXing, Worker/Decoder",
+      "acceptance": "Kamera, Berechtigung, Offline-Fallback"
+    },
+    {
+      "id": "F07",
+      "capability": "Foto-KI zur Mahlzeit, Bildverwaltung",
+      "target": "Ernährung → + → Foto",
+      "source": "`picker.js`, `js/idb-photos.js`",
+      "acceptance": "Bild-ID bleibt, keine Löschung bei Edit"
+    },
+    {
+      "id": "F08",
+      "capability": "Rezept-/Produktlink, Import-Parser",
+      "target": "Ernährung → + → Link; Kochbuch → Import",
+      "source": "`picker.js`, Worker",
+      "acceptance": "gleiche Import-Vorschau wie vorher"
+    },
+    {
+      "id": "F09",
+      "capability": "Lebensmittel-/Restaurant-Nährwerte DE, Datenbank, Fehlerkennzeichnung",
+      "target": "Ernährung → Suche",
+      "source": "`js/fooddb*.js`, `js/restaurants.js`, `js/calc.js`",
+      "acceptance": "Treffer und Grammanpassung korrekt"
+    },
+    {
+      "id": "F10",
+      "capability": "Ernährungsampel für Stillzeit, Schwangerschaft, Ernährungsform, Allergien",
+      "target": "Ernährung → Mahlzeitdetails / Profil",
+      "source": "`js/ampel.js`, `index.html`",
+      "acceptance": "identische Hinweise/Schutzlogik"
+    },
+    {
+      "id": "F11",
+      "capability": "Wiederkehrende Mahlzeiten, Pausieren, Vorlagen",
+      "target": "Ernährung → Planung / Vorlagen",
+      "source": "`js/recurring.js`, `js/templates.js`",
+      "acceptance": "Wiederholungen nicht doppelt gebucht"
+    },
+    {
+      "id": "F12",
+      "capability": "Kalorien, Makros, Wasser, Bewegung, Fasten, Tagesbilanz",
+      "target": "Ernährung → Heute",
+      "source": "`index.html`, `js/calc.js`",
+      "acceptance": "Referenzdaten = gleiche Werte"
+    },
+    {
+      "id": "F13",
+      "capability": "Wasserzähler, Glasgröße und Wasserziel, Trinkhinweise",
+      "target": "Ernährung → Wasser; Home-Schnellaktion",
+      "source": "`index.html`, `js/features.js`",
+      "acceptance": "`S.waterGoal` und Tageswert erhalten"
+    },
+    {
+      "id": "F14",
+      "capability": "Sport/Bewegung, MET, eigene Bibliothek, kcal-Abzug",
+      "target": "Ernährung → Aktivität",
+      "source": "`index.html`, `js/metdb.js`",
+      "acceptance": "MET/Netto-Bilanz konstant"
+    },
+    {
+      "id": "F15",
+      "capability": "Apple-/Samsung-Health-Import via Worker",
+      "target": "Ernährung → Aktivität / Mehr → Integrationen",
+      "source": "`js/health-sync.js`",
+      "acceptance": "mehrfaches Abholen ohne Dubletten"
+    },
+    {
+      "id": "F16",
+      "capability": "Fasten, Lauf/Ende, Erinnerung",
+      "target": "Ernährung → Fasten; Gerade wichtig, wenn läuft",
+      "source": "`index.html`, `js/reminders.js`",
+      "acceptance": "`nt_fast` unverändert, Ende nicht falsch"
+    },
+    {
+      "id": "F17",
+      "capability": "Gewicht, Gewichtsziel, Trend, 7-/14-/30-Tage-Daten, Wochenbericht, Streak",
+      "target": "Ernährung → Verlauf / Trends",
+      "source": "`js/stats.js`",
+      "acceptance": "Tages-/Wochen-/Gewichtsansichten stimmen"
+    },
+    {
+      "id": "F18",
+      "capability": "Kochbuch: Grundrezepte, eigene, Favoriten, Filter, Tags",
+      "target": "Ernährung → Kochbuch; Haushalt → Rezepte",
+      "source": "`js/cookbook.js`, `js/book-seed.js`",
+      "acceptance": "keine Rezept-ID/Markierung verloren"
+    },
+    {
+      "id": "F19",
+      "capability": "Rezepteditor, Foto-/Link-Import, Nährwerte, Portionen",
+      "target": "Kochbuch → + / Details",
+      "source": "`js/cookbook.js`, `picker.js`",
+      "acceptance": "Bearbeiten/Import und Portionen stabil"
+    },
+    {
+      "id": "F20",
+      "capability": "Kochmodus, Rezeptanpassung nach Profil, KI, Originalansicht",
+      "target": "Kochbuch → Rezept",
+      "source": "`js/book-swaps.js`, `js/cookbook.js`",
+      "acceptance": "„Original“/„angepasst“ konsistent"
+    },
+    {
+      "id": "F21",
+      "capability": "Rezepte kochen, Eintrag ins Tagebuch, Zutaten auf Einkaufszettel",
+      "target": "Rezeptdetail / Kochmodus",
+      "source": "`NTBook`, `NTPlan`, `NTShop`",
+      "acceptance": "Verknüpfungen durchgängig"
+    },
+    {
+      "id": "F22",
+      "capability": "Wochenplan: Tage, Slots, Notizen, Füllen, Portionen, Übernahme, Teilen",
+      "target": "Haushalt → Wochenplan; Ernährung → Planung",
+      "source": "`js/mealplan.js`",
+      "acceptance": "Auto-Füllung, Einkauf, Sync unverändert"
+    },
+    {
+      "id": "F23",
+      "capability": "Einkaufszettel: Kategorien, Mengen, Abhaken, Historie, Schnelleingabe",
+      "target": "Haushalt → Einkauf / +",
+      "source": "`js/shopping.js`",
+      "acceptance": "editieren, abhaken, wiederholen"
+    },
+    {
+      "id": "F24",
+      "capability": "Einkauf: Rezeptzutaten/Mengen zusammenführen, Kategorien lernen",
+      "target": "Einkauf / Rezept / Plan",
+      "source": "`js/shopping.js`, `js/calc.js`",
+      "acceptance": "Mengen/Herkunft nicht verfälschen"
+    },
+    {
+      "id": "F25",
+      "capability": "Vorrat: Lagerorte, Mengen/Mindestbestand, MHD/Verbrauchsdatum",
+      "target": "Haushalt → Vorrat / +",
+      "source": "`js/pantry.js`",
+      "acceptance": "Menge + MHD nach Edit identisch"
+    },
+    {
+      "id": "F26",
+      "capability": "Vorrat: Fotoauswertung, Scanner, Verbrauch, Undo, Historie",
+      "target": "Haushalt → Vorrat",
+      "source": "`js/pantry.js`, `js/idb-photos.js`",
+      "acceptance": "Korrektur/Undo, keine Doppelbuchung"
+    },
+    {
+      "id": "F27",
+      "capability": "Vorrat ↔ Einkauf ↔ Rezept: Mindestmengen, Nachfüllen, Kochen, „Was kochen?“",
+      "target": "Haushalt → Vorrat / Rezepte",
+      "source": "`NTShop`, `NTPantry`, `NTBook`",
+      "acceptance": "Bestandsfluss unter allen Wegen"
+    },
+    {
+      "id": "F28",
+      "capability": "Baby: nächste Brust, letzte Mahlzeit, Start/Stop/Wechsel der Stoppuhr",
+      "target": "Heute und Baby → Heute, dauerhaft",
+      "source": "`js/baby.js`, `js/launch.js`",
+      "acceptance": "F28-Szenarien siehe Abschnitt 8"
+    },
+    {
+      "id": "F29",
+      "capability": "Baby: alle 11 Eintragstypen, Datum, Zeit, Pflichtfelder, Bearbeiten/Löschen",
+      "target": "Baby → + und Tagebuch",
+      "source": "`js/baby.js`",
+      "acceptance": "jeder Typ erstellt/editiert/löscht"
+    },
+    {
+      "id": "F30",
+      "capability": "Baby: 10 persönliche Schnellknöpfe inkl. Seite/Timer/Nacht/Windel",
+      "target": "Baby → Schnellknöpfe bearbeiten",
+      "source": "`js/baby.js`",
+      "acceptance": "alle alten Konfigurationen identisch"
+    },
+    {
+      "id": "F31",
+      "capability": "Baby: Schlaf starten/stoppen, Nacht/Tag, über Mitternacht, historische Annahmen",
+      "target": "Baby → Schlaf",
+      "source": "`js/baby-sleep.js`, `js/baby.js`",
+      "acceptance": "echte/angenommene Zeiten getrennt"
+    },
+    {
+      "id": "F32",
+      "capability": "Baby: Schlafprognose, Tagesplan, Qualität, Prognose als Entwurf",
+      "target": "Baby → Schlaf",
+      "source": "`js/baby-sleep-plan.js`",
+      "acceptance": "Zukunft nie automatisch als Ist-Sleep"
+    },
+    {
+      "id": "F33",
+      "capability": "Baby: Tages-/7-/14-Tage-Verlauf, Beikost und Arztbericht",
+      "target": "Baby → Verlauf",
+      "source": "`js/baby-week.js`",
+      "acceptance": "Teilen/Kopieren und Summen stimmen"
+    },
+    {
+      "id": "F34",
+      "capability": "Baby: Wachstum Gewicht/Länge/Kopfumfang + WHO-Kurven",
+      "target": "Baby → Entwicklung → Wachstum",
+      "source": "`js/baby-growth.js`, `baby-growth-data.js`",
+      "acceptance": "Datums- und Perzentilwerte identisch"
+    },
+    {
+      "id": "F35",
+      "capability": "Baby: U-Untersuchungen, Termine, Impfungen, Meilensteine",
+      "target": "Baby → Entwicklung → U-Heft",
+      "source": "`js/baby-milestones.js`",
+      "acceptance": "bestehende Meilenstein-IDs beibehalten"
+    },
+    {
+      "id": "F36",
+      "capability": "Baby: Medikamente, Dosis/Gaben, vorhandene Abstandslogik",
+      "target": "Baby → Entwicklung → Medizin",
+      "source": "`js/baby-meds.js`",
+      "acceptance": "Gabeverlauf/Abstand wie bisher"
+    },
+    {
+      "id": "F37",
+      "capability": "Baby: Fragen an Arzt/Hebamme, Antworten, erledigte Fragen, Suche",
+      "target": "Baby → Entwicklung → Fragen",
+      "source": "`js/baby-midwife.js`",
+      "acceptance": "Empfänger/Status/Export erhalten"
+    },
+    {
+      "id": "F38",
+      "capability": "Baby: Stammdaten, An-/Ausschalten, Sync mit weiteren Personen",
+      "target": "Mehr → Funktionen / Verbindungen",
+      "source": "`js/features.js`, `js/baby.js`, `js/sync-core.js`",
+      "acceptance": "ausgeschaltetes Tagebuch bleibt erhalten"
+    },
+    {
+      "id": "F39",
+      "capability": "Verbindungen/Synchronisation: Baby, Einkauf, Vorrat, Plan",
+      "target": "Mehr → Verbindungen (auch je Fachbereich)",
+      "source": "`js/sync-core.js` + Module",
+      "acceptance": "Zwei-Geräte-Konflikte, Tombstones"
+    },
+    {
+      "id": "F40",
+      "capability": "Partner-Postfach, Mahlzeit senden, Import übernehmen",
+      "target": "Mehr → Partner; Mahlzeitdetail",
+      "source": "`js/partner.js`",
+      "acceptance": "Versand/Annahme nach wie vor möglich"
+    },
+    {
+      "id": "F41",
+      "capability": "Alexa: Familien-/Personen-Tokens, Baby/Einkauf/Ernährung/Sport/Wasser",
+      "target": "Mehr → Alexa",
+      "source": "`js/alexa-sync.js`, `alexa/`",
+      "acceptance": "gleiche Befehle, deduplizierter Import"
+    },
+    {
+      "id": "F42",
+      "capability": "OneDrive PKCE, Autosicherung, lokale Autosaves, Backup/Restore",
+      "target": "Mehr → Backup & Daten",
+      "source": "`js/onedrive.js`, `js/autosave.js`",
+      "acceptance": "Restore alt/neu, keine Tokenlöschung"
+    },
+    {
+      "id": "F43",
+      "capability": "Teilen per Link/Code, Import-Vorschau, iOS-Handoff",
+      "target": "Mehr → Import/Teilen, Fachdetails",
+      "source": "`index.html`, Worker",
+      "acceptance": "alle Payloadtypen funktionieren"
+    },
+    {
+      "id": "F44",
+      "capability": "Exporte: Excel, Lebensmittel, Berichte/Teilen",
+      "target": "Mehr → Export; Bereichs-Verlauf",
+      "source": "`js/food-export.js`, `js/xlsx.js`",
+      "acceptance": "Import/Export-Ergebnis geprüft"
+    },
+    {
+      "id": "F45",
+      "capability": "Erinnerungen: feste Zeiten, Wasser/Fasten/Vorrat",
+      "target": "Mehr → Erinnerungen",
+      "source": "`js/reminders.js`, `js/pantry.js`",
+      "acceptance": "bestehende Timer unabhängig von Lernen"
+    },
+    {
+      "id": "F46",
+      "capability": "KI: Anbieter, eigene Schlüssel, Vision, Prompts, Proxy",
+      "target": "Mehr → KI & Datenschutz",
+      "source": "`index.html`, Worker",
+      "acceptance": "keine Tokens im Log, kein Providerwechsel"
+    },
+    {
+      "id": "F47",
+      "capability": "Feedback: Bug/Wunsch, Screenshot, Hilfe, App-Tour, Changelog",
+      "target": "Mehr → Hilfe & Feedback",
+      "source": "`js/tour.js`, `js/changelog.js`, `index.html`",
+      "acceptance": "Feedback/Schritte erreichbar"
+    },
+    {
+      "id": "F48",
+      "capability": "PWA: Installieren, Updates, Offline, Manifest-Shortcuts, Single-Tab",
+      "target": "Unverändert + Einstellungen/Info",
+      "source": "`sw.js`, `manifest.json`, `js/single-tab.js`",
+      "acceptance": "Update, wieder online, zweiter Tab"
+    },
+    {
+      "id": "F49",
+      "capability": "Anpassung: Features an/aus, Kacheln, bisherige Schnellauswahl",
+      "target": "Mehr → Funktionen / Ansicht",
+      "source": "`js/features.js`, `dashboard.js`, `launch.js`",
+      "acceptance": "Altpräferenzen nicht überschreiben"
+    },
+    {
+      "id": "F50",
+      "capability": "Persistenz: lokale Fotos, Offline-Queue, historische Verdichtung, Tageswechsel",
+      "target": "Querschnitt, keine sichtbare Verlustrisiko-Stelle",
+      "source": "`js/idb-photos.js`, `offline-queue.js`, `calc.js`",
+      "acceptance": "Daten vor/nach Umbau byte-/semantisch verglichen"
+    }
+  ]
+}

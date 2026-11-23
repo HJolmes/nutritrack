@@ -291,3 +291,20 @@ Start mit **PR 00 → 01 → 02 → 03 → 04**. In PR 00: Script zum Auslesen d
 
 **Quellen im Repo:** `index.html`, `AGENTS.md`, `CLAUDE.md`, `UEBERGABE.md`, `package.json`, `.github/workflows/checks.yml`, `js/{actions,features,launch,dashboard,baby,baby-sleep,baby-sleep-plan,baby-week,baby-growth,baby-milestones,baby-meds,baby-midwife,reminders,mealplan,cookbook,shopping,pantry,stats,health-sync,sync-core,partner,alexa-sync,onedrive,autosave}.js`, `picker.js`, `sw.js`.  
 **Grundsatz:** Alle Angaben sind ein Implementierungsplan, keine Aussage, dass die neue Ansicht bereits in `main` integriert wäre.
+
+## 11. Verbindlicher Umsetzungsstand
+
+Stand 23.11.2026, geprüftes `main`: `88eeb9846e8646270a1c6a7c155e10b18317112e`, App/SW 0.334. PR #361 enthält die beschlossenen Dokumente; noch kein B3-Anwendungscode. Diese Tabelle ergänzt die Arbeitspakete in Abschnitt 7; sie ist deren Status, kein zweiter Aufgabenplan. F01–F50 bleiben bis zum jeweils nachgewiesenen neuen Einstieg offen.
+
+| Pakete | Status | Nachweis / nächster Schritt |
+|---|---|---|
+| 00 | In Prüfung | `tools/b3-inventory.js`, `docs/b3-baseline.json`, synthetische Fixture, Schutztests und Browser-Roundtrip; PR-Link folgt bei Erstellung |
+| 01–22 | Offen | Reihenfolge und Abnahmen gemäß Abschnitt 7 |
+
+**PR 00 / G0:** Das Inventar erfasst auch generiertes HTML, `tab.html`, Feature-Aktionen, Startkurzbefehle, Namespace-Exports und die 50 Zeilen der verbindlichen Matrix. Es ist ein Reichweiteninventar, keine Behauptung, dass alle Fachabläufe bereits getestet wurden. `npm test` prüft den Fortbestand seiner Einstiege/APIs. Der Snapshot bleibt unverändert; begründete Ablösungen benötigen später eine explizite, getestete Zuordnung.
+
+**Daten und Referenzen:** `tools/fixtures/b3-state.js` erzeugt ausschließlich synthetische Bestände (21 Ernährungstage, elf Babytypen, zehn freie Babyknöpfe, Rezepte, Plan, Einkauf, Vorrat). `tools/b3-browser.js` prüft den echten Datei-Export/Import, Reload, elf Eintragsdialoge und erzeugt Classic-Referenzen bei 320/390/430 px. GitHub Actions bewahrt sie mit Testbackup als `b3-mobile-baseline` auf. Produktive Nutzerdaten werden nicht verwendet. Der unveränderte Ausgangsstand ist über obige Git-Revision wiederherstellbar; bis zur Shell bleibt die klassische Ansicht der einzige Produktivweg.
+
+**Prüfungen:** `npm ci`, statische Prüfung, Typprüfung und 145 Node-Tests lokal erfolgreich. Lokaler Chromium-Start wird von der Ausführungsumgebung beim Socket-Aufruf blockiert; Browserprüfungen laufen in der vorhandenen GitHub-CI. Kein Merge vor erfolgreichem Browserjob. Reale Android-/iOS- und Zwei-Geräte-Prüfungen sind noch offen und werden hier nicht als erledigt markiert.
+
+**Technischer Befund:** Ernährungstage liegen tatsächlich unter `S.days[datum].meals[slot]`, nicht direkt unter `S.days[datum][slot]`. Neue Ansichten/Lernregeln müssen die reale Struktur verwenden. Direkter Git-Netzwerkzugriff ist lokal nicht nutzbar; der Quellstand wurde über den GitHub-Connector geladen und anhand der originalen Blob-Hashes verifiziert. Veröffentlichung erfolgt über GitHub-Git-Objekte auf Feature-Branches, niemals direkt nach `main`.

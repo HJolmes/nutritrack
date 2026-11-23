@@ -52,8 +52,21 @@ module.exports=async function shell(browser,width,output,base,origin){
       assert.equal(await page.evaluate(()=>NTUI.context()),'more','More reachable directly from '+id);
     }
     await page.evaluate(()=>NTUI.go('more'));
+    await page.getByRole('button',{name:'Alle Funktionen',exact:true}).click();
+    const groups=page.locator('#b3Catalog details');
+    assert.equal(await groups.count(),6);
+    assert.equal(await page.locator('#b3Catalog details[open]').count(),0,'catalogue starts with topics, not a long action list');
+    await page.locator('#b3Catalog summary').getByText('Baby',{exact:true}).click();
+    assert.equal(await page.getByRole('button',{name:'Tagebuch öffnen',exact:true}).isVisible(),true);
     await page.locator('#b3CatalogQuery').fill('Backup');
-    assert.ok(await page.locator('#b3Catalog button').count()>0);
+    assert.equal(await page.getByRole('button',{name:'Backup & Daten',exact:true}).count(),1,'deduplicated settings action');
+    await page.locator('#b3CatalogQuery').fill('ernaehrung ampel');
+    assert.ok(await page.locator('#b3Catalog').getByRole('button',{name:'Ernährung',exact:true}).isVisible(),'search accepts separate words and German transliteration');
+    await page.locator('#b3CatalogQuery').fill('ohne-treffer-xyz');
+    assert.match(await page.locator('#b3CatalogStatus').textContent(),/Keine passende/);
+    await page.goBack();
+    await page.locator('.b3-more-entry button').waitFor();
+    await page.locator('.b3-menu-details summary').filter({hasText:'Ansicht & Hinweise'}).click();
     await page.getByRole('button',{name:'Navigation anpassen',exact:true}).click();
     await page.locator('#b3Slot0').selectOption('shop');await page.locator('#b3Slot1').selectOption('shop');
     await page.locator('#b3PrefsOv [data-act="NTUI.savePreferences"]').click();

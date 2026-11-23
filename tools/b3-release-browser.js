@@ -19,7 +19,7 @@ module.exports=async function release(browser,output,base,origin){
     const dimensions=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth,buttons:Array.from(document.querySelectorAll('#b3Nav button')).map(b=>{const r=b.getBoundingClientRect();return {x:r.x,right:r.right,width:r.width,height:r.height,label:b.getAttribute('aria-label')};})}));
     assert.ok(dimensions.scroll<=dimensions.width+1,'200% text does not overflow the document');
     for(const b of dimensions.buttons){assert.ok(b.width>=44&&b.height>=44,'navigation touch target');assert.ok(b.x>=-1&&b.right<=321,'navigation stays in viewport');assert.ok(b.label);}
-    for(const id of ['home','nutrition','household','history','trends','more']){
+    for(const id of ['home','nutrition','household','history','trends','more','functions']){
       await page.evaluate(id=>NTUI.go(id),id);
       const header=await page.evaluate(()=>{const el=document.querySelector('#b3Root .b3-header'),title=document.getElementById('b3Title').getBoundingClientRect(),buttons=el.querySelectorAll('button');return {left:buttons[0].getBoundingClientRect().right,titleLeft:title.left,titleRight:title.right,right:buttons[buttons.length-1].getBoundingClientRect().left,end:buttons[buttons.length-1].getBoundingClientRect().right};});
       assert.ok(header.titleLeft>=header.left&&header.titleRight<=header.right&&header.end<=321,'large-text title keeps the menu visible in '+id);

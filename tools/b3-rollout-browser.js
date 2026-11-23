@@ -14,6 +14,7 @@ module.exports=async function rollout(browser,base){
     assert.equal(await page.locator('#b3Root').isVisible(),true,'ordinary existing profile starts in the new default');
     const before=await page.evaluate(()=>({days:S.days,babyLog:S.babyLog,babyQuick:S.babyQuick,recipes,launchBar:S.launchBar,dashOrder:S.dashOrder,dashHidden:S.dashHidden}));
     await page.evaluate(()=>{NTUI.prefs().futureKey={keep:true};NTUI.prefs().navSlots=['shop','pantry','more'];saveS();NTUI.go('more');});
+    await page.locator('.b3-menu-details summary').filter({hasText:'Ansicht & Hinweise'}).click();
     await page.getByRole('button',{name:'Klassische Ansicht',exact:true}).click();
     await page.waitForURL(/ui=classic/);await page.waitForFunction(()=>!NTUI.enabled()&&S.setupDone);
     await page.goto(base,{waitUntil:'load'});await page.waitForFunction(()=>S.setupDone);

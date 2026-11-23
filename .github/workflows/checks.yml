@@ -234,6 +234,8 @@ jobs:
         with:
           node-version: "22"
       - name: Playwright und WebKit
+        # Playwright 1.57.0 fixes the WebKit 1.56.1 history/reload crash:
+        # https://github.com/microsoft/playwright/issues/43949
         run: |
           npm ci
           npx playwright install --with-deps webkit

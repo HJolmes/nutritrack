@@ -242,6 +242,7 @@ jobs:
       - name: B3 auf Safari-Engine prüfen
         env:
           B3_BROWSER: webkit
+          DEBUG: pw:browser
         run: |
           node tools/b3-rollback.js
           node tools/b3-browser.js

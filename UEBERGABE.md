@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie beschreibt den **aktuellen** Stand, nicht seine Geschichte — die steht in Git und in `js/changelog.js`. Der Stand vor der Kürzung (#258, 132 KB): `git show 0d69ba2:UEBERGABE.md`. Grenzen siehe „Pflege“, `tools/check.js` prüft sie.
 
-**Stand:** v0.334 (23.11.2026 geprüft) — Schlafplan mit Erfasst/Angenommen/Prognose; seit v0.331 lokale Schlafprognose, manuelle Tag-/Nachteinordnung und Nachtannahmen. B3-Umstellung beginnt mit Bestandsabsicherung; verbindlicher Fortschritt in `docs/NutriTrack_B3_vollstaendiger_Implementierungsplan.md`, Abschnitt 11. Anwendung noch klassisch.
+**Stand:** v0.335 (23.11.2026) — Schlafplan mit Erfasst/Angenommen/Prognose; seit v0.331 lokale Schlafprognose, manuelle Tag-/Nachteinordnung und Nachtannahmen. B3-Bestandsabsicherung #362 gemergt; gekapselte B3-Design-Tokens, Smartphone-Zoom freigegeben; verbindlicher Fortschritt in `docs/NutriTrack_B3_vollstaendiger_Implementierungsplan.md`, Abschnitt 11. Anwendung noch klassisch.
 
 ## URLs
 
@@ -77,11 +77,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.326 | — | #345 `localTs(key,time,now)` in `js/calc.js` (doppelte Stunde: späteste vergangene, Test), `tsFor` nutzt es; Bearbeiten behält bei unveränderter Uhrzeit den alten `ts`. |
 | v0.327 | — | #347 Worker `logAiUsage` (Zählwerte aus `usage`, Antwort unverändert, `codeVersion` `v0.327-usage`, Test in `tools/worker-test.js`), `[observability]` in `wrangler.toml`; `lab/konto-test.html` (Passkey-PRF, Google Drive `appDataFolder`, CloudKit; sperrt sich auf github.io), `preview.yml` kopiert `lab/`. |
 | v0.328 | — | `feedEndTs(e,now)` in `js/calc.js` (Stillen: `ts`+`min`, max. jetzt; Stoppuhr/Flasche: `ts`; Test); `lastFeed()`/`feedLineHtml()` in `js/baby.js` sortieren und zählen ab Ende. |
 | v0.329 | — | `js/launch.js` (`NTLaunch`: `ACTIONS`, `run`, `runFromUrl`, Leiste `#launchBar`, Dialog `#launchOv`, `S.launchBar`); `manifest.json` `shortcuts` + `icons/sc-*.png`; `NTBaby.toggleSleep`/`runningFeed` exportiert; `sw.js` Startseite per Pfad (auch mit `?action=`). |
 | v0.330 | — | Excel-Export: `foodExportRows` in `js/calc.js` (Test), `js/xlsx.js` (`NTXlsx`, ZIP ohne Kompression + OpenXML, Test), `js/food-export.js` (`NTExport`, Dialog `#foodExportOv`, Teilen auf Touch-Geräten, sonst Download); Rauchtest-Schritt. |
+| v0.335 | — | B3-Design-Tokens unter `[data-ui="b3"]`; klassische Ansicht unverändert. Smartphone-Zoom freigegeben, gemeinsame App-/Cacheversion. #362 schützt das Ausgangsinventar und synthetische Wiederherstellung. |
 
 ---
 

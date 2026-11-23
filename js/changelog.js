@@ -2,6 +2,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.335',items:[
+    {icon:'🔎',text:'<b>Ansicht vergrößern</b>: Die App lässt sich auf dem Smartphone mit der Zoom-Geste vergrößern.',where:'Alle Ansichten'},
+  ]},
   {v:'0.334',items:[
     {icon:'😴',text:'<b>Neuer Schlafplan-Reiter</b>: 24-Stunden-Übersicht mit erfassten Schläfchen, separat gekennzeichneten angenommenen Nachtabschnitten, nächstem Schlaffenster und vorsichtigen weiteren Tagesvorschlägen. Aus der Prognose einen editierbaren Schlaf-Eintrag öffnen oder per Knopf jetzt Schlaf starten. Eine Prognose wird niemals automatisch als echter Schlaf gespeichert. Frühere Tage zeigen nur tatsächlich Erfasstes und gegebenenfalls historische Annahmen.',where:'👶 Baby-Tagebuch → 😴 Schlafplan'},
   ]},

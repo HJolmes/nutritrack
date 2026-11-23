@@ -37,6 +37,7 @@ module.exports=async function home(page){
   assert.deepEqual(await page.evaluate(()=>S.launchBar),['wickeln','foto','stillen']);
   assert.equal(await page.evaluate(()=>S.babyQuick.length),10);
   await page.evaluate(()=>closeOv('b3HomePrefsOv'));
+  assert.equal(await page.evaluate(()=>document.activeElement.id),'b3Title','closing after a home rerender restores a visible focus target');
   assert.equal(await root.locator('.b3-quick button').count(),6);
   await page.reload({waitUntil:'load'});await page.waitForFunction(()=>NTUI.enabled());
   assert.deepEqual(await page.evaluate(()=>S.ui.homeActions),['stillen','schlaf','wickeln','mahlzeit','einkauf','plan']);

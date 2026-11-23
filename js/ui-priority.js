@@ -28,7 +28,7 @@ function candidates(){
 function html(){
   var p=NTUI.prefs();p.priorityHidden=p.priorityHidden||{};var now=Date.now();
   Object.keys(p.priorityHidden).forEach(function(k){if(p.priorityHidden[k]<now)delete p.priorityHidden[k];});
-  shown=uiPrioritySort(candidates().filter(function(c){return c.kind==='running'||!(p.priorityMuted&&p.priorityMuted[c.source]);}),p.priorityHidden,now);
+  shown=uiPrioritySort(candidates().filter(function(c){return c.kind==='running'||!(p.priorityMuted&&p.priorityMuted[c.source]);}),p.priorityHidden,now).slice(0,1);
   if(!shown.length)return '<article class="b3-card"><h3>Nichts Dringendes</h3><p class="b3-muted">Dein Tagesstand bleibt unten im Blick.</p>'+btn('Etwas erfassen','NTUIActions.all')+'</article>';
   return shown.map(function(c,i){
     NTUIReminders.delivered(c);

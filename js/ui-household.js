@@ -8,7 +8,7 @@ function render(){
     if(id==='shop')detail=NTShop.openCount()+' Artikel offen';
     if(id==='pantry')detail=NTPantry.count()+' Artikel · '+NTPantry.lowCount()+' unter Mindestbestand';
     var off=NTFeat.isOff(f);
-    return '<section class="b3-card"><h2>'+f.ic+' '+esc(f.label)+'</h2><p class="b3-muted">'+esc(detail)+'</p><button type="button" data-act="'+(off?'NTFeat.sheet':'NTUI.go')+'" data-args="'+esc(JSON.stringify([id]))+'">'+(off?'Bereich einschalten':esc(f.label)+' öffnen')+'</button></section>';
+    return '<section class="b3-card b3-household-card"><h2>'+f.ic+' '+esc(f.label)+'</h2><p class="b3-muted">'+esc(detail)+'</p><button type="button" data-act="'+(off?'NTFeat.sheet':'NTUI.go')+'" data-args="'+esc(JSON.stringify([id]))+'">'+(off?'Bereich einschalten':esc(f.label)+' öffnen')+'</button></section>';
   }).join('');
 }
 window.NTUIHousehold={render:render};

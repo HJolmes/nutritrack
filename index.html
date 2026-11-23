@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.342"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.343"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.342"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.343"></script>
 <script>
   // @ts-check
   (function(){
@@ -920,6 +920,193 @@ body.b3-on.kb-open .tst{bottom:calc(var(--kbh,0px) + 12px);}
 body.b3-on #feedbackFab{bottom:calc(var(--b3-nav-height,88px) + 12px);}
 body.b3-on .ov[data-ui="b3"] :is(.mcl,.pt-st,.shopcat-mv,.shopcat-del){min-width:44px;min-height:44px;}
 body.b3-on .b3-page-menu{float:right;min-width:44px;min-height:44px;margin:0 .25rem .25rem 0;padding:.25rem;}
+
+/* B3 Bloom polish v0.343 — isolated from the classic recovery UI. */
+body.b3-on{--g1:#e96e3c;--g2:#e96e3c;--mu:#655a51;background:#faf6f1;overflow-x:clip;}
+#b3Root{
+  --b3-bg:#faf6f1;--b3-card:#fffdfb;--b3-ink:#2b2420;--b3-muted:#665b52;
+  --b3-accent:#a6401f;--b3-bloom:#e96e3c;--b3-accent-soft:#fff0e6;
+  --b3-line:#eadfd3;--b3-space:1rem;--b3-radius:1.25rem;
+  box-sizing:border-box;width:100%;max-width:480px;min-width:0;
+  margin:0 auto;padding:0 16px calc(var(--b3-nav-height,88px) + 24px);
+  background:var(--b3-bg);min-height:100dvh;overflow-wrap:break-word;hyphens:auto;
+}
+#b3Root *{box-sizing:border-box;min-width:0;}
+#b3Root .b3-header{
+  position:relative;display:grid;grid-template-columns:44px minmax(0,1fr) 44px;
+  align-items:center;gap:10px;margin:0 -16px 20px;
+  padding:calc(13px + env(safe-area-inset-top,0px)) 16px 14px;
+  background:var(--b3-bg);border-bottom:1px solid var(--b3-line);
+}
+#b3Root .b3-header button{
+  width:44px;min-width:44px;height:44px;min-height:44px;padding:0;
+  display:grid;place-items:center;background:#fff;border:1px solid var(--b3-line);
+  border-radius:14px;font-size:1.55rem;color:var(--b3-ink);
+  box-shadow:0 3px 10px rgba(84,52,33,.05);
+}
+#b3Root .b3-heading{text-align:center;min-width:0;}
+#b3Root .b3-eyebrow{display:block;font-size:.625rem;line-height:1.5;letter-spacing:.15em;font-weight:800;color:#965136;text-transform:uppercase;}
+#b3Root .b3-header h1{
+  font-family:var(--fs-display);font-weight:600;font-size:clamp(1.35rem,5.5vw,1.8rem);
+  line-height:1.16;letter-spacing:-.035em;color:var(--b3-ink);margin:2px 0 0;
+  overflow-wrap:break-word;
+}
+#b3Root #b3Content{display:block;width:100%;min-width:0;}
+#b3Root #b3Content>section{margin:0 0 24px;}
+#b3Root .b3-section-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:0 0 11px;}
+#b3Root .b3-section-head h2{margin:0;min-width:0;}
+#b3Root h2{
+  color:var(--b3-ink);font-family:var(--fs-display);
+  font-weight:650;font-size:1.3rem;line-height:1.3;letter-spacing:-.025em;
+}
+#b3Root .b3-overview-title{margin:22px 0 10px;}
+#b3Root .b3-muted{color:var(--b3-muted);font-size:.875rem;line-height:1.5;}
+#b3Root .b3-card{
+  display:block;margin:0 0 12px;padding:16px 17px;
+  border:1px solid var(--b3-line);border-radius:22px;background:var(--b3-card);
+  box-shadow:0 8px 26px -21px rgba(74,42,25,.33),0 1px 2px rgba(74,42,25,.04);
+  overflow-wrap:break-word;
+}
+#b3Root .b3-card h2,#b3Root .b3-card h3{margin:0 0 7px;}
+#b3Root .b3-card h3{font-size:1.05rem;line-height:1.35;}
+#b3Root .b3-card p{margin:7px 0;line-height:1.5;}
+#b3Root .b3-card .b3-muted{margin-block:4px 10px;}
+#b3Root .b3-card.b3-active{
+  border-color:#f1c5ac;background:linear-gradient(135deg,#fff0e6 0%,#fffaf6 74%);
+  box-shadow:inset 3px 0 var(--b3-bloom),0 8px 24px -20px rgba(74,42,25,.25);
+}
+#b3Root button,#b3Root select{
+  max-width:100%;min-height:44px;border-radius:13px;
+  color:var(--b3-ink);border:1px solid var(--b3-line);background:#fff;
+  font-family:var(--fs-body);font-weight:650;font-size:.875rem;line-height:1.3;
+}
+#b3Root button{padding:10px 13px;cursor:pointer;overflow-wrap:break-word;}
+#b3Root button.b3-primary,
+#b3Root .b3-card button.b3-primary,
+.ov[data-ui="b3"] button.b3-primary{
+  background:var(--b3-accent,#a6401f);border-color:var(--b3-accent,#a6401f);
+  color:white;font-weight:750;
+}
+#b3Root button:active{transform:scale(.985);}
+#b3Root .b3-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+#b3Root .b3-row>*{max-width:100%;}
+#b3Root .b3-row.b3-between{justify-content:space-between;}
+#b3Root .b3-section-head>button{
+  flex:0 0 auto;border:0;background:transparent;box-shadow:none;color:var(--b3-accent);
+  padding:7px 3px;font-size:.8rem;min-height:44px;
+}
+#b3Root .b3-date{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:9px;margin:0 0 22px;}
+#b3Root .b3-date button{width:44px;height:44px;padding:0;font-size:1.45rem;background:#fff;border-radius:14px;}
+#b3Root .b3-date p{
+  text-align:center;margin:0;font-weight:700;font-size:.9rem;color:var(--b3-ink);
+  hyphens:auto;overflow-wrap:break-word;
+}
+#b3Root .b3-quick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:0;}
+#b3Root .b3-quick button{
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  gap:7px;min-width:0;min-height:98px;padding:11px 6px 10px;
+  border-radius:19px;border:1px solid var(--b3-line);
+  background:#fffdfb;box-shadow:0 5px 18px -15px rgba(74,42,25,.25);
+  text-align:center;font-size:.77rem;line-height:1.3;
+}
+#b3Root .b3-quick-icon{
+  display:grid;place-items:center;width:42px;height:42px;flex:0 0 auto;
+  background:#fff0e6;border-radius:14px;color:var(--b3-accent);font-size:1.45rem;line-height:1;
+}
+#b3Root .b3-quick-label{display:block;min-width:0;max-width:100%;font-weight:750;overflow-wrap:break-word;}
+#b3Root .b3-next-side{font-family:var(--fs-display);font-size:1.2rem;font-weight:700;line-height:1.35;color:var(--b3-ink);}
+#b3Root .b3-baby-card{border-top:3px solid #e96e3c;}
+#b3Root .b3-summary-card{border-top:3px solid #d6a875;}
+#b3Root .b3-summary-metrics{display:flex;flex-wrap:wrap;gap:7px 14px;margin:10px 0;}
+#b3Root .b3-metric{color:var(--b3-muted);font-size:.81rem;line-height:1.4;}
+#b3Root .b3-metric strong{display:block;color:var(--b3-ink);font-size:1.25rem;line-height:1.25;}
+#b3Root .b3-feed-line{max-width:100%;overflow-wrap:anywhere;}
+#b3Root .b3-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+#b3Root .b3-grid button{width:100%;text-align:left;}
+#b3Root .b3-subnav{margin-bottom:17px;}
+#b3Root .b3-subnav button{text-align:center;min-height:52px;background:#fff;}
+#b3Root details.b3-card summary{cursor:pointer;font-weight:750;color:var(--b3-ink);padding:3px 0;}
+#b3Root details.b3-card .b3-grid{margin-top:13px;}
+#b3Root .b3-household-card{position:relative;padding-left:18px;}
+#b3Root .b3-household-card h2{font-size:1.22rem;}
+#b3Root .b3-catalog-row{display:block;width:100%;text-align:left;border-radius:12px;margin-block:6px;padding:13px 15px;}
+#b3Root :is(input[type="search"],select){
+  width:100%;max-width:100%;padding:10px 12px;border:1px solid var(--b3-line);border-radius:13px;
+  background:#fff;color:var(--b3-ink);font-size:1rem;
+}
+#b3Root label{display:block;font-size:.875rem;margin:0 0 7px;color:var(--b3-ink);font-weight:650;}
+#b3Nav{
+  box-sizing:border-box;width:min(100%,480px);max-width:480px;
+  padding:7px 7px calc(8px + env(safe-area-inset-bottom,0px));
+  background:rgba(255,253,251,.98);border-top:1px solid var(--b3-line,#eadfd3);
+  box-shadow:0 -9px 28px rgba(60,36,22,.08);gap:3px;
+}
+#b3Nav button{
+  box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:4px;min-height:59px;min-width:0;padding:5px 2px;border:0;border-radius:15px;
+  color:#665b52;background:transparent;font-family:var(--fs-body);line-height:1.15;
+}
+#b3Nav button span{font-size:1.34rem;line-height:1.15;}
+#b3Nav button small{
+  display:block;font-weight:700;font-size:.68rem;line-height:1.2;
+  white-space:normal;word-break:normal;overflow-wrap:break-word;hyphens:auto;
+}
+#b3Nav button[aria-current="page"]{background:#fff0e6;color:#a6401f;}
+#b3Nav button.b3-plus{background:transparent;color:#665b52;}
+#b3Nav button.b3-plus span{
+  display:grid;place-items:center;flex:none;width:43px;height:43px;
+  border-radius:16px;background:#a6401f;color:#fff;
+  font-size:2rem;line-height:1;box-shadow:0 5px 12px -6px rgba(166,64,31,.5);
+}
+#b3Nav button.b3-plus small{color:#a6401f;}
+body.b3-on .ov[data-ui="b3"]{
+  --b3-accent:#a6401f;--b3-line:#eadfd3;--b3-ink:#2b2420;--b3-muted:#665b52;
+  --b3-card:#fffdfb;--b3-accent-soft:#fff0e6;
+}
+body.b3-on .ov[data-ui="b3"] .mod{
+  box-sizing:border-box;width:min(100%,480px);background:#faf6f1;color:var(--b3-ink);
+  border-radius:22px 22px 0 0;
+}
+body.b3-on .ov[data-ui="b3"] .mbd{overflow-x:hidden;}
+body.b3-on .ov[data-ui="b3"] :is(button,input,select,textarea){max-width:100%;min-width:0;}
+body.b3-on .ov[data-ui="b3"] .mcl{
+  box-sizing:border-box;flex:0 0 44px;min-width:44px;max-width:44px;
+  height:44px;min-height:44px;padding:0;border-radius:14px;
+}
+body.b3-on .ov[data-ui="b3"] .mti{min-width:0;overflow-wrap:break-word;}
+body.b3-on .ov[data-ui="b3"] :is(#b3ActionBody,#b3PrefsBody,#b3HomePrefsBody,#b3MealPrefsBody){min-width:0;}
+body.b3-on .ov[data-ui="b3"] :is(#b3ActionBody,#b3HomePrefsBody) .b3-row{min-width:0;display:flex;flex-wrap:wrap;gap:8px;}
+body.b3-on .ov[data-b3-page] .b3-baby-tabs{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;
+  margin:8px 0 16px;padding:0 4px;
+}
+body.b3-on .ov[data-b3-page] .b3-baby-tabs button{
+  min-width:0;min-height:48px;padding:8px 3px;border:1px solid #eadfd3;
+  border-radius:13px;background:#fff;font-size:.78rem;line-height:1.25;
+  color:#51483e;white-space:normal;overflow-wrap:break-word;
+}
+body.b3-on .ov[data-b3-page] .b3-baby-tabs button[aria-current="page"]{
+  border-color:#efbda6;background:#fff0e6;color:#a6401f;font-weight:800;
+}
+body.b3-on .ov[data-b3-page] .b3-page-menu{float:right;width:auto;margin:0 5px 7px 0;padding:8px 12px;border-radius:12px;}
+body.b3-on .ov[data-b3-page] .b3-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;}
+body.b3-on .ov[data-b3-page] .b3-grid button{min-width:0;max-width:100%;white-space:normal;overflow-wrap:break-word;}
+@media(max-width:350px){
+  #b3Root{padding-left:12px;padding-right:12px;}
+  #b3Root .b3-header{margin-left:-12px;margin-right:-12px;padding-left:12px;padding-right:12px;gap:5px;}
+  #b3Root .b3-quick{grid-template-columns:repeat(2,minmax(0,1fr));}
+  #b3Root .b3-grid{grid-template-columns:1fr;}
+  #b3Nav{gap:1px;padding-inline:3px;}
+  #b3Nav button{padding-inline:1px;}
+  #b3Nav button small{font-size:.64rem;}
+  body.b3-on .ov[data-b3-page] .b3-baby-tabs{grid-template-columns:repeat(2,minmax(0,1fr));}
+  body.b3-on .ov[data-b3-page] .b3-grid{grid-template-columns:1fr;}
+}
+@media(min-width:481px){
+  #b3Root{border-left:1px solid #eadfd3;border-right:1px solid #eadfd3;}
+}
+@media(prefers-reduced-motion:reduce){#b3Root button:active{transform:none;}}
+
 </style>
 </head>
 <body>
@@ -1462,7 +1649,7 @@ body.b3-on .b3-page-menu{float:right;min-width:44px;min-height:44px;margin:0 .25
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.342</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.343</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -3900,15 +4087,15 @@ body.b3-on .b3-page-menu{float:right;min-width:44px;min-height:44px;margin:0 .25
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.342"></script>
-<script src="js/single-tab.js?v=0.342"></script>
-<script src="js/fooddb.js?v=0.342"></script>
-<script src="js/fooddb-usda.js?v=0.342"></script>
-<script src="js/restaurants.js?v=0.342"></script>
-<script src="js/metdb.js?v=0.342"></script>
-<script src="js/idb-photos.js?v=0.342"></script>
-<script src="js/changelog.js?v=0.342"></script>
-<script src="js/calc.js?v=0.342"></script>
+<script src="js/actions.js?v=0.343"></script>
+<script src="js/single-tab.js?v=0.343"></script>
+<script src="js/fooddb.js?v=0.343"></script>
+<script src="js/fooddb-usda.js?v=0.343"></script>
+<script src="js/restaurants.js?v=0.343"></script>
+<script src="js/metdb.js?v=0.343"></script>
+<script src="js/idb-photos.js?v=0.343"></script>
+<script src="js/changelog.js?v=0.343"></script>
+<script src="js/calc.js?v=0.343"></script>
 <script>
 // @ts-check
 // ════════════════════════════════════════
@@ -3928,7 +4115,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.342';
+var APP_VERSION='0.343';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -8511,54 +8698,54 @@ function axTestSync(){
 }
 
 </script>
-<script src="js/ampel.js?v=0.342"></script>
-<script src="picker.js?v=0.342"></script>
-<script src="js/health-sync.js?v=0.342"></script>
-<script src="js/sync-core.js?v=0.342"></script>
-<script src="js/baby.js?v=0.342"></script>
-<script src="js/baby-sleep.js?v=0.342"></script>
-<script src="js/baby-sleep-plan.js?v=0.342"></script>
-<script src="js/baby-meds.js?v=0.342"></script>
-<script src="js/baby-growth-data.js?v=0.342"></script>
-<script src="js/baby-growth.js?v=0.342"></script>
-<script src="js/baby-week.js?v=0.342"></script>
-<script src="js/baby-milestones.js?v=0.342"></script>
-<script src="js/baby-midwife.js?v=0.342"></script>
-<script src="js/shopping.js?v=0.342"></script>
-<script src="js/pantry.js?v=0.342"></script>
-<script src="js/partner.js?v=0.342"></script>
-<script src="js/alexa-sync.js?v=0.342"></script>
-<script src="js/dashboard.js?v=0.342"></script>
-<script src="js/features.js?v=0.342"></script>
-<script src="js/launch.js?v=0.342"></script>
-<script src="js/xlsx.js?v=0.342"></script>
-<script src="js/food-export.js?v=0.342"></script>
-<script src="js/mealplan.js?v=0.342"></script>
-<script src="js/book-swaps.js?v=0.342"></script>
-<script src="js/cookbook.js?v=0.342"></script>
-<script src="js/onedrive.js?v=0.342"></script>
-<script src="js/autosave.js?v=0.342"></script>
-<script src="js/recurring.js?v=0.342"></script>
-<script src="js/stats.js?v=0.342"></script>
-<script src="js/reminders.js?v=0.342"></script>
-<script src="js/templates.js?v=0.342"></script>
-<script src="js/offline-queue.js?v=0.342"></script>
-<script src="js/tour.js?v=0.342"></script>
-<script src="js/ui-catalog.js?v=0.342"></script>
-<script src="js/ui-actions.js?v=0.342"></script>
-<script src="js/ui-shell.js?v=0.342"></script>
-<script src="js/ui-home.js?v=0.342"></script>
-<script src="js/ui-baby.js?v=0.342"></script>
-<script src="js/ui-reminder-rules.js?v=0.342"></script>
-<script src="js/ui-priority.js?v=0.342"></script>
-<script src="js/ui-nutrition.js?v=0.342"></script>
-<script src="js/ui-household.js?v=0.342"></script>
-<script src="js/ui-settings.js?v=0.342"></script>
+<script src="js/ampel.js?v=0.343"></script>
+<script src="picker.js?v=0.343"></script>
+<script src="js/health-sync.js?v=0.343"></script>
+<script src="js/sync-core.js?v=0.343"></script>
+<script src="js/baby.js?v=0.343"></script>
+<script src="js/baby-sleep.js?v=0.343"></script>
+<script src="js/baby-sleep-plan.js?v=0.343"></script>
+<script src="js/baby-meds.js?v=0.343"></script>
+<script src="js/baby-growth-data.js?v=0.343"></script>
+<script src="js/baby-growth.js?v=0.343"></script>
+<script src="js/baby-week.js?v=0.343"></script>
+<script src="js/baby-milestones.js?v=0.343"></script>
+<script src="js/baby-midwife.js?v=0.343"></script>
+<script src="js/shopping.js?v=0.343"></script>
+<script src="js/pantry.js?v=0.343"></script>
+<script src="js/partner.js?v=0.343"></script>
+<script src="js/alexa-sync.js?v=0.343"></script>
+<script src="js/dashboard.js?v=0.343"></script>
+<script src="js/features.js?v=0.343"></script>
+<script src="js/launch.js?v=0.343"></script>
+<script src="js/xlsx.js?v=0.343"></script>
+<script src="js/food-export.js?v=0.343"></script>
+<script src="js/mealplan.js?v=0.343"></script>
+<script src="js/book-swaps.js?v=0.343"></script>
+<script src="js/cookbook.js?v=0.343"></script>
+<script src="js/onedrive.js?v=0.343"></script>
+<script src="js/autosave.js?v=0.343"></script>
+<script src="js/recurring.js?v=0.343"></script>
+<script src="js/stats.js?v=0.343"></script>
+<script src="js/reminders.js?v=0.343"></script>
+<script src="js/templates.js?v=0.343"></script>
+<script src="js/offline-queue.js?v=0.343"></script>
+<script src="js/tour.js?v=0.343"></script>
+<script src="js/ui-catalog.js?v=0.343"></script>
+<script src="js/ui-actions.js?v=0.343"></script>
+<script src="js/ui-shell.js?v=0.343"></script>
+<script src="js/ui-home.js?v=0.343"></script>
+<script src="js/ui-baby.js?v=0.343"></script>
+<script src="js/ui-reminder-rules.js?v=0.343"></script>
+<script src="js/ui-priority.js?v=0.343"></script>
+<script src="js/ui-nutrition.js?v=0.343"></script>
+<script src="js/ui-household.js?v=0.343"></script>
+<script src="js/ui-settings.js?v=0.343"></script>
 
 <div class="ov" id="b3HomePrefsOv" data-ui="b3" data-bg-close="b3HomePrefsOv"><div class="mod"><div class="mhd"><button type="button" class="mcl" data-act="closeOv" data-args='["b3HomePrefsOv"]' aria-label="Schnellaktionen schließen">✕</button><h2 class="mti">Schnellaktionen anpassen</h2></div><div class="mbd"><div id="b3HomePrefsBody"></div><button type="button" class="b3-primary" data-act="closeOv" data-args='["b3HomePrefsOv"]'>Fertig</button></div></div></div>
 <div class="ov" id="b3MealPrefsOv" data-ui="b3" data-bg-close="b3MealPrefsOv"><div class="mod"><div class="mhd"><button type="button" class="mcl" data-act="closeOv" data-args='["b3MealPrefsOv"]' aria-label="Hinweise schließen">✕</button><h2 class="mti">Mahlzeiten-Hinweise</h2></div><div class="mbd"><div id="b3MealPrefsBody"></div><button type="button" class="b3-primary" data-act="NTUIReminders.save">Einstellungen speichern</button></div></div></div>
 <section id="b3Root" data-ui="b3" hidden aria-label="NutriTrack">
-  <header class="b3-header"><button type="button" data-act="NTUI.back" aria-label="Zurück">‹</button><h1 id="b3Title" tabindex="-1">Heute</h1><button type="button" data-act="NTUI.go" data-args='["more"]' aria-label="Mehr und alle Funktionen">☰</button></header>
+  <header class="b3-header"><button type="button" data-act="NTUI.back" aria-label="Zurück">‹</button><div class="b3-heading"><span class="b3-eyebrow">NutriTrack</span><h1 id="b3Title" tabindex="-1">Heute</h1></div><button type="button" data-act="NTUI.go" data-args='["more"]' aria-label="Mehr und alle Funktionen">☰</button></header>
   <main id="b3Content"></main>
   <nav id="b3Nav" aria-label="Hauptnavigation"></nav>
 </section>

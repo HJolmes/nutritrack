@@ -4,7 +4,7 @@
 function button(label,act,args){return '<button type="button" data-act="NTUI.dispatch" data-args="'+esc(JSON.stringify([act,args||[]]))+'">'+esc(label)+'</button>';}
 function render(section){
   var root=document.getElementById('b3Content');
-  var h='<nav class="b3-grid" aria-label="Ernährungsbereiche">'+[['Heute','nutrition'],['Planung','plan'],['Kochbuch','book'],['Verlauf','history']].map(function(x){return button(x[0],'NTUI.go',[x[1]]);}).join('')+'</nav>';
+  var h='<nav class="b3-grid b3-subnav" aria-label="Ernährungsbereiche">'+[['Heute','nutrition'],['Planung','plan'],['Kochbuch','book'],['Verlauf','history']].map(function(x){return button(x[0],'NTUI.go',[x[1]]);}).join('')+'</nav>';
   h+='<div class="b3-date b3-row">'+button('‹','NTUI.changeDay',[-1])+'<p id="b3NutritionDate"></p>'+button('›','NTUI.changeDay',[1])+'</div>';
   h+='<div class="b3-row">'+button('Trends & Gewicht','NTUI.go',['trends'])+button('Tag teilen','shareDay')+button('Zeitraum teilen','openShareRange')+'</div>';
   if(section==='nutrition'){

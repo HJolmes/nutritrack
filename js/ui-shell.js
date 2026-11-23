@@ -111,6 +111,7 @@ function closed(id){
   if(!restoring&&isPage(id)&&!overlays.some(isPage)&&['baby','shop','pantry','plan','book'].indexOf(section)>=0)go(parents[section]||'home',true);
 }
 function back(){
+  if(overlays.indexOf('fileSaveOv')>=0)return;
   if(overlays.length){var id=overlays[overlays.length-1];if(isPage(id)){history.back();return;}if(id==='babyOv')NTBaby.closeDiary();else closeOv(id);return;}
   if(section!=='home')history.back();
 }
@@ -163,6 +164,7 @@ document.addEventListener('keydown',function(e){
 window.addEventListener('resize',measureNav);
 window.addEventListener('popstate',function(e){
   if(!active)return;
+  if(overlays.indexOf('fileSaveOv')>=0&&(!e.state||!e.state.overlays||e.state.overlays.indexOf('fileSaveOv')<0)){history.pushState(state(),'');return;}
   if(!e.state||!e.state.ntui){go('home',true);return;}
   var desired=e.state;
   var signature=function(s){return JSON.stringify([s.section,s.screen,s.meal||null,s.overlays,s.babyTab,s.babyDetail]);};

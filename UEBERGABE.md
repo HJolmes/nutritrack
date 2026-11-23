@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie beschreibt den **aktuellen** Stand, nicht seine Geschichte — die steht in Git und in `js/changelog.js`. Der Stand vor der Kürzung (#258, 132 KB): `git show 0d69ba2:UEBERGABE.md`. Grenzen siehe „Pflege“, `tools/check.js` prüft sie.
 
-**Stand:** v0.342 (23.11.2026) — B3 ist Standard für bestehende und neue Profile, ausdrückliche Classic-Wahl bleibt gespeichert. Heute mit sechs Favoriten/Bruststatus, vier Baby-Unterbereiche, Ernährung/Haushalt/Mehr und kontextabhängiges Erfassen verwenden die vorhandene Fachlogik. Mahlzeitenhinweise lernen vorsichtig, Systemmeldungen nur auf Wunsch. Dynamische Navigation bei großer Schrift und automatischer Classic-Rückfall bei Ladefehlern; Notfallroute `?ui=classic`, neue Ansicht `?ui=b3`. Verbindliche Paket-/F01–F50-Nachweise und offene manuelle Release-Prüfungen stehen in `docs/NutriTrack_B3_vollstaendiger_Implementierungsplan.md`, Abschnitt 11.
+**Stand:** v0.343 (23.11.2026) — B3 ist Standard für bestehende und neue Profile, ausdrückliche Classic-Wahl bleibt gespeichert. Heute mit sechs Favoriten/Bruststatus, vier Baby-Unterbereiche, Ernährung/Haushalt/Mehr und kontextabhängiges Erfassen verwenden die vorhandene Fachlogik. Mahlzeitenhinweise lernen vorsichtig, Systemmeldungen nur auf Wunsch. Dynamische Navigation bei großer Schrift und automatischer Classic-Rückfall bei Ladefehlern; Notfallroute `?ui=classic`, neue Ansicht `?ui=b3`. B3-Optik nach tatsächlicher Nutzung im warmen Bloom-Stil korrigiert (Home-Kacheln, Navigation, Karten, responsive Baby-Tabs); visuelle Layout-Gates ergänzen die Funktionschecks. Verbindliche Paket-/F01–F50-Nachweise und offene manuelle Release-Prüfungen stehen in `docs/NutriTrack_B3_vollstaendiger_Implementierungsplan.md`, Abschnitt 11.
 
 ## URLs
 
@@ -76,11 +76,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.338 | [#366](https://github.com/HJolmes/nutritrack/pull/366) | Vier Baby-Unterbereiche mit bestehenden Paneelen, Nachtfenster unter Schlaf, Back für Entwicklung; Arztbericht folgt ausgewähltem 7-/14-Tage-Zeitraum. |
 | v0.339 | [#367](https://github.com/HJolmes/nutritrack/pull/367) | Erklärbare Prioritäten und Auto/Immer/Nie je Mahlzeit, Snooze, Ausblenden und optionales OS-Opt-in; reine Regeln plus neue bestätigte Picker-Zeitstempel, Alt-Timer unverändert. |
 | v0.340 | [#368](https://github.com/HJolmes/nutritrack/pull/368) | Ernährung/Haushalt/Mehr über bestehende Fachscreens, vollständiger Suchkatalog mit Integrationen, Vorlagen/Import/Teilen; Detail-Back und angepasste Tour, Classic-Präferenzen additiv übernommen. |
 | v0.341 | [#369](https://github.com/HJolmes/nutritrack/pull/369) | Dynamische Nav-Höhe, AA-Farben/Touchflächen, Modal-Fokus, geschützte iOS-Sicherung und Classic bei Asset-Ausfall; verschlüsselter Sync/Original-Rollback, optionaler Decoder offline abgesichert. |
 | v0.342 | [#370](https://github.com/HJolmes/nutritrack/pull/370) | Neue Oberfläche als Standard, gespeicherte Classic-Wahl respektiert; Recovery-URL, Rückwechsel, Bestandserhalt und einmalige Manifest-Kurzbefehle zusätzlich abgesichert. |
+| v0.343 | B3-Bloom-Polish | Farben und Raster an Bloom angeglichen, Schnellaktionen und Tageskarten neu formatiert; 320/390/430-px-Layoutprüfungen und Screenshots, Classic unverändert. |
 
 ---
 

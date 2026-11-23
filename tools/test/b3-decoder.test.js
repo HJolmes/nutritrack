@@ -2,7 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const html=fs.readFileSync(path.join(__dirname,'../../index.html'),'utf8');
 const source=html.match(/<script type="module">([\s\S]*?)<\/script>/)[1];
-const bridge=source.replace(/import\("https:\/\/esm\.sh\/@undecaf\/zbar-wasm@0\.10\.1"\)/,'loadModule()');
+const bridge=source.replace(/import\("https:\/\/esm\.sh\/@undecaf\/zbar-wasm@0\.10\.1\?conditions=zbar-inlined"\)/,'loadModule()');
 assert.notEqual(bridge,source,'intercept only the real external module transport');
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
 test('optional barcode decoder is published only after its actual WASM initialization',async()=>{

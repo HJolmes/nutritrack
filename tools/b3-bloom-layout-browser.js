@@ -67,8 +67,8 @@ module.exports=async function bloomLayout(page,output,width){
       assert.ok(tab.h>=44,'Baby tab has a 44px touch target');
     }
     const diary=await page.locator('#babyOv > .mod').boundingBox();
-    assert.ok(diary.y>=-1&&diary.y<=1,'Baby opens as a full page at the top of the viewport');
-    assert.ok(await page.locator('#babyOvSub').evaluate(el=>el.getBoundingClientRect().top>=0),'Baby page starts at its visible header');
+    const header=await page.locator('#b3Header').boundingBox();
+    assert.ok(Math.abs(diary.y-header.y-header.height)<=2,'Baby opens directly below the shared header');
     await page.screenshot({path:path.join(output,'b3-bloom-baby-'+width+'.png'),animations:'disabled',style:'#toast{visibility:hidden}'});
     // Regression from a real Android screenshot: six settings buttons used to
     // shrink until even "Erinnerungen" wrapped one character per line.
@@ -113,7 +113,16 @@ module.exports=async function bloomLayout(page,output,width){
     await assertStrip('#babyTypeTabs',9,'Baby entry tabs');
     await page.evaluate(()=>{closeOv('babyEntryOv');NTPicker.openPicker('breakfast','chat');});
     await page.locator('#pickerOv.open .picker-tabs.nt-tab-strip').waitFor();
-    await assertStrip('#pickerOv .picker-tabs.nt-tab-strip',7,'Food picker tabs');
+    const picker=page.locator('#pickerOv .picker-tabs');
+    const grid=await picker.evaluate(el=>({
+      width:el.clientWidth,scroll:el.scrollWidth,
+      buttons:[...el.querySelectorAll('button')].map(b=>b.getBoundingClientRect().height)
+    }));
+    assert.equal(grid.buttons.length,7);
+    assert.ok(grid.scroll<=grid.width+1,'all seven capture options fit without sideways scrolling');
+    assert.ok(grid.buttons.every(height=>height>=44),'capture options retain touch targets');
+    const frame=await page.locator('#pickerOv').boundingBox(),bottomNav=await page.locator('#b3Nav').boundingBox();
+    assert.ok(frame.y>=header.y+header.height-1&&frame.y+frame.height<=bottomNav.y+1,'picker leaves both bars visible');
     await page.evaluate(()=>closeOv('pickerOv'));
     console.log('B3 Bloom '+width+'px: homepage, card widths, four Baby tabs, navigation and responsive sections OK');
   }finally{

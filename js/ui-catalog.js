@@ -6,8 +6,12 @@ var fixed=[{id:'home',label:'Heute',ic:'⌂'},{id:'nutrition',label:'Ernährung'
 function targets(){
   return fixed.concat(NTFeat.list().filter(function(f){return ['baby','shop','pantry','plan','book'].indexOf(f.id)>=0;}).map(function(f){return {id:f.id,label:f.label,ic:f.ic};}));
 }
-function target(id){return id==='functions'?{id:id,label:'Alle Funktionen',ic:'🧩'}:targets().find(function(t){return t.id===id;})||null;}
-function available(id){var f=NTFeat.byId(id);return !!target(id)&&(!f||!NTFeat.isOff(f));}
+function target(id){
+  if(id==='functions')return {id:id,label:'Alle Funktionen',ic:'🧩'};
+  var view=({'nutrition-plan':'plan','nutrition-book':'book'})[id]||id;
+  return targets().find(function(t){return t.id===view;})||null;
+}
+function available(id){var t=target(id),f=t&&NTFeat.byId(t.id);return !!t&&(!f||!NTFeat.isOff(f));}
 function entries(){
   var result=[
     {label:'Backup & Daten',hint:'OneDrive, Autosicherung, Backup wiederherstellen',act:'openSettings',args:['backup'],feature:''},

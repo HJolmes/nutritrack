@@ -950,7 +950,8 @@ function newBlank(){
 //     Seite laden, Zutaten lesen, „📋 Als Rezept". Hier nur der Weg dorthin.
 function newFromLink(){
   _from=null;
-  closeOv('recNewOv');closeOv('planOv');closeOv('libraryOv');
+  closeOv('recNewOv');
+  ['planOv','libraryOv'].forEach(function(id){if(!document.getElementById(id).hasAttribute('data-b3-inline'))closeOv(id);});
   setTimeout(function(){
     if(!window.NTPicker)return;
     NTPicker.openPicker(null,'link');

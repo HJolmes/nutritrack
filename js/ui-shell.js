@@ -6,24 +6,34 @@ var active=false,section='home',screen='main',routing=false,parents={},adapters=
 var defaults=['nutrition','baby','household'];
 var navMarkup='';
 var overlayHistory=null;
+var nutritionPanels={'nutrition-plan':{id:'planOv',owner:'plan'},'nutrition-book':{id:'libraryOv',owner:'book'}};
 function prefs(){
   var p=S.ui&&typeof S.ui==='object'?S.ui:{};
   if(!Array.isArray(p.navSlots)||p.navSlots.length!==3)p.navSlots=defaults.slice();
   var seen={home:true};
-  p.navSlots=p.navSlots.map(function(id,i){if(id==='functions'||!NTUICatalog.target(id)||seen[id])id=defaults.concat(['more','history','plan','book','shop','pantry']).find(function(x){return !seen[x];});seen[id]=true;return id;});
+  p.navSlots=p.navSlots.map(function(id,i){if(id==='functions'||nutritionPanels[id]||!NTUICatalog.target(id)||seen[id])id=defaults.concat(['more','history','plan','book','shop','pantry']).find(function(x){return !seen[x];});seen[id]=true;return id;});
   if(!p.classicLayout)p.classicLayout={order:Array.isArray(S.dashOrder)?S.dashOrder.slice():[],hidden:Array.isArray(S.dashHidden)?S.dashHidden.slice():[]};
   p.version=1;S.ui=p;return p;
 }
-function context(){var id=overlays[overlays.length-1]||'';if(id==='libraryOv'&&document.getElementById(id).getAttribute('data-tab')==='foods')return 'nutrition';return NTUICatalog.owner(id,section);}
+function context(){
+  var panel=nutritionPanels[section],id=overlays[overlays.length-1]||(panel?panel.id:'');
+  if(id==='libraryOv'&&document.getElementById(id).getAttribute('data-tab')==='foods')return 'nutrition';
+  return NTUICatalog.owner(id,panel?panel.owner:section);
+}
 function enabled(){return active;}
-function measureNav(){var el=document.getElementById('b3Nav');if(!el)return;var h=Math.ceil(el.getBoundingClientRect().height);if(h>0)document.body.style.setProperty('--b3-nav-height',h+'px');}
+function measureChrome(){
+  [['b3Nav','--b3-nav-height'],['b3Header','--b3-header-height']].forEach(function(part){
+    var el=document.getElementById(part[0]),h=el&&Math.ceil(el.getBoundingClientRect().height);
+    if(h)document.body.style.setProperty(part[1],h+'px');
+  });
+}
 function nav(){
   var el=document.getElementById('b3Nav');if(!el)return;
   var slots=prefs().navSlots,ids=['home',slots[0],'+',slots[1],slots[2]],owner=context();
   var current=overlays.some(isPage)?owner:section;
   if(!ids.includes(current)){
     if(current==='functions')current='more';
-    if(['history','trends'].includes(current))current='nutrition';
+    if(['history','trends'].includes(current)||nutritionPanels[section])current='nutrition';
     if(['shop','pantry','plan','book'].includes(current))current=section==='nutrition'?'nutrition':'household';
   }
   var markup=ids.map(function(id){
@@ -36,13 +46,15 @@ function nav(){
     return '<button type="button" aria-label="'+esc(t.label)+'"'+(on?' aria-current="page"':'')+' data-act="NTUI.go" data-args="'+esc(JSON.stringify([id]))+'"><span aria-hidden="true">'+t.ic+'</span><small>'+esc(short)+'</small></button>';
   }).join('');
   if(markup!==navMarkup){el.innerHTML=markup;navMarkup=markup;}
-  measureNav();
+  measureChrome();
 }
 function status(){
   var top=overlays[overlays.length-1],blocked=!!top;
-  document.body.classList.toggle('b3-modal',overlays.some(function(id){return !isPage(id);}));
-  document.querySelectorAll('#b3Root > :not(#b3Nav), body > .screen').forEach(function(el){el.toggleAttribute('inert',blocked);});
+  var modal=blocked&&!isPage(top);
+  document.querySelectorAll('#b3Content,#b3Notices, body > .screen,[data-b3-inline]').forEach(function(el){el.toggleAttribute('inert',blocked);});
+  document.querySelectorAll('#b3Header,#b3Nav').forEach(function(el){el.toggleAttribute('inert',modal);});
   overlays.forEach(function(id){document.getElementById(id).toggleAttribute('inert',id!==top);});
+  document.getElementById('b3Back').hidden=section==='home'&&!overlays.some(isPage);
   nav();
 }
 function isPage(id){return ['babyOv','shopOv','pantryOv','planOv','libraryOv'].indexOf(id)>=0;}
@@ -73,33 +85,47 @@ function recordOverlayHistory(closing){
 function noteView(){if(active&&!restoring)writeHistory(false);}
 function closeAll(){
   var wasRestoring=restoring;restoring=true;
-  overlays.slice().reverse().forEach(function(id){if(id==='babyOv')NTBaby.closeDiary();else closeOv(id);});
+  overlays.slice().reverse().forEach(function(id){if(id==='babyOv')NTBaby.closeDiary();else if(id==='planOv')NTPlan.close();else closeOv(id);});
   overlays=[];restoring=wasRestoring;
 }
 function render(){
   if(!active)return;
-  var t=NTUICatalog.target(section);document.getElementById('b3Title').textContent=t?t.label:'Heute';
+  var t=NTUICatalog.target(section),inNutrition=nutritionPanels[section]||['nutrition','history','trends'].includes(section);
+  document.getElementById('b3Title').textContent=inNutrition?'Ernährung':section==='home'?'Übersicht':t.label;
   var body=document.getElementById('b3Content');body.innerHTML='';
   if(section==='home'&&window.NTUIHome)NTUIHome.render();
-  if(['nutrition','history','trends'].indexOf(section)>=0&&window.NTUINutrition)NTUINutrition.render(section);
+  if(inNutrition&&window.NTUINutrition)NTUINutrition.render(section);
   if(section==='household'&&window.NTUIHousehold)NTUIHousehold.render();
   if(section==='more'&&window.NTUISettings)NTUISettings.render();
   if(section==='functions'&&window.NTUISettings)NTUISettings.renderCatalog();
   nav();
 }
 function dispatch(act,args){var f=NTActions.resolve(act);if(f)f.apply(null,args||[]);}
+function closeNutritionPanel(){
+  var panel=nutritionPanels[section];if(!panel)return;
+  var el=document.getElementById(panel.id);
+  if(panel.owner==='plan')NTPlan.close();else closeOv(panel.id);
+  el.removeAttribute('data-b3-inline');el.removeAttribute('inert');
+}
 function go(id,replace){
   if(!active)return;
   if(!NTUICatalog.target(id))id='home';
   if(!NTUICatalog.available(id)){showToast('Dieser Bereich ist ausgeschaltet. Unter Mehr → Alle Funktionen kannst du ihn aktivieren.');id='more';}
-  positions[section]=window.scrollY;if(!restoring&&id!==section)parents[id]=section;closeAll();section=id;
-  document.body.classList.toggle('b3-classic-screen',['nutrition','history','trends'].indexOf(id)>=0||(id==='home'&&!window.NTUIHome));
+  positions[section]=window.scrollY;if(!restoring&&id!==section)parents[id]=section;closeAll();closeNutritionPanel();section=id;
+  var panel=nutritionPanels[id];
+  document.body.classList.toggle('b3-embedded',!!panel);
+  document.body.classList.toggle('b3-classic-screen',!!panel||['nutrition','history','trends'].includes(id)||(id==='home'&&!window.NTUIHome));
   document.body.classList.toggle('b3-nutrition',id==='nutrition');
   var map={home:'main',nutrition:'main',history:'history',trends:'trends'};
   routing=true;if(map[id]&&adapters.screen)adapters.screen(map[id]);routing=false;
   render();
   var wasRestoring=restoring;restoring=true;
-  if(id==='baby')NTBaby.openDiary();
+  if(panel){
+    var el=document.getElementById(panel.id);el.setAttribute('data-b3-inline','');el.setAttribute('data-ui','b3');
+    el.removeAttribute('data-b3-page');el.removeAttribute('aria-modal');el.removeAttribute('role');
+    if(panel.owner==='plan')NTPlan.open();else adapters.book();
+  }
+  else if(id==='baby')NTBaby.openDiary();
   else if(id==='shop')NTShop.open();
   else if(id==='pantry')NTPantry.open();
   else if(id==='plan')NTPlan.open();
@@ -114,6 +140,7 @@ function go(id,replace){
 function opened(id){
   if(!active)return;
   var el=document.getElementById(id);if(!el)return;
+  if(el.hasAttribute('data-b3-inline'))return;
   if(overlays.indexOf(id)<0){
     focuses[id]=document.activeElement;overlays.push(id);recordOverlayHistory(false);
     if(isPage(id))el.querySelector('.mod').scrollTop=0;
@@ -123,11 +150,6 @@ function opened(id){
   el.setAttribute('aria-modal',isPage(id)?'false':'true');
   if(isPage(id)){
     el.setAttribute('data-b3-page','');
-    var header=el.querySelector('.mhd');
-    if(header&&!header.querySelector('.b3-page-menu')){
-      var menu=document.createElement('button');menu.type='button';menu.className='b3-page-menu';menu.textContent='☰';
-      menu.setAttribute('aria-label','Mehr und Einstellungen');menu.setAttribute('data-act','NTUI.go');menu.setAttribute('data-args','["more"]');header.insertBefore(menu,header.firstChild);
-    }
   }
   if(id==='babyOv'&&window.NTUIBaby)NTUIBaby.mount();
   var heading=/** @type {HTMLElement|null} */ (el.querySelector('.mti'));
@@ -145,8 +167,10 @@ function opened(id){
 }
 function closed(id){
   if(!active)return;
+  var el=document.getElementById(id);
+  if(el&&el.hasAttribute('data-b3-inline'))return;
   var at=overlays.indexOf(id);if(at>=0)overlays.splice(at,1);
-  var el=document.getElementById(id);if(el){el.style.zIndex='';el.removeAttribute('aria-modal');el.removeAttribute('inert');}
+  if(el){el.style.zIndex='';el.removeAttribute('aria-modal');el.removeAttribute('inert');}
   if(at>=0)recordOverlayHistory(true);
   status();
   var focus=focuses[id];
@@ -168,6 +192,7 @@ function legacy(tab){
   if(!active)return;screen=tab;if(routing)return;
   var map={main:'nutrition',history:'history',trends:'trends',more:'more',mealDetail:'nutrition'};
   if(map[tab]){
+    closeNutritionPanel();document.body.classList.remove('b3-embedded');
     section=map[tab];document.body.classList.toggle('b3-classic-screen',tab!=='more');document.body.classList.toggle('b3-nutrition',section==='nutrition');render();
     if(!restoring)writeHistory(false);
   }
@@ -196,10 +221,13 @@ function boot(ext){
   try{
     if(['NTUICatalog','NTUIActions','NTUIHome','NTUIBaby','NTUIReminders','NTUIPriority','NTUINutrition','NTUIHousehold','NTUISettings'].some(function(name){return !window[name];}))throw new Error('UI incomplete');
     prefs();active=true;var root=document.getElementById('b3Root');document.body.insertBefore(root,document.body.firstChild);root.hidden=false;go('home',true);document.body.classList.add('b3-on');
-    if(window.ResizeObserver)new ResizeObserver(measureNav).observe(document.getElementById('b3Nav'));
+    if(window.ResizeObserver){
+      var chromeObserver=new ResizeObserver(measureChrome);
+      chromeObserver.observe(document.getElementById('b3Nav'));chromeObserver.observe(document.getElementById('b3Header'));
+    }
     var notices=document.getElementById('b3Notices');
     ['updateBanner','installBanner','offBadge','backupReminder','odMissingBanner'].forEach(function(id){notices.appendChild(document.getElementById(id));});
-  }catch(e){active=false;document.body.classList.remove('b3-on','b3-modal','b3-classic-screen','b3-nutrition');var failedRoot=document.getElementById('b3Root');if(failedRoot)failedRoot.hidden=true;showToast('Die klassische Ansicht ist aktiv.');}
+  }catch(e){active=false;document.body.classList.remove('b3-on','b3-embedded','b3-classic-screen','b3-nutrition');var failedRoot=document.getElementById('b3Root');if(failedRoot)failedRoot.hidden=true;showToast('Die klassische Ansicht ist aktiv.');}
 }
 document.addEventListener('keydown',function(e){
   if(!active)return;
@@ -211,7 +239,7 @@ document.addEventListener('keydown',function(e){
     if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
   }
 });
-window.addEventListener('resize',measureNav);
+window.addEventListener('resize',measureChrome);
 window.addEventListener('popstate',function(e){
   if(!active)return;
   if(overlays.indexOf('fileSaveOv')>=0&&(!e.state||!e.state.overlays||e.state.overlays.indexOf('fileSaveOv')<0)){writeHistory(false);return;}
@@ -219,7 +247,7 @@ window.addEventListener('popstate',function(e){
   var desired=e.state;
   if(signature(desired)===signature(state())){history.back();return;}
   restoring=true;
-  overlays.slice().reverse().forEach(function(id){if(desired.overlays.indexOf(id)<0){if(id==='babyOv')NTBaby.closeDiary();else closeOv(id);}});
+  overlays.slice().reverse().forEach(function(id){if(desired.overlays.indexOf(id)<0){if(id==='babyOv')NTBaby.closeDiary();else if(id==='planOv')NTPlan.close();else closeOv(id);}});
   if(desired.section!==section){go(desired.section,true);}
   if(desired.screen&&['nutrition','history','trends'].indexOf(section)>=0&&adapters.screen){if(desired.screen==='mealDetail'&&desired.meal&&adapters.detail)adapters.detail(desired.meal);else adapters.screen(desired.screen);}
   (desired.overlays||[]).forEach(function(id){if(overlays.indexOf(id)<0)openOv(id);});

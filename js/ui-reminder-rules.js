@@ -25,10 +25,21 @@ function never(slot){pref(slot).mode='never';saveS();open();NTUI.refresh();}
 function reset(){NTUI.prefs().mealLearnSince=NTBaby.today();saveS();open();NTUI.refresh();}
 function open(){
   var learned=patterns();
-  document.getElementById('b3MealPrefsBody').innerHTML='<p>Automatisch lernt aus genutzten Ernährungstagen. Fehlende Einträge bedeuten nicht, dass du nichts gegessen hast. Feste Erinnerungen bleiben separat bestehen.</p>'+slots.map(function(slot,i){
+  document.getElementById('b3MealPrefsBody').innerHTML='<p class="b3-muted b3-reminder-intro">Automatische Hinweise orientieren sich an deinen Einträgen. Feste Erinnerungen stellst du separat ein.</p>'+slots.map(function(slot,i){
     var p=pref(slot),a=learned[slot];
-    return '<section class="b3-card"><h3>'+labels[i]+'</h3><label for="b3MealMode'+i+'">Hinweis-Modus</label><select id="b3MealMode'+i+'">'+[['auto','Automatisch lernen'],['always','Immer erinnern'],['never','Nie erinnern']].map(function(m){return '<option value="'+m[0]+'"'+(p.mode===m[0]?' selected':'')+'>'+m[1]+'</option>';}).join('')+'</select><label for="b3MealTime'+i+'">Uhrzeit bei „Immer“</label><input id="b3MealTime'+i+'" type="time" value="'+esc(p.time||times[i])+'"><label class="b3-row"><input type="checkbox" id="b3MealPush'+i+'"'+(p.push?' checked':'')+'>Systemmeldung zusätzlich einschalten</label><p class="b3-muted">'+esc(a.reason)+' · '+a.observed+'/'+a.days+' Tage erfasst, '+a.timed+' mit verlässlicher Uhrzeit.</p>'+(p.irrelevantCount>=3?'<p>Diesen Hinweis künftig ausschalten?</p><button type="button" data-act="NTUIReminders.never" data-args="'+esc(JSON.stringify([slot]))+'">'+labels[i]+' nie erinnern</button>':'')+'</section>';
-  }).join('')+'<h3>Weitere Hinweise</h3>'+[['care','Vorsorge und vorgemerkte Gaben'],['forecast','Schlafprognosen'],['household','Vorrat']].map(function(c){return '<label class="b3-row"><input type="checkbox" id="b3Hint'+c[0]+'"'+(!(NTUI.prefs().priorityMuted||{})[c[0]]?' checked':'')+'>'+c[1]+'</label>';}).join('')+'<p class="b3-muted">Systemmeldungen benötigen deine Zustimmung und funktionieren nur, solange die App aktiv bleibt. Es werden keine Lerndaten übertragen.</p><div class="b3-row"><button type="button" data-act="NTUIReminders.reset">Lernen neu beginnen</button><button type="button" data-act="NTUIReminders.fixed">Bestehende feste Erinnerungen</button></div>';
+    var options=[['auto','Automatisch lernen'],['always','Immer erinnern'],['never','Nie erinnern']].map(function(m){
+      return '<option value="'+m[0]+'"'+(p.mode===m[0]?' selected':'')+'>'+m[1]+'</option>';
+    }).join('');
+    return '<section class="b3-card"><h3>'+labels[i]+'</h3><div class="b3-reminder-fields">'
+      +'<label>Hinweis-Modus<select id="b3MealMode'+i+'">'+options+'</select></label>'
+      +'<label>Uhrzeit bei „Immer“<input id="b3MealTime'+i+'" type="time" value="'+esc(p.time||times[i])+'"></label></div>'
+      +'<label class="b3-reminder-check"><input type="checkbox" id="b3MealPush'+i+'"'+(p.push?' checked':'')+'>Systemmeldung einschalten</label>'
+      +'<p class="b3-muted">'+esc(a.reason)+(a.days?' · '+a.observed+' von '+a.days+' Tagen erfasst.':'')+'</p>'
+      +(p.irrelevantCount>=3?'<p>Diesen Hinweis künftig ausschalten?</p><button type="button" data-act="NTUIReminders.never" data-args="'+esc(JSON.stringify([slot]))+'">'+labels[i]+' nie erinnern</button>':'')+'</section>';
+  }).join('')+'<section class="b3-card"><h3>Weitere Hinweise</h3>'+[['care','Vorsorge und vorgemerkte Gaben'],['forecast','Schlafprognosen'],['household','Vorrat']].map(function(c){
+    return '<label class="b3-reminder-check"><input type="checkbox" id="b3Hint'+c[0]+'"'+(!(NTUI.prefs().priorityMuted||{})[c[0]]?' checked':'')+'>'+c[1]+'</label>';
+  }).join('')+'</section><p class="b3-muted">Systemmeldungen benötigen deine Zustimmung und funktionieren, solange die App aktiv ist.</p>'
+    +'<div class="b3-row b3-reminder-links"><button type="button" data-act="NTUIReminders.reset">Lernen neu beginnen</button><button type="button" data-act="NTUIReminders.fixed">Feste Erinnerungen</button></div>';
   openOv('b3MealPrefsOv');
 }
 function fixed(){closeOv('b3MealPrefsOv');NTUI.dispatch('openSettings',['erinnerungen']);}

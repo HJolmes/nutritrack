@@ -49,7 +49,8 @@
   // Andere Algorithmen als ZXing – oft erfolgreich bei schlechtem Kontrast oder
   // kleinen 1D-Codes, wo ZXing aufgibt. Optionaler Zusatz-Decoder, weiterhin per
   // esm.sh (best effort) – fehlt er, läuft der Scan über zxing-wasm.
-  import("https://esm.sh/@undecaf/zbar-wasm@0.10.1").then(function(m){
+  // Same pinned library with embedded WASM: no second, partially cached fetch.
+  import("https://esm.sh/@undecaf/zbar-wasm@0.10.1?conditions=zbar-inlined").then(function(m){
     // Import alone does not await the library's eager WASM initialization.
     // Catch that promise too: cached JS + unavailable WASM must stay optional.
     return m.getInstance().then(function(){

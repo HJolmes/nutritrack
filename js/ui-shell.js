@@ -100,7 +100,13 @@ function closed(id){
   var at=overlays.indexOf(id);if(at>=0)overlays.splice(at,1);
   var el=document.getElementById(id);if(el){el.style.zIndex='';el.removeAttribute('aria-modal');}
   if(!restoring&&history.state&&history.state.ntui)history.replaceState(state(),'');
-  var focus=focuses[id];if(focus&&focus.isConnected)focus.focus({preventScroll:true});
+  var focus=focuses[id];
+  if(!focus||!focus.isConnected||focus===document.body){
+    var parent=document.getElementById(overlays[overlays.length-1]||'');
+    focus=(parent&&parent.querySelector('.mti'))||document.getElementById('b3Title');
+    if(focus)focus.setAttribute('tabindex','-1');
+  }
+  if(focus)focus.focus({preventScroll:true});
   status();
   if(!restoring&&isPage(id)&&!overlays.some(isPage)&&['baby','shop','pantry','plan','book'].indexOf(section)>=0)go(parents[section]||'home',true);
 }

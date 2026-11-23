@@ -2,6 +2,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.349',items:[
+    {icon:'📱',text:'<b>Dialoge lassen sich mit dem Finger scrollen</b>: Wischen auf dem Inhalt bewegt auch lange Seiten wie das Baby-Tagebuch. Die Kopfzeile und die untere Navigation bleiben sichtbar.',where:'Baby · Dialoge'},
+  ]},
   {v:'0.348',items:[
     {icon:'🥫',text:'<b>Vom Einkauf in den Vorrat</b>: Abgehakte Artikel werden übernommen. Packungen mit unterschiedlichen Daten lassen sich beim selben Artikel als Chargen speichern. Produktschätzungen sind gekennzeichnet. Beim Tagebucheintrag entscheidest du, ob passende Mengen abgezogen werden.',where:'Haushalt · Vorrat · Ernährung'},
     {icon:'🌙',text:'<b>Schlaf im Überblick</b>: Gesamtzeit, Nachtschlaf, Nickerchen und sieben Tage erfasster Schlaf. Ausgeschaltete Bereiche verschwinden aus der Navigation. Der Versionsverlauf lässt sich auch mit vielen Einträgen scrollen.',where:'Baby · Übersicht · Was ist neu?'},

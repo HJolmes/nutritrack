@@ -1,0 +1,41 @@
+'use strict';
+const assert=require('node:assert/strict'),path=require('node:path');
+const {fixture}=require('./fixtures/b3-state');
+const {devices}=require('playwright');
+module.exports=async function release(browser,output,base){
+  const data=fixture(new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Berlin'}));
+  const opts={...(process.env.B3_BROWSER==='webkit'?devices['iPhone 13']:{}),viewport:{width:320,height:844},isMobile:true,hasTouch:true,timezoneId:'Europe/Berlin'};
+  async function context(){
+    const ctx=await browser.newContext(opts);
+    await ctx.route('**/*',r=>/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/)/.test(r.request().url())?r.continue():r.abort());
+    await ctx.addInitScript(data=>{if(localStorage.getItem('nt_v6'))return;localStorage.setItem('nt_v6',JSON.stringify(data.state));localStorage.setItem('nt_x',JSON.stringify({fc:{},cf:data.customFoods,rc:data.recipes}));localStorage.setItem('nt_gate_skipped','1');localStorage.setItem('nt_file_backup_day',data.state.currentDate);localStorage.setItem('nt_install_dismissed','1');},data);
+    return ctx;
+  }
+  const ctx=await context();
+  try{
+    const page=await ctx.newPage();await page.goto(base+'?ui=b3',{waitUntil:'load'});await page.waitForFunction(()=>NTUI.enabled());
+    await page.evaluate(()=>{document.documentElement.style.fontSize='200%';});
+    await page.waitForFunction(()=>Math.abs(document.getElementById('b3Nav').getBoundingClientRect().height-parseFloat(document.body.style.getPropertyValue('--b3-nav-height')))<2);
+    const dimensions=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth,buttons:Array.from(document.querySelectorAll('#b3Nav button')).map(b=>{const r=b.getBoundingClientRect();return {x:r.x,right:r.right,width:r.width,height:r.height,label:b.getAttribute('aria-label')};})}));
+    assert.ok(dimensions.scroll<=dimensions.width+1,'200% text does not overflow the document');
+    for(const b of dimensions.buttons){assert.ok(b.width>=44&&b.height>=44,'navigation touch target');assert.ok(b.x>=-1&&b.right<=321,'navigation stays in viewport');assert.ok(b.label);}
+    await page.evaluate(()=>{S.babyOn=true;NTUI.go('baby');NTUIBaby.select('history');});
+    const layout=await page.evaluate(()=>({pageBottom:document.querySelector('#babyOv .mod').getBoundingClientRect().bottom,navTop:document.getElementById('b3Nav').getBoundingClientRect().top}));
+    assert.ok(layout.pageBottom<=layout.navTop+1,'feature content ends above the enlarged navigation');
+    await page.locator('#babyPaneWeek [data-act="NTBabyWeek.openReport"]').click();
+    await page.locator('#babyReportOv.open').waitFor();await page.evaluate(()=>closeOv('babyReportOv'));
+    await page.screenshot({path:path.join(output,'b3-large-text-'+(process.env.B3_BROWSER||'chromium')+'.png'),fullPage:true});
+    // Existing single-tab protection also applies while the new shell is active.
+    const supported=await page.evaluate(()=>!!navigator.locks);
+    if(supported){const second=await ctx.newPage();await second.goto(base+'?ui=b3',{waitUntil:'load'});await second.waitForURL(/tab\.html/);await second.close();}
+  }finally{await ctx.close();}
+  const fail=await context();
+  try{
+    await fail.route('**/js/ui-home.js*',r=>r.abort());
+    const page=await fail.newPage();await page.goto(base+'?ui=b3',{waitUntil:'load'});await page.waitForFunction(()=>S.setupDone&&document.getElementById('mainScreen').classList.contains('active'));
+    assert.equal(await page.evaluate(()=>NTUI.enabled()),false,'missing new UI asset falls back to classic');
+    assert.equal(await page.locator('#b3Root').evaluate(el=>el.hidden),true);
+    for(const key of ['babyQuick','launchBar','dashOrder','dashHidden'])assert.deepEqual(await page.evaluate(key=>S[key],key),data.state[key]);
+  }finally{await fail.close();}
+  console.log('B3 release: 200% text at 320px, measured navigation, real report click, single-tab and failed-asset recovery OK');
+};

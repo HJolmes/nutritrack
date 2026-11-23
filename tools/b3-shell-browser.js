@@ -1,15 +1,16 @@
 'use strict';
 const assert=require('node:assert/strict'),path=require('node:path');
 const {fixture}=require('./fixtures/b3-state');
+const {devices}=require('playwright');
 module.exports=async function shell(browser,width,output,base){
-  const ctx=await browser.newContext({viewport:{width,height:844},isMobile:true,hasTouch:true,timezoneId:'Europe/Berlin'});
+  const ctx=await browser.newContext({...(process.env.B3_BROWSER==='webkit'?devices['iPhone 13']:{}),viewport:{width,height:844},isMobile:true,hasTouch:true,timezoneId:'Europe/Berlin'});
   try{
     await ctx.route('**/*',r=>/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/)/.test(r.request().url())?r.continue():r.abort());
     const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
     const data=fixture(new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Berlin'}));
     await page.addInitScript(data=>{
       if(localStorage.getItem('nt_v6'))return;
-      localStorage.setItem('nt_v6',JSON.stringify(data.state));localStorage.setItem('nt_x',JSON.stringify({fc:data.foodCache,cf:data.customFoods,rc:data.recipes}));localStorage.setItem('nt_gate_skipped','1');
+      localStorage.setItem('nt_v6',JSON.stringify(data.state));localStorage.setItem('nt_x',JSON.stringify({fc:data.foodCache,cf:data.customFoods,rc:data.recipes}));localStorage.setItem('nt_gate_skipped','1');localStorage.setItem('nt_install_dismissed','1');localStorage.setItem('nt_file_backup_day',data.state.currentDate);
     },data);
     await page.goto(base+'?ui=b3',{waitUntil:'load'});
     await page.waitForFunction(()=>window.NTUI&&NTUI.enabled());

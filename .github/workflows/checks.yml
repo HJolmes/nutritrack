@@ -211,13 +211,45 @@ jobs:
         run: node tools/smoke.js
 
       - name: B3 Bestandsschutz und mobile Referenzen
-        run: node tools/b3-browser.js
+        run: |
+          node tools/b3-rollback.js
+          node tools/b3-browser.js
 
       - name: B3 Referenzen aufbewahren
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: b3-mobile-baseline
+          path: .b3-artifacts/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30
+
+  b3_webkit:
+    name: B3 Safari-Engine und iPhone-Ansicht
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Playwright und WebKit
+        run: |
+          npm ci
+          npx playwright install --with-deps webkit
+      - name: Testserver
+        run: npx --yes http-server@14.1.1 -p 8099 -s . &
+      - name: B3 auf Safari-Engine prüfen
+        env:
+          B3_BROWSER: webkit
+        run: |
+          node tools/b3-rollback.js
+          node tools/b3-browser.js
+      - name: Safari-Referenzen aufbewahren
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: b3-webkit-mobile
           path: .b3-artifacts/
           include-hidden-files: true
           if-no-files-found: error

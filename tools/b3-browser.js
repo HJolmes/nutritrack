@@ -2,7 +2,8 @@
 'use strict';
 // Classic baseline, restore round-trip and mobile reference images. Local-only
 // synthetic data. These images are evidence, not a claim of visual approval.
-const {chromium}=require('playwright');
+const {chromium,webkit,devices}=require('playwright');
+const engine=process.env.B3_BROWSER==='webkit'?webkit:chromium;
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
@@ -11,10 +12,10 @@ const BASE=process.env.SMOKE_URL||'http://127.0.0.1:8099/index.html';
 const output=path.resolve(__dirname,'../.b3-artifacts');
 (async()=>{
   fs.mkdirSync(output,{recursive:true});
-  const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||undefined});
+  const browser=await engine.launch({executablePath:process.env.CHROMIUM_PATH||undefined});
   try {
     for(const width of [320,390,430]) {
-      const context=await browser.newContext({viewport:{width,height:844},isMobile:true,hasTouch:true,timezoneId:'Europe/Berlin',acceptDownloads:true});
+      const context=await browser.newContext({...(process.env.B3_BROWSER==='webkit'?devices['iPhone 13']:{}),viewport:{width,height:844},isMobile:true,hasTouch:true,timezoneId:'Europe/Berlin',acceptDownloads:true});
       await context.route('**/*',route=>/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/)/.test(route.request().url())?route.continue():route.abort());
       const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
       const day=new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Berlin'}),data=fixture(day);
@@ -57,5 +58,8 @@ const output=path.resolve(__dirname,'../.b3-artifacts');
       await context.close();console.log('B3 classic '+width+'px: eleven editors, export/import, reload, screenshots OK');
       if(fs.existsSync(path.resolve(__dirname,'../js/ui-shell.js')))await require('./b3-shell-browser')(browser,width,output,BASE);
     }
+    if(fs.existsSync(path.resolve(__dirname,'b3-release-browser.js')))await require('./b3-release-browser')(browser,output,BASE);
+    if(fs.existsSync(path.resolve(__dirname,'b3-sync-browser.js')))await require('./b3-sync-browser')(browser,BASE);
+    if(fs.existsSync(path.resolve(__dirname,'../b3-test-rollback/index.html')))await require('./b3-rollback-browser')(browser,output,BASE);
   } finally {await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

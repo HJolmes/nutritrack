@@ -43,9 +43,16 @@ module.exports=async function release(browser,output,base,origin){
     await page.clock.setFixedTime(await page.evaluate(next=>new Date(next+'T00:05:00').getTime(),next));await page.evaluate(()=>checkDayRollover());
     assert.equal(await page.evaluate(()=>S.currentDate),next,'midnight selects the new local day');
     if(await page.evaluate(()=>NTAutoSave.fileActive())){
+      const afterSixDays=await page.evaluate(()=>{
+        localStorage.setItem('nt_file_backup_day',addDays(today(),-6));
+        NTAutoSave.fileCheck();
+        return document.getElementById('fileSaveOv').classList.contains('open');
+      });
+      assert.equal(afterSixDays,false,'iOS backup stays closed for six days');
+      await page.evaluate(()=>localStorage.setItem('nt_file_backup_day',addDays(today(),-7)));
       await page.evaluate(()=>{Object.defineProperty(navigator,'canShare',{configurable:true,value:()=>true});Object.defineProperty(navigator,'share',{configurable:true,value:async data=>{window._b3FileSaved=data.files[0].name;}});NTAutoSave.fileCheck();});
       await page.locator('#fileSaveOv.open').waitFor();await page.keyboard.press('Escape');
-      assert.equal(await page.locator('#fileSaveOv').evaluate(el=>el.classList.contains('open')),true,'Escape cannot bypass the existing daily file backup');
+      assert.equal(await page.locator('#fileSaveOv').evaluate(el=>el.classList.contains('open')),true,'Escape cannot bypass the weekly file backup');
       await page.evaluate(()=>NTUI.back());await page.goBack();
       await page.waitForFunction(()=>history.state?.overlays?.includes('fileSaveOv'));
       assert.equal(await page.locator('#fileSaveOv').evaluate(el=>el.classList.contains('open')),true,'internal Back preserves the backup dialog');

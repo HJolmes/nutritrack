@@ -30,5 +30,5 @@ function plus(){
   if(owner==='household'){household();return;}
   all();
 }
-window.NTUIActions={plus:plus,baby:baby,household:household,all:all,choose:choose,button:button};
+window.NTUIActions={show:show,plus:plus,baby:baby,household:household,all:all,choose:choose,button:button};
 })();

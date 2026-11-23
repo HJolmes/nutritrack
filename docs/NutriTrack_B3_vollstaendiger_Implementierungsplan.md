@@ -300,8 +300,9 @@ Stand 23.11.2026, geprüftes `main`: `88eeb9846e8646270a1c6a7c155e10b18317112e`,
 |---|---|---|
 | 00 | Abgeschlossen, PR [#362](https://github.com/HJolmes/nutritrack/pull/362) gemergt | `tools/b3-inventory.js`, `docs/b3-baseline.json`, synthetische Fixture, Schutztests und Browser-Roundtrip; CI: Konsistenz, Typprüfung, 145 Tests, Browser-Smoke, elf Babyeditoren, Backup-Roundtrip, Referenzen 320/390/430 px grün |
 | 01 | Abgeschlossen, PR [#363](https://github.com/HJolmes/nutritrack/pull/363) gemergt | Gekapselte B3-Design-Tokens, zugängliche Touchflächen, Zoom freigegeben |
-| 02–04 | In Prüfung | Gemeinsames Funktionsregister, optionale Shell, freie Slots, Kontext-Plus, Back/Fokus und Notfallroute; echte vorhandene Editoren |
-| 05–22 | Offen | Reihenfolge und Abnahmen gemäß Abschnitt 7 |
+| 02–04 | Abgeschlossen, PR [#364](https://github.com/HJolmes/nutritrack/pull/364) gemergt | Gemeinsames Funktionsregister, optionale Shell, freie Slots, Kontext-Plus, Back/Fokus und Notfallroute; echte vorhandene Editoren |
+| 05–07 | In Prüfung | Neue Startseite, sechs unabhängige Schnellaktionen, dauerhafter Bruststatus auf Heute/Baby, ID-sicheres Stoppen/Wechseln |
+| 08–22 | Offen | Reihenfolge und Abnahmen gemäß Abschnitt 7 |
 
 **PR 00 / G0:** Das Inventar erfasst auch generiertes HTML, `tab.html`, Feature-Aktionen, Startkurzbefehle, Namespace-Exports und die 50 Zeilen der verbindlichen Matrix. Es ist ein Reichweiteninventar, keine Behauptung, dass alle Fachabläufe bereits getestet wurden. `npm test` prüft den Fortbestand seiner Einstiege/APIs. Der Snapshot bleibt unverändert; begründete Ablösungen benötigen später eine explizite, getestete Zuordnung.
 
@@ -313,3 +314,8 @@ Stand 23.11.2026, geprüftes `main`: `88eeb9846e8646270a1c6a7c155e10b18317112e`,
 
 
 **PR 02–04:** Zusammengelegt als eine überprüfbare Navigationsreise: Katalog aus `NTFeat` und vorhandenem Mehr-Markup, Fünfer-Leiste, drei eindeutige Slots in `S.ui`, Kontext-Plus über echte Fach-APIs. Klassisch bleibt Standard; `?ui=b3` bzw. Mehr → Neue Ansicht ausprobieren schaltet die Shell zu, `?ui=classic` umgeht sie. Die Startseite und Fachseiten sind in dieser Stufe noch die vorhandenen Inhalte; ihre B3-Abnahme folgt in PR 05–20. Neue Fachmodelle/Sync-Records entstehen nicht. 147 Node-Tests, statische Prüfung und Typprüfung lokal grün; CI prüft zusätzlich die neuen Klickpfade bei drei mobilen Breiten. PR 00/01 haben bereits erfolgreiche reale Datei-Roundtrips, Browserprüfungen und nun hochgeladene Referenzbilder (Artefakt `b3-mobile-baseline`).
+
+
+**PR 05–07:** Die neue Startseite ersetzt nur die Präsentation. „Gerade wichtig“ zeigt aktuell laufendes Stillen/Schlafen oder einen ruhigen Fallback; weitergehende Priorisierung bleibt PR 11. Globale Schnellaktionen migrieren einmal aus `S.launchBar` nach `S.ui.homeActions` (höchstens sechs), ohne Originalwerte oder `S.babyQuick` zu ändern. Die Aktionsauswahl erweitert das bestehende `NTLaunch`-Register. Brustvorschlag/letzte Mahlzeit/Timer stammen aus `NTBaby`; Stoppen und Wechseln verwenden nun auch im bestehenden Widget konkrete Eintrags-IDs, damit ein veralteter Knopf nach Sync keinen anderen Lauf beendet. Bei fehlender Historie bietet die UI beide Startseiten an. Ernährungssummen werden aus der vorhandenen Berechnung übernommen, nicht neu berechnet.
+
+**Gate G1 erfüllt:** PR #364 besteht einschließlich realem Service-Worker-Offline-Neustart, Editorzugriff offline, Back, deaktiviertem Modul und Classic-Recovery bei 320/390/430 px. Die synthetische Plan-Fixture enthält nun alle vier Mahlzeit-Slots gemäß tatsächlichem Schema.

@@ -147,6 +147,7 @@ function refresh(){
   // „Stillen" ↔ „Stillen stoppen" in der Schnellauswahl-Leiste (js/launch.js)
   if(window.NTLaunch)NTLaunch.renderBar();
   if(isOpen('babyOv'))renderDiary();
+  if(window.NTUI)NTUI.refresh();
 }
 function isOpen(id){
   var el=document.getElementById(id);
@@ -351,8 +352,8 @@ function stopFeed(silent,id){
   return e;
 }
 // Seite wechseln = laufende Seite beenden, andere sofort starten.
-function switchFeed(){
-  var e=stopFeed(true);
+function switchFeed(id){
+  var e=stopFeed(true,id);
   if(!e)return;
   var other=e.side==='l'?'r':'l';
   add({t:'breast',side:other,run:1,ts:Date.now()},_today());
@@ -382,8 +383,8 @@ function feedLineHtml(){
     var m=Math.max(0,Math.floor((Date.now()-run.ts)/60000));
     return '<div class="bby-run"><span>⏱ Stillt '+esc(SIDES[run.side]||'')+' seit '+fmtDur(m)+'</span>'
       +'<span style="display:flex;gap:6px;">'
-      +'<button type="button" class="bby-pill" data-act="NTBaby.switchFeed">⇄ Seite</button>'
-      +'<button type="button" class="bby-pill on" data-act="NTBaby.stopFeed">■ Stopp</button></span></div>';
+      +'<button type="button" class="bby-pill" data-act="NTBaby.switchFeed" data-args="'+esc(JSON.stringify([run.id]))+'">⇄ Seite</button>'
+      +'<button type="button" class="bby-pill on" data-act="NTBaby.stopFeed" data-args="'+esc(JSON.stringify([false,run.id]))+'">■ Stopp</button></span></div>';
   }
   var f=lastFeed();
   if(!f)return '';
@@ -1330,6 +1331,7 @@ function hasRunningSleep(){
 // Gaben), das offene Tagebuch nur, wenn dort etwas mitzählt.
 function tick(){
   if(!S.babyOn)return;
+  if(window.NTUI)NTUI.refresh();
   renderCard();
   if(isOpen('babyOv')){
     if(_tab==='sleep')renderTab();
@@ -1354,7 +1356,7 @@ window.NTBaby={
   openSync:openSync,renderSyncUI:renderSyncUI,openLinks:openLinks,syncNow:syncNow,
   Sync:Sync,summaryText:summaryText,TYPES:TYPES,
   // Fuer den Alexa-Einwurf: welche Brust waere als Naechstes dran?
-  nextSide:nextSide,
+  nextSide:nextSide,feedLineHtml:feedLineHtml,openSleep:openSleep,
   // Meilensteine (js/baby-milestones.js): Haken lesen/setzen, synchronisiert.
   milesStore:milesStore,setMile:setMile,
   // v0.263: Stoppuhr, Medizin-Auswahl, gemeinsame Helfer für Verlauf/Wachstum/Gaben

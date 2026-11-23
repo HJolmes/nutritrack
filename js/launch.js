@@ -36,7 +36,16 @@ var ACTIONS=[
   {id:'einkauf', ic:'🛒', label:'Einkaufszettel',sub:'Zettel öffnen'},
   {id:'vorrat',  ic:'🥫', label:'Vorrat',        sub:'Vorrat öffnen'},
   {id:'kochbuch',ic:'📖', label:'Kochbuch',      sub:'Rezepte öffnen'},
-  {id:'plan',    ic:'📅', label:'Wochenplan',    sub:'Woche planen'}
+  {id:'plan',    ic:'📅', label:'Wochenplan',    sub:'Woche planen'},
+  {id:'barcode',ic:'🏷',label:'Barcode',sub:'Lebensmittel scannen'},
+  {id:'flasche',ic:'🍼',label:'Flasche',sub:'Menge und Nahrung erfassen',baby:true},
+  {id:'beikost',ic:'🥣',label:'Beikost',sub:'Lebensmittel und Reaktion',baby:true},
+  {id:'medizin',ic:'💊',label:'Medikamente',sub:'Medizin und Gaben',baby:true},
+  {id:'links',ic:'🤱',label:'Brust links',sub:'Stoppuhr links starten',baby:true},
+  {id:'rechts',ic:'🤱',label:'Brust rechts',sub:'Stoppuhr rechts starten',baby:true},
+  {id:'frage',ic:'❓',label:'Arzt-/Hebammenfrage',sub:'Fragen notieren',baby:true},
+  {id:'wachstum',ic:'📏',label:'Wachstum',sub:'Messung eintragen',baby:true},
+  {id:'statistik',ic:'📈',label:'Statistik',sub:'Trends öffnen'}
 ];
 
 /** @type {Object<string,function():void>} */
@@ -62,7 +71,7 @@ function run(id){
       // Gleiche Logik wie der Stoppuhr-Schnell-Knopf: laeuft eine, wird sie
       // gestoppt, sonst startet eine neue (Seite = Vorschlag „naechste Seite").
       if(NTBaby.runningFeed())NTBaby.stopFeed();
-      else{NTBaby.startFeed();NTBaby.openDiary();}
+      else{NTBaby.startFeed();if(!window.NTUI||!NTUI.enabled())NTBaby.openDiary();}
       return;
     case 'wickeln': if(window.NTBaby)NTBaby.openEntry('diaper');return;
     case 'schlaf':  if(window.NTBaby)NTBaby.toggleSleep();return;
@@ -70,6 +79,15 @@ function run(id){
     case 'foto':    if(window.NTPicker)NTPicker.openPicker(null,'foto');return;
     case 'einkauf': if(window.NTShop)NTShop.open();return;
     case 'vorrat':  if(window.NTPantry)NTPantry.open();return;
+    case 'barcode':NTPicker.openPicker(null,'barcode');return;
+    case 'flasche':NTBaby.openEntry('bottle');return;
+    case 'beikost':NTBaby.openEntry('solid');return;
+    case 'medizin':NTBabyMed.open();return;
+    case 'links':NTBaby.startFeed('l');return;
+    case 'rechts':NTBaby.startFeed('r');return;
+    case 'frage':NTMidwife.open();return;
+    case 'wachstum':NTBaby.openEntry('growth');return;
+    case 'statistik':if(window.NTUI&&NTUI.enabled())NTUI.go('trends');else if(_ext.statistik)_ext.statistik();return;
     case 'plan':    if(window.NTPlan)NTPlan.open();return;
   }
   if(_ext[id])_ext[id]();

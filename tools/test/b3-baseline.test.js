@@ -38,6 +38,7 @@ test('B3 baseline: editing/deleting history recalculates, duplicate start and st
   const run=app.api.runningFeed();assert.equal(run.side,'r');
   app.api.switchFeed();assert.equal(app.api.runningFeed().side,'l');assert.equal(run.run,undefined);
   app.api.stopFeed(true,run.id);assert.equal(app.api.runningFeed().side,'l');
+  app.api.switchFeed(run.id);assert.equal(app.api.runningFeed().side,'l','stale switch cannot start another run');
   app.api.stopFeed(true,app.api.runningFeed().id);assert.equal(app.api.runningFeed(),null);
 });
 test('B3 fixture covers all eleven baby types, ten personal buttons and non-destructive state restore',()=>{

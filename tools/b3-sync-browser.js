@@ -20,7 +20,7 @@ module.exports=async function sync(browser,base){
         }
         await route.fulfill({json:{ok:true,data:{records:[...store.values()],cursor:Date.now(),serverTime:Date.now()}},headers});return;
       }
-      if(/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/)/.test(u.href)){await route.continue();return;}
+      if(/^(data|blob):/.test(u.href)||/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/)/.test(u.href)){await route.continue();return;}
       await route.abort();
     });
     await ctx.addInitScript(({which})=>{localStorage.setItem('nt_v6',JSON.stringify({setupDone:true,name:'Sync '+which,goal:2000,babyOn:true,baby:{name:'Demo'},babyLog:{},days:{},links:[],linksMigrated:1,bookSeedV:1,bookMealV:1,ui:{version:1,navSlots:which==='A'?['nutrition','baby','household']:['shop','pantry','more'],homeActions:which==='A'?['stillen']:['mahlzeit']}}));localStorage.setItem('nt_gate_skipped','1');localStorage.setItem('nt_install_dismissed','1');}, {which});

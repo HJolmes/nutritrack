@@ -7,7 +7,7 @@ module.exports=async function release(browser,output,base,origin){
   const opts={...(process.env.B3_BROWSER==='webkit'?devices['iPhone 13']:{}),viewport:{width:320,height:844},isMobile:true,hasTouch:true,timezoneId:'Europe/Berlin'};
   async function context(){
     const ctx=await browser.newContext(opts);
-    await ctx.route('**/*',r=>/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/)/.test(r.request().url())?r.continue():r.abort());
+    await ctx.route('**/*',r=>(/^(data|blob):/.test(r.request().url())||/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/)/.test(r.request().url()))?r.continue():r.abort());
     await ctx.addInitScript(data=>{if(localStorage.getItem('nt_v6'))return;localStorage.setItem('nt_v6',JSON.stringify(data.state));localStorage.setItem('nt_x',JSON.stringify({fc:{},cf:data.customFoods,rc:data.recipes}));localStorage.setItem('nt_gate_skipped','1');localStorage.setItem('nt_file_backup_day',data.state.currentDate);localStorage.setItem('nt_install_dismissed','1');},data);
     return ctx;
   }

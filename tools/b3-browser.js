@@ -73,7 +73,7 @@ const output=path.resolve(__dirname,'../.b3-artifacts');
       await context.close();console.log('B3 classic '+width+'px: eleven editors, export/import, reload, screenshots OK');
       if(fs.existsSync(path.resolve(__dirname,'../js/ui-shell.js')))await require('./b3-shell-browser')(browser,width,output,BASE,origin);
     }
-    if(fs.existsSync(path.resolve(__dirname,'b3-release-browser.js')))await require('./b3-release-browser')(browser,output,BASE);
+    if(fs.existsSync(path.resolve(__dirname,'b3-release-browser.js')))await require('./b3-release-browser')(browser,output,BASE,origin);
     if(fs.existsSync(path.resolve(__dirname,'b3-sync-browser.js')))await require('./b3-sync-browser')(browser,BASE);
     if(fs.existsSync(path.resolve(__dirname,'../b3-test-rollback/index.html')))await require('./b3-rollback-browser')(browser,output,BASE);
   } finally {await browser.close();if(origin)await origin.close();}

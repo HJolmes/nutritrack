@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict'),path=require('node:path');
 const {fixture}=require('./fixtures/b3-state');
 const {devices}=require('playwright');
-module.exports=async function release(browser,output,base){
+module.exports=async function release(browser,output,base,origin){
   const data=fixture(new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Berlin'}));
   const opts={...(process.env.B3_BROWSER==='webkit'?devices['iPhone 13']:{}),viewport:{width:320,height:844},isMobile:true,hasTouch:true,timezoneId:'Europe/Berlin'};
   async function context(){
@@ -29,7 +29,29 @@ module.exports=async function release(browser,output,base){
     // Existing single-tab protection also applies while the new shell is active.
     const supported=await page.evaluate(()=>!!navigator.locks);
     if(supported){const second=await ctx.newPage();await second.goto(base+'?ui=b3',{waitUntil:'load'});await second.waitForURL(/tab\.html/);await second.close();}
-  }finally{await ctx.close();}
+    // Cross midnight, write through existing real editors, and restart with
+    // the network still unavailable. A dialog-only offline test is insufficient.
+    await page.evaluate(async()=>{await navigator.serviceWorker.register(new URL('sw.js',location.href).href,{scope:'./'});await navigator.serviceWorker.ready;});
+    await page.reload({waitUntil:'load'});await page.waitForFunction(()=>!!navigator.serviceWorker.controller&&NTUI.enabled());
+    await page.waitForFunction(async()=>!!(await caches.match(location.href)));
+    const next=await page.evaluate(()=>NTBaby.addDayKey(S.currentDate,1));
+    await page.clock.setFixedTime(new Date(next+'T00:05:00+01:00'));await page.evaluate(()=>checkDayRollover());
+    assert.equal(await page.evaluate(()=>S.currentDate),next,'midnight selects the new local day');
+    if(origin){origin.setAvailable(false);await assert.rejects(ctx.request.get(base,{timeout:2000}));}else await ctx.setOffline(true);
+    await page.evaluate(()=>NTUI.go('baby'));
+    await page.getByRole('button',{name:'Erfassen: Baby-Tagebuch'}).click();await page.locator('#b3ActionBody button').filter({hasText:'Notiz'}).click();
+    await page.locator('#babyNoteText').fill('Offline nach Mitternacht');await page.locator('#babyEntryOv [data-act="NTBaby.saveEntry"]').click();
+    await page.evaluate(()=>{NTUI.go('nutrition');NTPicker.openPicker('breakfast','own');});
+    await page.locator('#ownName').fill('Offline-Mahlzeit');await page.locator('#ownKcal').fill('123');await page.locator('#ownOnce').check();
+    await page.locator('[data-act="NTPicker.pickerSaveOwn"]').click();
+    const persisted=await page.evaluate(()=>({day:S.currentDate,meals:S.days[S.currentDate].meals,baby:S.babyLog[S.currentDate]}));
+    assert.ok(persisted.meals.breakfast.some(e=>e.name==='Offline-Mahlzeit'));assert.ok(persisted.baby.some(e=>e.text==='Offline nach Mitternacht'));
+    const offline=await page.reload({waitUntil:'load'});assert.ok(offline.fromServiceWorker());await page.waitForFunction(()=>NTUI.enabled());
+    assert.deepEqual(await page.evaluate(()=>({day:S.currentDate,meals:S.days[S.currentDate].meals,baby:S.babyLog[S.currentDate]})),persisted,'new-day offline writes survive an offline restart');
+    if(origin)origin.setAvailable(true);else await ctx.setOffline(false);
+    await page.reload({waitUntil:'load'});await page.waitForFunction(()=>NTUI.enabled());
+    assert.deepEqual(await page.evaluate(()=>({day:S.currentDate,meals:S.days[S.currentDate].meals,baby:S.babyLog[S.currentDate]})),persisted,'reconnection keeps the complete offline day');
+  }finally{if(origin)origin.setAvailable(true);await ctx.close();}
   const fail=await context();
   try{
     await fail.route('**/js/ui-home.js*',r=>r.abort());
@@ -38,5 +60,5 @@ module.exports=async function release(browser,output,base){
     assert.equal(await page.locator('#b3Root').evaluate(el=>el.hidden),true);
     for(const key of ['babyQuick','launchBar','dashOrder','dashHidden'])assert.deepEqual(await page.evaluate(key=>S[key],key),data.state[key]);
   }finally{await fail.close();}
-  console.log('B3 release: 200% text at 320px, measured navigation, real report click, single-tab and failed-asset recovery OK');
+  console.log('B3 release: 200% text, measured navigation/report, single-tab, new-day Baby/nutrition offline writes + offline restart/reconnect and failed-asset recovery OK');
 };

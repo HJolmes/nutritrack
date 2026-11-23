@@ -82,7 +82,14 @@ function opened(id){
   el.style.zIndex=String(400+overlays.indexOf(id));
   el.setAttribute('data-ui','b3');el.setAttribute('role',isPage(id)?'region':'dialog');
   el.setAttribute('aria-modal',isPage(id)?'false':'true');
-  if(isPage(id))el.setAttribute('data-b3-page','');
+  if(isPage(id)){
+    el.setAttribute('data-b3-page','');
+    var header=el.querySelector('.mhd');
+    if(header&&!header.querySelector('.b3-page-menu')){
+      var menu=document.createElement('button');menu.type='button';menu.className='b3-page-menu';menu.textContent='☰';
+      menu.setAttribute('aria-label','Mehr und Einstellungen');menu.setAttribute('data-act','NTUI.go');menu.setAttribute('data-args','["more"]');header.insertBefore(menu,header.firstChild);
+    }
+  }
   if(id==='babyOv'&&window.NTUIBaby)NTUIBaby.mount();
   var heading=el.querySelector('.mti');if(heading){if(!heading.id)heading.id=id+'B3Title';el.setAttribute('aria-labelledby',heading.id);}
   status();

@@ -39,6 +39,13 @@ module.exports=async function shell(browser,width,output,base){
     await page.locator('#planPickOv.open').waitFor();await page.evaluate(()=>closeOv('planPickOv'));
     await page.evaluate(()=>NTUI.go('book'));await nav.getByRole('button',{name:'Erfassen: Kochbuch'}).click();
     await page.locator('#recNewOv.open').waitFor();await page.evaluate(()=>closeOv('recNewOv'));
+    // Domain pages cover the root header, so their own menu must remain usable
+    // even when none of the user's three slots is assigned to More.
+    for(const id of ['baby','shop','pantry','plan','book']){
+      await page.evaluate(id=>NTUI.go(id),id);
+      await page.locator('.ov.open[data-b3-page] .b3-page-menu').click();
+      assert.equal(await page.evaluate(()=>NTUI.context()),'more','More reachable directly from '+id);
+    }
     await page.evaluate(()=>NTUI.go('more'));
     await page.locator('#b3CatalogQuery').fill('Backup');
     assert.ok(await page.locator('#b3Catalog button').count()>0);

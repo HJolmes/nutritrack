@@ -2,6 +2,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.342',items:[
+    {icon:'⌂',text:'<b>Deine neue Übersicht</b>: Heute mit Gerade wichtig, sechs persönlichen Schnellaktionen und kompaktem Tagesüberblick. Die Navigation und das Erfassen passen zu deinem Bereich. Baby, Ernährung und Haushalt verwenden weiterhin deine vorhandenen Daten und Einstellungen. Unter Mehr kannst du jederzeit zur klassischen Ansicht wechseln.',where:'Heute → Mehr'},
+  ]},
   {v:'0.341',items:[
     {icon:'🔎',text:'<b>Besser lesbar</b>: Die neue Ansicht passt die Navigation und Fachseiten auch bei größerer Schrift an. Touchflächen und Kontraste sind verbessert. Bei einem Ladefehler bleibt die klassische Ansicht automatisch nutzbar.',where:'Neue Ansicht'},
   ]},

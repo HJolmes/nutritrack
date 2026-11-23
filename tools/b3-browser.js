@@ -79,6 +79,7 @@ const output=path.resolve(__dirname,'../.b3-artifacts');
       if(fs.existsSync(path.resolve(__dirname,'../js/ui-shell.js')))await require('./b3-shell-browser')(browser,width,output,BASE,origin);
     }
     if(fs.existsSync(path.resolve(__dirname,'b3-release-browser.js')))await require('./b3-release-browser')(browser,output,BASE,origin);
+    if(fs.existsSync(path.resolve(__dirname,'b3-rollout-browser.js')))await require('./b3-rollout-browser')(browser,BASE);
     if(fs.existsSync(path.resolve(__dirname,'b3-sync-browser.js')))await require('./b3-sync-browser')(browser,BASE);
     if(fs.existsSync(path.resolve(__dirname,'../b3-test-rollback/index.html')))await require('./b3-rollback-browser')(browser,output,BASE);
   } finally {await browser.close();if(serverControl)await serverControl.close();}

@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.341"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.342"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.341"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.342"></script>
 <script>
   // @ts-check
   (function(){
@@ -1444,7 +1444,7 @@ body.b3-on .b3-page-menu{float:right;min-width:44px;min-height:44px;margin:0 .25
       <div class="lr-body"><div class="lr-name">Funktionen</div><div class="lr-sub">Ein- und ausschalten, Reihenfolge auf „Heute"</div></div>
       <div class="lr-arrow">›</div>
     </div>
-    <button type="button" data-act="NTUI.enable" style="margin:8px 0;min-height:44px;">Neue Ansicht ausprobieren</button>
+    <button type="button" data-act="NTUI.enable" style="margin:8px 0;min-height:44px;">Neue Ansicht verwenden</button>
     <div class="list-row" data-act="NTLaunch.open">
       <div class="lr-ic">⚡</div>
       <div class="lr-body"><div class="lr-name">Schnellauswahl</div><div class="lr-sub">Stillen, Wickeln, Mahlzeit … mit einem Tipp</div></div>
@@ -1462,7 +1462,7 @@ body.b3-on .b3-page-menu{float:right;min-width:44px;min-height:44px;margin:0 .25
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.341</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.342</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -3900,15 +3900,15 @@ body.b3-on .b3-page-menu{float:right;min-width:44px;min-height:44px;margin:0 .25
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.341"></script>
-<script src="js/single-tab.js?v=0.341"></script>
-<script src="js/fooddb.js?v=0.341"></script>
-<script src="js/fooddb-usda.js?v=0.341"></script>
-<script src="js/restaurants.js?v=0.341"></script>
-<script src="js/metdb.js?v=0.341"></script>
-<script src="js/idb-photos.js?v=0.341"></script>
-<script src="js/changelog.js?v=0.341"></script>
-<script src="js/calc.js?v=0.341"></script>
+<script src="js/actions.js?v=0.342"></script>
+<script src="js/single-tab.js?v=0.342"></script>
+<script src="js/fooddb.js?v=0.342"></script>
+<script src="js/fooddb-usda.js?v=0.342"></script>
+<script src="js/restaurants.js?v=0.342"></script>
+<script src="js/metdb.js?v=0.342"></script>
+<script src="js/idb-photos.js?v=0.342"></script>
+<script src="js/changelog.js?v=0.342"></script>
+<script src="js/calc.js?v=0.342"></script>
 <script>
 // @ts-check
 // ════════════════════════════════════════
@@ -3928,7 +3928,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.341';
+var APP_VERSION='0.342';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -8511,49 +8511,49 @@ function axTestSync(){
 }
 
 </script>
-<script src="js/ampel.js?v=0.341"></script>
-<script src="picker.js?v=0.341"></script>
-<script src="js/health-sync.js?v=0.341"></script>
-<script src="js/sync-core.js?v=0.341"></script>
-<script src="js/baby.js?v=0.341"></script>
-<script src="js/baby-sleep.js?v=0.341"></script>
-<script src="js/baby-sleep-plan.js?v=0.341"></script>
-<script src="js/baby-meds.js?v=0.341"></script>
-<script src="js/baby-growth-data.js?v=0.341"></script>
-<script src="js/baby-growth.js?v=0.341"></script>
-<script src="js/baby-week.js?v=0.341"></script>
-<script src="js/baby-milestones.js?v=0.341"></script>
-<script src="js/baby-midwife.js?v=0.341"></script>
-<script src="js/shopping.js?v=0.341"></script>
-<script src="js/pantry.js?v=0.341"></script>
-<script src="js/partner.js?v=0.341"></script>
-<script src="js/alexa-sync.js?v=0.341"></script>
-<script src="js/dashboard.js?v=0.341"></script>
-<script src="js/features.js?v=0.341"></script>
-<script src="js/launch.js?v=0.341"></script>
-<script src="js/xlsx.js?v=0.341"></script>
-<script src="js/food-export.js?v=0.341"></script>
-<script src="js/mealplan.js?v=0.341"></script>
-<script src="js/book-swaps.js?v=0.341"></script>
-<script src="js/cookbook.js?v=0.341"></script>
-<script src="js/onedrive.js?v=0.341"></script>
-<script src="js/autosave.js?v=0.341"></script>
-<script src="js/recurring.js?v=0.341"></script>
-<script src="js/stats.js?v=0.341"></script>
-<script src="js/reminders.js?v=0.341"></script>
-<script src="js/templates.js?v=0.341"></script>
-<script src="js/offline-queue.js?v=0.341"></script>
-<script src="js/tour.js?v=0.341"></script>
-<script src="js/ui-catalog.js?v=0.341"></script>
-<script src="js/ui-actions.js?v=0.341"></script>
-<script src="js/ui-shell.js?v=0.341"></script>
-<script src="js/ui-home.js?v=0.341"></script>
-<script src="js/ui-baby.js?v=0.341"></script>
-<script src="js/ui-reminder-rules.js?v=0.341"></script>
-<script src="js/ui-priority.js?v=0.341"></script>
-<script src="js/ui-nutrition.js?v=0.341"></script>
-<script src="js/ui-household.js?v=0.341"></script>
-<script src="js/ui-settings.js?v=0.341"></script>
+<script src="js/ampel.js?v=0.342"></script>
+<script src="picker.js?v=0.342"></script>
+<script src="js/health-sync.js?v=0.342"></script>
+<script src="js/sync-core.js?v=0.342"></script>
+<script src="js/baby.js?v=0.342"></script>
+<script src="js/baby-sleep.js?v=0.342"></script>
+<script src="js/baby-sleep-plan.js?v=0.342"></script>
+<script src="js/baby-meds.js?v=0.342"></script>
+<script src="js/baby-growth-data.js?v=0.342"></script>
+<script src="js/baby-growth.js?v=0.342"></script>
+<script src="js/baby-week.js?v=0.342"></script>
+<script src="js/baby-milestones.js?v=0.342"></script>
+<script src="js/baby-midwife.js?v=0.342"></script>
+<script src="js/shopping.js?v=0.342"></script>
+<script src="js/pantry.js?v=0.342"></script>
+<script src="js/partner.js?v=0.342"></script>
+<script src="js/alexa-sync.js?v=0.342"></script>
+<script src="js/dashboard.js?v=0.342"></script>
+<script src="js/features.js?v=0.342"></script>
+<script src="js/launch.js?v=0.342"></script>
+<script src="js/xlsx.js?v=0.342"></script>
+<script src="js/food-export.js?v=0.342"></script>
+<script src="js/mealplan.js?v=0.342"></script>
+<script src="js/book-swaps.js?v=0.342"></script>
+<script src="js/cookbook.js?v=0.342"></script>
+<script src="js/onedrive.js?v=0.342"></script>
+<script src="js/autosave.js?v=0.342"></script>
+<script src="js/recurring.js?v=0.342"></script>
+<script src="js/stats.js?v=0.342"></script>
+<script src="js/reminders.js?v=0.342"></script>
+<script src="js/templates.js?v=0.342"></script>
+<script src="js/offline-queue.js?v=0.342"></script>
+<script src="js/tour.js?v=0.342"></script>
+<script src="js/ui-catalog.js?v=0.342"></script>
+<script src="js/ui-actions.js?v=0.342"></script>
+<script src="js/ui-shell.js?v=0.342"></script>
+<script src="js/ui-home.js?v=0.342"></script>
+<script src="js/ui-baby.js?v=0.342"></script>
+<script src="js/ui-reminder-rules.js?v=0.342"></script>
+<script src="js/ui-priority.js?v=0.342"></script>
+<script src="js/ui-nutrition.js?v=0.342"></script>
+<script src="js/ui-household.js?v=0.342"></script>
+<script src="js/ui-settings.js?v=0.342"></script>
 
 <div class="ov" id="b3HomePrefsOv" data-ui="b3" data-bg-close="b3HomePrefsOv"><div class="mod"><div class="mhd"><button type="button" class="mcl" data-act="closeOv" data-args='["b3HomePrefsOv"]' aria-label="Schnellaktionen schließen">✕</button><h2 class="mti">Schnellaktionen anpassen</h2></div><div class="mbd"><div id="b3HomePrefsBody"></div><button type="button" class="b3-primary" data-act="closeOv" data-args='["b3HomePrefsOv"]'>Fertig</button></div></div></div>
 <div class="ov" id="b3MealPrefsOv" data-ui="b3" data-bg-close="b3MealPrefsOv"><div class="mod"><div class="mhd"><button type="button" class="mcl" data-act="closeOv" data-args='["b3MealPrefsOv"]' aria-label="Hinweise schließen">✕</button><h2 class="mti">Mahlzeiten-Hinweise</h2></div><div class="mbd"><div id="b3MealPrefsBody"></div><button type="button" class="b3-primary" data-act="NTUIReminders.save">Einstellungen speichern</button></div></div></div>

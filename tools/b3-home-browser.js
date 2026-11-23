@@ -5,6 +5,12 @@ module.exports=async function home(page){
   const root=page.locator('#b3Root');
   assert.equal(await root.getByRole('heading',{name:'Gerade wichtig'}).count(),1);
   assert.equal(await root.getByText('Deine Bereiche',{exact:true}).count(),0);
+  const planHint=root.locator('[data-priority-id^="plan-"]');
+  if(await planHint.count()){
+    assert.equal(await planHint.getByRole('button',{name:'Heute ausblenden'}).isVisible(),false,'secondary hint options stay compact initially');
+    await planHint.locator('summary').click();await planHint.getByRole('button',{name:'Heute ausblenden'}).click();
+    assert.equal(await planHint.count(),0,'expanded explanation retains the real dismissal action');
+  }
   assert.match(await root.locator('.b3-next-side').textContent(),/Links/);
   assert.deepEqual(await page.evaluate(()=>S.ui.homeActions),['wickeln','foto','stillen'],'legacy launch bar imported in original order');
   await root.getByRole('button',{name:'Rechts starten',exact:true}).click();

@@ -2,6 +2,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.340',items:[
+    {icon:'🍽',text:'<b>Alle Bereiche verbunden</b>: Ernährung mit Planung, Kochbuch, Verlauf, Wasser, Aktivität und Fasten. Haushalt bündelt Einkauf, Vorrat und Wochenplan. Unter Mehr findest du auch versteckte Integrationen wie Alexa, Health, OneDrive und KI-Prompts über die Suche. Die App-Tour führt durch die neue Ansicht; alle bisherigen Editoren und Datenwege bleiben erhalten.',where:'Neue Ansicht → Ernährung / Haushalt / Mehr'},
+  ]},
   {v:'0.339',items:[
     {icon:'💡',text:'<b>Zurückhaltende Hinweise</b>: Gerade wichtig priorisiert laufende Vorgänge, vorhandene Termine, vorsichtige Schlafprognosen und echte Tagesaufgaben. Jeder Hinweis lässt sich erklären und ausblenden. Pro Mahlzeit: automatisch lernen, immer oder nie erinnern; später erinnern und für heute ausblenden. Feste Erinnerungen bleiben separat erhalten. Systemmeldungen sind standardmäßig aus.',where:'Neue Ansicht → Hinweise anpassen'},
   ]},

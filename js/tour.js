@@ -60,6 +60,18 @@ var STEPS=[
    x:'Fehler gefunden oder einen Wunsch? Der Käfer-Knopf schickt Feedback, auf Wunsch mit Bildschirmfoto.'}
 ];
 
+// Same explanations, adapted to the B3 owners and live surfaces.
+function steps(){
+  if(!window.NTUI||!NTUI.enabled())return STEPS;
+  var targets=[['nutrition','#mainScreen .sum'],['home','#b3Root .b3-date'],['home','#b3Root .b3-header'],['nutrition','#mealsCard .meals-grid'],['nutrition','#b3Nav .b3-plus'],['plan','#planOv .mod'],['book','#libraryOv .mod'],['nutrition','#exerciseCard'],['nutrition','#waterCard'],['shop','#shopOv .mod'],['pantry','#pantryOv .mod'],['nutrition','#fastCard'],['baby','#babyOv .mod'],['history','#historyScreen .main'],['trends','#statsScreen .main'],['more','#b3Content'],['more','#b3Catalog [data-args*="NTFeat.openCatalog"]'],['more','#b3Catalog [data-args*="NTSync.open"]'],['home','#feedbackFab']];
+  return STEPS.map(function(step,i){var out=Object.assign({},step,{tab:targets[i][0],sel:targets[i][1]});
+    if(i===2)out.x='Mehr öffnet den vollständigen Funktionskatalog. Dort findest du Einstellungen, Daten, Verbindungen, Hilfe und Anpassungen deiner Navigation.';
+    if(i===4)out.x='Erfassen folgt dem Bereich: Ernährung öffnet alle sieben Picker-Methoden, Baby alle elf Typen, Haushalt Einkauf oder Vorrat.';
+    if(i===15)out.x='Alle Funktionen sind suchbar, unabhängig von deinen drei frei belegbaren Navigationsplätzen. Auch KI, Alexa, Health, OneDrive, Backup und persönliche Babyknöpfe bleiben erreichbar.';
+    return out;
+  });
+}
+
 var cur=-1;
 var root=null;
 
@@ -88,6 +100,7 @@ function visible(node){
 }
 
 function showTab(tab){
+  if(window.NTUI&&NTUI.enabled()){NTUI.go(tab==='main'?'nutrition':tab);return;}
   var b=/** @type {HTMLElement|null} */(document.querySelector('#mainScreen .bnav .ni[data-tab="'+tab+'"]'));
   var scr={main:'mainScreen',history:'historyScreen',trends:'statsScreen',more:'moreScreen'}[tab];
   var on=el(scr);
@@ -96,7 +109,7 @@ function showTab(tab){
 
 function place(){
   if(cur<0||!root)return;
-  var s=STEPS[cur];
+  var s=steps()[cur];
   var target=document.querySelector(s.sel);
   var spot=el('tourSpot'), card=el('tourCard');
   if(!spot||!card)return;
@@ -129,7 +142,7 @@ function place(){
 function show(i){
   if(i<0||i>=STEPS.length)return;
   cur=i;
-  var s=STEPS[i];
+  var s=steps()[i];
   build();
   showTab(s.tab);
   var t=el('tourTitle'), x=el('tourText'), o=el('tourOff'), c=el('tourCount'), p=el('tourPrev'), n=el('tourNext');
@@ -178,7 +191,7 @@ function end(){
   window.removeEventListener('resize',place);
   window.removeEventListener('scroll',place,true);
   document.removeEventListener('keydown',onKey);
-  showTab('main');
+  if(window.NTUI&&NTUI.enabled())NTUI.go('home');else showTab('main');
   try{window.scrollTo(0,0);}catch(e){}
 }
 
@@ -186,12 +199,12 @@ function end(){
 function renderList(){
   var box=el('helpTourList');
   if(!box)return;
-  box.innerHTML=STEPS.map(function(s,i){
+  box.innerHTML=steps().map(function(s,i){
     return '<button type="button" class="tour-chip" data-act="NTTour.start" data-args="['+i+']">'+esc(s.ic+' '+s.t)+'</button>';
   }).join('');
 }
 
 renderList();
 
-window.NTTour={start:start,next:next,prev:prev,end:end,steps:function(){return STEPS;},active:function(){return cur>=0;}};
+window.NTTour={start:start,next:next,prev:prev,end:end,steps:steps,active:function(){return cur>=0;}};
 })();

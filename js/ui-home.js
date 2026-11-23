@@ -17,11 +17,14 @@ function allowed(a){
   var f=id&&NTFeat.byId(id);return !f||!NTFeat.isOff(f);
 }
 function btn(label,act,args,primary){return '<button type="button"'+(primary?' class="b3-primary"':'')+' data-act="'+act+'" data-args="'+esc(JSON.stringify(args||[]))+'">'+esc(label)+'</button>';}
+function quickButton(a,label){
+  return '<button type="button" data-act="NTUIHome.run" data-args="'+esc(JSON.stringify([a.id]))+'"><span class="b3-quick-icon" aria-hidden="true">'+esc(a.ic)+'</span><span class="b3-quick-label">'+esc(label)+'</span></button>';
+}
 function text(id){var el=document.getElementById(id);return el?el.textContent:'';}
 function breast(openLink){
   if(!S.babyOn)return '';
   var n=NTBaby.nextSide(S.currentDate),run=NTBaby.runningFeed();
-  var h='<section class="b3-card" aria-label="Baby-Kurzstatus"><h2>'+esc((S.baby&&S.baby.name)||'Baby')+'</h2>';
+  var h='<section class="b3-card b3-baby-card" aria-label="Baby-Kurzstatus"><h2>👶 '+esc((S.baby&&S.baby.name)||'Baby')+'</h2>';
   h+='<p class="b3-next-side">Nächste Brust: '+(n?esc(NTBaby.SIDES[n]):'Noch kein Vorschlag')+'</p><p class="b3-muted">'+(n?'Vorschlag aus letztem Stillen':'Links oder rechts selbst auswählen')+'</p>';
   h+='<div class="b3-row">';
   if(!run&&n)h+=btn('Stillen '+NTBaby.SIDES[n],'NTBaby.startFeed',[n],true);
@@ -42,15 +45,15 @@ function render(){
   var n=S.babyOn?NTBaby.nextSide(S.currentDate):'',run=S.babyOn&&NTBaby.runningFeed();
   var quick=actions().map(function(id){return NTLaunch.ACTIONS.find(function(a){return a.id===id;});}).filter(function(a){return a&&allowed(a);});
   var h='<div class="b3-row b3-date">'+btn('‹','NTUI.changeDay',[-1])+ '<p>'+esc(new Date(S.currentDate+'T12:00:00').toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'long'}))+'</p>'+btn('›','NTUI.changeDay',[1])+'</div>';
-  h+='<section aria-labelledby="b3PriorityTitle"><div class="b3-row b3-between"><h2 id="b3PriorityTitle">Gerade wichtig</h2>'+btn('Hinweise anpassen','NTUIReminders.open')+'</div>'+priority()+'</section>';
-  h+='<section aria-labelledby="b3QuickTitle"><div class="b3-row b3-between"><h2 id="b3QuickTitle">Schnell erfassen</h2>'+btn('Anpassen','NTUIHome.configure')+'</div><div class="b3-quick">';
+  h+='<section aria-labelledby="b3PriorityTitle"><div class="b3-section-head"><h2 id="b3PriorityTitle">Gerade wichtig</h2>'+btn('Hinweise anpassen','NTUIReminders.open')+'</div>'+priority()+'</section>';
+  h+='<section aria-labelledby="b3QuickTitle"><div class="b3-section-head"><h2 id="b3QuickTitle">Schnell erfassen</h2>'+btn('Anpassen','NTUIHome.configure')+'</div><div class="b3-quick">';
   h+=quick.map(function(a){var label=a.label;
     if(a.id==='stillen')label=run?'Stillen stoppen':('Stillen'+(n?' '+NTBaby.SIDES[n]:' · wählen'));
     if(a.id==='schlaf'&&S.babyOn&&NTBaby.openSleep(NTBaby.today()))label='Schlaf beenden';
-    return btn(a.ic+' '+label,'NTUIHome.run',[a.id]);
+    return quickButton(a,label);
   }).join('')+'</div></section>';
   h+='<h2 class="b3-overview-title">Dein Tagesüberblick</h2>'+breast();
-  h+='<section class="b3-card"><h2>Ernährung</h2><p><strong>'+esc(text('totKcal'))+' kcal</strong> erfasst · '+esc(text('remKcal'))+' kcal verfügbar</p><p class="b3-muted">Eiweiß '+esc(text('tP'))+' · Kohlenhydrate '+esc(text('tC'))+' · Fett '+esc(text('tF'))+'</p><p class="b3-muted">Wasser: '+esc(text('wVal'))+'</p>'+btn('Ernährung öffnen','NTUI.go',['nutrition'])+'</section>';
+  h+='<section class="b3-card b3-summary-card"><h2>🥗 Ernährung</h2><div class="b3-summary-metrics"><div class="b3-metric"><strong>'+esc(text('totKcal'))+' kcal</strong>erfasst</div><div class="b3-metric"><strong>'+esc(text('remKcal'))+' kcal</strong>verfügbar</div></div><p class="b3-muted">Eiweiß '+esc(text('tP'))+' · Kohlenhydrate '+esc(text('tC'))+' · Fett '+esc(text('tF'))+'</p><p class="b3-muted">Wasser: '+esc(text('wVal'))+'</p>'+btn('Ernährung öffnen','NTUI.go',['nutrition'])+'</section>';
   root.innerHTML=h;
 }
 function run(id){

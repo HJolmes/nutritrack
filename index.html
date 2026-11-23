@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.335"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.336"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.335"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.336"></script>
 <script>
   // @ts-check
   (function(){
@@ -849,6 +849,30 @@ body.tour-open #feedbackFab{display:flex!important;}
 [data-ui="b3"] .b3-status[data-kind="assumed"]{color:var(--b3-muted);border-style:dashed;}
 [data-ui="b3"] .b3-status[data-kind="forecast"]{color:var(--b3-warning);border-style:dotted;}
 @media(prefers-reduced-motion:reduce){[data-ui="b3"] *{animation:none!important;transition:none!important;scroll-behavior:auto!important;}}
+
+/* B3 shell: classic DOM remains intact for recovery and existing workflows. */
+#b3Root{padding:1rem 1rem calc(6.5rem + env(safe-area-inset-bottom,0px));}
+#b3Root .b3-header{display:flex;justify-content:space-between;align-items:center;gap:.5rem;margin-bottom:1rem;}
+#b3Root .b3-header button{flex-shrink:0;}
+#b3Nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(100%,430px);display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.15rem;z-index:450;background:var(--b3-card);border-top:1px solid var(--b3-line);padding:.4rem .3rem calc(.4rem + env(safe-area-inset-bottom,0px));}
+#b3Nav button{border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:.4rem .1rem;min-width:0;border-radius:.75rem;line-height:1.2;min-height:56px;}
+#b3Nav button span{font-size:1.3rem;}
+#b3Nav small{font-size:.75rem;line-height:1.3;overflow-wrap:anywhere;}
+#b3Nav [aria-current="page"]{color:var(--b3-accent);background:var(--b3-accent-soft);font-weight:700;}
+#b3Nav button.b3-plus{background:var(--b3-accent);color:#fff;}
+body.b3-on .bnav{display:none!important;}
+body.b3-on:not(.b3-classic-screen)>.screen{display:none!important;}
+body.b3-on.b3-classic-screen #b3Root{padding-bottom:0;}
+body.b3-on .screen>.hdr{display:none;}
+body.b3-nutrition :is(#babyCard,#shopCard,#pantryCard,#planCard,#bookCard,#partnerCard,#launchBar){display:none!important;}
+body.b3-on .ov[data-b3-page]{padding-bottom:calc(88px + env(safe-area-inset-bottom,0px));align-items:stretch;}
+body.b3-on .ov[data-b3-page]>.mod{max-height:none;border-radius:0;}
+body.b3-on .ov[data-b3-page] .mbd{overflow:auto;}
+body.b3-on :is(#b3ActionBody,#b3PrefsBody){display:grid;gap:.6rem;}
+body.b3-on #b3Catalog .b3-catalog-row{display:block;width:100%;text-align:left;margin-block:.4rem;}
+body.b3-on.b3-modal #b3Nav,body.b3-on.kb-open #b3Nav{display:none;}
+body.b3-on .ov[data-ui="b3"]{--mu:#685e55;--g1:#a93e1c;--g2:#a93e1c;}
+body.b3-on .ov[data-ui="b3"] .mod{color:var(--b3-ink);}
 </style>
 </head>
 <body>
@@ -1373,6 +1397,7 @@ body.tour-open #feedbackFab{display:flex!important;}
       <div class="lr-body"><div class="lr-name">Funktionen</div><div class="lr-sub">Ein- und ausschalten, Reihenfolge auf „Heute"</div></div>
       <div class="lr-arrow">›</div>
     </div>
+    <button type="button" data-act="NTUI.enable" style="margin:8px 0;min-height:44px;">Neue Ansicht ausprobieren</button>
     <div class="list-row" data-act="NTLaunch.open">
       <div class="lr-ic">⚡</div>
       <div class="lr-body"><div class="lr-name">Schnellauswahl</div><div class="lr-sub">Stillen, Wickeln, Mahlzeit … mit einem Tipp</div></div>
@@ -1390,7 +1415,7 @@ body.tour-open #feedbackFab{display:flex!important;}
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.335</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.336</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -3828,15 +3853,15 @@ body.tour-open #feedbackFab{display:flex!important;}
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.335"></script>
-<script src="js/single-tab.js?v=0.335"></script>
-<script src="js/fooddb.js?v=0.335"></script>
-<script src="js/fooddb-usda.js?v=0.335"></script>
-<script src="js/restaurants.js?v=0.335"></script>
-<script src="js/metdb.js?v=0.335"></script>
-<script src="js/idb-photos.js?v=0.335"></script>
-<script src="js/changelog.js?v=0.335"></script>
-<script src="js/calc.js?v=0.335"></script>
+<script src="js/actions.js?v=0.336"></script>
+<script src="js/single-tab.js?v=0.336"></script>
+<script src="js/fooddb.js?v=0.336"></script>
+<script src="js/fooddb-usda.js?v=0.336"></script>
+<script src="js/restaurants.js?v=0.336"></script>
+<script src="js/metdb.js?v=0.336"></script>
+<script src="js/idb-photos.js?v=0.336"></script>
+<script src="js/changelog.js?v=0.336"></script>
+<script src="js/calc.js?v=0.336"></script>
 <script>
 // @ts-check
 // ════════════════════════════════════════
@@ -3850,13 +3875,13 @@ body.tour-open #feedbackFab{display:flex!important;}
 // ════════════════════════════════════════
 // SECTION: STATE
 // ════════════════════════════════════════
-var S={apiKey:'',name:'Du',goal:2000,goalManual:false,weight:0,height:0,age:0,gender:'',activity:'',pregnant:/** @type {0|'0'|'1'|'2'|'3'|'et'} */ (0),pregnantET:'',pregWarn:false,nursing:/** @type {0|'0'|'excl'|'part'} */ (0),nursWarn:false,babyOn:false,baby:{name:'',birth:''},babyLog:{},babyTomb:{},babyMiles:{},babyQs:[],babyQuick:null,babySync:null,shopList:[],shopTomb:{},shopSync:null,shopRecent:[],shopCats:[],shopCatMem:{},pantry:[],pantryTomb:{},pantryLocs:null,links:[],linksMigrated:0,planTomb:{},goalWeight:0,goalDate:'',goalAchievedShown:'',goalStart:null,dietPrefs:[],dietFree:'',savedDietFree:[],dietWarn:false,macroTargets:{protein:0,carbs:0,fat:0},macroGoalMode:'percent',macroGoalG:{protein:0,carbs:0,fat:0},reminders:[],weightLog:{},portionMemory:{},waterGoal:8,waterUnit:250,mealTemplates:[],recurringMeals:[],exerciseLibrary:[],dashOrder:null,dashHidden:null,launchBar:/** @type {string[]} */ ([]),mealPlan:{},planApplied:{},cookLog:{},currentDate:'',days:{}};
+var S={ui:/** @type {any} */ (null),apiKey:'',name:'Du',goal:2000,goalManual:false,weight:0,height:0,age:0,gender:'',activity:'',pregnant:/** @type {0|'0'|'1'|'2'|'3'|'et'} */ (0),pregnantET:'',pregWarn:false,nursing:/** @type {0|'0'|'excl'|'part'} */ (0),nursWarn:false,babyOn:false,baby:{name:'',birth:''},babyLog:{},babyTomb:{},babyMiles:{},babyQs:[],babyQuick:null,babySync:null,shopList:[],shopTomb:{},shopSync:null,shopRecent:[],shopCats:[],shopCatMem:{},pantry:[],pantryTomb:{},pantryLocs:null,links:[],linksMigrated:0,planTomb:{},goalWeight:0,goalDate:'',goalAchievedShown:'',goalStart:null,dietPrefs:[],dietFree:'',savedDietFree:[],dietWarn:false,macroTargets:{protein:0,carbs:0,fat:0},macroGoalMode:'percent',macroGoalG:{protein:0,carbs:0,fat:0},reminders:[],weightLog:{},portionMemory:{},waterGoal:8,waterUnit:250,mealTemplates:[],recurringMeals:[],exerciseLibrary:[],dashOrder:null,dashHidden:null,launchBar:/** @type {string[]} */ ([]),mealPlan:{},planApplied:{},cookLog:{},currentDate:'',days:{}};
 // Tracking für Settings-Session: manuelle Eingabe vs. „Kalorienbedarf berechnen"
 var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.335';
+var APP_VERSION='0.336';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -4313,6 +4338,7 @@ function _bootApp(){
   if(window.NTPlan&&typeof NTPlan.boot==='function')NTPlan.boot();
   // Kochbuch: Kachel fuellen, beim ersten Start den Grundbestand nachladen.
   if(window.NTBook)NTBook.boot();
+  if(_mainShown&&window.NTUI)NTUI.boot({screen:switchTab,book:openLibrary});
   // iOS Safari/PWA: Bottom-Nav nach Viewport-Shift wieder anheften (#177)
   var _vvTimer=null;
   function _fixViewportChromeDebounced(){
@@ -4816,7 +4842,7 @@ function doSetup(){
   S.goal=parseInt(document.getElementById('s_goal').value)||2000;
   S.weight=parseInt(document.getElementById('s_weight').value)||0;
   S.height=parseInt(document.getElementById('s_height').value)||0;
-  saveS();showMain();
+  saveS();showMain();if(window.NTUI)NTUI.boot({screen:switchTab,book:openLibrary});
 }
 
 // ════════════════════════════════════════
@@ -7807,6 +7833,7 @@ function switchTab(tab){
   if(tab==='history')renderHistory();
   if(tab==='more')renderMore();
   if(tab==='main')window._mealDetailOpen=null;
+  if(window.NTUI)NTUI.legacy(tab);
   try{window.scrollTo(0,0);}catch(e){}
   if(typeof _fixViewportChrome==='function')_fixViewportChrome();
 }
@@ -7956,13 +7983,14 @@ function goToDay(k){S.currentDate=k;NTRecur.apply(k);saveS();switchTab('main');r
 
 // ── MORE Hub ──
 function renderMore(){/* statisch, kein Render nötig */}
-function openOv(id){document.getElementById(id).classList.add('open');}
+function openOv(id){document.getElementById(id).classList.add('open');if(window.NTUI)NTUI.opened(id);}
 function closeOv(id){
   document.getElementById(id).classList.remove('open');
   if(id==='pickerOv'){NTPicker.pickerStopScan();}
   // Rezept-Editor zu (✕, Grund, Speichern): Entwurf verwerfen bzw. mit
   // Rueckfrage, wenn etwas geaendert wurde (js/cookbook.js).
   if(id==='recEditOv'&&window.NTBook)NTBook.editClosed();
+  if(window.NTUI)NTUI.closed(id);
 }
 function bgClose(e,id){if(e.target.id===id)closeOv(id);}
 
@@ -8432,39 +8460,51 @@ function axTestSync(){
 }
 
 </script>
-<script src="js/ampel.js?v=0.335"></script>
-<script src="picker.js?v=0.335"></script>
-<script src="js/health-sync.js?v=0.335"></script>
-<script src="js/sync-core.js?v=0.335"></script>
-<script src="js/baby.js?v=0.335"></script>
-<script src="js/baby-sleep.js?v=0.335"></script>
-<script src="js/baby-sleep-plan.js?v=0.335"></script>
-<script src="js/baby-meds.js?v=0.335"></script>
-<script src="js/baby-growth-data.js?v=0.335"></script>
-<script src="js/baby-growth.js?v=0.335"></script>
-<script src="js/baby-week.js?v=0.335"></script>
-<script src="js/baby-milestones.js?v=0.335"></script>
-<script src="js/baby-midwife.js?v=0.335"></script>
-<script src="js/shopping.js?v=0.335"></script>
-<script src="js/pantry.js?v=0.335"></script>
-<script src="js/partner.js?v=0.335"></script>
-<script src="js/alexa-sync.js?v=0.335"></script>
-<script src="js/dashboard.js?v=0.335"></script>
-<script src="js/features.js?v=0.335"></script>
-<script src="js/launch.js?v=0.335"></script>
-<script src="js/xlsx.js?v=0.335"></script>
-<script src="js/food-export.js?v=0.335"></script>
-<script src="js/mealplan.js?v=0.335"></script>
-<script src="js/book-swaps.js?v=0.335"></script>
-<script src="js/cookbook.js?v=0.335"></script>
-<script src="js/onedrive.js?v=0.335"></script>
-<script src="js/autosave.js?v=0.335"></script>
-<script src="js/recurring.js?v=0.335"></script>
-<script src="js/stats.js?v=0.335"></script>
-<script src="js/reminders.js?v=0.335"></script>
-<script src="js/templates.js?v=0.335"></script>
-<script src="js/offline-queue.js?v=0.335"></script>
-<script src="js/tour.js?v=0.335"></script>
+<script src="js/ampel.js?v=0.336"></script>
+<script src="picker.js?v=0.336"></script>
+<script src="js/health-sync.js?v=0.336"></script>
+<script src="js/sync-core.js?v=0.336"></script>
+<script src="js/baby.js?v=0.336"></script>
+<script src="js/baby-sleep.js?v=0.336"></script>
+<script src="js/baby-sleep-plan.js?v=0.336"></script>
+<script src="js/baby-meds.js?v=0.336"></script>
+<script src="js/baby-growth-data.js?v=0.336"></script>
+<script src="js/baby-growth.js?v=0.336"></script>
+<script src="js/baby-week.js?v=0.336"></script>
+<script src="js/baby-milestones.js?v=0.336"></script>
+<script src="js/baby-midwife.js?v=0.336"></script>
+<script src="js/shopping.js?v=0.336"></script>
+<script src="js/pantry.js?v=0.336"></script>
+<script src="js/partner.js?v=0.336"></script>
+<script src="js/alexa-sync.js?v=0.336"></script>
+<script src="js/dashboard.js?v=0.336"></script>
+<script src="js/features.js?v=0.336"></script>
+<script src="js/launch.js?v=0.336"></script>
+<script src="js/xlsx.js?v=0.336"></script>
+<script src="js/food-export.js?v=0.336"></script>
+<script src="js/mealplan.js?v=0.336"></script>
+<script src="js/book-swaps.js?v=0.336"></script>
+<script src="js/cookbook.js?v=0.336"></script>
+<script src="js/onedrive.js?v=0.336"></script>
+<script src="js/autosave.js?v=0.336"></script>
+<script src="js/recurring.js?v=0.336"></script>
+<script src="js/stats.js?v=0.336"></script>
+<script src="js/reminders.js?v=0.336"></script>
+<script src="js/templates.js?v=0.336"></script>
+<script src="js/offline-queue.js?v=0.336"></script>
+<script src="js/tour.js?v=0.336"></script>
+<script src="js/ui-catalog.js?v=0.336"></script>
+<script src="js/ui-actions.js?v=0.336"></script>
+<script src="js/ui-shell.js?v=0.336"></script>
+
+<section id="b3Root" data-ui="b3" hidden aria-label="NutriTrack">
+  <header class="b3-header"><button type="button" data-act="NTUI.back" aria-label="Zurück">‹</button><h1 id="b3Title" tabindex="-1">Heute</h1><button type="button" data-act="NTUI.go" data-args='["more"]' aria-label="Mehr und alle Funktionen">☰</button></header>
+  <main id="b3Content"></main>
+  <nav id="b3Nav" aria-label="Hauptnavigation"></nav>
+</section>
+<div class="ov" id="b3ActionOv" data-ui="b3" data-bg-close="b3ActionOv"><div class="mod"><div class="mhd"><button type="button" class="mcl" data-act="closeOv" data-args='["b3ActionOv"]' aria-label="Erfassen schließen">✕</button><h2 id="b3ActionTitle" class="mti">Was erfassen?</h2></div><div id="b3ActionBody" class="mbd"></div></div></div>
+<div class="ov" id="b3PrefsOv" data-ui="b3" data-bg-close="b3PrefsOv"><div class="mod"><div class="mhd"><button type="button" class="mcl" data-act="closeOv" data-args='["b3PrefsOv"]' aria-label="Anpassung schließen">✕</button><h2 class="mti">Navigation anpassen</h2></div><div class="mbd"><div id="b3PrefsBody"></div><button type="button" class="b3-primary" data-act="NTUI.savePreferences">Speichern</button></div></div></div>
+
 <button type="button" id="feedbackFab" class="fb-fab" onclick="openFeedback()" title="Feedback senden" aria-label="Feedback senden">🐛</button>
 <div class="ov" id="odReconnectOv" onclick="bgClose(event,'odReconnectOv')">
   <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:28px 24px 32px;max-width:480px;width:100%;text-align:center;">

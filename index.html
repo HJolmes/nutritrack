@@ -866,7 +866,8 @@ body.b3-on.b3-classic-screen #b3Root{padding-bottom:0;}
 body.b3-on .screen>.hdr{display:none;}
 body.b3-nutrition :is(#babyCard,#shopCard,#pantryCard,#planCard,#bookCard,#partnerCard,#launchBar){display:none!important;}
 body.b3-on .ov[data-b3-page]{padding-bottom:calc(88px + env(safe-area-inset-bottom,0px));align-items:stretch;}
-body.b3-on .ov[data-b3-page]>.mod{max-height:none;border-radius:0;}
+body.b3-on .ov[data-b3-page]>.mod{top:0;bottom:calc(88px + env(safe-area-inset-bottom,0px));height:auto;max-height:none;border-radius:0;scroll-padding-bottom:1rem;}
+body.b3-on.kb-open .ov[data-b3-page]>.mod{bottom:var(--kbh,0px);max-height:var(--vvh,100vh);}
 body.b3-on .ov[data-b3-page] .mbd{overflow:auto;}
 body.b3-on :is(#b3ActionBody,#b3PrefsBody){display:grid;gap:.6rem;}
 body.b3-on #b3Catalog .b3-catalog-row{display:block;width:100%;text-align:left;margin-block:.4rem;}

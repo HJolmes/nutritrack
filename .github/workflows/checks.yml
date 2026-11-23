@@ -219,4 +219,6 @@ jobs:
         with:
           name: b3-mobile-baseline
           path: .b3-artifacts/
+          include-hidden-files: true
+          if-no-files-found: error
           retention-days: 30

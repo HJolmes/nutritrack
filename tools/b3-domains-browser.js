@@ -100,6 +100,14 @@ module.exports=async function domains(page,output,width){
     assert.equal(state.q,accept?3.9:4);
     assert.equal(state.lots.find(lot=>lot.mhd===undoCheck.first).q,accept?0.9:1,'earliest lot is used first');
   }
+  const repeat=await page.evaluate(()=>{
+    const first=NTShop.add('B3 Haferflocken','500 g','','');NTShop.toggle(first.id);
+    const second=NTShop.add('B3 Haferflocken','200 g','','');NTShop.toggle(second.id);
+    const stock=S.pantry.find(p=>p.n==='B3 Haferflocken'),bought=stock.q;
+    NTShop.toggle(second.id);
+    return {bought,remaining:stock.q};
+  });
+  assert.deepEqual(repeat,{bought:1.4,remaining:1},'reopening a completed list item starts a new purchase and keeps its previous lot');
   // Every settings/integration entry is reached through the searchable catalogue.
   await page.evaluate(()=>NTUI.go('more'));
   await page.getByRole('button',{name:'Alle Funktionen',exact:true}).click();

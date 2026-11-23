@@ -1069,7 +1069,7 @@ test('pantryBought: Stück, Packungen, Gramm, ohne Menge bis zur Mindestmenge', 
   assert.equal(C.pantryBought('3 Stück', {}), 3);
   assert.equal(C.pantryBought('2 Packungen', {}), 2);
   assert.equal(C.pantryBought('1 kg', { g: 500 }), 2);
-  assert.equal(C.pantryBought('200 g', { g: 500 }), 1);
+  assert.equal(C.pantryBought('200 g', { g: 500 }), 0.4);
   assert.equal(C.pantryBought('', { q: 1, min: 4 }), 3);
   assert.equal(C.pantryBought('', {}), 1);
   assert.equal(C.pantryBought('500 g', {}), 1);

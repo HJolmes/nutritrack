@@ -290,9 +290,9 @@ function onBought(shopItem,done){
   }
   var n=pantryBought(shopItem.q,it);
   var e=refill(it,n,'zettel');
-  if(e)shopItem.stock={pid:it.id,n:n,log:e.id,lot:e.lots[0].id};
+  if(e)shopItem.stock={pid:it.id,n:e.d,log:e.id,lot:e.lots[0].id};
   touch(it);
-  showToast('Vorrat: '+(it.ic||'')+' '+it.n+' +'+fmtN(n));
+  if(e)showToast('Vorrat: '+(it.ic||'')+' '+it.n+' +'+fmtN(e.d));
 }
 
 // ── Kochbuch: „Fertig gekocht“ zieht ab ───────────────────────────────────

@@ -328,7 +328,7 @@ function add(name,qty,c,ic,opts){
     // Abgehakt heisst gekauft: der alte Bedarf ist erledigt, es gilt nur die
     // neue Menge — sonst stuenden gekaufte 500 g + neue 400 g als 900 g da (#243).
     var bought=!!ex.d;
-    if(bought){ex.d=0;delete ex.da;delete ex.rc;delete ex.pre;}
+    if(bought){ex.d=0;delete ex.da;delete ex.rc;delete ex.pre;delete ex.stock;}
     if(qty)ex.q=(opts.mergeQty&&!bought)?mergeQty(ex.q,qty):qty;
     if(opts.recipe)tagSource(ex,opts.recipe,!bought);
     ex.rev=nextRev();

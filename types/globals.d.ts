@@ -37,3 +37,5 @@ declare var NTUI: any; declare var NTUICatalog: any; declare var NTUIActions: an
 declare var NTUIHome: any;
 
 declare var NTUIBaby: any;
+
+declare var NTUIReminders: any; declare var NTUIPriority: any;

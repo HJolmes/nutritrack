@@ -31,6 +31,7 @@ function breast(openLink){
   if(openLink!==false)h+=btn('Baby öffnen','NTUI.go',['baby']);return h+'</section>';
 }
 function priority(){
+  if(window.NTUIPriority)return NTUIPriority.html();
   var h='',run=S.babyOn&&NTBaby.runningFeed(),sleep=S.babyOn&&NTBaby.openSleep(NTBaby.today());
   if(run)h+='<article class="b3-card b3-active"><h3>Stillen '+esc(NTBaby.SIDES[run.side]||'')+' läuft</h3>'+NTBaby.feedLineHtml()+'</article>';
   if(sleep)h+='<article class="b3-card'+(run?'':' b3-active')+'"><h3>Schlaf läuft</h3><p>Seit '+esc(sleep.e.from)+'</p>'+btn('Wach jetzt','NTBaby.endSleep',[sleep.e.id],true)+'</article>';
@@ -41,7 +42,7 @@ function render(){
   var n=S.babyOn?NTBaby.nextSide(S.currentDate):'',run=S.babyOn&&NTBaby.runningFeed();
   var quick=actions().map(function(id){return NTLaunch.ACTIONS.find(function(a){return a.id===id;});}).filter(function(a){return a&&allowed(a);});
   var h='<div class="b3-row b3-date">'+btn('‹','NTUI.changeDay',[-1])+ '<p>'+esc(new Date(S.currentDate+'T12:00:00').toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'long'}))+'</p>'+btn('›','NTUI.changeDay',[1])+'</div>';
-  h+='<section aria-labelledby="b3PriorityTitle"><h2 id="b3PriorityTitle">Gerade wichtig</h2>'+priority()+'</section>';
+  h+='<section aria-labelledby="b3PriorityTitle"><div class="b3-row b3-between"><h2 id="b3PriorityTitle">Gerade wichtig</h2>'+btn('Hinweise anpassen','NTUIReminders.open')+'</div>'+priority()+'</section>';
   h+='<section aria-labelledby="b3QuickTitle"><div class="b3-row b3-between"><h2 id="b3QuickTitle">Schnell erfassen</h2>'+btn('Anpassen','NTUIHome.configure')+'</div><div class="b3-quick">';
   h+=quick.map(function(a){var label=a.label;
     if(a.id==='stillen')label=run?'Stillen stoppen':('Stillen'+(n?' '+NTBaby.SIDES[n]:' · wählen'));

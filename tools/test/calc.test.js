@@ -36,6 +36,54 @@ const plain = (o) => JSON.parse(JSON.stringify(o)); // Objekte aus dem Kontext v
 const zero = { kcal: 0, protein: 0, carbs: 0, fat: 0, sugar: 0, fiber: 0, salt: 0 };
 const emptyDay = () => ({ meals: { breakfast: [], lunch: [], dinner: [], snack: [] }, water: 0, exercise: [] });
 
+function learnedDays(C,slot='lunch',count=21){
+  const days={};for(let i=1;i<=count;i++){const key=C.addDays('2026-11-23',-i);days[key]=emptyDay();days[key].meals[slot]=[{kcal:400,addedAt:new Date(key+'T13:00:00').getTime()}];days[key].meals.dinner=[{kcal:500,addedAt:key+'T19:00:00+01:00'}];}return days;
+}
+test('B3: 21 used lunch/dinner days never imply a missing breakfast; Always/Never override learning',()=>{
+  const C=load({}),days=learnedDays(C),key='2026-11-23',now=new Date(key+'T08:05:00').getTime();
+  const before=JSON.stringify(days),pattern=C.uiMealPattern(days,'breakfast',key,{});
+  assert.equal(pattern.days,21);assert.equal(pattern.observed,0);assert.equal(pattern.regular,false);
+  assert.equal(C.uiMealReminder(days,'breakfast',key,now,{mode:'auto'},pattern),null);
+  assert.ok(C.uiMealReminder(days,'breakfast',key,now,{mode:'always',time:'08:00'},pattern));
+  assert.equal(C.uiMealReminder(days,'breakfast',key,now,{mode:'never',time:'08:00'},pattern),null);
+  assert.equal(JSON.stringify(days),before);assert.equal(C.saved,0);
+});
+test('B3: pauses, compressed days and backfilled timestamps are not fabricated learning evidence',()=>{
+  const C=load({}),key='2026-11-23',days=learnedDays(C,'lunch',13);
+  assert.equal(C.uiMealPattern(days,'lunch',key,{}).regular,false);
+  days[C.addDays(key,-14)]={_compressed:true,kcal:1000};
+  assert.equal(C.uiMealPattern(days,'lunch',key,{}).days,13);
+  for(let i=14;i<=28;i++)days[C.addDays(key,-i)]=emptyDay();
+  assert.equal(C.uiMealPattern(days,'lunch',key,{}).days,13);
+  const full=learnedDays(C);for(const day of Object.values(full))day.meals.lunch[0].addedAt=new Date(key+'T13:00:00').getTime();
+  const pattern=C.uiMealPattern(full,'lunch',key,{});assert.equal(pattern.timed,0);
+  assert.equal(C.uiMealReminder(full,'lunch',key,new Date(key+'T13:05:00').getTime(),{mode:'auto'},pattern),null);
+});
+test('B3: typical window uses median and spread; planned/recurring meals cannot teach tracking time',()=>{
+  const C=load({}),days=learnedDays(C),key='2026-11-23';
+  days[C.addDays(key,-1)].meals.lunch[0].addedAt=new Date(C.addDays(key,-1)+'T02:00:00').getTime();
+  days[C.addDays(key,-2)].meals.lunch[0]._fromPlan=true;
+  days[C.addDays(key,-3)].meals.lunch[0]._recurId='demo';
+  const p=C.uiMealPattern(days,'lunch',key,{});assert.equal(p.minute,13*60);assert.equal(p.timed,19);
+  assert.ok(C.uiMealReminder(days,'lunch',key,new Date(key+'T13:05:00').getTime(),{mode:'auto'},p));
+  assert.equal(C.uiMealReminder(days,'lunch',key,new Date(key+'T09:00:00').getTime(),{mode:'auto'},p),null);
+  assert.equal(C.uiMealPattern(days,'lunch',key,{since:key}).days,0);
+});
+test('B3: a logged meal, daily dismissal and snooze prevent a second generated hint',()=>{
+  const C=load({}),days=learnedDays(C),key='2026-11-23',now=new Date(key+'T13:05:00').getTime(),p=C.uiMealPattern(days,'lunch',key,{});
+  assert.equal(C.uiMealReminder(days,'lunch',key,now,{mode:'always',time:'13:00',dismissedDay:key},p),null);
+  assert.equal(C.uiMealReminder(days,'lunch',key,now,{mode:'auto',snoozeUntil:now+1000},p),null);
+  assert.ok(C.uiMealReminder(days,'lunch',key,now+31*60000,{mode:'always',time:'13:00',snoozeUntil:now+30*60000},p),'explicit snooze reopens the same hint after the original window');
+  days[key]=emptyDay();days[key].meals.lunch=[{kcal:400}];
+  assert.equal(C.uiMealReminder(days,'lunch',key,now,{mode:'always',time:'13:00'},p),null);
+});
+test('B3 priority keeps active logs, expires optional hints, is deterministic and caps the home at two',()=>{
+  const C=load({}),now=100,candidates=[{id:'meal',priority:3,kind:'hint',expiresAt:200},{id:'feed',priority:0,kind:'running'},{id:'stale',priority:1,kind:'hint',expiresAt:50},{id:'sleep',priority:0.1,kind:'running'},{id:'other',priority:4,kind:'hint'}];
+  assert.deepEqual(plain(C.uiPrioritySort(candidates,{feed:1000,sleep:1000},now)).map(x=>x.id),['feed','sleep']);
+  assert.deepEqual(plain(C.uiPrioritySort(candidates.slice().reverse(),{feed:1000,sleep:1000},now)).map(x=>x.id),['feed','sleep']);
+  assert.equal(candidates.length,5);
+});
+
 // ── Datum ────────────────────────────────────────────────────────────────
 test('pad: einstellig mit 0, zweistellig unveraendert', () => {
   const C = load({});

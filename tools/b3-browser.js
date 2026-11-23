@@ -36,7 +36,7 @@ const output=path.resolve(__dirname,'../.b3-artifacts');
   try {
     for(const width of [320,390,430]) {
       const context=await browser.newContext({...(process.env.B3_BROWSER==='webkit'?devices['iPhone 13']:{}),viewport:{width,height:844},isMobile:true,hasTouch:true,timezoneId:'Europe/Berlin',acceptDownloads:true});
-      await context.route('**/*',route=>/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/)/.test(route.request().url())?route.continue():route.abort());
+      await context.route('**/*',route=>(/^(data|blob):/.test(route.request().url())||/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/)/.test(route.request().url()))?route.continue():route.abort());
       const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
       const day=new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Berlin'}),data=fixture(day);
       await page.addInitScript(({data,day})=>{

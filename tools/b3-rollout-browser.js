@@ -5,7 +5,7 @@ module.exports=async function rollout(browser,base){
   const ctx=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,timezoneId:'Europe/Berlin'});
   try{
     const data=fixture(new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Berlin'}));
-    await ctx.route('**/*',r=>/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/)/.test(r.request().url())?r.continue():r.abort());
+    await ctx.route('**/*',r=>(/^(data|blob):/.test(r.request().url())||/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/)/.test(r.request().url()))?r.continue():r.abort());
     await ctx.addInitScript(data=>{if(localStorage.getItem('nt_v6'))return;localStorage.setItem('nt_v6',JSON.stringify(data.state));localStorage.setItem('nt_x',JSON.stringify({fc:{},cf:data.customFoods,rc:data.recipes}));localStorage.setItem('nt_gate_skipped','1');localStorage.setItem('nt_install_dismissed','1');localStorage.setItem('nt_file_backup_day',data.state.currentDate);},data);
     const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
     await page.goto(base,{waitUntil:'load'});await page.waitForFunction(()=>NTUI.enabled());

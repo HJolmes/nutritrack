@@ -5,9 +5,9 @@ const {devices}=require('playwright');
 module.exports=async function shell(browser,width,output,base,origin){
   const ctx=await browser.newContext({...(process.env.B3_BROWSER==='webkit'?devices['iPhone 13']:{}),viewport:{width,height:844},isMobile:true,hasTouch:true,timezoneId:'Europe/Berlin'});
   try{
-    await ctx.route('**/*',r=>/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/)/.test(r.request().url())?r.continue():r.abort());
+    await ctx.route('**/*',r=>(/^(data|blob):/.test(r.request().url())||/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/)/.test(r.request().url()))?r.continue():r.abort());
     const page=await ctx.newPage(),errors=[],failures=[];
-    page.on('requestfailed',r=>failures.push({path:new URL(r.url()).pathname,error:r.failure()?.errorText}));
+    page.on('requestfailed',r=>{const u=new URL(r.url());failures.push({path:/^(data|blob):$/.test(u.protocol)?u.protocol:u.pathname,error:r.failure()?.errorText});});
     page.on('pageerror',e=>{errors.push(e.stack||e.message);console.error('B3 uncaught browser error',e.stack||e.message);});
     const data=fixture(new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Berlin'}));
     await page.addInitScript(data=>{

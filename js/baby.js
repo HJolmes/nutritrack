@@ -926,6 +926,7 @@ function closeDiary(){Sync.stopPoll();closeOv('babyOv');}
 var TABS={log:'babyPaneLog',sleep:'babyPaneSleep',week:'babyPaneWeek',growth:'babyPaneGrowth',mile:'babyPaneMile',mw:'babyPaneMw'};
 var _tab='log';
 function setTab(t){
+  if(window.NTUIBaby&&window.NTUI&&NTUI.enabled())NTUIBaby.follow(t);
   _tab=TABS[t]?t:'log';
   document.querySelectorAll('#babyTabs [data-tab]').forEach(function(b){
     b.classList.toggle('act',b.getAttribute('data-tab')===_tab);

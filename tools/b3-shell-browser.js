@@ -13,6 +13,7 @@ module.exports=async function shell(browser,width,output,base){
     },data);
     await page.goto(base+'?ui=b3',{waitUntil:'load'});
     await page.waitForFunction(()=>window.NTUI&&NTUI.enabled());
+    await page.screenshot({path:path.join(output,'b3-home-'+width+'.png'),fullPage:true});
     const nav=page.getByRole('navigation',{name:'Hauptnavigation'});
     assert.equal(await nav.locator('button').count(),5);
     await nav.getByRole('button',{name:'Ernährung',exact:true}).click();
@@ -67,6 +68,7 @@ module.exports=async function shell(browser,width,output,base){
     await page.locator('#pickerOv.open').waitFor();await page.evaluate(()=>closeOv('pickerOv'));
     await ctx.setOffline(false);
     if(require('node:fs').existsSync(path.resolve(__dirname,'../js/ui-home.js')))await require('./b3-home-browser')(page);
+    if(require('node:fs').existsSync(path.resolve(__dirname,'b3-baby-browser.js')))await require('./b3-baby-browser')(page);
     await page.goto(base+'?ui=classic',{waitUntil:'load'});
     assert.equal(await page.evaluate(()=>NTUI.enabled()),false,'emergency route bypasses new shell');
     assert.equal(await page.locator('#mainScreen').evaluate(el=>el.classList.contains('active')),true);

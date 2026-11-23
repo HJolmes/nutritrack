@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie beschreibt den **aktuellen** Stand, nicht seine Geschichte — die steht in Git und in `js/changelog.js`. Der Stand vor der Kürzung (#258, 132 KB): `git show 0d69ba2:UEBERGABE.md`. Grenzen siehe „Pflege“, `tools/check.js` prüft sie.
 
-**Stand:** v0.337 (23.11.2026) — Schlafplan mit Erfasst/Angenommen/Prognose; seit v0.331 lokale Schlafprognose, manuelle Tag-/Nachteinordnung und Nachtannahmen. B3-Bestandsabsicherung #362 gemergt; gekapselte B3-Design-Tokens, Smartphone-Zoom freigegeben; verbindlicher Fortschritt in `docs/NutriTrack_B3_vollstaendiger_Implementierungsplan.md`, Abschnitt 11. Neue Heute-Ansicht mit sechs unabhängigen Favoriten und dauerhaftem Bruststatus; klassisch bleibt Standard, neue Shell optional unter Mehr oder `?ui=b3`; Notfallroute `?ui=classic`.
+**Stand:** v0.338 (23.11.2026) — Schlafplan mit Erfasst/Angenommen/Prognose; seit v0.331 lokale Schlafprognose, manuelle Tag-/Nachteinordnung und Nachtannahmen. B3-Bestandsabsicherung #362 gemergt; gekapselte B3-Design-Tokens, Smartphone-Zoom freigegeben; verbindlicher Fortschritt in `docs/NutriTrack_B3_vollstaendiger_Implementierungsplan.md`, Abschnitt 11. Neue Heute-Ansicht mit sechs Favoriten/Bruststatus; Baby in vier Unterbereiche geordnet, Nachtfenster bei Schlaf, Arztbericht 7/14 Tage; klassisch bleibt Standard, neue Shell optional unter Mehr oder `?ui=b3`; Notfallroute `?ui=classic`.
 
 ## URLs
 
@@ -66,22 +66,20 @@
 
 Ältere Live-Tests stehen als Issues (Label `live-test`), zuletzt #317–#321 (v0.300–v0.308), #327 (v0.314), #330 (v0.315), #331 (v0.316), #338 (v0.317–v0.318), #341 (v0.319), #352 (v0.320), #351 (v0.321), #350 (v0.322–v0.323), #354 (v0.324).
 
-- **v0.330 Excel-Export (iPhone, Android, Desktop):** Mehr → 💾 Backup & Daten → 📊 Excel-Export → „30 Tage“ → „Excel-Datei erstellen“. Handy: Teilen-Menü → Mail/Dateien; Desktop: Download. Datei in Excel (oder Numbers) öffnen: Blatt „Einträge“ mit Datum als TT.MM.JJJJ, Filter in Zeile 1, Umlaute korrekt; Blatt „Tage“ mit Summen, Sport, Wasser. „Alles“ → Tage älter 90 Tage mit Hinweis „archiviert“. „Was ist neu“ zeigt v0.330 einmal.
-- **v0.329 Schnellauswahl (Android-PWA und iPhone):** Mehr → ⚡ Schnellauswahl → Stillen, Wickeln, Mahlzeit anhaken → Leiste oben auf „Heute“. „⏱ Stillen“ → Stoppuhr läuft, Tagebuch offen, Knopf heißt „Stillen stoppen“; nochmal → Minuten eingetragen. Baby-Tagebuch aus → Baby-Knöpfe weg. **Android:** App einmal neu öffnen (Manifest-Update kann bis zu einem Tag dauern), lange aufs Symbol → 4 Kurzbefehle mit Bild; „Stillen“ startet die Stoppuhr, erneut → stoppt; „Foto“ öffnet den Foto-Reiter; einen Kurzbefehl auf den Startbildschirm ziehen → eigenes Symbol. App läuft schon im Hintergrund → Kurzbefehl wirkt trotzdem genau einmal.
-- **v0.328 Letzte Mahlzeit ab Still-Ende (Android-PWA):** Stillen mit Uhrzeit vor 2 h und 10 Min. eintragen → Kachel „Letzte Mahlzeit vor 1 h 50 Min.“; Flasche vor 1 h → „vor 1 h“. Stoppuhr starten/stoppen → danach „gerade eben“. „Was ist neu“ zeigt v0.328 einmal.
-- **v0.327 KI-Verbrauch und Konto-Test (#347):** Nach Merge: Cloudflare → Workers → nutritrack-ai-proxy → Logs zeigt nach einem Foto und einer Texteingabe je eine Zeile `ai_usage` mit `model`, `in`, `out`; kein Prompt-Text. `/health` → `v0.327-usage`. Testabzug `…/nutritrack/lab/konto-test.html` auf iPhone, Android, Desktop: Passkey anlegen, 2× entsperren, Bericht in #347. Google Drive/iCloud erst mit Client-ID bzw. CloudKit-Container.
-- **v0.325 Tagessicherung (iPhone-PWA ohne OneDrive):** App öffnen → nach ~3 s Dialog „💾 Tagessicherung“ ohne ✕, Tippen daneben schließt nicht. „Jetzt sichern“ → Teilen-Menü abbrechen → Dialog bleibt. Nochmal → „In Dateien sichern“ → iCloud Drive/NutriTrack → Toast „nutritrack-backup1.json gesichert“. App in den Hintergrund und zurück → kein Dialog. Datum am iPhone +1 Tag (oder `nt_file_backup_day` löschen) → Datei 2. **Zu klären:** Bietet iOS beim gleichen Namen „Ersetzen“ an oder legt es „… 2.json“ an? Import einer Datei über „Datei importieren“ stellt den Stand her. Mit OneDrive: kein Dialog.
+- **v0.338 B3-Abnahme auf echten Geräten:** Android/iOS-PWA mit 320–430 px, vergrößerter Schrift, Tastatur, Zurück-Geste, Kurzbefehlen, Update, Offline am Folgetag, Datei-/Excel-Export und iOS-Dateisicherung. Automatische Browserprüfungen ersetzen diese Geräteprüfung nicht.
+- **v0.338 Zwei-Geräte-Abnahme:** Baby (laufende Timer und Stopp), Einkauf, Vorrat und Plan einschließlich konkurrierender Änderungen/Löschmarken; UI-Präferenzen dürfen keine Fachlogs anderer Personen überschreiben. Vor Aktivierung des neuen Standards gemäß B3-Gate G5 prüfen.
+- **KI-Verbrauch / Konto-Test:** bestehendes Issue #347; Worker-Logs und Geräte-Passkeys dort weiterführen, nicht Bestandteil der B3-Fachmigration.
 - **Lambda neu einspielen** (Timeout 5 s; `alexa/` hat keine CI): `alexa/lambda/index.js` → Code → Deploy, Zeilenzahl vergleichen. Test-Tab: „sage mein tagebuch ich habe einen apfel gegessen“ → „einen Apfel. Ich habe es in NutriTrack notiert.“
 
 ## Versions-Historie (letzte 5)
 
 | Version | PR | Was |
 |---|---|---|
-| v0.329 | — | `js/launch.js` (`NTLaunch`: `ACTIONS`, `run`, `runFromUrl`, Leiste `#launchBar`, Dialog `#launchOv`, `S.launchBar`); `manifest.json` `shortcuts` + `icons/sc-*.png`; `NTBaby.toggleSleep`/`runningFeed` exportiert; `sw.js` Startseite per Pfad (auch mit `?action=`). |
 | v0.330 | — | Excel-Export: `foodExportRows` in `js/calc.js` (Test), `js/xlsx.js` (`NTXlsx`, ZIP ohne Kompression + OpenXML, Test), `js/food-export.js` (`NTExport`, Dialog `#foodExportOv`, Teilen auf Touch-Geräten, sonst Download); Rauchtest-Schritt. |
 | v0.335 | — | B3-Design-Tokens unter `[data-ui="b3"]`; klassische Ansicht unverändert. Smartphone-Zoom freigegeben, gemeinsame App-/Cacheversion. #362 schützt das Ausgangsinventar und synthetische Wiederherstellung. |
 | v0.336 | — | Optionale B3-Shell/Katalog/Aktionsrouter: Heute fix, drei Nav-Slots, Kontext-Plus und elf Babytypen; gemeinsame Daten, Back/Fokus, klassische Recovery-URL. |
 | v0.337 | — | B3-Heute, sechs freie Home-Aktionen getrennt von Altwerten, Bruststatus auf Heute/Baby; bestehendes Still-Widget nutzt ID-sichere Stopp-/Wechselaktionen. |
+| v0.338 | — | Vier Baby-Unterbereiche mit bestehenden Paneelen, Nachtfenster unter Schlaf, Back für Entwicklung; Arztbericht folgt ausgewähltem 7-/14-Tage-Zeitraum. |
 
 ---
 

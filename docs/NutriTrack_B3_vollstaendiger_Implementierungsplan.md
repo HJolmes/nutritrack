@@ -299,8 +299,9 @@ Stand 23.11.2026, geprüftes `main`: `88eeb9846e8646270a1c6a7c155e10b18317112e`,
 | Pakete | Status | Nachweis / nächster Schritt |
 |---|---|---|
 | 00 | Abgeschlossen, PR [#362](https://github.com/HJolmes/nutritrack/pull/362) gemergt | `tools/b3-inventory.js`, `docs/b3-baseline.json`, synthetische Fixture, Schutztests und Browser-Roundtrip; CI: Konsistenz, Typprüfung, 145 Tests, Browser-Smoke, elf Babyeditoren, Backup-Roundtrip, Referenzen 320/390/430 px grün |
-| 01 | In Umsetzung | Gekapselte B3-Design-Tokens, zugängliche Touchflächen, Zoom freigegeben |
-| 02–22 | Offen | Reihenfolge und Abnahmen gemäß Abschnitt 7 |
+| 01 | Abgeschlossen, PR [#363](https://github.com/HJolmes/nutritrack/pull/363) gemergt | Gekapselte B3-Design-Tokens, zugängliche Touchflächen, Zoom freigegeben |
+| 02–04 | In Prüfung | Gemeinsames Funktionsregister, optionale Shell, freie Slots, Kontext-Plus, Back/Fokus und Notfallroute; echte vorhandene Editoren |
+| 05–22 | Offen | Reihenfolge und Abnahmen gemäß Abschnitt 7 |
 
 **PR 00 / G0:** Das Inventar erfasst auch generiertes HTML, `tab.html`, Feature-Aktionen, Startkurzbefehle, Namespace-Exports und die 50 Zeilen der verbindlichen Matrix. Es ist ein Reichweiteninventar, keine Behauptung, dass alle Fachabläufe bereits getestet wurden. `npm test` prüft den Fortbestand seiner Einstiege/APIs. Der Snapshot bleibt unverändert; begründete Ablösungen benötigen später eine explizite, getestete Zuordnung.
 
@@ -309,3 +310,6 @@ Stand 23.11.2026, geprüftes `main`: `88eeb9846e8646270a1c6a7c155e10b18317112e`,
 **Prüfungen:** `npm ci`, statische Prüfung, Typprüfung und 145 Node-Tests lokal erfolgreich. GitHub Actions für PR #362 einschließlich Browserprüfung erfolgreich. Lokaler Chromium-Start wird von der Ausführungsumgebung beim Socket-Aufruf blockiert; Browserprüfungen laufen in der vorhandenen GitHub-CI. Kein Merge vor erfolgreichem Browserjob. Reale Android-/iOS- und Zwei-Geräte-Prüfungen sind noch offen und werden hier nicht als erledigt markiert.
 
 **Technischer Befund:** Ernährungstage liegen tatsächlich unter `S.days[datum].meals[slot]`, nicht direkt unter `S.days[datum][slot]`. Neue Ansichten/Lernregeln müssen die reale Struktur verwenden. Direkter Git-Netzwerkzugriff ist lokal nicht nutzbar; der Quellstand wurde über den GitHub-Connector geladen und anhand der originalen Blob-Hashes verifiziert. Veröffentlichung erfolgt über GitHub-Git-Objekte auf Feature-Branches, niemals direkt nach `main`.
+
+
+**PR 02–04:** Zusammengelegt als eine überprüfbare Navigationsreise: Katalog aus `NTFeat` und vorhandenem Mehr-Markup, Fünfer-Leiste, drei eindeutige Slots in `S.ui`, Kontext-Plus über echte Fach-APIs. Klassisch bleibt Standard; `?ui=b3` bzw. Mehr → Neue Ansicht ausprobieren schaltet die Shell zu, `?ui=classic` umgeht sie. Die Startseite und Fachseiten sind in dieser Stufe noch die vorhandenen Inhalte; ihre B3-Abnahme folgt in PR 05–20. Neue Fachmodelle/Sync-Records entstehen nicht. 147 Node-Tests, statische Prüfung und Typprüfung lokal grün; CI prüft zusätzlich die neuen Klickpfade bei drei mobilen Breiten. PR 00/01 haben bereits erfolgreiche reale Datei-Roundtrips, Browserprüfungen und nun hochgeladene Referenzbilder (Artefakt `b3-mobile-baseline`).

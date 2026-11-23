@@ -55,6 +55,7 @@ const output=path.resolve(__dirname,'../.b3-artifacts');
       assert.deepEqual(await page.evaluate(()=>S.babyQuick),before.babyQuick,'reload retains all ten custom buttons');
       assert.deepEqual(errors,[],'no uncaught browser errors');
       await context.close();console.log('B3 classic '+width+'px: eleven editors, export/import, reload, screenshots OK');
+      if(fs.existsSync(path.resolve(__dirname,'../js/ui-shell.js')))await require('./b3-shell-browser')(browser,width,output,BASE);
     }
   } finally {await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

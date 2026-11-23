@@ -2,6 +2,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.336',items:[
+    {icon:'☰',text:'<b>Neue Navigation ausprobieren</b>: Unter Mehr lässt sich die neue Ansicht einschalten. Drei frei belegbare Plätze und Erfassen passend zu Ernährung, Baby oder Haushalt. Die klassische Ansicht bleibt jederzeit erreichbar.',where:'Mehr → Neue Ansicht ausprobieren'},
+  ]},
   {v:'0.335',items:[
     {icon:'🔎',text:'<b>Ansicht vergrößern</b>: Die App lässt sich auf dem Smartphone mit der Zoom-Geste vergrößern.',where:'Alle Ansichten'},
   ]},

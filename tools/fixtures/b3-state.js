@@ -13,7 +13,7 @@ function fixture(today='2026-11-23') {
   state.babyLog[day]=records.map((e,i)=>({...e,id:'demo-b'+i,ts:ts+i*60000,rev:i+1}));
   for(let i=0;i<10;i++)state.babyQuick.push({id:'demo-quick'+i,icon:'🤱',label:'Eigener Knopf '+i,t:'breast',p:{side:i%2?'r':'l',timer:i%3===0}});
   const recipe={id:'demo-recipe',name:'Demo Brei',servings:1,ingredients:[{name:'Haferflocken',amount:50,per100}],meal:['breakfast']};
-  state.mealPlan[today]={lunch:[{r:recipe.id,p:2}]};
+  state.mealPlan[today]={breakfast:[],lunch:[{r:recipe.id,p:2}],dinner:[],snack:[]};
   return {state,foodCache:{},customFoods:[{id:'demo-food',name:'Demo Lebensmittel',per100}],recipes:[recipe],barcodeCache:{}};
 }
 module.exports={fixture};

@@ -2,6 +2,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.338',items:[
+    {icon:'👶',text:'<b>Baby übersichtlich gegliedert</b>: Heute, Schlaf, Verlauf und Entwicklung. Alle elf Eintragstypen, persönliche Schnellknöpfe, WHO-Kurven, U-Heft, Fragen und Medizin bleiben erreichbar. Nachtannahmen findest du bei Schlaf. Der Arztbericht folgt jetzt dem gewählten Zeitraum von 7 oder 14 Tagen.',where:'Neue Ansicht → Baby'},
+  ]},
   {v:'0.337',items:[
     {icon:'⌂',text:'<b>Neue Startseite</b>: Gerade wichtig, bis zu sechs frei wählbare Schnellaktionen und ein kompakter Tagesüberblick. Die nächste Brust steht dauerhaft im Baby-Kurzstatus. Laufende Stillvorgänge direkt stoppen oder die Seite wechseln. Deine bisherigen Baby-Schnellknöpfe bleiben erhalten.',where:'Neue Ansicht → Heute / Baby'},
   ]},

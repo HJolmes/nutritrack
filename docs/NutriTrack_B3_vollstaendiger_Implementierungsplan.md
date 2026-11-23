@@ -301,8 +301,9 @@ Stand 23.11.2026, geprüftes `main`: `88eeb9846e8646270a1c6a7c155e10b18317112e`,
 | 00 | Abgeschlossen, PR [#362](https://github.com/HJolmes/nutritrack/pull/362) gemergt | `tools/b3-inventory.js`, `docs/b3-baseline.json`, synthetische Fixture, Schutztests und Browser-Roundtrip; CI: Konsistenz, Typprüfung, 145 Tests, Browser-Smoke, elf Babyeditoren, Backup-Roundtrip, Referenzen 320/390/430 px grün |
 | 01 | Abgeschlossen, PR [#363](https://github.com/HJolmes/nutritrack/pull/363) gemergt | Gekapselte B3-Design-Tokens, zugängliche Touchflächen, Zoom freigegeben |
 | 02–04 | Abgeschlossen, PR [#364](https://github.com/HJolmes/nutritrack/pull/364) gemergt | Gemeinsames Funktionsregister, optionale Shell, freie Slots, Kontext-Plus, Back/Fokus und Notfallroute; echte vorhandene Editoren |
-| 05–07 | In Prüfung | Neue Startseite, sechs unabhängige Schnellaktionen, dauerhafter Bruststatus auf Heute/Baby, ID-sicheres Stoppen/Wechseln |
-| 08–22 | Offen | Reihenfolge und Abnahmen gemäß Abschnitt 7 |
+| 05–07 | Abgeschlossen, PR [#365](https://github.com/HJolmes/nutritrack/pull/365) gemergt | Neue Startseite, sechs unabhängige Schnellaktionen, dauerhafter Bruststatus auf Heute/Baby, ID-sicheres Stoppen/Wechseln |
+| 08–10 | In Prüfung | Vier Baby-Unterbereiche auf vorhandenen Paneelen; echte elf Editorabläufe, Verlauf/Bericht, WHO/U-Heft/Fragen/Medizin; Nachtfenster im Schlafbereich |
+| 11–22 | Offen | Reihenfolge und Abnahmen gemäß Abschnitt 7 |
 
 **PR 00 / G0:** Das Inventar erfasst auch generiertes HTML, `tab.html`, Feature-Aktionen, Startkurzbefehle, Namespace-Exports und die 50 Zeilen der verbindlichen Matrix. Es ist ein Reichweiteninventar, keine Behauptung, dass alle Fachabläufe bereits getestet wurden. `npm test` prüft den Fortbestand seiner Einstiege/APIs. Der Snapshot bleibt unverändert; begründete Ablösungen benötigen später eine explizite, getestete Zuordnung.
 
@@ -319,3 +320,6 @@ Stand 23.11.2026, geprüftes `main`: `88eeb9846e8646270a1c6a7c155e10b18317112e`,
 **PR 05–07:** Die neue Startseite ersetzt nur die Präsentation. „Gerade wichtig“ zeigt aktuell laufendes Stillen/Schlafen oder einen ruhigen Fallback; weitergehende Priorisierung bleibt PR 11. Globale Schnellaktionen migrieren einmal aus `S.launchBar` nach `S.ui.homeActions` (höchstens sechs), ohne Originalwerte oder `S.babyQuick` zu ändern. Die Aktionsauswahl erweitert das bestehende `NTLaunch`-Register. Brustvorschlag/letzte Mahlzeit/Timer stammen aus `NTBaby`; Stoppen und Wechseln verwenden nun auch im bestehenden Widget konkrete Eintrags-IDs, damit ein veralteter Knopf nach Sync keinen anderen Lauf beendet. Bei fehlender Historie bietet die UI beide Startseiten an. Ernährungssummen werden aus der vorhandenen Berechnung übernommen, nicht neu berechnet.
 
 **Gate G1 erfüllt:** PR #364 besteht einschließlich realem Service-Worker-Offline-Neustart, Editorzugriff offline, Back, deaktiviertem Modul und Classic-Recovery bei 320/390/430 px. Die synthetische Plan-Fixture enthält nun alle vier Mahlzeit-Slots gemäß tatsächlichem Schema.
+
+
+**PR 08–10:** Vier Baby-Unterbereiche ordnen dieselben vorhandenen Diary-Panes; keine Datenmigration und keine parallele Prognose. Entwicklung führt zu WHO, U-Heft, Meilensteinen, Fragen und Medikamenten; die Nachtfenster-Einstellung liegt bei Schlaf. Browser-Back merkt Bereich und Entwicklungs-Unterseite. Alle elf Typen werden im Browser über das neue Plus geöffnet, erzeugt, bearbeitet und mit den bestehenden Tombstones gelöscht. Schlafprognosen bleiben editierbare Entwürfe; ein Zukunfts-Speicherversuch wird geprüft. Der vorhandene Arztbericht verwendet nun den explizit gewählten 7-/14-Tage-Zeitraum statt immer sieben Tagen. Reale Geräte und Zwei-Geräte-Transporte bleiben im Release-Gate offen.

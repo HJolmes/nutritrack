@@ -30,7 +30,7 @@ function dayStats(k){
   return {k:k,s:s,feeds:s.breast+s.bottle+s.solid,diaper:s.diaper,sleep:s.sleepMin};
 }
 
-function setRange(n){_range=(n===14)?14:7;render();}
+function setRange(n){_range=(n===14)?14:7;render();var report=document.querySelector('#babyPaneWeek [data-act="NTBabyWeek.openReport"]');if(report)report.textContent='🩺 Bericht für Arzt/Hebamme ('+_range+' Tage)';}
 
 function render(){
   var box=document.getElementById('babyWeekBody');
@@ -112,7 +112,7 @@ function renderSolids(){
 
 // ── Arzt-Bericht: die letzten 7 Tage als Text zum Teilen ──
 function reportText(){
-  var ks=days(7),nm=(S.baby&&S.baby.name)||'Baby';
+  var ks=days(_range),nm=(S.baby&&S.baby.name)||'Baby';
   var L=[];
   L.push('Baby-Bericht – '+nm);
   if(S.baby&&S.baby.birth)L.push('Geboren am '+dFull(S.baby.birth)+(NTBaby.ageText()?' ('+NTBaby.ageText()+')':''));

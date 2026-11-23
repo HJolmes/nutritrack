@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.344"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.345"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.344"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.345"></script>
 <script>
   // @ts-check
   (function(){
@@ -860,6 +860,7 @@ body.tour-open #feedbackFab{display:flex!important;}
 #b3Root .b3-header{display:flex;justify-content:space-between;align-items:center;gap:.5rem;margin-bottom:1rem;}
 #b3Root .b3-header button{flex-shrink:0;}
 #b3Root .b3-header h1{min-width:0;overflow-wrap:anywhere;}
+#b3Title:focus,body.b3-on .ov[data-b3-page] .mti:focus{outline:none;}
 #b3Nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(100%,430px);display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.15rem;z-index:450;background:var(--b3-card);border-top:1px solid var(--b3-line);padding:.4rem .3rem calc(.4rem + env(safe-area-inset-bottom,0px));}
 #b3Nav button{border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:.4rem .1rem;min-width:0;border-radius:.75rem;line-height:1.2;min-height:56px;}
 #b3Nav button span{font-size:1.3rem;}
@@ -868,11 +869,12 @@ body.tour-open #feedbackFab{display:flex!important;}
 #b3Nav button.b3-plus{background:var(--b3-accent);color:#fff;}
 body.b3-on .bnav{display:none!important;}
 body.b3-on:not(.b3-classic-screen)>.screen{display:none!important;}
-body.b3-on.b3-classic-screen #b3Root{padding-bottom:0;}
+body.b3-on.b3-classic-screen #b3Root{min-height:0;padding-bottom:0;}
 body.b3-on .screen>.hdr{display:none;}
 body.b3-nutrition :is(#babyCard,#shopCard,#pantryCard,#planCard,#bookCard,#partnerCard,#launchBar){display:none!important;}
-body.b3-on .ov[data-b3-page]{padding-bottom:calc(88px + env(safe-area-inset-bottom,0px));align-items:stretch;}
-body.b3-on .ov[data-b3-page]>.mod{top:0;bottom:calc(88px + env(safe-area-inset-bottom,0px));height:auto;max-height:none;border-radius:0;scroll-padding-bottom:1rem;}
+body.b3-on .ov[data-b3-page]{padding-bottom:calc(88px + env(safe-area-inset-bottom,0px));align-items:stretch;background:var(--b3-bg);backdrop-filter:none;}
+body.b3-on .ov[data-b3-page]>.mod{top:0;bottom:calc(88px + env(safe-area-inset-bottom,0px));height:auto;max-height:none;scroll-padding-bottom:1rem;animation:none;}
+body.b3-on .ov[data-b3-page] .mhan{display:none;}
 body.b3-on.kb-open .ov[data-b3-page]>.mod{bottom:var(--kbh,0px);max-height:var(--vvh,100vh);}
 body.b3-on .ov[data-b3-page] .mbd{overflow:auto;}
 body.b3-on :is(#b3ActionBody,#b3PrefsBody){display:grid;gap:.6rem;}
@@ -917,12 +919,12 @@ body.b3-on .ov[data-b3-page]>.mod{bottom:var(--b3-nav-height,88px);}
 body.b3-on.kb-open .ov[data-b3-page]>.mod{bottom:var(--kbh,0px);}
 body.b3-on .tst{bottom:calc(var(--b3-nav-height,88px) + 12px);}
 body.b3-on.kb-open .tst{bottom:calc(var(--kbh,0px) + 12px);}
-body.b3-on #feedbackFab{bottom:calc(var(--b3-nav-height,88px) + 12px);}
+body.b3-on:not(.tour-open) #feedbackFab{display:none;}
 body.b3-on .ov[data-ui="b3"] :is(.mcl,.pt-st,.shopcat-mv,.shopcat-del){min-width:44px;min-height:44px;}
 body.b3-on .b3-page-menu{float:right;min-width:44px;min-height:44px;margin:0 .25rem .25rem 0;padding:.25rem;}
 
 /* B3 Bloom polish v0.343 — isolated from the classic recovery UI. */
-body.b3-on{--g1:#e96e3c;--g2:#e96e3c;--mu:#655a51;background:#faf6f1;overflow-x:clip;}
+body.b3-on{--g1:#a6401f;--g2:#a6401f;--mu:#655a51;background:#faf6f1;overflow-x:clip;}
 #b3Root{
   --b3-bg:#faf6f1;--b3-card:#fffdfb;--b3-ink:#2b2420;--b3-muted:#665b52;
   --b3-accent:#a6401f;--b3-bloom:#e96e3c;--b3-accent-soft:#fff0e6;
@@ -952,14 +954,16 @@ body.b3-on{--g1:#e96e3c;--g2:#e96e3c;--mu:#655a51;background:#faf6f1;overflow-x:
   overflow-wrap:break-word;
 }
 #b3Root #b3Content{display:block;width:100%;min-width:0;}
-#b3Root #b3Content>section{margin:0 0 24px;}
+#b3Root #b3Content>section{margin:0 0 18px;}
+#b3Notices>*{margin:0 0 10px!important;}
+#b3Notices #odMissingBanner{border-radius:12px;}
 #b3Root .b3-section-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:0 0 11px;}
 #b3Root .b3-section-head h2{margin:0;min-width:0;}
 #b3Root h2{
   color:var(--b3-ink);font-family:var(--fs-display);
   font-weight:650;font-size:1.3rem;line-height:1.3;letter-spacing:-.025em;
 }
-#b3Root .b3-overview-title{margin:22px 0 10px;}
+#b3Root .b3-overview-title{margin:18px 0 10px;}
 #b3Root .b3-muted{color:var(--b3-muted);font-size:.875rem;line-height:1.5;}
 #b3Root .b3-card{
   display:block;margin:0 0 12px;padding:16px 17px;
@@ -975,6 +979,10 @@ body.b3-on{--g1:#e96e3c;--g2:#e96e3c;--mu:#655a51;background:#faf6f1;overflow-x:
   border-color:#f1c5ac;background:linear-gradient(135deg,#fff0e6 0%,#fffaf6 74%);
   box-shadow:inset 3px 0 var(--b3-bloom),0 8px 24px -20px rgba(74,42,25,.25);
 }
+#b3Root .b3-priority-idle{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+#b3Root .b3-priority-idle h3{margin:0;}
+#b3Root .b3-running+.b3-running{border-top:1px solid #edcbb9;margin-top:12px;padding-top:12px;}
+#b3Root .b3-active summary{min-height:44px;align-content:center;cursor:pointer;color:var(--b3-accent);}
 #b3Root button,#b3Root select{
   max-width:100%;min-height:44px;border-radius:13px;
   color:var(--b3-ink);border:1px solid var(--b3-line);background:#fff;
@@ -995,8 +1003,9 @@ body.b3-on{--g1:#e96e3c;--g2:#e96e3c;--mu:#655a51;background:#faf6f1;overflow-x:
   flex:0 0 auto;border:0;background:transparent;box-shadow:none;color:var(--b3-accent);
   padding:7px 3px;font-size:.8rem;min-height:44px;
 }
-#b3Root .b3-date{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:9px;margin:0 0 22px;}
+#b3Root .b3-date{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:9px;margin:0 0 16px;}
 #b3Root .b3-date button{width:44px;height:44px;padding:0;font-size:1.45rem;background:#fff;border-radius:14px;}
+#b3Root .b3-date button:disabled{opacity:.47;cursor:default;}
 #b3Root .b3-date p{
   text-align:center;margin:0;font-weight:700;font-size:.9rem;color:var(--b3-ink);
   hyphens:auto;overflow-wrap:break-word;
@@ -1004,14 +1013,16 @@ body.b3-on{--g1:#e96e3c;--g2:#e96e3c;--mu:#655a51;background:#faf6f1;overflow-x:
 #b3Root .b3-quick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:0;}
 #b3Root .b3-quick button{
   display:flex;flex-direction:column;justify-content:center;align-items:center;
-  gap:7px;min-width:0;min-height:98px;padding:11px 6px 10px;
+  gap:6px;min-width:0;min-height:84px;padding:8px 4px;
   border-radius:19px;border:1px solid var(--b3-line);
   background:#fffdfb;box-shadow:0 5px 18px -15px rgba(74,42,25,.25);
   text-align:center;font-size:.77rem;line-height:1.3;
 }
+#b3Root .b3-quick button.b3-quick-off{background:#f6f0e9;border-style:dashed;color:var(--b3-muted);}
+#b3Root .b3-quick-state{font-size:.72rem;line-height:1.2;}
 #b3Root .b3-quick-icon{
-  display:grid;place-items:center;width:42px;height:42px;flex:0 0 auto;
-  background:#fff0e6;border-radius:14px;color:var(--b3-accent);font-size:1.45rem;line-height:1;
+  display:grid;place-items:center;width:36px;height:36px;flex:0 0 auto;
+  background:#fff0e6;border-radius:12px;color:var(--b3-accent);font-size:1.25rem;line-height:1;
 }
 #b3Root .b3-quick-label{display:block;min-width:0;max-width:100%;font-weight:750;overflow-wrap:break-word;}
 #b3Root .b3-next-side{font-family:var(--fs-display);font-size:1.2rem;font-weight:700;line-height:1.35;color:var(--b3-ink);}
@@ -1023,12 +1034,22 @@ body.b3-on{--g1:#e96e3c;--g2:#e96e3c;--mu:#655a51;background:#faf6f1;overflow-x:
 #b3Root .b3-feed-line{max-width:100%;overflow-wrap:anywhere;}
 #b3Root .b3-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
 #b3Root .b3-grid button{width:100%;text-align:left;}
-#b3Root .b3-subnav{margin-bottom:17px;}
-#b3Root .b3-subnav button{text-align:center;min-height:52px;background:#fff;}
+#b3Root .b3-subnav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;padding:4px;border-radius:16px;background:#f2e9df;margin-bottom:12px;}
+#b3Root .b3-subnav button{text-align:center;min-height:44px;padding:5px 2px;border:0;background:transparent;font-size:.83rem;line-height:1.25;overflow-wrap:anywhere;}
+#b3Root .b3-subnav button[aria-current="page"]{background:#fffdfb;color:var(--b3-accent);box-shadow:0 2px 6px #38201314;}
+#b3Root .b3-history-tools{padding-bottom:12px;}
+#b3Root .b3-nutrition-tools{margin-bottom:5px;padding:5px 12px;}
 #b3Root details.b3-card summary{cursor:pointer;font-weight:750;color:var(--b3-ink);padding:3px 0;}
+#b3Root details.b3-card summary{min-height:44px;align-content:center;}
 #b3Root details.b3-card .b3-grid{margin-top:13px;}
-#b3Root .b3-household-card{position:relative;padding-left:18px;}
-#b3Root .b3-household-card h2{font-size:1.22rem;}
+#b3Root .b3-feature-list{display:grid;gap:9px;}
+#b3Root #b3Content>.b3-feature-list+.b3-card{margin-top:12px;}
+#b3Root .b3-feature-row{width:100%;display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:12px;text-align:left;padding:11px;}
+#b3Root .b3-feature-icon{display:grid;place-items:center;width:44px;height:44px;background:var(--b3-accent-soft);border-radius:13px;font-size:1.25rem;}
+#b3Root .b3-feature-row strong,#b3Root .b3-feature-row small{display:block;overflow-wrap:anywhere;}
+#b3Root .b3-feature-row small{color:var(--b3-muted);font-weight:500;}
+#b3Root .b3-expiry{background:#fff5e5;border-color:#ead3ad;margin-top:0;}
+#b3Root .b3-expiry h2{font-size:1.19rem;}
 #b3Root .b3-catalog-row{display:block;width:100%;text-align:left;border-radius:12px;margin-block:6px;padding:13px 15px;}
 #b3Root :is(input[type="search"],select){
   width:100%;max-width:100%;padding:10px 12px;border:1px solid var(--b3-line);border-radius:13px;
@@ -1067,6 +1088,7 @@ body.b3-on .ov[data-ui="b3"] .mod{
   box-sizing:border-box;width:min(100%,480px);background:#faf6f1;color:var(--b3-ink);
   border-radius:22px 22px 0 0;
 }
+body.b3-on .ov[data-b3-page]>.mod{border-radius:0;}
 body.b3-on .ov[data-ui="b3"] .mbd{overflow-x:hidden;}
 body.b3-on .ov[data-ui="b3"] :is(button,input,select,textarea){max-width:100%;min-width:0;}
 body.b3-on .ov[data-ui="b3"] .mcl{
@@ -1075,6 +1097,9 @@ body.b3-on .ov[data-ui="b3"] .mcl{
 }
 body.b3-on .ov[data-ui="b3"] .mti{min-width:0;overflow-wrap:break-word;}
 body.b3-on .ov[data-ui="b3"] :is(#b3ActionBody,#b3PrefsBody,#b3HomePrefsBody,#b3MealPrefsBody){min-width:0;}
+body.b3-on #b3ActionBody.b3-action-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+body.b3-on #b3ActionBody button{text-align:left;line-height:1.3;overflow-wrap:anywhere;}
+body.b3-on #b3ActionBody select{width:100%;padding:.6rem;border:1px solid var(--b3-line);border-radius:.8rem;background:white;color:var(--b3-ink);}
 body.b3-on .ov[data-ui="b3"] :is(#b3ActionBody,#b3HomePrefsBody) .b3-row{min-width:0;display:flex;flex-wrap:wrap;gap:8px;}
 body.b3-on .ov[data-b3-page] .b3-baby-tabs{
   display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;
@@ -1088,19 +1113,28 @@ body.b3-on .ov[data-b3-page] .b3-baby-tabs button{
 body.b3-on .ov[data-b3-page] .b3-baby-tabs button[aria-current="page"]{
   border-color:#efbda6;background:#fff0e6;color:#a6401f;font-weight:800;
 }
+body.b3-on #babyPaneLog :is(#babyOvSum,#babyOvNextSide,#babyOvFeed,[data-act="NTBaby.startFeed"]){display:none!important;}
+body.b3-on #b3BabyStatus .b3-baby-card{margin:0 0 12px;}
 body.b3-on .ov[data-b3-page] .b3-page-menu{float:right;width:auto;margin:0 5px 7px 0;padding:8px 12px;border-radius:12px;}
 body.b3-on .ov[data-b3-page] .b3-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;}
 body.b3-on .ov[data-b3-page] .b3-grid button{min-width:0;max-width:100%;white-space:normal;overflow-wrap:break-word;}
 @media(max-width:350px){
   #b3Root{padding-left:12px;padding-right:12px;}
   #b3Root .b3-header{margin-left:-12px;margin-right:-12px;padding-left:12px;padding-right:12px;gap:5px;}
-  #b3Root .b3-quick{grid-template-columns:repeat(2,minmax(0,1fr));}
+  #b3Root .b3-quick{gap:5px;}
   #b3Root .b3-grid{grid-template-columns:1fr;}
   #b3Nav{gap:1px;padding-inline:3px;}
   #b3Nav button{padding-inline:1px;}
   #b3Nav button small{font-size:.64rem;}
   body.b3-on .ov[data-b3-page] .b3-baby-tabs{grid-template-columns:repeat(2,minmax(0,1fr));}
   body.b3-on .ov[data-b3-page] .b3-grid{grid-template-columns:1fr;}
+}
+@media(max-width:380px){
+  body.b3-nutrition .sum .mac{display:grid;}
+  body.b3-nutrition .sum .mac-pct{position:static;grid-row:3;text-align:right;}
+  body.b3-nutrition .sum .mn{grid-row:1;}
+  body.b3-nutrition .sum .mv{grid-row:2;}
+  body.b3-nutrition .sum .mb{grid-row:4;}
 }
 @media(min-width:481px){
   #b3Root{border-left:1px solid #eadfd3;border-right:1px solid #eadfd3;}
@@ -1685,7 +1719,7 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip{
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.344</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.345</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -2039,7 +2073,7 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip{
       </details>
       <div id="babyOvQuickBtns" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>
       <div style="display:flex;gap:6px;margin-bottom:8px;">
-        <button type="button" class="svb" style="flex:2;width:auto;margin:0;" data-act="NTBaby.openEntry" data-args='["breast"]'>＋ Eintrag</button>
+        <button type="button" id="babyDiaryAdd" class="svb" style="flex:2;width:auto;margin:0;" data-act="NTBaby.openEntry" data-args='["breast"]'>＋ Eintrag</button>
         <button type="button" class="seb" style="flex:1;width:auto;margin:0;" data-act="NTBaby.startFeed">⏱ Stillen</button>
       </div>
       <div style="display:flex;gap:6px;margin-bottom:10px;">
@@ -4123,15 +4157,15 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip{
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.344"></script>
-<script src="js/single-tab.js?v=0.344"></script>
-<script src="js/fooddb.js?v=0.344"></script>
-<script src="js/fooddb-usda.js?v=0.344"></script>
-<script src="js/restaurants.js?v=0.344"></script>
-<script src="js/metdb.js?v=0.344"></script>
-<script src="js/idb-photos.js?v=0.344"></script>
-<script src="js/changelog.js?v=0.344"></script>
-<script src="js/calc.js?v=0.344"></script>
+<script src="js/actions.js?v=0.345"></script>
+<script src="js/single-tab.js?v=0.345"></script>
+<script src="js/fooddb.js?v=0.345"></script>
+<script src="js/fooddb-usda.js?v=0.345"></script>
+<script src="js/restaurants.js?v=0.345"></script>
+<script src="js/metdb.js?v=0.345"></script>
+<script src="js/idb-photos.js?v=0.345"></script>
+<script src="js/changelog.js?v=0.345"></script>
+<script src="js/calc.js?v=0.345"></script>
 <script>
 // @ts-check
 // ════════════════════════════════════════
@@ -4151,7 +4185,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.344';
+var APP_VERSION='0.345';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -8744,54 +8778,55 @@ function axTestSync(){
 }
 
 </script>
-<script src="js/ampel.js?v=0.344"></script>
-<script src="picker.js?v=0.344"></script>
-<script src="js/health-sync.js?v=0.344"></script>
-<script src="js/sync-core.js?v=0.344"></script>
-<script src="js/baby.js?v=0.344"></script>
-<script src="js/baby-sleep.js?v=0.344"></script>
-<script src="js/baby-sleep-plan.js?v=0.344"></script>
-<script src="js/baby-meds.js?v=0.344"></script>
-<script src="js/baby-growth-data.js?v=0.344"></script>
-<script src="js/baby-growth.js?v=0.344"></script>
-<script src="js/baby-week.js?v=0.344"></script>
-<script src="js/baby-milestones.js?v=0.344"></script>
-<script src="js/baby-midwife.js?v=0.344"></script>
-<script src="js/shopping.js?v=0.344"></script>
-<script src="js/pantry.js?v=0.344"></script>
-<script src="js/partner.js?v=0.344"></script>
-<script src="js/alexa-sync.js?v=0.344"></script>
-<script src="js/dashboard.js?v=0.344"></script>
-<script src="js/features.js?v=0.344"></script>
-<script src="js/launch.js?v=0.344"></script>
-<script src="js/xlsx.js?v=0.344"></script>
-<script src="js/food-export.js?v=0.344"></script>
-<script src="js/mealplan.js?v=0.344"></script>
-<script src="js/book-swaps.js?v=0.344"></script>
-<script src="js/cookbook.js?v=0.344"></script>
-<script src="js/onedrive.js?v=0.344"></script>
-<script src="js/autosave.js?v=0.344"></script>
-<script src="js/recurring.js?v=0.344"></script>
-<script src="js/stats.js?v=0.344"></script>
-<script src="js/reminders.js?v=0.344"></script>
-<script src="js/templates.js?v=0.344"></script>
-<script src="js/offline-queue.js?v=0.344"></script>
-<script src="js/tour.js?v=0.344"></script>
-<script src="js/ui-catalog.js?v=0.344"></script>
-<script src="js/ui-actions.js?v=0.344"></script>
-<script src="js/ui-shell.js?v=0.344"></script>
-<script src="js/ui-home.js?v=0.344"></script>
-<script src="js/ui-baby.js?v=0.344"></script>
-<script src="js/ui-reminder-rules.js?v=0.344"></script>
-<script src="js/ui-priority.js?v=0.344"></script>
-<script src="js/ui-nutrition.js?v=0.344"></script>
-<script src="js/ui-household.js?v=0.344"></script>
-<script src="js/ui-settings.js?v=0.344"></script>
+<script src="js/ampel.js?v=0.345"></script>
+<script src="picker.js?v=0.345"></script>
+<script src="js/health-sync.js?v=0.345"></script>
+<script src="js/sync-core.js?v=0.345"></script>
+<script src="js/baby.js?v=0.345"></script>
+<script src="js/baby-sleep.js?v=0.345"></script>
+<script src="js/baby-sleep-plan.js?v=0.345"></script>
+<script src="js/baby-meds.js?v=0.345"></script>
+<script src="js/baby-growth-data.js?v=0.345"></script>
+<script src="js/baby-growth.js?v=0.345"></script>
+<script src="js/baby-week.js?v=0.345"></script>
+<script src="js/baby-milestones.js?v=0.345"></script>
+<script src="js/baby-midwife.js?v=0.345"></script>
+<script src="js/shopping.js?v=0.345"></script>
+<script src="js/pantry.js?v=0.345"></script>
+<script src="js/partner.js?v=0.345"></script>
+<script src="js/alexa-sync.js?v=0.345"></script>
+<script src="js/dashboard.js?v=0.345"></script>
+<script src="js/features.js?v=0.345"></script>
+<script src="js/launch.js?v=0.345"></script>
+<script src="js/xlsx.js?v=0.345"></script>
+<script src="js/food-export.js?v=0.345"></script>
+<script src="js/mealplan.js?v=0.345"></script>
+<script src="js/book-swaps.js?v=0.345"></script>
+<script src="js/cookbook.js?v=0.345"></script>
+<script src="js/onedrive.js?v=0.345"></script>
+<script src="js/autosave.js?v=0.345"></script>
+<script src="js/recurring.js?v=0.345"></script>
+<script src="js/stats.js?v=0.345"></script>
+<script src="js/reminders.js?v=0.345"></script>
+<script src="js/templates.js?v=0.345"></script>
+<script src="js/offline-queue.js?v=0.345"></script>
+<script src="js/tour.js?v=0.345"></script>
+<script src="js/ui-catalog.js?v=0.345"></script>
+<script src="js/ui-actions.js?v=0.345"></script>
+<script src="js/ui-shell.js?v=0.345"></script>
+<script src="js/ui-home.js?v=0.345"></script>
+<script src="js/ui-baby.js?v=0.345"></script>
+<script src="js/ui-reminder-rules.js?v=0.345"></script>
+<script src="js/ui-priority.js?v=0.345"></script>
+<script src="js/ui-nutrition.js?v=0.345"></script>
+<script src="js/ui-household.js?v=0.345"></script>
+<script src="js/ui-settings.js?v=0.345"></script>
 
 <div class="ov" id="b3HomePrefsOv" data-ui="b3" data-bg-close="b3HomePrefsOv"><div class="mod"><div class="mhd"><button type="button" class="mcl" data-act="closeOv" data-args='["b3HomePrefsOv"]' aria-label="Schnellaktionen schließen">✕</button><h2 class="mti">Schnellaktionen anpassen</h2></div><div class="mbd"><div id="b3HomePrefsBody"></div><button type="button" class="b3-primary" data-act="closeOv" data-args='["b3HomePrefsOv"]'>Fertig</button></div></div></div>
 <div class="ov" id="b3MealPrefsOv" data-ui="b3" data-bg-close="b3MealPrefsOv"><div class="mod"><div class="mhd"><button type="button" class="mcl" data-act="closeOv" data-args='["b3MealPrefsOv"]' aria-label="Hinweise schließen">✕</button><h2 class="mti">Mahlzeiten-Hinweise</h2></div><div class="mbd"><div id="b3MealPrefsBody"></div><button type="button" class="b3-primary" data-act="NTUIReminders.save">Einstellungen speichern</button></div></div></div>
 <section id="b3Root" data-ui="b3" hidden aria-label="NutriTrack">
   <header class="b3-header"><button type="button" data-act="NTUI.back" aria-label="Zurück">‹</button><div class="b3-heading"><span class="b3-eyebrow">NutriTrack</span><h1 id="b3Title" tabindex="-1">Heute</h1></div><button type="button" data-act="NTUI.go" data-args='["more"]' aria-label="Mehr und alle Funktionen">☰</button></header>
+  <div id="b3Notices"></div>
   <main id="b3Content"></main>
   <nav id="b3Nav" aria-label="Hauptnavigation"></nav>
 </section>

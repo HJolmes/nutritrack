@@ -28,12 +28,16 @@ function candidates(){
 function html(){
   var p=NTUI.prefs();p.priorityHidden=p.priorityHidden||{};var now=Date.now();
   Object.keys(p.priorityHidden).forEach(function(k){if(p.priorityHidden[k]<now)delete p.priorityHidden[k];});
-  shown=uiPrioritySort(candidates().filter(function(c){return c.kind==='running'||!(p.priorityMuted&&p.priorityMuted[c.source]);}),p.priorityHidden,now).slice(0,1);
-  if(!shown.length)return '<article class="b3-card"><h3>Nichts Dringendes</h3><p class="b3-muted">Dein Tagesstand bleibt unten im Blick.</p>'+btn('Etwas erfassen','NTUIActions.all')+'</article>';
-  return shown.map(function(c,i){
+  var sorted=uiPrioritySort(candidates().filter(function(c){return c.kind==='running'||!(p.priorityMuted&&p.priorityMuted[c.source]);}),p.priorityHidden,now);
+  shown=sorted[0]&&sorted[0].kind==='running'?sorted.filter(function(c){return c.kind==='running';}):sorted.slice(0,1);
+  if(!shown.length)return '<article class="b3-card b3-priority-idle"><h3>Nichts Dringendes</h3>'+btn('Etwas erfassen','NTUIActions.all')+'</article>';
+  if(shown[0].kind==='running')return '<article class="b3-card b3-active" data-priority-id="'+esc(shown[0].id)+'">'+shown.map(function(c){
+    return '<div class="b3-running"><h3>'+esc(c.title)+'</h3>'+c.html+'<details><summary>Warum sehe ich das?</summary><p class="b3-muted">'+esc(c.reason)+'</p></details></div>';
+  }).join('')+'</article>';
+  return shown.map(function(c){
     NTUIReminders.delivered(c);
-    var options=c.kind==='running'||c.source==='meal'?'':'<div class="b3-row">'+btn('Heute ausblenden','NTUIPriority.hide',[c.id])+(c.source==='fixed'?'':btn('Solche Hinweise ausschalten','NTUIPriority.mute',[c.source]))+'</div>';
-    return '<article class="b3-card'+(i===0?' b3-active':'')+'" data-priority-id="'+esc(c.id)+'"><h3>'+esc(c.title)+'</h3>'+(c.detail?'<p>'+esc(c.detail)+'</p>':'')+(c.html||'')+(c.source==='meal'?btn('Eintragen','NTUIPriority.meal',[c.slot]):'')+'<details><summary>Warum sehe ich das?</summary><p class="b3-muted">'+esc(c.reason)+'</p>'+options+'</details>'+(c.source==='meal'?'<div class="b3-row">'+btn('30 Min. später','NTUIReminders.dismiss',[c.slot,'snooze'])+btn('Heute ausblenden','NTUIReminders.dismiss',[c.slot,'today'])+btn('Nicht relevant','NTUIReminders.dismiss',[c.slot,'irrelevant'])+'</div>':'')+'</article>';
+    var options=c.source==='meal'?'':'<div class="b3-row">'+btn('Heute ausblenden','NTUIPriority.hide',[c.id])+(c.source==='fixed'?'':btn('Solche Hinweise ausschalten','NTUIPriority.mute',[c.source]))+'</div>';
+    return '<article class="b3-card b3-active" data-priority-id="'+esc(c.id)+'"><h3>'+esc(c.title)+'</h3>'+(c.detail?'<p>'+esc(c.detail)+'</p>':'')+(c.html||'')+(c.source==='meal'?btn('Eintragen','NTUIPriority.meal',[c.slot]):'')+'<details><summary>Warum sehe ich das?</summary><p class="b3-muted">'+esc(c.reason)+'</p>'+options+'</details>'+(c.source==='meal'?'<div class="b3-row">'+btn('30 Min. später','NTUIReminders.dismiss',[c.slot,'snooze'])+btn('Heute ausblenden','NTUIReminders.dismiss',[c.slot,'today'])+btn('Nicht relevant','NTUIReminders.dismiss',[c.slot,'irrelevant'])+'</div>':'')+'</article>';
   }).join('');
 }
 function hide(id){var c=shown.find(function(x){return x.id===id;});if(!c||c.kind==='running')return;var end=new Date();end.setHours(24,0,0,0);NTUI.prefs().priorityHidden[id]=end.getTime();saveS();NTUI.refresh();}

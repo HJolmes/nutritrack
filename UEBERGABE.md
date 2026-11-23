@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie beschreibt den **aktuellen** Stand, nicht seine Geschichte — die steht in Git und in `js/changelog.js`. Der Stand vor der Kürzung (#258, 132 KB): `git show 0d69ba2:UEBERGABE.md`. Grenzen siehe „Pflege“, `tools/check.js` prüft sie.
 
-**Stand:** v0.344 (23.11.2026) — B3 ist Standard für bestehende und neue Profile, ausdrückliche Classic-Wahl bleibt gespeichert. Heute mit sechs Favoriten/Bruststatus, vier Baby-Unterbereiche, Ernährung/Haushalt/Mehr und kontextabhängiges Erfassen verwenden die vorhandene Fachlogik. Mahlzeitenhinweise lernen vorsichtig, Systemmeldungen nur auf Wunsch. Dynamische Navigation bei großer Schrift und automatischer Classic-Rückfall bei Ladefehlern; Notfallroute `?ui=classic`, neue Ansicht `?ui=b3`. B3-Optik nach tatsächlicher Nutzung im warmen Bloom-Stil korrigiert (Home-Kacheln, Navigation, Karten, responsive Baby-Tabs); visuelle Layout-Gates ergänzen die Funktionschecks; horizontale Mobile-Reiter verhindern Textbrüche in Einstellungen, Baby-Einträgen und Picker. Verbindliche Paket-/F01–F50-Nachweise und offene manuelle Release-Prüfungen stehen in `docs/NutriTrack_B3_vollstaendiger_Implementierungsplan.md`, Abschnitt 11.
+**Stand:** v0.345 (23.11.2026) — B3 ist Standard, eine ausdrückliche Classic-Wahl bleibt gespeichert. Heute bündelt laufende Vorgänge in einer Karte, erhält die Schnellaktionen samt Status und zeigt Update-, Offline- und Sicherungshinweise. Ernährung hat eine kompakte Bereichsnavigation, Haushalt Einstiege für Haltbarkeit und Rezeptvorschläge. Das beschriftete Kontext-Plus im Wochenplan arbeitet in der angezeigten Woche. Mahlzeitenhinweise lernen lokal, Systemmeldungen sind freiwillig. Recovery: `?ui=classic`, B3: `?ui=b3`. Verbindliche Paket-/F01–F50-Nachweise und offene manuelle Release-Prüfungen stehen im B3-Implementierungsplan, Abschnitt 11.
 
 ## URLs
 
@@ -76,11 +76,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.340 | [#368](https://github.com/HJolmes/nutritrack/pull/368) | Ernährung/Haushalt/Mehr über bestehende Fachscreens, vollständiger Suchkatalog mit Integrationen, Vorlagen/Import/Teilen; Detail-Back und angepasste Tour, Classic-Präferenzen additiv übernommen. |
 | v0.341 | [#369](https://github.com/HJolmes/nutritrack/pull/369) | Dynamische Nav-Höhe, AA-Farben/Touchflächen, Modal-Fokus, geschützte iOS-Sicherung und Classic bei Asset-Ausfall; verschlüsselter Sync/Original-Rollback, optionaler Decoder offline abgesichert. |
 | v0.342 | [#370](https://github.com/HJolmes/nutritrack/pull/370) | Neue Oberfläche als Standard, gespeicherte Classic-Wahl respektiert; Recovery-URL, Rückwechsel, Bestandserhalt und einmalige Manifest-Kurzbefehle zusätzlich abgesichert. |
 | v0.343 | B3-Bloom-Polish | Farben und Raster an Bloom angeglichen, Schnellaktionen und Tageskarten neu formatiert; 320/390/430-px-Layoutprüfungen und Screenshots, Classic unverändert. |
 | v0.344 | Mobile-Reiter | Einstellungen/Picker/Baby-Reiter als horizontale Wischleiste statt schrumpfender Spalten; aktive Einstellungen automatisch sichtbar, ARIA-Status und mobile Browserprüfungen. |
+| v0.345 | B3-Konzeptabgleich | Kompakte Bloom-Oberfläche, fortlaufende Timer-Aktionen, sichtbare Starthinweise, kontextbezogenes Plus und direkter Vorratszugriff. Zusammengefasste Dialogwechsel verhindern unnötige Browserverlaufseinträge. |
 
 ---
 

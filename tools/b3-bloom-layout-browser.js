@@ -38,7 +38,7 @@ module.exports=async function bloomLayout(page,output,width){
     assert.ok(home.frame<=width+1&&home.rootScroll<=home.client+2,'home has no horizontal overflow at '+width);
     assert.deepEqual(home.outside,[],'home cards remain inside the mobile frame');
     assert.ok(home.nav.left>=-1&&home.nav.right<=width+1,'bottom navigation remains within mobile viewport');
-    await page.screenshot({path:path.join(output,'b3-bloom-home-'+width+'.png'),fullPage:true});
+    await page.screenshot({path:path.join(output,'b3-bloom-home-'+width+'.png'),fullPage:true,animations:'disabled',style:'#toast{visibility:hidden}'});
     for(const id of ['household','more','nutrition']){
       await page.evaluate(id=>NTUI.go(id),id);
       const x=await page.evaluate(()=>{
@@ -47,6 +47,11 @@ module.exports=async function bloomLayout(page,output,width){
       });
       assert.ok(x.scroll<=x.client+2,id+' must not cause horizontal scrolling at '+width+'px');
       assert.ok(x.nav<=width+1,id+' navigation must fit the screen');
+      if(id==='nutrition'){
+        const gap=await page.locator('#mainScreen .sum').evaluate(el=>el.getBoundingClientRect().top-document.getElementById('b3Root').getBoundingClientRect().bottom);
+        assert.ok(gap>=0&&gap<32,'nutrition tools and daily totals form one continuous screen');
+      }
+      if(id!=='more')await page.screenshot({path:path.join(output,'b3-bloom-'+id+'-'+width+'.png'),fullPage:true,animations:'disabled',style:'#toast{visibility:hidden}'});
     }
     await page.evaluate(()=>NTUI.go('baby'));
     await page.locator('#b3BabyTabs button').first().waitFor();
@@ -61,7 +66,10 @@ module.exports=async function bloomLayout(page,output,width){
       assert.ok(tab.l>=tab.frameL-2&&tab.r<=tab.frameR+2,'Baby tab fits at '+width);
       assert.ok(tab.h>=44,'Baby tab has a 44px touch target');
     }
-    await page.screenshot({path:path.join(output,'b3-bloom-baby-'+width+'.png'),fullPage:true});
+    const diary=await page.locator('#babyOv > .mod').boundingBox();
+    assert.ok(diary.y>=-1&&diary.y<=1,'Baby opens as a full page at the top of the viewport');
+    assert.ok(await page.locator('#babyOvSub').evaluate(el=>el.getBoundingClientRect().top>=0),'Baby page starts at its visible header');
+    await page.screenshot({path:path.join(output,'b3-bloom-baby-'+width+'.png'),animations:'disabled',style:'#toast{visibility:hidden}'});
     // Regression from a real Android screenshot: six settings buttons used to
     // shrink until even "Erinnerungen" wrapped one character per line.
     await page.evaluate(()=>{NTUI.go('home');openSettings('ziele');});

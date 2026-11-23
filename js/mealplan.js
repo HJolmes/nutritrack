@@ -47,6 +47,10 @@ function weekStart(){
   if(!_week)_week=monday(S.currentDate?parse(S.currentDate):new Date());
   return _week;
 }
+function visibleDates(){
+  var start=weekStart();
+  return Array.from({length:7},function(_,i){return iso(addDays(start,i));});
+}
 
 // ── Plan-Zugriff ──────────────────────────────────────────────────────────
 function planFor(date,create){
@@ -1216,7 +1220,7 @@ document.addEventListener('visibilitychange',function(){
 window.NTPlan={
   boot:boot,open:open,close:close,render:render,refreshCard:refreshCard,
   shiftWeek:shiftWeek,autoFill:autoFill,clearDay:clearDay,clearWeek:clearWeek,
-  weekToShop:weekToShop,toDiary:toDiary,
+  weekToShop:weekToShop,toDiary:toDiary,visibleDates:visibleDates,
   pick:pick,renderPick:renderPick,addToSlot:addToSlot,addSnapshot:addSnapshot,
   addNote:addNote,saveNote:saveNote,noteToRecipe:noteToRecipe,
   similarRecipe:similarRecipe,confirmNotDuplicate:confirmNotDuplicate,

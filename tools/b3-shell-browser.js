@@ -29,7 +29,10 @@ module.exports=async function shell(browser,width,output,base,origin){
     assert.equal(await page.locator('#b3ActionBody button').count(),11);
     await page.locator('#b3ActionBody button').filter({hasText:'Flasche'}).click();
     await page.locator('#babyEntryOv.open').waitFor();
-    await page.evaluate(()=>closeOv('babyEntryOv'));
+    await page.goBack();
+    await page.locator('#babyEntryOv').waitFor({state:'hidden'});
+    assert.equal(await page.locator('#b3ActionOv').isVisible(),false,'Back goes to the diary after choosing an editor');
+    assert.equal(await page.locator('#babyOv').isVisible(),true);
     await page.evaluate(()=>NTUI.go('household'));
     await nav.getByRole('button',{name:'Erfassen: Haushalt'}).click();
     await page.locator('#b3ActionBody button').filter({hasText:'Vorratsartikel'}).click();
@@ -88,6 +91,7 @@ module.exports=async function shell(browser,width,output,base,origin){
     if(require('node:fs').existsSync(path.resolve(__dirname,'../js/ui-nutrition.js')))await require('./b3-domains-browser')(page,output,width);
     await require('./b3-bloom-layout-browser')(page,output,width);
     await page.goto(base+'?ui=classic',{waitUntil:'load'});
+    await page.locator('#mainScreen.active').waitFor();
     assert.equal(await page.evaluate(()=>NTUI.enabled()),false,'emergency route bypasses new shell');
     assert.equal(await page.locator('#mainScreen').evaluate(el=>el.classList.contains('active')),true);
     if(errors.length)console.error('B3 failed-request diagnostics',failures);

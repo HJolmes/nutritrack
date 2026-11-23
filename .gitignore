@@ -3,3 +3,4 @@ worker/.dev.vars
 *.local
 node_modules/
 .typecheck/
+.b3-artifacts/

@@ -209,3 +209,14 @@ jobs:
 
       - name: Rauchtest
         run: node tools/smoke.js
+
+      - name: B3 Bestandsschutz und mobile Referenzen
+        run: node tools/b3-browser.js
+
+      - name: B3 Referenzen aufbewahren
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: b3-mobile-baseline
+          path: .b3-artifacts/
+          retention-days: 30

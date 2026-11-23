@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie beschreibt den **aktuellen** Stand, nicht seine Geschichte — die steht in Git und in `js/changelog.js`. Der Stand vor der Kürzung (#258, 132 KB): `git show 0d69ba2:UEBERGABE.md`. Grenzen siehe „Pflege“, `tools/check.js` prüft sie.
 
-**Stand:** v0.330 (2026-11-13) — Essen als Excel exportieren (Mehr → 💾 Backup & Daten → 📊, Blätter „Einträge“ und „Tage“). Davor v0.329: Schnellauswahl-Leiste und Android-Kurzbefehle.
+**Stand:** v0.334 (23.11.2026 geprüft) — Schlafplan mit Erfasst/Angenommen/Prognose; seit v0.331 lokale Schlafprognose, manuelle Tag-/Nachteinordnung und Nachtannahmen. B3-Umstellung beginnt mit Bestandsabsicherung; verbindlicher Fortschritt in `docs/NutriTrack_B3_vollstaendiger_Implementierungsplan.md`, Abschnitt 11. Anwendung noch klassisch.
 
 ## URLs
 

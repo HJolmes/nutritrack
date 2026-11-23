@@ -50,7 +50,11 @@
   // kleinen 1D-Codes, wo ZXing aufgibt. Optionaler Zusatz-Decoder, weiterhin per
   // esm.sh (best effort) – fehlt er, läuft der Scan über zxing-wasm.
   import("https://esm.sh/@undecaf/zbar-wasm@0.10.1").then(function(m){
-    window.ZBarWasm={scanImageData:m.scanImageData};
+    // Import alone does not await the library's eager WASM initialization.
+    // Catch that promise too: cached JS + unavailable WASM must stay optional.
+    return m.getInstance().then(function(){
+      window.ZBarWasm={scanImageData:m.scanImageData};
+    });
   }).catch(function(e){console.warn('zbar-wasm load failed',e);});
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">

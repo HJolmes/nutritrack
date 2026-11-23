@@ -38,7 +38,10 @@ function chromePath() {
   return undefined;
 }
 
-const BASE = process.env.SMOKE_URL || 'http://127.0.0.1:8099/index.html';
+// Keep exercising the complete classic recovery path after the new UI rollout.
+const classicUrl=new URL(process.env.SMOKE_URL || 'http://127.0.0.1:8099/index.html');
+classicUrl.searchParams.set('ui','classic');
+const BASE=classicUrl.href;
 
 const EXPECTED_NAMESPACES = [
   'NTSync', 'NTBaby', 'NTShop', 'NTPartner', 'NTPlan', 'NTDash',

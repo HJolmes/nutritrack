@@ -136,7 +136,7 @@ function classic(){prefs().enabled=false;saveS();var u=new URL(location.href);u.
 function enable(){prefs().enabled=true;saveS();var u=new URL(location.href);u.searchParams.set('ui','b3');location.href=u.href;}
 function boot(ext){
   adapters=ext||{};var mode=new URLSearchParams(location.search).get('ui');
-  if(mode==='classic'||(mode!=='b3'&&!(S.ui&&S.ui.enabled)))return;
+  if(mode==='classic'||(mode!=='b3'&&S.ui&&S.ui.enabled===false))return;
   try{
     if(['NTUICatalog','NTUIActions','NTUIHome','NTUIBaby','NTUIReminders','NTUIPriority','NTUINutrition','NTUIHousehold','NTUISettings'].some(function(name){return !window[name];}))throw new Error('UI incomplete');
     prefs();active=true;var root=document.getElementById('b3Root');document.body.insertBefore(root,document.body.firstChild);root.hidden=false;go('home',true);document.body.classList.add('b3-on');

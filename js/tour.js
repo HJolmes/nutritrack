@@ -63,11 +63,12 @@ var STEPS=[
 // Same explanations, adapted to the B3 owners and live surfaces.
 function steps(){
   if(!window.NTUI||!NTUI.enabled())return STEPS;
-  var targets=[['nutrition','#mainScreen .sum'],['home','#b3Root .b3-date'],['home','#b3Root .b3-header'],['nutrition','#mealsCard .meals-grid'],['nutrition','#b3Nav .b3-plus'],['plan','#planOv .mod'],['book','#libraryOv .mod'],['nutrition','#exerciseCard'],['nutrition','#waterCard'],['shop','#shopOv .mod'],['pantry','#pantryOv .mod'],['nutrition','#fastCard'],['baby','#babyOv .mod'],['history','#historyScreen .main'],['trends','#statsScreen .main'],['more','#b3Content'],['more','#b3Catalog [data-args*="NTFeat.openCatalog"]'],['more','#b3Catalog [data-args*="NTSync.open"]'],['home','#feedbackFab']];
+  var targets=[['nutrition','#mainScreen .sum'],['home','#b3Root .b3-date'],['home','#b3Root .b3-header'],['nutrition','#mealsCard .meals-grid'],['nutrition','#b3Nav .b3-plus'],['plan','#planOv .mod'],['book','#libraryOv .mod'],['nutrition','#exerciseCard'],['nutrition','#waterCard'],['shop','#shopOv .mod'],['pantry','#pantryOv .mod'],['nutrition','#fastCard'],['baby','#babyOv .mod'],['history','#historyScreen .main'],['trends','#statsScreen .main'],['more','#b3Content'],['more','.b3-more-entry button'],['more','#b3Content [data-args*="NTSync.open"]'],['home','#feedbackFab']];
   return STEPS.map(function(step,i){var out=Object.assign({},step,{tab:targets[i][0],sel:targets[i][1]});
-    if(i===2)out.x='Mehr öffnet den vollständigen Funktionskatalog. Dort findest du Einstellungen, Daten, Verbindungen, Hilfe und Anpassungen deiner Navigation.';
+    if(i===2)out.x='Mehr bündelt die wichtigsten Einstellungen. Alle Funktionen öffnet die Suche und die Themenübersicht.';
     if(i===4)out.x='Erfassen folgt dem Bereich: Ernährung öffnet alle sieben Picker-Methoden, Baby alle elf Typen, Haushalt Einkauf oder Vorrat.';
     if(i===15)out.x='Alle Funktionen sind suchbar, unabhängig von deinen drei frei belegbaren Navigationsplätzen. Auch KI, Alexa, Health, OneDrive, Backup und persönliche Babyknöpfe bleiben erreichbar.';
+    if(i===16)out.x='Unter Alle Funktionen → Einstellungen & App → Funktionen kannst du Bereiche wie Fasten oder Baby-Tagebuch ein- und ausschalten.';
     return out;
   });
 }

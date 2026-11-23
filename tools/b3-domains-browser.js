@@ -62,8 +62,10 @@ module.exports=async function domains(page,output,width){
   await page.getByRole('button',{name:'Rezepte aus dem Vorrat finden'}).click();
   await page.locator('#pantryCookOv.open').waitFor();
   // Every settings/integration entry is reached through the searchable catalogue.
-  for(const [query,label,id] of [['Alexa','Alexa-Verbindung','alexaOv'],['Samsung','Apple / Samsung Health','healthSyncOv'],['Excel','Excel-Export','foodExportOv'],['Prompts','KI-Prompts','promptOv'],['Link importieren','Code / Link importieren','importPasteOv'],['Backup','OneDrive, Autosicherung, Backup & Datei-Import','settOv'],['Hilfe','Hilfe und App-Tour','helpOv']]){
-    await page.evaluate(()=>NTUI.go('more'));await page.locator('#b3CatalogQuery').fill(query);
+  await page.evaluate(()=>NTUI.go('more'));
+  await page.getByRole('button',{name:'Alle Funktionen',exact:true}).click();
+  for(const [query,label,id] of [['Alexa','Alexa-Verbindung','alexaOv'],['Samsung','Apple / Samsung Health','healthSyncOv'],['Excel','Excel-Export','foodExportOv'],['Prompts','KI-Prompts','promptOv'],['Link importieren','Code / Link importieren','importPasteOv'],['Backup','Backup & Daten','settOv'],['Hilfe','Hilfe und App-Tour','helpOv']]){
+    await page.locator('#b3CatalogQuery').fill(query);
     await page.locator('#b3Catalog').getByRole('button',{name:label,exact:true}).click();await page.locator('#'+id+'.open').waitFor();await page.evaluate(id=>closeOv(id),id);
   }
   const photo='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aWQAAAABJRU5ErkJggg==';

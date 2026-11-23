@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.345"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.346"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.345"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.346"></script>
 <script>
   // @ts-check
   (function(){
@@ -878,7 +878,6 @@ body.b3-on .ov[data-b3-page] .mhan{display:none;}
 body.b3-on.kb-open .ov[data-b3-page]>.mod{bottom:var(--kbh,0px);max-height:var(--vvh,100vh);}
 body.b3-on .ov[data-b3-page] .mbd{overflow:auto;}
 body.b3-on :is(#b3ActionBody,#b3PrefsBody){display:grid;gap:.6rem;}
-body.b3-on #b3Catalog .b3-catalog-row{display:block;width:100%;text-align:left;margin-block:.4rem;}
 body.b3-on.b3-modal #b3Nav,body.b3-on.kb-open #b3Nav{display:none;}
 body.b3-on .ov[data-ui="b3"]{--mu:#685e55;--g1:#a93e1c;--g2:#a93e1c;}
 body.b3-on .ov[data-ui="b3"] .mod{color:var(--b3-ink);}
@@ -1050,7 +1049,27 @@ body.b3-on{--g1:#a6401f;--g2:#a6401f;--mu:#655a51;background:#faf6f1;overflow-x:
 #b3Root .b3-feature-row small{color:var(--b3-muted);font-weight:500;}
 #b3Root .b3-expiry{background:#fff5e5;border-color:#ead3ad;margin-top:0;}
 #b3Root .b3-expiry h2{font-size:1.19rem;}
-#b3Root .b3-catalog-row{display:block;width:100%;text-align:left;border-radius:12px;margin-block:6px;padding:13px 15px;}
+#b3Root .b3-more-entry{margin-bottom:16px;}
+#b3Root .b3-menu-list{display:grid;gap:8px;}
+#b3Root .b3-menu-row,#b3Root .b3-menu-details>summary,#b3Root .b3-menu-results h2{
+  display:flex;align-items:center;gap:11px;width:100%;min-height:54px;padding:10px;text-align:left;
+}
+#b3Root .b3-menu-icon{display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;border-radius:12px;background:var(--b3-accent-soft);font-size:1.15rem;}
+#b3Root .b3-menu-copy{flex:1;overflow-wrap:anywhere;}
+#b3Root .b3-menu-copy strong,#b3Root .b3-menu-copy small{display:block;line-height:1.35;}
+#b3Root .b3-menu-copy small{margin-top:3px;color:var(--b3-muted);font-weight:500;}
+#b3Root .b3-more-entry .b3-menu-row{background:var(--b3-accent-soft);border-color:#efbda6;padding:13px 10px;}
+#b3Root .b3-more-entry strong{color:var(--b3-accent);}
+#b3Root .b3-menu-details,#b3Root .b3-menu-results{border:1px solid var(--b3-line);border-radius:15px;background:var(--b3-card);}
+#b3Root .b3-menu-details>summary{list-style:none;cursor:pointer;border-radius:inherit;}
+#b3Root .b3-menu-details>summary::-webkit-details-marker{display:none;}
+#b3Root .b3-menu-details>summary strong{flex:1;overflow-wrap:anywhere;}
+#b3Root .b3-menu-details>summary::after{content:'';width:8px;height:8px;margin:0 4px 4px 0;border:solid var(--b3-accent);border-width:0 2px 2px 0;transform:rotate(45deg);flex:none;}
+#b3Root .b3-menu-details[open]>summary::after{margin-bottom:0;transform:rotate(225deg);}
+#b3Root .b3-menu-results h2{margin:0;font:inherit;}
+#b3Root .b3-menu-sublist{padding-inline:10px;}
+#b3Root .b3-menu-sublist>.b3-menu-row{border:0;border-top:1px solid var(--b3-line);border-radius:0;box-shadow:none;padding:9px 4px;background:transparent;}
+#b3Root #b3CatalogStatus{margin:0 0 12px;}
 #b3Root :is(input[type="search"],select){
   width:100%;max-width:100%;padding:10px 12px;border:1px solid var(--b3-line);border-radius:13px;
   background:#fff;color:var(--b3-ink);font-size:1rem;
@@ -1719,7 +1738,7 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip{
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.345</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.346</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -4157,15 +4176,15 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip{
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.345"></script>
-<script src="js/single-tab.js?v=0.345"></script>
-<script src="js/fooddb.js?v=0.345"></script>
-<script src="js/fooddb-usda.js?v=0.345"></script>
-<script src="js/restaurants.js?v=0.345"></script>
-<script src="js/metdb.js?v=0.345"></script>
-<script src="js/idb-photos.js?v=0.345"></script>
-<script src="js/changelog.js?v=0.345"></script>
-<script src="js/calc.js?v=0.345"></script>
+<script src="js/actions.js?v=0.346"></script>
+<script src="js/single-tab.js?v=0.346"></script>
+<script src="js/fooddb.js?v=0.346"></script>
+<script src="js/fooddb-usda.js?v=0.346"></script>
+<script src="js/restaurants.js?v=0.346"></script>
+<script src="js/metdb.js?v=0.346"></script>
+<script src="js/idb-photos.js?v=0.346"></script>
+<script src="js/changelog.js?v=0.346"></script>
+<script src="js/calc.js?v=0.346"></script>
 <script>
 // @ts-check
 // ════════════════════════════════════════
@@ -4185,7 +4204,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.345';
+var APP_VERSION='0.346';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -8778,49 +8797,49 @@ function axTestSync(){
 }
 
 </script>
-<script src="js/ampel.js?v=0.345"></script>
-<script src="picker.js?v=0.345"></script>
-<script src="js/health-sync.js?v=0.345"></script>
-<script src="js/sync-core.js?v=0.345"></script>
-<script src="js/baby.js?v=0.345"></script>
-<script src="js/baby-sleep.js?v=0.345"></script>
-<script src="js/baby-sleep-plan.js?v=0.345"></script>
-<script src="js/baby-meds.js?v=0.345"></script>
-<script src="js/baby-growth-data.js?v=0.345"></script>
-<script src="js/baby-growth.js?v=0.345"></script>
-<script src="js/baby-week.js?v=0.345"></script>
-<script src="js/baby-milestones.js?v=0.345"></script>
-<script src="js/baby-midwife.js?v=0.345"></script>
-<script src="js/shopping.js?v=0.345"></script>
-<script src="js/pantry.js?v=0.345"></script>
-<script src="js/partner.js?v=0.345"></script>
-<script src="js/alexa-sync.js?v=0.345"></script>
-<script src="js/dashboard.js?v=0.345"></script>
-<script src="js/features.js?v=0.345"></script>
-<script src="js/launch.js?v=0.345"></script>
-<script src="js/xlsx.js?v=0.345"></script>
-<script src="js/food-export.js?v=0.345"></script>
-<script src="js/mealplan.js?v=0.345"></script>
-<script src="js/book-swaps.js?v=0.345"></script>
-<script src="js/cookbook.js?v=0.345"></script>
-<script src="js/onedrive.js?v=0.345"></script>
-<script src="js/autosave.js?v=0.345"></script>
-<script src="js/recurring.js?v=0.345"></script>
-<script src="js/stats.js?v=0.345"></script>
-<script src="js/reminders.js?v=0.345"></script>
-<script src="js/templates.js?v=0.345"></script>
-<script src="js/offline-queue.js?v=0.345"></script>
-<script src="js/tour.js?v=0.345"></script>
-<script src="js/ui-catalog.js?v=0.345"></script>
-<script src="js/ui-actions.js?v=0.345"></script>
-<script src="js/ui-shell.js?v=0.345"></script>
-<script src="js/ui-home.js?v=0.345"></script>
-<script src="js/ui-baby.js?v=0.345"></script>
-<script src="js/ui-reminder-rules.js?v=0.345"></script>
-<script src="js/ui-priority.js?v=0.345"></script>
-<script src="js/ui-nutrition.js?v=0.345"></script>
-<script src="js/ui-household.js?v=0.345"></script>
-<script src="js/ui-settings.js?v=0.345"></script>
+<script src="js/ampel.js?v=0.346"></script>
+<script src="picker.js?v=0.346"></script>
+<script src="js/health-sync.js?v=0.346"></script>
+<script src="js/sync-core.js?v=0.346"></script>
+<script src="js/baby.js?v=0.346"></script>
+<script src="js/baby-sleep.js?v=0.346"></script>
+<script src="js/baby-sleep-plan.js?v=0.346"></script>
+<script src="js/baby-meds.js?v=0.346"></script>
+<script src="js/baby-growth-data.js?v=0.346"></script>
+<script src="js/baby-growth.js?v=0.346"></script>
+<script src="js/baby-week.js?v=0.346"></script>
+<script src="js/baby-milestones.js?v=0.346"></script>
+<script src="js/baby-midwife.js?v=0.346"></script>
+<script src="js/shopping.js?v=0.346"></script>
+<script src="js/pantry.js?v=0.346"></script>
+<script src="js/partner.js?v=0.346"></script>
+<script src="js/alexa-sync.js?v=0.346"></script>
+<script src="js/dashboard.js?v=0.346"></script>
+<script src="js/features.js?v=0.346"></script>
+<script src="js/launch.js?v=0.346"></script>
+<script src="js/xlsx.js?v=0.346"></script>
+<script src="js/food-export.js?v=0.346"></script>
+<script src="js/mealplan.js?v=0.346"></script>
+<script src="js/book-swaps.js?v=0.346"></script>
+<script src="js/cookbook.js?v=0.346"></script>
+<script src="js/onedrive.js?v=0.346"></script>
+<script src="js/autosave.js?v=0.346"></script>
+<script src="js/recurring.js?v=0.346"></script>
+<script src="js/stats.js?v=0.346"></script>
+<script src="js/reminders.js?v=0.346"></script>
+<script src="js/templates.js?v=0.346"></script>
+<script src="js/offline-queue.js?v=0.346"></script>
+<script src="js/tour.js?v=0.346"></script>
+<script src="js/ui-catalog.js?v=0.346"></script>
+<script src="js/ui-actions.js?v=0.346"></script>
+<script src="js/ui-shell.js?v=0.346"></script>
+<script src="js/ui-home.js?v=0.346"></script>
+<script src="js/ui-baby.js?v=0.346"></script>
+<script src="js/ui-reminder-rules.js?v=0.346"></script>
+<script src="js/ui-priority.js?v=0.346"></script>
+<script src="js/ui-nutrition.js?v=0.346"></script>
+<script src="js/ui-household.js?v=0.346"></script>
+<script src="js/ui-settings.js?v=0.346"></script>
 
 <div class="ov" id="b3HomePrefsOv" data-ui="b3" data-bg-close="b3HomePrefsOv"><div class="mod"><div class="mhd"><button type="button" class="mcl" data-act="closeOv" data-args='["b3HomePrefsOv"]' aria-label="Schnellaktionen schließen">✕</button><h2 class="mti">Schnellaktionen anpassen</h2></div><div class="mbd"><div id="b3HomePrefsBody"></div><button type="button" class="b3-primary" data-act="closeOv" data-args='["b3HomePrefsOv"]'>Fertig</button></div></div></div>
 <div class="ov" id="b3MealPrefsOv" data-ui="b3" data-bg-close="b3MealPrefsOv"><div class="mod"><div class="mhd"><button type="button" class="mcl" data-act="closeOv" data-args='["b3MealPrefsOv"]' aria-label="Hinweise schließen">✕</button><h2 class="mti">Mahlzeiten-Hinweise</h2></div><div class="mbd"><div id="b3MealPrefsBody"></div><button type="button" class="b3-primary" data-act="NTUIReminders.save">Einstellungen speichern</button></div></div></div>

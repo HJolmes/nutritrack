@@ -2,6 +2,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.350',items:[
+    {icon:'💾',text:'<b>Wöchentliche Dateisicherung auf dem iPhone und iPad</b>. Ohne OneDrive erscheint der Sicherungsdialog sieben Tage nach der letzten gespeicherten Datei.',where:'Backup & Daten'},
+  ]},
   {v:'0.349',items:[
     {icon:'📱',text:'<b>Dialoge lassen sich mit dem Finger scrollen</b>: Wischen auf dem Inhalt bewegt auch lange Seiten wie das Baby-Tagebuch. Die Kopfzeile und die untere Navigation bleiben sichtbar.',where:'Baby · Dialoge'},
   ]},

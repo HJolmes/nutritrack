@@ -4336,9 +4336,9 @@ function _bootApp(){
   });
   // Service Worker
   if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('/nutritrack/sw.js').then(function(){
-      if(caches)caches.open('nt-v6').then(function(c){c.add(window.location.href).catch(function(){});});
-    }).catch(function(e){console.warn('SW registration failed:',e);});
+    // Versioned HTML/asset caching belongs to sw.js. A second client-side
+    // cache.add raced mode changes and could abort while the old page unloaded.
+    navigator.serviceWorker.register('/nutritrack/sw.js').catch(function(e){console.warn('SW registration failed:',e);});
   }
   // Health-Sync: pull new Apple-Health/Samsung-Health workouts on boot
   // and on tab refocus. Module is no-op when no token has been set up.

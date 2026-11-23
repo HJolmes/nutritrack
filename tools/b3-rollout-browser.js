@@ -7,7 +7,9 @@ module.exports=async function rollout(browser,base){
     const data=fixture(new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Berlin'}));
     await ctx.route('**/*',r=>(/^(data|blob):/.test(r.request().url())||/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/)/.test(r.request().url()))?r.continue():r.abort());
     await ctx.addInitScript(data=>{if(localStorage.getItem('nt_v6'))return;localStorage.setItem('nt_v6',JSON.stringify(data.state));localStorage.setItem('nt_x',JSON.stringify({fc:{},cf:data.customFoods,rc:data.recipes}));localStorage.setItem('nt_gate_skipped','1');localStorage.setItem('nt_install_dismissed','1');localStorage.setItem('nt_file_backup_day',data.state.currentDate);},data);
-    const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+    const page=await ctx.newPage(),errors=[],failures=[];
+    page.on('requestfailed',r=>{const u=new URL(r.url());failures.push({path:/^(data|blob):$/.test(u.protocol)?u.protocol:u.pathname,error:r.failure()?.errorText});});
+    page.on('pageerror',e=>{errors.push(e.stack||e.message);console.error('B3 rollout browser error',e.stack||e.message);});
     await page.goto(base,{waitUntil:'load'});await page.waitForFunction(()=>NTUI.enabled());
     assert.equal(await page.locator('#b3Root').isVisible(),true,'ordinary existing profile starts in the new default');
     const before=await page.evaluate(()=>({days:S.days,babyLog:S.babyLog,babyQuick:S.babyQuick,recipes,launchBar:S.launchBar,dashOrder:S.dashOrder,dashHidden:S.dashHidden}));
@@ -31,6 +33,7 @@ module.exports=async function rollout(browser,base){
     await page.evaluate(id=>NTBaby.stopFeed(true,id),running);
     await page.goto(base+'?ui=classic',{waitUntil:'load'});await page.waitForFunction(()=>S.setupDone);
     assert.equal(await page.evaluate(()=>NTUI.enabled()),false,'recovery URL always overrides the default');
+    if(errors.length)console.error('B3 rollout request diagnostics',failures);
     assert.deepEqual(errors,[],'rollout and recovery have no uncaught browser errors');
     console.log('B3 rollout: plain URL default, persistent classic choice, re-enable, protected old data, unknown settings and one-shot manifest shortcut OK');
   }finally{await ctx.close();}

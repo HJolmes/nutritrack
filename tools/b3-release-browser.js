@@ -58,9 +58,11 @@ module.exports=async function release(browser,output,base,origin){
     await page.evaluate(()=>NTUI.go('baby'));
     await page.getByRole('button',{name:'Erfassen: Baby-Tagebuch'}).click();await page.locator('#b3ActionBody button').filter({hasText:'Notiz'}).click();
     await page.locator('#babyNoteText').fill('Offline nach Mitternacht');await page.locator('#babyEntryOv [data-act="NTBaby.saveEntry"]').click();
+    await page.waitForFunction(()=>(S.babyLog[S.currentDate]||[]).some(e=>e.text==='Offline nach Mitternacht'),{},{timeout:5000});
     await page.evaluate(()=>{NTUI.go('nutrition');NTPicker.openPicker('breakfast','own');});
     await page.locator('#ownName').fill('Offline-Mahlzeit');await page.locator('#ownKcal').fill('123');await page.locator('#ownOnce').check();
     await page.locator('[data-act="NTPicker.pickerSaveOwn"]').click();
+    await page.waitForFunction(()=>S.days[S.currentDate].meals.breakfast.some(e=>e.name==='Offline-Mahlzeit'),{},{timeout:5000});
     const persisted=await page.evaluate(()=>({day:S.currentDate,meals:S.days[S.currentDate].meals,baby:S.babyLog[S.currentDate]}));
     assert.ok(persisted.meals.breakfast.some(e=>e.name==='Offline-Mahlzeit'));assert.ok(persisted.baby.some(e=>e.text==='Offline nach Mitternacht'));
     const offline=await page.reload({waitUntil:'load'});assert.ok(offline.fromServiceWorker());await page.waitForFunction(()=>NTUI.enabled());

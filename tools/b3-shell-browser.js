@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict'),path=require('node:path');
 const {fixture}=require('./fixtures/b3-state');
 const {devices}=require('playwright');
-module.exports=async function shell(browser,width,output,base){
+module.exports=async function shell(browser,width,output,base,origin){
   const ctx=await browser.newContext({...(process.env.B3_BROWSER==='webkit'?devices['iPhone 13']:{}),viewport:{width,height:844},isMobile:true,hasTouch:true,timezoneId:'Europe/Berlin'});
   try{
     await ctx.route('**/*',r=>/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/)/.test(r.request().url())?r.continue():r.abort());
@@ -69,12 +69,17 @@ module.exports=async function shell(browser,width,output,base){
     await page.evaluate(async()=>{await navigator.serviceWorker.register(new URL('sw.js',location.href).href,{scope:'./'});await navigator.serviceWorker.ready;});
     await page.reload({waitUntil:'load'});await page.waitForFunction(()=>!!navigator.serviceWorker.controller&&NTUI.enabled());
     await page.waitForFunction(async()=>!!(await caches.match(location.href)));
-    await ctx.setOffline(true);await page.reload({waitUntil:'load'});
+    if(origin){
+      origin.setAvailable(false);
+      await assert.rejects(ctx.request.get(base,{timeout:2000}),'direct origin request must fail independently of service worker');
+    }else await ctx.setOffline(true);
+    const offlineResponse=await page.reload({waitUntil:'load'});
+    assert.ok(offlineResponse.fromServiceWorker(),'restart must be served by the real service worker');
     await page.waitForFunction(()=>NTUI.enabled());
     assert.deepEqual(await page.evaluate(()=>S.ui.navSlots),['shop','pantry','more'],'offline reload retains navigation');
     await page.evaluate(()=>NTUI.go('nutrition'));await nav.getByRole('button',{name:'Erfassen: Ernährung'}).click();
     await page.locator('#pickerOv.open').waitFor();await page.evaluate(()=>closeOv('pickerOv'));
-    await ctx.setOffline(false);
+    if(origin)origin.setAvailable(true);else await ctx.setOffline(false);
     if(require('node:fs').existsSync(path.resolve(__dirname,'../js/ui-home.js')))await require('./b3-home-browser')(page);
     if(require('node:fs').existsSync(path.resolve(__dirname,'b3-baby-browser.js')))await require('./b3-baby-browser')(page);
     if(require('node:fs').existsSync(path.resolve(__dirname,'../js/ui-reminder-rules.js')))await require('./b3-reminder-browser')(page);
@@ -84,5 +89,5 @@ module.exports=async function shell(browser,width,output,base){
     assert.equal(await page.locator('#mainScreen').evaluate(el=>el.classList.contains('active')),true);
     assert.deepEqual(errors,[]);
     console.log('B3 shell '+width+'px: context +, eleven types, preferences, Back, feature off, classic recovery OK');
-  }finally{await ctx.close();}
+  }finally{if(origin)origin.setAvailable(true);await ctx.close();}
 };

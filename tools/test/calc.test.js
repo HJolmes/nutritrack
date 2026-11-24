@@ -1211,6 +1211,130 @@ test('pantryLogTrim und pantryWaste: 90 Tage, Höchstzahl, Weggeworfenes je Mona
   assert.equal(C.pantryWaste(null, '2026-10').n, 0);
 });
 
+// ── Vorrat: Übersicht, Haltbarkeit schätzen, Geöffnet, älteste Charge zuerst
+test('pantryMissing: leer oder unter Mindestmenge', () => {
+  const C = load({});
+  assert.equal(C.pantryMissing({ q: 0 }), true);
+  assert.equal(C.pantryMissing({ q: 1, min: 2 }), true);
+  assert.equal(C.pantryMissing({ q: 2, min: 2 }), false);
+  assert.equal(C.pantryMissing({ q: 0.5 }), false);
+});
+test('pantryShelfKind: erster Treffer gilt, Kategorie als Rückfall, sonst nichts', () => {
+  const C = load({});
+  const kind = (n, c) => (C.pantryShelfKind(n, c) || {}).id;
+  assert.equal(kind('H-Milch'), 'hmilch');
+  assert.equal(kind('Vollmilch 3,5 %'), 'milch');
+  assert.equal(kind('Hafermilch'), 'drink');
+  assert.equal(kind('Milchreis'), 'trocken');
+  assert.equal(kind('Basmatireis'), 'trocken');
+  assert.equal(kind('Frischkäse'), 'frischkaese');
+  assert.equal(kind('Gouda'), 'kaese');
+  assert.equal(kind('Erdbeerjoghurt'), 'joghurt');
+  assert.equal(kind('Erdbeermarmelade'), 'aufstrich');
+  assert.equal(kind('Putenaufschnitt'), 'aufschnitt');
+  assert.equal(kind('Rinderhack'), 'hack');
+  assert.equal(kind('Hähnchenbrust'), 'gefluegel');
+  assert.equal(kind('TK-Erbsen'), 'tk');
+  assert.equal(kind('Tomaten (Dose)'), 'konserve');
+  assert.equal(kind('Eier'), 'eier');
+  assert.equal(kind('Vollkornbrot'), 'brot');
+  assert.equal(kind('Äpfel'), 'lagergemuese');
+  assert.equal(kind('Paprika'), 'obstgemuese');
+  assert.equal(kind('Spülmittel'), undefined);
+  assert.equal(kind('Smoke-Wunderding', 'obst'), 'obstgemuese');
+  assert.equal(kind('Smoke-Wunderding', 'getraenke'), undefined);
+});
+test('pantryPlace: Start-Orte über die ID, eigene über den Namen', () => {
+  const C = load({});
+  assert.equal(C.pantryPlace({ id: 'kuehl', label: 'Egal' }), 'k');
+  assert.equal(C.pantryPlace({ id: 'tk' }), 't');
+  assert.equal(C.pantryPlace({ id: 'vorrat' }), 'v');
+  assert.equal(C.pantryPlace({ id: 'u1', label: 'Gefriertruhe Keller' }), 't');
+  assert.equal(C.pantryPlace({ id: 'u2', label: 'Tiefkühlfach' }), 't');
+  assert.equal(C.pantryPlace({ id: 'u3', label: 'Kühlschrank Büro' }), 'k');
+  assert.equal(C.pantryPlace({ id: 'u4', label: 'Keller' }), 'v');
+  assert.equal(C.pantryPlace({ id: 'u5', label: 'Auto' }), '');
+  assert.equal(C.pantryPlace(null), '');
+});
+test('pantryShelf/pantryEstimateDays: Ort zählt, eigene Haltedauer hat Vorrang, im TK keine Geöffnet-Frist', () => {
+  const C = load({});
+  assert.deepEqual(plain(C.pantryShelf('Milch', '', 'k')), { kind: 'milch', days: 5, open: 3 });
+  assert.deepEqual(plain(C.pantryShelf('Milch', '', 't')), { kind: 'milch', days: 30, open: 0 });
+  assert.equal(C.pantryShelf('Milch', '', 'v').days, 5);          // nicht vorgesehen → Kühlschrank-Wert
+  assert.equal(C.pantryShelf('Nudeln', '', 'k').days, 180);       // ohne Kühlschrank-Wert → Schrank
+  assert.equal(C.pantryShelf('H-Milch', '', '').days, 90);        // ohne Ort → üblicher Ort
+  assert.equal(C.pantryShelf('Hackfleisch', '', '').days, 1);
+  assert.equal(C.pantryShelf('Spülmittel', '', 'k'), null);
+  assert.equal(C.pantryEstimateDays({ n: 'Milch', hd: 9 }, 'k'), 9);
+  assert.equal(C.pantryEstimateDays({ n: 'Milch' }, 'k'), 5);
+  assert.equal(C.pantryEstimateDays({ n: 'Spülmittel' }, 'k'), 0);
+  assert.equal(C.pantryEstimateDays({ n: 'Ding', c: 'tk' }, ''), 90);
+  // Richtwerte bleiben vorsichtig: frische Ware im Kühlschrank höchstens drei Wochen
+  for (const n of ['Milch', 'Joghurt', 'Aufschnitt', 'Hackfleisch', 'Lachs', 'Hähnchen', 'Salat', 'Erdbeeren'])
+    assert.ok(C.pantryShelf(n, '', 'k').days <= 14, n);
+});
+test('pantryLotDue/pantryDue: geöffnet verkürzt, das frühere Datum zählt', () => {
+  const C = load({});
+  assert.equal(C.pantryLotDue({ mhd: '2026-12-01' }, 3), '2026-12-01');
+  assert.equal(C.pantryLotDue({ mhd: '2026-12-01', op: '2026-11-20' }, 3), '2026-11-23');
+  assert.equal(C.pantryLotDue({ mhd: '2026-11-21', op: '2026-11-20' }, 3), '2026-11-21');
+  assert.equal(C.pantryLotDue({ op: '2026-11-20' }, 0), '');
+  assert.equal(C.pantryLotDue({ vd: '2026-11-22', mhd: '2026-11-25' }, 0), '2026-11-22');
+  const it = { q: 2, mhd: '2026-12-01' };
+  const lots = [{ q: 1, mhd: '2026-12-01', op: '2026-11-20' }, { q: 1, mhd: '2026-12-05' }];
+  assert.deepEqual(plain(C.pantryDue(it, lots, 3, '2026-11-22')), { k: 'op', d: '2026-11-23', days: 1, lvl: 'soon', op: '2026-11-20' });
+  assert.equal(C.pantryDue(it, lots, 0, '2026-11-22').k, 'mhd');           // ohne Frist bleibt das MHD
+  assert.equal(C.pantryDue(it, [{ q: 0, op: '2026-11-01' }], 3, '2026-11-22').k, 'mhd'); // leere Charge zählt nicht
+  // pantryExpiring nimmt die Frist über expOf mit
+  const ex = C.pantryExpiring([{ n: 'Milch', q: 1, mhd: '2026-12-01', lots }], '2026-11-22', 3, (x) => C.pantryDue(x, x.lots, 3, '2026-11-22'));
+  assert.equal(ex.length, 1);
+  assert.equal(C.pantryExpiring([{ n: 'Milch', q: 1, mhd: '2026-12-01', lots }], '2026-11-22', 3).length, 0);
+});
+test('pantryDebit: geöffnete zuerst, dann frühestes Datum, ohne Datum zuletzt; nur eine Charge', () => {
+  const C = load({});
+  const lots = [
+    { id: 'a', q: 2, mhd: '' },
+    { id: 'b', q: 1, mhd: '2026-12-10' },
+    { id: 'c', q: 1, mhd: '2026-12-01' },
+    { id: 'd', q: 1, mhd: '2026-12-20', op: '2026-11-21' }
+  ];
+  assert.deepEqual(plain(C.pantryLotOrder(lots, 0)).map((l) => l.id), ['d', 'c', 'b', 'a']);
+  let r = C.pantryDebit(lots, 2.5, '', 3);
+  assert.deepEqual(plain(r.removed).map((l) => [l.id, l.q]), [['d', 1], ['c', 1], ['b', 0.5]]);
+  assert.deepEqual(plain(r.lots).map((l) => l.q), [2, 0.5, 0, 0]);
+  assert.equal(lots[1].q, 1, 'Eingabe bleibt unverändert');
+  r = C.pantryDebit(lots, 5, 'a', 3);
+  assert.deepEqual(plain(r.removed).map((l) => [l.id, l.q]), [['a', 2]]);
+  // gleiches Datum: früher eingebucht zuerst
+  const same = [{ id: 'n', q: 1, mhd: '2026-12-01', in: '2026-11-20' }, { id: 'o', q: 1, mhd: '2026-12-01', in: '2026-11-10' }];
+  assert.equal(C.pantryDebit(same, 1).removed[0].id, 'o');
+  // Verbrauchsdatum zählt wie das MHD
+  assert.equal(C.pantryDebit([{ id: 'x', q: 1, mhd: '2026-12-01' }, { id: 'y', q: 1, vd: '2026-11-28' }], 1).removed[0].id, 'y');
+});
+test('pantryReestimate: nur geschätzte Daten, echtes MHD und Verbrauchsdatum bleiben', () => {
+  const C = load({});
+  const lots = [
+    { id: 'e', q: 1, mhd: '2026-11-25', estimated: true },
+    { id: 'r', q: 1, mhd: '2026-11-26', estimated: false },
+    { id: 'v', q: 1, mhd: '', vd: '2026-11-27', estimated: true },
+    { id: 'n', q: 1, mhd: '' }
+  ];
+  const r = C.pantryReestimate(lots, 30, '2026-11-22');
+  assert.equal(r.n, 1);
+  assert.deepEqual(plain(r.lots).map((l) => l.mhd), ['2026-12-22', '2026-11-26', '', '']);
+  assert.equal(lots[0].mhd, '2026-11-25');
+  assert.equal(C.pantryReestimate(lots, 0, '2026-11-22').n, 0);
+});
+test('pantrySort: Name, Menge (wenig zuerst), Haltbarkeit (ohne Datum zuletzt)', () => {
+  const C = load({});
+  const items = [{ n: 'Zwieback', q: 3, d: '' }, { n: 'Äpfel', q: 1, d: '2026-12-05' }, { n: 'Milch', q: 1, d: '2026-11-24' }];
+  const names = (mode) => plain(C.pantrySort(items, mode, (it) => it.d)).map((x) => x.n);
+  assert.deepEqual(names('name'), ['Äpfel', 'Milch', 'Zwieback']);
+  assert.deepEqual(names('qty'), ['Äpfel', 'Milch', 'Zwieback']);
+  assert.deepEqual(names('exp'), ['Milch', 'Äpfel', 'Zwieback']);
+  assert.equal(items[0].n, 'Zwieback', 'Eingabe bleibt unverändert');
+});
+
 test('localTs: doppelte Stunde bei der Rückstellung nimmt die zuletzt vergangene (#345)', () => {
   const C = load({});
   const cest0205 = Date.UTC(2026, 9, 25, 0, 5); // 02:05 Sommerzeit

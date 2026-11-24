@@ -721,7 +721,7 @@ const EXPECTED_NAMESPACES = [
       NTPantry.saveItem();
       NTPantry.setFilter('__exp');
       out.expiry = tom.vd === addDays(today(), 1) && /Verbr\. bis .* morgen/.test(document.getElementById('pantryList').textContent)
-        && /Läuft ab/.test(document.getElementById('pantryLocChips').textContent)
+        && /Läuft ab/.test(document.querySelector('#pantryStats [aria-pressed="true"]').textContent)
         && /Läuft ab:[\s\S]*Tomaten · morgen/.test(document.getElementById('pantryCardBody').textContent);
       NTPantry.setFilter('');
       // 🐛 bleibt über dem offenen Dialog sichtbar, nur im Feedback-Dialog weg
@@ -859,6 +859,127 @@ const EXPECTED_NAMESPACES = [
     const newErr = errors.length - errBefore;
     if (newErr) { pantryFail++; console.log(`  x   Vorrat: ${newErr} neue(r) Fehler, siehe unten.`); }
     if (!pantryFail) console.log('  ok  Vorrat: Eintippen, Mindestmenge → Einkaufszettel, Abhaken füllt auf, Kochen zieht ab, Haltbarkeit, 🐛 im Dialog, Lagerorte, Kamera, Fotos erst nach Bestätigung, Zettel minus Vorrat, Verlauf/Weggeworfen/Rückgängig, Hält-ca.-Tage, Ablauf-Meldung, Barcode, Kochvorschläge, eigener Sync-Topf.');
+  }
+
+  // 12c. Vorrat-Ausbau: Übersicht (Läuft ab/Fehlt/Artikel), Suche getrennt vom
+  //      Einbuchen, Ordnen nach Name/Kategorie, Kategorie auf den Zettel,
+  //      Detail mit Chargen, geschätztes MHD, „Geöffnet“ verkürzt die Frist,
+  //      geöffnete Charge zuerst abgezogen, Charge entfernen + Rückgängig,
+  //      Ortswechsel schätzt nur geschätzte Daten neu. Alles per Klick.
+  let pantry2Fail = 0;
+  {
+    const errBefore = errors.length;
+    const onDialog = (d) => d.accept();
+    page.on('dialog', onDialog);
+    const out = {};
+    let keep = null;
+    try {
+      keep = await page.evaluate(() => {
+        const k = JSON.stringify({ shop: S.shopList, pantry: S.pantry || [], log: S.pantryLog || [], order: S.pantryOrder === undefined ? null : S.pantryOrder });
+        document.querySelectorAll('.ov.open').forEach((o) => o.classList.remove('open'));
+        S.pantry = []; S.pantryLog = []; S.pantryLocs = null; delete S.pantryOrder;
+        NTPantry.open(); NTPantry.setFilter('');
+        return k;
+      });
+      const T = await page.evaluate(() => ({ d5: addDays(today(), 5), d3: addDays(today(), 3), d10: addDays(today(), 10), d30: addDays(today(), 30), t: today() }));
+      const type = async (txt) => { await page.fill('#pantryInput', txt); await page.click('#pantryOv [data-act="NTPantry.submitInput"]'); };
+      const listText = () => page.evaluate(() => document.getElementById('pantryList').textContent);
+      // D1: im Kühlschrank eingebucht → MHD heute + 5, als geschätzt markiert
+      await page.click('#pantryLocChips [data-args=\'["kuehl"]\']');
+      await type('Milch');
+      await page.click('#pantryLocChips [data-args=\'[""]\']');
+      await type('2 Nudeln');
+      await type('Smoke-Schwamm');
+      const st = await page.evaluate(() => {
+        const m = S.pantry.find((x) => x.n === 'Milch'), s = S.pantry.find((x) => x.n === 'Smoke-Schwamm');
+        s.min = 3; NTPantry.render();
+        return { m: { loc: m.loc, mhd: m.mhd, est: m.lots[0].estimated, c: m.c, in: m.lots[0].in }, s: { mhd: s.mhd }, row: document.getElementById('pantryList').textContent };
+      });
+      out.estimate = st.m.loc === 'kuehl' && st.m.mhd === T.d5 && st.m.est === true && st.m.in === T.t && st.s.mhd === '' && /geschätzt/.test(st.row);
+      // A1: Kennzahlen, „Fehlt“ filtert, zweiter Tipp hebt auf
+      const tiles = await page.evaluate(() => [...document.querySelectorAll('#pantryStats .nt-tool')].map((b) => b.textContent));
+      await page.click('#pantryStats [data-args=\'["__low"]\']');
+      const low = await listText();
+      const pressed = await page.getAttribute('#pantryStats [data-args=\'["__low"]\']', 'aria-pressed');
+      await page.click('#pantryStats [data-args=\'["__low"]\']');
+      out.stats = tiles[0] === '0Läuft ab' && tiles[1] === '1Fehlt' && tiles[2] === '3Artikel'
+        && /Smoke-Schwamm/.test(low) && !/Nudeln/.test(low) && pressed === 'true' && /Nudeln/.test(await listText());
+      // A2: Suche legt nichts an; „nicht gefunden“ bietet das Einbuchen an
+      await page.fill('#pantrySearch', 'nud');
+      const found = await listText();
+      await page.fill('#pantrySearch', 'Quark');
+      const n0 = await page.evaluate(() => S.pantry.length);
+      const miss = await listText();
+      await page.click('#pantryList [data-act="NTPantry.addQuery"]');
+      out.search = /Nudeln/.test(found) && !/Milch/.test(found) && /Nichts gefunden/.test(miss) && n0 === 3
+        && await page.evaluate(() => S.pantry.length === 4 && !!S.pantry.find((x) => x.n === 'Quark') && document.getElementById('pantrySearch').value === '');
+      // A2/A3: ordnen nach Name (flach, gemerkt) und nach Kategorie (Gruppen + Kategorie-Chips)
+      await page.selectOption('#pantryOrder', 'name');
+      const byName = await page.evaluate(() => [...document.querySelectorAll('#pantryList [data-act="NTPantry.openItem"] > div:first-child')].map((d) => d.textContent));
+      await page.selectOption('#pantryOrder', 'cat');
+      const byCat = await page.evaluate(() => ({ list: document.getElementById('pantryList').textContent, chips: document.getElementById('pantryLocChips').textContent, order: S.pantryOrder }));
+      await page.selectOption('#pantryOrder', 'loc');
+      out.order = byName.join('|') === 'Milch|Nudeln|Quark|Smoke-Schwamm' && byCat.order === 'cat' && /Milch & Käse/.test(byCat.list) && /Milch & Käse/.test(byCat.chips)
+        && await page.evaluate(() => S.pantryOrder === 'loc');
+      // A4 + A3: Detail öffnen, Kategorie auf den Zettel
+      const milkId = await page.evaluate(() => S.pantry.find((x) => x.n === 'Milch').id);
+      await page.click('#pantryOv [data-act="NTPantry.step"][data-args=\'["' + milkId + '",1]\']');
+      await page.click('#pantryList [data-act="NTPantry.openItem"][data-args=\'["' + milkId + '"]\']');
+      await page.locator('#pantryItemOv.open').waitFor();
+      const det = await page.evaluate(() => ({ sum: document.getElementById('pantryItemSum').textContent, cards: document.querySelectorAll('#pantryCharges .pantry-charge[data-lot-id]:not([data-lot-id=""])').length, log: document.getElementById('pantryItemLog').textContent }));
+      await page.click('#pantryItemOv [data-act="NTPantry.toShop"]');
+      out.detail = /Bestand/.test(det.sum) && /Kühlschrank/.test(det.sum) && /Milch & Käse/.test(det.sum) && det.cards === 2 && /Gekauft/.test(det.log)
+        && await page.evaluate(() => { const m = S.pantry.find((x) => x.n === 'Milch'), si = S.shopList.find((x) => x.n === 'Milch' && !x.d); return !!si && si.c === m.c; });
+      // D2: zweite Charge „Geöffnet“ → Frist heute + 3 zählt, Kennzahl „Läuft ab“
+      const lots0 = await page.evaluate((id) => S.pantry.find((x) => x.id === id).lots.map((l) => l.id), milkId);
+      await page.click('#pantryCharges [data-act="NTPantry.openLot"][data-args=\'["' + lots0[1] + '"]\']');
+      const op = await page.evaluate((id) => { const m = S.pantry.find((x) => x.id === id); return { op: m.lots.find((l) => l.op), exp: NTPantry.expiring().length, sum: document.getElementById('pantryItemSum').textContent }; }, milkId);
+      out.opened = !!op.op && op.op.id === lots0[1] && op.op.op === T.t && op.exp === 1 && /Geöffnet · bis/.test(op.sum);
+      // D3: „−“ in der Liste nimmt die geöffnete Charge, obwohl beide gleich lange halten
+      await page.evaluate(() => closeOv('pantryItemOv'));
+      await page.click('#pantryOv [data-act="NTPantry.step"][data-args=\'["' + milkId + '",-1]\']');
+      out.oldestFirst = await page.evaluate(({ id, keepLot }) => { const m = S.pantry.find((x) => x.id === id); return m.q === 1 && m.lots.length === 1 && m.lots[0].id === keepLot && S.pantryLog[0].lots[0].op; }, { id: milkId, keepLot: lots0[0] });
+      // A4: Charge entfernen bucht eine Korrektur, ↩️ in „Letzte Buchungen“ holt sie zurück
+      await page.click('#pantryList [data-act="NTPantry.openItem"][data-args=\'["' + milkId + '"]\']');
+      await page.click('#pantryCharges [data-act="NTPantry.dropLot"]');
+      const dropped = await page.evaluate((id) => ({ q: S.pantry.find((x) => x.id === id).q, k: S.pantryLog[0].k }), milkId);
+      await page.click('#pantryItemLog [data-act="NTPantry.undo"]');
+      out.dropLot = dropped.q === 0 && dropped.k === 'korrektur' && await page.evaluate((id) => S.pantry.find((x) => x.id === id).q === 1 && /Bestand/.test(document.getElementById('pantryItemSum').textContent), milkId);
+      // D4: echte Charge (Datum eingetragen) bleibt, geschätzte wird für den Tiefkühler neu berechnet
+      await page.click('#pantryItemOv [data-act="NTPantry.addChargeRow"]');
+      await page.fill('#pantryCharges .pantry-charge-mhd >> nth=-1', T.d10);
+      await page.click('#pantryItemOv [data-act="NTPantry.saveItem"]');
+      await page.click('#pantryList [data-act="NTPantry.openItem"][data-args=\'["' + milkId + '"]\']');
+      await page.selectOption('#pantryItemLoc', 'tk');
+      const offer = await page.isVisible('#pantryItemRelocChk');
+      await page.click('#pantryItemOv [data-act="NTPantry.saveItem"]');
+      out.reloc = offer && await page.evaluate(({ id, T }) => {
+        const m = S.pantry.find((x) => x.id === id), d = m.lots.map((l) => l.mhd).sort();
+        return m.loc === 'tk' && d[0] === T.d10 && d[1] === T.d30 && m.lots.find((l) => l.mhd === T.d10).estimated === false;
+      }, { id: milkId, T });
+    } catch (e) { record('Vorrat-Ausbau', e.message); }
+    await page.evaluate((k) => {
+      document.querySelectorAll('.ov.open').forEach((o) => o.classList.remove('open'));
+      if (!k) return;
+      const o = JSON.parse(k);
+      S.shopList = o.shop; S.pantry = o.pantry; S.pantryLog = o.log; S.pantryLocs = null; S.pantryTomb = {};
+      if (o.order === null) delete S.pantryOrder; else S.pantryOrder = o.order;
+      saveS(); NTShop.render(); NTPantry.render();
+    }, keep).catch(() => {});
+    page.off('dialog', onDialog);
+    for (const [k, v] of Object.entries({ estimate: 'Milch im Kühlschrank → MHD heute + 5, „geschätzt“, eingebucht heute; ohne Richtwert kein Datum',
+      stats: 'Übersicht Läuft ab/Fehlt/Artikel, „Fehlt“ filtert und hebt beim zweiten Tipp auf',
+      search: 'Suche filtert ohne anzulegen, „nicht gefunden“ bucht auf Wunsch ein',
+      order: 'Ordnen nach Name (flach, gemerkt) und Kategorie (Gruppen und Chips)',
+      detail: 'Detail mit Bestand, Ort, Kategorie, Chargen und Buchungen; Zettel übernimmt die Kategorie',
+      opened: '„Geöffnet“ setzt das Datum, verkürzte Frist zählt in Kopf und „Läuft ab“',
+      oldestFirst: '„−“ zieht von der geöffneten Charge ab', dropLot: 'Charge entfernen als Korrektur, ↩️ im Detail holt sie zurück',
+      reloc: 'Ortswechsel schätzt nur das geschätzte Datum neu, eingetragenes bleibt' })) {
+      if (!out[k]) { pantry2Fail++; console.log('  x   Vorrat-Ausbau: ' + v); }
+    }
+    const newErr = errors.length - errBefore;
+    if (newErr) { pantry2Fail++; console.log(`  x   Vorrat-Ausbau: ${newErr} neue(r) Fehler, siehe unten.`); }
+    if (!pantry2Fail) console.log('  ok  Vorrat-Ausbau: Übersicht und Filter, Suche getrennt vom Einbuchen, Ordnen nach Name/Kategorie, Detail mit Chargen und Buchungen, Kategorie auf den Zettel, geschätztes MHD, Geöffnet-Frist, geöffnete Charge zuerst, Charge entfernen/Rückgängig, Ortswechsel.');
   }
 
   // 7c. App-Tour: aus der Hilfe von vorn bis „Fertig“ per Klick, dann an

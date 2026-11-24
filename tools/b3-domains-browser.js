@@ -56,7 +56,7 @@ module.exports=async function domains(page,output,width){
   assert.equal(await page.evaluate(id=>S.pantry.find(p=>p.id===id).q,item.id),2,'Undo restores the quantity');
   await page.evaluate(id=>{S.pantry.find(p=>p.id===id).mhd=NTBaby.today();NTUI.go('household');},item.id);
   await page.locator('.b3-expiry').getByRole('button',{name:'Artikel anzeigen'}).click();
-  assert.match(await page.locator('#pantryOv.open .stab.act').textContent(),/Läuft ab/);
+  assert.match(await page.locator('#pantryOv.open #pantryStats [aria-pressed="true"]').textContent(),/Läuft ab/);
   assert.ok(await page.locator('#pantryOv.open').getByText('B3 Mindestvorrat',{exact:true}).isVisible());
   await page.evaluate(()=>{NTPantry.setFilter('');NTUI.go('household');});
   await page.getByRole('button',{name:'Rezepte aus dem Vorrat finden'}).click();

@@ -2,6 +2,13 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.354',items:[
+    {icon:'🥫',text:'<b>Vorrat mit Übersicht</b>. Oben steht, was bald abläuft, was fehlt und wie viele Artikel da sind – ein Tipp filtert die Liste.',where:'Vorrat'},
+    {icon:'🔎',text:'<b>Suchen und Ordnen</b> nach Lagerort, Kategorie, Haltbarkeit, Name oder Menge.',where:'Vorrat'},
+    {icon:'📦',text:'<b>Artikel-Detail mit allen Packungen</b>: Datum, letzte Buchungen und „Auf den Zettel“. Einzelne Packungen lassen sich korrigieren oder entfernen.',where:'Vorrat · Artikel'},
+    {icon:'📅',text:'<b>Haltbarkeit wird geschätzt</b>, wenn kein Datum eingetragen ist – vorsichtig nach Produktart und Lagerort, als „geschätzt“ markiert. Beim Umräumen, z. B. in den Tiefkühler, wird auf Wunsch neu gerechnet.',where:'Vorrat'},
+    {icon:'📂',text:'<b>„Geöffnet“ verkürzt die Frist</b>. Beim Verbrauchen wird zuerst die geöffnete, dann die älteste Packung abgezogen.',where:'Vorrat · Artikel'},
+  ]},
   {v:'0.353',items:[
     {icon:'🔤',text:'<b>Knöpfe brechen nicht mehr mitten im Wort um</b>. Lagerort-Filter, Reiter und Artikelkacheln bleiben einzeilig oder lassen sich quer wischen – auch bei großer Schrift.',where:'Vorrat · Einkauf · Baby'},
     {icon:'🧰',text:'<b>Einheitliche Werkzeugleisten</b>. Vorrat, Einkaufszettel und Wochenplan zeigen ihre Aktionen als gleich große Kacheln mit Symbol und Beschriftung.',where:'Haushalt'},

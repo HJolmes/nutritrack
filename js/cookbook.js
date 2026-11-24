@@ -329,12 +329,13 @@ function detail(id){
   var r=rec(id);
   if(!r){showToast('Rezept nicht gefunden');return;}
   _cur=id;_portions=servingsOf(r);_panel='';
+  _fresh=(_freshNext===id)?id:null;_freshNext=null;
   renderDetail();
   openOv('bookDetailOv');
   aiCheck(r);
   var b=document.querySelector('#bookDetailOv .mod');if(b)b.scrollTop=0;
 }
-function closeDetail(){_panel='';closeOv('bookDetailOv');}
+function closeDetail(){_panel='';_fresh=null;closeOv('bookDetailOv');}
 function setPortions(d){
   _portions=Math.max(1,Math.min(99,_portions+d));
   renderIngs('bookDetIngs',view(rec(_cur)),_portions);
@@ -428,10 +429,17 @@ function planNow(){
   showToast('📅 '+r.name+' · '+(s?s.label:'')+' '+fmtDate(d)+' eingeplant ✓');
   _panel='';renderDetail();
 }
+// 🛒 Einkaufen und das Angebot nach dem Anlegen: dieselbe Vorschau wie überall
+// (NTShop.recipePreview) — Portionen, Vorrat, Zeilen abwählbar.
 function toShop(){
   if(!window.NTShop){showToast('Einkaufszettel nicht verfügbar');return;}
-  NTShop.addRecipe(_cur,_portions,!!_orig[_cur]);
+  if(_fresh){_fresh=null;renderDetail();}
+  NTShop.recipePreview(_cur,_portions,!!_orig[_cur]);
 }
+// Ein gerade angelegtes Rezept zeigt oben ein ruhiges Angebot „🛒 Zutaten auf
+// den Zettel“ — nur bis die Ansicht geschlossen wird, kein Pflicht-Dialog.
+var _fresh=null,_freshNext=null;
+function shopOn(){var f=window.NTFeat&&NTFeat.byId('shop');return !!window.NTShop&&!(f&&NTFeat.isOff(f));}
 function toggleFav(){
   var r=rec(_cur);if(!r)return;
   r.fav=!r.fav;if(!r.fav)delete r.fav;
@@ -467,7 +475,9 @@ function renderDetail(){
   var btn=function(act,label){return '<button type="button" class="bk-act" data-act="'+act+'">'+label+'</button>';};
   var tags=mealTags(r)+(r.cat||[]).map(function(c){return '<span class="bk-tag">'+esc(c)+'</span>';}).join('');
   el.innerHTML=
-    (tags?'<div class="bk-tags" style="margin:0 0 10px;">'+tags+'</div>':'')
+    (_fresh===r.id&&shopOn()?'<div class="bk-panel" id="bookFreshShop"><div class="bk-pt">✓ Neu im Kochbuch</div>'
+      +'<button type="button" class="seb" style="margin:0;" data-act="NTBook.toShop">🛒 Zutaten auf den Zettel</button></div>':'')
+    +(tags?'<div class="bk-tags" style="margin:0 0 10px;">'+tags+'</div>':'')
     +(bookMeals(r).length?'':'<div class="bk-mu" style="margin:0 0 10px;">Keine Mahlzeit gewählt – „🎲 Füllen“ plant das Rezept nicht ein. ✏️ Bearbeiten → Passt zu.</div>')
     +'<button type="button" class="svb" style="margin:0 0 8px;" data-act="NTBook.cook" data-args="'+args([r.id,0])+'">👨‍🍳 Kochen'+(steps.length?' · '+steps.length+' Schritt'+(steps.length===1?'':'e'):'')+'</button>'
     +'<div class="bk-acts">'
@@ -660,7 +670,9 @@ function editSave(){
   var missing=d.ingredients.filter(function(g){return !(g.amount>0)&&!g.pu;}).length;
   if(missing&&o.isNew&&!confirm(missing+' Zutat'+(missing===1?' hat':'en haben')+' keine Grammangabe und zählen mit 0 kcal. Trotzdem speichern?'))return;
   var old=o.isNew?null:rec(d.id);
-  if(o.isNew||(old&&old.name!==d.name)){if(!confirmNew(d,o.isNew?null:d.id))return;}
+  if(o.isNew||(old&&old.name!==d.name)){
+    if(!confirmNew(d,o.isNew?null:d.id)){if(o.isNew&&o.from==='shop')useExisting(d);return;}
+  }
   var n=d.baseServings;
   // Vom alten Rezept bleibt, was der Editor nicht kennt (fav und kuenftige Felder).
   /** @type {Record<string, any>} */
@@ -684,8 +696,27 @@ function editSave(){
     else showToast((out.emoji||'📋')+' '+out.name+' im Kochbuch gespeichert ✓');
   } else showToast('Rezept gespeichert ✓');
   render();
-  if(o.from!=='mealDetail'&&o.from!=='plan')detail(out.id);
+  // Vom Einkaufszettel (📷 Rezept-Foto): direkt die Vorschau „Zutaten auf den
+  // Zettel“ in der Portionenzahl des Rezepts, statt der Rezeptansicht.
+  if(o.from==='shop'&&o.isNew&&window.NTShop)NTShop.recipePreview(out.id,n,false,{fresh:true});
+  else if(o.from!=='mealDetail'&&o.from!=='plan'){if(o.isNew)_freshNext=out.id;detail(out.id);}
   else if(isOpen('bookDetailOv'))renderDetail();
+}
+// Vom Einkaufszettel angelegt und „nicht zusätzlich anlegen“ gewählt: das
+// vorhandene Rezept nehmen statt eines zweiten — der Entwurf wird verworfen.
+function dupOf(d){
+  if(d.src){var same=recipes.filter(function(r){return r.src&&r.src===d.src;})[0];if(same)return same;}
+  var m=window.NTPlan&&NTPlan.similarRecipe?NTPlan.similarRecipe(d.name,d.ingredients,null):null;
+  return m?m.r:null;
+}
+function useExisting(d){
+  var m=dupOf(d);
+  if(!m||!window.NTShop)return;
+  if(!confirm('Stattdessen die Zutaten von „'+m.name+'“ aus dem Kochbuch auf den Einkaufszettel?\n\nAbbrechen = zurück zum Entwurf.'))return;
+  _saved=true;_draft=null;_dOpts=null;
+  closeOv('recEditOv');
+  if(window.NTPlan&&NTPlan.cancelNew)NTPlan.cancelNew();
+  NTShop.recipePreview(m.id,servingsOf(m),false);
 }
 // Vom closeOv-Haken in index.html gerufen — bei JEDEM Schliessen des Editors.
 // Nicht gespeicherte Aenderungen gehen nur mit Rueckfrage verloren; das

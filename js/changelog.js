@@ -2,6 +2,11 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.358',items:[
+    {icon:'📷',text:'<b>Rezept-Foto am Einkaufszettel</b>: Rezept abfotografieren, prüfen, ins Kochbuch speichern und gleich auswählen, welche Zutaten auf den Zettel kommen.',where:'Einkaufszettel'},
+    {icon:'🛒',text:'<b>Vorschau „Zutaten auf den Zettel“</b>: rechnet auf deine Portionen um und lässt Vorrätiges sowie Grundzutaten wie Salz und Öl erst einmal weg. Jede Zeile kannst du an- oder abwählen.',where:'Einkaufszettel · Kochbuch'},
+    {icon:'📖',text:'<b>„Einkaufen“ im Kochbuch</b> öffnet jetzt dieselbe Vorschau, statt alles sofort auf den Zettel zu legen. Ein neu angelegtes Rezept bietet sie direkt an.',where:'Kochbuch'},
+  ]},
   {v:'0.357',items:[
     {icon:'🧾',text:'<b>Kassenbon fotografieren</b>: Die gekauften Artikel landen nach deiner Bestätigung auf einmal im Vorrat und werden auf dem Einkaufszettel abgehakt. Preise werden nicht gespeichert.',where:'Vorrat · Foto/Bon'},
     {icon:'🏷️',text:'<b>Barcode-Serienscan</b>: Der Scanner bleibt offen, jeder Code zählt ＋1 oder −1, mit Mitschrift und Rückgängig. Neue Codes sammeln sich zum Zuordnen.',where:'Vorrat · Einbuchen/Verbrauchen'},

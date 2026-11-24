@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.357"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.358"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.357"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.358"></script>
 <script>
   // @ts-check
   (function(){
@@ -924,6 +924,15 @@ body.b3-on #babySleepPlanBody{max-height:none!important;overflow:visible!importa
 .pantry-meal-q .sinp{min-height:44px;text-align:right;}
 .pantry-meal-q span{flex-shrink:0;font-size:12px;color:var(--mu);}
 .pantry-meal-head{margin-top:10px;}
+/* Vorschau „Zutaten auf den Zettel“ (#planShopOv, NTShop.recipePreview) */
+.shop-prev{margin:0 0 10px;}
+.shop-prev-row{display:flex;align-items:center;gap:8px;min-height:44px;padding:6px 0;border-bottom:1px solid var(--br);cursor:pointer;}
+.shop-prev-row input{width:22px;height:22px;margin:0 6px;flex-shrink:0;}
+.shop-prev-n{flex:1;min-width:0;font-size:14px;font-weight:700;overflow-wrap:break-word;}
+.shop-prev-n small{display:block;font-size:12px;font-weight:400;color:var(--mu);}
+.shop-prev-q{flex-shrink:0;font-size:13px;color:var(--mu);white-space:nowrap;}
+.shop-prev-row.off .shop-prev-n{color:var(--mu);}
+#planShopOv .svb,#planShopOv .seb{white-space:nowrap;}
 .pantry-meal-acts .svb,.pantry-meal-acts .seb{white-space:nowrap;}
 .pantry-exp-cook{margin:0 0 8px!important;min-height:44px;font-size:13px;white-space:nowrap;}
 .pantry-cook-row{padding:10px 2px;border-bottom:1px solid var(--br);}
@@ -1355,6 +1364,8 @@ body.b3-on #babyOvQuickBtns{align-items:stretch;}
 .nt-tools{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
 .nt-tools .nt-tool,body.b3-on .nt-tools .nt-tool{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;flex:1 1 22%;min-width:0;min-height:56px;margin:0;padding:6px 2px;border:1.5px solid var(--br);border-radius:12px;background:#fff;color:var(--tx);font-size:12px;font-weight:700;line-height:1.2;text-align:center;white-space:nowrap;cursor:pointer;}
 .nt-tools .nt-tool>span:first-child{font-size:18px;line-height:1;}
+/* Einkaufszettel: vier Kacheln, Breite nach Beschriftung („Rezept-Foto“, „Kategorien“) — bei 312 px passt so jede ohne Abschneiden. */
+#shopOv .nt-tools .nt-tool{flex:1 1 auto;padding:6px 4px;}
 .nt-tools .nt-tool-l{font-style:normal;}
 #mealDetailScreen .md-cta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
 #mealDetailScreen .md-cta .tpl,body.b3-on #mealDetailScreen .md-cta .tpl{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:0;padding:10px 4px;border-radius:16px;font-size:12.5px;line-height:1.2;white-space:nowrap;}
@@ -1369,6 +1380,8 @@ body.b3-on .list-row .lr-name{white-space:normal;overflow:visible;line-height:1.
 body.b3-on .list-row .lr-val{white-space:nowrap;flex-shrink:0;}
 body.b3-on .shopcat-row{flex-wrap:wrap;justify-content:flex-end;}
 body.b3-on .shopcat-row .shopcat-nm{flex:1 1 120px;}
+body.b3-on .bk-acts .bk-act{min-width:0;padding:8px 2px 6px;}
+body.b3-on .bk-acts .bk-act span{white-space:nowrap;hyphens:none;}
 #b3HomePrefsBody .b3-pref-head{margin:16px 2px 6px;font-size:.75rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--b3-muted);}
 #b3HomePrefsBody .b3-pref-row{display:grid;grid-template-columns:minmax(0,1fr) 44px 44px;gap:8px;align-items:stretch;margin-bottom:8px;}
 #b3HomePrefsBody .b3-pref-row.is-off{grid-template-columns:minmax(0,1fr);}
@@ -2007,7 +2020,7 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.357</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.358</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -2284,9 +2297,9 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
       <details open><summary>🏠 Heute-Tab</summary><div class="hb">Der Startbildschirm zeigt dein Tagesziel, die verbleibenden Kalorien und die drei Makro-Karten (Protein, Kohlenhydrate, Fett). Darunter liegen die vier Mahlzeiten-Karten — antippen öffnet die Detail-Ansicht — und die Kacheln der eingeschalteten Funktionen (Wochenplan, Kochbuch, Sport, Wasser, Einkaufszettel, Vorrat, Fasten, Baby …). Welche Kacheln erscheinen und in welcher Reihenfolge, stellst du unter <strong>Mehr → 🧩 Funktionen</strong> ein. Mit den Pfeilen <strong>‹ ›</strong> blätterst du zwischen Tagen. Oben rechts liegen <strong>?</strong> (Hilfe und App-Tour), <strong>📬</strong> (Partner-Postfach, sobald ihr gekoppelt seid — mit Flagge für ungelesene Sendungen) und <strong>📤</strong> (den angezeigten Tag teilen). „▶ Nährwert-Details" klappt die Ampel-Kacheln (Zucker, Ballaststoffe, Salz …) auf. Wasser trackst du über die Gläser-Reihe oder die Mengen-Knöpfe, Sport über „+ Eintragen" — verbrannte Kalorien kommen zu dem dazu, was heute noch übrig ist. Ein Tipp auf die Versionsnummer neben deinem Namen zeigt, was neu ist.</div></details>
       <details><summary>➕ Mahlzeit erfassen</summary><div class="hb">Der <strong>＋</strong>-Knopf in der Mitte der unteren Leiste öffnet den Picker, standardmäßig im <strong>Chat</strong>: Einfach tippen oder per 🎙️ diktieren, was du gegessen hast („Brot mit Käse und Schinken") — die App zerlegt es in Zutaten und schätzt Nährwerte. Weitere Wege:<ul><li><strong>Suche</strong> — lokale Treffer sofort beim Tippen, Enter lädt Online-Ergebnisse</li><li><strong>Zuletzt</strong> — kürzlich verwendete Einträge</li><li><strong>Foto</strong> — Teller fotografieren, KI erkennt die Komponenten</li><li><strong>Barcode</strong> — Verpackung scannen</li><li><strong>Eigenes</strong> — Nährwerte selbst eintragen; mit Häkchen „Nur einmal eintragen" wird nichts dauerhaft gespeichert</li><li><strong>Link</strong> — ein Feld für beides: Rezept-Link von nahezu jeder Rezept-Seite oder jedem Food-Blog (Chefkoch, Lecker, Kochbar, Essen &amp; Trinken, AllRecipes …) <em>oder</em> eine geteilte NutriTrack-Sendung (Mahlzeit, Rezept, ganzer Tag, Zeitraum) als Link oder Code. Die App erkennt selbst, was du eingefügt hast; ein passender Inhalt aus der Zwischenablage wird beim Öffnen gleich angeboten. Die App liest zuerst die Rezeptdaten der Seite selbst und fragt die KI nur, wenn die Seite keine hat. Danach wählst du unter „Wohin damit?", ob das Rezept eingetragen, als Rezept gespeichert und/oder auf den Einkaufszettel gelegt wird</li></ul></div></details>
       <details><summary>🍽 Mahlzeit-Detail</summary><div class="hb">Die Karte einer Mahlzeit öffnet die Detail-Ansicht mit allen Posten. Oben rechts übernimmt <strong>⎘</strong> die Mahlzeit von gestern, <strong>📤</strong> teilt sie. Unten findest du: <strong>📋 Vorlage</strong> (Mahlzeit als Vorlage laden/speichern), <strong>🔁 Wiederholen</strong> (an festen Wochentagen automatisch eintragen) und <strong>💾 Als Rezept</strong> (alle Einträge als Rezept ins Kochbuch übernehmen — du prüfst es im Editor). Einzelne Einträge antippen zum Bearbeiten, Verschieben oder Löschen.</div></details>
-      <details><summary>🛒 Einkaufszettel</summary><div class="hb">Über die Kachel <strong>🛒 Einkaufszettel</strong> auf „Heute" (oder Mehr → Funktionen, wenn der Zettel leer ist) führst du eine Einkaufsliste: oben eintippen („2 Liter Milch" erkennt Menge und Kategorie von selbst) oder über „🧺 Artikel" aus den Kacheln antippen; „🏷 Kategorien" legt eigene Kategorien an. Ein Tipp auf einen Artikel hakt ihn ab, ✏️ ändert Name, Menge, Symbol und Kategorie. Über „🔄 Teilen" (oder Mehr → 🔗 Verbindungen) koppelst du ein zweites Gerät mit einem Code — beide Geräte sehen denselben Zettel in Echtzeit, verschlüsselt und getrennt vom Baby-Tagebuch. Per Alexa Angesagtes erreicht ebenfalls beide, sofern beide Handys dasselbe Familien-Token tragen (Mehr → 🔗 Verbindungen → 🗣️ Alexa). Rezepte übernimmst du im Kochbuch über das Rezept → 🛒 Einkaufen.</div></details>
+      <details><summary>🛒 Einkaufszettel</summary><div class="hb">Über die Kachel <strong>🛒 Einkaufszettel</strong> auf „Heute" (oder Mehr → Funktionen, wenn der Zettel leer ist) führst du eine Einkaufsliste: oben eintippen („2 Liter Milch" erkennt Menge und Kategorie von selbst) oder über „🧺 Artikel" aus den Kacheln antippen; „🏷 Kategorien" legt eigene Kategorien an. Ein Tipp auf einen Artikel hakt ihn ab, ✏️ ändert Name, Menge, Symbol und Kategorie. Über „🔄 Teilen" (oder Mehr → 🔗 Verbindungen) koppelst du ein zweites Gerät mit einem Code — beide Geräte sehen denselben Zettel in Echtzeit, verschlüsselt und getrennt vom Baby-Tagebuch. Per Alexa Angesagtes erreicht ebenfalls beide, sofern beide Handys dasselbe Familien-Token tragen (Mehr → 🔗 Verbindungen → 🗣️ Alexa). Rezepte übernimmst du im Kochbuch über das Rezept → 🛒 Einkaufen.<br><br><strong>📷 Rezept-Foto:</strong> Ein Rezept aus Kochbuch, Zeitschrift oder Rezeptkarte abfotografieren — die KI liest es, du prüfst es im Editor und speicherst es ins Kochbuch. Gleich danach zeigt die Vorschau „Zutaten auf den Zettel“ jede Zutat für die gewählten Portionen: Was der Vorrat deckt, ist als „im Vorrat“ abgewählt (teilweise Vorrätiges nur mit dem Rest), Grundzutaten wie Salz, Pfeffer, Öl und Wasser ebenfalls; alles lässt sich an- und abwählen. „Nur Rezept speichern“ legt nichts auf den Zettel. Braucht Internet und die KI — sonst stellst du das Rezept selbst zusammen.</div></details>
       <details><summary>🥫 Vorrat</summary><div class="hb">Die Kachel <strong>🥫 Vorrat</strong> zeigt, was zu Hause da ist. Oben stehen drei Kennzahlen — <strong>Läuft ab</strong>, <strong>Fehlt</strong> und <strong>Artikel</strong>; antippen filtert die Liste, ein zweiter Tipp hebt auf. Darunter <strong>Suchen</strong> (legt nichts an) und <strong>Ordnen</strong> nach Lagerort, Kategorie, Haltbarkeit, Name oder Menge; die Chips filtern nach Ort bzw. Kategorie. Stehen mehrere Hinweise an, fasst eine Zeile sie zusammen — antippen klappt sie auf.<br><br><strong>Einbuchen:</strong> oben eintippen („3 Dosen Tomaten“), mit − / ＋ zählen, auf dem Einkaufszettel abhaken, per <strong>📷 Foto/Bon</strong> oder per Barcode. Ein Tipp auf den Namen öffnet die Details: Bestand, Lagerort, Kategorie, Mindestmenge, Chargen und die letzten Buchungen.<br><br><strong>Haltbarkeit:</strong> Ohne Datum von der Packung schätzt die App ein MHD nach Produktart und Lagerort (markiert als „geschätzt“, ein vorsichtiger Richtwert). Jede Packung ist eine eigene Charge mit eigenem Datum; <strong>📂 Geöffnet</strong> verkürzt die Frist, abgezogen wird zuerst aus geöffneten, dann aus der Charge, die am frühesten abläuft. Was in 3 Tagen abläuft, steht unter „Läuft ab“ — „👨‍🍳 Rezept dazu finden“ sucht passende Rezepte.<br><br><strong>Geht bald aus / Immer nachkaufen:</strong> Aus dem Verbrauch der letzten Wochen schätzt die App, wie lange ein Artikel reicht. Fällt er unter die Mindestmenge, kommt er auf den Einkaufszettel. Mit <strong>🔁 Immer nachkaufen</strong> (Dauerartikel) kommt er schon ein paar Tage vorher von selbst darauf — „Diesmal nicht“ setzt bis zum nächsten Einkauf aus.<br><br><strong>Nach dem Eintragen:</strong> Trägst du eine Mahlzeit ins Tagebuch ein, fragt die App „Aus dem Vorrat abziehen?“ — abgezogen wird nur, was du bestätigst (du kannst ja auswärts gegessen haben). Ohne dich Eingetragenes (Alexa, Wiederkehrendes) wartet als Hinweis im Vorrat. Löschst oder änderst du den Eintrag, bietet sie die Rückbuchung an. „✓ Fertig gekocht“ im Kochbuch zieht die Zutaten ab (bei Artikeln mit Gramm je Stück).<br><br><strong>🧾 Kassenbon:</strong> unter 📷 Foto/Bon „Kassenbon“ wählen und den Bon fotografieren. Die KI liest die Artikel (Kürzel wie „H-MILCH 1,5%“ werden lesbar) und die Stückzahl; Preise, Pfand, Rabatte, Tüten und Summen werden nicht übernommen. In der Liste prüfst du je Zeile Name, Menge, Lagerort und Kategorie; eingebucht wird nur Ausgewähltes, passende Artikel auf dem Einkaufszettel werden abgehakt. Fotos werden nicht gespeichert; ohne KI bleiben Eintippen und Barcode.<br><br><strong>🏷️ Serienscan:</strong> „📥 Einbuchen“ oder „📤 Verbrauchen“ öffnet den Scanner, der offen bleibt: Jeder bekannte Barcode zählt ＋1 bzw. −1 und erscheint in der Mitschrift unter dem Sucherbild, mit ↩️ je Zeile. Derselbe Code zählt erst nach einer kurzen Pause erneut. Neue Codes sammeln sich als Liste — „Zuordnen“ legt den Artikel an (Name und Packungsgröße von Open Food Facts) oder hängt den Code an einen vorhandenen.<br><br><strong>⋯ Mehr:</strong> <strong>📋 Inventur</strong> geht einen Lagerort Artikel für Artikel durch: Soll ansehen, Ist zählen („Stimmt“, „Ist weg“ oder − / ＋), am Ende eine Zusammenfassung und EINE Bestätigung — die Abweichungen gehen als Korrektur in den Verlauf und zählen nicht als Verbrauch. Abbrechen bucht nichts; zugemacht bleibt die Zählung auf diesem Gerät erhalten. <strong>📊 Auswertung</strong> zeigt je Monat, was verbraucht und was weggeworfen wurde, den Anteil, den Vormonat und was oft abläuft, mit einem Vorschlag aus deinen Daten (der Verlauf reicht 90 Tage). Nach einem Monatswechsel erscheint einmal ein kurzer Rückblick, wenn etwas weggeworfen wurde. Außerdem 📍 Orte, 🔄 Teilen, 📜 Verlauf (jede Buchung, ↩️ macht sie rückgängig) und der Vorlauf für Dauerartikel.<br><br>Unter Mehr → ⚙️ Einstellungen → Erinnerungen meldet NutriTrack einmal am Tag, was bald abläuft (nur bei offener App); dieser Schalter gilt auch für den Monatsrückblick. Rezepte und Wochenplan legen nur auf den Einkaufszettel, was der Vorrat nicht deckt. Über 🔄 Teilen (Mehr → 🔗 Verbindungen) seht ihr denselben Vorrat auf zwei Handys.</div></details>
-      <details><summary>📖 Kochbuch</summary><div class="hb">Das <strong>Kochbuch</strong> (Kachel auf „Heute" oder <strong>Mehr → 📖 Kochbuch</strong>) sammelt deine Rezepte und eigenen Lebensmittel. Oben suchst du nach Name, Zutat oder Kategorie, darunter filterst du nach ⭐ Favoriten und Kategorien und wählst die Sortierung (neu, A–Z, zuletzt oder oft gekocht, schnell, wenig kcal).<br><br><strong>Ein Rezept antippen</strong> zeigt Zutaten, Zubereitung und Nährwerte je Portion. Mit − / ＋ rechnest du die Zutaten auf mehr oder weniger Portionen um — das ändert nur die Anzeige. Von dort: <strong>📅 Einplanen</strong> (Tag und Mahlzeit im Wochenplan), <strong>🛒 Einkaufen</strong> (Zutaten in der angezeigten Portionenzahl auf den Zettel), <strong>🍽 Eintragen</strong> (ins Tagebuch), ⭐ Favorit, ✏️ Bearbeiten, ⎘ Kopieren und 📤 Teilen.<br><br><strong>👨‍🍳 Kochmodus:</strong> ein Schritt pro Bildschirm in großer Schrift, der Bildschirm bleibt an. Steht in einem Schritt eine Zeit („10 Minuten köcheln"), startest du per Tipp einen Timer; er läuft beim Blättern weiter und meldet sich mit Ton und Vibration. „✓ Fertig gekocht" zählt mit — der Wochenplan schlägt beim 🎲 Füllen Rezepte, die du in den letzten zwei Wochen gekocht hast, seltener vor.<br><br><strong>Neue Rezepte</strong> über „＋ Neues Rezept": selbst, per Foto einer Kochbuchseite oder per Link (Chefkoch, Lecker, Blogs). Beim Link übernimmt die App Portionen, Zeit, Zubereitung, Quelle und die Mengen der Seite („2 EL Olivenöl") — du prüfst alles im Editor, bevor es gespeichert wird. Auch im ＋ → 🔗 Link-Tab legt „📖 Ins Kochbuch" so an.<br><br><strong>Ein Rezept bleibt, wie es ist</strong>, bis du es selbst bearbeitest und 💾 speicherst. Schließt du den Editor ohne Speichern, bleibt alles beim Alten. Wochenplan, Tagebuch und Einkaufszettel arbeiten mit Kopien bzw. verweisen nur darauf; geplante Tage zeigen nach dem Bearbeiten den neuen Stand, das Tagebuch behält, was du gegessen hast.<br><br><strong>Grundrezepte:</strong> Das Kochbuch bringt 101 Gerichte mit (Schnitzel, Lasagne, Dal, Pad Thai, Tiramisu …) — aus dem freien Projekt MorphCook (MIT-Lizenz, © Cedric Mössner), dort von einer KI geschrieben; die Nährwerte rechnet NutriTrack aus der eigenen Lebensmittel-Datenbank. Jedes lässt sich bearbeiten oder löschen; Gelöschtes kommt nicht wieder.<br><br><strong>🌱 Für dich angepasst:</strong> Stehen unter Mehr → 🥗 Ernährung z. B. Vegetarisch, Vegan, Glutenfrei, Laktosefrei, Keto, Low Carb oder Fischallergie — oder bist du schwanger bzw. stillst —, zeigt jedes Rezept die passende Fassung: Hackfleisch wird zu roten Linsen, Hähnchen zu Tofu, Wein zu Brühe, rohes Ei zu pasteurisiertem, Weizenmehl zu Reismehl usw. Oben steht, was getauscht wurde und warum. Was die feste Tausch-Tabelle nicht kennt, prüft einmal je Rezept die KI (mit Internet). Einplanen, Einkaufen, Eintragen und der Kochmodus nehmen die angepasste Fassung. Das gespeicherte Rezept bleibt unverändert — <strong>📖 Original anzeigen</strong> schaltet zurück.<br><br>Beim Anlegen und Umbenennen prüft die App, ob schon etwas Ähnliches drinsteht (gleiche Quelle, ähnlicher Name oder fast dieselben Zutaten), und fragt nach, bevor ein zweites daraus wird.</div></details>
+      <details><summary>📖 Kochbuch</summary><div class="hb">Das <strong>Kochbuch</strong> (Kachel auf „Heute" oder <strong>Mehr → 📖 Kochbuch</strong>) sammelt deine Rezepte und eigenen Lebensmittel. Oben suchst du nach Name, Zutat oder Kategorie, darunter filterst du nach ⭐ Favoriten und Kategorien und wählst die Sortierung (neu, A–Z, zuletzt oder oft gekocht, schnell, wenig kcal).<br><br><strong>Ein Rezept antippen</strong> zeigt Zutaten, Zubereitung und Nährwerte je Portion. Mit − / ＋ rechnest du die Zutaten auf mehr oder weniger Portionen um — das ändert nur die Anzeige. Von dort: <strong>📅 Einplanen</strong> (Tag und Mahlzeit im Wochenplan), <strong>🛒 Einkaufen</strong> (Vorschau der Zutaten in der angezeigten Portionenzahl: Vorrätiges und Grundzutaten abgewählt, jede Zeile wählbar, dann auf den Zettel), <strong>🍽 Eintragen</strong> (ins Tagebuch), ⭐ Favorit, ✏️ Bearbeiten, ⎘ Kopieren und 📤 Teilen.<br><br><strong>👨‍🍳 Kochmodus:</strong> ein Schritt pro Bildschirm in großer Schrift, der Bildschirm bleibt an. Steht in einem Schritt eine Zeit („10 Minuten köcheln"), startest du per Tipp einen Timer; er läuft beim Blättern weiter und meldet sich mit Ton und Vibration. „✓ Fertig gekocht" zählt mit — der Wochenplan schlägt beim 🎲 Füllen Rezepte, die du in den letzten zwei Wochen gekocht hast, seltener vor.<br><br><strong>Neue Rezepte</strong> über „＋ Neues Rezept": selbst, per Foto einer Kochbuchseite oder per Link (Chefkoch, Lecker, Blogs). Beim Link übernimmt die App Portionen, Zeit, Zubereitung, Quelle und die Mengen der Seite („2 EL Olivenöl") — du prüfst alles im Editor, bevor es gespeichert wird. Auch im ＋ → 🔗 Link-Tab legt „📖 Ins Kochbuch" so an. Nach dem Speichern bietet das neue Rezept oben „🛒 Zutaten auf den Zettel“ an — ein Angebot, kein Muss.<br><br><strong>Ein Rezept bleibt, wie es ist</strong>, bis du es selbst bearbeitest und 💾 speicherst. Schließt du den Editor ohne Speichern, bleibt alles beim Alten. Wochenplan, Tagebuch und Einkaufszettel arbeiten mit Kopien bzw. verweisen nur darauf; geplante Tage zeigen nach dem Bearbeiten den neuen Stand, das Tagebuch behält, was du gegessen hast.<br><br><strong>Grundrezepte:</strong> Das Kochbuch bringt 101 Gerichte mit (Schnitzel, Lasagne, Dal, Pad Thai, Tiramisu …) — aus dem freien Projekt MorphCook (MIT-Lizenz, © Cedric Mössner), dort von einer KI geschrieben; die Nährwerte rechnet NutriTrack aus der eigenen Lebensmittel-Datenbank. Jedes lässt sich bearbeiten oder löschen; Gelöschtes kommt nicht wieder.<br><br><strong>🌱 Für dich angepasst:</strong> Stehen unter Mehr → 🥗 Ernährung z. B. Vegetarisch, Vegan, Glutenfrei, Laktosefrei, Keto, Low Carb oder Fischallergie — oder bist du schwanger bzw. stillst —, zeigt jedes Rezept die passende Fassung: Hackfleisch wird zu roten Linsen, Hähnchen zu Tofu, Wein zu Brühe, rohes Ei zu pasteurisiertem, Weizenmehl zu Reismehl usw. Oben steht, was getauscht wurde und warum. Was die feste Tausch-Tabelle nicht kennt, prüft einmal je Rezept die KI (mit Internet). Einplanen, Einkaufen, Eintragen und der Kochmodus nehmen die angepasste Fassung. Das gespeicherte Rezept bleibt unverändert — <strong>📖 Original anzeigen</strong> schaltet zurück.<br><br>Beim Anlegen und Umbenennen prüft die App, ob schon etwas Ähnliches drinsteht (gleiche Quelle, ähnlicher Name oder fast dieselben Zutaten), und fragt nach, bevor ein zweites daraus wird.</div></details>
       <details><summary>📅 Wochenplan</summary><div class="hb">Unter <strong>Mehr → 📅 Wochenplan</strong> (oder über die Kachel auf „Heute“) verteilst du Rezepte auf die Woche. Das ＋ an einer Mahlzeit öffnet die Auswahl: Tipp ein, was du suchst — du kannst einen <strong>Rezept-Treffer</strong> nehmen oder den Text direkt <strong>als Notiz</strong> einplanen („Pizza bestellen“, „Reste“, „bei Oma essen“). Eine Notiz zählt mit 0 kcal, steht nicht auf dem Einkaufszettel und wandert nicht ins Tagebuch; tipp sie an und wähle „📋 Rezept hinterlegen“, sobald du weißt, was es gibt. Oben sagt der Plan, wie viele Einträge noch offen sind.<br><br><strong>🎲 Füllen</strong> plant die leeren Mahlzeiten so, dass <strong>jeder Tag dein Kalorienziel trifft</strong>: Frühstück, Mittag, Abend und Snack teilen sich das Ziel, danach werden die Portionen nachgezogen. Jeder Tag zeigt seine Summe gegen das Ziel. Die Vorschläge kommen zuerst aus deinen Rezepten, dazu aus ganzen Mahlzeiten deines Tagebuchs („Burger mit Pommes“) — einzelne Lebensmittel bleiben draußen, und was du zum Frühstück gegessen hast, wird nicht als Abendessen vorgeschlagen. Von Hand Geplantes wird nie angefasst.<br><br><strong>＋ Neues Rezept</strong> legt das Rezept im <strong>Kochbuch</strong> ab — nicht als Mahlzeit im Tagebuch. Wurde es aus dem ＋ eines Tages heraus angelegt, steht es danach gleich in diesem Slot.</div></details>
       <details><summary>📤 Teilen &amp; Import</summary><div class="hb">Rezepte, Lebensmittel, einzelne Mahlzeiten, <strong>ganze Tage</strong> und <strong>Zeiträume</strong> lassen sich teilen (📤-Symbole; der Tages-Knopf liegt auf „Heute" oben rechts in der Kopfzeile und im Verlauf bei jedem Tag, der Zeitraum hinter 🗓 im Verlauf).<ul><li><strong>Mit Partner-Kopplung (empfohlen):</strong> Einmalig unter <strong>Mehr → 🔗 Verbindungen → 📬 Partner-Postfach</strong> verbinden — danach steht im Teilen-Dialog oben „An … senden" und die Sendung landet direkt im Postfach des anderen. Kein Link, kein Messenger.</li><li><strong>Ohne Kopplung:</strong> weiterhin als Link. Der Empfänger öffnet ihn — auf dem iPhone ggf. in der installierten App über <strong>＋ → 🔗 Link</strong> einfügen (das Feld erkennt selbst, ob ein Rezept-Link oder eine NutriTrack-Sendung drinsteht, und bietet einen passenden Link aus der Zwischenablage gleich an). Für ganze Tage und Zeiträume braucht der Link-Weg eine Internetverbindung, weil die Daten sonst nicht in eine URL passen.</li></ul></div></details>
       <details><summary>👫 Partner</summary><div class="hb">Unter <strong>Mehr → 🔗 Verbindungen → 📬 Partner-Postfach</strong> verbindest du dein Gerät mit dem deines Partners: auf einem Gerät „Kopplung starten", den Code auf dem anderen einfügen. Trag dort auch deinen Namen ein — der steht beim Empfänger an jeder Sendung.<br><br><strong>Es wird nichts automatisch übertragen.</strong> Nur was du ausdrücklich sendest, geht raus und landet im <strong>Postfach</strong> des anderen. Das sitzt auf „Heute" oben rechts (📬) und trägt eine Flagge mit der Zahl der ungelesenen Sendungen; bei etwas Neuem erscheint zusätzlich eine Kachel im Tagesüberblick. Eine Sendung, die zu einer bestimmten Mahlzeit gehört, zeigt ihr 📬 außerdem <strong>an genau dieser Mahlzeit</strong> — an der Kachel auf „Heute" und in der geöffneten Mahlzeit. Ein Tipp darauf öffnet die Übernahme direkt, mit der richtigen Mahlzeit schon ausgewählt. Dort wird jede Sendung einzeln angesehen und übernommen — bei einem ganzen Tag wählst du, welche Mahlzeiten du willst, auf welchen Tag sie sollen und ob Vorhandenes ergänzt oder ersetzt wird; bei einem Zeitraum hakst du einzelne Tage ab. Eure Tagebücher bleiben also getrennt.<br><br>Die Sendungen werden auf dem Gerät verschlüsselt; der Schlüssel steckt nur im Kopplungs-Code und wird nie übertragen. Der Code gilt <strong>nur</strong> fürs Partner-Postfach — Einkaufszettel und Baby-Tagebuch haben eigene Codes und bleiben unberührt. Neue Sendungen holt die App beim Start, beim Zurückkehren in die App und solange das Postfach offen ist; das kann bis zu einer Minute dauern.</div></details>
@@ -3139,6 +3152,7 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
       <div id="shopSuggest" style="display:none;margin-bottom:6px;"></div>
       <div class="nt-tools">
         <button type="button" class="nt-tool" data-act="NTShop.openCatalog"><span aria-hidden="true">🧺</span>Artikel</button>
+        <button type="button" class="nt-tool" data-act="NTShop.recipePhoto" aria-label="Rezept fotografieren: Zutaten auf den Zettel"><span aria-hidden="true">📷</span>Rezept-Foto</button>
         <button type="button" class="nt-tool" data-act="NTShop.openCats"><span aria-hidden="true">🏷</span>Kategorien</button>
         <button type="button" class="nt-tool" data-act="NTShop.openSync"><span aria-hidden="true">🔄</span><i class="nt-tool-l">Teilen <span id="shopSyncBadge" style="display:none;">✓</span></i></button>
       </div>
@@ -3884,22 +3898,7 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
 </div>
 
 <!-- ══ WOCHENPLAN: EINTRAG ══ -->
-<!-- Woche → Einkaufszettel (F2): erst die Zusammenfassung „X auf den Zettel, Y im Vorrat“, dann übernehmen. -->
-<div class="ov" id="planShopOv" data-bg-close="planShopOv">
-  <div class="mod" style="height:auto;">
-    <div class="mhan"></div>
-    <div class="mhd">
-      <button type="button" class="mcl" data-act="closeOv" data-args='["planShopOv"]' aria-label="Schließen">✕</button>
-      <div class="mti">🛒 Woche einkaufen</div>
-      <div class="msu" id="planShopSub"></div>
-    </div>
-    <div class="mbd">
-      <div id="planShopSum" style="font-size:14px;line-height:1.5;margin-bottom:10px;"></div>
-      <button type="button" class="svb" id="planShopGo" data-act="NTPlan.weekShopGo">Auf den Zettel</button>
-      <button type="button" class="seb" data-act="closeOv" data-args='["planShopOv"]'>Abbrechen</button>
-    </div>
-  </div>
-</div>
+<!-- Die Vorschau „Woche einkaufen“ / „Zutaten auf den Zettel“ (#planShopOv) steht seit Paket 5 hinter dem Rezept-Editor. -->
 <div class="ov" id="planItemOv" data-bg-close="planItemOv">
   <div class="mod">
     <div class="mhan"></div>
@@ -4195,6 +4194,27 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
       <div class="bk-mu" style="margin:2px 2px 0;">Gespeichert wird je Portion. Das Rezept ändert sich nur hier — Wochenplan, Tagebuch und Einkaufszettel schreiben nie zurück.</div>
       <button type="button" class="cb2" data-act="NTBook.editSave">💾 Rezept speichern</button>
       <button type="button" class="del-btn" id="recEditDelBtn" data-act="NTBook.editDelete">🗑️ Rezept löschen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ZUTATEN AUF DEN EINKAUFSZETTEL: VORSCHAU (js/shopping.js, NTShop.previewShow) ══ -->
+<!-- Eine Vorschau für Woche (F2, nur Zusammenfassung) und einzelnes Rezept (Portionen, Zeilen abwählbar).
+     Steht hinter Rezeptansicht und Editor, damit sie in der klassischen Ansicht darüber liegt. -->
+<div class="ov" id="planShopOv" data-bg-close="planShopOv">
+  <div class="mod" style="height:auto;">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" data-act="closeOv" data-args='["planShopOv"]' aria-label="Schließen">✕</button>
+      <div class="mti" id="planShopTitle">🛒 Woche einkaufen</div>
+      <div class="msu" id="planShopSub"></div>
+    </div>
+    <div class="mbd">
+      <div id="planShopPort" class="hidden"></div>
+      <div id="planShopSum" style="font-size:14px;line-height:1.5;margin-bottom:10px;"></div>
+      <div id="planShopRows" class="shop-prev"></div>
+      <button type="button" class="svb" id="planShopGo" data-act="NTShop.previewGo">Auf den Zettel</button>
+      <button type="button" class="seb" id="planShopNo" data-act="closeOv" data-args='["planShopOv"]'>Abbrechen</button>
     </div>
   </div>
 </div>
@@ -4529,15 +4549,15 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.357"></script>
-<script src="js/single-tab.js?v=0.357"></script>
-<script src="js/fooddb.js?v=0.357"></script>
-<script src="js/fooddb-usda.js?v=0.357"></script>
-<script src="js/restaurants.js?v=0.357"></script>
-<script src="js/metdb.js?v=0.357"></script>
-<script src="js/idb-photos.js?v=0.357"></script>
-<script src="js/changelog.js?v=0.357"></script>
-<script src="js/calc.js?v=0.357"></script>
+<script src="js/actions.js?v=0.358"></script>
+<script src="js/single-tab.js?v=0.358"></script>
+<script src="js/fooddb.js?v=0.358"></script>
+<script src="js/fooddb-usda.js?v=0.358"></script>
+<script src="js/restaurants.js?v=0.358"></script>
+<script src="js/metdb.js?v=0.358"></script>
+<script src="js/idb-photos.js?v=0.358"></script>
+<script src="js/changelog.js?v=0.358"></script>
+<script src="js/calc.js?v=0.358"></script>
 <script>
 // @ts-check
 // ════════════════════════════════════════
@@ -4557,7 +4577,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.357';
+var APP_VERSION='0.358';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -9191,49 +9211,49 @@ function axTestSync(){
 }
 
 </script>
-<script src="js/ampel.js?v=0.357"></script>
-<script src="picker.js?v=0.357"></script>
-<script src="js/health-sync.js?v=0.357"></script>
-<script src="js/sync-core.js?v=0.357"></script>
-<script src="js/baby.js?v=0.357"></script>
-<script src="js/baby-sleep.js?v=0.357"></script>
-<script src="js/baby-sleep-plan.js?v=0.357"></script>
-<script src="js/baby-meds.js?v=0.357"></script>
-<script src="js/baby-growth-data.js?v=0.357"></script>
-<script src="js/baby-growth.js?v=0.357"></script>
-<script src="js/baby-week.js?v=0.357"></script>
-<script src="js/baby-milestones.js?v=0.357"></script>
-<script src="js/baby-midwife.js?v=0.357"></script>
-<script src="js/shopping.js?v=0.357"></script>
-<script src="js/pantry.js?v=0.357"></script>
-<script src="js/partner.js?v=0.357"></script>
-<script src="js/alexa-sync.js?v=0.357"></script>
-<script src="js/dashboard.js?v=0.357"></script>
-<script src="js/features.js?v=0.357"></script>
-<script src="js/launch.js?v=0.357"></script>
-<script src="js/xlsx.js?v=0.357"></script>
-<script src="js/food-export.js?v=0.357"></script>
-<script src="js/mealplan.js?v=0.357"></script>
-<script src="js/book-swaps.js?v=0.357"></script>
-<script src="js/cookbook.js?v=0.357"></script>
-<script src="js/onedrive.js?v=0.357"></script>
-<script src="js/autosave.js?v=0.357"></script>
-<script src="js/recurring.js?v=0.357"></script>
-<script src="js/stats.js?v=0.357"></script>
-<script src="js/reminders.js?v=0.357"></script>
-<script src="js/templates.js?v=0.357"></script>
-<script src="js/offline-queue.js?v=0.357"></script>
-<script src="js/tour.js?v=0.357"></script>
-<script src="js/ui-catalog.js?v=0.357"></script>
-<script src="js/ui-actions.js?v=0.357"></script>
-<script src="js/ui-shell.js?v=0.357"></script>
-<script src="js/ui-home.js?v=0.357"></script>
-<script src="js/ui-baby.js?v=0.357"></script>
-<script src="js/ui-reminder-rules.js?v=0.357"></script>
-<script src="js/ui-priority.js?v=0.357"></script>
-<script src="js/ui-nutrition.js?v=0.357"></script>
-<script src="js/ui-household.js?v=0.357"></script>
-<script src="js/ui-settings.js?v=0.357"></script>
+<script src="js/ampel.js?v=0.358"></script>
+<script src="picker.js?v=0.358"></script>
+<script src="js/health-sync.js?v=0.358"></script>
+<script src="js/sync-core.js?v=0.358"></script>
+<script src="js/baby.js?v=0.358"></script>
+<script src="js/baby-sleep.js?v=0.358"></script>
+<script src="js/baby-sleep-plan.js?v=0.358"></script>
+<script src="js/baby-meds.js?v=0.358"></script>
+<script src="js/baby-growth-data.js?v=0.358"></script>
+<script src="js/baby-growth.js?v=0.358"></script>
+<script src="js/baby-week.js?v=0.358"></script>
+<script src="js/baby-milestones.js?v=0.358"></script>
+<script src="js/baby-midwife.js?v=0.358"></script>
+<script src="js/shopping.js?v=0.358"></script>
+<script src="js/pantry.js?v=0.358"></script>
+<script src="js/partner.js?v=0.358"></script>
+<script src="js/alexa-sync.js?v=0.358"></script>
+<script src="js/dashboard.js?v=0.358"></script>
+<script src="js/features.js?v=0.358"></script>
+<script src="js/launch.js?v=0.358"></script>
+<script src="js/xlsx.js?v=0.358"></script>
+<script src="js/food-export.js?v=0.358"></script>
+<script src="js/mealplan.js?v=0.358"></script>
+<script src="js/book-swaps.js?v=0.358"></script>
+<script src="js/cookbook.js?v=0.358"></script>
+<script src="js/onedrive.js?v=0.358"></script>
+<script src="js/autosave.js?v=0.358"></script>
+<script src="js/recurring.js?v=0.358"></script>
+<script src="js/stats.js?v=0.358"></script>
+<script src="js/reminders.js?v=0.358"></script>
+<script src="js/templates.js?v=0.358"></script>
+<script src="js/offline-queue.js?v=0.358"></script>
+<script src="js/tour.js?v=0.358"></script>
+<script src="js/ui-catalog.js?v=0.358"></script>
+<script src="js/ui-actions.js?v=0.358"></script>
+<script src="js/ui-shell.js?v=0.358"></script>
+<script src="js/ui-home.js?v=0.358"></script>
+<script src="js/ui-baby.js?v=0.358"></script>
+<script src="js/ui-reminder-rules.js?v=0.358"></script>
+<script src="js/ui-priority.js?v=0.358"></script>
+<script src="js/ui-nutrition.js?v=0.358"></script>
+<script src="js/ui-household.js?v=0.358"></script>
+<script src="js/ui-settings.js?v=0.358"></script>
 
 <div class="ov" id="b3HomePrefsOv" data-ui="b3" data-bg-close="b3HomePrefsOv"><div class="mod"><div class="mhd"><button type="button" class="mcl" data-act="closeOv" data-args='["b3HomePrefsOv"]' aria-label="Schnellaktionen schließen">✕</button><h2 class="mti">Schnellaktionen anpassen</h2></div><div class="mbd"><div id="b3HomePrefsBody"></div><button type="button" class="b3-primary" data-act="closeOv" data-args='["b3HomePrefsOv"]'>Fertig</button></div></div></div>
 <div class="ov" id="b3MealPrefsOv" data-ui="b3" data-bg-close="b3MealPrefsOv"><div class="mod"><div class="mhd"><button type="button" class="mcl" data-act="closeOv" data-args='["b3MealPrefsOv"]' aria-label="Hinweise schließen">✕</button><h2 class="mti">Mahlzeiten-Hinweise</h2></div><div class="mbd"><div id="b3MealPrefsBody"></div><div class="b3-reminder-save"><button type="button" class="b3-primary" data-act="NTUIReminders.save">Einstellungen speichern</button></div></div></div></div>

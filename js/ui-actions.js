@@ -14,9 +14,11 @@ function baby(){
   show('Baby-Eintrag',Object.keys(NTBaby.TYPES).map(function(k){var t=NTBaby.TYPES[k];return button(t.label,'NTBaby.openEntry',[k],t.ic);}).join(''),true);
 }
 function household(){
-  var h=[['shop','Artikel auf den Einkaufszettel','NTShop.openCatalog',[]],['pantry','Vorratsartikel anlegen','NTPantry.openItem',[null]]].map(function(row){
+  var h=[['shop','Artikel auf den Einkaufszettel','NTShop.openCatalog',[]],['shop','Rezept-Foto auf den Zettel','NTShop.recipePhoto',[],'📷'],['pantry','Vorratsartikel anlegen','NTPantry.openItem',[null]]].map(function(row,i,all){
     var target=NTUICatalog.target(row[0]);
-    return NTUICatalog.available(row[0])?button(row[1],row[2],row[3],target.ic):button(target.label+' einschalten','NTFeat.sheet',[row[0]],target.ic);
+    if(NTUICatalog.available(row[0]))return button(row[1],row[2],row[3],row[4]||target.ic);
+    // Ausgeschaltet: „… einschalten“ nur einmal je Bereich.
+    return all.findIndex(function(x){return x[0]===row[0];})===i?button(target.label+' einschalten','NTFeat.sheet',[row[0]],target.ic):'';
   }).join('');
   show('Haushalt ergänzen',h,true);
 }

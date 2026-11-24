@@ -67,6 +67,7 @@ var FEATURES=[
    sub:'Was noch gekauft werden muss',
    actions:[
      {ic:'🛒', label:'Zettel öffnen', hint:'Artikel abhaken und ergänzen', act:'NTShop.open'},
+     {ic:'📷', label:'Rezept-Foto',   hint:'Rezept abfotografieren, Zutaten auf den Zettel', act:'NTShop.recipePhoto'},
      {ic:'🔗', label:'Verbindungen',  hint:'Zettel mit jemandem teilen', act:'NTSync.open'}
    ]},
 

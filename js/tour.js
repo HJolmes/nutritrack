@@ -39,7 +39,7 @@ var STEPS=[
   {tab:'main', sel:'#waterCard', ic:'💧', t:'Wasser', off:OFF,
    x:'Ein Tipp auf ein Glas oder einen Mengen-Knopf zählt mit. Das Tagesziel stellst du unter Mehr → 🧩 Funktionen → Wasser ein.'},
   {tab:'main', sel:'#shopCard', ic:'🛒', t:'Einkaufszettel', off:'Der Zettel erscheint hier, sobald etwas darauf steht oder er eingeschaltet ist – sonst über Mehr → 🧩 Funktionen → Einkaufszettel.',
-   x:'Artikel eintippen („2 Liter Milch"), abhaken, nach Kategorien sortiert. Mit 🔗 Verbindungen teilt ihr den Zettel verschlüsselt zwischen zwei Handys.'},
+   x:'Artikel eintippen („2 Liter Milch"), abhaken, nach Kategorien sortiert. 📷 Rezept-Foto: Rezept abfotografieren, es landet im Kochbuch, und du wählst, welche Zutaten auf den Zettel kommen – Vorrätiges bleibt weg. Mit 🔗 Verbindungen teilt ihr den Zettel verschlüsselt zwischen zwei Handys.'},
   {tab:'main', sel:'#pantryCard', ic:'🥫', t:'Vorrat', off:OFF,
    x:'Was zu Hause da ist, wo es steht und wie lange es hält (ohne Packungsdatum geschätzt). Oben zählen Läuft ab / Fehlt / Artikel, darunter Suche und Ordnen. Aus dem Verbrauch schätzt die App, was bald ausgeht; „🔁 Immer nachkaufen“ setzt es von selbst auf den Einkaufszettel. Nach dem Eintragen einer Mahlzeit fragt sie, was aus dem Vorrat weg ist — abgezogen wird nur nach deiner Bestätigung. Einbuchen per Kassenbon-Foto oder Barcode-Serienscan; unter ⋯ Mehr: Inventur und Auswertung.'},
   {tab:'main', sel:'#fastCard', ic:'🌙', t:'Fasten', off:OFF,

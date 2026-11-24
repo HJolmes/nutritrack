@@ -840,7 +840,9 @@ function weekToShop(){
     +(from.length<7?'<div style="font-size:12px;color:var(--mu);margin-top:4px;">Vergangene Tage der Woche zählen nicht mit.</div>':'');
   var go=document.getElementById('planShopGo');
   if(go)go.textContent=n?'Auf den Zettel':'Fertig';
-  openOv('planShopOv');
+  // Dieselbe Vorschau wie ein einzelnes Rezept (NTShop.recipePreview), hier
+  // nur mit der Zusammenfassung.
+  NTShop.previewShow({title:'🛒 Woche einkaufen',go:weekShopGo});
 }
 function weekShopGo(){
   var w=_shopWeek;_shopWeek=null;
@@ -1016,6 +1018,24 @@ function newFromPhoto(){
   resetPhoto();
   setTimeout(function(){openOv('recPhotoOv');},200);
 }
+// Vom Einkaufszettel (📷 Rezept-Foto): derselbe Ablauf mit dem Ziel „danach auf
+// den Zettel“ (_from='shop'). Gespeichert wird im Editor wie immer, danach
+// öffnet NTBook.editSave die Vorschau NTShop.recipePreview. Ohne KI oder
+// Internet gibt es kein Foto-Auslesen — dann das Angebot, selbst zusammenzustellen.
+function photoToShop(){
+  _target=null;_replaceIdx=null;_pendingSlot=null;
+  var why=(typeof isOnline!=='undefined'&&!isOnline)?'braucht Internet'
+    :((typeof canUseAi==='function'&&!canUseAi())?'braucht die KI (Mehr → 🤖 KI)':'');
+  if(why){
+    _from=null;
+    if(!confirm('📷 Rezept-Foto '+why+'.\n\nStattdessen das Rezept selbst zusammenstellen? Danach wählst du, was auf den Einkaufszettel kommt.'))return;
+    if(window.NTBook)NTBook.editDraft({name:'',emoji:'📋',ingredients:[],baseServings:1},{from:'shop',hint:'Nach dem Speichern wählst du, was auf den Einkaufszettel kommt.'});
+    return;
+  }
+  _from='shop';
+  resetPhoto();
+  openOv('recPhotoOv');
+}
 function resetPhoto(){
   _photoB64=null;_photoIngs=[];_photoMeta=null;
   var w=document.getElementById('recPhotoPrevWrap');if(w)w.classList.add('hidden');
@@ -1136,7 +1156,8 @@ function toEditor(){
   if(!window.NTBook)return;
   NTBook.editDraft({name:m.titel,meal:pendingMeal(),baseServings:m.portionen,time:m.minuten,instructions:m.anleitung,
     ingredients:_photoIngs.map(function(g){return {name:g.name,emoji:g.emoji||'🍽',amount:g.amount||0,per100:g.per100,missingGrams:!g.amount};})},
-    {from:_pendingSlot?'plan':f,hint:'Von der KI gelesen — Mengen und Portionen bitte prüfen.'});
+    {from:_pendingSlot?'plan':f,hint:'Von der KI gelesen — Mengen und Portionen bitte prüfen.'
+      +(f==='shop'?' Nach dem Speichern wählst du, was auf den Einkaufszettel kommt.':'')});
   resetPhoto();
 }
 
@@ -1272,7 +1293,7 @@ window.NTPlan={
   pick:pick,renderPick:renderPick,addToSlot:addToSlot,addSnapshot:addSnapshot,
   addNote:addNote,saveNote:saveNote,noteToRecipe:noteToRecipe,
   similarRecipe:similarRecipe,confirmNotDuplicate:confirmNotDuplicate,
-  noteRecipeCreated:noteRecipeCreated,cancelNew:cancelNew,planRecipe:planRecipe,dayRecipes:dayRecipes,itemToBook:itemToBook,
+  noteRecipeCreated:noteRecipeCreated,cancelNew:cancelNew,photoToShop:photoToShop,planRecipe:planRecipe,dayRecipes:dayRecipes,itemToBook:itemToBook,
   openItem:openItem,saveItem:saveItem,deleteItem:deleteItem,removeItem:removeItem,
   itemToShop:itemToShop,planItemTotal:planItemTotal,
   openSync:openSync,renderSyncUI:renderSyncUI,openLinks:openLinks,syncNow:syncNow,Sync:Sync,

@@ -1858,6 +1858,72 @@ function planShopDates(dates,todayStr){
   return (dates||[]).filter(function(d){return String(d)>=String(todayStr);});
 }
 
+// ── Rezept → Einkaufszettel: Vorschau (Paket 5) ──
+// Zeilen der Vorschau „Zutaten auf den Einkaufszettel“: Zutaten je Portion
+// (`amount` in g) × Portionen, gleiche Namen zusammengefasst, dann gegen den
+// Vorrat mit derselben Rechnung wie der Zettel (pantryShortfall).
+// `st`: 'buy' fehlt · 'part' Vorrat deckt einen Teil, `amount` = Rest ·
+// 'have' deckt der Vorrat (abgewählt) · 'unk' auch im Vorrat, aber ohne
+// verrechenbare Menge (gewählt — lieber zu viel als zu wenig, wie der Zettel) ·
+// 'basic' Grundzutat wie Salz, Öl, Wasser (PANTRY_BASICS, abgewählt) ·
+// 'noqty' ohne Mengenangabe (gewählt, kommt ohne Menge auf den Zettel).
+// `full` = Menge für die gewählten Portionen, `on` = Vorauswahl.
+/** @param {Array<any>} ings @param {number} portions @param {Array<any>} items */
+function shopRecipeRows(ings,portions,items){
+  var p=+portions>0?+portions:1;
+  var have=(items||[]).filter(function(it){return (+(it&&it.q)||0)>0;});
+  /** @type {Object<string,any>} */
+  var agg={};
+  /** @type {Array<{name:string,emoji:string,full:number,amount:number,st:string,on:boolean}>} */
+  var rows=[];
+  (ings||[]).forEach(function(g){
+    var nm=String((g&&(g.name||g.n))||'').trim(),k=nm.toLowerCase();
+    if(!k)return;
+    if(!agg[k]){agg[k]={name:nm,emoji:String((g&&(g.emoji||g.ic))||''),full:0,amount:0,st:'buy',on:true};rows.push(agg[k]);}
+    var a=(+(g&&g.amount)||0)*p;
+    if(a>0)agg[k].full+=a;
+  });
+  /** @type {Array<{name:string,amount:number,_i:number}>} */
+  var calc=[];
+  rows.forEach(function(r,i){
+    r.full=Math.round(r.full);r.amount=r.full;
+    if(PANTRY_BASICS.indexOf(pantryKey(r.name))>=0){r.st='basic';r.on=false;return;}
+    if(!(r.full>0)){var f=pantryFind(have,r.name);r.st=f?'have':'noqty';r.on=!f;return;}
+    calc.push({name:r.name,amount:r.full,_i:i});
+  });
+  /** @type {Object<number,any>} */
+  var left={};
+  pantryShortfall(calc,items).ings.forEach(function(c){left[c._i]=c;});
+  calc.forEach(function(c){
+    var r=rows[c._i],o=left[c._i];
+    if(!o){r.st='have';r.on=false;return;}
+    if(o.amount<c.amount){r.st='part';r.amount=o.amount;return;}
+    if(pantryFind(have,r.name))r.st='unk';
+  });
+  return rows;
+}
+// Gewählte Zeilen → Zutaten für NTShop.addIngredients (ohne zweiten
+// Vorratsabzug). Wer „im Vorrat“ oder eine Grundzutat bewusst anhakt, will die
+// volle Menge kaufen; ohne Menge bleibt `amount` 0 (Artikel ohne Mengenangabe).
+/** @param {Array<any>} rows */
+function shopRowsPick(rows){
+  return (rows||[]).filter(function(r){return r&&r.on;}).map(function(r){
+    return {name:r.name,emoji:r.emoji||'',amount:(r.st==='have'||r.st==='basic')?(r.full||0):(r.amount||0)};
+  });
+}
+// Kopfzeile der Vorschau: gewählt (n), ganz im Vorrat (have), teilweise (part).
+/** @param {Array<any>} rows */
+function shopRowsCount(rows){
+  var n=0,have=0,part=0;
+  (rows||[]).forEach(function(r){
+    if(!r)return;
+    if(r.on)n++;
+    if(r.st==='have')have++;
+    if(r.st==='part'&&r.on)part++;
+  });
+  return {n:n,have:have,part:part};
+}
+
 // ── Baby: Ende einer Mahlzeit ──
 // „Letzte Mahlzeit vor …" zählt ab dem Ende: Beim Stillen liegt e.ts am Beginn,
 // e.min ist die Stilldauer – Ende = Beginn + Dauer. Laufende Stoppuhr (e.run)

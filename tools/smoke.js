@@ -1525,6 +1525,175 @@ const EXPECTED_NAMESPACES = [
     if (!pantry5Fail) console.log('  ok  Vorrat Paket 4: Kassenbon ohne Preise mit Bestätigung und Abhaken ohne Doppelbuchung, Serienscan mit Sperre/Liste/Rückgängig, Inventur mit Entwurf und einer Bestätigung, Monatsrückblick, gebündelte Hinweise, Auswertung im Verlauf.');
   }
 
+  // 7b6. Paket 5: Rezept-Foto am Einkaufszettel. Ganzer Weg per Klick mit
+  //      gestellter KI-Antwort: Kachel am Zettel → Foto → Editor (Entwurf) →
+  //      Speichern → Rezept im Kochbuch → Vorschau (Vorrat abgewählt, Rest,
+  //      Grundzutat, ohne Menge, Portionen) → „Auf den Zettel“ → Artikel mit
+  //      Herkunft. Dazu die Abbruch-Wege (ohne KI, Editor ✕, Vorschau), das
+  //      Angebot nach dem Anlegen im Kochbuch und der Dubletten-Fall.
+  let shop5Fail = 0;
+  {
+    const errBefore = errors.length;
+    const out = {};
+    let keep = null;
+    const ev = (fn, a) => page.evaluate(fn, a);
+    let answer = () => true;
+    const dialogs = [];
+    const onDialog = (d) => { dialogs.push(d.message()); return answer(d.message()) ? d.accept() : d.dismiss(); };
+    page.on('dialog', onDialog);
+    const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAD0lEQVR4nGP4jwQYiOMAANuQL9FuRbCyAAAAAElFTkSuQmCC', 'base64');
+    const shot = async () => {
+      await page.locator('#shopOv.open [data-act="NTShop.recipePhoto"]').click();
+      await page.locator('#recPhotoOv.open').waitFor();
+      await page.setInputFiles('#recPhotoGal', { name: 'rezept.png', mimeType: 'image/png', buffer: PNG });
+      await page.locator('#recPhotoBtn:not([disabled])').waitFor();
+      await page.click('#recPhotoBtn');
+      await page.locator('#recEditOv.open').waitFor();
+    };
+    const state = () => ev(() => ({ n: recipes.filter((r) => /^Smoke-Foto/.test(r.name)).length, shop: S.shopList.length,
+      edit: document.getElementById('recEditOv').classList.contains('open'), photo: document.getElementById('recPhotoOv').classList.contains('open'),
+      prev: document.getElementById('planShopOv').classList.contains('open'), det: document.getElementById('bookDetailOv').classList.contains('open') }));
+    try {
+      keep = await ev(() => {
+        const k = JSON.stringify({ shop: S.shopList, shopTomb: S.shopTomb || {}, pantry: S.pantry || [], log: S.pantryLog || [], tomb: S.pantryTomb || {} });
+        document.querySelectorAll('.ov.open').forEach((o) => o.classList.remove('open'));
+        window.__p5 = { c: window.callClaude, u: window.canUseAi, l: window.lookupNutrients };
+        S.shopList = []; S.shopTomb = {}; S.pantryTomb = {}; S.pantryLog = [];
+        S.pantry = [
+          { id: 'p5-milch', n: 'Milch', ic: '🥛', loc: 'kuehl', q: 2, g: 500, min: 0, rev: 1 },
+          { id: 'p5-zwiebel', n: 'Zwiebeln', ic: '🧅', loc: 'vorrat', q: 1, g: 80, min: 0, rev: 1 },
+        ];
+        window.lookupNutrients = (list, cb) => cb(list.map((z) => ({ name: z.name, emoji: '', amount: z.g || 0, per100: { kcal: 100, protein: 2, carbs: 10, fat: 3 } })));
+        window.callClaude = (m, content, max, ok) => ok('```json\n' + JSON.stringify({ titel: 'Smoke-Foto-Auflauf', portionen: 4, minuten: 40,
+          zutaten: [{ name: 'Milch', g: 500 }, { name: 'Zwiebel', g: 240 }, { name: 'Nudeln', g: 400 }, { name: 'Salz', g: 5 }, { name: 'Muskat', g: null }],
+          anleitung: '1. Kochen.\n2. Backen.' }) + '\n```');
+        saveS(); NTShop.open();
+        return k;
+      });
+      // Ohne KI: klare Meldung beim Einstieg; „Abbrechen“ lässt alles, wie es ist …
+      await ev(() => { window.canUseAi = () => false; });
+      answer = () => false;
+      await page.locator('#shopOv.open [data-act="NTShop.recipePhoto"]').click();
+      let s = await state();
+      out.noAi = /Rezept-Foto braucht/.test(dialogs[dialogs.length - 1] || '') && /selbst zusammenstellen/.test(dialogs[dialogs.length - 1] || '')
+        && !s.photo && !s.edit && s.n === 0 && s.shop === 0;
+      // … „OK“ öffnet den leeren Editor mit Hinweis auf den Zettel; ✕ legt nichts an.
+      answer = () => true;
+      await page.locator('#shopOv.open [data-act="NTShop.recipePhoto"]').click();
+      await page.locator('#recEditOv.open').waitFor();
+      const hint = await page.textContent('#recEditHint');
+      await page.click('#recEditOv [data-act="closeOv"]');
+      s = await state();
+      out.noAiBlank = /Einkaufszettel/.test(hint) && !s.edit && s.n === 0 && s.shop === 0;
+      // Mit KI: Foto → Editor mit dem Entwurf; noch nichts angelegt. ✕ im Editor bricht ab.
+      await ev(() => { window.canUseAi = () => true; });
+      await shot();
+      const draft = await ev(() => ({ name: document.getElementById('recEditName').value, serv: document.getElementById('recEditServ').value,
+        hint: document.getElementById('recEditHint').textContent, rows: document.querySelectorAll('#recEditIngList input.ing-amt').length }));
+      s = await state();
+      out.editor = draft.name === 'Smoke-Foto-Auflauf' && draft.serv === '4' && draft.rows === 5 && /Einkaufszettel/.test(draft.hint) && s.n === 0 && !s.photo;
+      await page.click('#recEditOv [data-act="closeOv"]');
+      s = await state();
+      out.editCancel = !s.edit && !s.prev && s.n === 0 && s.shop === 0;
+      // Noch einmal, jetzt speichern (Rückfrage „keine Grammangabe“ für Muskat → OK).
+      await shot();
+      dialogs.length = 0;
+      await page.click('#recEditOv [data-act="NTBook.editSave"]');
+      await page.locator('#planShopOv.open').waitFor();
+      s = await state();
+      const pv = await ev(() => ({ t: document.getElementById('planShopTitle').textContent, no: document.getElementById('planShopNo').textContent,
+        sum: document.getElementById('planShopSum').textContent, p: document.getElementById('planShopP').textContent,
+        rows: Array.from(document.querySelectorAll('#planShopRows .shop-prev-row')).map((r) => ({ t: r.textContent, on: r.querySelector('input').checked })),
+        rec: (recipes.find((r) => r.name === 'Smoke-Foto-Auflauf') || {}) }));
+      const row = (re) => pv.rows.find((r) => re.test(r.t)) || {};
+      out.saved = s.n === 1 && !s.edit && !s.det && pv.rec.baseServings === 4 && pv.rec.ingredients.length === 5 && /keine Grammangabe/.test(dialogs.join('|'));
+      out.preview = /Zutaten auf den Zettel/.test(pv.t) && pv.no === 'Nur Rezept speichern' && pv.p === '4' && pv.rows.length === 5
+        && /^3 Zutaten auf den Zettel, 1 ist im Vorrat\./.test(pv.sum) && /1 davon nur teilweise/.test(pv.sum)
+        && row(/Milch/).on === false && /im Vorrat/.test(row(/Milch/).t)
+        && row(/Zwiebel/).on === true && /fehlen 160 von 240 g/.test(row(/Zwiebel/).t)
+        && row(/Salz/).on === false && /Grundzutat/.test(row(/Salz/).t)
+        && row(/Muskat/).on === true && /ohne Mengenangabe/.test(row(/Muskat/).t) && /—/.test(row(/Muskat/).t)
+        && row(/Nudeln/).on === true && /400 g/.test(row(/Nudeln/).t);
+      // Portionen umrechnen (5 → Nudeln 500 g), zurück auf 4; Nudeln von Hand abwählen.
+      await page.click('#planShopPort [data-act="NTShop.previewPortions"][data-args="[1]"]');
+      const p5 = await page.textContent('#planShopRows');
+      await page.click('#planShopPort [data-act="NTShop.previewPortions"][data-args="[-1]"]');
+      await page.locator('#planShopRows .shop-prev-row', { hasText: 'Nudeln' }).locator('.shop-prev-n').click();
+      const after = await ev(() => document.getElementById('planShopSum').textContent);
+      out.portions = /500 g/.test(p5) && /^2 Zutaten auf den Zettel/.test(after);
+      await page.click('#planShopGo');
+      const list = await ev(() => S.shopList.map((x) => ({ n: x.n, q: x.q, rc: x.rc || [] })));
+      const it = (n) => list.find((x) => x.n === n);
+      s = await state();
+      out.onList = !s.prev && list.length === 2 && it('Zwiebel') && it('Zwiebel').q === '160 g' && it('Zwiebel').rc[0] === 'Smoke-Foto-Auflauf'
+        && it('Muskat') && it('Muskat').q === '' && it('Muskat').rc[0] === 'Smoke-Foto-Auflauf' && !it('Milch') && !it('Salz') && !it('Nudeln')
+        && await page.isVisible('#shopOv.open');
+      // Rezeptansicht → 🛒 Einkaufen: dieselbe Vorschau, „Abbrechen“ legt nichts auf den Zettel.
+      await ev(() => NTBook.detail(recipes.find((r) => r.name === 'Smoke-Foto-Auflauf').id));
+      out.noFreshOnReopen = !(await page.isVisible('#bookFreshShop'));
+      await page.click('#bookDetailOv [data-act="NTBook.toShop"]');
+      await page.locator('#planShopOv.open').waitFor();
+      const detNo = await page.textContent('#planShopNo');
+      const top = await ev(() => { const a = document.getElementById('planShopOv').getBoundingClientRect(); const e = document.elementFromPoint(a.left + a.width / 2, window.innerHeight - 40); return !!(e && e.closest('#planShopOv')); });
+      await page.click('#planShopNo');
+      s = await state();
+      out.detailCancel = detNo === 'Abbrechen' && top && !s.prev && s.shop === 2;
+      await ev(() => NTBook.closeDetail());
+      // Kochbuch-Weg: neues Rezept gespeichert → ruhiges Angebot oben, kein Pflicht-Dialog; ✕ der Vorschau legt nichts ab.
+      await ev(() => NTBook.editDraft({ name: 'Smoke-Foto-Kochbuch', baseServings: 2, ingredients: [{ name: 'Reis', emoji: '🍚', amount: 300, per100: { kcal: 350, protein: 7, carbs: 77, fat: 1 } }] }, { from: 'library' }));
+      await page.click('#recEditOv [data-act="NTBook.editSave"]');
+      await page.locator('#bookDetailOv.open #bookFreshShop').waitFor();
+      s = await state();
+      const offer = !s.prev;
+      await page.click('#bookFreshShop [data-act="NTBook.toShop"]');
+      await page.locator('#planShopOv.open').waitFor();
+      const reis = await page.textContent('#planShopRows');
+      await page.click('#planShopOv [data-act="closeOv"]');
+      s = await state();
+      out.bookOffer = offer && /Reis/.test(reis) && /300 g/.test(reis) && !s.prev && s.shop === 2 && !(await page.isVisible('#bookFreshShop'));
+      await ev(() => NTBook.closeDetail());
+      // Dublette: dasselbe Foto noch einmal → „nicht zusätzlich anlegen“ → das vorhandene Rezept in die Vorschau.
+      dialogs.length = 0;
+      answer = (m) => !/trotzdem zusätzlich anlegen/.test(m);
+      await shot();
+      await page.click('#recEditOv [data-act="NTBook.editSave"]');
+      await page.locator('#planShopOv.open').waitFor();
+      s = await state();
+      const dupSub = await page.textContent('#planShopSub');
+      out.dup = s.n === 2 && !s.edit && /Smoke-Foto-Auflauf/.test(dupSub) && dialogs.some((m) => /Stattdessen die Zutaten von „Smoke-Foto-Auflauf“/.test(m))
+        && await page.textContent('#planShopNo') === 'Abbrechen';
+      await page.click('#planShopNo');
+      s = await state();
+      out.dupCancel = s.shop === 2 && !s.prev;
+    } catch (e) { record('Rezept-Foto → Einkaufszettel', e.message); }
+    page.off('dialog', onDialog);
+    await ev((k) => {
+      document.querySelectorAll('.ov.open').forEach((o) => o.classList.remove('open'));
+      if (window.__p5) { window.callClaude = window.__p5.c; window.canUseAi = window.__p5.u; window.lookupNutrients = window.__p5.l; }
+      for (let i = recipes.length - 1; i >= 0; i--) if (/^Smoke-Foto/.test(recipes[i].name)) recipes.splice(i, 1);
+      saveX();
+      if (!k) return;
+      const o = JSON.parse(k);
+      S.shopList = o.shop; S.shopTomb = o.shopTomb; S.pantry = o.pantry; S.pantryLog = o.log; S.pantryTomb = o.tomb; S.pantryLocs = null;
+      saveS(); NTShop.render(); NTPantry.render(); NTBook.render();
+    }, keep).catch(() => {});
+    for (const [k, v] of Object.entries({ noAi: 'ohne KI: klare Meldung beim Einstieg mit Hinweis „selbst zusammenstellen“, Abbrechen legt nichts an',
+      noAiBlank: 'ohne KI → leerer Editor mit Zettel-Hinweis, ✕ legt nichts an',
+      editor: 'Foto → KI → Editor mit Titel/Portionen/Zutaten als Entwurf, noch kein Rezept',
+      editCancel: '✕ im Editor: kein Rezept, kein Zettel-Eintrag',
+      saved: 'Speichern legt das Rezept im Kochbuch an (Rückfrage ohne Grammangabe), keine Rezeptansicht',
+      preview: 'Vorschau: Vorrätiges abgewählt, Rest, Grundzutat abgewählt, ohne Menge gewählt, „Nur Rezept speichern“',
+      portions: 'Portionen rechnen um, Abwählen zählt mit', onList: '„Auf den Zettel“: nur Gewähltes, Rest in Gramm, ohne Menge leer, Herkunft rc',
+      noFreshOnReopen: 'Angebot erscheint nur direkt nach dem Anlegen', detailCancel: 'Rezeptansicht → 🛒 Einkaufen: dieselbe Vorschau obenauf, Abbrechen legt nichts ab',
+      bookOffer: 'Kochbuch-Weg: Angebot „🛒 Zutaten auf den Zettel“ nach dem Speichern, ✕ legt nichts ab',
+      dup: 'Dublette: vorhandenes Rezept statt eines zweiten', dupCancel: 'Dubletten-Vorschau abbrechen legt nichts ab' })) {
+      if (!out[k]) { shop5Fail++; console.log('  x   Rezept-Foto → Zettel: ' + v); }
+    }
+    const newErr = errors.length - errBefore;
+    if (newErr) { shop5Fail++; console.log(`  x   Rezept-Foto → Zettel: ${newErr} neue(r) Fehler, siehe unten.`); }
+    if (!shop5Fail) console.log('  ok  Rezept-Foto → Zettel: Kachel am Zettel, Foto → Editor → Kochbuch → Vorschau (Vorrat/Grundzutat/ohne Menge/Portionen) → Artikel mit Herkunft; Abbrüche ohne Reste, Angebot im Kochbuch, Dublette nimmt das vorhandene Rezept.');
+  }
+
   // 7c. App-Tour: aus der Hilfe von vorn bis „Fertig“ per Klick, dann an
   //     einem Punkt einsteigen und mit Esc beenden.
   let tourFail = 0;
@@ -1822,10 +1991,10 @@ const EXPECTED_NAMESPACES = [
 
   await browser.close();
 
-  if (errors.length || nsFail || badExports.length || deadHandlers.length || delegationFail || stack.length || deadFeatActs.length || remindFail || tabFail || kbFail || dietFail || pickFail || bookFail || pantryFail || pantry2Fail || pantry3Fail || pantry4Fail || tourFail) {
+  if (errors.length || nsFail || badExports.length || deadHandlers.length || delegationFail || stack.length || deadFeatActs.length || remindFail || tabFail || kbFail || dietFail || pickFail || bookFail || pantryFail || pantry2Fail || pantry3Fail || pantry4Fail || pantry5Fail || shop5Fail || tourFail) {
     console.error('\nFEHLER:');
     [...new Set(errors)].forEach((e) => console.error('  x   ' + e));
-    console.error(`\n${errors.length + nsFail + badExports.length + deadHandlers.length + delegationFail + stack.length + deadFeatActs.length + remindFail + tabFail + kbFail + dietFail + pickFail + bookFail + pantryFail + pantry2Fail + pantry3Fail + pantry4Fail + tourFail} Problem(e).`);
+    console.error(`\n${errors.length + nsFail + badExports.length + deadHandlers.length + delegationFail + stack.length + deadFeatActs.length + remindFail + tabFail + kbFail + dietFail + pickFail + bookFail + pantryFail + pantry2Fail + pantry3Fail + pantry4Fail + pantry5Fail + shop5Fail + tourFail} Problem(e).`);
     process.exit(1);
   }
   console.log('\nRauchtest bestanden.');

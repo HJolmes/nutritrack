@@ -933,9 +933,12 @@ function deleteItem(){
 // NTPantry.shortfall) — teilweise Gedecktes nur mit der Restmenge in Gramm.
 // Rückgabe: {added, merged, total, pantry, part} für eine ehrliche Rückmeldung
 // (pantry = ganz im Vorrat, part = nur der Rest auf dem Zettel).
-function addIngredients(ings,recipeName){
+// opts.checked: die Vorschau (recipePreview) hat den Vorrat schon verrechnet und
+// der Nutzer hat gewählt — dann kein zweiter Abzug.
+/** @param {Array<any>} ings @param {string} recipeName @param {{checked?:boolean}} [opts] */
+function addIngredients(ings,recipeName,opts){
   var added=0,merged=0,sf={ings:ings||[],covered:0,partial:0};
-  if(window.NTPantry&&NTPantry.shortfall)sf=NTPantry.shortfall(ings||[]);
+  if(!(opts&&opts.checked)&&window.NTPantry&&NTPantry.shortfall)sf=NTPantry.shortfall(ings||[]);
   sf.ings.forEach(function(ing){
     if(!ing)return;
     var nm=String(ing.name||ing.n||'').trim();
@@ -970,6 +973,129 @@ function addRecipe(recipeId,portions,orig){
   shopToast(addIngredients(ings,rec.name));
 }
 
+// ════════ Vorschau „Zutaten auf den Einkaufszettel“ (#planShopOv) ════════
+// Eine Vorschau für alle Wege, Rezept-Zutaten auf den Zettel zu bringen: den
+// Wocheneinkauf (NTPlan.weekToShop, nur die Zusammenfassung) und ein einzelnes
+// Rezept (Kochbuch → 🛒 Einkaufen, das Angebot nach dem Anlegen, 📷 Rezept-Foto
+// am Zettel) mit Portionen und abwählbaren Zeilen (shopRecipeRows). Auf den
+// Zettel kommt erst etwas mit „Auf den Zettel“ — ✕, Grund und der Nebenknopf
+// lassen ihn unberührt.
+/** @type {any} */
+var _prev=null;
+function previewEl(id){return document.getElementById(id);}
+/** @param {{title:string,no?:string,go:Function,rows?:boolean}} o */
+function previewShow(o){
+  var t=previewEl('planShopTitle');if(t)t.textContent=o.title;
+  var no=previewEl('planShopNo');if(no)no.textContent=o.no||'Abbrechen';
+  var go=/** @type {HTMLButtonElement|null} */ (previewEl('planShopGo'));if(go)go.disabled=false;
+  if(!o.rows){
+    var pe=previewEl('planShopPort');if(pe){pe.innerHTML='';pe.classList.add('hidden');}
+    var re=previewEl('planShopRows');if(re)re.innerHTML='';
+  }
+  _prev=o;
+  openOv('planShopOv');
+}
+function previewGo(){
+  var o=_prev;_prev=null;
+  if(o&&o.go)o.go(o);else closeOv('planShopOv');
+}
+function recipeById(id){
+  try{return (recipes||[]).find(function(r){return r.id===id;})||null;}catch(e){return null;}
+}
+// Rezept-Zutaten in der Fassung, die gekocht wird (NTBook.view), je Portion.
+function previewIngs(o){
+  var rec=recipeById(o.id);if(!rec)return [];
+  var src=(window.NTBook&&NTBook.view)?NTBook.view(rec,o.orig).ingredients:(rec.ingredients||[]);
+  // 🍽 ist der Platzhalter des Editors — dann rät der Zettel das Symbol (guess).
+  return src.map(function(g){return {name:bookIngShort(g)||g.name,emoji:(g.emoji&&g.emoji!=='🍽')?g.emoji:'',amount:g.amount||0};});
+}
+function previewCalc(o){
+  var items=(window.NTPantry&&NTPantry.list)?NTPantry.list():[];
+  o.list=shopRecipeRows(previewIngs(o),o.p,items);
+  // Von Hand An- oder Abgewähltes übersteht das Umrechnen der Portionen.
+  o.list.forEach(function(r){var k=r.name.toLowerCase();if(Object.prototype.hasOwnProperty.call(o.user,k))r.on=o.user[k];});
+}
+// opts.fresh: direkt nach dem Anlegen — der Nebenknopf heißt dann „Nur Rezept
+// speichern“ (gespeichert ist es da schon; auf den Zettel kommt nichts).
+/** @param {string} recipeId @param {number} [portions] @param {boolean} [orig] @param {{fresh?:boolean}} [opts] */
+function recipePreview(recipeId,portions,orig,opts){
+  var rec=recipeById(recipeId);
+  if(!rec){showToast('Rezept nicht gefunden');return;}
+  opts=opts||{};
+  var p=Math.max(1,Math.min(99,Math.round(+(portions||0)||rec.baseServings||1)));
+  var o={title:'🛒 Zutaten auf den Zettel',no:opts.fresh?'Nur Rezept speichern':'Abbrechen',rows:true,
+    id:rec.id,name:rec.name,emoji:rec.emoji||'📋',orig:!!orig,p:p,user:{},list:[],go:recipeGo};
+  previewCalc(o);
+  previewShow(o);
+  previewRender();
+}
+var PREV_NOTE={buy:'',part:'teilweise im Vorrat · nur der Rest',have:'im Vorrat',unk:'auch im Vorrat – Menge prüfen',
+  basic:'Grundzutat – meist zu Hause',noqty:'ohne Mengenangabe'};
+function previewRow(r,i){
+  var q=(r.st==='noqty'||!(r.full>0))?'—':((r.st==='have'||r.st==='basic')?r.full:r.amount)+' g';
+  var note=PREV_NOTE[r.st]||'';
+  if(r.st==='part')note='im Vorrat · fehlen '+r.amount+' von '+r.full+' g';
+  return '<label class="shop-prev-row'+(r.on?'':' off')+'" for="shopPrevOn'+i+'">'
+    +'<input type="checkbox" id="shopPrevOn'+i+'"'+(r.on?' checked':'')+' data-act="NTShop.previewToggle" data-args="'+esc(JSON.stringify([i]))+'">'
+    +'<span class="shop-prev-n">'+esc((r.emoji?r.emoji+' ':'')+r.name)+(note?'<small>'+esc(note)+'</small>':'')+'</span>'
+    +'<span class="shop-prev-q">'+esc(q)+'</span></label>';
+}
+function previewSum(){
+  var o=_prev;if(!o||!o.rows)return;
+  var c=shopRowsCount(o.list);
+  var sum=previewEl('planShopSum');
+  if(sum)sum.innerHTML='<b>'+c.n+' Zutat'+(c.n===1?'':'en')+'</b> auf den Zettel, <b>'+c.have+'</b> '+(c.have===1?'ist':'sind')+' im Vorrat.'
+    +(c.part?'<div style="font-size:12px;color:var(--mu);margin-top:4px;">'+c.part+' davon nur teilweise im Vorrat — es kommt nur der Rest auf den Zettel.</div>':'');
+  var go=/** @type {HTMLButtonElement|null} */ (previewEl('planShopGo'));
+  if(go){go.textContent='Auf den Zettel';go.disabled=!c.n;}
+}
+function previewRender(){
+  var o=_prev;if(!o||!o.rows)return;
+  var sub=previewEl('planShopSub');
+  if(sub)sub.textContent=o.emoji+' '+o.name;
+  var pe=previewEl('planShopPort');
+  if(pe){
+    pe.classList.remove('hidden');
+    pe.innerHTML='<div class="bk-sec"><div class="bk-sh">Einkaufen für</div>'
+      +'<div class="bk-scale"><button type="button" data-act="NTShop.previewPortions" data-args="[-1]" aria-label="Eine Portion weniger">−</button>'
+      +'<b id="planShopP">'+o.p+'</b><span>Portion'+(o.p===1?'':'en')+'</span>'
+      +'<button type="button" data-act="NTShop.previewPortions" data-args="[1]" aria-label="Eine Portion mehr">＋</button></div></div>';
+  }
+  var re=previewEl('planShopRows');
+  if(re)re.innerHTML=o.list.length?o.list.map(previewRow).join(''):'<div class="bk-mu">Dieses Rezept hat keine Zutaten.</div>';
+  previewSum();
+}
+/** @param {number} d */
+function previewPortions(d){
+  var o=_prev;if(!o||!o.rows)return;
+  o.p=Math.max(1,Math.min(99,o.p+d));
+  previewCalc(o);previewRender();
+}
+/** @param {number} i */
+function previewToggle(i){
+  var o=_prev;if(!o||!o.rows)return;
+  var r=o.list[i];if(!r)return;
+  var el=/** @type {HTMLInputElement|null} */ (previewEl('shopPrevOn'+i));
+  r.on=el?!!el.checked:!r.on;
+  o.user[r.name.toLowerCase()]=r.on;
+  var row=el&&el.closest('.shop-prev-row');if(row)row.classList.toggle('off',!r.on);
+  previewSum();
+}
+function recipeGo(o){
+  closeOv('planShopOv');
+  var pick=shopRowsPick(o.list);
+  if(!pick.length){showToast('Nichts übernommen');return;}
+  var r=addIngredients(pick,o.name,{checked:true});
+  r.pantry=o.list.filter(function(x){return x.st==='have'&&!x.on;}).length;
+  shopToast(r);
+}
+// 📷 Rezept-Foto am Zettel: der Foto-Ablauf des Kochbuchs (NTPlan), danach
+// diese Vorschau.
+function recipePhoto(){
+  if(!window.NTPlan||!NTPlan.photoToShop){showToast('Rezept-Foto nicht verfügbar');return;}
+  NTPlan.photoToShop();
+}
+
 // ── Boot: höchste bekannte rev merken, dann einmal abgleichen ──
 function boot(){
   list().forEach(function(it){if((it.rev||0)>_lastRev)_lastRev=it.rev;});
@@ -990,6 +1116,8 @@ window.NTShop={
   submitInput:submitInput,inputKey:inputKey,suggest:suggest,addFromSuggest:addFromSuggest,
   openCatalog:openCatalog,catalogQuery:catalogQuery,tileTap:tileTap,addCatQuery:addCatQuery,
   openItem:openItem,saveItem:saveItem,deleteItem:deleteItem,addRecipe:addRecipe,addIngredients:addIngredients,resultText:resultText,
+  previewShow:previewShow,previewGo:previewGo,recipePreview:recipePreview,previewPortions:previewPortions,
+  previewToggle:previewToggle,recipePhoto:recipePhoto,
   openSync:openSync,renderSyncUI:renderSyncUI,openLinks:openLinks,syncNow:syncNow,
   openCount:function(){return openItems().length;},
   openCats:openCats,renderCats:renderCats,catAdd:catAdd,catSave:catSave,catMove:catMove,catDelete:catDelete,

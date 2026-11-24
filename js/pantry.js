@@ -2312,7 +2312,7 @@ window.NTPantry={
   stockCancel:stockCancel,stockBook:stockBook,openReport:openReport,reportToggle:reportToggle,
   toggleHints:toggleHints,monthCheck:monthCheck,monthDismiss:monthDismiss,
   usage:function(id){var it=byId(id);return it?usage(it):null;},
-  count:function(){return items().length;},lowCount:function(){return items().filter(low).length;},
+  count:function(){return items().length;},list:function(){return items().slice();},lowCount:function(){return items().filter(low).length;},
   Sync:Sync
 };
 })();

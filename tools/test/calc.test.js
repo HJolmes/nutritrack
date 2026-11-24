@@ -1185,6 +1185,64 @@ test('pantryShortfall: Wochenplan verbraucht den Vorrat über mehrere Rezepte nu
   assert.equal(two.covered, 1);
   assert.deepEqual(plain(two.ings.map((x) => [x.name, x.amount])), [['Weizenmehl Mehl', 500]]);
 });
+test('shopRecipeRows: Rezept × Portionen minus Vorrat, Grundzutaten, ohne Menge (Paket 5)', () => {
+  const C = load({});
+  const items = [
+    { id: 'm', n: 'Milch', q: 2, g: 500 },       // 1000 g da
+    { id: 'z', n: 'Zwiebeln', q: 1, g: 80 },     // 80 g da
+    { id: 'k', n: 'Käse', q: 1 },                // da, aber ohne Gramm je Stück
+    { id: 'p', n: 'Petersilie', q: 1, g: 20 },
+    { id: 'e', n: 'Eier', q: 0, g: 60 },         // leer zählt nicht
+  ];
+  const ings = [
+    { name: 'Milch', amount: 250, emoji: '🥛' },
+    { name: 'Zwiebel', amount: 80 },
+    { name: 'Käse', amount: 50 },
+    { name: 'Mehl', amount: 125 },
+    { name: 'Salz', amount: 2 },
+    { name: 'Olivenöl', amount: 10 },
+    { name: 'Wasser', amount: 0 },
+    { name: 'Petersilie', amount: 0 },
+    { name: 'Muskat' },
+    { name: 'Ei', amount: 60 },
+    { name: 'mehl', amount: 25 },               // gleicher Name → zusammengefasst
+    { name: '  ' },
+  ];
+  const rows = plain(C.shopRecipeRows(ings, 4, items));
+  const by = Object.fromEntries(rows.map((r) => [r.name, r]));
+  assert.equal(rows.length, 10);
+  assert.deepEqual([by.Milch.st, by.Milch.full, by.Milch.on, by.Milch.emoji], ['have', 1000, false, '🥛']);
+  assert.deepEqual([by.Zwiebel.st, by.Zwiebel.amount, by.Zwiebel.full, by.Zwiebel.on], ['part', 240, 320, true]);
+  assert.deepEqual([by['Käse'].st, by['Käse'].on, by['Käse'].amount], ['unk', true, 200]);
+  assert.deepEqual([by.Mehl.st, by.Mehl.amount, by.Mehl.on], ['buy', 600, true]);
+  assert.deepEqual([by.Salz.st, by.Salz.on, by['Olivenöl'].st, by.Wasser.st], ['basic', false, 'basic', 'basic']);
+  assert.deepEqual([by.Petersilie.st, by.Petersilie.on], ['have', false]);   // ohne Menge, aber im Vorrat
+  assert.deepEqual([by.Muskat.st, by.Muskat.on, by.Muskat.amount], ['noqty', true, 0]);
+  assert.equal(by.Ei.st, 'buy');                                             // Bestand 0 zählt nicht
+  assert.deepEqual(plain(C.shopRowsCount(rows)), { n: 5, have: 2, part: 1 });
+  // Portionen ändern die Mengen und damit, was der Vorrat deckt
+  const one = Object.fromEntries(plain(C.shopRecipeRows(ings, 1, items)).map((r) => [r.name, r]));
+  assert.deepEqual([one.Zwiebel.st, one.Milch.st, one.Mehl.amount], ['have', 'have', 150]);
+  // ungültige Portionen → 1; leere Eingaben
+  assert.equal(plain(C.shopRecipeRows([{ name: 'Mehl', amount: 100 }], 0, null))[0].amount, 100);
+  assert.deepEqual(plain(C.shopRecipeRows(null, 2, null)), []);
+});
+test('shopRowsPick: nur Gewähltes; bewusst Angehaktes aus dem Vorrat mit voller Menge', () => {
+  const C = load({});
+  const rows = [
+    { name: 'Milch', emoji: '🥛', full: 1000, amount: 1000, st: 'have', on: true },
+    { name: 'Zwiebel', emoji: '', full: 320, amount: 240, st: 'part', on: true },
+    { name: 'Salz', emoji: '', full: 8, amount: 8, st: 'basic', on: true },
+    { name: 'Muskat', emoji: '', full: 0, amount: 0, st: 'noqty', on: true },
+    { name: 'Mehl', emoji: '', full: 600, amount: 600, st: 'buy', on: false },
+  ];
+  assert.deepEqual(plain(C.shopRowsPick(rows)), [
+    { name: 'Milch', emoji: '🥛', amount: 1000 }, { name: 'Zwiebel', emoji: '', amount: 240 },
+    { name: 'Salz', emoji: '', amount: 8 }, { name: 'Muskat', emoji: '', amount: 0 },
+  ]);
+  assert.deepEqual(plain(C.shopRowsPick(null)), []);
+  assert.deepEqual(plain(C.shopRowsCount(null)), { n: 0, have: 0, part: 0 });
+});
 test('planShopDates: nur heute und später', () => {
   const C = load({});
   assert.deepEqual(plain(C.planShopDates(['2026-11-23', '2026-11-24', '2026-11-27'], '2026-11-24')), ['2026-11-24', '2026-11-27']);

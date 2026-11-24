@@ -2,7 +2,7 @@
 
 > Erste Aktion jeder Session: diese Datei lesen. Sie beschreibt den **aktuellen** Stand, nicht seine Geschichte — die steht in Git und in `js/changelog.js`. Der Stand vor der Kürzung (#258, 132 KB): `git show 0d69ba2:UEBERGABE.md`. Grenzen siehe „Pflege“, `tools/check.js` prüft sie.
 
-**Stand:** v0.352 (24.11.2026) — Höchstens ein Hinweis-Banner gleichzeitig, Postfach-Knopf mit Zähler in der B3-Kopfzeile, Mahlzeit-Detail ohne Reiter darüber, Bereichsseiten mit nur einem Titel, zeitabhängiger Ziel-Hinweis, kompakter Wochenplan, B3-Text mindestens 12 px. Das Plus öffnet eine kompakte Auswahl mit hervorgehobener Lebensmittelerfassung. Die iOS-Dateisicherung ohne OneDrive ist nach sieben Tagen wieder fällig. Lange Dialoge und Bereichsseiten nehmen vertikale Wischgesten im Inhaltsbereich an. B3 zeigt nur aktive Bereiche in der Navigation. Dialoge lassen die Kopf- und Fußleiste sichtbar. „Was ist neu?“ hat einen scrollbaren Verlauf. Die Baby-Schlafansicht zeigt Tageswerte und die letzten sieben Tage erfassten Schlaf. Abhaken im Einkauf übernimmt Artikel in den aktiven Vorrat. Einzelne Chargen behalten ihre Daten, ein Vorratsabzug bei manuellen Tagebucheinträgen braucht Bestätigung. Mehr führt zum gruppierten Funktionskatalog. Recovery: `?ui=classic`, B3: `?ui=b3`. Die offenen manuellen Release-Prüfungen stehen im B3-Implementierungsplan, Abschnitt 11.
+**Stand:** v0.353 (24.11.2026) — B3 bricht Knopftexte nicht mehr im Wort um (Reiter-Chips wischen quer), Vorrat/Einkauf/Wochenplan haben Werkzeug-Kacheln (`.nt-tools`), „Schnellaktionen anpassen“ ist in Ausgewählt/Weitere gegliedert. Höchstens ein Hinweis-Banner gleichzeitig, Postfach-Knopf mit Zähler in der B3-Kopfzeile, Mahlzeit-Detail ohne Reiter darüber, Bereichsseiten mit nur einem Titel, zeitabhängiger Ziel-Hinweis, kompakter Wochenplan, B3-Text mindestens 12 px. Das Plus öffnet eine kompakte Auswahl mit hervorgehobener Lebensmittelerfassung. Die iOS-Dateisicherung ohne OneDrive ist nach sieben Tagen wieder fällig. Lange Dialoge und Bereichsseiten nehmen vertikale Wischgesten im Inhaltsbereich an. B3 zeigt nur aktive Bereiche in der Navigation. Dialoge lassen die Kopf- und Fußleiste sichtbar. „Was ist neu?“ hat einen scrollbaren Verlauf. Die Baby-Schlafansicht zeigt Tageswerte und die letzten sieben Tage erfassten Schlaf. Abhaken im Einkauf übernimmt Artikel in den aktiven Vorrat. Einzelne Chargen behalten ihre Daten, ein Vorratsabzug bei manuellen Tagebucheinträgen braucht Bestätigung. Mehr führt zum gruppierten Funktionskatalog. Recovery: `?ui=classic`, B3: `?ui=b3`. Die offenen manuellen Release-Prüfungen stehen im B3-Implementierungsplan, Abschnitt 11.
 
 ## URLs
 
@@ -76,11 +76,11 @@
 
 | Version | PR | Was |
 |---|---|---|
-| v0.348 | Vorrat und Schlaf | Einkauf erzeugt Chargen mit tatsächlichem oder geschätztem Datum. Tagebuch bietet einen bestätigten Abzug an. Schlafstatistik, übersichtliche Hinweise und scrollbarer Versionsverlauf. |
 | v0.349 | Mobiles Scrollen | Dialoginhalte lassen sich durch Wischen scrollen. Tests prüfen auch Mehr und Alle Funktionen bei kurzer Bildschirmhöhe. |
 | v0.350 | iOS-Wochensicherung | Die Datei-Sicherung ohne OneDrive ist sieben Tage nach der letzten erfolgreichen Sicherung wieder fällig. |
 | v0.351 | Erfassen | Kompakter Auswahldialog mit hervorgehobener Lebensmittelerfassung und Kacheln für die vorhandenen Aktionen. |
 | v0.352 | UI-Prüfung | Ein Banner gleichzeitig, Postfach-Knopf in B3, Mahlzeit-Detail oben, einfache Seitenköpfe, Ziel-Hinweis nach Uhrzeit, kompakter Wochenplan, 12 px Mindestschrift. |
+| v0.353 | UI-Sichtprüfung | Kein Umbruch im Wort, Reiter-Chips als Wischleiste, Werkzeug-Kacheln, neuer Schnellaktionen-Dialog, Wasserziel/Navigation/Fasten/Lagerorte ausgerichtet. |
 
 ---
 

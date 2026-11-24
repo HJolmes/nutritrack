@@ -67,10 +67,22 @@ function run(id){
 }
 function configure(){
   var selected=actions();
-  document.getElementById('b3HomePrefsBody').innerHTML='<p>Bis zu sechs Aktionen. Die persönlichen Baby-Schnellknöpfe bleiben separat erhalten.</p>'+NTLaunch.ACTIONS.filter(function(a){return selected.includes(a.id)||!disabledFeature(a);}).map(function(a){
-    var at=selected.indexOf(a.id),on=at>=0;
-    return '<div class="b3-row">'+btn((on?'✓ ':'＋ ')+a.label,'NTUIHome.toggle',[a.id])+(on?btn('Hoch','NTUIHome.move',[a.id,-1])+btn('Runter','NTUIHome.move',[a.id,1]):'')+'</div>';
+  var all=NTLaunch.ACTIONS.filter(function(a){return selected.includes(a.id)||!disabledFeature(a);});
+  function by(id){return all.find(function(a){return a.id===id;});}
+  function act(name,args,cls,label,html,off){return '<button type="button" class="'+cls+'" data-act="'+name+'" data-args="'+esc(JSON.stringify(args))+'"'+(label?' aria-label="'+esc(label)+'"':'')+(off?' disabled':'')+'>'+html+'</button>';}
+  var chosen=selected.map(by).filter(Boolean),rest=all.filter(function(a){return !selected.includes(a.id);});
+  var h='<p>Bis zu sechs Aktionen. Die persönlichen Baby-Schnellknöpfe bleiben separat erhalten.</p>';
+  h+='<div class="b3-pref-head">Ausgewählt ('+chosen.length+'/6)</div>';
+  h+=chosen.map(function(a,i){
+    return '<div class="b3-pref-row">'+act('NTUIHome.toggle',[a.id],'b3-pref-main',a.label+' entfernen','<span class="b3-pref-mark" aria-hidden="true">✓</span><span>'+esc(a.label)+'</span>')
+      +act('NTUIHome.move',[a.id,-1],'b3-pref-move',a.label+' nach oben','<span aria-hidden="true">↑</span>',i===0)
+      +act('NTUIHome.move',[a.id,1],'b3-pref-move',a.label+' nach unten','<span aria-hidden="true">↓</span>',i===chosen.length-1)+'</div>';
   }).join('');
+  if(rest.length){
+    h+='<div class="b3-pref-head">Weitere Aktionen</div>';
+    h+=rest.map(function(a){return '<div class="b3-pref-row is-off">'+act('NTUIHome.toggle',[a.id],'b3-pref-main',a.label+' hinzufügen','<span class="b3-pref-mark" aria-hidden="true">＋</span><span>'+esc(a.label)+'</span>')+'</div>';}).join('');
+  }
+  document.getElementById('b3HomePrefsBody').innerHTML=h;
   openOv('b3HomePrefsOv');
 }
 function toggle(id){

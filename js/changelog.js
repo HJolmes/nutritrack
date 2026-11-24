@@ -2,6 +2,12 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.353',items:[
+    {icon:'🔤',text:'<b>Knöpfe brechen nicht mehr mitten im Wort um</b>. Lagerort-Filter, Reiter und Artikelkacheln bleiben einzeilig oder lassen sich quer wischen – auch bei großer Schrift.',where:'Vorrat · Einkauf · Baby'},
+    {icon:'🧰',text:'<b>Einheitliche Werkzeugleisten</b>. Vorrat, Einkaufszettel und Wochenplan zeigen ihre Aktionen als gleich große Kacheln mit Symbol und Beschriftung.',where:'Haushalt'},
+    {icon:'⚡',text:'<b>Schnellaktionen anpassen ist aufgeräumt</b>: Ausgewähltes steht oben mit Pfeilen zum Sortieren, der Rest darunter.',where:'Übersicht · Anpassen'},
+    {icon:'🪟',text:'<b>Dialoge sauber ausgerichtet</b>: Wasserziel, Navigation anpassen, Fasten mit eigener Dauer, Lagerorte und die Aktionen im Mahlzeit-Detail.',where:'Dialoge'},
+  ]},
   {v:'0.352',items:[
     {icon:'📬',text:'<b>Postfach-Hinweis in der Kopfzeile</b>. Neue Sendungen vom Partner zeigt ein Knopf mit Zähler auf jeder Seite.',where:'Kopfzeile'},
     {icon:'🧹',text:'<b>Nur noch ein Hinweis-Banner gleichzeitig</b>. Sicherungs-Tipp und OneDrive-Hinweis erscheinen nicht mehr doppelt, der Inhalt beginnt weiter oben.',where:'Alle Seiten'},

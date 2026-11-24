@@ -726,12 +726,12 @@ function renderCatalog(){
       return '<button type="button" onclick="NTShop.tileTap(\''+enc(x.n)+'\',\''+enc(x.ic)+'\',\''+esc(x.c)+'\')" '
         +'style="'+bg+'border-width:1.5px;border-style:solid;border-radius:14px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;position:relative;">'
         +'<span style="font-size:22px;line-height:1;">'+esc(x.ic)+'</span>'
-        +'<span style="font-size:10px;font-weight:700;color:var(--tx);text-align:center;line-height:1.2;word-break:break-word;">'+esc(x.n)+'</span>'
+        +'<span style="font-size:10px;font-weight:700;color:var(--tx);text-align:center;line-height:1.2;overflow-wrap:break-word;hyphens:auto;max-width:100%;">'+esc(x.n)+'</span>'
         +(on?'<span style="position:absolute;top:3px;right:5px;font-size:11px;color:var(--g2);">✓</span>':'')
         +'</button>';
     }).join('');
   }
-  var grid='display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px;';
+  var grid='display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px;margin-bottom:10px;';
 
   var rec=recent().slice(0,QUICK_MAX_RECENT).filter(function(r){return !n||norm(r.n).indexOf(n)>=0;});
   if(rec.length){

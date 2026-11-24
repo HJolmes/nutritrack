@@ -1109,6 +1109,203 @@ const EXPECTED_NAMESPACES = [
     if (!pantry3Fail) console.log('  ok  Vorrat Nachkauf: Verbrauch lernen, Prognose in Zeile/Detail, Geht bald aus, Mindestmenge vorschlagen, Dauerartikel mit Herkunft auf den Zettel, Sperre nach Entfernen, Nachkaufen-Ansicht, täglicher Lauf ohne Dublette, eine Meldung, ⋯ Mehr.');
   }
 
+  // 12e. Vorrat Paket 3: Tagebuch ↔ Vorrat und Wochenplan ↔ Vorrat. Ein
+  //      Rezept ins Tagebuch → EIN Vorschlag mit allen Artikeln (Gramm/Stück,
+  //      abwählbar), Mehrdeutiges zur Auswahl und gemerkt, dreimal abgelehnt →
+  //      nicht mehr gefragt (⋯ Mehr setzt zurück), Schalter aus → keine Frage,
+  //      Wiederkehrende → nur offener Vorschlag im Vorrat (kein Dialog, kein
+  //      Abzug), schon gebucht → entdoppelt, Portionen halbiert → Rückbuchung,
+  //      Läuft ab → „Rezept dazu finden“ → Einplanen, „Füllen“ mit Vorrats-
+  //      Merkmal, Woche → Zettel mit Zusammenfassung, Vorrat nur einmal.
+  let pantry4Fail = 0;
+  {
+    const errBefore = errors.length;
+    const onDialog = (d) => d.accept();
+    page.on('dialog', onDialog);
+    const out = {};
+    let keep = null;
+    const tick = () => page.evaluate(() => new Promise((r) => setTimeout(r, 30)));
+    const isOpen = (id) => page.evaluate((id) => document.getElementById(id).classList.contains('open'), id);
+    try {
+      keep = await page.evaluate(() => {
+        const k = JSON.stringify({ shop: S.shopList, shopTomb: S.shopTomb || {}, pantry: S.pantry || [], log: S.pantryLog || [], tomb: S.pantryTomb || {},
+          ask: S.pantryAsk || null, map: S.pantryMap || null, off: !!S.pantryAskOff, days: S.days, plan: S.mealPlan || {}, planTomb: S.planTomb || {},
+          applied: S.planApplied || {}, recur: S.recurringMeals || [], cook: S.cookLog || {}, goal: S.goal, cur: S.currentDate, recipes });
+        document.querySelectorAll('.ov.open').forEach((o) => o.classList.remove('open'));
+        const p = (kcal) => ({ kcal, protein: 5, carbs: 10, fat: 3, sugar: 0, fiber: 0, salt: 0 });
+        S.currentDate = today(); S.goal = 2000; S.days = {}; S.mealPlan = {}; S.planApplied = {}; S.recurringMeals = []; S.cookLog = {};
+        delete S.pantryAsk; delete S.pantryMap; delete S.pantryAskOff;
+        S.shopList = []; S.pantryLog = []; S.pantryTomb = {}; S.pantryLocs = null;
+        S.pantry = [
+          { id: 'sm-milch', n: 'Milch', ic: '🥛', loc: 'kuehl', q: 2, g: 1000, min: 0, lots: [{ id: 'sm-l1', q: 2, mhd: addDays(today(), 1), vd: '' }], mhd: addDays(today(), 1), vd: '', rev: 1 },
+          { id: 'sm-hafer', n: 'Haferflocken', ic: '🌾', loc: 'vorrat', q: 1, g: 500, min: 0, rev: 1 },
+          { id: 'sm-toast', n: 'Smoke-Toast', ic: '🍞', loc: 'vorrat', q: 3, g: 0, min: 0, rev: 1 },
+          { id: 'sm-pizza', n: 'Smoke-Pizza', ic: '🍕', loc: 'tk', q: 2, g: 0, min: 0, rev: 1 },
+        ];
+        recipes.splice(0, recipes.length,
+          { id: 'sm-muesli', name: 'Smoke-Müsli', emoji: '🥣', meal: ['breakfast'], ingredients: [
+            { name: 'Haferflocken', amount: 60, per100: p(370) }, { name: 'Milch', amount: 200, per100: p(64) },
+            { name: 'Smoke-Toast', amount: 50, per100: p(260) }, { name: 'Zimt', amount: 2, per100: p(250) }] },
+          { id: 'sm-pudding', name: 'Smoke-Pudding', emoji: '🍮', meal: ['lunch'], ingredients: [{ name: 'Milch', amount: 1000, per100: p(70) }] },
+          { id: 'sm-reis', name: 'Smoke-Reis', emoji: '🍚', meal: ['dinner'], ingredients: [{ name: 'Reis', amount: 100, per100: p(350) }] });
+        saveS(); renderAll();
+        return k;
+      });
+      // E1: Rezept ins Tagebuch → ein Vorschlag, Gramm vorgeschlagen, Stück leer und abgewählt
+      await page.evaluate(() => NTPicker.addRecipeEntry('sm-muesli', 'breakfast', 1));
+      await page.locator('#pantryMealOv.open').waitFor();
+      const rows = await page.evaluate(() => [...document.querySelectorAll('#pantryMealRows .pantry-meal-row')].map((r) => ({
+        it: r.querySelector('select').value, q: r.querySelector('.pantry-meal-q input').value, unit: r.querySelector('.pantry-meal-q span').textContent,
+        on: r.querySelector('.pantry-meal-on input').checked })));
+      out.offer = rows.length === 3 && JSON.stringify(rows) === JSON.stringify([
+        { it: 'sm-hafer', q: '60', unit: 'g', on: true }, { it: 'sm-milch', q: '200', unit: 'g', on: true }, { it: 'sm-toast', q: '', unit: 'Stück', on: false }])
+        && await page.textContent('#pantryMealOk') === 'Abziehen' && await page.textContent('#pantryMealNo') === 'Nicht aus dem Vorrat'
+        && await page.evaluate(() => S.pantry.find((x) => x.id === 'sm-milch').q === 2);
+      // abwählen und ergänzen: Haferflocken nicht, Toast 1 Stück
+      await page.click('#pantryMealRows .pantry-meal-row:nth-child(1) .pantry-meal-on');
+      await page.fill('#pantryMealRows .pantry-meal-row:nth-child(3) .pantry-meal-q input', '1');
+      await page.click('#pantryMealRows .pantry-meal-row:nth-child(3) .pantry-meal-on');
+      await page.click('#pantryMealOk');
+      out.booked = await page.evaluate(() => {
+        const q = (id) => S.pantry.find((x) => x.id === id).q, e = getDay().meals.breakfast[0];
+        const evs = S.pantryLog.filter((l) => l.ev === e._vid).map((l) => l.pid + ':' + l.d).sort().join();
+        return q('sm-milch') === 1.8 && q('sm-toast') === 2 && q('sm-hafer') === 1 && evs === 'sm-milch:-0.2,sm-toast:-1'
+          && S.pantryMap.milch.ok === 1 && S.pantryMap.milch.p === 'sm-milch' && S.pantryMap[pantryKey('Haferflocken')].no === 1
+          && !document.getElementById('pantryMealOv').classList.contains('open');
+      });
+      // E2: mehrdeutig → zur Auswahl, nichts vorgewählt; Wahl wird gemerkt
+      const amb = { name: 'Haferflocken mit Milch', emoji: '🥣', amount: 250, per100: { kcal: 90, protein: 3, carbs: 12, fat: 3 }, kcal: 225, protein: 8, carbs: 30, fat: 8 };
+      await page.evaluate((amb) => { const e = JSON.parse(JSON.stringify(amb)); getDay().meals.snack.push(e); NTPantry.offerMeal(e); }, amb);
+      await page.locator('#pantryMealOv.open').waitFor();
+      const ambRow = await page.evaluate(() => ({ n: document.querySelectorAll('#pantryMealRows .pantry-meal-row').length, sel: document.querySelector('#pantryMealRows select').value,
+        on: document.querySelector('#pantryMealRows .pantry-meal-on input').checked, note: document.querySelector('#pantryMealRows small').textContent }));
+      await page.selectOption('#pantryMealRows select', 'sm-milch');
+      const picked = await page.inputValue('#pantryMealRows .pantry-meal-q input');
+      await page.click('#pantryMealOk');
+      await page.evaluate((amb) => { const e = JSON.parse(JSON.stringify(amb)); getDay().meals.snack.push(e); NTPantry.offerMeal(e); }, amb);
+      await page.locator('#pantryMealOv.open').waitFor();
+      const again = await page.evaluate(() => ({ sel: document.querySelector('#pantryMealRows select').value, on: document.querySelector('#pantryMealRows .pantry-meal-on input').checked }));
+      await page.click('#pantryMealNo');
+      out.choice = ambRow.n === 1 && ambRow.sel === '' && !ambRow.on && /Mehrdeutig/.test(ambRow.note) && picked === '250'
+        && again.sel === 'sm-milch' && again.on && await page.evaluate(() => S.pantry.find((x) => x.id === 'sm-milch').q === 1.55);
+      // E2: dreimal „Nicht aus dem Vorrat“ für denselben Namen → keine Frage mehr; ⋯ Mehr setzt zurück
+      const pizza = { name: 'Smoke-Pizza', emoji: '🍕', amount: 300, per100: { kcal: 250, protein: 10, carbs: 30, fat: 10 }, kcal: 750, protein: 30, carbs: 90, fat: 30 };
+      for (let i = 0; i < 3; i++) {
+        await page.evaluate((x) => { const e = JSON.parse(JSON.stringify(x)); getDay().meals.dinner.push(e); NTPantry.offerMeal(e); }, pizza);
+        await page.locator('#pantryMealOv.open').waitFor();
+        await page.click('#pantryMealNo');
+      }
+      await page.evaluate((x) => { const e = JSON.parse(JSON.stringify(x)); getDay().meals.dinner.push(e); NTPantry.offerMeal(e); }, pizza);
+      await tick();
+      const muted = !(await isOpen('pantryMealOv'));
+      await page.evaluate(() => { NTPantry.open(); NTPantry.openMore(); });
+      const muteNote = await page.textContent('#pantryAskMuted');
+      await page.click('#pantryAskMuted [data-act="NTPantry.askUnmute"]');
+      out.mute = muted && /Für 1 Namen fragt die App nicht mehr/.test(muteNote) && await page.evaluate(() => !S.pantryMap[pantryKey('Smoke-Pizza')]);
+      // E5: Schalter aus → keine Frage (gerätelokal), an → wieder
+      await page.uncheck('#pantryAskChk');
+      await page.evaluate((x) => { const e = JSON.parse(JSON.stringify(x)); getDay().meals.dinner.push(e); NTPantry.offerMeal(e); }, pizza);
+      await tick();
+      out.toggle = !(await isOpen('pantryMealOv')) && await page.evaluate(() => S.pantryAskOff === true);
+      await page.check('#pantryAskChk');
+      await page.evaluate(() => { closeOv('pantryMoreOv'); });
+      // E3: Wiederkehrende Mahlzeit → kein Dialog, kein Abzug, offener Vorschlag im Vorrat
+      await page.evaluate(() => {
+        S.recurringMeals = [{ id: 'sm-rec', active: true, meal: 'lunch', weekdays: [0, 1, 2, 3, 4, 5, 6], startDate: addDays(today(), -1),
+          entries: [{ name: 'Smoke-Toast', emoji: '🍞', amount: 50, per100: { kcal: 260, protein: 8, carbs: 48, fat: 3 }, kcal: 130, protein: 4, carbs: 24, fat: 2, _vid: 'alt' }] }];
+        NTRecur.apply(today()); saveS(); NTPantry.render();
+      });
+      await tick();
+      const e3 = await page.evaluate(() => ({ open: document.getElementById('pantryMealOv').classList.contains('open'), toast: S.pantry.find((x) => x.id === 'sm-toast').q,
+        ask: (S.pantryAsk || []).length, vid: getDay().meals.lunch[0]._vid, hint: document.getElementById('pantryAskHint').textContent }));
+      await page.click('#pantryAskHint .pantry-soon');
+      await page.locator('#pantryMealOv.open').waitFor();
+      const e3sub = await page.textContent('#pantryMealSub');
+      await page.fill('#pantryMealRows .pantry-meal-q input', '1');
+      await page.check('#pantryMealRows .pantry-meal-on input');
+      await page.click('#pantryMealOk');
+      out.pending = !e3.open && e3.toast === 2 && e3.ask === 1 && e3.vid !== 'alt' && /1 Mahlzeit: aus dem Vorrat abziehen\?/.test(e3.hint) && /Ohne dich eingetragen/.test(e3sub)
+        && await page.evaluate(() => S.pantry.find((x) => x.id === 'sm-toast').q === 1 && !(S.pantryAsk || []).length && !document.getElementById('pantryAskHint').textContent);
+      // E3: derselbe Eintrag schon gebucht (anderes Gerät, Verlauf per Sync) → Vorschlag fällt weg; zu alte Tage gar nicht erst
+      out.dedup = await page.evaluate(() => {
+        const e = { name: 'Smoke-Toast', amount: 50, per100: { kcal: 260, protein: 8, carbs: 48, fat: 3 }, kcal: 130 };
+        getDay().meals.snack.push(e); NTPantry.queueMeal(e, today(), 'snack', 'alexa');
+        const before = S.pantryAsk.length;
+        S.pantryLog.unshift({ id: 'fremd', t: Date.now(), pid: 'sm-toast', n: 'Smoke-Toast', d: -1, k: 'verbrauch', src: 'Mahlzeit', ev: e._vid, u: 0, rev: 1 });
+        NTPantry.render();
+        const old = { name: 'Smoke-Toast', amount: 50 }; NTPantry.queueMeal(old, addDays(today(), -5), 'snack', 'alexa');
+        return before === 1 && !S.pantryAsk.length && !document.getElementById('pantryAskHint').textContent;
+      });
+      // E4: Portionen halbiert → Rückbuchung anbieten, Gramm/Stück zurück, im Verlauf mit Bezug
+      await page.evaluate(() => { closeOv('pantryOv'); openEditEntry('breakfast', 0); document.getElementById('editPortions').value = '0.5'; saveEditEntry(); });
+      await page.locator('#pantryMealOv.open').waitFor();
+      const back = await page.evaluate(() => ({ t: document.getElementById('pantryMealTitle').textContent,
+        q: [...document.querySelectorAll('#pantryMealRows .pantry-meal-q input')].map((i) => i.value).sort().join('|') }));
+      await page.click('#pantryMealOk');
+      out.rebook = /anpassen/.test(back.t) && back.q === '0,5|100' && await page.evaluate(() => {
+        const q = (id) => S.pantry.find((x) => x.id === id).q, v = getDay().meals.breakfast[0]._vid;
+        return q('sm-milch') === 1.65 && q('sm-toast') === 1.5 && S.pantryLog.some((l) => l.ev === v && l.k === 'korrektur' && l.d === 0.1);
+      });
+      // F3: Läuft ab → „Rezept dazu finden“ → nur Rezepte mit Milch → Einplanen öffnet das Kochbuch mit Einplanen-Feld
+      await page.evaluate(() => { NTPantry.open(); NTPantry.setFilter('__exp'); });
+      await page.click('#pantryList [data-act="NTPantry.openCook"][data-args=\'["sm-milch"]\']');
+      await page.locator('#pantryCookOv.open').waitFor();
+      const cook = await page.textContent('#pantryCookList');
+      await page.click('#pantryCookList [data-act="NTPantry.planRecipe"][data-args=\'["sm-pudding"]\']');
+      await page.locator('#bookDetailOv.open').waitFor();
+      out.cookFor = /Mit 🥛 Milch/.test(cook) && /Smoke-Pudding/.test(cook) && /Smoke-Müsli/.test(cook) && !/Smoke-Reis/.test(cook)
+        && await page.isVisible('#bookPlanDate');
+      // F1: „Füllen“ nimmt das Rezept mit ablaufender Milch und sagt warum
+      out.fill = await page.evaluate(() => {
+        document.querySelectorAll('.ov.open').forEach((o) => o.classList.remove('open'));
+        S.days = {}; S.mealPlan = {};
+        recipes.splice(0, recipes.length, recipes.find((r) => r.id === 'sm-pudding') || { id: 'x' });
+        recipes[0].ingredients[0].amount = 1000; // 700 kcal ≈ 35 % von 2000
+        NTPlan.open(today()); NTPlan.autoFill();
+        const it = (S.mealPlan[today()] || {}).lunch || [];
+        return it.length === 1 && it[0].w === 'verbraucht Milch (läuft ab)' && /🥫 verbraucht Milch/.test(document.getElementById('planDays').textContent);
+      });
+      // F2: zwei Rezepte à 1000 g Milch bei 1500 g Vorrat → 500 g fehlen; vergangene Tage zählen nicht; erst Zusammenfassung
+      await page.evaluate(() => {
+        S.mealPlan = {}; S.pantry.find((x) => x.id === 'sm-milch').q = 1.5; S.pantry.find((x) => x.id === 'sm-milch').lots = [{ id: 'sm-l1', q: 1.5, mhd: '', vd: '' }];
+        NTPlan.planRecipe(today(), 'lunch', 'sm-pudding', 1); NTPlan.planRecipe(today(), 'dinner', 'sm-pudding', 1);
+        if (NTPlan.visibleDates().indexOf(addDays(today(), -1)) >= 0) NTPlan.planRecipe(addDays(today(), -1), 'lunch', 'sm-pudding', 3);
+        NTPlan.render(); NTPlan.weekToShop();
+      });
+      await page.locator('#planShopOv.open').waitFor();
+      const shopSum = await page.textContent('#planShopSum');
+      const shop0 = await page.evaluate(() => S.shopList.length);
+      await page.click('#planShopGo');
+      out.weekShop = /1 Zutat auf den Zettel, 0 sind im Vorrat/.test(shopSum) && /1 davon nur teilweise/.test(shopSum) && shop0 === 0
+        && await page.evaluate(() => { const m = S.shopList.find((x) => x.n === 'Milch'); return !!m && /^500 g$/.test(m.q); });
+    } catch (e) { record('Vorrat Tagebuch/Plan', e.message); }
+    await page.evaluate((k) => {
+      document.querySelectorAll('.ov.open').forEach((o) => o.classList.remove('open'));
+      if (!k) return;
+      const o = JSON.parse(k);
+      S.shopList = o.shop; S.shopTomb = o.shopTomb; S.pantry = o.pantry; S.pantryLog = o.log; S.pantryTomb = o.tomb; S.pantryLocs = null;
+      if (o.ask) S.pantryAsk = o.ask; else delete S.pantryAsk;
+      if (o.map) S.pantryMap = o.map; else delete S.pantryMap;
+      if (o.off) S.pantryAskOff = true; else delete S.pantryAskOff;
+      S.days = o.days; S.mealPlan = o.plan; S.planTomb = o.planTomb; S.planApplied = o.applied; S.recurringMeals = o.recur; S.cookLog = o.cook; S.goal = o.goal; S.currentDate = o.cur;
+      recipes.splice(0, recipes.length, ...o.recipes);
+      saveS(); renderAll(); NTShop.render(); NTPantry.render();
+    }, keep).catch(() => {});
+    page.off('dialog', onDialog);
+    for (const [k, v] of Object.entries({ offer: 'Rezept ins Tagebuch → ein Vorschlag mit allen Artikeln, Gramm vorgeschlagen, Stück leer und abgewählt',
+      booked: '„Abziehen“ bucht nur Gewähltes, Buchung kennt den Eintrag, Zuordnung/Ablehnung gemerkt',
+      choice: 'mehrdeutiger Name zur Auswahl, Wahl gemerkt und beim nächsten Mal vorgewählt',
+      mute: 'dreimal abgelehnt → keine Frage mehr, ⋯ Mehr setzt zurück', toggle: 'Schalter „Beim Eintragen nach Vorratsabzug fragen“ aus → keine Frage',
+      pending: 'Wiederkehrende → kein Dialog, kein Abzug, Hinweis im Vorrat, dort bestätigt', dedup: 'schon gebucht (anderes Gerät) entdoppelt, zu alte Tage nicht gefragt',
+      rebook: 'Portionen halbiert → Rückbuchung angeboten und im Verlauf mit Bezug', cookFor: 'Läuft ab → Rezept dazu finden → Einplanen',
+      fill: '„Füllen“ mit Vorrats-Merkmal am Planeintrag', weekShop: 'Woche → Zettel: Zusammenfassung, Vorrat nur einmal verrechnet' })) {
+      if (!out[k]) { pantry4Fail++; console.log('  x   Vorrat Tagebuch/Plan: ' + v); }
+    }
+    const newErr = errors.length - errBefore;
+    if (newErr) { pantry4Fail++; console.log(`  x   Vorrat Tagebuch/Plan: ${newErr} neue(r) Fehler, siehe unten.`); }
+    if (!pantry4Fail) console.log('  ok  Vorrat Tagebuch/Plan: ein bestätigter Vorschlag je Mahlzeit, Auswahl bei Mehrdeutigem, gemerkte Zuordnung, Ablehnen dämpft, Schalter, offene Vorschläge ohne Dialog, Entdoppeln, Rückbuchung, Rezept zu Ablaufendem, Füllen mit Merkmal, Woche → Zettel mit Zusammenfassung.');
+  }
+
   // 7c. App-Tour: aus der Hilfe von vorn bis „Fertig“ per Klick, dann an
   //     einem Punkt einsteigen und mit Esc beenden.
   let tourFail = 0;
@@ -1406,10 +1603,10 @@ const EXPECTED_NAMESPACES = [
 
   await browser.close();
 
-  if (errors.length || nsFail || badExports.length || deadHandlers.length || delegationFail || stack.length || deadFeatActs.length || remindFail || tabFail || kbFail || dietFail || pickFail || bookFail || pantryFail || pantry2Fail || pantry3Fail || tourFail) {
+  if (errors.length || nsFail || badExports.length || deadHandlers.length || delegationFail || stack.length || deadFeatActs.length || remindFail || tabFail || kbFail || dietFail || pickFail || bookFail || pantryFail || pantry2Fail || pantry3Fail || pantry4Fail || tourFail) {
     console.error('\nFEHLER:');
     [...new Set(errors)].forEach((e) => console.error('  x   ' + e));
-    console.error(`\n${errors.length + nsFail + badExports.length + deadHandlers.length + delegationFail + stack.length + deadFeatActs.length + remindFail + tabFail + kbFail + dietFail + pickFail + bookFail + pantryFail + pantry2Fail + pantry3Fail + tourFail} Problem(e).`);
+    console.error(`\n${errors.length + nsFail + badExports.length + deadHandlers.length + delegationFail + stack.length + deadFeatActs.length + remindFail + tabFail + kbFail + dietFail + pickFail + bookFail + pantryFail + pantry2Fail + pantry3Fail + pantry4Fail + tourFail} Problem(e).`);
     process.exit(1);
   }
   console.log('\nRauchtest bestanden.');

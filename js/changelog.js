@@ -2,6 +2,13 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.356',items:[
+    {icon:'🍽️',text:'<b>Nach dem Eintragen fragt die App, was aus dem Vorrat weg ist</b>. Du bestätigst, änderst die Menge oder tippst „Nicht aus dem Vorrat“ – abgezogen wird nie ohne dich.',where:'Tagebuch · Vorrat'},
+    {icon:'🕓',text:'<b>Alexa, wiederkehrende und geteilte Mahlzeiten</b> warten als Hinweis im Vorrat, statt still abzubuchen. Nach drei Tagen verfällt der Hinweis.',where:'Vorrat'},
+    {icon:'↩️',text:'<b>Eintrag gelöscht oder Menge geändert?</b> Der Vorrat bietet an, die Buchung zurückzunehmen oder anzupassen.',where:'Tagebuch'},
+    {icon:'🎲',text:'<b>„Füllen“ im Wochenplan</b> bevorzugt Rezepte, die bald Ablaufendes verbrauchen, und sagt, warum.',where:'Wochenplan'},
+    {icon:'🛒',text:'<b>Wocheneinkauf mit Vorschau</b>: wie viel auf den Zettel kommt und was schon im Vorrat ist. Vergangene Tage zählen nicht mehr mit. Zu Ablaufendem findest du passende Rezepte.',where:'Wochenplan · Vorrat'},
+  ]},
   {v:'0.355',items:[
     {icon:'📈',text:'<b>Der Vorrat lernt aus deinem Verbrauch</b> und schätzt, wie lange ein Artikel noch reicht – kurz in der Liste, ausführlich im Artikel.',where:'Vorrat'},
     {icon:'⏳',text:'<b>„Geht bald aus“</b> zeigt gesammelt, was demnächst leer wird, mit „Auf den Zettel“ und „Diesmal nicht“.',where:'Vorrat'},

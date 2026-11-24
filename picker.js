@@ -291,7 +291,8 @@ function _pickerAppendToEditEntry(items,beforeClose){
   if(beforeClose)beforeClose();
   closePicker();
   openEditEntry(meal,idx);
-  if(window.NTPantry)NTPantry.offerMeal({ingredients:items,portions:e.portions});
+  // Nur die neuen Zutaten fragen; die Buchung gehoert zum Eintrag e (Rueckweg beim Loeschen).
+  if(window.NTPantry)NTPantry.offerMeal({ingredients:items,portions:e.portions},e);
   showToast(items.length===1?((items[0].emoji||'🍽')+' '+items[0].name+' hinzugefügt'):(items.length+' Zutat(en) hinzugefügt'));
   return true;
 }

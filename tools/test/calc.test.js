@@ -1174,6 +1174,126 @@ test('pantryShortfall: zieht den Vorrat in Gramm ab, teilt Bestand, lässt Unbek
   assert.equal(ing.amount, 900);
   assert.deepEqual(JSON.parse(JSON.stringify(C.pantryShortfall([], null))), { ings: [], covered: 0, partial: 0, unknown: 0 });
 });
+test('pantryShortfall: Wochenplan verbraucht den Vorrat über mehrere Rezepte nur einmal', () => {
+  const C = load({});
+  const items = [{ id: 'm', n: 'Mehl', q: 1, g: 500 }];
+  // zwei Rezepte je 500 g, zusammengefasst wie weekToShop es tut → 500 g fehlen
+  const agg = C.pantryShortfall([{ name: 'Mehl', amount: 1000 }], items);
+  assert.deepEqual(plain(agg.ings.map((x) => [x.name, x.amount])), [['Mehl', 500]]);
+  // dieselbe Menge unter zwei Namen (nicht zusammengefasst): Bestand nur einmal
+  const two = C.pantryShortfall([{ name: 'Mehl', amount: 500 }, { name: 'Weizenmehl Mehl', amount: 500 }], items);
+  assert.equal(two.covered, 1);
+  assert.deepEqual(plain(two.ings.map((x) => [x.name, x.amount])), [['Weizenmehl Mehl', 500]]);
+});
+test('planShopDates: nur heute und später', () => {
+  const C = load({});
+  assert.deepEqual(plain(C.planShopDates(['2026-11-23', '2026-11-24', '2026-11-27'], '2026-11-24')), ['2026-11-24', '2026-11-27']);
+  assert.deepEqual(plain(C.planShopDates([], '2026-11-24')), []);
+});
+
+// ── Vorrat ↔ Tagebuch (Paket 3)
+test('pantryEntryLines: Rezept je Zutat × Portionen, Einzeleintrag, Ketten-Portion ohne Gramm', () => {
+  const C = load({});
+  assert.deepEqual(plain(C.pantryEntryLines({ name: 'Müsli', isRecipe: true, portions: 2, ingredients: [{ name: 'Haferflocken', amount: 50 }, { name: 'Milch', amount: 150 }] })),
+    [{ name: 'Haferflocken', grams: 100 }, { name: 'Milch', grams: 300 }]);
+  assert.deepEqual(plain(C.pantryEntryLines({ name: 'Joghurt', amount: 150 })), [{ name: 'Joghurt', grams: 150 }]);
+  assert.deepEqual(plain(C.pantryEntryLines({ name: 'Burger', amount: 100, pu: true })), [{ name: 'Burger', grams: 0 }]);
+  assert.deepEqual(plain(C.pantryEntryLines(null)), []);
+});
+test('pantryMatch: gleicher Name, eindeutiges Wort, mehrdeutig zur Auswahl, gemerkt, stumm', () => {
+  const C = load({});
+  const items = [
+    { id: 'm', n: 'Milch', q: 2, g: 1000 }, { id: 'h', n: 'H-Milch', q: 1, g: 1000 },
+    { id: 'f', n: 'Haferflocken', q: 1, g: 500 }, { id: 'e', n: 'Eier', q: 0 },
+  ];
+  assert.equal(C.pantryMatch(items, 'Milch').it.id, 'm');           // gleicher Name schlägt „H-Milch“
+  assert.equal(C.pantryMatch(items, 'Milch').src, 'name');
+  assert.equal(C.pantryMatch(items, 'Haferflocken zart').it.id, 'f'); // ganzes Wort
+  const amb = C.pantryMatch(items, 'Haferflocken mit Milch');
+  assert.equal(amb.src, 'choice'); assert.equal(amb.it, null); assert.equal(amb.cands.length, 2);
+  assert.equal(C.pantryMatch(items, 'Ei'), null);                    // leer → kein Vorschlag
+  assert.equal(C.pantryMatch(items, 'Pizza'), null);
+  const mem = { [C.pantryKey('Haferflocken mit Milch')]: { p: 'f', ok: 1, no: 0 }, pizza: { ok: 0, no: 3 } };
+  assert.equal(C.pantryMatch(items, 'Haferflocken mit Milch', mem).it.id, 'f');
+  assert.equal(C.pantryMatch(items, 'Haferflocken mit Milch', mem).src, 'mem');
+  assert.equal(C.pantryMatch(items.concat({ id: 'p', n: 'Pizza', q: 1 }), 'Pizza', mem).src, 'muted');
+  // gemerkter Artikel leer → zurück zur Namenslogik
+  assert.equal(C.pantryMatch([{ id: 'f', n: 'Haferflocken', q: 0 }, items[0]], 'Haferflocken mit Milch', mem).it.id, 'm');
+});
+test('pantryAskLearn/pantryAskMuted: dreimal abgelehnt und nie bestätigt → nicht mehr fragen', () => {
+  const C = load({});
+  let m;
+  for (let i = 0; i < 2; i++) m = C.pantryAskLearn(m, false);
+  assert.equal(C.pantryAskMuted(m), false);
+  m = C.pantryAskLearn(m, false);
+  assert.equal(C.pantryAskMuted(m), true);
+  assert.deepEqual(plain(m), { ok: 0, no: 3 });
+  const ok = C.pantryAskLearn(m, true, 'x');
+  assert.deepEqual(plain(ok), { ok: 1, no: 0, p: 'x' });
+  let after = ok;
+  for (let i = 0; i < 5; i++) after = C.pantryAskLearn(after, false);
+  assert.equal(C.pantryAskMuted(after), false, 'wer einmal bestätigt hat, wird weiter gefragt');
+  assert.equal(after.p, 'x');
+});
+test('pantryMealRows/pantryAskQty/pantryAskPieces: Zeilen je Artikel, Gramm oder Stück', () => {
+  const C = load({});
+  const items = [{ id: 'm', n: 'Milch', q: 1, g: 1000 }, { id: 't', n: 'Toast', q: 3 }, { id: 'h', n: 'Haferflocken', q: 1, g: 500 }];
+  const rows = C.pantryMealRows({ name: 'Frühstück', isRecipe: true, portions: 1, ingredients: [
+    { name: 'Milch', amount: 200 }, { name: 'Milch', amount: 100 }, { name: 'Toast', amount: 60 }, { name: 'Haferflocken mit Milch', amount: 50 }, { name: 'Kaffee', amount: 5 },
+  ] }, items);
+  assert.equal(rows.length, 3);
+  assert.deepEqual(plain(rows[0].keys), ['milch']); assert.equal(rows[0].grams, 300); assert.equal(rows[0].known, true);
+  assert.equal(rows[2].src, 'choice');
+  assert.deepEqual(plain(C.pantryAskQty(items[0], 300, true)), { unit: 'g', q: 300 });
+  assert.deepEqual(plain(C.pantryAskQty(items[0], 3000, true)), { unit: 'g', q: 1000 }); // höchstens der Bestand
+  assert.deepEqual(plain(C.pantryAskQty(items[1], 60, true)), { unit: 'Stück', q: null });
+  assert.equal(C.pantryAskPieces(items[0], 300, 'g'), 0.3);
+  assert.equal(C.pantryAskPieces(items[1], 5, 'Stück'), 3);
+  assert.equal(C.pantryAskPieces(items[1], 0, 'Stück'), 0);
+  assert.deepEqual(plain(C.pantryMealRows({ name: 'Pizza', amount: 300 }, items)), []);
+});
+test('pantryAskSkip/pantryAskOpen: gekocht = schon abgezogen, offene Vorschläge verfallen', () => {
+  const C = load({});
+  const log = { r1: { n: 1, last: '2026-11-23' } };
+  assert.equal(C.pantryAskSkip({ recipeId: 'r1' }, log, '2026-11-24'), true);
+  assert.equal(C.pantryAskSkip({ recipeId: 'r1' }, log, '2026-11-26'), false);
+  assert.equal(C.pantryAskSkip({ name: 'x' }, log, '2026-11-24'), false);
+  const list = [{ v: 'a', d: '2026-11-24' }, { v: 'b', d: '2026-11-21' }, { v: 'c', d: '2026-11-20' }, { v: 'd', d: '2026-11-25' }, { d: '2026-11-24' }];
+  assert.deepEqual(plain(C.pantryAskOpen(list, '2026-11-24').map((a) => a.v)), ['a', 'b']);
+});
+test('pantryBooked/pantryRebook/pantryLotsPart: Rückweg für geänderte und gelöschte Einträge', () => {
+  const C = load({});
+  const log = [
+    { id: '1', ev: 'v1', pid: 'm', d: -0.3 }, { id: '2', ev: 'v1', pid: 't', d: -2, u: 1 },
+    { id: '3', ev: 'v1', pid: 'm', d: 0.1 }, { id: '4', ev: 'v2', pid: 'm', d: -1 }, { id: '5', pid: 'm', d: -1 },
+  ];
+  assert.deepEqual(plain(C.pantryBooked(log, 'v1')), { m: 0.2 });
+  assert.deepEqual(plain(C.pantryBooked(log, '')), {});
+  assert.equal(C.pantryRebook(0.2, 200, 0), 0.2);        // gelöscht: alles zurück
+  assert.equal(C.pantryRebook(0.2, 200, 100), 0.1);      // halbe Menge: Hälfte zurück
+  assert.equal(C.pantryRebook(0.2, 200, 300), -0.1);     // mehr gegessen: mehr ab
+  assert.equal(C.pantryRebook(0.2, 200, 200), 0);
+  assert.equal(C.pantryRebook(0, 200, 0), 0);
+  const part = C.pantryLotsPart([{ id: 'a', q: 0.2, mhd: '2026-12-01' }, { id: 'b', q: 0.5 }], 0.4);
+  assert.deepEqual(plain(part), { lots: [{ id: 'a', q: 0.2, mhd: '2026-12-01' }, { id: 'b', q: 0.2 }], rest: 0 });
+  assert.equal(C.pantryLotsPart([{ id: 'a', q: 0.2 }], 0.5).rest, 0.3);
+});
+test('planPantryScore/planCandScore/planPantryWhy: Bonus begrenzt, nur bei passenden Kalorien', () => {
+  const C = load({});
+  const items = [{ id: 'm', n: 'Milch', q: 1 }, { id: 'r', n: 'Reis', q: 2 }, { id: 's', n: 'Salz', q: 1 }, { id: 'h', n: 'Hack', q: 1 }];
+  const exp = (it) => (it.id === 'm' ? { k: 'mhd', days: 1 } : it.id === 'h' ? { k: 'vd', days: -1 } : null);
+  const r = C.planPantryScore(['Milch', 'Reis', 'Salz', 'Hack', 'Milch 1,5 %', 'Nudeln'], items, exp, 3);
+  assert.deepEqual(plain(r.use), [{ n: 'Milch', exp: true }, { n: 'Reis', exp: false }, { n: 'Hack', exp: false }]);
+  assert.equal(r.bonus, 0.1);
+  const many = C.planPantryScore(['a', 'b', 'c'], [{ id: 1, n: 'a', q: 1 }, { id: 2, n: 'b', q: 1 }, { id: 3, n: 'c', q: 1 }], () => ({ k: 'mhd', days: 0 }), 3);
+  assert.equal(many.bonus, 0.12, 'gedeckelt');
+  assert.equal(C.planPantryScore([], items).bonus, 0);
+  assert.equal(C.planCandScore(0.05, 0, 0.1), -0.05 + 0);
+  assert.equal(C.planCandScore(0.2, 0.3, 0.12), 0.5, 'schlechte Kalorien-Passung bekommt keinen Bonus');
+  assert.equal(C.planPantryWhy(r.use), 'verbraucht Milch (läuft ab)');
+  assert.equal(C.planPantryWhy([{ n: 'Reis', exp: false }, { n: 'Linsen', exp: false }, { n: 'X', exp: false }]), 'nutzt Vorrat: Reis, Linsen');
+  assert.equal(C.planPantryWhy([]), '');
+});
 test('pantryRefillMhd: leer → heute + Tage, sonst früheres Datum, ohne Tage unverändert', () => {
   const C = load({});
   const t = '2026-10-17';

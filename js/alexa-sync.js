@@ -476,6 +476,8 @@
           _alexaId:j.item.id,_source:'alexa',_alexaPending:pending};
         for(var k in scaled){if(Object.prototype.hasOwnProperty.call(scaled,k))entry[k]=scaled[k];}
         day.meals[j.slot].push(entry);
+        // Niemand schaut zu: nie abbuchen, nur ein offener Vorratsvorschlag.
+        if(window.NTPantry&&window.NTPantry.queueMeal)window.NTPantry.queueMeal(entry,j.key,j.slot,'alexa');
         added++;
       });
       done(added,true);

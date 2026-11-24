@@ -30,7 +30,9 @@
 //   S.pantryLog   [{id,t,pid,n,ic,d,k,src,u,g,rev,_sy}]  Verlauf (#336): d = ± Stück,
 //                 k = kauf|verbrauch|verderb|kochen|korrektur, u = rückgängig,
 //                 g = Gramm je Stück zur Zeit der Buchung (Verbrauch lernen,
-//                 pantryUseRate rechnet bei neuer Packungsgröße um).
+//                 pantryUseRate rechnet bei neuer Packungsgröße um),
+//                 ev = _vid des Tagebucheintrags (Abzug „aus dem Tagebuch“),
+//                 en = dessen Name (Anzeige).
 //                 Synchron als Record `log:<id>`, 90 Tage, ohne Grabsteine —
 //                 jedes Gerät kürzt selbst und nimmt Älteres nicht mehr an.
 //   S.pantryRemindOff / S.pantryRemindDay  Ablauf-Meldung aus / zuletzt gemeldet
@@ -45,6 +47,9 @@
 //   - Einkaufszettel, Gegenrichtung: Rezepte und Wochenplan legen nur auf den
 //     Zettel, was der Vorrat nicht deckt (`shortfall`, gerufen aus
 //     NTShop.addIngredients, #334).
+//   - Tagebuch: nach dem Eintragen ein bestätigter Abzug (offerMeal/queueMeal,
+//     siehe „Tagebuch → Vorrat“), Rückweg beim Löschen/Ändern (entryChanged).
+//   - Wochenplan: „Füllen“ fragt planScore, was ein Rezept aus dem Vorrat nutzt.
 //   - Scanner: NTPicker.scanFor bucht bekannte Barcodes ±1 (#335).
 //   - Erinnerungen: einmal am Tag „läuft bald ab“ über NTRemind.notify (#337).
 //   - KI: Fotos von Kühlschrank und Schrank auswerten (nur nach Bestätigung
@@ -457,50 +462,289 @@ function useRecipe(ings,portions,recName){
   return used.length;
 }
 
-var mealStock=new Map(),mealPending=false;
-function offerMeal(entry){
-  var feature=NTFeat.byId('pantry');
-  if(feature&&NTFeat.isOff(feature))return;
-  var ingredients=Array.isArray(entry.ingredients)&&entry.ingredients.length?entry.ingredients:[entry];
-  var portions=ingredients===entry.ingredients?(+entry.portions||1):1;
-  ingredients.forEach(function(ing){
-    var name=bookIngShort(ing)||ing.name,item=pantryFind(items(),name);
-    if(!item&&pantryKey(name)){
-      var token=' '+pantryKey(name)+' ';
-      var matches=items().filter(function(it){return it.q>0&&(' '+pantryKey(it.n)+' ').includes(token);});
-      if(matches.length===1)item=matches[0];
-    }
-    if(!item||!(item.q>0))return;
-    var known=item.g>0&&ing.amount>0&&!ing.pu&&!entry.pu;
-    var previous=mealStock.get(item.id);
-    mealStock.set(item.id,{item:item,known:known&&(!previous||previous.known),qty:(previous?previous.qty:0)+(known?ing.amount*portions/item.g:0)});
+// ── Tagebuch → Vorrat (Paket 3, E1–E5) ────────────────────────────────────
+// Ein Tagebucheintrag bucht NIE still ab (der Nutzer kann bestellt oder
+// auswärts gegessen haben). Drei Wege, alle über denselben Dialog #pantryMealOv:
+//   'new'  — gerade aktiv eingetragen (Picker, Rezept, Vorlage, Plan → Tagebuch,
+//            Kopie von gestern): EIN zusammengefasster Vorschlag sofort.
+//   'open' — ohne anwesenden Nutzer entstanden (Alexa, Wiederkehrende, Import):
+//            offener Vorschlag in S.pantryAsk, wartet als Hinweis im Vorrat und
+//            verfällt nach PANTRY_ASK_DAYS Tagen.
+//   'back' — Eintrag gelöscht oder Menge geändert: Buchung zurücknehmen/anpassen.
+// Die Buchung kennt den Eintrag über `ev` (= entry._vid) im Verlauf; das
+// entdoppelt auch zwischen Geräten (der Verlauf reist im Vorrats-Topf).
+//   entry._vid       ID des Tagebucheintrags für den Vorrat (im Tagebuch, lokal)
+//   S.pantryAsk      [{v,d,m,s,t}] offene Vorschläge (gerätelokal: das Tagebuch
+//                    ist gerätelokal, und ein Vorschlag gehört zum Gerät, auf
+//                    dem der Eintrag entstand)
+//   S.pantryMap      {Namensschlüssel: {p,ok,no}} gemerkte Zuordnung und
+//                    Ablehnungen (gerätelokal: Tagebuch-Namen und „bei mir nie
+//                    aus dem Vorrat“ sind persönlich, nicht Sache des Haushalts)
+//   S.pantryAskOff   Schalter „Beim Eintragen nach Vorratsabzug fragen“ aus (lokal)
+var ASK_MAX=40;
+var MEAL_LABEL={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
+var ASK_SRC={alexa:'🗣️ Alexa',wdh:'🔁 Wiederkehrend',import:'📥 Übernommen'};
+/** @type {any} */
+var _ask=null;       // {mode:'new'|'open'|'back', groups:[{v,title,name,rows}]}
+var _askBatch=[],_askPending=false;
+function pantryOff(){var f=window.NTFeat?NTFeat.byId('pantry'):null;return !!(f&&NTFeat.isOff(f));}
+function askOn(){return !S.pantryAskOff;}
+function askMem(){if(!S.pantryMap||typeof S.pantryMap!=='object')S.pantryMap={};return S.pantryMap;}
+function askList(){if(!Array.isArray(S.pantryAsk))S.pantryAsk=[];return S.pantryAsk;}
+// Zu diesem Eintrag wurde schon gebucht (auch auf einem anderen Gerät oder rückgängig).
+function askBooked(v){return logArr().some(function(e){return e.ev===v;});}
+function askDrop(v){var a=askList(),b=a.filter(function(x){return x.v!==v;});if(b.length!==a.length)S.pantryAsk=b;}
+// Vorschlags-Zeilen eines Eintrags für den Dialog (Menge in der Einheit des Artikels).
+function askGroup(entry,v,title){
+  var rows=pantryMealRows(entry,items(),askMem()).map(function(r){
+    var it=r.it,qq=it?pantryAskQty(it,r.grams,r.known):{unit:'',q:null};
+    return {keys:r.keys,names:r.names,id:it?it.id:'',cands:r.cands.map(function(c){return c.id;}),src:r.src,
+      grams:r.grams,known:r.known,unit:qq.unit,q:qq.q,on:!!it&&qq.q!==null&&qq.q>0,dir:-1};
   });
-  if(!mealStock.size||mealPending)return;
-  mealPending=true;
+  return {v:v,title:title||((entry.emoji||'🍽')+' '+(entry.name||'Eintrag')),name:String(entry.name||''),rows:rows};
+}
+// Aktiv eingetragen (E1). `owner` = der echte Eintrag, wenn nur Zutaten an ihn
+// angehängt wurden (er behält seine ID, die Buchungen summieren sich).
+/** @param {any} entry @param {any} [owner] */
+function offerMeal(entry,owner){
+  if(!entry)return;
+  var host=owner||entry;
+  // Neu eingetragen = neue ID, auch wenn nicht gefragt wird: Kopien (Vorlage,
+  // gestern) trügen sonst die ID des Originals und dessen Buchungen.
+  if(!owner||!host._vid)host._vid=uid('v');
+  if(pantryOff()||!askOn()||pantryAskSkip(host,S.cookLog,today()))return;
+  _askBatch.push({entry:entry,host:host});
+  if(_askPending)return;
+  _askPending=true;
+  // Alles, was im selben Schritt eingetragen wird (Vorlage, Plan-Tag), ergibt EINEN Vorschlag.
   queueMicrotask(function(){
-    mealPending=false;
-    var body=document.getElementById('pantryMealRows');
-    body.innerHTML=Array.from(mealStock.values()).map(function(match){
-      var item=match.item,qty=match.known?fmtN(Math.min(item.q,match.qty)):'';
-      return '<label class="pantry-meal-row" data-pantry-id="'+esc(item.id)+'"><span><strong>'+esc(item.n)+'</strong><small>'+fmtN(item.q)+' Stück vorhanden</small></span>'
-        +'<span>Abziehen (Stück)<input class="sinp" inputmode="decimal" value="'+esc(qty)+'" placeholder="0" aria-label="'+esc(item.n)+' abziehen, Stück"></span></label>';
-    }).join('');
-    mealStock.clear();
+    _askPending=false;
+    var batch=_askBatch;_askBatch=[];
+    var groups=batch.map(function(b){return askGroup(b.entry,b.host._vid,b.entry===b.host?'':((b.host.emoji||'🍽')+' '+(b.host.name||'')));})
+      .filter(function(g){return g.rows.length;});
+    if(!groups.length)return;
+    if(_ask&&isOpen('pantryMealOv')){
+      if(_ask.mode==='new'){askRead();_ask.groups=_ask.groups.concat(groups);renderAsk();}
+      return;// ein anderer Dialog ist offen: nicht überfahren
+    }
+    _ask={mode:'new',groups:groups};
+    renderAsk();
     openOv('pantryMealOv');
   });
 }
-function confirmMeal(){
-  var used=[];
-  document.querySelectorAll('#pantryMealRows [data-pantry-id]').forEach(function(row){
-    var item=byId(row.getAttribute('data-pantry-id'));
-    var qty=num(/** @type {HTMLInputElement} */ (row.querySelector('input')).value);
-    if(!item||!qty)return;
-    var before=pantryNeed(item.q,item.min);
-    if(!take(item,qty,'verbrauch','Mahlzeit'))return;
-    item.rev=nextRev();used.push(item);afterChange(item,before);
+// Ohne anwesenden Nutzer eingetragen (E3): nie abbuchen, kein Dialog — nur ein
+// offener Vorschlag. Speichern übernimmt der Aufrufer.
+/** @param {any} entry @param {string} date @param {string} meal @param {string} [src] alexa|wdh|import */
+function queueMeal(entry,date,meal,src){
+  if(!entry)return;
+  entry._vid=uid('v');
+  if(pantryOff()||!askOn())return;
+  var a={v:entry._vid,d:String(date||''),m:String(meal||''),s:src||'',t:Date.now()};
+  if(!pantryAskOpen([a],today()).length)return;
+  var list=askList();
+  list.push(a);
+  if(list.length>ASK_MAX)list.splice(0,list.length-ASK_MAX);
+  // Später zeichnen: Der Aufrufer hängt den Eintrag evtl. erst danach an den Tag.
+  setTimeout(render,0);
+}
+function findEntry(d,m,v){
+  var day=S.days&&S.days[d];
+  if(!day||!day.meals)return null;
+  var ms=[m].concat(Object.keys(day.meals).filter(function(k){return k!==m;}));
+  for(var i=0;i<ms.length;i++){
+    var arr=day.meals[ms[i]]||[];
+    for(var j=0;j<arr.length;j++)if(arr[j]&&arr[j]._vid===v)return arr[j];
+  }
+  return null;
+}
+// Offene Vorschläge, die noch gelten und etwas im Vorrat finden. Abgelaufene,
+// schon gebuchte (auch vom anderen Gerät) und verschwundene Einträge fallen weg.
+function askOpenGroups(){
+  var all=askList(),keep=pantryAskOpen(all,today()),groups=[];
+  keep=keep.filter(function(a){
+    var en=findEntry(a.d,a.m,a.v);
+    if(!en||askBooked(a.v))return false;
+    var g=askGroup(en,a.v,(ASK_SRC[a.s]?ASK_SRC[a.s]+' · ':'')+(MEAL_LABEL[a.m]||'')+' '+fmtDate(a.d)+': '+(en.name||''));
+    if(g.rows.length)groups.push(g);
+    return true;
   });
-  if(used.length){saveS();Sync.schedule();render();showToast('Vorrat aktualisiert ✓');}
+  if(keep.length!==all.length){S.pantryAsk=keep;saveS();}
+  return groups;
+}
+function openAsk(){
+  var groups=askOpenGroups();
+  if(!groups.length){showToast('Nichts offen ✓');render();return;}
+  _ask={mode:'open',groups:groups};
+  renderAsk();
+  openOv('pantryMealOv');
+}
+// Ruhiger Hinweis im Vorrat: „2 Mahlzeiten: aus dem Vorrat abziehen?“
+function renderAskHint(){
+  var el=document.getElementById('pantryAskHint');
+  if(!el)return;
+  var n=askOn()&&askList().length?askOpenGroups().length:0;
+  el.innerHTML=n?'<button type="button" class="pantry-soon" data-act="NTPantry.openAsk">'
+    +'<span aria-hidden="true">🍽️</span><span>'+n+(n===1?' Mahlzeit':' Mahlzeiten')+': aus dem Vorrat abziehen?</span><span aria-hidden="true">›</span></button>':'';
+}
+// Eintrag gelöscht (neu = 0) oder Menge geändert (alt → neu, z. B. Gramm oder
+// Portionen): Rücknahme bzw. Anpassung der Buchung anbieten (E4).
+/** @param {any} entry @param {number} oldAmt @param {number} newAmt */
+function entryChanged(entry,oldAmt,newAmt){
+  if(!entry||!entry._vid)return;
+  var v=entry._vid;
+  if(!(+newAmt>0)){askDrop(v);saveS();renderCard();}
+  var net=pantryBooked(logArr(),v),rows=[];
+  Object.keys(net).forEach(function(pid){
+    var it=byId(pid);if(!it)return;
+    var d=pantryRebook(net[pid],oldAmt,newAmt);
+    if(!d)return;
+    var unit=+it.g>0?'g':'Stück',n=Math.abs(d);
+    rows.push({keys:[],names:[],id:pid,cands:[pid],src:'mem',unit:unit,q:unit==='g'?Math.round(n*it.g):roundQty(n),on:true,dir:d>0?1:-1,net:net[pid]});
+  });
+  if(!rows.length)return;
+  if(isOpen('pantryMealOv'))closeOv('pantryMealOv');
+  _ask={mode:'back',gone:!(+newAmt>0),groups:[{v:v,title:(entry.emoji||'🍽')+' '+(entry.name||''),name:String(entry.name||''),rows:rows}]};
+  renderAsk();
+  openOv('pantryMealOv');
+}
+function askOptions(r){
+  var have=items().filter(function(it){return (+it.q||0)>0||it.id===r.id;});
+  var first=have.filter(function(it){return r.cands.indexOf(it.id)>=0;});
+  var rest=pantrySort(have.filter(function(it){return r.cands.indexOf(it.id)<0;}),'name');
+  return (r.id?'':'<option value="">Welcher Artikel?</option>')
+    +first.concat(rest).map(function(it){return '<option value="'+esc(it.id)+'"'+(it.id===r.id?' selected':'')+'>'+esc((it.ic||'🥫')+' '+it.n)+'</option>';}).join('');
+}
+function askRowHtml(gi,ri,r){
+  var it=r.id?byId(r.id):null,back=_ask.mode==='back';
+  var lbl=back?(r.dir>0?'zurück':'zusätzlich ab'):'abziehen';
+  var note=back?(r.dir>0?'Zurück in den Vorrat':'Mehr gegessen — zusätzlich abziehen')
+    :[r.src==='choice'?'Mehrdeutig — bitte wählen':'',
+      // Woher die Zeile kommt, nur wenn der Tagebuch-Name anders heißt als der Artikel.
+      it&&r.names.every(function(n){return pantryKey(n)===pantryKey(it.n);})?'':'aus „'+r.names.join('“, „')+'“',
+      it?fmtN(it.q)+' Stück da':''].filter(Boolean).join(' · ');
+  var name=it?(it.ic||'🥫')+' '+it.n:'';
+  return '<div class="pantry-meal-row" data-g="'+gi+'" data-r="'+ri+'">'
+    +'<label class="pantry-meal-on"><input type="checkbox"'+(r.on?' checked':'')+' aria-label="'+esc((name||r.names.join(', '))+' '+lbl)+'"></label>'
+    +(back?'<strong class="pantry-meal-name">'+esc(name)+'</strong>'
+      :'<select class="sinp pantry-meal-it" aria-label="Vorratsartikel für '+esc(r.names.join(', '))+'" onchange="NTPantry.askPick(this)">'+askOptions(r)+'</select>')
+    +'<small>'+esc(note)+'</small>'
+    +'<label class="pantry-meal-q"><input class="sinp" inputmode="decimal" value="'+esc(r.q===null||r.q===undefined?'':fmtN(r.q))+'" placeholder="0" aria-label="'+esc((name||'Menge')+' '+lbl+', '+(r.unit||'Stück'))+'"><span>'+esc(r.unit||'Stück')+'</span></label>'
+    +'</div>';
+}
+function renderAsk(){
+  var el=document.getElementById('pantryMealRows');
+  if(!el||!_ask)return;
+  var back=_ask.mode==='back',many=_ask.groups.length>1||_ask.mode==='open';
+  var t=document.getElementById('pantryMealTitle'),sub=document.getElementById('pantryMealSub');
+  var ok=document.getElementById('pantryMealOk'),no=document.getElementById('pantryMealNo');
+  if(t)t.textContent=back?(_ask.gone?'Vorratsbuchung zurücknehmen?':'Vorratsbuchung anpassen?'):'Aus dem Vorrat abziehen?';
+  if(sub)sub.textContent=back?(_ask.gone?'Der Eintrag ist gelöscht. Dafür wurde vom Vorrat abgezogen.':'Die Menge ist geändert. Dafür wurde vom Vorrat abgezogen.')
+    :(_ask.mode==='open'?'Ohne dich eingetragen — erst jetzt gefragt. Verfällt nach '+PANTRY_ASK_DAYS+' Tagen.':'Der Eintrag ist im Tagebuch gespeichert.');
+  if(ok)ok.textContent=back?(_ask.gone?'Zurückbuchen':'Buchung anpassen'):'Abziehen';
+  if(no)no.textContent=back?'Vorrat so lassen':'Nicht aus dem Vorrat';
+  el.innerHTML=_ask.groups.map(function(g,gi){
+    return (many||back?'<div class="lbl pantry-meal-head">'+esc(g.title)+'</div>':'')
+      +g.rows.map(function(r,ri){return askRowHtml(gi,ri,r);}).join('');
+  }).join('');
+}
+// Eingaben in das Modell zurücklesen (vor Neuzeichnen und Buchen).
+function askRead(){
+  if(!_ask)return;
+  document.querySelectorAll('#pantryMealRows .pantry-meal-row').forEach(function(row){
+    var g=_ask.groups[+row.getAttribute('data-g')],r=g&&g.rows[+row.getAttribute('data-r')];
+    if(!r)return;
+    var on=/** @type {HTMLInputElement} */ (row.querySelector('.pantry-meal-on input'));
+    var q=/** @type {HTMLInputElement} */ (row.querySelector('.pantry-meal-q input'));
+    var sel=/** @type {HTMLSelectElement} */ (row.querySelector('.pantry-meal-it'));
+    if(on)r.on=on.checked;
+    if(q){var v=parseFloat(String(q.value||'').replace(',','.'));r.q=isFinite(v)&&v>0?v:null;}
+    if(sel)r.id=sel.value;
+  });
+}
+// Anderen Artikel gewählt: Einheit und Menge neu, Zeile an.
+/** @param {HTMLSelectElement} sel */
+function askPick(sel){
+  var row=sel&&sel.closest?sel.closest('.pantry-meal-row'):null;
+  if(!row||!_ask)return;
+  var g=_ask.groups[+row.getAttribute('data-g')],r=g&&g.rows[+row.getAttribute('data-r')];
+  if(!r)return;
+  askRead();
+  var it=byId(sel.value);
+  r.id=it?it.id:'';
+  var qq=it?pantryAskQty(it,r.grams,r.known):{unit:'',q:null};
+  r.unit=qq.unit;r.q=qq.q;r.on=!!it;
+  renderAsk();
+}
+function askLearn(keys,ok,id){var m=askMem();keys.forEach(function(k){m[k]=pantryAskLearn(m[k],ok,id);});}
+// Rückbuchung `n` Stück zum Eintrag `v`: ganze Buchungen über Rückgängig,
+// ein Rest anteilig in die abgebuchten Chargen (Korrektur im Verlauf).
+function giveBack(it,n,v,name){
+  var left=roundQty(n);
+  logArr().filter(function(e){return e.ev===v&&e.pid===it.id&&!e.u&&e.d<0;}).forEach(function(e){
+    if(left<=0)return;
+    if(-e.d<=left+0.0005){reverse(e,it);left=roundQty(left+e.d);return;}
+    var part=pantryLotsPart(e.lots,left);
+    var lots=part.lots.concat(part.rest>0?[{id:uid('charge'),q:part.rest,mhd:it.mhd||'',vd:it.vd||''}]:[]);
+    appendLots(it,lots);
+    var le=log(it,left,'korrektur','Mahlzeit');
+    if(le){le.lots=lots;le.ev=v;if(name)le.en=name;}
+    left=0;
+  });
+}
+function confirmMeal(){
+  if(!_ask){closeOv('pantryMealOv');return;}
+  askRead();
+  var used=[],back=_ask.mode==='back';
+  _ask.groups.forEach(function(g){
+    g.rows.forEach(function(r){
+      var it=r.id?byId(r.id):null;
+      var pieces=it&&r.on&&r.q?(r.dir>0?Math.min(+r.net||0,r.unit==='g'?(+it.g>0?r.q/it.g:0):r.q):pantryAskPieces(it,r.q,r.unit)):0;
+      if(!back&&r.keys.length)askLearn(r.keys,pieces>0,it?it.id:'');
+      if(!(pieces>0))return;
+      var before=pantryNeed(it.q,it.min);
+      if(r.dir>0)giveBack(it,pieces,g.v,g.name);
+      else{
+        var e=take(it,pieces,'verbrauch','Mahlzeit');
+        if(!e)return;
+        e.ev=g.v;if(g.name)e.en=g.name;
+      }
+      it.rev=nextRev();
+      if(used.indexOf(it)<0)used.push(it);
+      afterChange(it,before);
+    });
+    if(!back)askDrop(g.v);
+  });
+  _ask=null;
+  saveS();
+  if(used.length){Sync.schedule();showToast((back?'Vorrat angepasst ✓':'Vom Vorrat abgezogen ✓')+' · ↩️ im Verlauf');}
+  render();
   closeOv('pantryMealOv');
+}
+// „Nicht aus dem Vorrat“: gleichrangiger Ausgang ohne Nachfrage. Merkt die
+// Ablehnung je Name (nach PANTRY_ASK_NO in Folge wird nicht mehr gefragt).
+function declineMeal(){
+  if(_ask&&_ask.mode!=='back'){
+    askRead();
+    _ask.groups.forEach(function(g){
+      g.rows.forEach(function(r){if(r.keys.length)askLearn(r.keys,false);});
+      askDrop(g.v);
+    });
+    saveS();render();
+  }
+  _ask=null;
+  closeOv('pantryMealOv');
+}
+/** @param {boolean} on */
+function setAsk(on){
+  S.pantryAskOff=!on;saveS();
+  renderMore();render();
+  showToast(on?'Beim Eintragen wird nach dem Vorrat gefragt':'Beim Eintragen wird nicht mehr nach dem Vorrat gefragt');
+}
+function mutedKeys(){var m=askMem();return Object.keys(m).filter(function(k){return pantryAskMuted(m[k]);});}
+function askUnmute(){
+  var m=askMem();mutedKeys().forEach(function(k){delete m[k];});
+  saveS();renderMore();
+  showToast('Für alle Namen wird wieder gefragt');
 }
 
 // ════════ Sync ════════
@@ -570,10 +814,14 @@ function renderCard(){
   var a=items(),lo=a.filter(low),ex=expiring();
   v.textContent=a.length?(a.length+' Artikel'):'＋ Eintragen';
   if(!a.length){body.innerHTML='<div style="font-size:12px;color:var(--mu);">Noch nichts eingetragen.</div>';return;}
-  if(!lo.length&&!ex.length){body.innerHTML='<div style="font-size:12px;color:var(--mu);">Alles da, was da sein soll ✓</div>';return;}
+  // Offene Vorschläge aus dem Tagebuch (E3): eine ruhige Zeile, antippen fragt.
+  var asks=askOn()&&askList().length?askOpenGroups().length:0;
+  var askLine=asks?'<button type="button" class="pantry-soon" data-act="NTPantry.openAsk" style="margin:0 0 6px;"><span aria-hidden="true">🍽️</span><span>'
+    +asks+(asks===1?' Mahlzeit':' Mahlzeiten')+': aus dem Vorrat abziehen?</span><span aria-hidden="true">›</span></button>':'';
+  if(!lo.length&&!ex.length){body.innerHTML=askLine+'<div style="font-size:12px;color:var(--mu);">Alles da, was da sein soll ✓</div>';return;}
   function chip(t){return '<span style="display:inline-block;background:var(--gl);border:1px solid var(--br);border-radius:999px;padding:3px 9px;font-size:11px;font-weight:700;margin:0 4px 4px 0;">'+esc(t)+'</span>';}
   function more(n){return n>6?'<span style="font-size:11px;color:var(--mu);font-weight:700;">+'+(n-6)+' weitere</span>':'';}
-  var html='';
+  var html=askLine;
   if(ex.length){
     html+='<div style="font-size:11px;font-weight:700;color:var(--re);margin-bottom:4px;">Läuft ab:</div>'
       +ex.slice(0,6).map(function(x){
@@ -711,6 +959,11 @@ function soonRow(it,ro){
       +(listed||(it.auto&&!blocked)?'<button type="button" class="seb" data-act="NTPantry.skipRestock" data-args="'+args([it.id])+'">Diesmal nicht</button>':'<span></span>')
     +'</div></div></div>';
 }
+// Läuft ab (F3): Zeile wie in der Liste, darunter der Weg zu passenden Rezepten.
+function expRow(it,ro){
+  return '<div class="pantry-soon-item">'+row(it,ro)
+    +'<button type="button" class="seb pantry-exp-cook" data-act="NTPantry.openCook" data-args="'+args([it.id])+'">👨‍🍳 Rezept dazu finden</button></div>';
+}
 function autoBlocked(it){
   var b=lastBuy(it);
   return pantryAutoState(null,+it.rsNo||0,null,b?+b.t||0:0,Date.now(),BLOCK_DAYS).k==='blocked';
@@ -730,6 +983,7 @@ function renderList(){
   if(sub)sub.textContent=a.length?(a.length+' Artikel'+(lo.length?' · '+lo.length+' knapp':'')+(ex.length?' · '+ex.length+' läuft ab':'')+(Sync.active()?' · geteilt':'')):'Noch nichts eingetragen';
   renderStats(a,ex,miss);
   renderSoon(soon);
+  renderAskHint();
   function rowOf(it){return row(it,ros[it.id]);}
   var sel=/** @type {HTMLSelectElement} */ (document.getElementById('pantryOrder'));
   if(sel){
@@ -772,8 +1026,12 @@ function renderList(){
     return;
   }
   // Läuft ab: dringendstes zuerst; sonst flach sortiert oder nach Ort/Kategorie gruppiert.
-  if(_tile===EXP||ord==='exp'||ord==='name'||ord==='qty'){
-    el.innerHTML=(_tile===EXP?shown:pantrySort(shown,ord,dueOf)).map(rowOf).join('');
+  if(_tile===EXP){
+    el.innerHTML=shown.map(function(it){return expRow(it,ros[it.id]);}).join('');
+    return;
+  }
+  if(ord==='exp'||ord==='name'||ord==='qty'){
+    el.innerHTML=pantrySort(shown,ord,dueOf).map(rowOf).join('');
     return;
   }
   var groups=byCat
@@ -996,6 +1254,17 @@ function renderMore(){
     if(!sel.options.length)sel.innerHTML=LEADS.map(function(n){return '<option value="'+n+'">'+n+(n===1?' Tag':' Tage')+' vorher</option>';}).join('');
     sel.value=String(lead());
   }
+  var chk=/** @type {HTMLInputElement} */ (document.getElementById('pantryAskChk'));
+  if(chk)chk.checked=askOn();
+  var mu=document.getElementById('pantryAskMuted'),n=mutedKeys().length;
+  if(mu)mu.innerHTML=n?'<div class="pantry-min-sug"><span>Für '+n+(n===1?' Namen':' Namen')+' fragt die App nicht mehr (dreimal hintereinander „Nicht aus dem Vorrat“).</span>'
+    +'<button type="button" class="seb" data-act="NTPantry.askUnmute">Wieder fragen</button></div>':'';
+}
+// „Füllen“ im Wochenplan (F1): Vorrat in einem Rezept, siehe planPantryScore.
+/** @param {Array<string>} names */
+function planScore(names){
+  if(pantryOff())return {bonus:0,use:[]};
+  return planPantryScore(names,items(),expiry,EXP_DAYS);
 }
 // Aus ⋯ Mehr geöffnet: das kleine Blatt schließt, damit „zurück“ in der Liste landet.
 function leaveMore(){if(isOpen('pantryMoreOv'))closeOv('pantryMoreOv');}
@@ -1234,7 +1503,7 @@ function scanUnknown(code,prod){
 
 // ════════ Verlauf (#336) ════════
 var KIND={kauf:'＋ Gekauft',verbrauch:'🍽️ Verbraucht',verderb:'🗑️ Weggeworfen',kochen:'👨‍🍳 Gekocht',korrektur:'✏️ Korrigiert'};
-var SRC={hand:'',zettel:'vom Einkaufszettel',scan:'per Scan',foto:'vom Foto'};
+var SRC={hand:'',zettel:'vom Einkaufszettel',scan:'per Scan',foto:'vom Foto',Mahlzeit:'aus dem Tagebuch'};
 function openLog(){leaveMore();trimLog();openOv('pantryLogOv');renderLog();}
 function monthKey(d){return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2);}
 function renderLog(){
@@ -1267,10 +1536,19 @@ function logRow(e,withDay){
     +'<div style="font-size:18px;flex-shrink:0;">'+esc(e.ic||'🥫')+'</div>'
     +'<div style="flex:1;min-width:0;">'
       +'<div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'+(e.u?'text-decoration:line-through;':'')+'">'+esc(e.n)+' '+(e.d>0?'+':'−')+fmtN(Math.abs(e.d))+'</div>'
-      +'<div style="font-size:12px;color:var(--mu);">'+when+' · '+esc(KIND[e.k]||e.k)+(src?' '+esc(src):'')+(e.u?' · rückgängig':'')+'</div>'
+      +'<div style="font-size:12px;color:var(--mu);">'+when+' · '+esc(KIND[e.k]||e.k)+(src?' '+esc(src):'')+(e.en?' · „'+esc(e.en)+'“':'')+(e.u?' · rückgängig':'')+'</div>'
     +'</div>'
     +(e.u?'':'<button type="button" class="seb" style="width:auto;margin:0;padding:6px 10px;font-size:12px;" data-act="NTPantry.undo" data-args="'+args([e.id])+'" aria-label="Buchung rückgängig machen">↩️</button>')
     +'</div>';
+}
+// Bestand um die Buchung `e` zurück, Eintrag als rückgängig markiert (ohne Speichern).
+function reverse(e,it){
+  if(e.d>0){
+    if(Array.isArray(e.lots))e.lots.forEach(function(lot){debit(it,lot.q,lot.id);});
+    else debit(it,e.d);
+  }else if(Array.isArray(e.lots))appendLots(it,e.lots);
+  else appendLots(it,[{id:uid('charge'),q:-e.d,mhd:it.mhd||'',vd:it.vd||''}]);
+  e.u=1;e.rev=nextRev();
 }
 // Gegenbuchung: Bestand um die Buchung zurück, Eintrag als rückgängig markiert.
 /** @param {string} id */
@@ -1280,12 +1558,7 @@ function undo(id){
   var it=byId(e.pid);
   if(!it){showToast('„'+e.n+'“ steht nicht mehr im Vorrat');return;}
   var before=pantryNeed(it.q,it.min);
-  if(e.d>0){
-    if(Array.isArray(e.lots))e.lots.forEach(function(lot){debit(it,lot.q,lot.id);});
-    else debit(it,e.d);
-  }else if(Array.isArray(e.lots))appendLots(it,e.lots);
-  else appendLots(it,[{id:uid('charge'),q:-e.d,mhd:it.mhd||'',vd:it.vd||''}]);
-  e.u=1;e.rev=nextRev();
+  reverse(e,it);
   touch(it);afterChange(it,before);
   renderLog();
   if(isOpen('pantryItemOv')&&_editId===it.id)refreshItem(it);
@@ -1532,18 +1805,31 @@ function cookRecs(){
   }catch(e){}
   return list;
 }
-function openCook(){
+var _cookFor='';     // „Rezept dazu finden“ (F3): nur Rezepte mit diesem Artikel
+// `forId` = Artikel-ID: nur Rezepte, die ihn verwenden (aus „Läuft ab“).
+/** @param {string} [forId] */
+function openCook(forId){
+  var it=typeof forId==='string'&&forId?byId(forId):null;
+  _cookFor=it?it.id:'';
   var el=document.getElementById('pantryCookList');
   if(el){
-    var sug=pantrySuggest(cookRecs(),items()).slice(0,10);
-    el.innerHTML=sug.length?sug.map(function(s){
-      return '<div style="padding:10px 2px;border-bottom:1px solid var(--br);cursor:pointer;" data-act="NTPantry.openRecipe" data-args="'+args([s.id])+'">'
+    var recs=cookRecs();
+    if(it)recs=recs.filter(function(r){return r.ings.some(function(n){return !!pantryFind([it],n);});});
+    var sug=pantrySuggest(recs,items()).slice(0,10);
+    var head=it?'<div class="pantry-cook-for"><span>Mit '+esc((it.ic||'🥫')+' '+it.n)+'</span>'
+      +'<button type="button" class="seb" data-act="NTPantry.openCook">Alle zeigen</button></div>':'';
+    el.innerHTML=head+(sug.length?sug.map(function(s){
+      return '<div class="pantry-cook-row">'
         +'<div style="font-weight:700;font-size:14px;">'+esc(s.name)+'</div>'
-        +'<div style="font-size:11px;color:var(--g1);margin-top:2px;">✓ '+s.have.length+' von '+(s.have.length+s.miss.length)+' Zutaten da</div>'
-        +(s.miss.length?'<div style="font-size:11px;color:var(--mu);margin-top:1px;">Fehlt: '+esc(s.miss.slice(0,6).join(', '))+(s.miss.length>6?' …':'')+'</div>':'')
-        +'</div>';
+        +'<div style="font-size:12px;color:var(--g1);margin-top:2px;">✓ '+s.have.length+' von '+(s.have.length+s.miss.length)+' Zutaten da</div>'
+        +(s.miss.length?'<div style="font-size:12px;color:var(--mu);margin-top:1px;">Fehlt: '+esc(s.miss.slice(0,6).join(', '))+(s.miss.length>6?' …':'')+'</div>':'')
+        +'<div class="pantry-charge-acts">'
+          +'<button type="button" class="seb" data-act="NTPantry.openRecipe" data-args="'+args([s.id])+'">📖 Ansehen</button>'
+          +'<button type="button" class="seb" data-act="NTPantry.planRecipe" data-args="'+args([s.id])+'">📅 Einplanen</button>'
+        +'</div></div>';
     }).join(''):'<div style="font-size:13px;color:var(--mu);font-style:italic;padding:10px 2px;line-height:1.5;">'
-      +(items().length?'Kein Rezept im Kochbuch passt zu deinem Vorrat.':'Der Vorrat ist leer — trag erst ein, was du da hast.')+'</div>';
+      +(it?'Kein Rezept im Kochbuch verwendet „'+esc(it.n)+'“ — die KI hat unten vielleicht eine Idee.'
+        :(items().length?'Kein Rezept im Kochbuch passt zu deinem Vorrat.':'Der Vorrat ist leer — trag erst ein, was du da hast.'))+'</div>');
   }
   var ai=document.getElementById('pantryAiList');if(ai)ai.innerHTML='';
   openOv('pantryCookOv');
@@ -1551,6 +1837,13 @@ function openCook(){
 function openRecipe(id){
   closeOv('pantryCookOv');
   setTimeout(function(){if(window.NTBook)NTBook.detail(id);},200);
+}
+// „In den Wochenplan“: das Rezept im Kochbuch mit offenem Einplanen-Feld
+// (vorhandener Plan-Weg NTBook.planNow → NTPlan.planRecipe).
+/** @param {string} id */
+function planRecipe(id){
+  closeOv('pantryCookOv');
+  setTimeout(function(){if(window.NTBook){NTBook.detail(id);NTBook.togglePanel('plan');}},200);
 }
 function aiIdeas(){
   var have=items().filter(function(it){return (+it.q||0)>0;});
@@ -1560,7 +1853,8 @@ function aiIdeas(){
   var el=document.getElementById('pantryAiList');
   if(el)el.innerHTML='<div style="font-size:13px;color:var(--mu);padding:10px 2px;display:flex;gap:6px;align-items:center;"><span class="spin"></span>Die KI überlegt …</div>';
   var prefs=(S.dietPrefs||[]).join(', ');
-  var prompt='Im Haushalt ist vorrätig: '+have.map(function(it){return it.n+' ('+fmtN(it.q)+' Stück'+(+it.g>0?' à '+fmtN(it.g)+' g':'')+')';}).join(', ')+'.\n'
+  var focus=_cookFor?byId(_cookFor):null;
+  var prompt=(focus?'Verwende unbedingt „'+focus.n+'“ — es läuft bald ab.\n':'')+'Im Haushalt ist vorrätig: '+have.map(function(it){return it.n+' ('+fmtN(it.q)+' Stück'+(+it.g>0?' à '+fmtN(it.g)+' g':'')+')';}).join(', ')+'.\n'
     +(prefs?'Ernährung: '+prefs+'.\n':'')
     +(S.pregnant&&S.pregnant!=='0'?'Die Person ist schwanger.\n':'')
     +'Schlage 5 alltagstaugliche Gerichte vor, die möglichst nur diese Zutaten (plus Salz, Pfeffer, Öl, Wasser) brauchen.\n'
@@ -1611,6 +1905,8 @@ window.NTPantry={
   analyzePhotos:analyzePhotos,foundSet:foundSet,foundApply:foundApply,
   openCook:openCook,openRecipe:openRecipe,aiIdeas:aiIdeas,openExpiring:openExpiring,expiring:expiring,
   onBought:onBought,useRecipe:useRecipe,offerMeal:offerMeal,confirmMeal:confirmMeal,shortfall:shortfall,
+  declineMeal:declineMeal,queueMeal:queueMeal,openAsk:openAsk,askPick:askPick,entryChanged:entryChanged,
+  setAsk:setAsk,askUnmute:askUnmute,planScore:planScore,planRecipe:planRecipe,
   consume:consume,dropBarcodes:dropBarcodes,scan:scan,openLog:openLog,undo:undo,
   remindOn:remindOn,setRemind:setRemind,checkRemind:checkRemind,daily:daily,restockDaily:restockDaily,
   restockNow:restockNow,skipRestock:skipRestock,takeMinSug:takeMinSug,openMore:openMore,setLead:setLead,

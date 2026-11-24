@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.355"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.356"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.355"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.356"></script>
 <script>
   // @ts-check
   (function(){
@@ -915,9 +915,23 @@ body.b3-on #babySleepPlanBody{max-height:none!important;overflow:visible!importa
 .pantry-charge>strong,.pantry-charge>button,.pantry-charge>label:has(.pantry-charge-qty){grid-column:1/-1;}
 .pantry-charge label,.pantry-meal-row{font-size:.8rem;}
 .pantry-charge .sinp,.pantry-meal-row .sinp{min-width:0;width:100%;box-sizing:border-box;}
-.pantry-meal-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(100px,.7fr);align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--br);}
-.pantry-meal-row small,.pantry-meal-row strong{display:block;}
-.pantry-meal-row small{color:var(--mu);}
+.pantry-meal-row{display:grid;grid-template-columns:44px minmax(0,1fr) 116px;grid-template-areas:"on it it" "on note q";align-items:center;gap:4px 6px;padding:8px 0;border-bottom:1px solid var(--br);}
+.pantry-meal-on{grid-area:on;display:flex;align-items:center;justify-content:center;min-height:44px;cursor:pointer;}
+.pantry-meal-on input{width:22px;height:22px;margin:0;}
+.pantry-meal-row .pantry-meal-it,.pantry-meal-name{grid-area:it;font-size:14px;}
+.pantry-meal-row>small{grid-area:note;display:block;font-size:12px;line-height:1.35;color:var(--mu);overflow-wrap:break-word;hyphens:manual;-webkit-hyphens:manual;}
+.pantry-meal-q{grid-area:q;display:flex;align-items:center;gap:4px;}
+.pantry-meal-q .sinp{min-height:44px;text-align:right;}
+.pantry-meal-q span{flex-shrink:0;font-size:12px;color:var(--mu);}
+.pantry-meal-head{margin-top:10px;}
+.pantry-meal-acts .svb,.pantry-meal-acts .seb{white-space:nowrap;}
+.pantry-exp-cook{margin:0 0 8px!important;min-height:44px;font-size:13px;white-space:nowrap;}
+.pantry-cook-row{padding:10px 2px;border-bottom:1px solid var(--br);}
+.pantry-cook-row .pantry-charge-acts{margin-top:8px;}
+.pantry-cook-for{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;margin:0 2px 6px;}
+.pantry-cook-for>span{flex:1;min-width:0;}
+.pantry-cook-for .seb{width:auto;margin:0;min-height:44px;padding:6px 12px;font-size:13px;white-space:nowrap;}
+.plan-why{flex-basis:100%;font-size:12px;color:var(--mu);line-height:1.3;}
 .pantry-charge>div{grid-column:1/-1;}
 .pantry-charge .sinp{padding:10px 6px;font-size:14px;}
 .pantry-charge-note{font-size:12px;line-height:1.4;color:var(--mu);}
@@ -1927,7 +1941,7 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.355</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.356</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -3078,6 +3092,7 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
     <div class="mbd">
       <div id="pantryStats" class="nt-tools pantry-stats" role="group" aria-label="Übersicht: antippen filtert die Liste"></div>
       <div id="pantrySoon"></div>
+      <div id="pantryAskHint"></div>
       <label class="lbl" for="pantryInput">Neu einbuchen</label>
       <div style="display:flex;gap:6px;margin-bottom:8px;">
         <input type="text" class="sinp" id="pantryInput" style="flex:1;min-width:0;" placeholder="z. B. 3 Dosen Tomaten" autocomplete="off" autocapitalize="sentences" spellcheck="false" onkeydown="NTPantry.inputKey(event)">
@@ -3170,13 +3185,16 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
     </div>
   </div>
 </div>
+<!-- Vorrat ↔ Tagebuch (Paket 3): ein Dialog für neu Eingetragenes, offene Vorschläge und den Rückweg; nie ein stiller Abzug. -->
 <div class="ov" id="pantryMealOv" data-bg-close="pantryMealOv">
-  <div class="mod">
-    <div class="mhd"><button type="button" class="mcl" data-act="closeOv" data-args='["pantryMealOv"]' aria-label="Vorratsabzug schließen">✕</button><h2 class="mti">Vom Vorrat abziehen?</h2><div class="msu">Der Eintrag ist im Tagebuch gespeichert.</div></div>
+  <div class="mod" style="height:auto;">
+    <div class="mhd"><button type="button" class="mcl" data-act="closeOv" data-args='["pantryMealOv"]' aria-label="Vorratsabzug schließen">✕</button><h2 class="mti" id="pantryMealTitle">Aus dem Vorrat abziehen?</h2><div class="msu" id="pantryMealSub">Der Eintrag ist im Tagebuch gespeichert.</div></div>
     <div class="mbd">
       <div id="pantryMealRows"></div>
-      <button type="button" class="svb" data-act="NTPantry.confirmMeal">Vom Vorrat abziehen</button>
-      <button type="button" class="seb" data-act="closeOv" data-args='["pantryMealOv"]'>Nur im Tagebuch lassen</button>
+      <div class="pantry-meal-acts">
+        <button type="button" class="svb" id="pantryMealOk" data-act="NTPantry.confirmMeal">Abziehen</button>
+        <button type="button" class="seb" id="pantryMealNo" data-act="NTPantry.declineMeal">Nicht aus dem Vorrat</button>
+      </div>
     </div>
   </div>
 </div>
@@ -3231,6 +3249,9 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
       <label class="lbl" for="pantryLead">🔁 Dauerartikel nachkaufen</label>
       <div class="sf"><select class="sinp" id="pantryLead" onchange="NTPantry.setLead(this.value)"></select></div>
       <div style="font-size:12px;color:var(--mu);line-height:1.5;margin:-2px 2px 8px;">So viele Tage, bevor ein Dauerartikel laut Verbrauch ausgeht, kommt er auf den Einkaufszettel. Gilt auf diesem Gerät.</div>
+      <label class="pantry-reloc"><input type="checkbox" id="pantryAskChk" onchange="NTPantry.setAsk(this.checked)">
+        <span><b>🍽️ Beim Eintragen nach Vorratsabzug fragen</b> — nach einer Mahlzeit im Tagebuch schlägt die App vor, was aus dem Vorrat weg ist. Abgezogen wird nur, was du bestätigst. Gilt auf diesem Gerät.</span></label>
+      <div id="pantryAskMuted"></div>
     </div>
   </div>
 </div>
@@ -3780,6 +3801,22 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
 </div>
 
 <!-- ══ WOCHENPLAN: EINTRAG ══ -->
+<!-- Woche → Einkaufszettel (F2): erst die Zusammenfassung „X auf den Zettel, Y im Vorrat“, dann übernehmen. -->
+<div class="ov" id="planShopOv" data-bg-close="planShopOv">
+  <div class="mod" style="height:auto;">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" data-act="closeOv" data-args='["planShopOv"]' aria-label="Schließen">✕</button>
+      <div class="mti">🛒 Woche einkaufen</div>
+      <div class="msu" id="planShopSub"></div>
+    </div>
+    <div class="mbd">
+      <div id="planShopSum" style="font-size:14px;line-height:1.5;margin-bottom:10px;"></div>
+      <button type="button" class="svb" id="planShopGo" data-act="NTPlan.weekShopGo">Auf den Zettel</button>
+      <button type="button" class="seb" data-act="closeOv" data-args='["planShopOv"]'>Abbrechen</button>
+    </div>
+  </div>
+</div>
 <div class="ov" id="planItemOv" data-bg-close="planItemOv">
   <div class="mod">
     <div class="mhan"></div>
@@ -4409,15 +4446,15 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.355"></script>
-<script src="js/single-tab.js?v=0.355"></script>
-<script src="js/fooddb.js?v=0.355"></script>
-<script src="js/fooddb-usda.js?v=0.355"></script>
-<script src="js/restaurants.js?v=0.355"></script>
-<script src="js/metdb.js?v=0.355"></script>
-<script src="js/idb-photos.js?v=0.355"></script>
-<script src="js/changelog.js?v=0.355"></script>
-<script src="js/calc.js?v=0.355"></script>
+<script src="js/actions.js?v=0.356"></script>
+<script src="js/single-tab.js?v=0.356"></script>
+<script src="js/fooddb.js?v=0.356"></script>
+<script src="js/fooddb-usda.js?v=0.356"></script>
+<script src="js/restaurants.js?v=0.356"></script>
+<script src="js/metdb.js?v=0.356"></script>
+<script src="js/idb-photos.js?v=0.356"></script>
+<script src="js/changelog.js?v=0.356"></script>
+<script src="js/calc.js?v=0.356"></script>
 <script>
 // @ts-check
 // ════════════════════════════════════════
@@ -4437,7 +4474,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.355';
+var APP_VERSION='0.356';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -6021,6 +6058,7 @@ function editAddIng(){
 
 function saveEditEntry(){
   var day=getDay(),e=day.meals[editMeal][editIdx];
+  var _was=e.isRecipe?(e.portions||1):(e.amount||100);// fuer die Vorratsbuchung (Menge geaendert)
   if(e.isRecipe){
     var newName=document.getElementById('editName');
     if(newName&&newName.value.trim())e.name=newName.value.trim();
@@ -6037,6 +6075,7 @@ function saveEditEntry(){
   // der Eintrag geprueft — die 🗣️-Markierung hat sich damit erledigt.
   if(e._alexaPending)delete e._alexaPending;
   saveS();renderAll();closeOv('editOv');showToast('Aktualisiert ✓');
+  if(window.NTPantry)NTPantry.entryChanged(e,_was,e.isRecipe?(e.portions||1):e.amount);
 }
 
 function editSaveAsRecipe(){
@@ -6057,6 +6096,8 @@ function deleteEntry(){
   getDay().meals[editMeal].splice(editIdx,1);
   if(_e)delPhotoIfUnused(_e.mealPhotoId);// erst nach dem Entfernen pruefen (#234)
   saveS();renderAll();closeOv('editOv');
+  // Wurde fuer den Eintrag vom Vorrat abgezogen, bietet der Vorrat die Ruecknahme an.
+  if(_e&&window.NTPantry)NTPantry.entryChanged(_e,1,0);
 }
 
 function openMoveEntry(){
@@ -6097,10 +6138,12 @@ function moveEntry(mode){
     var c=JSON.parse(JSON.stringify(entry));
     // Kopie ist ein eigener Eintrag: keine Herkunfts-Marken, die Dedup
     // (Alexa), Wiederholungs-Badge oder Plan-Abgleich auf sie beziehen.
-    delete c._recurId;delete c._alexaId;delete c._alexaPending;delete c._fromPlan;
+    delete c._recurId;delete c._alexaId;delete c._alexaPending;delete c._fromPlan;delete c._vid;
     // mealPhotoId bleibt geteilt – delPhotoIfUnused loescht erst beim letzten.
     td.meals[targetMeal].push(c);
     showToast('⧉ Nach '+label+' kopiert');
+    // Noch einmal gegessen: Vorratsabzug anbieten (bestaetigt, nie still).
+    if(window.NTPantry)NTPantry.offerMeal(c);
   } else {
     src.splice(editIdx,1);
     if(!sameDay)delete entry._recurId;
@@ -6661,7 +6704,8 @@ function _applyDayMeals(key,mm,onlyMeals,mode){
     var arr=(mm||{})[m]||[];
     if(!arr.length)return;
     if(mode==='replace')day.meals[m]=[];
-    _materializeEntryList(arr).forEach(function(e){day.meals[m].push(e);n++;});
+    // Uebernommen (Partner/Import): nur ein offener Vorratsvorschlag, nie ein Abzug.
+    _materializeEntryList(arr).forEach(function(e){day.meals[m].push(e);n++;if(window.NTPantry)NTPantry.queueMeal(e,key,m,'import');});
   });
   return n;
 }
@@ -6767,6 +6811,7 @@ function importConfirmTo(where){
     } else {
       var day=_ensureDayForImport(key);
       day.meals[meal].push(entry);
+      if(window.NTPantry)NTPantry.queueMeal(entry,key,meal,'import');
       saveS();
       showToast('✅ '+nm+' in '+MEAL_NAMES[meal]+' '+dayLbl+' übernommen');
     }
@@ -6805,7 +6850,7 @@ function importConfirm(){
   } else if(d.t==='m'){
     var target=document.getElementById('importConfirmMealTarget').value||'breakfast';
     var entries=_materializeMealEntries(d);
-    entries.forEach(function(e){getDay().meals[target].push(e);});
+    entries.forEach(function(e){getDay().meals[target].push(e);if(window.NTPantry)NTPantry.queueMeal(e,S.currentDate,target,'import');});
     saveS();
     showToast('✅ '+entries.length+' Einträge in '+MEAL_NAMES[target]+' importiert');
   } else if(d.t==='d'){
@@ -7831,6 +7876,7 @@ function copyMealFromYesterday(meal){
   day.meals[meal]=day.meals[meal].concat(copies);
   saveS();renderAll();
   showToast('✓ '+copies.length+' Eintrag(e) kopiert');
+  if(window.NTPantry)copies.forEach(function(e){NTPantry.offerMeal(e);});
 }
 
 
@@ -9062,49 +9108,49 @@ function axTestSync(){
 }
 
 </script>
-<script src="js/ampel.js?v=0.355"></script>
-<script src="picker.js?v=0.355"></script>
-<script src="js/health-sync.js?v=0.355"></script>
-<script src="js/sync-core.js?v=0.355"></script>
-<script src="js/baby.js?v=0.355"></script>
-<script src="js/baby-sleep.js?v=0.355"></script>
-<script src="js/baby-sleep-plan.js?v=0.355"></script>
-<script src="js/baby-meds.js?v=0.355"></script>
-<script src="js/baby-growth-data.js?v=0.355"></script>
-<script src="js/baby-growth.js?v=0.355"></script>
-<script src="js/baby-week.js?v=0.355"></script>
-<script src="js/baby-milestones.js?v=0.355"></script>
-<script src="js/baby-midwife.js?v=0.355"></script>
-<script src="js/shopping.js?v=0.355"></script>
-<script src="js/pantry.js?v=0.355"></script>
-<script src="js/partner.js?v=0.355"></script>
-<script src="js/alexa-sync.js?v=0.355"></script>
-<script src="js/dashboard.js?v=0.355"></script>
-<script src="js/features.js?v=0.355"></script>
-<script src="js/launch.js?v=0.355"></script>
-<script src="js/xlsx.js?v=0.355"></script>
-<script src="js/food-export.js?v=0.355"></script>
-<script src="js/mealplan.js?v=0.355"></script>
-<script src="js/book-swaps.js?v=0.355"></script>
-<script src="js/cookbook.js?v=0.355"></script>
-<script src="js/onedrive.js?v=0.355"></script>
-<script src="js/autosave.js?v=0.355"></script>
-<script src="js/recurring.js?v=0.355"></script>
-<script src="js/stats.js?v=0.355"></script>
-<script src="js/reminders.js?v=0.355"></script>
-<script src="js/templates.js?v=0.355"></script>
-<script src="js/offline-queue.js?v=0.355"></script>
-<script src="js/tour.js?v=0.355"></script>
-<script src="js/ui-catalog.js?v=0.355"></script>
-<script src="js/ui-actions.js?v=0.355"></script>
-<script src="js/ui-shell.js?v=0.355"></script>
-<script src="js/ui-home.js?v=0.355"></script>
-<script src="js/ui-baby.js?v=0.355"></script>
-<script src="js/ui-reminder-rules.js?v=0.355"></script>
-<script src="js/ui-priority.js?v=0.355"></script>
-<script src="js/ui-nutrition.js?v=0.355"></script>
-<script src="js/ui-household.js?v=0.355"></script>
-<script src="js/ui-settings.js?v=0.355"></script>
+<script src="js/ampel.js?v=0.356"></script>
+<script src="picker.js?v=0.356"></script>
+<script src="js/health-sync.js?v=0.356"></script>
+<script src="js/sync-core.js?v=0.356"></script>
+<script src="js/baby.js?v=0.356"></script>
+<script src="js/baby-sleep.js?v=0.356"></script>
+<script src="js/baby-sleep-plan.js?v=0.356"></script>
+<script src="js/baby-meds.js?v=0.356"></script>
+<script src="js/baby-growth-data.js?v=0.356"></script>
+<script src="js/baby-growth.js?v=0.356"></script>
+<script src="js/baby-week.js?v=0.356"></script>
+<script src="js/baby-milestones.js?v=0.356"></script>
+<script src="js/baby-midwife.js?v=0.356"></script>
+<script src="js/shopping.js?v=0.356"></script>
+<script src="js/pantry.js?v=0.356"></script>
+<script src="js/partner.js?v=0.356"></script>
+<script src="js/alexa-sync.js?v=0.356"></script>
+<script src="js/dashboard.js?v=0.356"></script>
+<script src="js/features.js?v=0.356"></script>
+<script src="js/launch.js?v=0.356"></script>
+<script src="js/xlsx.js?v=0.356"></script>
+<script src="js/food-export.js?v=0.356"></script>
+<script src="js/mealplan.js?v=0.356"></script>
+<script src="js/book-swaps.js?v=0.356"></script>
+<script src="js/cookbook.js?v=0.356"></script>
+<script src="js/onedrive.js?v=0.356"></script>
+<script src="js/autosave.js?v=0.356"></script>
+<script src="js/recurring.js?v=0.356"></script>
+<script src="js/stats.js?v=0.356"></script>
+<script src="js/reminders.js?v=0.356"></script>
+<script src="js/templates.js?v=0.356"></script>
+<script src="js/offline-queue.js?v=0.356"></script>
+<script src="js/tour.js?v=0.356"></script>
+<script src="js/ui-catalog.js?v=0.356"></script>
+<script src="js/ui-actions.js?v=0.356"></script>
+<script src="js/ui-shell.js?v=0.356"></script>
+<script src="js/ui-home.js?v=0.356"></script>
+<script src="js/ui-baby.js?v=0.356"></script>
+<script src="js/ui-reminder-rules.js?v=0.356"></script>
+<script src="js/ui-priority.js?v=0.356"></script>
+<script src="js/ui-nutrition.js?v=0.356"></script>
+<script src="js/ui-household.js?v=0.356"></script>
+<script src="js/ui-settings.js?v=0.356"></script>
 
 <div class="ov" id="b3HomePrefsOv" data-ui="b3" data-bg-close="b3HomePrefsOv"><div class="mod"><div class="mhd"><button type="button" class="mcl" data-act="closeOv" data-args='["b3HomePrefsOv"]' aria-label="Schnellaktionen schließen">✕</button><h2 class="mti">Schnellaktionen anpassen</h2></div><div class="mbd"><div id="b3HomePrefsBody"></div><button type="button" class="b3-primary" data-act="closeOv" data-args='["b3HomePrefsOv"]'>Fertig</button></div></div></div>
 <div class="ov" id="b3MealPrefsOv" data-ui="b3" data-bg-close="b3MealPrefsOv"><div class="mod"><div class="mhd"><button type="button" class="mcl" data-act="closeOv" data-args='["b3MealPrefsOv"]' aria-label="Hinweise schließen">✕</button><h2 class="mti">Mahlzeiten-Hinweise</h2></div><div class="mbd"><div id="b3MealPrefsBody"></div><div class="b3-reminder-save"><button type="button" class="b3-primary" data-act="NTUIReminders.save">Einstellungen speichern</button></div></div></div></div>

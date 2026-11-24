@@ -281,7 +281,7 @@ function render(){
       continue;
     }
     SLOTS.forEach(function(s){
-      var items=slotItems(ds,s.id);
+      var items=slotItems(ds,s.id),whys=[];
       html+='<div class="plan-slot">'
         +'<div class="plan-si" title="'+esc(s.label)+'">'+s.ic+'</div>'
         +'<div class="plan-sc">';
@@ -295,8 +295,11 @@ function render(){
         // Fremdes Rezept (nur als Abzug da): erkennbar, aber gleichwertig nutzbar.
         html+='<span class="plan-chip'+(r.own?'':' is-guest')+'" onclick="NTPlan.openItem(\''+ds+'\',\''+s.id+'\','+idx+')">'
           +esc(r.emoji||'📋')+' '+esc(r.name)+((it.p||1)!==1?' <b>'+(it.p||1)+'×</b>':'')+'</span>';
+        // Warum „Füllen“ das Rezept gewählt hat (Vorrat, F1) — eine Zeile unter den Chips.
+        if(it.w)whys.push(it.w);
       });
       html+='<button type="button" class="plan-add" onclick="NTPlan.pick(\''+ds+'\',\''+s.id+'\')">＋</button>'
+        +whys.map(function(w){return '<span class="plan-why">🥫 '+esc(w)+'</span>';}).join('')
         +'</div></div>';
     });
     html+='<div class="plan-dact">'
@@ -499,7 +502,7 @@ function openItem(date,slot,idx){
     var bb=document.getElementById('planItemBookBtn');if(bb)bb.style.display=r.own?'':'none';
     planItemTotal();
   }
-  document.getElementById('planItemSub').textContent=DOW[(d.getDay()+6)%7]+' · '+shortDate(d)+' · '+(s?s.label:'');
+  document.getElementById('planItemSub').textContent=DOW[(d.getDay()+6)%7]+' · '+shortDate(d)+' · '+(s?s.label:'')+(it.w?' · 🥫 '+it.w:'');
   openOv('planItemOv');
 }
 // Eigenes Rezept: im Kochbuch oeffnen — dort Zubereitung und Kochmodus.
@@ -650,7 +653,10 @@ function bestCandidate(cands,used,slot,target,relax){
       var d=Math.abs(c.kcal*pp-target);
       if(d<bd){bd=d;bp=pp;}
     });
-    scored.push({c:c,p:bp,score:(target>0?bd/target:bd)+(c.hist?HIST_PENALTY:0)+(c.recent?COOKED_PENALTY:0)});
+    // Vorrats-Bonus (c.pb, planPantryScore) nur bei passenden Kalorien, siehe planCandScore.
+    var fit=target>0?bd/target:bd;
+    scored.push({c:c,p:bp,score:planCandScore(fit,(c.hist?HIST_PENALTY:0)+(c.recent?COOKED_PENALTY:0),c.pb||0),
+      why:c.pb>0&&fit<=PLAN_PANTRY_FIT?(c.why||''):''});
   });
   if(!scored.length)return relax?null:bestCandidate(cands,used,slot,target,true);
   scored.sort(function(a,b){return a.score-b.score;});
@@ -697,9 +703,12 @@ function autoFill(){
   recipes.forEach(function(r){
     var sl=bookFillSlots(r);
     if(!sl.length)return;
-    var k=ingTotal(viewIngs(r)).kcal;
+    var vi=viewIngs(r),k=ingTotal(vi).kcal;
     if(!(k>0))return;
+    // Was das Rezept aus dem Vorrat nutzt (bald Ablaufendes zählt mehr).
+    var pz=window.NTPantry&&NTPantry.planScore?NTPantry.planScore(vi.map(function(g){return bookIngShort(g)||g.name;})):null;
     cands.push({key:'r:'+r.id,kcal:k,slot:null,slots:sl,hist:false,recent:!!(log[r.id]&&log[r.id].last>=since),
+      pb:pz?pz.bonus:0,why:pz?planPantryWhy(pz.use):'',
       make:function(pp){return {r:r.id,p:pp};}});
   });
   hist.forEach(function(c){
@@ -738,6 +747,8 @@ function autoFill(){
       if(!picked)return;
       used[picked.c.key]=true;
       var it=picked.c.make(picked.p);
+      // Merkmal am Planeintrag: warum gewählt (reist mit dem Tag im Sync).
+      if(picked.why)it.w=picked.why;
       pl[slot].push(it);fresh.push(it);added++;
     });
     if(!fresh.length)continue;
@@ -787,11 +798,18 @@ function clearWeek(){
 // aus fuenf Rezepten als fuenf Zeilen auf dem Zettel. NTShop fasst gleiche
 // Namen zwar zusammen, aber nur die Mengen — der Rezept-Vermerk waere dann der
 // des letzten Rezepts.
+// Nur heute und spätere Tage (planShopDates): Vergangenes ist gegessen. Der
+// Vorrat wird über alle Rezepte zusammen nur einmal verrechnet (Zutaten erst
+// zusammengefasst, dann pantryShortfall). Vor dem Übernehmen eine Zusammenfassung.
+var _shopWeek=null;
 function weekToShop(){
   if(!window.NTShop){showToast('Einkaufszettel nicht geladen');return;}
-  var mo=weekStart(),agg={},order=[],days=0;
-  for(var i=0;i<7;i++){
-    var ds=iso(addDays(mo,i));
+  var mo=weekStart(),agg={},order=[],days=0,all=[];
+  var todayIso=(typeof today==='function')?today():iso(new Date());
+  for(var i0=0;i0<7;i0++)all.push(iso(addDays(mo,i0)));
+  var from=planShopDates(all,todayIso);
+  for(var i=0;i<from.length;i++){
+    var ds=from[i];
     if(isEmptyPlan(ds))continue;
     days++;
     SLOTS.forEach(function(s){
@@ -809,10 +827,27 @@ function weekToShop(){
       });
     });
   }
-  if(!days){showToast('Für diese Woche ist nichts geplant');return;}
+  if(!days){showToast(from.length<7?'Ab heute ist in dieser Woche nichts geplant':'Für diese Woche ist nichts geplant');return;}
   var ings=order.map(function(k){var a=agg[k];return{name:a.name,emoji:a.emoji,amount:Math.round(a.amount)};});
-  var r=NTShop.addIngredients(ings,'Wochenplan KW '+isoWeek(mo));
-  showToast(NTShop.resultText(r,' aus '+days+' Tag'+(days===1?'':'en')));
+  var sf=window.NTPantry&&NTPantry.shortfall?NTPantry.shortfall(ings):{ings:ings,covered:0,partial:0};
+  _shopWeek={ings:ings,label:'Wochenplan KW '+isoWeek(mo),days:days};
+  var n=sf.ings.length,have=sf.covered;
+  var sub=document.getElementById('planShopSub');
+  if(sub)sub.textContent=days+' Tag'+(days===1?'':'e')+' ab '+(from[0]===todayIso?'heute':shortDate(parse(from[0])))+' · KW '+isoWeek(mo);
+  var sum=document.getElementById('planShopSum');
+  if(sum)sum.innerHTML='<b>'+n+' Zutat'+(n===1?'':'en')+'</b> auf den Zettel, <b>'+have+'</b> '+(have===1?'ist':'sind')+' im Vorrat.'
+    +(sf.partial?'<div style="font-size:12px;color:var(--mu);margin-top:4px;">'+sf.partial+' davon nur teilweise im Vorrat — es kommt nur der Rest auf den Zettel.</div>':'')
+    +(from.length<7?'<div style="font-size:12px;color:var(--mu);margin-top:4px;">Vergangene Tage der Woche zählen nicht mit.</div>':'');
+  var go=document.getElementById('planShopGo');
+  if(go)go.textContent=n?'Auf den Zettel':'Fertig';
+  openOv('planShopOv');
+}
+function weekShopGo(){
+  var w=_shopWeek;_shopWeek=null;
+  closeOv('planShopOv');
+  if(!w||!window.NTShop)return;
+  var r=NTShop.addIngredients(w.ings,w.label);
+  showToast(NTShop.resultText(r,' aus '+w.days+' Tag'+(w.days===1?'':'en')));
 }
 
 // ── Plan → Tagebuch ───────────────────────────────────────────────────────
@@ -1233,7 +1268,7 @@ document.addEventListener('visibilitychange',function(){
 window.NTPlan={
   boot:boot,open:open,close:close,render:render,refreshCard:refreshCard,
   shiftWeek:shiftWeek,autoFill:autoFill,clearDay:clearDay,clearWeek:clearWeek,
-  weekToShop:weekToShop,toDiary:toDiary,visibleDates:visibleDates,
+  weekToShop:weekToShop,weekShopGo:weekShopGo,toDiary:toDiary,visibleDates:visibleDates,
   pick:pick,renderPick:renderPick,addToSlot:addToSlot,addSnapshot:addSnapshot,
   addNote:addNote,saveNote:saveNote,noteToRecipe:noteToRecipe,
   similarRecipe:similarRecipe,confirmNotDuplicate:confirmNotDuplicate,

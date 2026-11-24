@@ -32,7 +32,7 @@ const { handlerCalls } = require('./js-scan');
 // selbst verwaltet (dann kein executablePath noetig).
 function chromePath() {
   const fs2 = require('fs');
-  for (const p of ['/opt/pw-browsers/chromium-1194/chrome-linux/chrome', process.env.CHROMIUM_PATH]) {
+  for (const p of [process.env.CHROMIUM_PATH, '/opt/pw-browsers/chromium']) {
     if (p && fs2.existsSync(p)) return p;
   }
   return undefined;

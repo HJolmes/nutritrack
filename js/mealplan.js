@@ -265,11 +265,21 @@ function render(){
       kcTxt=goal?(kc+' / '+goal+' kcal'):(kc+' kcal');
       if(goal)kcCls=(Math.abs(kc-goal)<=goal*0.1)?' is-ok':' is-off';
     }
-    html+='<div class="plan-day'+(isToday?' is-today':'')+'">'
+    var dayEmpty=isEmptyPlan(ds);
+    html+='<div class="plan-day'+(isToday?' is-today':'')+(dayEmpty?' is-empty':'')+'">'
       +'<div class="plan-dh">'
         +'<div class="plan-dt">'+DOW[k]+' · '+dt.getDate()+'. '+MON[dt.getMonth()]+(isToday?' <span class="plan-badge">heute</span>':'')+'</div>'
         +'<div class="plan-dk'+kcCls+'">'+kcTxt+'</div>'
       +'</div>';
+    // Leerer Tag: ein Streifen aus vier Slot-Knoepfen (Symbol + ＋), keine Aktionsknoepfe.
+    if(dayEmpty){
+      html+='<div class="plan-slots-empty">';
+      SLOTS.forEach(function(s){
+        html+='<button type="button" class="plan-add plan-add-slot" aria-label="'+esc(s.label)+' hinzufügen" title="'+esc(s.label)+'" onclick="NTPlan.pick(\''+ds+'\',\''+s.id+'\')"><span aria-hidden="true">'+s.ic+'</span>＋</button>';
+      });
+      html+='</div></div>';
+      continue;
+    }
     SLOTS.forEach(function(s){
       var items=slotItems(ds,s.id);
       html+='<div class="plan-slot">'

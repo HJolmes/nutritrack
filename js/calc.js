@@ -134,8 +134,10 @@ function scaleNutrients(t,factor){return{kcal:t.kcal*factor,protein:t.protein*fa
 function totalStr(t){return Math.round(t.kcal)+' kcal · P'+Math.round(t.protein)+'g K'+Math.round(t.carbs)+'g F'+Math.round(t.fat)+'g';}
 
 // ── Kalorien-Ampel ──
-function _kcalAmpel(goal,eaten,S){
-  // Liefert {state:'balanced'|'over'|'under', text}.
+function _kcalAmpel(goal,eaten,S,ctx){
+  // Liefert {state:'balanced'|'over'|'open', text}.
+  // ctx (optional, vom Aufrufer): {isToday:boolean, hour:0-23}. Heute vor 20 Uhr
+  // ist „unter Ziel" noch kein Alarm, sondern neutral ('open'). Ohne ctx: wie bisher.
   // ±10 % Toleranz = grün. Außerhalb: Bewertung anhand Diät-Ziel
   // (lose/gain/maintain), abgeleitet aus S.goalWeight vs S.weight.
   var diff=goal-eaten;
@@ -153,6 +155,7 @@ function _kcalAmpel(goal,eaten,S){
   }
   // unter dem Kalorienziel
   if(dir==='lose')return {state:'balanced',text:'⬊ '+pct+' % unter Ziel · gut für dein Defizit'};
+  if(ctx&&ctx.isToday&&typeof ctx.hour==='number'&&ctx.hour<20)return {state:'open',text:'noch '+Math.round(diff)+' kcal offen'};
   return {state:'over',text:'⬊ '+pct+' % unter Ziel · noch etwas essen!'};
 }
 

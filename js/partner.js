@@ -439,6 +439,15 @@ function refreshBadges(){
     flag.style.display=n?'block':'none';
     flag.textContent=n>9?'9+':String(n);
   }
+  // B3 blendet die Classic-Kopfzeile aus. Dort steht der Hinweis in der
+  // B3-Kopfzeile — nur bei Kopplung UND ungelesenen Sendungen, sonst gar nicht.
+  var b3=document.getElementById('b3InboxBtn');
+  if(b3){
+    b3.hidden=!(on&&n);
+    b3.setAttribute('aria-label',on&&n?'Postfach, '+n+' neu':'Postfach');
+    var b3flag=document.getElementById('b3InboxFlag');
+    if(b3flag)b3flag.textContent=n>9?'9+':String(n);
+  }
   ['breakfast','lunch','dinner','snack'].forEach(function(m){
     var b=document.getElementById('mealInbox-'+m);
     if(!b)return;

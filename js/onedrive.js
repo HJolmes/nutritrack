@@ -61,6 +61,10 @@ function _checkOdBanner(){
   var last=localStorage.getItem('nt_od_banner_date');
   if(last===today())return;
   localStorage.setItem('nt_od_banner_date',today());
+  // Pro Tag nur ein Sicherungs-Hinweis: kam „Daten heute sichern?" schon
+  // (auch wenn weggeklickt), bleibt dieser weg. Gegenstueck: showBackupReminder().
+  if(localStorage.getItem('nt_backup_hint_day')===today())return;
+  localStorage.setItem('nt_backup_hint_day',today());
   var el=document.getElementById('odMissingBanner');
   if(el)el.style.display='flex';
 }

@@ -375,6 +375,7 @@ function lastFeed(){
 function sinceText(ts){
   var min=Math.max(0,Math.floor((Date.now()-ts)/60000));
   if(min<1)return 'gerade eben';
+  if(min>=1440){var days=Math.floor(min/1440);return 'vor '+days+(days===1?' Tag':' Tagen');}
   return 'vor '+fmtDur(min);
 }
 function feedLineHtml(){

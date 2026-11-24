@@ -1266,32 +1266,6 @@ function parsePantryReceipt(text,locIds){
   });
   return {items:out,partial:r.partial&&out.length>0};
 }
-// KI-Antwort zum Foto eines Einkaufszettels (nach dem Einkauf, G1 Zusatz) →
-// {items:[{n,q,g,loc,raw,unread,crossed}], partial, crossed}. Handschrift: ohne
-// Menge 1 Stück. Unleserliches wird nicht geraten: eigene Zeile mit `unread`
-// und der gelesenen Zeichenfolge in `raw` (Name leer). `crossed` = mindestens
-// eine Zeile durchgestrichen (= gekauft); gleiche Artikel werden zusammengezählt.
-/** @param {string} text @param {Array<string>} locIds */
-function parsePantryShopList(text,locIds){
-  var r=_pantryJsonList(text,'artikel'),out=[],by={},any=false;
-  r.list.forEach(function(x){
-    if(!x||x.vorrat===false)return;
-    var raw=String(x.zeile||'').replace(/\s+/g,' ').trim().slice(0,40);
-    var n=String(x.name||'').replace(/\s+/g,' ').trim().slice(0,40);
-    var unread=x.unleserlich===true||(!n&&!!raw);
-    if(!n&&!raw)return;
-    var crossed=x.durchgestrichen===true;
-    if(crossed)any=true;
-    if(unread){out.push({n:'',q:1,g:0,loc:'',raw:raw||n,unread:true,crossed:crossed});return;}
-    var q=Math.round(parseFloat(String(x.stueck===undefined||x.stueck===null||x.stueck===''?1:x.stueck).replace(',','.')));
-    var g=Math.round(parseFloat(String(x.g===undefined?0:x.g).replace(',','.')));
-    var loc=String(x.ort||''),k=pantryKey(n);
-    if(by[k]){by[k].q=Math.min(99,by[k].q+(q>0?q:1));if(crossed)by[k].crossed=true;if(!by[k].g&&g>0&&g<=50000)by[k].g=g;return;}
-    var it={n:n,q:q>0?Math.min(99,q):1,g:g>0&&g<=50000?g:0,loc:(locIds||[]).indexOf(loc)>=0?loc:'',raw:raw&&pantryKey(raw)!==k?raw:'',unread:false,crossed:crossed};
-    by[k]=it;out.push(it);
-  });
-  return {items:out,partial:r.partial&&out.length>0,crossed:any};
-}
 // Üblicher Lagerort für einen Artikel (Vorbelegung, G1): der erste Ort, dessen
 // Art (pantryPlace) zum üblichen Ort der Produktart passt; sonst ''.
 /** @param {string} name @param {string} cat @param {Array<any>} locs */

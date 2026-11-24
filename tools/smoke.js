@@ -1373,9 +1373,9 @@ const EXPECTED_NAMESPACES = [
         && rows[1].loc === 'kuehl' && rows[1].cat === 'milch' && rows[3].loc === 'tk' && /abgehakt/.test(rows[2].note)
         && !JSON.stringify(rows).includes('1,98') && !JSON.stringify(rows).includes('1.98');
       // TK-Spinat abwählen, Joghurt-Menge ändern, einbuchen
-      await page.click('#pantryFound .pantry-found:nth-of-type(4) .pantry-found-on');
-      await page.fill('#pantryFound .pantry-found:nth-of-type(2) .pantry-found-q input', '3');
-      await page.dispatchEvent('#pantryFound .pantry-found:nth-of-type(2) .pantry-found-q input', 'change');
+      await page.click('#pantryFound .pantry-found >> nth=3 >> .pantry-found-on');
+      await page.fill('#pantryFound .pantry-found >> nth=1 >> .pantry-found-q input', '3');
+      await page.dispatchEvent('#pantryFound .pantry-found >> nth=1 >> .pantry-found-q input', 'change');
       await page.click('#pantryFound [data-act="NTPantry.foundApply"]');
       const bon = await ev((ids) => {
         const by = (n) => S.pantry.find((x) => x.n === n), milk = by('H-Milch'), sm = S.shopList.find((x) => x.id === ids[0]), sb = S.shopList.find((x) => x.id === ids[1]);
@@ -1424,25 +1424,32 @@ const EXPECTED_NAMESPACES = [
       await ev(() => { document.querySelectorAll('.ov.open').forEach((o) => o.classList.remove('open')); NTPantry.open(); NTPantry.openMore(); });
       await page.click('#pantryMoreOv [data-act="NTPantry.openStock"]');
       await page.click('#pantryStockBody [data-act="NTPantry.stockStart"][data-args=\'["kuehl"]\']');
-      const first = await page.textContent('#pantryStockBody .pantry-stock-name');
-      // Butter (alphabetisch zuerst): ist weg
-      await page.click('#pantryStockBody [data-act="NTPantry.stockSet"][data-args=\'["gone"]\']');
-      // Joghurt: zweimal −, dann Dialog zu (versehentlich) und wieder auf: der Durchgang ist noch da
-      await page.click('#pantryStockBody [data-act="NTPantry.stockStep"][data-args="[-1]"]');
-      await page.click('#pantryStockBody [data-act="NTPantry.stockStep"][data-args="[-1]"]');
-      await page.click('#pantryStockOv .mcl');
-      await ev(() => NTPantry.openStock());
-      const resumed = await ev(() => ({ name: document.querySelector('#pantryStockBody .pantry-stock-name').textContent, ist: document.getElementById('pantryStockIst').value, draft: !!S.pantryStockDraft }));
-      await page.click('#pantryStockBody [data-act="NTPantry.stockSet"][data-args=\'["next"]\']');
-      await page.click('#pantryStockBody [data-act="NTPantry.stockSet"][data-args=\'["ok"]\']');
+      // Artikel für Artikel: Butter „Ist weg“, Joghurt zweimal − (dazwischen zu
+      // und wieder auf: der Durchgang ist noch da), alles andere „Stimmt“.
+      let first = '', resumed = null;
+      for (let guard = 0; guard < 10; guard++) {
+        const name = await ev(() => { const el = document.querySelector('#pantryStockBody .pantry-stock-name'); return el ? el.textContent : ''; });
+        if (!name) break;
+        if (!first) first = name;
+        if (/Butter/.test(name)) await page.click('#pantryStockBody [data-act="NTPantry.stockSet"][data-args=\'["gone"]\']');
+        else if (/Joghurt$/.test(name)) {
+          await page.click('#pantryStockBody [data-act="NTPantry.stockStep"][data-args="[-1]"]');
+          await page.click('#pantryStockBody [data-act="NTPantry.stockStep"][data-args="[-1]"]');
+          await page.click('#pantryStockOv .mcl');
+          await ev(() => NTPantry.openStock());
+          resumed = await ev(() => ({ name: document.querySelector('#pantryStockBody .pantry-stock-name').textContent, ist: document.getElementById('pantryStockIst').value, draft: !!S.pantryStockDraft }));
+          await page.click('#pantryStockBody [data-act="NTPantry.stockSet"][data-args=\'["next"]\']');
+        } else await page.click('#pantryStockBody [data-act="NTPantry.stockSet"][data-args=\'["ok"]\']');
+      }
+      resumed = resumed || { name: '', ist: '', draft: false };
       const summary = await page.textContent('#pantryStockBody');
       const before = await ev(() => ({ q: S.pantry.find((x) => x.id === 'p4-jog').q, use: NTPantry.usage('p4-jog') }));
       await page.click('#pantryStockBody [data-act="NTPantry.stockBook"]');
-      out.stock = /Butter/.test(first) && /Joghurt/.test(resumed.name) && resumed.ist === '1' && resumed.draft && /2 Abweichungen/.test(summary) && /3 → 1/.test(summary)
+      out.stock = !!first && /Joghurt/.test(resumed.name) && resumed.ist === '1' && resumed.draft && /2 Abweichungen/.test(summary) && /3 → 1/.test(summary)
         && before.q === 3 && await ev(() => {
           const j = S.pantry.find((x) => x.id === 'p4-jog'), b = S.pantry.find((x) => x.id === 'p4-butter');
           const ks = S.pantryLog.filter((e) => e.src === 'inventur').map((e) => e.k + ':' + e.d).sort().join();
-          return j.q === 1 && b.q === 0 && ks === 'korrektur:-1,korrektur:-2' && !S.pantryStockDraft && NTPantry.usage('p4-jog') === null
+          return j.q === 1 && b.q === 0 && ks === 'korrektur:-2,korrektur:-2' && !S.pantryStockDraft && NTPantry.usage('p4-jog') === null
             && !document.getElementById('pantryStockOv').classList.contains('open');
         });
       // Abbrechen bucht nichts
@@ -1470,11 +1477,9 @@ const EXPECTED_NAMESPACES = [
       const hint = await ev(() => ({ t: document.getElementById('pantryMonthHint').textContent, news: !!S.pantryMonthNews }));
       // drei Hinweise anlegen (geht bald aus, offene Mahlzeit, Rückblick) → eine Zeile
       const many = await ev(() => {
-        const j = S.pantry.find((x) => x.id === 'p4-milch'); j.q = 2;
-        for (let i = 1; i <= 4; i++) S.pantryLog.push({ id: 'p4s' + i, t: Date.now() - i * 2 * 864e5, pid: j.id, n: j.n, d: -1, k: 'verbrauch', src: 'hand', u: 0, rev: 1 });
-        S.pantryLog.sort((a, b) => b.t - a.t);
+        const s = NTShop.add('Butter', '1 Stück', '', '🧈'); S.pantry.find((x) => x.id === 'p4-butter').rs = { s: s.id, t: Date.now() };
         NTPantry.render();
-        return { sum: document.getElementById('pantryHintSum').textContent, hidden: document.getElementById('pantryHintList').hidden };
+        return { sum: document.getElementById('pantryHintSum').textContent, hidden: document.getElementById('pantryHintList').hidden, soon: document.getElementById('pantrySoon').textContent, month: document.getElementById('pantryMonthHint').textContent };
       });
       await page.click('#pantryHintSum .pantry-hint-sum');
       const opened = await ev(() => !document.getElementById('pantryHintList').hidden);

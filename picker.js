@@ -1180,9 +1180,10 @@ function scanFor(opts){
   var tabs=document.querySelector('#pickerOv .picker-tabs');
   if(tabs)/** @type {HTMLElement} */(tabs).style.display='none';
   // Über dem Dialog des Aufrufers: alle .ov teilen z-index 300, und #pickerOv
-  // steht im Markup vor dem Vorrat.
+  // steht im Markup vor dem Vorrat. In B3 hat die Ansicht den Stapel schon höher
+  // gesetzt (400 + Platz) — dann nicht wieder darunter schieben.
   var ov=document.getElementById('pickerOv');
-  if(ov)ov.style.zIndex='301';
+  if(ov&&!((+ov.style.zIndex||0)>301))ov.style.zIndex='301';
 }
 // Name und Packungsgröße in Gramm (oder ml) aus Open Food Facts, sonst null.
 function _pickerOffProduct(p){

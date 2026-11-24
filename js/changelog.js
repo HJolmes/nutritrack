@@ -2,6 +2,13 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.357',items:[
+    {icon:'🧾',text:'<b>Kassenbon fotografieren</b>: Die gekauften Artikel landen nach deiner Bestätigung auf einmal im Vorrat und werden auf dem Einkaufszettel abgehakt. Preise werden nicht gespeichert.',where:'Vorrat · Foto/Bon'},
+    {icon:'🏷️',text:'<b>Barcode-Serienscan</b>: Der Scanner bleibt offen, jeder Code zählt ＋1 oder −1, mit Mitschrift und Rückgängig. Neue Codes sammeln sich zum Zuordnen.',where:'Vorrat · Einbuchen/Verbrauchen'},
+    {icon:'📋',text:'<b>Inventur</b>: einen Lagerort Artikel für Artikel nachzählen und alle Abweichungen mit einer Bestätigung korrigieren.',where:'Vorrat · ⋯'},
+    {icon:'📊',text:'<b>Auswertung im Verlauf</b>: was je Monat verbraucht und weggeworfen wurde, mit Vorschlägen für oft Ablaufendes. Nach dem Monatswechsel gibt es einmal einen kurzen Rückblick.',where:'Vorrat · ⋯'},
+    {icon:'🧹',text:'<b>Aufgeräumter Vorrat</b>: Mehrere Hinweise stehen in einer Zeile, die Liste beginnt weiter oben. Hilfe und Tour beschreiben den neuen Vorrat.',where:'Vorrat'},
+  ]},
   {v:'0.356',items:[
     {icon:'🍽️',text:'<b>Nach dem Eintragen fragt die App, was aus dem Vorrat weg ist</b>. Du bestätigst, änderst die Menge oder tippst „Nicht aus dem Vorrat“ – abgezogen wird nie ohne dich.',where:'Tagebuch · Vorrat'},
     {icon:'🕓',text:'<b>Alexa, wiederkehrende und geteilte Mahlzeiten</b> warten als Hinweis im Vorrat, statt still abzubuchen. Nach drei Tagen verfällt der Hinweis.',where:'Vorrat'},

@@ -41,10 +41,13 @@ test('Historische Tagesübersicht zeigt keine neue Prognose an',()=>{
   assert.match(app.body.innerHTML,/NTBaby.startSleepFromPlanNow/);
 });
 test('Das Lesen der Tagesübersicht fügt keine Schläfchen hinzu',()=>{
-  const now=new Date(),key=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  // Gestern statt heute: Kurz nach Mitternacht läge „bis 00:40“ in der Zukunft, und
+  // der Zukunfts-Schutz blendete den Eintrag aus — der Test hing an der Uhrzeit.
+  const now=new Date();now.setDate(now.getDate()-1);
+  const key=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
   const log={[key]:[{id:'baby-safe',t:'sleep',from:'00:00',to:'00:40',sleepType:'day'}]};
   const snapshot=JSON.stringify(log);
-  const app=setup(log);app.api.render();
+  const app=setup(log);app.api.today();app.api.shift(-1);
   assert.match(app.body.innerHTML,/Bearbeiten/);
   assert.match(app.body.innerHTML,/<strong>40 Min\.<\/strong><small>Gesamt/);
   assert.equal(JSON.stringify(log),snapshot);

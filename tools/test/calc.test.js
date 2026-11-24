@@ -1363,30 +1363,6 @@ test('parsePantryReceipt: Artikel und Mengen, Preise/Pfand/Rabatt/Tüten/Summen 
   assert.deepEqual(plain(C.parsePantryReceipt('', [])), { items: [], partial: false });
   assert.equal(C.parsePantryReceipt('{"artikel":[{"name":"Eier","stueck":500}]}', []).items[0].q, 99);
 });
-test('parsePantryShopList: Handschrift, ohne Menge 1, durchgestrichen, Unleserliches nicht geraten', () => {
-  const C = load({});
-  const txt = '{"artikel":[' +
-    '{"zeile":"Mlich","name":"Milch","stueck":"","durchgestrichen":true},' +
-    '{"zeile":"2 Gurken","name":"Gurken","stueck":2,"ort":"kuehl","durchgestrichen":true},' +
-    '{"zeile":"Brot","name":"Brot"},' +
-    '{"zeile":"Xqrzl","name":"","unleserlich":true},' +
-    '{"zeile":"milch","name":"Milch","stueck":1},' +
-    '{"name":"Blumen","vorrat":false}' +
-    ']}';
-  const r = C.parsePantryShopList(txt, ['kuehl']);
-  assert.equal(r.crossed, true);
-  assert.equal(r.partial, false);
-  assert.deepEqual(plain(r.items), [
-    { n: 'Milch', q: 2, g: 0, loc: '', raw: 'Mlich', unread: false, crossed: true },        // ohne Menge 1, zweite Zeile dazugezählt
-    { n: 'Gurken', q: 2, g: 0, loc: 'kuehl', raw: '2 Gurken', unread: false, crossed: true },
-    { n: 'Brot', q: 1, g: 0, loc: '', raw: '', unread: false, crossed: false },
-    { n: '', q: 1, g: 0, loc: '', raw: 'Xqrzl', unread: true, crossed: false },             // unleserlich: kein Name geraten
-  ]);
-  const cut = C.parsePantryShopList('{"artikel":[{"name":"Eier","stueck":10},{"name":"Rei', []);
-  assert.equal(cut.partial, true);
-  assert.deepEqual(plain(cut.items).map((x) => x.n + ':' + x.q), ['Eier:10']);
-  assert.deepEqual(plain(C.parsePantryShopList('nichts', [])), { items: [], partial: false, crossed: false });
-});
 test('pantryHomeLoc: üblicher Ort der Produktart, nach Position', () => {
   const C = load({});
   const locs = [{ id: 'vorrat', label: 'Vorratsschrank', pos: 3 }, { id: 'kuehl', label: 'Kühlschrank', pos: 1 }, { id: 'u1', label: 'Keller', pos: 2 }];

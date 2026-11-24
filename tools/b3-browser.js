@@ -32,7 +32,9 @@ const output=path.resolve(__dirname,'../.b3-artifacts');
     serverControl={setAvailable(value){available=value;},close(){server.closeAllConnections();return new Promise(resolve=>server.close(resolve));}};
     if(process.env.B3_BROWSER==='webkit')origin=serverControl;
   }
-  const browser=await engine.launch({executablePath:process.env.CHROMIUM_PATH||undefined});
+  // Chromium: CHROMIUM_PATH, sonst vorinstalliert, sonst Playwrights eigener Browser. WebKit: unveraendert.
+  const exe=process.env.CHROMIUM_PATH||(process.env.B3_BROWSER!=='webkit'&&fs.existsSync('/opt/pw-browsers/chromium')?'/opt/pw-browsers/chromium':undefined);
+  const browser=await engine.launch({executablePath:exe});
   try {
     for(const width of [320,390,430]) {
       const context=await browser.newContext({...(process.env.B3_BROWSER==='webkit'?devices['iPhone 13']:{}),viewport:{width,height:844},isMobile:true,hasTouch:true,timezoneId:'Europe/Berlin',acceptDownloads:true});

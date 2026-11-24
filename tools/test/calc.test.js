@@ -229,6 +229,25 @@ test('_kcalAmpel: unter dem Ziel – Abnehmen gruen, sonst rot', () => {
   assert.match(keep.text, /noch etwas essen/);
 });
 
+test('_kcalAmpel: heute vor 20 Uhr ist „unter Ziel" neutral (open), danach/frueher wie bisher', () => {
+  const C = load({});
+  const noon = C._kcalAmpel(2000, 1000, {}, { isToday: true, hour: 12 });
+  assert.equal(noon.state, 'open');
+  assert.equal(noon.text, 'noch 1000 kcal offen');
+  assert.equal(C._kcalAmpel(2000, 1000, {}, { isToday: true, hour: 19 }).state, 'open');
+  const evening = C._kcalAmpel(2000, 1000, {}, { isToday: true, hour: 21 });
+  assert.equal(evening.state, 'over');
+  assert.match(evening.text, /50 % unter Ziel · noch etwas essen!/);
+  assert.equal(C._kcalAmpel(2000, 1000, {}, { isToday: false, hour: 12 }).state, 'over');
+  // ueber Ziel und im Plan bleiben unveraendert; Abnehm-Ziel bleibt gruen
+  assert.equal(C._kcalAmpel(2000, 2300, {}, { isToday: true, hour: 12 }).state, 'over');
+  assert.match(C._kcalAmpel(2000, 2300, {}, { isToday: true, hour: 12 }).text, /über Ziel/);
+  assert.equal(C._kcalAmpel(2000, 1900, {}, { isToday: true, hour: 12 }).state, 'balanced');
+  const lose = C._kcalAmpel(2000, 1000, { goalWeight: 70, weight: 80 }, { isToday: true, hour: 12 });
+  assert.equal(lose.state, 'balanced');
+  assert.match(lose.text, /gut für dein Defizit/);
+});
+
 test('_kcalAmpel: Ziel 0 gilt als im Plan', () => {
   const C = load({});
   assert.equal(C._kcalAmpel(0, 500, {}).state, 'balanced');

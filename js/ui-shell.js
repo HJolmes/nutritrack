@@ -39,7 +39,7 @@ function nav(){
   function navButton(id){
     if(id==='+'){
       var label=(NTUICatalog.target(owner)||{}).label||'Alle Bereiche';
-      var visible=({nutrition:'Lebensmittel',baby:'Eintrag',shop:'Artikel',pantry:'Vorrat',book:'Rezept',plan:'Planen'})[owner]||'Erfassen';
+      var visible=({nutrition:'Essen',baby:'Eintrag',shop:'Artikel',pantry:'Vorrat',book:'Rezept',plan:'Planen'})[owner]||'Erfassen';
       return '<button type="button" class="b3-plus" data-act="NTUIActions.plus" aria-label="'+esc('Erfassen: '+label+(label.includes(visible)||visible==='Erfassen'?'':' · '+visible))+'"><span aria-hidden="true">＋</span><small>'+visible+'</small></button>';
     }
     var t=NTUICatalog.target(id),on=id===current,short=({baby:'Baby',shop:'Einkauf'})[id]||t.label;
@@ -100,6 +100,7 @@ function render(){
   if(section==='household'&&window.NTUIHousehold)NTUIHousehold.render();
   if(section==='more'&&window.NTUISettings)NTUISettings.render();
   if(section==='functions'&&window.NTUISettings)NTUISettings.renderCatalog();
+  detailMode();
   nav();
 }
 function dispatch(act,args){var f=NTActions.resolve(act);if(f)f.apply(null,args||[]);}
@@ -190,8 +191,11 @@ function back(){
   if(overlays.length){var id=overlays[overlays.length-1];if(isPage(id)){history.back();return;}if(id==='babyOv')NTBaby.closeDiary();else closeOv(id);return;}
   if(section!=='home')history.back();
 }
+// Offenes Mahlzeit-Detail: Reiterleiste, Datum, Teilen und Hinweise treten
+// zurueck, das Detail steht direkt unter der Kopfzeile (CSS b3-meal-detail).
+function detailMode(){document.body.classList.toggle('b3-meal-detail',active&&screen==='mealDetail'&&section==='nutrition');}
 function legacy(tab){
-  if(!active)return;screen=tab;if(routing)return;
+  if(!active)return;screen=tab;detailMode();if(routing)return;
   var map={main:'nutrition',history:'history',trends:'trends',more:'more',mealDetail:'nutrition'};
   if(map[tab]){
     closeNutritionPanel();document.body.classList.remove('b3-embedded');

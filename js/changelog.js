@@ -2,6 +2,14 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.352',items:[
+    {icon:'📬',text:'<b>Postfach-Hinweis in der Kopfzeile</b>. Neue Sendungen vom Partner zeigt ein Knopf mit Zähler auf jeder Seite.',where:'Kopfzeile'},
+    {icon:'🧹',text:'<b>Nur noch ein Hinweis-Banner gleichzeitig</b>. Sicherungs-Tipp und OneDrive-Hinweis erscheinen nicht mehr doppelt, der Inhalt beginnt weiter oben.',where:'Alle Seiten'},
+    {icon:'🍽️',text:'<b>Mahlzeit-Detail steht direkt oben</b>, ohne Reiter und Datumszeile darüber. Bereichsseiten zeigen ihren Titel nur noch einmal.',where:'Ernährung · Baby · Haushalt'},
+    {icon:'🎯',text:'<b>Ruhiger Ziel-Hinweis tagsüber</b>. Vor 20 Uhr steht „noch … kcal offen“ statt einer roten Warnung.',where:'Ernährung'},
+    {icon:'📅',text:'<b>Wochenplan kompakter</b>. Leere Tage brauchen eine Zeile, die Plus-Flächen sind größer.',where:'Wochenplan'},
+    {icon:'🔎',text:'<b>Besser lesbar</b>: größere Beschriftungen, lesbarer Begrüßungstext, „Speichern“ als Hauptknopf, Baby-Zeiten ab 24 Stunden in Tagen.',where:'Allgemein'},
+  ]},
   {v:'0.351',items:[
     {icon:'➕',text:'<b>Erfassen ist übersichtlicher</b>. Der Plus-Dialog zeigt Lebensmittel, Baby, Haushalt, Wasser und Sport als kompakte Auswahl. Die Seite dahinter bleibt sichtbar.',where:'Übersicht · Erfassen'},
   ]},

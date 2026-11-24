@@ -1310,6 +1310,216 @@ const EXPECTED_NAMESPACES = [
     if (!pantry4Fail) console.log('  ok  Vorrat Tagebuch/Plan: ein bestätigter Vorschlag je Mahlzeit, Auswahl bei Mehrdeutigem, gemerkte Zuordnung, Ablehnen dämpft, Schalter, offene Vorschläge ohne Dialog, Entdoppeln, Rückbuchung, Rezept zu Ablaufendem, Füllen mit Merkmal, Woche → Zettel mit Zusammenfassung.');
   }
 
+  // 12f. Vorrat Paket 4: Kassenbon (gestellte KI-Antwort mit Kürzeln, Pfand,
+  //      Rabatt, Tüte, Summe und Preisen → Bestätigungsliste mit Ort/Kategorie,
+  //      Einbuchen + Abhaken ohne Doppelbuchung, Ent-haken nimmt genau diese
+  //      Buchung zurück; ohne KI klare Meldung), Serienscan ohne Kamera über
+  //      „Code manuell eingeben“ (bekannt ±1, gleicher Code gesperrt, neuer Code
+  //      in die Liste, Mitschrift mit Rückgängig), Inventur (Entwurf überlebt das
+  //      Schließen, EINE Bestätigung bucht Korrekturen, die nicht als Verbrauch
+  //      zählen; Abbrechen bucht nichts), Auswertung im Verlauf, Monatsrückblick,
+  //      Hinweise gebündelt. Per Klick, wo es einen Knopf gibt.
+  let pantry5Fail = 0;
+  {
+    const errBefore = errors.length;
+    const out = {};
+    let keep = null;
+    const ev = (fn, a) => page.evaluate(fn, a);
+    try {
+      keep = await ev(() => {
+        const k = JSON.stringify({ shop: S.shopList, shopTomb: S.shopTomb || {}, pantry: S.pantry || [], log: S.pantryLog || [], tomb: S.pantryTomb || {},
+          ask: S.pantryAsk || null, seen: S.pantryMonthSeen === undefined ? null : S.pantryMonthSeen, news: S.pantryMonthNews || null,
+          draft: S.pantryStockDraft || null, remindOff: !!S.pantryRemindOff });
+        document.querySelectorAll('.ov.open').forEach((o) => o.classList.remove('open'));
+        S.shopList = []; S.shopTomb = {}; S.pantryTomb = {}; S.pantryLocs = null; S.pantryLog = [];
+        delete S.pantryAsk; delete S.pantryStockDraft; delete S.pantryMonthNews; S.pantryRemindOff = false;
+        S.pantry = [
+          { id: 'p4-milch', n: 'H-Milch', ic: '🥛', loc: 'vorrat', c: 'milch', q: 1, g: 1000, min: 0, rev: 1 },
+          { id: 'p4-jog', n: 'Joghurt', ic: '🥛', loc: 'kuehl', c: 'milch', q: 2, g: 150, min: 0, rev: 1 },
+          { id: 'p4-butter', n: 'Butter', ic: '🧈', loc: 'kuehl', c: 'milch', q: 1, g: 250, min: 0, rev: 1 },
+        ];
+        saveS(); NTPantry.open(); NTPantry.setFilter('');
+        return k;
+      });
+      // G1 ohne KI: klare Meldung schon beim Öffnen, kein leeres Ergebnis
+      await ev(() => { window.__p4 = { c: window.callClaude, u: window.canUseAi }; window.canUseAi = () => false; });
+      await page.click('#pantryOv [data-act="NTPantry.openPhotos"]');
+      await page.click('#pantryPhotoMode [data-args=\'["bon"]\']');
+      out.noAi = /braucht es die KI/.test(await page.textContent('#pantryPhotoStatus')) && /Kassenbon/.test(await page.textContent('#pantryPhotoTitle'));
+      // G1: gestellte Antwort
+      const shopIds = await ev(() => {
+        window.canUseAi = () => true;
+        window.callClaude = (m, content, max, ok) => ok('Erkannt:\n' + JSON.stringify({ artikel: [
+          { bon: 'H-MILCH FETTARM 1,5%', name: 'H-Milch', stueck: 2, g: 1000, preis: 1.98 },
+          { bon: 'PFAND 0,25', name: 'Pfand', stueck: 6 }, { bon: 'RABATT 10%', name: 'Rabatt', stueck: 1 },
+          { bon: 'TRAGETASCHE', name: 'Tragetasche', stueck: 1 }, { bon: 'SUMME EUR', name: 'Summe', stueck: 1 },
+          { bon: 'JOGH.NAT.3,8%', name: 'Joghurt natur', stueck: 4, g: 500 },
+          { bon: 'BANANEN', name: 'Bananen', stueck: 1, g: 612 },
+          { bon: 'ZEITSCHRIFT', name: 'Zeitschrift', stueck: 1, vorrat: false },
+          { bon: 'TK SPINAT', name: 'TK-Spinat', stueck: 1, g: 450 }] }));
+        const a = NTShop.add('H-Milch', '2 Stück', '', '🥛'), b = NTShop.add('Bananen', '', '', '');
+        const fake = document.createElement('canvas'); fake.width = 4; fake.height = 4;
+        const b64 = fake.toDataURL('image/jpeg').split(',')[1];
+        NTPantry.photosChosen({ files: [new File([Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))], 'bon.jpg', { type: 'image/jpeg' })] });
+        return [a.id, b.id];
+      });
+      await page.waitForFunction(() => !document.getElementById('pantryPhotoBtn').disabled);
+      await page.click('#pantryPhotoBtn');
+      const rows = await ev(() => [...document.querySelectorAll('#pantryFound .pantry-found')].map((r) => ({
+        n: r.querySelector('.pantry-found-n').value, q: r.querySelector('.pantry-found-q input').value,
+        loc: r.querySelector('.pantry-found-loc').value, cat: r.querySelector('.pantry-found-cat').value, note: (r.querySelector('small') || {}).textContent || '' })));
+      out.bonRows = rows.length === 4 && rows.map((r) => r.n).join('|') === 'H-Milch|Joghurt natur|Bananen|TK-Spinat'
+        && rows[0].q === '2' && rows[0].loc === 'vorrat' && /Zettel — wird abgehakt/.test(rows[0].note) && /Bon: H-MILCH FETTARM/.test(rows[0].note)
+        && rows[1].loc === 'kuehl' && rows[1].cat === 'milch' && rows[3].loc === 'tk' && /abgehakt/.test(rows[2].note)
+        && !JSON.stringify(rows).includes('1,98') && !JSON.stringify(rows).includes('1.98');
+      // TK-Spinat abwählen, Joghurt-Menge ändern, einbuchen
+      await page.click('#pantryFound .pantry-found:nth-of-type(4) .pantry-found-on');
+      await page.fill('#pantryFound .pantry-found:nth-of-type(2) .pantry-found-q input', '3');
+      await page.dispatchEvent('#pantryFound .pantry-found:nth-of-type(2) .pantry-found-q input', 'change');
+      await page.click('#pantryFound [data-act="NTPantry.foundApply"]');
+      const bon = await ev((ids) => {
+        const by = (n) => S.pantry.find((x) => x.n === n), milk = by('H-Milch'), sm = S.shopList.find((x) => x.id === ids[0]), sb = S.shopList.find((x) => x.id === ids[1]);
+        const kauf = S.pantryLog.filter((e) => e.pid === milk.id && e.k === 'kauf');
+        return { milk: milk.q, kauf: kauf.length, src: kauf[0] && kauf[0].src, est: milk.lots.some((l) => l.estimated), jog: by('Joghurt natur') && by('Joghurt natur').q,
+          jogLoc: by('Joghurt natur') && by('Joghurt natur').loc, ban: by('Bananen') && by('Bananen').q, spinat: !!by('TK-Spinat'), pfand: !!by('Pfand'),
+          ticked: !!(sm && sm.d && sb && sb.d), stock: sm && sm.stock && sm.stock.log === (kauf[0] && kauf[0].id), price: JSON.stringify(S).includes('1.98'),
+          closed: !document.getElementById('pantryPhotoOv').classList.contains('open') };
+      }, shopIds);
+      out.bonApply = bon.milk === 3 && bon.kauf === 1 && bon.src === 'bon' && bon.est && bon.jog === 3 && bon.jogLoc === 'kuehl' && bon.ban === 1
+        && !bon.spinat && !bon.pfand && bon.ticked && bon.stock && !bon.price && bon.closed;
+      // Ent-haken auf dem Zettel nimmt genau die Bon-Buchung zurück (keine zweite Buchung beim Abhaken)
+      out.bonUntick = await ev((id) => { NTShop.toggle(id); const m = S.pantry.find((x) => x.n === 'H-Milch'); return m.q === 1 && S.pantryLog.filter((e) => e.pid === m.id && e.k === 'kauf' && !e.u).length === 0; }, shopIds[0]);
+      await ev(() => { window.callClaude = window.__p4.c; window.canUseAi = window.__p4.u; });
+      // G2: Serienscan — Codes ohne Kamera über die manuelle Eingabe einspeisen
+      const codes = await ev(() => {
+        const ean = (d12) => d12 + ((10 - (d12.split('').reduce((a, c, i) => a + (+c) * (i % 2 ? 3 : 1), 0) % 10)) % 10);
+        const a = ean('400638100001'), b = ean('400638100002'), nu = ean('400000000999');
+        S.pantry.find((x) => x.id === 'p4-jog').bc = [a]; S.pantry.find((x) => x.id === 'p4-butter').bc = [b];
+        return { a, b, nu };
+      });
+      const feed = async (code) => ev((code) => { NTPicker.pickerStopScan(); NTPicker.pickerOpenManualBarcode(); document.getElementById('bcDirectInput').value = code; NTPicker.pickerSubmitManualBarcode(); }, code);
+      await page.click('#pantryOv [data-act="NTPantry.scan"][data-args=\'["in"]\']');
+      await page.locator('#pickerOv.open').waitFor();
+      await feed(codes.a); await feed(codes.a); await feed(codes.b);
+      const s1 = await ev(() => ({ jog: S.pantry.find((x) => x.id === 'p4-jog').q, butter: S.pantry.find((x) => x.id === 'p4-butter').q,
+        msg: document.getElementById('pickerBarcodeResult').textContent, rows: document.querySelectorAll('#pickerScanList [data-act="NTPantry.scanUndo"]').length }));
+      await page.waitForTimeout(2100);
+      await feed(codes.a);
+      const realFetch = await ev(() => { window.__p4f = window.fetchT; window.fetchT = () => Promise.resolve({ json: () => ({ status: 1, product: { product_name: 'P4-Linsen', product_quantity: 500, product_quantity_unit: 'g' } }) }); return true; });
+      await feed(codes.nu);
+      await page.waitForFunction(() => /P4-Linsen/.test(document.getElementById('pickerScanList').textContent));
+      await feed(codes.nu); // gleich wieder: nicht doppelt
+      await ev(() => { window.fetchT = window.__p4f; });
+      const s2 = await ev(() => ({ open: document.getElementById('pickerOv').classList.contains('open'), jog: S.pantry.find((x) => x.id === 'p4-jog').q,
+        list: document.getElementById('pickerScanList').textContent }));
+      await page.click('#pickerScanList [data-act="NTPantry.scanUndo"] >> nth=0');
+      const s3 = await ev(() => ({ jog: S.pantry.find((x) => x.id === 'p4-jog').q, undone: document.querySelectorAll('#pickerScanList .pantry-scan-row.is-undone').length }));
+      out.serial = realFetch && s1.jog === 3 && s1.butter === 2 && s1.rows === 2 && /gerade gezählt|＋/.test(s1.msg)
+        && s2.open && s2.jog === 4 && /P4-Linsen/.test(s2.list) && !/2×/.test(s2.list) && s3.jog === 3 && s3.undone === 1;
+      await page.click('#pickerScanList [data-act="NTPantry.scanResolve"]');
+      await page.locator('#pantryItemOv.open').waitFor();
+      await page.click('#pantryItemOv [data-act="NTPantry.saveItem"]');
+      out.serialNew = await ev((nu) => { const l = S.pantry.find((x) => x.n === 'P4-Linsen'); return !!l && l.q === 1 && l.g === 500 && l.bc[0] === nu; }, codes.nu);
+      // G3: Inventur im Kühlschrank — Joghurt 3 → 1, Butter „Ist weg“, Joghurt natur „stimmt“
+      await ev(() => { document.querySelectorAll('.ov.open').forEach((o) => o.classList.remove('open')); NTPantry.open(); NTPantry.openMore(); });
+      await page.click('#pantryMoreOv [data-act="NTPantry.openStock"]');
+      await page.click('#pantryStockBody [data-act="NTPantry.stockStart"][data-args=\'["kuehl"]\']');
+      const first = await page.textContent('#pantryStockBody .pantry-stock-name');
+      // Butter (alphabetisch zuerst): ist weg
+      await page.click('#pantryStockBody [data-act="NTPantry.stockSet"][data-args=\'["gone"]\']');
+      // Joghurt: zweimal −, dann Dialog zu (versehentlich) und wieder auf: der Durchgang ist noch da
+      await page.click('#pantryStockBody [data-act="NTPantry.stockStep"][data-args="[-1]"]');
+      await page.click('#pantryStockBody [data-act="NTPantry.stockStep"][data-args="[-1]"]');
+      await page.click('#pantryStockOv .mcl');
+      await ev(() => NTPantry.openStock());
+      const resumed = await ev(() => ({ name: document.querySelector('#pantryStockBody .pantry-stock-name').textContent, ist: document.getElementById('pantryStockIst').value, draft: !!S.pantryStockDraft }));
+      await page.click('#pantryStockBody [data-act="NTPantry.stockSet"][data-args=\'["next"]\']');
+      await page.click('#pantryStockBody [data-act="NTPantry.stockSet"][data-args=\'["ok"]\']');
+      const summary = await page.textContent('#pantryStockBody');
+      const before = await ev(() => ({ q: S.pantry.find((x) => x.id === 'p4-jog').q, use: NTPantry.usage('p4-jog') }));
+      await page.click('#pantryStockBody [data-act="NTPantry.stockBook"]');
+      out.stock = /Butter/.test(first) && /Joghurt/.test(resumed.name) && resumed.ist === '1' && resumed.draft && /2 Abweichungen/.test(summary) && /3 → 1/.test(summary)
+        && before.q === 3 && await ev(() => {
+          const j = S.pantry.find((x) => x.id === 'p4-jog'), b = S.pantry.find((x) => x.id === 'p4-butter');
+          const ks = S.pantryLog.filter((e) => e.src === 'inventur').map((e) => e.k + ':' + e.d).sort().join();
+          return j.q === 1 && b.q === 0 && ks === 'korrektur:-1,korrektur:-2' && !S.pantryStockDraft && NTPantry.usage('p4-jog') === null
+            && !document.getElementById('pantryStockOv').classList.contains('open');
+        });
+      // Abbrechen bucht nichts
+      await ev(() => NTPantry.openStock());
+      await page.click('#pantryStockBody [data-act="NTPantry.stockStart"][data-args=\'["vorrat"]\']');
+      await page.click('#pantryStockBody [data-act="NTPantry.stockSet"][data-args=\'["gone"]\']');
+      const n0 = await ev(() => S.pantryLog.length);
+      await page.click('#pantryStockBody [data-act="NTPantry.stockCancel"]');
+      out.stockCancel = await ev((n0) => S.pantryLog.length === n0 && !S.pantryStockDraft && S.pantry.find((x) => x.n === 'H-Milch').q === 1
+        && !!document.querySelector('#pantryStockBody [data-act="NTPantry.stockStart"]'), n0);
+      await ev(() => closeOv('pantryStockOv'));
+      // H1/H2: Verlauf über Monatsgrenze — Rückblick einmal, Auswertung im Verlauf
+      const prevM = await ev(() => {
+        const now = new Date(), prev = new Date(now.getFullYear(), now.getMonth() - 1, 15, 12).getTime();
+        const prevKey = pantryMonthShift(now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0'), -1);
+        const add = (id, t, k, d, n, pid) => S.pantryLog.push({ id, t, pid, n, ic: '🥛', d, k, src: 'hand', u: 0, rev: 1 });
+        add('p4w1', prev, 'verderb', -1, 'Joghurt', 'p4-jog'); add('p4w2', prev + 3600e3, 'verderb', -1, 'Joghurt', 'p4-jog');
+        add('p4w3', prev + 7200e3, 'verderb', -1, 'H-Milch', 'p4-milch'); add('p4u1', prev - 864e5 * 5, 'verbrauch', -3, 'H-Milch', 'p4-milch');
+        add('p4k0', prev - 864e5 * 40, 'kauf', 4, 'H-Milch', 'p4-milch');
+        S.pantryLog.sort((a, b) => b.t - a.t);
+        S.pantryMonthSeen = prevKey; delete S.pantryMonthNews;
+        NTPantry.monthCheck(); NTPantry.monthCheck();
+        return prevKey;
+      });
+      const hint = await ev(() => ({ t: document.getElementById('pantryMonthHint').textContent, news: !!S.pantryMonthNews }));
+      // drei Hinweise anlegen (geht bald aus, offene Mahlzeit, Rückblick) → eine Zeile
+      const many = await ev(() => {
+        const j = S.pantry.find((x) => x.id === 'p4-milch'); j.q = 2;
+        for (let i = 1; i <= 4; i++) S.pantryLog.push({ id: 'p4s' + i, t: Date.now() - i * 2 * 864e5, pid: j.id, n: j.n, d: -1, k: 'verbrauch', src: 'hand', u: 0, rev: 1 });
+        S.pantryLog.sort((a, b) => b.t - a.t);
+        NTPantry.render();
+        return { sum: document.getElementById('pantryHintSum').textContent, hidden: document.getElementById('pantryHintList').hidden };
+      });
+      await page.click('#pantryHintSum .pantry-hint-sum');
+      const opened = await ev(() => !document.getElementById('pantryHintList').hidden);
+      await page.click('#pantryMonthHint [data-act="NTPantry.openReport"]');
+      await page.locator('#pantryLogOv.open').waitFor();
+      const rep = await ev(() => ({ open: document.getElementById('pantryReport').open, t: document.getElementById('pantryReport').textContent, waste: document.getElementById('pantryWaste').textContent }));
+      out.month = !!prevM && hint.news && /weggeworfen: 2 Artikel — am häufigsten Joghurt/.test(hint.t);
+      out.hints = /2 Hinweise|3 Hinweise/.test(many.sum) && many.hidden && opened;
+      out.report = rep.open && /Daten seit/.test(rep.t) && /Weggeworfen: 3 Packungen/.test(rep.t) && /Anteil weggeworfen: 50 %/.test(rep.t)
+        && /Läuft oft ab/.test(rep.t) && /Joghurt/.test(rep.t) && /Vorschlag:/.test(rep.t) && /Diesen Monat/.test(rep.waste);
+      await ev(() => closeOv('pantryLogOv'));
+      await page.click('#pantryMonthHint [data-act="NTPantry.monthDismiss"]');
+      out.monthGone = await ev(() => !S.pantryMonthNews && !document.getElementById('pantryMonthHint').textContent);
+    } catch (e) { record('Vorrat Paket 4', e.message); }
+    await ev((k) => {
+      document.querySelectorAll('.ov.open').forEach((o) => o.classList.remove('open'));
+      if (window.__p4) { window.callClaude = window.__p4.c; window.canUseAi = window.__p4.u; }
+      if (window.__p4f) window.fetchT = window.__p4f;
+      if (!k) return;
+      const o = JSON.parse(k);
+      S.shopList = o.shop; S.shopTomb = o.shopTomb; S.pantry = o.pantry; S.pantryLog = o.log; S.pantryTomb = o.tomb; S.pantryLocs = null;
+      if (o.ask) S.pantryAsk = o.ask; else delete S.pantryAsk;
+      if (o.seen === null) delete S.pantryMonthSeen; else S.pantryMonthSeen = o.seen;
+      if (o.news) S.pantryMonthNews = o.news; else delete S.pantryMonthNews;
+      if (o.draft) S.pantryStockDraft = o.draft; else delete S.pantryStockDraft;
+      S.pantryRemindOff = o.remindOff;
+      saveS(); NTShop.render(); NTPantry.render();
+    }, keep).catch(() => {});
+    for (const [k, v] of Object.entries({ noAi: 'Kassenbon ohne KI: klare Meldung beim Öffnen',
+      bonRows: 'Bon → nur Artikel (kein Pfand/Rabatt/Tüte/Summe/Preis), Ort und Kategorie vorbelegt, Zettel-Treffer markiert',
+      bonApply: 'Bon einbuchen: Menge geändert, Abgewähltes nicht, geschätztes Datum, Zettel abgehakt, EINE Buchung je Artikel, kein Preis gespeichert',
+      bonUntick: 'Ent-haken nimmt genau die Bon-Buchung zurück',
+      serial: 'Serienscan: Scanner bleibt offen, ±1, gleicher Code nicht doppelt, neuer Code in die Liste, Rückgängig je Zeile',
+      serialNew: 'neuer Code aus der Liste zugeordnet und eingebucht',
+      stock: 'Inventur: Entwurf überlebt das Schließen, Zusammenfassung, EINE Bestätigung bucht Korrekturen (kein Verbrauch)',
+      stockCancel: 'Inventur abbrechen bucht nichts', month: 'Monatsrückblick einmal nach dem Monatswechsel',
+      hints: 'mehrere Hinweise → eine aufklappbare Zeile', report: 'Auswertung im Verlauf: Daten seit, Packungen, Anteil, läuft oft ab mit Vorschlag',
+      monthGone: 'Rückblick lässt sich ausblenden' })) {
+      if (!out[k]) { pantry5Fail++; console.log('  x   Vorrat Paket 4: ' + v); }
+    }
+    const newErr = errors.length - errBefore;
+    if (newErr) { pantry5Fail++; console.log(`  x   Vorrat Paket 4: ${newErr} neue(r) Fehler, siehe unten.`); }
+    if (!pantry5Fail) console.log('  ok  Vorrat Paket 4: Kassenbon ohne Preise mit Bestätigung und Abhaken ohne Doppelbuchung, Serienscan mit Sperre/Liste/Rückgängig, Inventur mit Entwurf und einer Bestätigung, Monatsrückblick, gebündelte Hinweise, Auswertung im Verlauf.');
+  }
+
   // 7c. App-Tour: aus der Hilfe von vorn bis „Fertig“ per Klick, dann an
   //     einem Punkt einsteigen und mit Esc beenden.
   let tourFail = 0;

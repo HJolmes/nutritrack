@@ -1622,7 +1622,7 @@ function scanResolve(code){
 
 // ════════ Verlauf (#336) ════════
 var KIND={kauf:'＋ Gekauft',verbrauch:'🍽️ Verbraucht',verderb:'🗑️ Weggeworfen',kochen:'👨‍🍳 Gekocht',korrektur:'✏️ Korrigiert'};
-var SRC={hand:'',zettel:'vom Einkaufszettel',scan:'per Scan',foto:'vom Foto',bon:'vom Kassenbon',inventur:'bei der Inventur',Mahlzeit:'aus dem Tagebuch'};
+var SRC={hand:'',zettel:'vom Einkaufszettel',scan:'per Scan',foto:'vom Foto',bon:'vom Kassenbon',zettelfoto:'vom Zettel-Foto',inventur:'bei der Inventur',Mahlzeit:'aus dem Tagebuch'};
 var _reportOpen=false;// Auswertung im Verlauf aufgeklappt (nur in dieser Sitzung)
 function openLog(){leaveMore();trimLog();openOv('pantryLogOv');renderLog();}
 // ⋯ Mehr → 📊 Auswertung (H1): derselbe Verlauf, die Auswertung oben aufgeklappt.
@@ -1841,21 +1841,27 @@ function locDelete(id){
 }
 
 // ════════ Fotos auswerten (#326), Kassenbon (Paket 4, G1) ════════
-// Ein Dialog, zwei Arten: 'shelf' = Kühlschrank/Schrank fotografieren, 'bon' =
-// Kassenbon → mehrere gekaufte Artikel auf einmal. Beide übernehmen erst nach
+// Ein Dialog, drei Quellen: 'shelf' = Kühlschrank/Schrank fotografieren, 'bon'
+// = Kassenbon, 'list' = Einkaufszettel nach dem Einkauf (Handschrift oder
+// gedruckt) → mehrere gekaufte Artikel auf einmal. Alle übernehmen erst nach
 // Bestätigung; Fotos und die KI-Antwort werden nicht gespeichert, Preise vom
-// Bon nie gelesen (parsePantryReceipt gibt keine zurück).
+// Bon nie gelesen (parsePantryReceipt gibt keine zurück). Bon und Zettel buchen
+// gleich ein (bonApply), nur die Quelle im Verlauf unterscheidet sich.
 var _photoMode='shelf';
-/** @param {string} [mode] 'shelf' | 'bon' */
+var PHOTO_MODES=[['shelf','🧊 Vorrat-Foto'],['bon','🧾 Kassenbon'],['list','📝 Einkaufszettel']];
+/** @param {string} m */
+function photoModeOk(m){return m==='bon'||m==='list'?m:'shelf';}
+/** @param {string} [mode] 'shelf' | 'bon' | 'list' */
 function openPhotos(mode){
   _photos=[];_found=[];
-  _photoMode=mode==='bon'?'bon':'shelf';
+  _photoMode=photoModeOk(mode||'');
   photoStatus(noAiText(),true);
   renderPhotoMode();
   renderPhotos();
   openOv('pantryPhotoOv');
 }
 function openReceipt(){leaveMore();openPhotos('bon');}
+function openListPhoto(){leaveMore();openPhotos('list');}
 // Ohne KI klar sagen, was geht, statt später ein leeres Ergebnis zu zeigen.
 function noAiText(){
   if(typeof isOnline!=='undefined'&&!isOnline)return 'Fotos auswerten braucht Internet. Bis dahin: Artikel oben im Vorrat eintippen oder per Barcode einbuchen.';
@@ -1864,23 +1870,25 @@ function noAiText(){
 }
 /** @param {string} mode */
 function setPhotoMode(mode){
-  var m=mode==='bon'?'bon':'shelf';
+  var m=photoModeOk(mode);
   if(m===_photoMode)return;
   _photoMode=m;_found=[];
   photoStatus(noAiText(),true);
   renderPhotoMode();renderPhotos();
 }
 function renderPhotoMode(){
-  var bon=_photoMode==='bon';
+  var bon=_photoMode==='bon',sl=_photoMode==='list';
   var el=document.getElementById('pantryPhotoMode');
-  if(el)el.innerHTML=[['shelf','🧊 Vorrat-Foto'],['bon','🧾 Kassenbon']].map(function(x){
+  if(el)el.innerHTML=PHOTO_MODES.map(function(x){
     return '<button type="button" class="stab'+(_photoMode===x[0]?' act':'')+'" data-act="NTPantry.setPhotoMode" data-args="'+args([x[0]])+'" aria-pressed="'+(_photoMode===x[0])+'">'+x[1]+'</button>';
   }).join('');
   var t=document.getElementById('pantryPhotoTitle'),sub=document.getElementById('pantryPhotoSub'),note=document.getElementById('pantryPhotoNote');
-  if(t)t.textContent=bon?'🧾 Kassenbon einlesen':'📷 Fotos auswerten';
-  if(sub)sub.textContent=bon?'Ein Bon, notfalls in mehreren Fotos — die gekauften Artikel auf einmal einbuchen':'Kühlschrank, Tiefkühler, Vorratsschrank — bis zu 6 Fotos, aus der Kamera oder der Galerie';
-  if(note)note.textContent=bon?'Die Fotos gehen nur zur Auswertung an die KI und werden nicht gespeichert. Preise, Pfand, Rabatte und Summen werden nicht übernommen. Eingebucht wird erst, was du bestätigst; passende Artikel auf dem Einkaufszettel werden abgehakt.'
-    :'Die Fotos gehen nur zur Auswertung an die KI und werden nicht gespeichert. Übernommen wird erst, was du bestätigst.';
+  if(t)t.textContent=bon?'🧾 Kassenbon einlesen':(sl?'📝 Einkaufszettel einlesen':'📷 Fotos auswerten');
+  if(sub)sub.textContent=bon?'Ein Bon, notfalls in mehreren Fotos — die gekauften Artikel auf einmal einbuchen'
+    :(sl?'Dein Zettel nach dem Einkauf, von Hand oder gedruckt — Durchgestrichenes gilt als gekauft':'Kühlschrank, Tiefkühler, Vorratsschrank — bis zu 6 Fotos, aus der Kamera oder der Galerie');
+  if(note)note.textContent=bon?'Die Fotos gehen nur zur Auswertung an die KI und werden nicht gespeichert. Preise, Pfand, Rabatte und Summen werden nicht übernommen. Eingebucht wird erst, was du bestätigst; passende Artikel auf dem Einkaufszettel der App werden abgehakt.'
+    :(sl?'Die Fotos gehen nur zur Auswertung an die KI und werden nicht gespeichert. Ohne Menge gilt 1 Stück. Unleserliches steht abgewählt in der Liste, statt geraten zu werden. Eingebucht wird erst, was du bestätigst; passende Artikel auf dem Einkaufszettel der App werden abgehakt.'
+    :'Die Fotos gehen nur zur Auswertung an die KI und werden nicht gespeichert. Übernommen wird erst, was du bestätigst.');
 }
 function photoStatus(t,err){
   var el=document.getElementById('pantryPhotoStatus');
@@ -1966,15 +1974,30 @@ function receiptPrompt(){
     +'- Gleiche Artikel auf mehreren Zeilen zusammenzählen. Nichts erfinden, was nicht auf dem Bon steht.\n'
     +'- Kein Kassenbon erkennbar: {"artikel":[]}';
 }
+function listPrompt(){
+  return 'Auf den Fotos ist ein Einkaufszettel aus einem Haushalt in Deutschland, nach dem Einkauf fotografiert — von Hand geschrieben oder gedruckt.\n'
+    +'Lies die Artikel und gib AUSSCHLIESSLICH dieses JSON zurück, ohne Fließtext und ohne Markdown:\n'
+    +'{"artikel":[{"zeile":"2 Gurken","name":"Gurken","stueck":2,"g":0,"ort":"kuehl","durchgestrichen":true,"unleserlich":false}]}\n'
+    +'Regeln:\n'
+    +'- "zeile": die Zeile, wie sie dasteht.\n'
+    +'- "name": einfacher deutscher Grundname ohne Marke, Abkürzungen und Tippfehler aufgelöst („Tom. Dose“ → „Tomaten (Dose)“).\n'
+    +'- "stueck": Anzahl, wenn dasteht, sonst leer lassen ("").\n'
+    +'- "g": Gramm bzw. Milliliter je Stück, wenn dasteht („500 g Hack“ → 1 Stück, 500), sonst 0.\n'
+    +'- "ort": einer von '+sortedLocs().map(function(l){return '"'+l.id+'" ('+l.label+')';}).join(', ')+' — wo man den Artikel üblicherweise lagert, sonst "".\n'
+    +'- "durchgestrichen": true, wenn die Zeile durchgestrichen oder abgehakt ist.\n'
+    +'- Nicht sicher lesbar: NICHT raten — "unleserlich": true, "name": "" und in "zeile", was zu erkennen ist.\n'
+    +'- Nichts ohne Bezug zum Vorrat (Termine, Notizen, Blumen): weglassen oder "vorrat": false.\n'
+    +'- Kein Einkaufszettel erkennbar: {"artikel":[]}';
+}
 // Bestätigungszeile vorbelegen: gleicher Name wie ein Vorratsartikel → dessen
 // Ort, Kategorie und Packungsgröße; sonst Kategorie geraten und Ort nach Art.
 /** @param {any} x {n,q,g,loc,mhd,vd,bon} */
 function foundRow(x){
-  var ex=findByName(x.n),bon=_photoMode==='bon';
+  var ex=x.n?findByName(x.n):null,bon=_photoMode!=='shelf';
   var c=ex?catOf(ex):guessCat(x.n);
   var l=bon?((ex&&ex.loc)||x.loc||pantryHomeLoc(x.n,c,locs())):(x.loc||(ex&&ex.loc)||'');
   var sh=bon?shopByName(x.n):null;
-  return {n:x.n,q:x.q,g:x.g||(ex&&+ex.g>0?+ex.g:0),loc:l,c:c,mhd:x.mhd||'',vd:x.vd||'',bon:x.bon||'',on:true,ex:!!ex,shop:sh?sh.id:''};
+  return {n:x.n,q:x.q,g:x.g||(ex&&+ex.g>0?+ex.g:0),loc:x.unread?'':l,c:x.unread?'sonst':c,mhd:x.mhd||'',vd:x.vd||'',bon:x.bon||x.raw||'',on:true,ex:!!ex,shop:sh&&x.n?sh.id:'',unread:!!x.unread,open:!!x.open};
 }
 function analyzePhotos(){
   if(!_photos.length)return;
@@ -1985,17 +2008,26 @@ function analyzePhotos(){
   photoStatus('Die KI wertet '+_photos.length+' Foto'+(_photos.length===1?'':'s')+' aus …',false);
   /** @type {Array<any>} */
   var content=_photos.map(function(b){return {type:'image',source:{type:'base64',media_type:'image/jpeg',data:b}};});
-  var bon=_photoMode==='bon';
-  content.push({type:'text',text:bon?receiptPrompt():photoPrompt()});
-  callClaude('claude-sonnet-5-5',content,bon?3000:2048,function(text){
-    if(_photoMode!==(bon?'bon':'shelf'))return;// inzwischen umgeschaltet
-    var ids=locs().map(function(l){return l.id;}),partial=false,list;
+  var mode=_photoMode,bon=mode==='bon',sl=mode==='list';
+  content.push({type:'text',text:bon?receiptPrompt():(sl?listPrompt():photoPrompt())});
+  callClaude('claude-sonnet-5-5',content,mode==='shelf'?2048:3000,function(text){
+    if(_photoMode!==mode)return;// inzwischen umgeschaltet
+    var ids=locs().map(function(l){return l.id;}),partial=false,list,unread=0;
     if(bon){var r=parsePantryReceipt(text,ids);list=r.items;partial=r.partial;}
+    else if(sl){
+      // Durchgestrichen = gekauft. Ist etwas durchgestrichen, gilt der Rest als
+      // vermutlich nicht gekauft: abgewählt, aber in der Liste.
+      var z=parsePantryShopList(text,ids);partial=z.partial;
+      list=z.items.map(function(x){return Object.assign({},x,{open:z.crossed&&!x.crossed&&!x.unread});});
+    }
     else list=parsePantryPhoto(text,ids);
     _found=list.map(foundRow);
-    var n=_found.length;
-    photoStatus(n?(n+(bon?(n===1?' Artikel':' Artikel')+' vom Bon gelesen':' Lebensmittel erkannt')+(partial?' — die Antwort war unvollständig, bitte mit dem Bon vergleichen':'')+' — prüfen, anpassen, übernehmen.')
-      :(bon?'Auf dem Foto war kein Kassenbon zu lesen. Den Bon glatt und ganz aufs Bild, bei langen Bons in zwei Fotos.':'Nichts erkannt. Ein schärferes Foto hilft.'),!n||partial);
+    _found.forEach(function(x){if(x.unread||x.open)x.on=false;if(x.unread)unread++;});
+    var n=_found.length-unread;
+    var src=bon?'vom Bon gelesen':(sl?'vom Zettel gelesen':'Lebensmittel erkannt');
+    photoStatus(_found.length?(n+(sl||bon?' Artikel ':' ')+src+(unread?', '+unread+' unleserlich':'')+(partial?' — die Antwort war unvollständig, bitte mit dem Foto vergleichen':'')+' — prüfen, anpassen, übernehmen.')
+      :(bon?'Auf dem Foto war kein Kassenbon zu lesen. Den Bon glatt und ganz aufs Bild, bei langen Bons in zwei Fotos.'
+        :(sl?'Auf dem Foto war kein Einkaufszettel zu lesen. Den Zettel flach, hell und ganz aufs Bild.':'Nichts erkannt. Ein schärferes Foto hilft.')),!_found.length||partial||unread>0);
     renderPhotos();
   },function(err){
     photoStatus(window.NTPicker?NTPicker.pickerFriendlyAiError(err):('Fehler: '+err),true);
@@ -2007,14 +2039,15 @@ function renderFound(){
   var el=document.getElementById('pantryFound');
   if(!el)return;
   if(!_found.length){el.innerHTML='';return;}
-  var bon=_photoMode==='bon';
-  el.innerHTML='<div class="lbl" style="margin-top:14px;">'+(bon?'Vom Bon':'Erkannt')+'</div>'
+  var bon=_photoMode!=='shelf',sl=_photoMode==='list';
+  el.innerHTML='<div class="lbl" style="margin-top:14px;">'+(_photoMode==='bon'?'Vom Bon':(sl?'Vom Zettel':'Erkannt'))+'</div>'
     +_found.map(function(x,i){
-      var notes=[x.bon?'Bon: '+x.bon:'',x.ex?'steht schon im Vorrat — wird dazugezählt':'',x.shop?'🛒 steht auf dem Zettel — wird abgehakt':'',
+      var notes=[x.unread?'⚠️ unleserlich — Namen selbst eintragen oder abgewählt lassen':'',x.open?'nicht durchgestrichen — vermutlich nicht gekauft':'',
+        x.bon?(sl?'Zettel: ':'Bon: ')+x.bon:'',x.ex?'steht schon im Vorrat — wird dazugezählt':'',x.shop?'🛒 steht auf dem Zettel — wird abgehakt':'',
         x.vd?'Verbr. bis '+fmtD(x.vd):'',x.mhd?'MHD '+fmtD(x.mhd):'',+x.g>0?'à '+fmtN(x.g)+' g':''].filter(Boolean);
       return '<div class="pantry-found'+(x.on?'':' is-off')+'">'
         +'<label class="pantry-found-on"><input type="checkbox" '+(x.on?'checked ':'')+'onchange="NTPantry.foundSet('+i+',\'on\',this.checked)" aria-label="'+esc(x.n)+' übernehmen"></label>'
-        +'<input type="text" class="sinp pantry-found-n" value="'+esc(x.n)+'" onchange="NTPantry.foundSet('+i+',\'n\',this.value)" aria-label="Name">'
+        +'<input type="text" class="sinp pantry-found-n" value="'+esc(x.n)+'"'+(x.unread?' placeholder="unleserlich"':'')+' onchange="NTPantry.foundSet('+i+',\'n\',this.value)" aria-label="Name">'
         +'<label class="pantry-found-q"><input type="text" class="sinp" value="'+esc(fmtN(x.q))+'" inputmode="decimal" onchange="NTPantry.foundSet('+i+',\'q\',this.value)" aria-label="Stück"><span>Stück</span></label>'
         +'<select class="sinp pantry-found-loc" onchange="NTPantry.foundSet('+i+',\'loc\',this.value)" aria-label="Lagerort">'+locOptions(x.loc)+'</select>'
         +'<select class="sinp pantry-found-cat" onchange="NTPantry.foundSet('+i+',\'c\',this.value)" aria-label="Kategorie">'+catOptions(x.c).replace(/^<option value="">[^<]*<\/option>/,'')+'</select>'
@@ -2028,13 +2061,19 @@ function foundSet(i,k,v){
   if(k==='on'){x.on=!!v;var rows=document.querySelectorAll('#pantryFound .pantry-found');if(rows[i])rows[i].classList.toggle('is-off',!x.on);}
   else if(k==='q')x.q=num(v);
   else x[k]=String(v||'').trim();
+  // Unleserliche Zeile mit selbst eingetragenem Namen: jetzt auswählbar und vorbelegt.
+  if(k==='n'&&x.unread&&x.n){
+    x.unread=false;x.on=true;x.c=guessCat(x.n);x.loc=pantryHomeLoc(x.n,x.c,locs());
+    var sh=shopByName(x.n);x.shop=sh?sh.id:'';
+    renderFound();
+  }
 }
 // Kassenbon übernehmen: je Zeile eine Einbuchung über refill (Datum geschätzt
 // wie beim Einbuchen) und, steht der Artikel offen auf dem Einkaufszettel, dort
 // abgehakt. NTShop.toggle ruft onBought — das bucht nicht noch einmal, weil der
 // Zettel-Eintrag die Buchung schon als `stock` trägt (Ent-haken nimmt genau sie zurück).
-/** @param {any} x */
-function bonApply(x){
+/** @param {any} x @param {string} src 'bon' | 'zettelfoto' */
+function bonApply(x,src){
   var it=findByName(x.n),before=0;
   if(!it){
     it={id:uid('p'),n:x.n,ic:guessIc(x.n),loc:x.loc||'',c:x.c||guessCat(x.n),q:0,g:+x.g>0?+x.g:0,min:0,mhd:'',vd:'',ts:Date.now(),rev:nextRev()};
@@ -2045,17 +2084,17 @@ function bonApply(x){
     if(x.loc)it.loc=x.loc;
     if(x.c)it.c=x.c;
   }
-  var e=refill(it,x.q||1,'bon');
+  var e=refill(it,x.q||1,src||'bon');
   touch(it);afterChange(it,before);
   var s=e?shopByName(it.n):null;
   if(s&&!s.stock&&window.NTShop){s.stock={pid:it.id,n:e.d,log:e.id,lot:e.lots[0].id};NTShop.toggle(s.id);return 2;}
   return e?1:0;
 }
 function foundApply(){
-  var n=0,ticked=0,bon=_photoMode==='bon';
+  var n=0,ticked=0,bon=_photoMode!=='shelf',src=_photoMode==='list'?'zettelfoto':'bon';
   _found.forEach(function(x){
     if(!x.on||!x.n)return;
-    if(bon){var r=bonApply(x);if(r)n++;if(r===2)ticked++;}
+    if(bon){var r=bonApply(x,src);if(r)n++;if(r===2)ticked++;}
     else if(add(x.n,x.q||1,x.g,x.loc,'',0,{mhd:x.mhd,vd:x.vd},'foto',x.c))n++;
   });
   _found=[];_photos=[];
@@ -2306,7 +2345,7 @@ window.NTPantry={
   consume:consume,dropBarcodes:dropBarcodes,scan:scan,openLog:openLog,undo:undo,
   remindOn:remindOn,setRemind:setRemind,checkRemind:checkRemind,daily:daily,restockDaily:restockDaily,
   restockNow:restockNow,skipRestock:skipRestock,takeMinSug:takeMinSug,openMore:openMore,setLead:setLead,
-  openReceipt:openReceipt,setPhotoMode:setPhotoMode,scanUndo:scanUndo,scanDrop:scanDrop,scanResolve:scanResolve,
+  openReceipt:openReceipt,openListPhoto:openListPhoto,setPhotoMode:setPhotoMode,scanUndo:scanUndo,scanDrop:scanDrop,scanResolve:scanResolve,
   openStock:openStock,stockStart:stockStart,stockStep:stockStep,stockInput:stockInput,stockSet:stockSet,stockBack:stockBack,
   stockCancel:stockCancel,stockBook:stockBook,openReport:openReport,reportToggle:reportToggle,
   toggleHints:toggleHints,monthCheck:monthCheck,monthDismiss:monthDismiss,

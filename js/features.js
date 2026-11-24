@@ -77,6 +77,7 @@ var FEATURES=[
      {ic:'📷', label:'Fotos auswerten',        hint:'Kühlschrank und Schrank fotografieren', act:'NTPantry.openPhotos'},
      {ic:'👨‍🍳', label:'Was kann ich kochen?', hint:'Passende Rezepte, dann Ideen der KI', act:'NTPantry.openCook'},
      {ic:'🧾', label:'Kassenbon einlesen',     hint:'Gekaufte Artikel auf einmal einbuchen', act:'NTPantry.openReceipt'},
+     {ic:'📝', label:'Einkaufszettel-Foto',    hint:'Zettel nach dem Einkauf fotografieren und einbuchen', act:'NTPantry.openListPhoto'},
      {ic:'📋', label:'Inventur',               hint:'Lagerort für Lagerort nachzählen', act:'NTPantry.openStock'},
      {ic:'📊', label:'Auswertung',             hint:'Verbraucht und weggeworfen je Monat', act:'NTPantry.openReport'},
      {ic:'🔗', label:'Verbindungen',           hint:'Vorrat mit jemandem teilen', act:'NTSync.open'}

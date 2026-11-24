@@ -333,16 +333,18 @@ function trimLog(){
 // Auffüllen um `n` Stück als neue Charge, Verlauf. Ohne Datum schätzt die
 // App eins (D1): eigene Haltedauer `hd` vor dem Richtwert für Art und Ort;
 // die Charge trägt dann `estimated` und die Oberfläche „geschätzt“.
-/** @param {any} it @param {number} n @param {string} src @param {string} [mhd] @param {string} [vd] */
-function refill(it,n,src,mhd,vd){
+// `kind` 'korrektur' (Inventur: mehr da als gedacht) bucht dieselbe neue Charge,
+// zählt aber nicht als Kauf (kein Nachkauf-Zyklus, kein „üblicher Kauf“).
+/** @param {any} it @param {number} n @param {string} src @param {string} [mhd] @param {string} [vd] @param {string} [kind] */
+function refill(it,n,src,mhd,vd,kind){
   n=roundQty(n);
   if(!(n>0))return null;
   var days=!mhd&&!vd?estimateDays(it):0;
   var lot={id:uid('charge'),q:n,mhd:mhd||(days?addDays(today(),days):''),vd:vd||'',estimated:!!days,in:today()};
   appendLots(it,[lot]);
   // Eingebucht = Nachkauf-Zyklus erledigt: Markierung und „diesmal nicht“ fallen weg.
-  delete it.rs;delete it.rsNo;
-  var e=log(it,n,'kauf',src);e.lots=[lot];return e;
+  if(kind!=='korrektur'){delete it.rs;delete it.rsNo;}
+  var e=log(it,n,kind||'kauf',src);e.lots=[lot];return e;
 }
 // Abziehen um `n` Stück (nie unter 0), älteste Charge zuerst oder nur `lotId`.
 /** @param {any} it @param {number} n @param {string} k @param {string} [src] @param {string} [lotId] */
@@ -583,6 +585,7 @@ function renderAskHint(){
   var el=document.getElementById('pantryAskHint');
   if(!el)return;
   var n=askOn()&&askList().length?askOpenGroups().length:0;
+  _hs.ask=n?'🍽️ '+n+(n===1?' Mahlzeit':' Mahlzeiten')+' abziehen?':'';
   el.innerHTML=n?'<button type="button" class="pantry-soon" data-act="NTPantry.openAsk">'
     +'<span aria-hidden="true">🍽️</span><span>'+n+(n===1?' Mahlzeit':' Mahlzeiten')+': aus dem Vorrat abziehen?</span><span aria-hidden="true">›</span></button>':'';
 }
@@ -933,15 +936,70 @@ function soonList(a,ros){
     return (rx===null||rx===undefined?99:rx)-(ry===null||ry===undefined?99:ry)||String(x.n).localeCompare(String(y.n),'de');
   });
 }
+// Hinweiszeilen (P1): „geht bald aus“, offene Mahlzeiten, Monatsrückblick.
+// Steht mehr als einer an, zeigt der Kopf EINE Zeile „N Hinweise: …“, die
+// aufklappt — so beginnt die Liste auch auf kleinen Telefonen weit oben.
+var _hs={soon:'',ask:'',month:''};
+var _hintsOpen=false;
+function renderHints(){
+  var sum=document.getElementById('pantryHintSum'),list=document.getElementById('pantryHintList');
+  if(!sum||!list)return;
+  var shorts=[_hs.soon,_hs.ask,_hs.month].filter(Boolean),many=shorts.length>1,open=_hintsOpen||_tile===SOON;
+  sum.innerHTML=many?'<button type="button" class="pantry-soon pantry-hint-sum" data-act="NTPantry.toggleHints" aria-expanded="'+open+'">'
+    +'<span aria-hidden="true">💡</span><span>'+shorts.length+' Hinweise: '+esc(shorts.join(' · '))+'</span><span aria-hidden="true">'+(open?'▴':'▾')+'</span></button>':'';
+  list.hidden=many&&!open;
+}
+function toggleHints(){_hintsOpen=!_hintsOpen;renderHints();}
+// ── Monatsrückblick (H2) ──
+// Einmal im Monat, beim ersten Öffnen nach dem Monatswechsel (täglicher Lauf):
+// eine ruhige Zeile, wenn im Vormonat etwas weggeworfen wurde. Bei 0 nichts;
+// aus mit der Ablauf-Erinnerung (S.pantryRemindOff). Gerätelokal:
+//   S.pantryMonthSeen  'JJJJ-MM' zuletzt geprüfter Monat
+//   S.pantryMonthNews  {m: Vormonat, t: ms} bis weggetippt oder MONTH_NEWS_DAYS
+var MONTH_NEWS_DAYS=7;
+function monthCheck(){
+  if(pantryOff())return;
+  var cur=monthKey(new Date());
+  if(S.pantryMonthSeen===cur)return;
+  // Der erste Lauf überhaupt merkt sich nur den Monat: kein Rückblick mitten im Monat.
+  var first=!S.pantryMonthSeen;
+  S.pantryMonthSeen=cur;
+  delete S.pantryMonthNews;
+  if(!first&&!S.pantryRemindOff){
+    var prev=pantryMonthShift(cur,-1);
+    if(pantryWaste(logArr(),prev).n)S.pantryMonthNews={m:prev,t:Date.now()};
+  }
+  saveS();render();
+}
+function monthNews(){
+  var m=S.pantryMonthNews;
+  if(!m||!m.m||S.pantryRemindOff||pantryOff()||Date.now()-(+m.t||0)>MONTH_NEWS_DAYS*864e5)return null;
+  var w=pantryWaste(logArr(),m.m);
+  return w.n?{m:String(m.m),w:w}:null;
+}
+function renderMonthHint(){
+  var el=document.getElementById('pantryMonthHint');
+  if(!el)return;
+  var x=monthNews();
+  if(!x){el.innerHTML='';_hs.month='';return;}
+  var mn=MONTHS[(+x.m.split('-')[1]||1)-1],top=x.w.top[0],tip=top?wasteTip(top):'',arts=x.w.top.length;
+  _hs.month='🗑️ Rückblick '+mn;
+  el.innerHTML='<div class="pantry-month-hint"><button type="button" class="pantry-soon" data-act="NTPantry.openReport">'
+    +'<span aria-hidden="true">🗑️</span><span>Im '+esc(mn)+' weggeworfen: '+arts+' Artikel'+(top?' — am häufigsten '+esc(top.n):'')
+    +(tip?'. Tipp: '+esc(tip):'')+'</span><span aria-hidden="true">›</span></button>'
+    +'<button type="button" class="pantry-hint-x" data-act="NTPantry.monthDismiss" aria-label="Rückblick ausblenden">✕</button></div>';
+}
+function monthDismiss(){delete S.pantryMonthNews;saveS();render();}
 // Ruhiger Hinweis unter den Kennzahlen, nur wenn es etwas gibt; antippen filtert.
 function renderSoon(soon){
   var el=document.getElementById('pantrySoon');
   if(!el)return;
   var listed=soon.filter(function(it){return it.rs&&it.rs.s;}).length,going=soon.length-listed;
-  if(!soon.length){el.innerHTML='';return;}
+  if(!soon.length){el.innerHTML='';_hs.soon='';return;}
   var parts=[];
   if(going)parts.push(going+(going===1?' geht':' gehen')+' bald aus');
   if(listed)parts.push('🛒 '+listed+' auf dem Zettel');
+  _hs.soon='⏳ '+parts.join(' · ');
   el.innerHTML='<button type="button" class="pantry-soon" data-act="NTPantry.pickTile" data-args="'+args([SOON])+'" aria-pressed="'+(_tile===SOON)+'">'
     +'<span aria-hidden="true">⏳</span><span>'+esc(parts.join(' · '))+'</span><span aria-hidden="true">'+(_tile===SOON?'✕':'›')+'</span></button>';
 }
@@ -984,6 +1042,8 @@ function renderList(){
   renderStats(a,ex,miss);
   renderSoon(soon);
   renderAskHint();
+  renderMonthHint();
+  renderHints();
   function rowOf(it){return row(it,ros[it.id]);}
   var sel=/** @type {HTMLSelectElement} */ (document.getElementById('pantryOrder'));
   if(sel){
@@ -1317,7 +1377,7 @@ function openItem(id){
   if(au)au.checked=!!(it&&it.auto);
   var ld=document.getElementById('pantryItemLead');
   if(ld)ld.textContent=lead()+(lead()===1?' Tag':' Tage');
-  _pendingBc='';
+  _pendingBc='';_pendingN=1;
   var sel=document.getElementById('pantryItemLoc');
   if(sel)sel.innerHTML=locOptions(it?it.loc:chipLoc());
   var cs=document.getElementById('pantryItemCat');
@@ -1376,9 +1436,9 @@ function saveItem(){
     var t=byId(asg);
     if(t){
       var code=_pendingBc;_pendingBc='';
-      addBc(t,code);
+      addBc(t,code);scanDrop(code);
       var b0=pantryNeed(t.q,t.min);
-      if(_scanMode==='out')take(t,1,'verbrauch','scan');else refill(t,1,'scan');
+      if(_scanMode==='out')take(t,_pendingN||1,'verbrauch','scan');else refill(t,_pendingN||1,'scan');
       touch(t);afterChange(t,b0);
       closeOv('pantryItemOv');
       showToast('🏷️ Barcode bei „'+t.n+'“ gespeichert · '+fmtN(t.q)+' Stück');
@@ -1447,7 +1507,7 @@ function saveItem(){
     if(wanted<cur&&!isNew)take(it,cur-wanted,'korrektur','hand');
   }
   newRows.forEach(function(lot){refill(it,lot.q,'hand',lot.mhd,lot.vd);});
-  if(_pendingBc&&isNew){addBc(it,_pendingBc);_pendingBc='';}
+  if(_pendingBc&&isNew){addBc(it,_pendingBc);scanDrop(_pendingBc);_pendingBc='';}
   touch(it);
   _editId=null;
   closeOv('pantryItemOv');
@@ -1463,59 +1523,174 @@ function deleteItem(){
   showToast('Gelöscht');
 }
 
-// ════════ Barcode scannen (#335) ════════
-// Bekannt → ±1 und weiterscannen; unbekannt → Artikel-Dialog mit dem, was Open
-// Food Facts weiß, dort neu anlegen oder einem vorhandenen zuordnen.
+// ════════ Barcode scannen (#335), Serienscan (Paket 4, G2) ════════
+// Der Scanner bleibt offen: bekannt → ±1 und eine Zeile in der Mitschrift
+// (mit ↩️), unbekannt → Open Food Facts fragen und als offene Rückfrage in die
+// Liste unter dem Sucherbild, statt den Scan zu unterbrechen. „Anlegen“ dort
+// öffnet den Artikel-Dialog (neu anlegen oder einem vorhandenen zuordnen).
+// Derselbe Code direkt hintereinander zählt erst nach einer Pause erneut
+// (pantryScanAccept). Mitschrift und Rückfragen leben nur im Speicher.
+var SCAN_SHOW=8;
+/** @type {Array<any>} */
+var _scanLog=[];     // [{id: Verlaufs-ID, n, ic, d}] dieser Scan-Runde, neueste zuerst
+/** @type {Array<any>} */
+var _scanAsk=[];     // unbekannte Codes [{code,name,g,count,mode}]
+/** @type {any} */
+var _scanLast=null;  // {code,t} zuletzt gezählter Code
+var _pendingN=1;     // Stück für die Buchung eines zugeordneten neuen Codes
 /** @param {string} mode 'in' | 'out' */
 function scan(mode){
   if(!window.NTPicker||!NTPicker.scanFor){showToast('Scanner nicht geladen');return;}
   _scanMode=mode==='out'?'out':'in';
+  _scanLog=[];_scanLast=null;
   NTPicker.scanFor({
     title:_scanMode==='out'?'🏷️ Vorrat: verbrauchen':'🏷️ Vorrat: einbuchen',
-    known:scanKnown,unknown:scanUnknown
+    serial:true,known:scanKnown,unknown:scanUnknown
   });
+  renderScanList();
 }
 /** @param {string} code */
+function scanAskOf(code){for(var i=0;i<_scanAsk.length;i++)if(_scanAsk[i].code===code)return _scanAsk[i];return null;}
+// Ein Treffer des Scanners (auch über „Code manuell eingeben“). Rückgabe: Meldung
+// für den Scanner; '' = unbekannt (der Scanner fragt dann Open Food Facts).
+/** @param {string} code */
 function scanKnown(code){
-  var it=findByBc(code);
-  if(!it)return '';
-  var before=pantryNeed(it.q,it.min);
+  var it=findByBc(code),q=scanAskOf(code),now=Date.now();
+  if(!it&&!q)return '';
+  if(!pantryScanAccept(_scanLast,code,now))return '⏸ '+(it?(it.ic||'')+' '+it.n:'Derselbe Code')+' gerade gezählt — für ein weiteres Stück kurz absetzen und neu scannen';
+  _scanLast={code:code,t:now};
+  if(!it){q.count++;renderScanList();return '🏷️ '+(q.name||'Neuer Code')+' · '+q.count+'× — unten zuordnen';}
+  var before=pantryNeed(it.q,it.min),e;
   if(_scanMode==='out'){
     if(!((+it.q||0)>0))return (it.ic||'')+' '+it.n+' ist schon leer';
-    take(it,1,'verbrauch','scan');
-  }else refill(it,1,'scan');
+    e=take(it,1,'verbrauch','scan');
+  }else e=refill(it,1,'scan');
   touch(it);afterChange(it,before);
+  if(e){_scanLog.unshift({id:e.id,n:it.n,ic:it.ic||'',d:e.d});renderScanList();}
   return (_scanMode==='out'?'− ':'＋ ')+(it.ic||'')+' '+it.n+' · jetzt '+fmtN(it.q);
 }
 /** @param {string} code @param {any} prod {name,g}|null */
 function scanUnknown(code,prod){
+  _scanLast={code:code,t:Date.now()};
+  var q=scanAskOf(code);
+  if(q)q.count++;
+  else _scanAsk.unshift({code:code,name:prod&&prod.name?String(prod.name):'',g:prod&&+prod.g>0?+prod.g:0,count:1,mode:_scanMode});
+  renderScanList();
+  return '🏷️ '+(prod&&prod.name?prod.name:'Unbekannter Code')+' — unten in der Liste zuordnen';
+}
+// Mitschrift und Rückfragen unter dem Sucherbild (#pickerScanList im Picker).
+function renderScanList(){
+  var el=document.getElementById('pickerScanList');
+  if(!el)return;
+  var asks=_scanAsk.slice(0,SCAN_SHOW),rows=_scanLog.slice(0,SCAN_SHOW);
+  if(!asks.length&&!rows.length){el.innerHTML='<div class="pantry-scan-note">Jeder erkannte Code bucht '+(_scanMode==='out'?'−1':'＋1')+'. Neue Codes sammeln sich hier zum Zuordnen.</div>';return;}
+  el.innerHTML='<div class="pantry-scan">'
+    +(asks.length?'<div class="lbl">Neue Codes · '+_scanAsk.length+'</div>'+asks.map(function(a){
+      return '<div class="pantry-scan-row"><span><b>'+esc(a.name||'Unbekannter Artikel')+'</b><small>'+esc(a.code)+(a.count>1?' · '+a.count+'×':'')+(a.mode==='out'?' · verbrauchen':'')+'</small></span>'
+        +'<button type="button" class="seb" data-act="NTPantry.scanResolve" data-args="'+args([a.code])+'">Zuordnen</button>'
+        +'<button type="button" class="seb pantry-scan-x" data-act="NTPantry.scanDrop" data-args="'+args([a.code])+'" aria-label="Code verwerfen">✕</button></div>';
+    }).join(''):'')
+    +(rows.length?'<div class="lbl">Gebucht</div>'+rows.map(function(r){
+      var e=logById(r.id),gone=!e||e.u;
+      return '<div class="pantry-scan-row'+(gone?' is-undone':'')+'"><span><b>'+esc((r.ic||'🥫')+' '+r.n)+' '+(r.d>0?'＋':'−')+fmtN(Math.abs(r.d))+'</b>'+(gone?'<small>rückgängig</small>':'')+'</span>'
+        +(gone?'':'<button type="button" class="seb" data-act="NTPantry.scanUndo" data-args="'+args([r.id])+'">↩️ Rückgängig</button>')+'</div>';
+    }).join(''):'')
+    +'</div>';
+}
+/** @param {string} id */
+function scanUndo(id){undo(id);renderScanList();}
+/** @param {string} code */
+function scanDrop(code){_scanAsk=_scanAsk.filter(function(a){return a.code!==code;});renderScanList();}
+// Rückfrage beantworten: Scanner zu, Artikel-Dialog wie bisher (neu anlegen
+// oder einem vorhandenen zuordnen), gebucht wird die gezählte Stückzahl.
+/** @param {string} code */
+function scanResolve(code){
+  var a=scanAskOf(code);if(!a)return;
+  if(window.NTPicker&&NTPicker.closePicker)NTPicker.closePicker();
+  _scanMode=a.mode==='out'?'out':'in';
   openItem('');
-  _pendingBc=code;
-  setVal('pantryItemName',prod&&prod.name?prod.name:'');
-  if(prod&&prod.g)setVal('pantryItemG',String(prod.g));
-  setVal('pantryItemQ',_scanMode==='out'?'0':'1');
+  _pendingBc=code;_pendingN=a.count||1;
+  setVal('pantryItemName',a.name||'');
+  if(a.g)setVal('pantryItemG',String(a.g));
+  setVal('pantryItemQ',_scanMode==='out'?'0':String(_pendingN));
   var t=document.getElementById('pantryItemTitle');
   if(t)t.textContent='🏷️ Neuer Barcode';
   renderItemExtras(null);
   formChanged();
-  if(!prod)showToast('Barcode nicht in Open Food Facts — bitte Namen eintragen');
+  if(!a.name)showToast('Barcode nicht in Open Food Facts — bitte Namen eintragen');
 }
 
 // ════════ Verlauf (#336) ════════
 var KIND={kauf:'＋ Gekauft',verbrauch:'🍽️ Verbraucht',verderb:'🗑️ Weggeworfen',kochen:'👨‍🍳 Gekocht',korrektur:'✏️ Korrigiert'};
-var SRC={hand:'',zettel:'vom Einkaufszettel',scan:'per Scan',foto:'vom Foto',Mahlzeit:'aus dem Tagebuch'};
+var SRC={hand:'',zettel:'vom Einkaufszettel',scan:'per Scan',foto:'vom Foto',bon:'vom Kassenbon',inventur:'bei der Inventur',Mahlzeit:'aus dem Tagebuch'};
+var _reportOpen=false;// Auswertung im Verlauf aufgeklappt (nur in dieser Sitzung)
 function openLog(){leaveMore();trimLog();openOv('pantryLogOv');renderLog();}
+// ⋯ Mehr → 📊 Auswertung (H1): derselbe Verlauf, die Auswertung oben aufgeklappt.
+function openReport(){_reportOpen=true;openLog();var b=document.querySelector('#pantryLogOv .mbd');if(b)b.scrollTop=0;}
 function monthKey(d){return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2);}
+var MONTHS=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+/** @param {string} m JJJJ-MM */
+function monthName(m){var p=String(m).split('-');return MONTHS[(+p[1]||1)-1]+' '+p[0];}
+function topText(list,unit){
+  return list.slice(0,3).map(function(x){return (x.ic?x.ic+' ':'')+x.n+(unit?' ('+fmtN(x.q)+')':(x.count>1?' ('+x.count+'×)':''));}).join(', ');
+}
+// Wie oft ein Artikel im ganzen Verlauf weggeworfen wurde (für den Vorschlag).
+/** @param {string} n */
+function wasteOf(n){
+  var k=pantryKey(n),c=0,q=0;
+  logArr().forEach(function(e){if(e&&e.k==='verderb'&&!e.u&&(+e.d||0)<0&&pantryKey(e.n)===k){c++;q+=-e.d;}});
+  return {count:c,q:roundQty(q)};
+}
+var TIP={auto:'„Immer nachkaufen“ ausschalten — kommt von selbst und verfällt dann',smaller:'kleinere Menge kaufen — meist verfällt nur ein Teil',
+  freeze:'rechtzeitig einfrieren',rarer:'seltener kaufen'};
+// Vorschlag zu einem weggeworfenen Artikel aus den Daten (pantryWasteTip), '' = keiner.
+/** @param {any} x {n,pid} */
+function wasteTip(x){
+  var it=(x.pid&&byId(x.pid))||findByName(x.n),w=wasteOf(x.n);
+  var autoBuys=it?logArr().filter(function(e){return e.pid===it.id&&e.k==='kauf'&&!e.u&&e.src==='zettel';}).length:0;
+  var sk=pantryShelfKind(x.n,it?catOf(it):guessCat(x.n));
+  var canFreeze=!!(sk&&sk.t>0&&sk.h!=='t'&&!(it&&placeOf(it)==='t'));
+  var k=pantryWasteTip(w,{auto:!!(it&&it.auto),autoBuys:autoBuys,usual:it?pantryUsualBuy(logArr(),it.id,+it.g||0):1,canFreeze:canFreeze});
+  return k?TIP[k]:'';
+}
+// Auswertung „Vorrat im Monat“ (H1) als Abschnitt im Verlauf.
+function reportHtml(){
+  var r=pantryReport(logArr(),{now:Date.now(),from:logFrom()});
+  if(!r.months.length)return '<div class="pantry-charge-note">Noch keine Buchungen — die Auswertung füllt sich mit dem Verlauf.</div>';
+  var html='<div class="pantry-charge-note">Daten seit '+fmtD(r.since)+' (der Verlauf reicht 90 Tage). Gezählt in Packungen: 🍽️ verbraucht und gekocht, 🗑️ weggeworfen — Inventur, Korrekturen und Rückgängiges nicht. Monate, denen mehr als eine Woche fehlt, stehen nicht hier.</div>';
+  r.months.forEach(function(m,i){
+    var prev=r.months[i+1];
+    html+='<div class="pantry-month">'
+      +'<div class="pantry-month-head"><b>'+esc(monthName(m.m))+'</b><small>'+(m.running?'bis heute':(m.partFrom?'ab '+fmtD(m.partFrom):'ganzer Monat'))+'</small></div>'
+      +(m.share!==null?'<div class="pantry-bar" role="img" aria-label="'+m.share+' Prozent weggeworfen"><span style="width:'+Math.max(m.share,m.share?3:0)+'%;"></span></div>':'')
+      +'<div>🗑️ Weggeworfen: <b>'+fmtN(m.waste.q)+(m.waste.q===1?' Packung':' Packungen')+'</b>'+(m.waste.g?' (≈ '+fmtN(m.waste.g>=1000?Math.round(m.waste.g/100)/10:m.waste.g)+(m.waste.g>=1000?' kg':' g')+')':'')
+        +(m.waste.top.length?' · meist '+esc(topText(m.waste.top,false)):'')+'</div>'
+      +'<div>🍽️ Verbraucht: <b>'+fmtN(m.used.q)+(m.used.q===1?' Packung':' Packungen')+'</b>'+(m.used.top.length?' · meist '+esc(topText(m.used.top,true)):'')+'</div>'
+      +(m.share!==null?'<div>Anteil weggeworfen: <b>'+m.share+' %</b></div>':'')
+      +(prev?'<small>Vormonat ('+esc(MONTHS[(+prev.m.split('-')[1])-1])+'): '+fmtN(prev.waste.q)+' weggeworfen, '+fmtN(prev.used.q)+' verbraucht'+(prev.share!==null?' · '+prev.share+' %':'')+'</small>':'')
+      +'</div>';
+  });
+  if(r.often.length){
+    html+='<div class="lbl" style="margin-top:10px;">Läuft oft ab</div>'+r.often.slice(0,6).map(function(x){
+      var t=wasteTip(x);
+      return '<div class="pantry-often"><b>'+esc((x.ic||'🥫')+' '+x.n)+'</b> · '+x.count+'× weggeworfen ('+fmtN(x.q)+' Stück)'+(t?'<small>Vorschlag: '+esc(t)+'</small>':'')+'</div>';
+    }).join('');
+  }
+  return html;
+}
+/** @param {boolean} on */
+function reportToggle(on){_reportOpen=!!on;}
 function renderLog(){
   var el=document.getElementById('pantryLogList'),ws=document.getElementById('pantryWaste');
   if(!el)return;
   var a=logArr();
   if(ws){
     var w=pantryWaste(a,monthKey(new Date()));
-    ws.innerHTML=w.n
+    ws.innerHTML=(w.n
       ?'<div style="font-size:12px;line-height:1.5;background:var(--gl);border:1px solid var(--br);border-radius:10px;padding:8px 10px;margin-bottom:8px;">🗑️ Diesen Monat weggeworfen: <b>'+fmtN(w.q)+' Stück</b> ('+w.n+'×)'
         +' · meist '+w.top.slice(0,3).map(function(x){return esc((x.ic||'')+' '+x.n)+(x.count>1?' ('+x.count+'×)':'');}).join(', ')+'</div>'
-      :'<div style="font-size:12px;color:var(--mu);margin-bottom:8px;">Diesen Monat nichts weggeworfen ✓</div>';
+      :'<div style="font-size:12px;color:var(--mu);margin-bottom:8px;">Diesen Monat nichts weggeworfen ✓</div>')
+      +'<details class="pantry-report" id="pantryReport"'+(_reportOpen?' open':'')+' ontoggle="NTPantry.reportToggle(this.open)"><summary>📊 Auswertung: Vorrat im Monat</summary>'+reportHtml()+'</details>';
   }
   if(!a.length){el.innerHTML='<div style="font-size:13px;color:var(--mu);font-style:italic;padding:14px 2px;">Noch keine Buchungen.</div>';return;}
   var html='',day='';
@@ -1603,7 +1778,7 @@ function checkRemind(){
   NTRemind.notify('🥫 '+title.join(' · '),{body:body.join('\n'),tag:'nt-pantry-exp'});
 }
 // Einmal am Tag: erst nachkaufen, dann die eine Meldung (sie nennt beides).
-function daily(){restockDaily();checkRemind();}
+function daily(){restockDaily();checkRemind();monthCheck();}
 
 // Einkaufszettel: nur, was der Vorrat nicht deckt (#334).
 /** @param {Array<any>} ings */
@@ -1665,12 +1840,47 @@ function locDelete(id){
   saveS();Sync.schedule();render();
 }
 
-// ════════ Fotos auswerten (#326) ════════
-function openPhotos(){
+// ════════ Fotos auswerten (#326), Kassenbon (Paket 4, G1) ════════
+// Ein Dialog, zwei Arten: 'shelf' = Kühlschrank/Schrank fotografieren, 'bon' =
+// Kassenbon → mehrere gekaufte Artikel auf einmal. Beide übernehmen erst nach
+// Bestätigung; Fotos und die KI-Antwort werden nicht gespeichert, Preise vom
+// Bon nie gelesen (parsePantryReceipt gibt keine zurück).
+var _photoMode='shelf';
+/** @param {string} [mode] 'shelf' | 'bon' */
+function openPhotos(mode){
   _photos=[];_found=[];
-  photoStatus('',false);
+  _photoMode=mode==='bon'?'bon':'shelf';
+  photoStatus(noAiText(),true);
+  renderPhotoMode();
   renderPhotos();
   openOv('pantryPhotoOv');
+}
+function openReceipt(){leaveMore();openPhotos('bon');}
+// Ohne KI klar sagen, was geht, statt später ein leeres Ergebnis zu zeigen.
+function noAiText(){
+  if(typeof isOnline!=='undefined'&&!isOnline)return 'Fotos auswerten braucht Internet. Bis dahin: Artikel oben im Vorrat eintippen oder per Barcode einbuchen.';
+  if(!canUseAi())return 'Für die Auswertung braucht es die KI (Mehr → 🤖 KI). Ohne KI: Artikel oben im Vorrat eintippen oder per Barcode einbuchen.';
+  return '';
+}
+/** @param {string} mode */
+function setPhotoMode(mode){
+  var m=mode==='bon'?'bon':'shelf';
+  if(m===_photoMode)return;
+  _photoMode=m;_found=[];
+  photoStatus(noAiText(),true);
+  renderPhotoMode();renderPhotos();
+}
+function renderPhotoMode(){
+  var bon=_photoMode==='bon';
+  var el=document.getElementById('pantryPhotoMode');
+  if(el)el.innerHTML=[['shelf','🧊 Vorrat-Foto'],['bon','🧾 Kassenbon']].map(function(x){
+    return '<button type="button" class="stab'+(_photoMode===x[0]?' act':'')+'" data-act="NTPantry.setPhotoMode" data-args="'+args([x[0]])+'" aria-pressed="'+(_photoMode===x[0])+'">'+x[1]+'</button>';
+  }).join('');
+  var t=document.getElementById('pantryPhotoTitle'),sub=document.getElementById('pantryPhotoSub'),note=document.getElementById('pantryPhotoNote');
+  if(t)t.textContent=bon?'🧾 Kassenbon einlesen':'📷 Fotos auswerten';
+  if(sub)sub.textContent=bon?'Ein Bon, notfalls in mehreren Fotos — die gekauften Artikel auf einmal einbuchen':'Kühlschrank, Tiefkühler, Vorratsschrank — bis zu 6 Fotos, aus der Kamera oder der Galerie';
+  if(note)note.textContent=bon?'Die Fotos gehen nur zur Auswertung an die KI und werden nicht gespeichert. Preise, Pfand, Rabatte und Summen werden nicht übernommen. Eingebucht wird erst, was du bestätigst; passende Artikel auf dem Einkaufszettel werden abgehakt.'
+    :'Die Fotos gehen nur zur Auswertung an die KI und werden nicht gespeichert. Übernommen wird erst, was du bestätigst.';
 }
 function photoStatus(t,err){
   var el=document.getElementById('pantryPhotoStatus');
@@ -1742,56 +1952,242 @@ function photoPrompt(){
     +'- Keine Getränke-Leergut, keine Gewürze ohne Etikett, nichts Geratenes.\n'
     +'- Nichts erkannt: {"artikel":[]}';
 }
+function receiptPrompt(){
+  return 'Auf den Fotos ist ein Kassenbon eines Supermarkts, Discounters oder einer Drogerie in Deutschland (bei mehreren Fotos Teile desselben Bons).\n'
+    +'Lies die gekauften Artikel und gib AUSSCHLIESSLICH dieses JSON zurück, ohne Fließtext und ohne Markdown:\n'
+    +'{"artikel":[{"bon":"H-MILCH 1,5%","name":"H-Milch 1,5 %","stueck":2,"g":1000,"ort":"vorrat"}]}\n'
+    +'Regeln:\n'
+    +'- "bon": die Artikelzeile, wie sie auf dem Bon steht, OHNE Preis.\n'
+    +'- "name": lesbarer deutscher Name ohne Marke, Bon-Kürzel aufgelöst („JOGH.NAT.3,8%“ → „Joghurt natur 3,8 %“, „SPAG.“ → „Spaghetti“).\n'
+    +'- "stueck": Anzahl laut Bon („2 x“ oder Mengenzeile), sonst 1. Lose Ware nach Gewicht: 1.\n'
+    +'- "g": Gramm bzw. Milliliter je Stück, wenn auf dem Bon steht oder für die Packung üblich (Gewichtszeile „0,612 kg“ → 612), sonst 0.\n'
+    +'- "ort": einer von '+sortedLocs().map(function(l){return '"'+l.id+'" ('+l.label+')';}).join(', ')+' — wo man den Artikel üblicherweise lagert, sonst "".\n'
+    +'- Weglassen: alle Preise und Beträge (nie ausgeben), Pfand und Leergut, Rabatte, Coupons, Tüten und Taschen, Summen, Zahlungs-, Steuer- und Bonuszeilen sowie Artikel ohne Bezug zum Vorrat (Zeitschriften, Blumen, Geschenkkarten). Haushaltsverbrauch wie Spülmittel oder Toilettenpapier gehört dazu.\n'
+    +'- Gleiche Artikel auf mehreren Zeilen zusammenzählen. Nichts erfinden, was nicht auf dem Bon steht.\n'
+    +'- Kein Kassenbon erkennbar: {"artikel":[]}';
+}
+// Bestätigungszeile vorbelegen: gleicher Name wie ein Vorratsartikel → dessen
+// Ort, Kategorie und Packungsgröße; sonst Kategorie geraten und Ort nach Art.
+/** @param {any} x {n,q,g,loc,mhd,vd,bon} */
+function foundRow(x){
+  var ex=findByName(x.n),bon=_photoMode==='bon';
+  var c=ex?catOf(ex):guessCat(x.n);
+  var l=bon?((ex&&ex.loc)||x.loc||pantryHomeLoc(x.n,c,locs())):(x.loc||(ex&&ex.loc)||'');
+  var sh=bon?shopByName(x.n):null;
+  return {n:x.n,q:x.q,g:x.g||(ex&&+ex.g>0?+ex.g:0),loc:l,c:c,mhd:x.mhd||'',vd:x.vd||'',bon:x.bon||'',on:true,ex:!!ex,shop:sh?sh.id:''};
+}
 function analyzePhotos(){
   if(!_photos.length)return;
-  if(typeof isOnline!=='undefined'&&!isOnline){photoStatus('Fotos auswerten braucht Internet.',true);return;}
-  if(!canUseAi()){photoStatus('KI ist nicht eingerichtet — Mehr → 🤖 KI.',true);return;}
+  var no=noAiText();
+  if(no){photoStatus(no,true);return;}
   var btn=/** @type {HTMLButtonElement} */ (document.getElementById('pantryPhotoBtn'));
   if(btn){btn.disabled=true;btn.innerHTML='<span style="display:inline-flex;gap:5px;align-items:center;"><span class="spin"></span>KI schaut nach…</span>';}
   photoStatus('Die KI wertet '+_photos.length+' Foto'+(_photos.length===1?'':'s')+' aus …',false);
   /** @type {Array<any>} */
   var content=_photos.map(function(b){return {type:'image',source:{type:'base64',media_type:'image/jpeg',data:b}};});
-  content.push({type:'text',text:photoPrompt()});
-  callClaude('claude-sonnet-5-5',content,2048,function(text){
-    _found=parsePantryPhoto(text,locs().map(function(l){return l.id;})).map(function(x){
-      var ex=findByName(x.n);
-      return {n:x.n,q:x.q,g:x.g,loc:x.loc||(ex&&ex.loc)||'',mhd:x.mhd,vd:x.vd,on:true,ex:!!ex};
-    });
-    photoStatus(_found.length?(_found.length+' Lebensmittel erkannt — prüfen, anpassen, übernehmen.'):'Nichts erkannt. Ein schärferes Foto hilft.',!_found.length);
+  var bon=_photoMode==='bon';
+  content.push({type:'text',text:bon?receiptPrompt():photoPrompt()});
+  callClaude('claude-sonnet-5-5',content,bon?3000:2048,function(text){
+    if(_photoMode!==(bon?'bon':'shelf'))return;// inzwischen umgeschaltet
+    var ids=locs().map(function(l){return l.id;}),partial=false,list;
+    if(bon){var r=parsePantryReceipt(text,ids);list=r.items;partial=r.partial;}
+    else list=parsePantryPhoto(text,ids);
+    _found=list.map(foundRow);
+    var n=_found.length;
+    photoStatus(n?(n+(bon?(n===1?' Artikel':' Artikel')+' vom Bon gelesen':' Lebensmittel erkannt')+(partial?' — die Antwort war unvollständig, bitte mit dem Bon vergleichen':'')+' — prüfen, anpassen, übernehmen.')
+      :(bon?'Auf dem Foto war kein Kassenbon zu lesen. Den Bon glatt und ganz aufs Bild, bei langen Bons in zwei Fotos.':'Nichts erkannt. Ein schärferes Foto hilft.'),!n||partial);
     renderPhotos();
   },function(err){
     photoStatus(window.NTPicker?NTPicker.pickerFriendlyAiError(err):('Fehler: '+err),true);
     renderPhotos();
   });
 }
+// Bestätigungsliste: je Zeile abwählbar, Name, Stück, Lagerort, Kategorie.
 function renderFound(){
   var el=document.getElementById('pantryFound');
   if(!el)return;
   if(!_found.length){el.innerHTML='';return;}
-  el.innerHTML='<div style="font-size:11px;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin:14px 2px 6px;">Erkannt</div>'
+  var bon=_photoMode==='bon';
+  el.innerHTML='<div class="lbl" style="margin-top:14px;">'+(bon?'Vom Bon':'Erkannt')+'</div>'
     +_found.map(function(x,i){
-      return '<div style="display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--br);">'
-        +'<input type="checkbox" '+(x.on?'checked ':'')+'onchange="NTPantry.foundSet('+i+',\'on\',this.checked)" style="width:20px;height:20px;flex-shrink:0;">'
-        +'<input type="text" class="sinp" value="'+esc(x.n)+'" onchange="NTPantry.foundSet('+i+',\'n\',this.value)" style="flex:1;min-width:0;padding:7px 8px;font-size:13px;">'
-        +'<input type="number" class="sinp" value="'+x.q+'" min="0" step="1" inputmode="decimal" onchange="NTPantry.foundSet('+i+',\'q\',this.value)" style="width:56px;padding:7px 6px;font-size:13px;" aria-label="Stück">'
-        +'<select class="sinp" onchange="NTPantry.foundSet('+i+',\'loc\',this.value)" style="width:96px;padding:7px 4px;font-size:12px;">'+locOptions(x.loc)+'</select>'
-        +'</div>'+(x.ex?'<div style="font-size:10px;color:var(--mu);margin:-2px 0 4px 26px;">steht schon im Vorrat — wird dazugezählt</div>':'')
-        +(x.vd||x.mhd?'<div style="font-size:10px;color:var(--mu);margin:-2px 0 4px 26px;">'+esc([x.vd?'Verbr. bis '+fmtD(x.vd):'',x.mhd?'MHD '+fmtD(x.mhd):''].filter(Boolean).join(' · '))+'</div>':'');
+      var notes=[x.bon?'Bon: '+x.bon:'',x.ex?'steht schon im Vorrat — wird dazugezählt':'',x.shop?'🛒 steht auf dem Zettel — wird abgehakt':'',
+        x.vd?'Verbr. bis '+fmtD(x.vd):'',x.mhd?'MHD '+fmtD(x.mhd):'',+x.g>0?'à '+fmtN(x.g)+' g':''].filter(Boolean);
+      return '<div class="pantry-found'+(x.on?'':' is-off')+'">'
+        +'<label class="pantry-found-on"><input type="checkbox" '+(x.on?'checked ':'')+'onchange="NTPantry.foundSet('+i+',\'on\',this.checked)" aria-label="'+esc(x.n)+' übernehmen"></label>'
+        +'<input type="text" class="sinp pantry-found-n" value="'+esc(x.n)+'" onchange="NTPantry.foundSet('+i+',\'n\',this.value)" aria-label="Name">'
+        +'<label class="pantry-found-q"><input type="text" class="sinp" value="'+esc(fmtN(x.q))+'" inputmode="decimal" onchange="NTPantry.foundSet('+i+',\'q\',this.value)" aria-label="Stück"><span>Stück</span></label>'
+        +'<select class="sinp pantry-found-loc" onchange="NTPantry.foundSet('+i+',\'loc\',this.value)" aria-label="Lagerort">'+locOptions(x.loc)+'</select>'
+        +'<select class="sinp pantry-found-cat" onchange="NTPantry.foundSet('+i+',\'c\',this.value)" aria-label="Kategorie">'+catOptions(x.c).replace(/^<option value="">[^<]*<\/option>/,'')+'</select>'
+        +(notes.length?'<small>'+esc(notes.join(' · '))+'</small>':'')
+        +'</div>';
     }).join('')
-    +'<button type="button" class="svb" data-act="NTPantry.foundApply">✓ Ausgewählte übernehmen</button>';
+    +'<button type="button" class="svb" data-act="NTPantry.foundApply">✓ Ausgewählte '+(bon?'einbuchen':'übernehmen')+'</button>';
 }
 function foundSet(i,k,v){
   var x=_found[i];if(!x)return;
-  if(k==='on')x.on=!!v;
+  if(k==='on'){x.on=!!v;var rows=document.querySelectorAll('#pantryFound .pantry-found');if(rows[i])rows[i].classList.toggle('is-off',!x.on);}
   else if(k==='q')x.q=num(v);
   else x[k]=String(v||'').trim();
 }
+// Kassenbon übernehmen: je Zeile eine Einbuchung über refill (Datum geschätzt
+// wie beim Einbuchen) und, steht der Artikel offen auf dem Einkaufszettel, dort
+// abgehakt. NTShop.toggle ruft onBought — das bucht nicht noch einmal, weil der
+// Zettel-Eintrag die Buchung schon als `stock` trägt (Ent-haken nimmt genau sie zurück).
+/** @param {any} x */
+function bonApply(x){
+  var it=findByName(x.n),before=0;
+  if(!it){
+    it={id:uid('p'),n:x.n,ic:guessIc(x.n),loc:x.loc||'',c:x.c||guessCat(x.n),q:0,g:+x.g>0?+x.g:0,min:0,mhd:'',vd:'',ts:Date.now(),rev:nextRev()};
+    items().push(it);
+  }else{
+    before=pantryNeed(it.q,it.min);
+    if(+x.g>0&&!(+it.g>0))it.g=+x.g;
+    if(x.loc)it.loc=x.loc;
+    if(x.c)it.c=x.c;
+  }
+  var e=refill(it,x.q||1,'bon');
+  touch(it);afterChange(it,before);
+  var s=e?shopByName(it.n):null;
+  if(s&&!s.stock&&window.NTShop){s.stock={pid:it.id,n:e.d,log:e.id,lot:e.lots[0].id};NTShop.toggle(s.id);return 2;}
+  return e?1:0;
+}
 function foundApply(){
-  var n=0;
-  _found.forEach(function(x){if(x.on&&x.n&&add(x.n,x.q||1,x.g,x.loc,'',0,{mhd:x.mhd,vd:x.vd},'foto'))n++;});
+  var n=0,ticked=0,bon=_photoMode==='bon';
+  _found.forEach(function(x){
+    if(!x.on||!x.n)return;
+    if(bon){var r=bonApply(x);if(r)n++;if(r===2)ticked++;}
+    else if(add(x.n,x.q||1,x.g,x.loc,'',0,{mhd:x.mhd,vd:x.vd},'foto',x.c))n++;
+  });
   _found=[];_photos=[];
   closeOv('pantryPhotoOv');
-  showToast(n?(n+' Artikel im Vorrat ✓'):'Nichts übernommen');
+  showToast(n?(n+' Artikel im Vorrat ✓'+(ticked?' · '+ticked+' auf dem Zettel abgehakt':'')):'Nichts übernommen');
+}
+
+// ════════ Inventur je Lagerort (Paket 4, G3) ════════
+// Artikel für Artikel durch einen Lagerort: Soll zeigen, Ist zählen, am Ende
+// EINE Bestätigung, die jede Abweichung als Korrektur bucht (Verlauf, ↩️ je
+// Buchung, zählt nicht als Verbrauch — pantryUseRate liest nur verbrauch/kochen).
+// Ein angefangener Durchgang steht in S.pantryStockDraft (gerätelokal, nicht im
+// Sync): {loc, ids, i, ist:{id: Menge}, t}; Schließen behält ihn, nur
+// „Abbrechen“ verwirft ihn — ohne Buchung.
+var NO_LOC='__none';
+function draft(){var d=S.pantryStockDraft;return d&&typeof d==='object'&&Array.isArray(d.ids)?d:null;}
+/** @param {string} locId */
+function locItems(locId){
+  return pantrySort(items().filter(function(it){return locId===NO_LOC?!(it.loc&&loc(it.loc)):it.loc===locId;}),'name');
+}
+function locTitle(locId){var l=locId===NO_LOC?null:loc(locId);return l?l.ic+' '+l.label:'📦 Ohne Lagerort';}
+function openStock(){leaveMore();openOv('pantryStockOv');renderStock();}
+/** @param {string} locId */
+function stockStart(locId){
+  var ids=locItems(locId).map(function(it){return it.id;});
+  if(!ids.length){showToast('Hier steht nichts');return;}
+  S.pantryStockDraft={loc:locId,ids:ids,i:0,ist:{},t:Date.now()};saveS();
+  renderStock();
+}
+// Aktuelle Zeile: gelöschte Artikel überspringen.
+function stockCur(d){
+  while(d.i<d.ids.length&&!byId(d.ids[d.i]))d.i++;
+  return d.i<d.ids.length?byId(d.ids[d.i]):null;
+}
+function stockVal(){var v=val('pantryStockIst').trim();if(v==='')return null;var n=parseFloat(v.replace(',','.'));return isFinite(n)&&n>=0?roundQty(n):null;}
+// Eingabe sofort in den Entwurf (nichts geht verloren, wenn der Dialog zugeht).
+function stockInput(){
+  var d=draft(),it=d?stockCur(d):null,v=stockVal();
+  if(!it||v===null)return;
+  d.ist[it.id]=v;saveS();
+}
+/** @param {number} delta */
+function stockStep(delta){
+  var d=draft(),it=d?stockCur(d):null;if(!it)return;
+  var v=stockVal();if(v===null)v=roundQty(+it.q||0);
+  v=Math.max(0,roundQty(v+delta));
+  setVal('pantryStockIst',fmtN(v));
+  d.ist[it.id]=v;saveS();
+}
+/** @param {string} how 'ok' (stimmt) | 'gone' (ist weg) | 'next' (wie eingetragen) */
+function stockSet(how){
+  var d=draft(),it=d?stockCur(d):null;if(!it)return;
+  var v=how==='ok'?roundQty(+it.q||0):(how==='gone'?0:stockVal());
+  if(v===null)v=roundQty(+it.q||0);
+  d.ist[it.id]=v;d.i++;saveS();
+  renderStock();
+}
+function stockBack(){var d=draft();if(!d)return;d.i=Math.max(0,Math.min(d.i,d.ids.length)-1);while(d.i>0&&!byId(d.ids[d.i]))d.i--;saveS();renderStock();}
+function stockCancel(){
+  if(!draft()){closeOv('pantryStockOv');return;}
+  delete S.pantryStockDraft;saveS();
+  renderStock();
+  showToast('Inventur abgebrochen — nichts gebucht');
+}
+function stockBook(){
+  var d=draft();if(!d)return;
+  var diff=pantryInventoryDiff(d.ids.map(byId).filter(Boolean),d.ist),n=0;
+  diff.forEach(function(x){
+    var it=byId(x.id);if(!it)return;
+    var before=pantryNeed(it.q,it.min),cur=roundQty(+it.q||0),dd=roundQty(x.ist-cur);
+    var e=dd<0?take(it,-dd,'korrektur','inventur'):(dd>0?refill(it,dd,'inventur','','','korrektur'):null);
+    if(!e)return;
+    it.rev=nextRev();n++;
+    afterChange(it,before);
+  });
+  delete S.pantryStockDraft;
+  saveS();if(n)Sync.schedule();render();
+  closeOv('pantryStockOv');
+  showToast(n?'Inventur gebucht: '+n+(n===1?' Korrektur':' Korrekturen')+' · ↩️ im Verlauf':'Inventur fertig — alles stimmt ✓');
+}
+function renderStock(){
+  var el=document.getElementById('pantryStockBody'),sub=document.getElementById('pantryStockSub');
+  if(!el)return;
+  var d=draft();
+  if(d&&!d.ids.some(byId)){delete S.pantryStockDraft;d=null;}
+  if(!d){
+    if(sub)sub.textContent='Lagerort wählen, dann Artikel für Artikel nachzählen';
+    var opts=sortedLocs().map(function(l){return {id:l.id,t:l.ic+' '+l.label,n:locItems(l.id).length};});
+    var none=locItems(NO_LOC).length;
+    if(none)opts.push({id:NO_LOC,t:'📦 Ohne Lagerort',n:none});
+    el.innerHTML='<div class="pantry-charge-note" style="margin-bottom:8px;">Gebucht wird erst am Ende, nach einer Zusammenfassung. Abweichungen gehen als „✏️ Korrigiert“ in den Verlauf und zählen nicht als Verbrauch.</div>'
+      +opts.map(function(o){
+        return '<button type="button" class="pantry-soon" data-act="NTPantry.stockStart" data-args="'+args([o.id])+'"'+(o.n?'':' disabled')+'>'
+          +'<span aria-hidden="true">📋</span><span>'+esc(o.t)+' · '+o.n+' Artikel</span><span aria-hidden="true">›</span></button>';
+      }).join('');
+    return;
+  }
+  var it=stockCur(d),total=d.ids.length;
+  if(it){
+    var counted=Object.prototype.hasOwnProperty.call(d.ist,it.id),ist=counted?d.ist[it.id]:roundQty(+it.q||0),e=(+it.q||0)>0?expiry(it):null;
+    if(sub)sub.textContent=locTitle(d.loc)+' · '+(d.i+1)+' von '+total;
+    el.innerHTML='<div class="pantry-stock-item">'
+      +'<div class="pantry-stock-name">'+esc((it.ic||'🥫')+' '+it.n)+'</div>'
+      +'<div class="pantry-charge-note">Laut Vorrat: <b>'+esc(amountText(it))+'</b>'+(e?' · '+esc(expiryText(e)):'')+'</div>'
+      +'<label class="lbl" for="pantryStockIst">Wirklich da (Stück)</label>'
+      +'<div class="pantry-stock-count">'
+        +'<button type="button" class="pt-st" data-act="NTPantry.stockStep" data-args="[-1]" aria-label="Eins weniger">−</button>'
+        +'<input type="text" class="sinp" id="pantryStockIst" inputmode="decimal" value="'+esc(fmtN(ist))+'" oninput="NTPantry.stockInput()">'
+        +'<button type="button" class="pt-st" data-act="NTPantry.stockStep" data-args="[1]" aria-label="Eins mehr">＋</button>'
+      +'</div>'
+      +'<div class="pantry-charge-acts">'
+        +'<button type="button" class="seb" data-act="NTPantry.stockSet" data-args=\'["ok"]\'>✓ Stimmt</button>'
+        +'<button type="button" class="seb" data-act="NTPantry.stockSet" data-args=\'["gone"]\'>Ist weg</button>'
+      +'</div>'
+      +'<button type="button" class="svb" data-act="NTPantry.stockSet" data-args=\'["next"]\'>Weiter ›</button>'
+      +'<div class="pantry-charge-acts">'
+        +(d.i>0?'<button type="button" class="seb" data-act="NTPantry.stockBack">‹ Zurück</button>':'<span></span>')
+        +'<button type="button" class="seb" data-act="NTPantry.stockCancel">Abbrechen</button>'
+      +'</div></div>';
+    return;
+  }
+  var diff=pantryInventoryDiff(d.ids.map(byId).filter(Boolean),d.ist);
+  if(sub)sub.textContent=locTitle(d.loc)+' · fertig gezählt';
+  el.innerHTML='<div class="pantry-charge-note" style="margin-bottom:6px;">'+total+' Artikel gezählt · '+(diff.length?diff.length+(diff.length===1?' Abweichung':' Abweichungen'):'keine Abweichung')+'</div>'
+    +diff.map(function(x){
+      return '<div class="pantry-often"><b>'+esc((x.ic||'🥫')+' '+x.n)+'</b>: '+fmtN(x.soll)+' → '+fmtN(x.ist)+' Stück <span style="color:'+(x.d<0?'var(--or)':'var(--g1)')+';font-weight:800;">('+(x.d>0?'+':'−')+fmtN(Math.abs(x.d))+')</span></div>';
+    }).join('')
+    +'<button type="button" class="svb" data-act="NTPantry.stockBook">'+(diff.length?'✓ '+diff.length+(diff.length===1?' Korrektur buchen':' Korrekturen buchen'):'✓ Fertig')+'</button>'
+    +'<div class="pantry-charge-acts">'
+      +'<button type="button" class="seb" data-act="NTPantry.stockBack">‹ Zurück</button>'
+      +'<button type="button" class="seb" data-act="NTPantry.stockCancel">Abbrechen</button>'
+    +'</div>';
 }
 
 // ════════ Was kann ich kochen? ════════
@@ -1910,6 +2306,10 @@ window.NTPantry={
   consume:consume,dropBarcodes:dropBarcodes,scan:scan,openLog:openLog,undo:undo,
   remindOn:remindOn,setRemind:setRemind,checkRemind:checkRemind,daily:daily,restockDaily:restockDaily,
   restockNow:restockNow,skipRestock:skipRestock,takeMinSug:takeMinSug,openMore:openMore,setLead:setLead,
+  openReceipt:openReceipt,setPhotoMode:setPhotoMode,scanUndo:scanUndo,scanDrop:scanDrop,scanResolve:scanResolve,
+  openStock:openStock,stockStart:stockStart,stockStep:stockStep,stockInput:stockInput,stockSet:stockSet,stockBack:stockBack,
+  stockCancel:stockCancel,stockBook:stockBook,openReport:openReport,reportToggle:reportToggle,
+  toggleHints:toggleHints,monthCheck:monthCheck,monthDismiss:monthDismiss,
   usage:function(id){var it=byId(id);return it?usage(it):null;},
   count:function(){return items().length;},lowCount:function(){return items().filter(low).length;},
   Sync:Sync

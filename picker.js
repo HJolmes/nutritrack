@@ -87,6 +87,7 @@ function openPicker(meal, defaultTab){
   document.getElementById('pickerCam').value='';
   document.getElementById('pickerGal').value='';
   document.getElementById('pickerBarcodeResult').innerHTML='';
+  var _scanList=document.getElementById('pickerScanList');if(_scanList)_scanList.innerHTML='';
   document.getElementById('pickerRecipeName').value='';
   document.getElementById('pickerChatRecipeName').value='';
   document.getElementById('pickerLinkInput').value='';
@@ -1165,14 +1166,17 @@ function pickerSubmitManualBarcode(){
 // in den Nährwert-Weg. opts = {title, known(code) → Meldung|'' , unknown(code,
 // prod|null)}. Bekannt → Meldung zeigen und weiterscannen (Einkauf auspacken);
 // unbekannt → Name und Packungsgröße von Open Food Facts holen, Picker zu,
-// `unknown` entscheidet. Jeder andere openPicker/closePicker beendet den Modus.
+// `unknown` entscheidet. `serial` (Serienscan): auch unbekannt bleibt der
+// Scanner offen, `unknown` gibt die Meldung zurück und der Aufrufer zeichnet
+// seine Liste in #pickerScanList unter dem Sucherbild. Jeder andere
+// openPicker/closePicker beendet den Modus.
 var _pickerScanFor=null;
-/** @param {{title:string,known:function(string):string,unknown:function(string,any):void}} opts */
+/** @param {{title:string,serial?:boolean,known:function(string):string,unknown:function(string,any):(string|void)}} opts */
 function scanFor(opts){
   openPicker(null,'barcode');
   _pickerScanFor=opts;
   document.getElementById('pickerTitle').textContent=opts.title||'Barcode scannen';
-  document.getElementById('pickerSub').textContent='Barcode in den grünen Rahmen halten';
+  document.getElementById('pickerSub').textContent=opts.serial?'Ein Code nach dem anderen — der Scanner bleibt offen':'Barcode in den grünen Rahmen halten';
   var tabs=document.querySelector('#pickerOv .picker-tabs');
   if(tabs)/** @type {HTMLElement} */(tabs).style.display='none';
   // Über dem Dialog des Aufrufers: alle .ov teilen z-index 300, und #pickerOv
@@ -1201,13 +1205,14 @@ function _pickerScanHit(code){
   code=String(code||'').replace(/\s/g,'');
   function again(msg,ok){
     if(el)el.innerHTML='<div style="font-size:14px;font-weight:700;color:'+(ok?'var(--g1)':'var(--re)')+';padding:10px;text-align:center;">'+_esc(msg)+'</div>';
-    setTimeout(function(){var ov=document.getElementById('pickerOv');if(_pickerScanFor===o&&ov&&ov.classList.contains('open'))pickerStartScan();},1300);
+    setTimeout(function(){var ov=document.getElementById('pickerOv');if(_pickerScanFor===o&&ov&&ov.classList.contains('open'))pickerStartScan();},o.serial?800:1300);
   }
   if(!/^(\d{8}|\d{13})$/.test(code)){again('Kein EAN-Barcode erkannt – nochmal versuchen',false);return;}
   var msg=o.known(code);
   if(msg){again(msg,true);return;}
   function done(prod){
     if(_pickerScanFor!==o)return;
+    if(o.serial){again(o.unknown(code,prod)||'Neuer Code',true);return;}
     closePicker();
     o.unknown(code,prod);
   }

@@ -823,7 +823,11 @@ const EXPECTED_NAMESPACES = [
       NTPicker.pickerSubmitManualBarcode();
       await wait(50);
       window.fetchT = realFetch;
-      out.scanNew = !isOpen('pickerOv') && isOpen('pantryItemOv') && document.getElementById('pantryItemName').value === 'Smoke-Haferflocken'
+      // Paket 4 (G2): Serienscan — ein neuer Code unterbricht den Scan nicht mehr,
+      // er steht als Rückfrage unter dem Sucherbild; „Zuordnen“ öffnet den Artikel-Dialog.
+      const stillOpen = isOpen('pickerOv') && /Smoke-Haferflocken/.test(document.getElementById('pickerScanList').textContent);
+      document.querySelector('#pickerScanList [data-act="NTPantry.scanResolve"]').click();
+      out.scanNew = stillOpen && !isOpen('pickerOv') && isOpen('pantryItemOv') && document.getElementById('pantryItemName').value === 'Smoke-Haferflocken'
         && document.getElementById('pantryItemG').value === '500' && !!document.getElementById('pantryItemAssign');
       NTPantry.saveItem();
       const oat = S.pantry.find((x) => x.n === 'Smoke-Haferflocken');
@@ -852,7 +856,7 @@ const EXPECTED_NAMESPACES = [
       waste: '🗑️ Weggeworfen bucht ab, Monatszeile im Verlauf', undo: '↩️ macht die Buchung rückgängig',
       hd: '„Hält ca. 5 Tage“: leer aufgefüllt → MHD heute + 5 (#337)', remind: 'Ablauf-Meldung höchstens einmal am Tag',
       remindChk: 'Schalter in Einstellungen → Erinnerungen', scanKnown: 'bekannter Barcode ＋1, Scanner bleibt offen (#335)',
-      scanNew: 'neuer Barcode → Artikel-Dialog mit Name und Gramm aus Open Food Facts', scanSaved: 'Artikel mit Barcode gespeichert',
+      scanNew: 'neuer Barcode → Rückfrage unter dem Sucherbild, Scanner bleibt offen, „Zuordnen“ → Artikel-Dialog mit Name und Gramm aus Open Food Facts', scanSaved: 'Artikel mit Barcode gespeichert',
       sync: 'eigener Topf „Vorrat“ im Sync-Kern' })) {
       if (!r[k]) { pantryFail++; console.log('  x   Vorrat: ' + v); }
     }

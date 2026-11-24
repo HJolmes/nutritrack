@@ -968,6 +968,53 @@ body.b3-on #babySleepPlanBody{max-height:none!important;overflow:visible!importa
 .pantry-min-sug>span{flex:1;min-width:0;}
 .pantry-min-sug .seb{width:auto;margin:0;min-height:44px;padding:6px 12px;font-size:13px;white-space:nowrap;}
 .pantry-auto{margin:0 0 10px;}
+/* Vorrat Paket 4: Hinweise gebündelt, Kassenbon, Serienscan, Inventur, Auswertung */
+#pantryHintList[hidden]{display:none;}
+.pantry-hint-sum>span:nth-child(2){white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pantry-month-hint{display:flex;gap:6px;align-items:stretch;margin:0 0 8px;}
+.pantry-month-hint .pantry-soon{margin:0;flex:1;min-width:0;font-weight:600;}
+.pantry-hint-x{flex:0 0 44px;min-height:44px;border:1px solid var(--br);border-radius:12px;background:var(--gl);color:var(--mu);font-size:16px;cursor:pointer;font-family:inherit;}
+#pantryMoreOv .nt-tools{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));}
+.pantry-found{display:grid;grid-template-columns:44px minmax(0,1fr) 104px;grid-template-areas:"on n q" "on loc cat" "on note note";gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid var(--br);}
+.pantry-found.is-off>:not(.pantry-found-on){opacity:.45;}
+.pantry-found-on{grid-area:on;display:flex;align-items:center;justify-content:center;min-height:44px;cursor:pointer;}
+.pantry-found-on input{width:22px;height:22px;margin:0;}
+.pantry-found .sinp{min-width:0;width:100%;box-sizing:border-box;min-height:44px;padding:8px;font-size:14px;margin:0;}
+.pantry-found-n{grid-area:n;}
+.pantry-found-q{grid-area:q;display:flex;align-items:center;gap:4px;}
+.pantry-found-q .sinp{text-align:right;}
+.pantry-found-q span,.pantry-found>small{font-size:12px;color:var(--mu);}
+.pantry-found-loc{grid-area:loc;}
+.pantry-found-cat{grid-area:cat;}
+.pantry-found .pantry-found-loc,.pantry-found .pantry-found-cat{padding:8px 4px;font-size:13px;}
+.pantry-found>small{grid-area:note;line-height:1.4;overflow-wrap:anywhere;}
+.pantry-found+.svb{margin-top:12px;}
+.pantry-scan{margin:4px 0 10px;}
+.pantry-scan-note{font-size:12px;line-height:1.45;color:var(--mu);margin:4px 2px 8px;}
+.pantry-scan-row{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--br);font-size:13px;}
+.pantry-scan-row>span{flex:1;min-width:0;}
+.pantry-scan-row b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pantry-scan-row small{display:block;font-size:12px;color:var(--mu);overflow-wrap:anywhere;}
+.pantry-scan-row .seb{width:auto;margin:0;min-height:44px;padding:6px 10px;font-size:13px;white-space:nowrap;flex-shrink:0;}
+.pantry-scan-row .pantry-scan-x{min-width:44px;padding:6px;}
+.pantry-scan-row.is-undone b{text-decoration:line-through;opacity:.6;}
+.pantry-stock-item .svb{margin-top:8px;}
+.pantry-stock-item .pantry-charge-acts{margin-top:8px;}
+.pantry-stock-name{font-size:20px;font-weight:800;line-height:1.3;margin:2px 0 4px;overflow-wrap:anywhere;}
+.pantry-stock-count{display:flex;align-items:center;gap:8px;}
+.pantry-stock-count .sinp{flex:1;min-width:0;min-height:48px;margin:0;text-align:center;font-size:20px;font-weight:800;}
+.pantry-stock-count .pt-st{min-width:48px;min-height:48px;}
+.pantry-soon:disabled{opacity:.5;cursor:default;}
+.pantry-report{margin:0 0 10px;border:1px solid var(--br);border-radius:12px;padding:0 10px;}
+.pantry-report>summary{min-height:44px;display:flex;align-items:center;font-size:13px;font-weight:800;cursor:pointer;}
+.pantry-report[open]{padding-bottom:10px;}
+.pantry-month{font-size:13px;line-height:1.5;padding:8px 0;border-top:1px solid var(--br);}
+.pantry-month-head{display:flex;align-items:baseline;gap:8px;}
+.pantry-month-head small,.pantry-month>small,.pantry-often small{font-size:12px;color:var(--mu);}
+.pantry-month>small,.pantry-often small{display:block;}
+.pantry-bar{height:8px;border-radius:4px;background:var(--gl);border:1px solid var(--br);overflow:hidden;margin:4px 0;}
+.pantry-bar>span{display:block;height:100%;background:var(--or);}
+.pantry-often{font-size:13px;line-height:1.45;padding:6px 0;border-bottom:1px solid var(--br);}
 
 body.b3-on #mainScreen .main{--mu:#685e55;}
 body.b3-on #mainScreen button{min-height:44px;}
@@ -2054,6 +2101,7 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
         <input type="file" id="pickerBcPhoto" accept="image/*" capture="environment" style="position:fixed;top:-100vh;left:-100vw;width:1px;height:1px;opacity:0;" onchange="NTPicker.pickerScanFromPhoto(event)">
         <button type="button" id="torchBtn" data-act="NTPicker.pickerToggleTorch" style="display:none;width:100%;background:rgba(0,0,0,.08);border:1.5px solid var(--br);border-radius:10px;padding:10px;font-size:15px;margin-bottom:8px;font-weight:600;">🔦 Taschenlampe ein/aus</button>
         <div id="pickerBarcodeResult"></div>
+        <div id="pickerScanList"></div>
         <button type="button" id="pickerBcStartBtn" class="abt" data-act="NTPicker.pickerStartScan">▶ Scanner starten</button>
         <button type="button" id="pickerBcStopBtn" class="abt" style="display:none;background:linear-gradient(135deg,#555,#777);" data-act="NTPicker.pickerStopScan">■ Scanner stoppen</button>
         <label id="pickerBcPhotoBtn" for="pickerBcPhoto" style="margin-top:8px;display:block;width:100%;box-sizing:border-box;background:rgba(0,0,0,.06);border:1.5px solid var(--br);border-radius:10px;padding:10px;font-size:14px;font-weight:700;color:var(--g1);text-align:center;cursor:pointer;">📸 Foto aufnehmen (alle Decoder)</label>
@@ -2218,7 +2266,7 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
       <details><summary>➕ Mahlzeit erfassen</summary><div class="hb">Der <strong>＋</strong>-Knopf in der Mitte der unteren Leiste öffnet den Picker, standardmäßig im <strong>Chat</strong>: Einfach tippen oder per 🎙️ diktieren, was du gegessen hast („Brot mit Käse und Schinken") — die App zerlegt es in Zutaten und schätzt Nährwerte. Weitere Wege:<ul><li><strong>Suche</strong> — lokale Treffer sofort beim Tippen, Enter lädt Online-Ergebnisse</li><li><strong>Zuletzt</strong> — kürzlich verwendete Einträge</li><li><strong>Foto</strong> — Teller fotografieren, KI erkennt die Komponenten</li><li><strong>Barcode</strong> — Verpackung scannen</li><li><strong>Eigenes</strong> — Nährwerte selbst eintragen; mit Häkchen „Nur einmal eintragen" wird nichts dauerhaft gespeichert</li><li><strong>Link</strong> — ein Feld für beides: Rezept-Link von nahezu jeder Rezept-Seite oder jedem Food-Blog (Chefkoch, Lecker, Kochbar, Essen &amp; Trinken, AllRecipes …) <em>oder</em> eine geteilte NutriTrack-Sendung (Mahlzeit, Rezept, ganzer Tag, Zeitraum) als Link oder Code. Die App erkennt selbst, was du eingefügt hast; ein passender Inhalt aus der Zwischenablage wird beim Öffnen gleich angeboten. Die App liest zuerst die Rezeptdaten der Seite selbst und fragt die KI nur, wenn die Seite keine hat. Danach wählst du unter „Wohin damit?", ob das Rezept eingetragen, als Rezept gespeichert und/oder auf den Einkaufszettel gelegt wird</li></ul></div></details>
       <details><summary>🍽 Mahlzeit-Detail</summary><div class="hb">Die Karte einer Mahlzeit öffnet die Detail-Ansicht mit allen Posten. Oben rechts übernimmt <strong>⎘</strong> die Mahlzeit von gestern, <strong>📤</strong> teilt sie. Unten findest du: <strong>📋 Vorlage</strong> (Mahlzeit als Vorlage laden/speichern), <strong>🔁 Wiederholen</strong> (an festen Wochentagen automatisch eintragen) und <strong>💾 Als Rezept</strong> (alle Einträge als Rezept ins Kochbuch übernehmen — du prüfst es im Editor). Einzelne Einträge antippen zum Bearbeiten, Verschieben oder Löschen.</div></details>
       <details><summary>🛒 Einkaufszettel</summary><div class="hb">Über die Kachel <strong>🛒 Einkaufszettel</strong> auf „Heute" (oder Mehr → Funktionen, wenn der Zettel leer ist) führst du eine Einkaufsliste: oben eintippen („2 Liter Milch" erkennt Menge und Kategorie von selbst) oder über „🧺 Artikel" aus den Kacheln antippen; „🏷 Kategorien" legt eigene Kategorien an. Ein Tipp auf einen Artikel hakt ihn ab, ✏️ ändert Name, Menge, Symbol und Kategorie. Über „🔄 Teilen" (oder Mehr → 🔗 Verbindungen) koppelst du ein zweites Gerät mit einem Code — beide Geräte sehen denselben Zettel in Echtzeit, verschlüsselt und getrennt vom Baby-Tagebuch. Per Alexa Angesagtes erreicht ebenfalls beide, sofern beide Handys dasselbe Familien-Token tragen (Mehr → 🔗 Verbindungen → 🗣️ Alexa). Rezepte übernimmst du im Kochbuch über das Rezept → 🛒 Einkaufen.</div></details>
-      <details><summary>🥫 Vorrat</summary><div class="hb">Die Kachel <strong>🥫 Vorrat</strong> zeigt, was zu Hause da ist. Oben eintippen („3 Dosen Tomaten“), mit − / ＋ zählen, ein Tipp auf den Namen öffnet die Details: Lagerort, Stück, <strong>Gramm je Stück</strong> und <strong>„Immer da: mindestens … Stück“</strong>, dazu <strong>„Mindestens haltbar bis“</strong> und <strong>„Zu verbrauchen bis“</strong> — was in den nächsten 3 Tagen abläuft, steht unter „⏰ Läuft ab“ und auf der Kachel. Fällt ein Artikel unter diese Mindestmenge, landet er von selbst auf dem Einkaufszettel; hakst du ihn dort ab, wird der Vorrat aufgefüllt. „✓ Fertig gekocht“ im Kochbuch zieht die verbrauchten Zutaten ab — bei Artikeln mit Gramm je Stück.<br><br><strong>📍 Orte:</strong> Kühlschrank, Tiefkühler und Vorratsschrank sind vorgeschlagen; umbenennen, sortieren, löschen und eigene anlegen geht alles. <strong>📷 Fotos:</strong> bis zu sechs Fotos von Kühlschrank und Schrank, direkt mit „📷 Kamera“ oder aus der „🖼️ Galerie“ — die KI listet, was sie erkennt, du prüfst und übernimmst nur, was stimmt. Die Fotos werden nicht gespeichert. <strong>🏷️ Einbuchen / Verbrauchen:</strong> Barcode scannen — ein bekannter zählt ＋1 bzw. −1 und der Scanner läuft weiter; ein neuer holt Name und Packungsgröße von Open Food Facts, dann legst du den Artikel an oder ordnest den Barcode einem vorhandenen zu. Im Artikel nimmst du mit <strong>🍽️ Verbraucht</strong> oder <strong>🗑️ Weggeworfen</strong> etwas heraus; <strong>📜 Verlauf</strong> zeigt jede Buchung der letzten 90 Tage auf allen verbundenen Geräten, mit ↩️ zum Rückgängigmachen und dem, was diesen Monat weggeworfen wurde. <strong>„Hält ca. … Tage“</strong> setzt beim Auffüllen das MHD von selbst; unter Mehr → ⚙️ Einstellungen → Erinnerungen meldet NutriTrack einmal am Tag, was bald abläuft (nur bei offener App). Rezepte und Wochenplan legen nur auf den Einkaufszettel, was der Vorrat nicht deckt (gerechnet über Gramm je Stück). <strong>👨‍🍳 Kochen:</strong> zuerst Rezepte aus deinem Kochbuch, zu denen die meisten Zutaten da sind, danach auf Wunsch Ideen der KI. Über 🔄 Teilen (Mehr → 🔗 Verbindungen) seht ihr denselben Vorrat auf zwei Handys.</div></details>
+      <details><summary>🥫 Vorrat</summary><div class="hb">Die Kachel <strong>🥫 Vorrat</strong> zeigt, was zu Hause da ist. Oben stehen drei Kennzahlen — <strong>Läuft ab</strong>, <strong>Fehlt</strong> und <strong>Artikel</strong>; antippen filtert die Liste, ein zweiter Tipp hebt auf. Darunter <strong>Suchen</strong> (legt nichts an) und <strong>Ordnen</strong> nach Lagerort, Kategorie, Haltbarkeit, Name oder Menge; die Chips filtern nach Ort bzw. Kategorie. Stehen mehrere Hinweise an, fasst eine Zeile sie zusammen — antippen klappt sie auf.<br><br><strong>Einbuchen:</strong> oben eintippen („3 Dosen Tomaten“), mit − / ＋ zählen, auf dem Einkaufszettel abhaken, per <strong>📷 Foto/Bon</strong> oder per Barcode. Ein Tipp auf den Namen öffnet die Details: Bestand, Lagerort, Kategorie, Mindestmenge, Chargen und die letzten Buchungen.<br><br><strong>Haltbarkeit:</strong> Ohne Datum von der Packung schätzt die App ein MHD nach Produktart und Lagerort (markiert als „geschätzt“, ein vorsichtiger Richtwert). Jede Packung ist eine eigene Charge mit eigenem Datum; <strong>📂 Geöffnet</strong> verkürzt die Frist, abgezogen wird zuerst aus geöffneten, dann aus der Charge, die am frühesten abläuft. Was in 3 Tagen abläuft, steht unter „Läuft ab“ — „👨‍🍳 Rezept dazu finden“ sucht passende Rezepte.<br><br><strong>Geht bald aus / Immer nachkaufen:</strong> Aus dem Verbrauch der letzten Wochen schätzt die App, wie lange ein Artikel reicht. Fällt er unter die Mindestmenge, kommt er auf den Einkaufszettel. Mit <strong>🔁 Immer nachkaufen</strong> (Dauerartikel) kommt er schon ein paar Tage vorher von selbst darauf — „Diesmal nicht“ setzt bis zum nächsten Einkauf aus.<br><br><strong>Nach dem Eintragen:</strong> Trägst du eine Mahlzeit ins Tagebuch ein, fragt die App „Aus dem Vorrat abziehen?“ — abgezogen wird nur, was du bestätigst (du kannst ja auswärts gegessen haben). Ohne dich Eingetragenes (Alexa, Wiederkehrendes) wartet als Hinweis im Vorrat. Löschst oder änderst du den Eintrag, bietet sie die Rückbuchung an. „✓ Fertig gekocht“ im Kochbuch zieht die Zutaten ab (bei Artikeln mit Gramm je Stück).<br><br><strong>🧾 Kassenbon:</strong> unter 📷 Foto/Bon „Kassenbon“ wählen und den Bon fotografieren. Die KI liest die Artikel (Kürzel wie „H-MILCH 1,5%“ werden lesbar) und die Stückzahl; Preise, Pfand, Rabatte, Tüten und Summen werden nicht übernommen. In der Liste prüfst du je Zeile Name, Menge, Lagerort und Kategorie; eingebucht wird nur Ausgewähltes, passende Artikel auf dem Einkaufszettel werden abgehakt. Fotos werden nicht gespeichert; ohne KI bleiben Eintippen und Barcode.<br><br><strong>🏷️ Serienscan:</strong> „📥 Einbuchen“ oder „📤 Verbrauchen“ öffnet den Scanner, der offen bleibt: Jeder bekannte Barcode zählt ＋1 bzw. −1 und erscheint in der Mitschrift unter dem Sucherbild, mit ↩️ je Zeile. Derselbe Code zählt erst nach einer kurzen Pause erneut. Neue Codes sammeln sich als Liste — „Zuordnen“ legt den Artikel an (Name und Packungsgröße von Open Food Facts) oder hängt den Code an einen vorhandenen.<br><br><strong>⋯ Mehr:</strong> <strong>📋 Inventur</strong> geht einen Lagerort Artikel für Artikel durch: Soll ansehen, Ist zählen („Stimmt“, „Ist weg“ oder − / ＋), am Ende eine Zusammenfassung und EINE Bestätigung — die Abweichungen gehen als Korrektur in den Verlauf und zählen nicht als Verbrauch. Abbrechen bucht nichts; zugemacht bleibt die Zählung auf diesem Gerät erhalten. <strong>📊 Auswertung</strong> zeigt je Monat, was verbraucht und was weggeworfen wurde, den Anteil, den Vormonat und was oft abläuft, mit einem Vorschlag aus deinen Daten (der Verlauf reicht 90 Tage). Nach einem Monatswechsel erscheint einmal ein kurzer Rückblick, wenn etwas weggeworfen wurde. Außerdem 📍 Orte, 🔄 Teilen, 📜 Verlauf (jede Buchung, ↩️ macht sie rückgängig) und der Vorlauf für Dauerartikel.<br><br>Unter Mehr → ⚙️ Einstellungen → Erinnerungen meldet NutriTrack einmal am Tag, was bald abläuft (nur bei offener App); dieser Schalter gilt auch für den Monatsrückblick. Rezepte und Wochenplan legen nur auf den Einkaufszettel, was der Vorrat nicht deckt. Über 🔄 Teilen (Mehr → 🔗 Verbindungen) seht ihr denselben Vorrat auf zwei Handys.</div></details>
       <details><summary>📖 Kochbuch</summary><div class="hb">Das <strong>Kochbuch</strong> (Kachel auf „Heute" oder <strong>Mehr → 📖 Kochbuch</strong>) sammelt deine Rezepte und eigenen Lebensmittel. Oben suchst du nach Name, Zutat oder Kategorie, darunter filterst du nach ⭐ Favoriten und Kategorien und wählst die Sortierung (neu, A–Z, zuletzt oder oft gekocht, schnell, wenig kcal).<br><br><strong>Ein Rezept antippen</strong> zeigt Zutaten, Zubereitung und Nährwerte je Portion. Mit − / ＋ rechnest du die Zutaten auf mehr oder weniger Portionen um — das ändert nur die Anzeige. Von dort: <strong>📅 Einplanen</strong> (Tag und Mahlzeit im Wochenplan), <strong>🛒 Einkaufen</strong> (Zutaten in der angezeigten Portionenzahl auf den Zettel), <strong>🍽 Eintragen</strong> (ins Tagebuch), ⭐ Favorit, ✏️ Bearbeiten, ⎘ Kopieren und 📤 Teilen.<br><br><strong>👨‍🍳 Kochmodus:</strong> ein Schritt pro Bildschirm in großer Schrift, der Bildschirm bleibt an. Steht in einem Schritt eine Zeit („10 Minuten köcheln"), startest du per Tipp einen Timer; er läuft beim Blättern weiter und meldet sich mit Ton und Vibration. „✓ Fertig gekocht" zählt mit — der Wochenplan schlägt beim 🎲 Füllen Rezepte, die du in den letzten zwei Wochen gekocht hast, seltener vor.<br><br><strong>Neue Rezepte</strong> über „＋ Neues Rezept": selbst, per Foto einer Kochbuchseite oder per Link (Chefkoch, Lecker, Blogs). Beim Link übernimmt die App Portionen, Zeit, Zubereitung, Quelle und die Mengen der Seite („2 EL Olivenöl") — du prüfst alles im Editor, bevor es gespeichert wird. Auch im ＋ → 🔗 Link-Tab legt „📖 Ins Kochbuch" so an.<br><br><strong>Ein Rezept bleibt, wie es ist</strong>, bis du es selbst bearbeitest und 💾 speicherst. Schließt du den Editor ohne Speichern, bleibt alles beim Alten. Wochenplan, Tagebuch und Einkaufszettel arbeiten mit Kopien bzw. verweisen nur darauf; geplante Tage zeigen nach dem Bearbeiten den neuen Stand, das Tagebuch behält, was du gegessen hast.<br><br><strong>Grundrezepte:</strong> Das Kochbuch bringt 101 Gerichte mit (Schnitzel, Lasagne, Dal, Pad Thai, Tiramisu …) — aus dem freien Projekt MorphCook (MIT-Lizenz, © Cedric Mössner), dort von einer KI geschrieben; die Nährwerte rechnet NutriTrack aus der eigenen Lebensmittel-Datenbank. Jedes lässt sich bearbeiten oder löschen; Gelöschtes kommt nicht wieder.<br><br><strong>🌱 Für dich angepasst:</strong> Stehen unter Mehr → 🥗 Ernährung z. B. Vegetarisch, Vegan, Glutenfrei, Laktosefrei, Keto, Low Carb oder Fischallergie — oder bist du schwanger bzw. stillst —, zeigt jedes Rezept die passende Fassung: Hackfleisch wird zu roten Linsen, Hähnchen zu Tofu, Wein zu Brühe, rohes Ei zu pasteurisiertem, Weizenmehl zu Reismehl usw. Oben steht, was getauscht wurde und warum. Was die feste Tausch-Tabelle nicht kennt, prüft einmal je Rezept die KI (mit Internet). Einplanen, Einkaufen, Eintragen und der Kochmodus nehmen die angepasste Fassung. Das gespeicherte Rezept bleibt unverändert — <strong>📖 Original anzeigen</strong> schaltet zurück.<br><br>Beim Anlegen und Umbenennen prüft die App, ob schon etwas Ähnliches drinsteht (gleiche Quelle, ähnlicher Name oder fast dieselben Zutaten), und fragt nach, bevor ein zweites daraus wird.</div></details>
       <details><summary>📅 Wochenplan</summary><div class="hb">Unter <strong>Mehr → 📅 Wochenplan</strong> (oder über die Kachel auf „Heute“) verteilst du Rezepte auf die Woche. Das ＋ an einer Mahlzeit öffnet die Auswahl: Tipp ein, was du suchst — du kannst einen <strong>Rezept-Treffer</strong> nehmen oder den Text direkt <strong>als Notiz</strong> einplanen („Pizza bestellen“, „Reste“, „bei Oma essen“). Eine Notiz zählt mit 0 kcal, steht nicht auf dem Einkaufszettel und wandert nicht ins Tagebuch; tipp sie an und wähle „📋 Rezept hinterlegen“, sobald du weißt, was es gibt. Oben sagt der Plan, wie viele Einträge noch offen sind.<br><br><strong>🎲 Füllen</strong> plant die leeren Mahlzeiten so, dass <strong>jeder Tag dein Kalorienziel trifft</strong>: Frühstück, Mittag, Abend und Snack teilen sich das Ziel, danach werden die Portionen nachgezogen. Jeder Tag zeigt seine Summe gegen das Ziel. Die Vorschläge kommen zuerst aus deinen Rezepten, dazu aus ganzen Mahlzeiten deines Tagebuchs („Burger mit Pommes“) — einzelne Lebensmittel bleiben draußen, und was du zum Frühstück gegessen hast, wird nicht als Abendessen vorgeschlagen. Von Hand Geplantes wird nie angefasst.<br><br><strong>＋ Neues Rezept</strong> legt das Rezept im <strong>Kochbuch</strong> ab — nicht als Mahlzeit im Tagebuch. Wurde es aus dem ＋ eines Tages heraus angelegt, steht es danach gleich in diesem Slot.</div></details>
       <details><summary>📤 Teilen &amp; Import</summary><div class="hb">Rezepte, Lebensmittel, einzelne Mahlzeiten, <strong>ganze Tage</strong> und <strong>Zeiträume</strong> lassen sich teilen (📤-Symbole; der Tages-Knopf liegt auf „Heute" oben rechts in der Kopfzeile und im Verlauf bei jedem Tag, der Zeitraum hinter 🗓 im Verlauf).<ul><li><strong>Mit Partner-Kopplung (empfohlen):</strong> Einmalig unter <strong>Mehr → 🔗 Verbindungen → 📬 Partner-Postfach</strong> verbinden — danach steht im Teilen-Dialog oben „An … senden" und die Sendung landet direkt im Postfach des anderen. Kein Link, kein Messenger.</li><li><strong>Ohne Kopplung:</strong> weiterhin als Link. Der Empfänger öffnet ihn — auf dem iPhone ggf. in der installierten App über <strong>＋ → 🔗 Link</strong> einfügen (das Feld erkennt selbst, ob ein Rezept-Link oder eine NutriTrack-Sendung drinsteht, und bietet einen passenden Link aus der Zwischenablage gleich an). Für ganze Tage und Zeiträume braucht der Link-Weg eine Internetverbindung, weil die Daten sonst nicht in eine URL passen.</li></ul></div></details>
@@ -3091,8 +3139,7 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
     </div>
     <div class="mbd">
       <div id="pantryStats" class="nt-tools pantry-stats" role="group" aria-label="Übersicht: antippen filtert die Liste"></div>
-      <div id="pantrySoon"></div>
-      <div id="pantryAskHint"></div>
+      <div id="pantryHints"><div id="pantryHintSum"></div><div id="pantryHintList"><div id="pantrySoon"></div><div id="pantryAskHint"></div><div id="pantryMonthHint"></div></div></div>
       <label class="lbl" for="pantryInput">Neu einbuchen</label>
       <div style="display:flex;gap:6px;margin-bottom:8px;">
         <input type="text" class="sinp" id="pantryInput" style="flex:1;min-width:0;" placeholder="z. B. 3 Dosen Tomaten" autocomplete="off" autocapitalize="sentences" spellcheck="false" onkeydown="NTPantry.inputKey(event)">
@@ -3100,7 +3147,7 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
       </div>
       <!-- Oft gebraucht in einer Reihe; Orte, Teilen, Verlauf und der Nachkauf-Vorlauf unter ⋯ Mehr. -->
       <div class="nt-tools pantry-tools">
-        <button type="button" class="nt-tool" data-act="NTPantry.openPhotos"><span aria-hidden="true">📷</span>Fotos</button>
+        <button type="button" class="nt-tool" data-act="NTPantry.openPhotos" title="Kühlschrank, Schrank oder Kassenbon fotografieren"><span aria-hidden="true">📷</span>Foto/Bon</button>
         <button type="button" class="nt-tool" data-act="NTPantry.openCook"><span aria-hidden="true">👨‍🍳</span>Kochen</button>
         <button type="button" class="nt-tool" data-act="NTPantry.scan" data-args='["in"]' title="Barcode scannen: ＋1"><span aria-hidden="true">📥</span>Einbuchen</button>
         <button type="button" class="nt-tool" data-act="NTPantry.scan" data-args='["out"]' title="Barcode scannen: −1"><span aria-hidden="true">📤</span>Verbrauchen</button>
@@ -3108,7 +3155,7 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
       <div class="pantry-find">
         <input type="search" class="sinp" id="pantrySearch" placeholder="Suchen" aria-label="Im Vorrat suchen" autocomplete="off" spellcheck="false" oninput="NTPantry.search(this.value)">
         <select class="sinp" id="pantryOrder" aria-label="Liste ordnen nach" onchange="NTPantry.setOrder(this.value)"></select>
-        <button type="button" class="pantry-more" data-act="NTPantry.openMore" aria-label="Mehr: Lagerorte, Teilen, Verlauf, Nachkaufen" title="Mehr: Lagerorte, Teilen, Verlauf, Nachkaufen">⋯</button>
+        <button type="button" class="pantry-more" data-act="NTPantry.openMore" aria-label="Mehr: Inventur, Auswertung, Lagerorte, Teilen, Verlauf, Nachkaufen" title="Mehr: Inventur, Auswertung, Lagerorte, Teilen, Verlauf, Nachkaufen">⋯</button>
       </div>
       <div id="pantryLocChips" class="nt-tab-strip" style="padding:2px 0 8px;"></div>
       <div id="pantryList"></div>
@@ -3245,6 +3292,9 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
         <button type="button" class="nt-tool" data-act="NTPantry.openLocs"><span aria-hidden="true">📍</span>Orte</button>
         <button type="button" class="nt-tool" data-act="NTSync.open"><span aria-hidden="true">🔄</span>Teilen</button>
         <button type="button" class="nt-tool" data-act="NTPantry.openLog"><span aria-hidden="true">📜</span>Verlauf</button>
+        <button type="button" class="nt-tool" data-act="NTPantry.openStock"><span aria-hidden="true">📋</span>Inventur</button>
+        <button type="button" class="nt-tool" data-act="NTPantry.openReport"><span aria-hidden="true">📊</span>Auswertung</button>
+        <button type="button" class="nt-tool" data-act="NTPantry.openReceipt"><span aria-hidden="true">🧾</span>Kassenbon</button>
       </div>
       <label class="lbl" for="pantryLead">🔁 Dauerartikel nachkaufen</label>
       <div class="sf"><select class="sinp" id="pantryLead" onchange="NTPantry.setLead(this.value)"></select></div>
@@ -3261,18 +3311,32 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
     <div class="mhan"></div>
     <div class="mhd">
       <button type="button" class="mcl" data-act="closeOv" data-args='["pantryPhotoOv"]'>✕</button>
-      <div class="mti">📷 Fotos auswerten</div>
-      <div class="msu">Kühlschrank, Tiefkühler, Vorratsschrank — bis zu 6 Fotos, aus der Kamera oder der Galerie</div>
+      <div class="mti" id="pantryPhotoTitle">📷 Fotos auswerten</div>
+      <div class="msu" id="pantryPhotoSub">Kühlschrank, Tiefkühler, Vorratsschrank — bis zu 6 Fotos, aus der Kamera oder der Galerie</div>
     </div>
     <div class="mbd">
+      <div id="pantryPhotoMode" class="nt-tab-strip" role="group" aria-label="Was ist auf dem Foto?" style="padding:0 0 10px;"></div>
       <input type="file" id="pantryPhotoFile" accept="image/*" multiple style="display:none;" onchange="NTPantry.photosChosen(this)">
       <input type="file" id="pantryCamFile" accept="image/*" capture="environment" style="display:none;" onchange="NTPantry.photosChosen(this)">
       <div id="pantryPhotoThumbs" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;"></div>
       <button type="button" class="svb" id="pantryPhotoBtn" data-act="NTPantry.analyzePhotos" disabled>🤖 Auswerten</button>
       <div id="pantryPhotoStatus" style="display:none;font-size:12px;line-height:1.5;margin-top:8px;"></div>
-      <div style="font-size:11px;color:var(--mu);line-height:1.5;margin-top:6px;">Die Fotos gehen nur zur Auswertung an die KI und werden nicht gespeichert. Übernommen wird erst, was du bestätigst.</div>
+      <div id="pantryPhotoNote" style="font-size:12px;color:var(--mu);line-height:1.5;margin-top:6px;">Die Fotos gehen nur zur Auswertung an die KI und werden nicht gespeichert. Übernommen wird erst, was du bestätigst.</div>
       <div id="pantryFound"></div>
     </div>
+  </div>
+</div>
+
+<!-- Inventur je Lagerort (Paket 4): zählen, am Ende EINE Bestätigung; der angefangene Durchgang bleibt gerätelokal erhalten. -->
+<div class="ov" id="pantryStockOv" data-bg-close="pantryStockOv">
+  <div class="mod" style="height:auto;">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" data-act="closeOv" data-args='["pantryStockOv"]' aria-label="Inventur schließen (angefangene Zählung bleibt erhalten)">✕</button>
+      <div class="mti">📋 Inventur</div>
+      <div class="msu" id="pantryStockSub">Lagerort wählen, dann Artikel für Artikel nachzählen</div>
+    </div>
+    <div class="mbd"><div id="pantryStockBody"></div></div>
   </div>
 </div>
 
@@ -4363,7 +4427,7 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
         </div>
         <label style="display:flex;gap:10px;align-items:center;margin-top:14px;font-size:13px;font-weight:700;line-height:1.4;cursor:pointer;">
           <input type="checkbox" id="pantryRemindChk" style="width:20px;height:20px;flex-shrink:0;" onchange="NTPantry.setRemind(this.checked)">
-          <span>🥫 Vorrat: einmal am Tag melden, was bald abläuft<br><span style="font-weight:400;font-size:11px;color:var(--mu);">Ab 7 Uhr beim ersten Öffnen, wenn etwas abgelaufen ist oder in 3 Tagen abläuft.</span></span>
+          <span>🥫 Vorrat: einmal am Tag melden, was bald abläuft<br><span style="font-weight:400;font-size:11px;color:var(--mu);">Ab 7 Uhr beim ersten Öffnen, wenn etwas abgelaufen ist oder in 3 Tagen abläuft. Nach einem Monatswechsel ein kurzer Rückblick im Vorrat, wenn etwas weggeworfen wurde.</span></span>
         </label>
       </div>
 

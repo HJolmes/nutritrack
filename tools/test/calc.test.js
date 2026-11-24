@@ -1331,6 +1331,125 @@ test('pantryLogTrim und pantryWaste: 90 Tage, Höchstzahl, Weggeworfenes je Mona
   assert.equal(C.pantryWaste(null, '2026-10').n, 0);
 });
 
+// ── Vorrat Paket 4: Kassenbon, Serienscan, Inventur, Auswertung
+test('parsePantryReceipt: Artikel und Mengen, Preise/Pfand/Rabatt/Tüten/Summen fallen weg', () => {
+  const C = load({});
+  const txt = 'Hier der Bon:\n```json\n{"artikel":[' +
+    '{"bon":"H-MILCH FETTARM 1,5%","name":"H-Milch 1,5 %","stueck":2,"g":1000,"preis":1.98,"ort":"vorrat"},' +
+    '{"bon":"PFAND 0,25","name":"Pfand","stueck":6},' +
+    '{"bon":"RABATT 10%","name":"Rabatt","stueck":1},' +
+    '{"bon":"TRAGETASCHE","name":"Tragetasche","stueck":1},' +
+    '{"bon":"SUMME","name":"Summe","stueck":1},' +
+    '{"bon":"ZEITSCHR.","name":"Zeitschrift","stueck":1,"vorrat":false},' +
+    '{"bon":"BANANEN","name":"Bananen","stueck":"1","g":"612","ort":"irgendwo"},' +
+    '{"bon":"H-MILCH 1,5%","name":"H-Milch 1,5 %","stueck":1},' +
+    '{"bon":"TEEBEUTEL","name":"Teebeutel","stueck":0},' +
+    '{"name":"4,99","stueck":1}' +
+    ']}\n```';
+  const r = C.parsePantryReceipt(txt, ['kuehl', 'vorrat']);
+  assert.equal(r.partial, false);
+  assert.deepEqual(plain(r.items), [
+    { n: 'H-Milch 1,5 %', bon: 'H-MILCH FETTARM 1,5%', q: 3, g: 1000, loc: 'vorrat' },   // zwei Zeilen zusammengezählt
+    { n: 'Bananen', bon: '', q: 1, g: 612, loc: '' },                              // Bon gleich Name → leer, unbekannter Ort → ''
+    { n: 'Teebeutel', bon: '', q: 1, g: 0, loc: '' },                              // „beutel“ nur als ganzes Wort gesperrt
+  ]);
+  assert.ok(!JSON.stringify(plain(r.items)).includes('1.98'), 'kein Preis im Ergebnis');
+  // abgeschnittene Antwort: die vollständigen Zeilen werden gerettet
+  const cut = C.parsePantryReceipt('{"artikel":[{"name":"Butter","stueck":1,"g":250},{"name":"Quark","stueck":2},{"name":"Jog', []);
+  assert.equal(cut.partial, true);
+  assert.deepEqual(plain(cut.items).map((x) => x.n + ':' + x.q), ['Butter:1', 'Quark:2']);
+  assert.deepEqual(plain(C.parsePantryReceipt('Kein Bon zu sehen.', [])), { items: [], partial: false });
+  assert.deepEqual(plain(C.parsePantryReceipt('{"artikel":[]}', [])), { items: [], partial: false });
+  assert.deepEqual(plain(C.parsePantryReceipt('', [])), { items: [], partial: false });
+  assert.equal(C.parsePantryReceipt('{"artikel":[{"name":"Eier","stueck":500}]}', []).items[0].q, 99);
+});
+test('pantryHomeLoc: üblicher Ort der Produktart, nach Position', () => {
+  const C = load({});
+  const locs = [{ id: 'vorrat', label: 'Vorratsschrank', pos: 3 }, { id: 'kuehl', label: 'Kühlschrank', pos: 1 }, { id: 'u1', label: 'Keller', pos: 2 }];
+  assert.equal(C.pantryHomeLoc('Joghurt', 'milch', locs), 'kuehl');
+  assert.equal(C.pantryHomeLoc('Nudeln', 'vorrat', locs), 'u1');                 // Keller zählt als Schrank und steht vor dem Vorratsschrank
+  assert.equal(C.pantryHomeLoc('TK-Erbsen', 'tk', locs), '');                    // kein Tiefkühler angelegt
+  assert.equal(C.pantryHomeLoc('Spülmittel', 'haushalt', locs), '');             // keine Produktart
+});
+test('pantryScanAccept: gleicher Code erst nach der Pause erneut', () => {
+  const C = load({});
+  assert.equal(C.pantryScanAccept(null, '4001', 0), true);
+  assert.equal(C.pantryScanAccept({ code: '4001', t: 1000 }, '4001', 1500), false);
+  assert.equal(C.pantryScanAccept({ code: '4001', t: 1000 }, '4001', 3000), true);
+  assert.equal(C.pantryScanAccept({ code: '4001', t: 1000 }, '4002', 1100), true);
+  assert.equal(C.pantryScanAccept({ code: '4001', t: 1000 }, '4001', 1400, 300), true);
+});
+test('pantryInventoryDiff: nur gezählte Artikel mit Abweichung', () => {
+  const C = load({});
+  const items = [{ id: 'a', n: 'Milch', ic: '🥛', q: 2 }, { id: 'b', n: 'Nudeln', q: 3 }, { id: 'c', n: 'Reis', q: 1 }, { id: 'd', n: 'Mehl', q: 0.5 }];
+  assert.deepEqual(plain(C.pantryInventoryDiff(items, { a: 1, b: 3, d: '2' })), [
+    { id: 'a', n: 'Milch', ic: '🥛', soll: 2, ist: 1, d: -1 },
+    { id: 'd', n: 'Mehl', ic: '', soll: 0.5, ist: 2, d: 1.5 },
+  ]);
+  assert.deepEqual(plain(C.pantryInventoryDiff(items, { c: -4 })), [{ id: 'c', n: 'Reis', ic: '', soll: 1, ist: 0, d: -1 }]);
+  assert.deepEqual(plain(C.pantryInventoryDiff(items, null)), []);
+});
+test('pantryMonthShift', () => {
+  const C = load({});
+  assert.equal(C.pantryMonthShift('2026-01', -1), '2025-12');
+  assert.equal(C.pantryMonthShift('2026-11', 2), '2027-01');
+});
+test('pantryReport: Monate mit genug Daten, Weggeworfen/Verbraucht, Anteil, oft weggeworfen', () => {
+  const C = load({});
+  const at = (m, d) => new Date(2026, m, d, 12).getTime();
+  const now = at(10, 20);                                      // 20.11.2026
+  const log = [
+    { id: '0', t: at(8, 12), k: 'kauf', n: 'Milch', d: 2, pid: 'm' },                 // 12.09.: erste Buchung
+    { id: '1', t: at(9, 3), k: 'verderb', n: 'Joghurt', ic: '🥛', d: -1, g: 150, pid: 'j' },
+    { id: '2', t: at(9, 9), k: 'verbrauch', n: 'Milch', d: -2, g: 1000, pid: 'm' },
+    { id: '3', t: at(9, 20), k: 'kochen', n: 'Nudeln', d: -1, pid: 'n' },
+    { id: '4', t: at(10, 2), k: 'verderb', n: 'Joghurt', d: -2, g: 150, pid: 'j' },
+    { id: '5', t: at(10, 4), k: 'verderb', n: 'Salat', d: -1, pid: 's' },
+    { id: '6', t: at(10, 5), k: 'verbrauch', n: 'Milch', d: -1, pid: 'm' },
+    { id: '7', t: at(10, 6), k: 'korrektur', n: 'Milch', d: -3, pid: 'm' },          // Inventur zählt nicht
+    { id: '8', t: at(10, 7), k: 'verderb', n: 'Brot', d: -1, pid: 'b', u: 1 },        // rückgängig
+    { id: '9', t: at(10, 8), k: 'kauf', n: 'Brot', d: 1, pid: 'b' },
+  ];
+  const r = C.pantryReport(log, { now, from: now - 90 * 864e5 });
+  assert.equal(r.since, '2026-09-12');
+  assert.deepEqual(plain(r.months).map((m) => m.m + (m.running ? '*' : '') + (m.partFrom ? '<' + m.partFrom : '')), ['2026-11*', '2026-10']); // September fehlen 11 Tage
+  const [nov, okt] = r.months;
+  assert.equal(nov.waste.n, 2);
+  assert.equal(nov.waste.q, 3);
+  assert.equal(nov.waste.g, 300);
+  assert.equal(nov.waste.top[0].n, 'Joghurt');
+  assert.equal(nov.used.q, 1);
+  assert.equal(nov.share, 75);
+  assert.equal(okt.waste.q, 1);
+  assert.equal(okt.used.q, 3);
+  assert.equal(okt.used.g, 2000);
+  assert.deepEqual(plain(okt.used.top).map((x) => x.n), ['Milch', 'Nudeln']);
+  assert.equal(okt.share, 25);
+  assert.deepEqual(plain(r.often).map((x) => x.n + ':' + x.count + ':' + x.pid), ['Joghurt:2:j']);
+  // mit Kulanz 14 Tage zählt auch der September (fehlende Tage am Anfang benannt)
+  const r2 = C.pantryReport(log, { now, from: now - 90 * 864e5, slack: 14 });
+  assert.equal(r2.months[2].m, '2026-09');
+  assert.equal(r2.months[2].partFrom, '2026-09-12');
+  // gekappter Verlauf: vor `from` weiß die App nichts
+  const r3 = C.pantryReport(log, { now, from: at(10, 1) });
+  assert.equal(r3.since, '2026-11-01');
+  assert.deepEqual(plain(r3.months).map((m) => m.m), ['2026-11']);
+  assert.deepEqual(plain(C.pantryReport([], { now })), { since: '', months: [], often: [] });
+  const empty = C.pantryReport([{ t: now, k: 'kauf', n: 'X', d: 1 }], { now });
+  assert.equal(empty.months[0].share, null);
+});
+test('pantryWasteTip: Vorschlag nur aus den Daten', () => {
+  const C = load({});
+  assert.equal(C.pantryWasteTip({ count: 1, q: 1 }, { auto: 1, autoBuys: 2 }), 'auto');
+  assert.equal(C.pantryWasteTip({ count: 1, q: 1 }, { auto: 1, autoBuys: 0 }), '');
+  assert.equal(C.pantryWasteTip({ count: 1, q: 1 }, {}), '');                          // einmal ist kein Muster
+  assert.equal(C.pantryWasteTip({ count: 3, q: 1.5 }, { usual: 1 }), 'smaller');       // meist nur ein Teil
+  assert.equal(C.pantryWasteTip({ count: 2, q: 2 }, { usual: 4 }), 'smaller');         // 1 von üblich 4
+  assert.equal(C.pantryWasteTip({ count: 2, q: 2 }, { usual: 1, canFreeze: true }), 'freeze');
+  assert.equal(C.pantryWasteTip({ count: 2, q: 2 }, { usual: 1 }), 'rarer');
+  assert.equal(C.pantryWasteTip(null, {}), '');
+});
+
 // ── Vorrat: Übersicht, Haltbarkeit schätzen, Geöffnet, älteste Charge zuerst
 test('pantryMissing: leer oder unter Mindestmenge', () => {
   const C = load({});

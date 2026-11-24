@@ -1225,6 +1225,151 @@ function pantryWaste(log,month){
     .sort(function(a,b){return b.count-a.count||b.q-a.q||a.n.localeCompare(b.n,'de');});
   return {n:n,q:_pantryR1(q),top:top};
 }
+
+// ── Vorrat Paket 4: Kassenbon, Serienscan, Inventur, Auswertung ──
+// JSON-Liste `key` aus einer KI-Antwort. Ist die Antwort abgeschnitten oder
+// kaputt, werden die einzelnen flachen Objekte gerettet (`partial`).
+/** @param {string} text @param {string} key @returns {{list:Array<any>,partial:boolean}} */
+function _pantryJsonList(text,key){
+  var s=String(text||''),a=s.indexOf('{'),b=s.lastIndexOf('}');
+  if(a>=0&&b>a){
+    try{var d=JSON.parse(s.slice(a,b+1));if(d&&Array.isArray(d[key]))return {list:d[key],partial:false};}catch(e){}
+  }
+  var out=[],m,re=/\{[^{}]*\}/g;
+  while((m=re.exec(s))){try{var o=JSON.parse(m[0]);if(o&&typeof o==='object'&&!Array.isArray(o)&&!(key in o))out.push(o);}catch(e){}}
+  return {list:out,partial:a>=0};
+}
+// Bon-Zeilen ohne Vorratsbezug: Pfand, Rabatte, Tüten, Summen, Zahlung,
+// Steuer. Die KI soll sie schon weglassen; das hier fängt ab, was durchrutscht.
+var PANTRY_BON_SKIP=/pfand|leergut|rabatt|gutschein|coupon|zwischensumme|gesamtsumme|rueckgeld|wechselgeld|kartenzahlung|girocard|preisvorteil|ersparnis|tragetasche|tragetuete|einkaufstasche|papiertasche|payback|kassenbon/;
+var PANTRY_BON_WORD=/(^| )(summe|gesamt|bar|ec|ec karte|mwst|ust|steuer|netto|brutto|tuete|tueten|beutel|tasche|nachlass|zu zahlen|visa|mastercard|total)( |$)/;
+// KI-Antwort der Kassenbon-Erkennung (G1) → {items:[{n,bon,q,g,loc}], partial}.
+// Preise liest die Funktion nie und gibt sie nie zurück (Nutzerentscheidung:
+// keine Geldbeträge). Gleiche Artikel auf mehreren Zeilen werden zusammengezählt.
+// `vorrat:false` (Zeitschrift, Blumen …) und die Ausschlussliste fallen weg.
+/** @param {string} text @param {Array<string>} locIds */
+function parsePantryReceipt(text,locIds){
+  var r=_pantryJsonList(text,'artikel'),out=[],by={};
+  r.list.forEach(function(x){
+    if(!x||x.vorrat===false||x.lebensmittel===false)return;
+    var n=String(x.name||'').replace(/\s+/g,' ').trim().slice(0,40);
+    var bon=String(x.bon||'').replace(/\s+/g,' ').trim().slice(0,40);
+    var norm=_pantryShelfNorm(n+' '+bon);
+    if(!n||!/[a-zäöüß]/i.test(n)||PANTRY_BON_SKIP.test(norm)||PANTRY_BON_WORD.test(_pantryShelfNorm(n)))return;
+    var q=Math.round(parseFloat(String(x.stueck===undefined?1:x.stueck).replace(',','.')));
+    var g=Math.round(parseFloat(String(x.g===undefined?0:x.g).replace(',','.')));
+    var loc=String(x.ort||'');
+    var k=pantryKey(n);
+    if(by[k]){by[k].q=Math.min(99,by[k].q+(q>0?q:1));if(!by[k].g&&g>0&&g<=50000)by[k].g=g;return;}
+    var it={n:n,bon:bon&&pantryKey(bon)!==k?bon:'',q:q>0?Math.min(99,q):1,g:g>0&&g<=50000?g:0,loc:(locIds||[]).indexOf(loc)>=0?loc:''};
+    by[k]=it;out.push(it);
+  });
+  return {items:out,partial:r.partial&&out.length>0};
+}
+// Üblicher Lagerort für einen Artikel (Vorbelegung, G1): der erste Ort, dessen
+// Art (pantryPlace) zum üblichen Ort der Produktart passt; sonst ''.
+/** @param {string} name @param {string} cat @param {Array<any>} locs */
+function pantryHomeLoc(name,cat,locs){
+  var s=pantryShelfKind(name,cat);
+  if(!s)return '';
+  var a=(locs||[]).slice().sort(function(x,y){return (+(x&&x.pos)||0)-(+(y&&y.pos)||0);});
+  for(var i=0;i<a.length;i++)if(a[i]&&pantryPlace(a[i])===s.h)return String(a[i].id);
+  return '';
+}
+// Serienscan (G2): Zählt dieser Treffer? Derselbe Code direkt hintereinander
+// erst wieder `pauseMs` nach dem zuletzt gezählten (kein Doppelzählen, wenn die
+// Kamera denselben Strichcode zweimal liest). `last` = {code,t} oder null.
+var PANTRY_SCAN_PAUSE=2000;
+/** @param {any} last @param {string} code @param {number} now @param {number} [pauseMs] */
+function pantryScanAccept(last,code,now,pauseMs){
+  if(!last||last.code!==code)return true;
+  return now-(+last.t||0)>=(pauseMs===undefined?PANTRY_SCAN_PAUSE:pauseMs);
+}
+// Inventur (G3): gezählte Ist-Mengen gegen den heutigen Bestand. `counts` =
+// {Artikel-ID: Ist} (nur, was gezählt wurde). Rückgabe [{id,n,ic,soll,ist,d}]
+// mit Abweichung d ≠ 0, in der Reihenfolge von `items`.
+/** @param {Array<any>} items @param {Object<string,any>} counts */
+function pantryInventoryDiff(items,counts){
+  var c=counts||{},out=[];
+  (items||[]).forEach(function(it){
+    if(!it||!Object.prototype.hasOwnProperty.call(c,it.id))return;
+    var ist=_pantryR3(Math.max(0,+c[it.id]||0)),soll=_pantryR3(+it.q||0),d=_pantryR3(ist-soll);
+    if(d)out.push({id:it.id,n:String(it.n||''),ic:String(it.ic||''),soll:soll,ist:ist,d:d});
+  });
+  return out;
+}
+// Monat 'JJJJ-MM' um `delta` Monate verschoben.
+/** @param {string} m @param {number} delta */
+function pantryMonthShift(m,delta){
+  var p=String(m||'').split('-'),d=new Date(+p[0],+p[1]-1+(+delta||0),1);
+  return d.getFullYear()+'-'+pad(d.getMonth()+1);
+}
+// Auswertung „Vorrat im Monat“ (H1) aus dem geteilten Verlauf. Weggeworfen =
+// k 'verderb', verbraucht = 'verbrauch'/'kochen' (wie pantryUseRate); Kauf,
+// Korrektur (Inventur, Zählfehler) und Rückgängiges zählen nicht. Monate nach
+// Ortszeit. `opts.now` (ms) Ende, `opts.from` (ms) Beginn des lückenlosen
+// Verlaufs (älter ist gekappt). `since` = Tag der ersten Buchung, bei
+// gekapptem Verlauf `from`: Davor weiß die App nichts. Gezeigt wird der laufende Monat (`running`)
+// und jeder frühere, dem höchstens `slack` Tage (Standard 7) am Anfang fehlen
+// (`partFrom` = ab wann, wenn ihm Tage fehlen), höchstens `max` (Standard 3).
+// `often` = Artikel, die im ganzen Zeitraum mindestens zweimal weggeworfen wurden.
+/** @param {Array<any>} log @param {{now:number,from?:number,slack?:number,max?:number}} opts */
+function pantryReport(log,opts){
+  var now=+opts.now,from=+(opts.from||0),slack=opts.slack===undefined?7:+opts.slack,max=opts.max||3;
+  var es=(log||[]).filter(function(e){var t=+(e&&e.t)||0;return e&&!e.u&&t>=from&&t<=now;});
+  if(!es.length)return {since:'',months:[],often:[]};
+  // Gibt es Älteres als `from` (gekappt), beginnt das Wissen bei `from`.
+  var cut=(log||[]).some(function(e){return e&&(+e.t||0)<from;});
+  var first=cut?from:es.reduce(function(m,e){return Math.min(m,+e.t||0);},Infinity);
+  var fd=new Date(first),since=fd.getFullYear()+'-'+pad(fd.getMonth()+1)+'-'+pad(fd.getDate());
+  var nd=new Date(now),cur=nd.getFullYear()+'-'+pad(nd.getMonth()+1);
+  var USE=['verbrauch','kochen'];
+  function key(e){var d=new Date(+e.t||0);return d.getFullYear()+'-'+pad(d.getMonth()+1);}
+  function sum(list){
+    /** @type {Object<string,any>} */
+    var by={};var q=0,g=0;
+    list.forEach(function(e){
+      var a=Math.abs(+e.d||0),k=pantryKey(e.n)||String(e.n||'');
+      q+=a;g+=a*(+e.g||0);
+      if(!by[k])by[k]={n:String(e.n||''),ic:String(e.ic||''),pid:String(e.pid||''),count:0,q:0};
+      by[k].count++;by[k].q=_pantryR3(by[k].q+a);
+    });
+    var top=Object.keys(by).map(function(k){return by[k];}).sort(function(a,b){return b.q-a.q||b.count-a.count||a.n.localeCompare(b.n,'de');});
+    return {n:list.length,q:_pantryR1(q),g:Math.round(g),top:top};
+  }
+  var months=[];
+  for(var m=cur,i=0;i<24&&months.length<max+1;i++,m=pantryMonthShift(m,-1)){
+    var start=m+'-01';
+    var running=m===cur;
+    if(!running&&pantryDays(addDays(start,slack),since)<0)break;
+    var mine=es.filter(function(e){return key(e)===m;});
+    var waste=sum(mine.filter(function(e){return e.k==='verderb'&&(+e.d||0)<0;}));
+    var used=sum(mine.filter(function(e){return USE.indexOf(e.k)>=0&&(+e.d||0)<0;}));
+    var all=waste.q+used.q;
+    months.push({m:m,running:running,partFrom:since>start?since:'',waste:waste,used:used,share:all>0?Math.round(waste.q/all*100):null});
+  }
+  var often=sum(es.filter(function(e){return e.k==='verderb'&&(+e.d||0)<0;})).top
+    .filter(function(x){return x.count>=2;}).sort(function(a,b){return b.count-a.count||b.q-a.q||a.n.localeCompare(b.n,'de');});
+  return {since:since,months:months,often:often};
+}
+// Vorschlag zu einem weggeworfenen Artikel (H2), nur aus den Daten, keine
+// Belehrung. `w` = {count: wie oft weggeworfen, q: Stück gesamt}, `o` =
+// {auto: Dauerartikel, autoBuys: Einbuchungen vom Zettel, usual: üblicher Kauf
+// in Stück (pantryUsualBuy), canFreeze: lässt sich einfrieren und liegt nicht im
+// Tiefkühler}. 'auto' Dauerartikel, nachgekauft und dann weggeworfen; ab dem
+// zweiten Mal: 'smaller' meist nur ein Teil des Kaufs, 'freeze' einfrierbar,
+// 'rarer' ganze Käufe; '' kein Vorschlag (einmal ist kein Muster).
+/** @param {any} w @param {any} o */
+function pantryWasteTip(w,o){
+  o=o||{};
+  if(!w||!(+w.count>0))return '';
+  if(o.auto&&+o.autoBuys>0)return 'auto';
+  if(+w.count<2)return '';
+  var per=(+w.q||0)/(+w.count);
+  if(per<Math.max(1,+o.usual||1)-1e-9)return 'smaller';
+  if(o.canFreeze)return 'freeze';
+  return 'rarer';
+}
 // Fehlt im Vorrat: leer oder unter der Mindestmenge (Kennzahl „Fehlt“).
 function pantryMissing(it){return !((+(it&&it.q)||0)>0)||pantryNeed(it&&it.q,it&&it.min)>0;}
 

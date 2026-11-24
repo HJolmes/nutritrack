@@ -39,7 +39,7 @@ function nav(){
   function navButton(id){
     if(id==='+'){
       var label=(NTUICatalog.target(owner)||{}).label||'Alle Bereiche';
-      var visible=({nutrition:'Lebensmittel',baby:'Eintrag',shop:'Artikel',pantry:'Vorrat',book:'Rezept',plan:'Planen'})[owner]||'Erfassen';
+      var visible=({nutrition:'Essen',baby:'Eintrag',shop:'Artikel',pantry:'Vorrat',book:'Rezept',plan:'Planen'})[owner]||'Erfassen';
       return '<button type="button" class="b3-plus" data-act="NTUIActions.plus" aria-label="'+esc('Erfassen: '+label+(label.includes(visible)||visible==='Erfassen'?'':' · '+visible))+'"><span aria-hidden="true">＋</span><small>'+visible+'</small></button>';
     }
     var t=NTUICatalog.target(id),on=id===current,short=({baby:'Baby',shop:'Einkauf'})[id]||t.label;

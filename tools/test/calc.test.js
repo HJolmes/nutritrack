@@ -1335,6 +1335,105 @@ test('pantrySort: Name, Menge (wenig zuerst), Haltbarkeit (ohne Datum zuletzt)',
   assert.equal(items[0].n, 'Zwieback', 'Eingabe bleibt unverändert');
 });
 
+// ── Vorrat: Verbrauch lernen, Prognose, Nachkauf
+test('pantryUseRate: zählt nur Verbrauch/Kochen, nicht Weggeworfenes, Korrekturen und Rückgängiges', () => {
+  const C = load({});
+  const day = 864e5, now = new Date(2026, 10, 24, 12).getTime();
+  const at = (d) => now - d * day;
+  // 28 Tage: gekauft vor 30 Tagen (8 Stück), seitdem jede Woche 1 verbraucht + 1 gekocht
+  const log = [{ id: 'k', pid: 'p', t: at(30), k: 'kauf', d: 8 }];
+  for (const d of [28, 21, 14, 7]) log.push({ id: 'v' + d, pid: 'p', t: at(d), k: 'verbrauch', d: -1 }, { id: 'c' + d, pid: 'p', t: at(d - 1), k: 'kochen', d: -1 });
+  log.push({ id: 'w', pid: 'p', t: at(5), k: 'verderb', d: -3 });        // weggeworfen: kein Verbrauch
+  log.push({ id: 'x', pid: 'p', t: at(4), k: 'korrektur', d: -1 });      // Korrektur: kein Verbrauch
+  log.push({ id: 'u', pid: 'p', t: at(3), k: 'verbrauch', d: -5, u: 1 }); // rückgängig: zählt nicht
+  log.push({ id: 'o', pid: 'anders', t: at(3), k: 'verbrauch', d: -9 });  // anderer Artikel
+  // Bestand heute: 8 − 8 − 3 − 1 = −4 → unbekannt; mit q 4 (älterer Kauf fehlt nicht) rechnen
+  const r = C.pantryUseRate(log, 'p', { now, q: 4 });
+  // Artikel war vor dem Kauf schon da (Bestand davor 8) → Fenster ab Beginn: 56 Tage
+  assert.equal(r.n, 8);
+  assert.equal(r.total, 8);
+  assert.equal(r.days, 56);
+  assert.ok(Math.abs(r.perWeek - 1) < 1e-9);
+  // Ohne Vorbestand (10 gekauft, 8 verbraucht, 2 da → vorher 0): ab dem Kauf, 30 Tage
+  const log2 = log.filter((e) => /^[vc]/.test(e.id)).concat({ id: 'k2', pid: 'p', t: at(30), k: 'kauf', d: 10 });
+  const r2 = C.pantryUseRate(log2, 'p', { now, q: 2 });
+  assert.equal(r2.days, 30);
+  assert.ok(Math.abs(r2.perDay - 8 / 30) < 1e-9);
+});
+test('pantryUseRate: noch keine Aussage bei wenigen Buchungen oder zu kurzem Zeitraum', () => {
+  const C = load({});
+  const day = 864e5, now = new Date(2026, 10, 24, 12).getTime();
+  const two = [{ pid: 'p', t: now - 10 * day, k: 'kauf', d: 5 }, { pid: 'p', t: now - 8 * day, k: 'verbrauch', d: -1 }, { pid: 'p', t: now - 2 * day, k: 'verbrauch', d: -1 }];
+  assert.equal(C.pantryUseRate(two, 'p', { now, q: 3 }), null, 'zwei Entnahmen reichen nicht');
+  const short = [{ pid: 'p', t: now - 3 * day, k: 'kauf', d: 5 }, ...[3, 2, 1].map((d) => ({ pid: 'p', t: now - d * day + 1, k: 'verbrauch', d: -1 }))];
+  assert.equal(C.pantryUseRate(short, 'p', { now, q: 2 }), null, 'drei Tage reichen nicht');
+  assert.equal(C.pantryUseRate(null, 'p', { now }), null);
+  // Gekappter Verlauf: Beginn der Abdeckung begrenzt das Fenster
+  const old = [{ pid: 'p', t: now - 40 * day, k: 'verbrauch', d: -1 }, { pid: 'p', t: now - 20 * day, k: 'verbrauch', d: -1 }, { pid: 'p', t: now - 10 * day, k: 'verbrauch', d: -1 }, { pid: 'p', t: now - 5 * day, k: 'verbrauch', d: -1 }];
+  assert.equal(C.pantryUseRate(old, 'p', { now, q: 2, from: now - 30 * day }).days, 30);
+  assert.equal(C.pantryUseRate(old, 'p', { now, q: 2, from: now - 30 * day }).n, 3);
+});
+test('pantryUseRate: leere Zeiten sind Lücken, Packungsgröße wechselt über Gramm', () => {
+  const C = load({});
+  const day = 864e5, now = new Date(2026, 10, 24, 12).getTime();
+  // 2 Stück gekauft vor 40 Tagen, bis Tag 30 leer verbraucht, 20 Tage leer, vor 10 Tagen 2 neu, 1 verbraucht
+  const log = [
+    { pid: 'p', t: now - 40 * day, k: 'kauf', d: 2 },
+    { pid: 'p', t: now - 35 * day, k: 'verbrauch', d: -1 },
+    { pid: 'p', t: now - 30 * day, k: 'verbrauch', d: -1 },
+    { pid: 'p', t: now - 10 * day, k: 'kauf', d: 2 },
+    { pid: 'p', t: now - 2 * day, k: 'verbrauch', d: -1 },
+  ];
+  const r = C.pantryUseRate(log, 'p', { now, q: 1 });
+  assert.equal(r.days, 20, '40 Tage minus 20 leere');
+  assert.ok(Math.abs(r.perDay - 3 / 20) < 1e-9);
+  // Früher 500-g-Packungen, heute 1000 g: zwei alte Stück = ein heutiges
+  const g = [
+    { pid: 'p', t: now - 20 * day, k: 'verbrauch', d: -2, g: 500 },
+    { pid: 'p', t: now - 15 * day, k: 'verbrauch', d: -2, g: 500 },
+    { pid: 'p', t: now - 5 * day, k: 'verbrauch', d: -1, g: 1000 },
+    { pid: 'p', t: now - 1 * day, k: 'verbrauch', d: -1 },             // ohne g: wie gebucht
+  ];
+  const rg = C.pantryUseRate(g, 'p', { now, q: 3, g: 1000 });
+  assert.equal(rg.total, 4);
+  assert.ok(Math.abs(rg.gPerWeek - rg.perWeek * 1000) < 1e-9);
+});
+test('pantryRunout, pantryMinSuggest, pantryUsualBuy, pantryRestockWhy', () => {
+  const C = load({});
+  const rate = { perDay: 0.5 };
+  assert.equal(C.pantryRunout(3, rate), 6);
+  assert.equal(C.pantryRunout(0.4, rate), 0);
+  assert.equal(C.pantryRunout(3, null), null);
+  assert.equal(C.pantryMinSuggest(rate), 4, 'eine Woche: 3,5 → 4');
+  assert.equal(C.pantryMinSuggest({ perDay: 0.01 }), 1);
+  assert.equal(C.pantryMinSuggest(null), 0);
+  const log = [
+    { pid: 'p', t: 5, k: 'kauf', d: 6 }, { pid: 'p', t: 4, k: 'kauf', d: 2 }, { pid: 'p', t: 3, k: 'kauf', d: 4, u: 1 },
+    { pid: 'p', t: 2, k: 'kauf', d: 3 }, { pid: 'p', t: 1, k: 'korrektur', d: 9 }, { pid: 'q', t: 1, k: 'kauf', d: 9 },
+  ];
+  assert.equal(C.pantryUsualBuy(log, 'p'), 3, 'Median aus 6, 2, 3; Rückgängiges und Korrektur zählen nicht');
+  assert.equal(C.pantryUsualBuy(log, 'x'), 1);
+  assert.equal(C.pantryUsualBuy([{ pid: 'p', t: 1, k: 'kauf', d: 4, g: 250 }], 'p', 1000), 1, 'vier 250-g-Packungen = 1 heutige');
+  assert.deepEqual(plain(C.pantryRestockWhy(1, 3, 10, 3)), { k: 'min', need: 2, days: 10 });
+  assert.deepEqual(plain(C.pantryRestockWhy(4, 0, 2, 3)), { k: 'soon', need: 0, days: 2 });
+  assert.equal(C.pantryRestockWhy(4, 0, 5, 3), null);
+  assert.equal(C.pantryRestockWhy(4, 0, null, 3), null);
+});
+test('pantryAutoState: steht drauf, gekauft, vom Zettel genommen, Sync ausstehend, Sperre', () => {
+  const C = load({});
+  const day = 864e5, now = 100 * day, rs = { s: 'z', t: now - day / 2 };
+  assert.deepEqual(plain(C.pantryAutoState(rs, 0, { open: true }, 0, now, 14)), { k: 'listed', rs: true, no: 0 });
+  assert.deepEqual(plain(C.pantryAutoState(rs, 0, { done: true }, 0, now, 14)), { k: 'free', rs: false, no: 0 });
+  assert.deepEqual(plain(C.pantryAutoState(rs, 0, null, now - 1000, now, 14)), { k: 'free', rs: false, no: 0 }, 'eingebucht und Zettel aufgeräumt');
+  assert.deepEqual(plain(C.pantryAutoState(rs, 0, { gone: true }, 0, now, 14)), { k: 'blocked', rs: false, no: now }, 'vom Zettel genommen');
+  assert.deepEqual(plain(C.pantryAutoState(rs, 0, null, 0, now, 14)), { k: 'wait', rs: true, no: 0 }, 'Zettel noch nicht synchron: nicht doppelt');
+  assert.equal(C.pantryAutoState({ s: 'z', t: now - 2 * day }, 0, null, 0, now, 14).k, 'free', 'nach einem Tag ohne Zettel-Eintrag frei');
+  assert.equal(C.pantryAutoState(null, now - 3 * day, null, 0, now, 14).k, 'blocked');
+  assert.equal(C.pantryAutoState(null, now - 3 * day, null, now - day, now, 14).k, 'free', 'nach dem nächsten Einbuchen');
+  assert.equal(C.pantryAutoState(null, now - 15 * day, null, 0, now, 14).k, 'free', 'nach 14 Tagen');
+  assert.equal(C.pantryAutoState(null, 0, null, 0, now, 14).k, 'free');
+});
+
 test('localTs: doppelte Stunde bei der Rückstellung nimmt die zuletzt vergangene (#345)', () => {
   const C = load({});
   const cest0205 = Date.UTC(2026, 9, 25, 0, 5); // 02:05 Sommerzeit

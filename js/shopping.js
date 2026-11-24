@@ -268,9 +268,13 @@ function tagSource(it,recipe,existed){
   it.rc.push(recipe);
   if(it.rc.length>8)it.rc.shift();
 }
+// `pv` = vom Vorrat automatisch gesetzt (NTPantry), mit Grund („reicht noch ca.
+// 2 Tage“). Dann erklärt der Grund, warum er schon draufstand — „war vorher
+// schon da“ entfällt.
 function srcLine(it){
   var parts=[];
-  if(it.pre)parts.push('war vorher schon da');
+  if(it.pv)parts.push('aus dem Vorrat'+(typeof it.pv==='string'?' · '+it.pv:''));
+  else if(it.pre)parts.push('war vorher schon da');
   if(it.rc&&it.rc.length)parts.push('für '+it.rc.join(', '));
   return parts.join(' · ');
 }
@@ -314,7 +318,8 @@ function mergeQty(a,b){
 }
 
 // ════════ Schreiben ════════
-// opts: {recipe:'Rezeptname', mergeQty:true} — beides nur beim Rezept-Import.
+// opts: {recipe:'Rezeptname', mergeQty:true} — beides nur beim Rezept-Import;
+// {pantry:'Grund'} — vom Vorrat gesetzt (Herkunft `pv`, siehe srcLine).
 function add(name,qty,c,ic,opts){
   name=String(name||'').trim();
   if(!name)return null;
@@ -328,9 +333,10 @@ function add(name,qty,c,ic,opts){
     // Abgehakt heisst gekauft: der alte Bedarf ist erledigt, es gilt nur die
     // neue Menge — sonst stuenden gekaufte 500 g + neue 400 g als 900 g da (#243).
     var bought=!!ex.d;
-    if(bought){ex.d=0;delete ex.da;delete ex.rc;delete ex.pre;delete ex.stock;}
+    if(bought){ex.d=0;delete ex.da;delete ex.rc;delete ex.pre;delete ex.stock;delete ex.pv;}
     if(qty)ex.q=(opts.mergeQty&&!bought)?mergeQty(ex.q,qty):qty;
     if(opts.recipe)tagSource(ex,opts.recipe,!bought);
+    if(opts.pantry&&(bought||ex.pv))ex.pv=opts.pantry;
     ex.rev=nextRev();
     saveS();Sync.schedule();render();
     return ex;
@@ -338,6 +344,7 @@ function add(name,qty,c,ic,opts){
   var g=guess(name);
   var it={id:opts.id||uid(),n:name,q:qty||'',c:c||g.c,ic:ic||g.ic,d:0,ts:Date.now(),rev:nextRev()};
   if(opts.recipe)tagSource(it,opts.recipe,false);
+  if(opts.pantry)it.pv=opts.pantry;
   list().push(it);
   noteRecent(it);
   saveS();Sync.schedule();render();

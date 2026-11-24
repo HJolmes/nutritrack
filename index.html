@@ -14,7 +14,7 @@
 <!-- @zxing/library (JS-Fallback-Decoder): lokal gehostet + defer, damit kein
      synchroner CDN-Request das erste Rendern blockiert (unpkg steht in der
      SW-SKIP-Liste und wurde nie gecacht - hing bei langsamem CDN). -->
-<script defer src="js/zxing/zxing-js.umd.min.js?v=0.354"></script>
+<script defer src="js/zxing/zxing-js.umd.min.js?v=0.355"></script>
 <!-- zxing-wasm: moderner C++ ZXing-Port (~10× schneller/robuster als JS-Port).
      iOS Safari hat keinen nativen BarcodeDetector – ohne WASM läuft alles über
      den langsamen JS-Decoder. Lokal gehostet (js/zxing/, vom Service-Worker
@@ -22,7 +22,7 @@
      bei jedem Start sekundenlang aus dem Netz nachlädt (#143) und offline läuft.
      IIFE-Build exportiert global `ZXingWASM`; bei Ladefehler fällt picker.js auf
      @zxing/library zurück. -->
-<script src="js/zxing/zxing-reader.iife.js?v=0.354"></script>
+<script src="js/zxing/zxing-reader.iife.js?v=0.355"></script>
 <script>
   // @ts-check
   (function(){
@@ -939,6 +939,21 @@ body.b3-on #babySleepPlanBody{max-height:none!important;overflow:visible!importa
 .pantry-find{display:flex;gap:6px;margin-bottom:8px;}
 .pantry-find #pantrySearch{flex:1 1 auto;min-width:0;}
 .pantry-find #pantryOrder{flex:0 0 auto;width:auto;max-width:55%;padding:11px 4px;font-size:14px;}
+.pantry-more{flex:0 0 46px;min-height:44px;border:1.5px solid var(--br);border-radius:11px;background:#fff;color:var(--tx);font-size:20px;font-weight:800;line-height:1;cursor:pointer;font-family:inherit;}
+#pantryOv .pantry-tools{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));}
+@media (max-width:359px){#pantryOv .pantry-tools{grid-template-columns:repeat(2,minmax(0,1fr));}}
+.pantry-soon{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;margin:0 0 8px;padding:8px 12px;border:1px solid var(--br);border-radius:12px;background:var(--gl);color:var(--tx);font-family:inherit;font-size:13px;font-weight:700;text-align:left;cursor:pointer;}
+.pantry-soon>span:nth-child(2){flex:1;min-width:0;hyphens:manual;-webkit-hyphens:manual;overflow-wrap:normal;}
+.pantry-soon[aria-pressed="true"]{border-color:var(--g2);}
+.pantry-soon-item>div:first-child{border-bottom:0!important;padding-bottom:2px!important;}
+.pantry-soon-row{padding:0 2px 8px;border-bottom:1px solid var(--br);}
+.pantry-soon-row .pantry-charge-acts{margin-top:6px;}
+.pantry-sum-use{font-size:13px;font-weight:700;margin-top:8px;line-height:1.4;}
+.pantry-sum-use small{display:block;font-size:12px;font-weight:600;color:var(--mu);}
+.pantry-min-sug{display:flex;align-items:center;gap:8px;font-size:12px;line-height:1.4;margin:-2px 2px 8px;}
+.pantry-min-sug>span{flex:1;min-width:0;}
+.pantry-min-sug .seb{width:auto;margin:0;min-height:44px;padding:6px 12px;font-size:13px;white-space:nowrap;}
+.pantry-auto{margin:0 0 10px;}
 
 body.b3-on #mainScreen .main{--mu:#685e55;}
 body.b3-on #mainScreen button{min-height:44px;}
@@ -1912,7 +1927,7 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
     </div>
     <div class="list-row" onclick="if(typeof showWhatsNew==='function')showWhatsNew();else openOv('whatsNewOv');">
       <div class="lr-ic">🎉</div>
-      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.354</div></div>
+      <div class="lr-body"><div class="lr-name">Was ist neu</div><div class="lr-sub">Beta v0.355</div></div>
       <div class="lr-val">›</div>
     </div>
   </div>
@@ -3062,23 +3077,23 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
     </div>
     <div class="mbd">
       <div id="pantryStats" class="nt-tools pantry-stats" role="group" aria-label="Übersicht: antippen filtert die Liste"></div>
+      <div id="pantrySoon"></div>
       <label class="lbl" for="pantryInput">Neu einbuchen</label>
       <div style="display:flex;gap:6px;margin-bottom:8px;">
         <input type="text" class="sinp" id="pantryInput" style="flex:1;min-width:0;" placeholder="z. B. 3 Dosen Tomaten" autocomplete="off" autocapitalize="sentences" spellcheck="false" onkeydown="NTPantry.inputKey(event)">
         <button type="button" data-act="NTPantry.submitInput" aria-label="Einbuchen" style="background:linear-gradient(135deg,var(--g1),var(--g2));border:none;border-radius:11px;color:white;font-size:20px;font-weight:800;width:48px;flex-shrink:0;cursor:pointer;">＋</button>
       </div>
-      <div class="nt-tools">
+      <!-- Oft gebraucht in einer Reihe; Orte, Teilen, Verlauf und der Nachkauf-Vorlauf unter ⋯ Mehr. -->
+      <div class="nt-tools pantry-tools">
         <button type="button" class="nt-tool" data-act="NTPantry.openPhotos"><span aria-hidden="true">📷</span>Fotos</button>
         <button type="button" class="nt-tool" data-act="NTPantry.openCook"><span aria-hidden="true">👨‍🍳</span>Kochen</button>
-        <button type="button" class="nt-tool" data-act="NTPantry.openLocs"><span aria-hidden="true">📍</span>Orte</button>
-        <button type="button" class="nt-tool" data-act="NTSync.open"><span aria-hidden="true">🔄</span>Teilen</button>
         <button type="button" class="nt-tool" data-act="NTPantry.scan" data-args='["in"]' title="Barcode scannen: ＋1"><span aria-hidden="true">📥</span>Einbuchen</button>
         <button type="button" class="nt-tool" data-act="NTPantry.scan" data-args='["out"]' title="Barcode scannen: −1"><span aria-hidden="true">📤</span>Verbrauchen</button>
-        <button type="button" class="nt-tool" data-act="NTPantry.openLog"><span aria-hidden="true">📜</span>Verlauf</button>
       </div>
       <div class="pantry-find">
-        <input type="search" class="sinp" id="pantrySearch" placeholder="🔍 Suchen" aria-label="Im Vorrat suchen" autocomplete="off" spellcheck="false" oninput="NTPantry.search(this.value)">
+        <input type="search" class="sinp" id="pantrySearch" placeholder="Suchen" aria-label="Im Vorrat suchen" autocomplete="off" spellcheck="false" oninput="NTPantry.search(this.value)">
         <select class="sinp" id="pantryOrder" aria-label="Liste ordnen nach" onchange="NTPantry.setOrder(this.value)"></select>
+        <button type="button" class="pantry-more" data-act="NTPantry.openMore" aria-label="Mehr: Lagerorte, Teilen, Verlauf, Nachkaufen" title="Mehr: Lagerorte, Teilen, Verlauf, Nachkaufen">⋯</button>
       </div>
       <div id="pantryLocChips" class="nt-tab-strip" style="padding:2px 0 8px;"></div>
       <div id="pantryList"></div>
@@ -3141,7 +3156,10 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
         </div>
         <label class="lbl" for="pantryItemMin">Immer da: mindestens … Stück <span style="text-transform:none;font-weight:600;">(leer = egal)</span></label>
         <div class="sf"><input type="text" class="sinp" id="pantryItemMin" inputmode="decimal" placeholder="z. B. 2" autocomplete="off"></div>
+        <div id="pantryItemMinSug"></div>
         <div style="font-size:11px;color:var(--mu);line-height:1.5;margin:-2px 2px 8px;">Fällt der Bestand darunter, kommt der Artikel auf den Einkaufszettel. Mit Gramm je Stück zieht „Fertig gekocht“ im Kochbuch die verbrauchte Menge ab.</div>
+        <label class="pantry-reloc pantry-auto"><input type="checkbox" id="pantryItemAuto">
+          <span><b>🔁 Immer nachkaufen</b> (Dauerartikel): kommt von selbst auf den Einkaufszettel, ca. <span id="pantryItemLead">3 Tage</span> bevor er laut Verbrauch ausgeht — spätestens unter der Mindestmenge. Vorlauf unter ⋯ Mehr.</span></label>
         <label class="lbl" for="pantryItemHd">Hält nach dem Kauf ca. … Tage <span style="text-transform:none;font-weight:600;">(leer = egal)</span></label>
         <div class="sf"><input type="text" class="sinp" id="pantryItemHd" inputmode="numeric" placeholder="z. B. 7" autocomplete="off" onchange="NTPantry.formChanged()"></div>
         <div style="font-size:11px;color:var(--mu);line-height:1.5;margin:-2px 2px 8px;">Für neue Packungen ohne Datum gilt die eingetragene Dauer, sonst ein vorsichtiger Richtwert für Produktart und Lagerort. Das Datum auf der Packung hat Vorrang.</div>
@@ -3193,6 +3211,26 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
         <input type="text" class="shopcat-nm" id="pantryLocNewNm" maxlength="40" placeholder="z. B. Keller" aria-label="Name">
       </div>
       <button type="button" class="svb" data-act="NTPantry.locAdd">＋ Lagerort anlegen</button>
+    </div>
+  </div>
+</div>
+
+<div class="ov" id="pantryMoreOv" data-bg-close="pantryMoreOv">
+  <div class="mod" style="height:auto;">
+    <div class="mhan"></div>
+    <div class="mhd">
+      <button type="button" class="mcl" data-act="closeOv" data-args='["pantryMoreOv"]' aria-label="Mehr schließen">✕</button>
+      <div class="mti">🥫 Vorrat: mehr</div>
+    </div>
+    <div class="mbd">
+      <div class="nt-tools">
+        <button type="button" class="nt-tool" data-act="NTPantry.openLocs"><span aria-hidden="true">📍</span>Orte</button>
+        <button type="button" class="nt-tool" data-act="NTSync.open"><span aria-hidden="true">🔄</span>Teilen</button>
+        <button type="button" class="nt-tool" data-act="NTPantry.openLog"><span aria-hidden="true">📜</span>Verlauf</button>
+      </div>
+      <label class="lbl" for="pantryLead">🔁 Dauerartikel nachkaufen</label>
+      <div class="sf"><select class="sinp" id="pantryLead" onchange="NTPantry.setLead(this.value)"></select></div>
+      <div style="font-size:12px;color:var(--mu);line-height:1.5;margin:-2px 2px 8px;">So viele Tage, bevor ein Dauerartikel laut Verbrauch ausgeht, kommt er auf den Einkaufszettel. Gilt auf diesem Gerät.</div>
     </div>
   </div>
 </div>
@@ -4371,15 +4409,15 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
 
 <div class="tst" id="toast"></div>
 <!-- Ausgelagerte Daten-Module (klassische Scripts, vom SW cache-first ausgeliefert) -->
-<script src="js/actions.js?v=0.354"></script>
-<script src="js/single-tab.js?v=0.354"></script>
-<script src="js/fooddb.js?v=0.354"></script>
-<script src="js/fooddb-usda.js?v=0.354"></script>
-<script src="js/restaurants.js?v=0.354"></script>
-<script src="js/metdb.js?v=0.354"></script>
-<script src="js/idb-photos.js?v=0.354"></script>
-<script src="js/changelog.js?v=0.354"></script>
-<script src="js/calc.js?v=0.354"></script>
+<script src="js/actions.js?v=0.355"></script>
+<script src="js/single-tab.js?v=0.355"></script>
+<script src="js/fooddb.js?v=0.355"></script>
+<script src="js/fooddb-usda.js?v=0.355"></script>
+<script src="js/restaurants.js?v=0.355"></script>
+<script src="js/metdb.js?v=0.355"></script>
+<script src="js/idb-photos.js?v=0.355"></script>
+<script src="js/changelog.js?v=0.355"></script>
+<script src="js/calc.js?v=0.355"></script>
 <script>
 // @ts-check
 // ════════════════════════════════════════
@@ -4399,7 +4437,7 @@ var _goalEditedManual=false,_goalFromCalc=false;
 var MEALS=['breakfast','lunch','dinner','snack'];
 var MEAL_NAMES={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack'};
 
-var APP_VERSION='0.354';
+var APP_VERSION='0.355';
 var PROJECT_WORKER_BASE='https://nutritrack-ai-proxy.h-jolmes.workers.dev';
 var PROJECT_AI_PROXY_URL=PROJECT_WORKER_BASE+'/v1/messages';
 // Konfigurierbarer KI-Anbieter: läuft über denselben Worker (Format-Übersetzung
@@ -9024,49 +9062,49 @@ function axTestSync(){
 }
 
 </script>
-<script src="js/ampel.js?v=0.354"></script>
-<script src="picker.js?v=0.354"></script>
-<script src="js/health-sync.js?v=0.354"></script>
-<script src="js/sync-core.js?v=0.354"></script>
-<script src="js/baby.js?v=0.354"></script>
-<script src="js/baby-sleep.js?v=0.354"></script>
-<script src="js/baby-sleep-plan.js?v=0.354"></script>
-<script src="js/baby-meds.js?v=0.354"></script>
-<script src="js/baby-growth-data.js?v=0.354"></script>
-<script src="js/baby-growth.js?v=0.354"></script>
-<script src="js/baby-week.js?v=0.354"></script>
-<script src="js/baby-milestones.js?v=0.354"></script>
-<script src="js/baby-midwife.js?v=0.354"></script>
-<script src="js/shopping.js?v=0.354"></script>
-<script src="js/pantry.js?v=0.354"></script>
-<script src="js/partner.js?v=0.354"></script>
-<script src="js/alexa-sync.js?v=0.354"></script>
-<script src="js/dashboard.js?v=0.354"></script>
-<script src="js/features.js?v=0.354"></script>
-<script src="js/launch.js?v=0.354"></script>
-<script src="js/xlsx.js?v=0.354"></script>
-<script src="js/food-export.js?v=0.354"></script>
-<script src="js/mealplan.js?v=0.354"></script>
-<script src="js/book-swaps.js?v=0.354"></script>
-<script src="js/cookbook.js?v=0.354"></script>
-<script src="js/onedrive.js?v=0.354"></script>
-<script src="js/autosave.js?v=0.354"></script>
-<script src="js/recurring.js?v=0.354"></script>
-<script src="js/stats.js?v=0.354"></script>
-<script src="js/reminders.js?v=0.354"></script>
-<script src="js/templates.js?v=0.354"></script>
-<script src="js/offline-queue.js?v=0.354"></script>
-<script src="js/tour.js?v=0.354"></script>
-<script src="js/ui-catalog.js?v=0.354"></script>
-<script src="js/ui-actions.js?v=0.354"></script>
-<script src="js/ui-shell.js?v=0.354"></script>
-<script src="js/ui-home.js?v=0.354"></script>
-<script src="js/ui-baby.js?v=0.354"></script>
-<script src="js/ui-reminder-rules.js?v=0.354"></script>
-<script src="js/ui-priority.js?v=0.354"></script>
-<script src="js/ui-nutrition.js?v=0.354"></script>
-<script src="js/ui-household.js?v=0.354"></script>
-<script src="js/ui-settings.js?v=0.354"></script>
+<script src="js/ampel.js?v=0.355"></script>
+<script src="picker.js?v=0.355"></script>
+<script src="js/health-sync.js?v=0.355"></script>
+<script src="js/sync-core.js?v=0.355"></script>
+<script src="js/baby.js?v=0.355"></script>
+<script src="js/baby-sleep.js?v=0.355"></script>
+<script src="js/baby-sleep-plan.js?v=0.355"></script>
+<script src="js/baby-meds.js?v=0.355"></script>
+<script src="js/baby-growth-data.js?v=0.355"></script>
+<script src="js/baby-growth.js?v=0.355"></script>
+<script src="js/baby-week.js?v=0.355"></script>
+<script src="js/baby-milestones.js?v=0.355"></script>
+<script src="js/baby-midwife.js?v=0.355"></script>
+<script src="js/shopping.js?v=0.355"></script>
+<script src="js/pantry.js?v=0.355"></script>
+<script src="js/partner.js?v=0.355"></script>
+<script src="js/alexa-sync.js?v=0.355"></script>
+<script src="js/dashboard.js?v=0.355"></script>
+<script src="js/features.js?v=0.355"></script>
+<script src="js/launch.js?v=0.355"></script>
+<script src="js/xlsx.js?v=0.355"></script>
+<script src="js/food-export.js?v=0.355"></script>
+<script src="js/mealplan.js?v=0.355"></script>
+<script src="js/book-swaps.js?v=0.355"></script>
+<script src="js/cookbook.js?v=0.355"></script>
+<script src="js/onedrive.js?v=0.355"></script>
+<script src="js/autosave.js?v=0.355"></script>
+<script src="js/recurring.js?v=0.355"></script>
+<script src="js/stats.js?v=0.355"></script>
+<script src="js/reminders.js?v=0.355"></script>
+<script src="js/templates.js?v=0.355"></script>
+<script src="js/offline-queue.js?v=0.355"></script>
+<script src="js/tour.js?v=0.355"></script>
+<script src="js/ui-catalog.js?v=0.355"></script>
+<script src="js/ui-actions.js?v=0.355"></script>
+<script src="js/ui-shell.js?v=0.355"></script>
+<script src="js/ui-home.js?v=0.355"></script>
+<script src="js/ui-baby.js?v=0.355"></script>
+<script src="js/ui-reminder-rules.js?v=0.355"></script>
+<script src="js/ui-priority.js?v=0.355"></script>
+<script src="js/ui-nutrition.js?v=0.355"></script>
+<script src="js/ui-household.js?v=0.355"></script>
+<script src="js/ui-settings.js?v=0.355"></script>
 
 <div class="ov" id="b3HomePrefsOv" data-ui="b3" data-bg-close="b3HomePrefsOv"><div class="mod"><div class="mhd"><button type="button" class="mcl" data-act="closeOv" data-args='["b3HomePrefsOv"]' aria-label="Schnellaktionen schließen">✕</button><h2 class="mti">Schnellaktionen anpassen</h2></div><div class="mbd"><div id="b3HomePrefsBody"></div><button type="button" class="b3-primary" data-act="closeOv" data-args='["b3HomePrefsOv"]'>Fertig</button></div></div></div>
 <div class="ov" id="b3MealPrefsOv" data-ui="b3" data-bg-close="b3MealPrefsOv"><div class="mod"><div class="mhd"><button type="button" class="mcl" data-act="closeOv" data-args='["b3MealPrefsOv"]' aria-label="Hinweise schließen">✕</button><h2 class="mti">Mahlzeiten-Hinweise</h2></div><div class="mbd"><div id="b3MealPrefsBody"></div><div class="b3-reminder-save"><button type="button" class="b3-primary" data-act="NTUIReminders.save">Einstellungen speichern</button></div></div></div></div>

@@ -2,6 +2,13 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.355',items:[
+    {icon:'📈',text:'<b>Der Vorrat lernt aus deinem Verbrauch</b> und schätzt, wie lange ein Artikel noch reicht – kurz in der Liste, ausführlich im Artikel.',where:'Vorrat'},
+    {icon:'⏳',text:'<b>„Geht bald aus“</b> zeigt gesammelt, was demnächst leer wird, mit „Auf den Zettel“ und „Diesmal nicht“.',where:'Vorrat'},
+    {icon:'🔁',text:'<b>„Immer nachkaufen“</b>: Dauerartikel kommen ein paar Tage, bevor sie ausgehen, von selbst auf den Einkaufszettel – erkennbar an „aus dem Vorrat“ mit Grund.',where:'Vorrat · Artikel'},
+    {icon:'🎯',text:'<b>Mindestmenge als Vorschlag</b> aus deinem Verbrauch; übernommen wird sie nur per Tipp.',where:'Vorrat · Artikel'},
+    {icon:'⋯',text:'<b>Orte, Teilen und Verlauf</b> liegen jetzt unter „⋯“ neben der Suche. Die tägliche Meldung nennt auch, was auf den Zettel kam.',where:'Vorrat'},
+  ]},
   {v:'0.354',items:[
     {icon:'🥫',text:'<b>Vorrat mit Übersicht</b>. Oben steht, was bald abläuft, was fehlt und wie viele Artikel da sind – ein Tipp filtert die Liste.',where:'Vorrat'},
     {icon:'🔎',text:'<b>Suchen und Ordnen</b> nach Lagerort, Kategorie, Haltbarkeit, Name oder Menge.',where:'Vorrat'},

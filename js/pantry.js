@@ -13,11 +13,24 @@
 //                 lots = Chargen [{id,q,mhd,vd,estimated,in,op}]: estimated = Datum
 //                 geschätzt (hd oder Richtwert pantryShelf), in = eingebucht am,
 //                 op = geöffnet am (verkürzte Frist laut pantryShelf().open)
+//                 auto = Dauerartikel „immer nachkaufen“ (1, fehlt = nein),
+//                 rs = {s: ID auf dem Zettel, t: ms} automatisch gesetzt,
+//                 rsNo = ms „diesmal nicht“/vom Zettel genommen (Sperre bis zum
+//                 nächsten Einbuchen oder BLOCK_DAYS). Alle drei reisen mit dem
+//                 Artikel im Sync, damit das zweite Gerät dieselbe Sperre kennt.
 //   S.pantryOrder Ordnung der Liste loc|cat|exp|name|qty (gerätelokal, nicht im Sync)
+//   S.pantryLead  Nachkauf-Vorlauf in Tagen (gerätelokal, Standard LEAD): wann
+//                 ein Dauerartikel vor dem errechneten Leer-Tag auf den Zettel kommt.
+//                 Lokal, weil es nur den Zeitpunkt betrifft: zwei Geräte setzen
+//                 denselben Eintrag (feste ID), das frühere gewinnt.
+//   S.pantryRestockDay / S.pantryRestockNews  täglicher Nachkauf-Lauf zuletzt /
+//                 was er heute gesetzt hat, für die eine tägliche Meldung (lokal)
 //   S.pantryLocs  [{id,ic,label,pos,rev,_sy}]  Lagerorte, alle änderbar
 //   S.pantryTomb  {id:{rev}}  Grabsteine für Artikel und Lagerorte (`loc:<id>`)
-//   S.pantryLog   [{id,t,pid,n,ic,d,k,src,u,rev,_sy}]  Verlauf (#336): d = ± Stück,
-//                 k = kauf|verbrauch|verderb|kochen|korrektur, u = rückgängig.
+//   S.pantryLog   [{id,t,pid,n,ic,d,k,src,u,g,rev,_sy}]  Verlauf (#336): d = ± Stück,
+//                 k = kauf|verbrauch|verderb|kochen|korrektur, u = rückgängig,
+//                 g = Gramm je Stück zur Zeit der Buchung (Verbrauch lernen,
+//                 pantryUseRate rechnet bei neuer Packungsgröße um).
 //                 Synchron als Record `log:<id>`, 90 Tage, ohne Grabsteine —
 //                 jedes Gerät kürzt selbst und nimmt Älteres nicht mehr an.
 //   S.pantryRemindOff / S.pantryRemindDay  Ablauf-Meldung aus / zuletzt gemeldet
@@ -56,12 +69,18 @@ var MAX_PHOTOS=6;
 
 var _editId=null;
 var _filter='';      // Chip: Lagerort-ID oder 'cat:<Kategorie>', '' = alle
-var _tile='';        // Kennzahl der Übersicht: '' = alle, EXP = läuft ab, LOW = fehlt
+var _tile='';        // Kennzahl der Übersicht: '' = alle, EXP = läuft ab, LOW = fehlt, SOON = nachkaufen
 var _query='';       // Suche in der Liste (nur Anzeige, legt nichts an)
 var _shownQ='';      // Stückzahl, wie der Artikel-Dialog sie zuletzt zeigte
 var _openLoc='';     // Lagerort beim Öffnen des Artikel-Dialogs (D4)
 var EXP='__exp';
 var LOW='__low';
+var SOON='__soon';   // Nachkaufen: geht laut Prognose bald aus / automatisch auf dem Zettel
+var LEAD=3,LEADS=[1,2,3,5,7];
+var SOON_DAYS=7;     // „geht bald aus“: reicht laut Prognose höchstens so lange
+var ROW_DAYS=14;     // Listenzeile nennt „reicht ca. …“ nur bis hierhin
+var BLOCK_DAYS=14;   // „diesmal nicht“ hält höchstens so lange (sonst bis zum Einbuchen)
+var AUTO_PREFIX='vorrat-';
 var CAT_CHIP='cat:';
 var EXP_DAYS=3;
 var ORDERS=[['loc','↕ Lagerort'],['cat','↕ Kategorie'],['exp','↕ Haltbarkeit'],['name','↕ Name'],['qty','↕ Menge']];
@@ -175,12 +194,116 @@ function amountText(it){
 // den Einkaufszettel — nur beim Übergang (oder wenn mehr fehlt als vorher),
 // sonst landete er nach jedem −-Tipp erneut dort, auch wenn ihn jemand
 // bewusst vom Zettel genommen hat.
+// Dauerartikel (it.auto) gehen stattdessen durch restockItem: dort zählt auch
+// die Prognose, und ein vom Zettel genommener Eintrag kommt nicht gleich wieder.
 function afterChange(it,before){
+  if(it.auto){
+    var why=restockItem(it);
+    if(why){saveS();Sync.schedule();render();showToast((it.ic||'')+' '+it.n+' → Einkaufszettel ('+why+')');}
+    return;
+  }
   var need=pantryNeed(it.q,it.min);
   if(need>0&&need>before&&window.NTShop){
-    NTShop.add(it.n,need+' Stück',catOf(it),it.ic||'');
+    NTShop.add(it.n,need+' Stück',catOf(it),it.ic||'',{pantry:'unter Mindestmenge'});
     showToast((it.ic||'')+' '+it.n+' ist knapp → Einkaufszettel');
   }
+}
+
+// ── Verbrauch lernen und Nachkauf ─────────────────────────────────────────
+// Beginn des lückenlosen Verlaufs: gekappt wird nach LOG_DAYS Tagen oder nach
+// LOG_MAX Einträgen — dann zählt erst ab dem ältesten behaltenen.
+function logFrom(){
+  var a=logArr(),from=Date.now()-LOG_DAYS*864e5;
+  if(a.length>=LOG_MAX){
+    var oldest=Infinity;
+    a.forEach(function(e){oldest=Math.min(oldest,+e.t||0);});
+    from=Math.max(from,oldest);
+  }
+  return from;
+}
+// Verbrauchsrate des Artikels oder null (noch keine Aussage), siehe pantryUseRate.
+function usage(it){return pantryUseRate(logArr(),it.id,{now:Date.now(),q:+it.q||0,g:+it.g||0,from:logFrom()});}
+function runout(it){return pantryRunout(+it.q||0,usage(it));}
+function lead(){var v=+S.pantryLead;return LEADS.indexOf(v)>=0?v:LEAD;}
+function fmtUse(v){return String(Math.round(v*10)/10).replace('.',',');}
+function daysText(n){return n<=0?'geht heute aus':'reicht noch ca. '+n+(n===1?' Tag':' Tage');}
+function whyText(w){return w.k==='min'?'unter Mindestmenge':daysText(w.days);}
+// Letzte Einbuchung (ms) und ihre ID — der Nachkauf-Zyklus des Artikels.
+function lastBuy(it){
+  var a=logArr(),best=null;
+  for(var i=0;i<a.length;i++){var e=a[i];if(e.pid===it.id&&e.k==='kauf'&&!e.u&&(+e.d||0)>0&&(!best||(+e.t||0)>(+best.t||0)))best=e;}
+  return best;
+}
+function shopList(){return Array.isArray(S.shopList)?S.shopList:[];}
+function shopById(id){var a=shopList();for(var i=0;i<a.length;i++)if(a[i].id===id)return a[i];return null;}
+function shopByName(n){var k=pantryKey(n),a=shopList();for(var i=0;i<a.length;i++)if(!a[i].d&&pantryKey(a[i].n)===k)return a[i];return null;}
+// Feste ID je Artikel und Einkaufszyklus: zwei Geräte, die gleichzeitig
+// nachkaufen, legen denselben Zettel-Eintrag an, der Sync macht daraus einen.
+// Eine schon gelöschte ID (Grabstein) wird nicht wiederbelebt.
+function autoShopId(it){
+  var b=lastBuy(it),base=AUTO_PREFIX+it.id+'-'+(b?b.id:'0'),id=base,n=1,tombs=S.shopTomb||{};
+  while(tombs[id]){n++;id=base+'-'+n;}
+  return id;
+}
+// Zustand laut pantryAutoState; schreibt geänderte Markierung/Sperre in den
+// Artikel (true = Artikel geändert, rev neu).
+function autoState(it){
+  var s=it.rs&&it.rs.s?shopById(it.rs.s):null;
+  var shop=s?{open:!s.d,done:!!s.d}:(it.rs&&it.rs.s&&S.shopTomb&&S.shopTomb[it.rs.s]?{gone:true}:null);
+  var b=lastBuy(it);
+  var st=pantryAutoState(it.rs,+it.rsNo||0,shop,b?+b.t||0:0,Date.now(),BLOCK_DAYS);
+  var changed=false;
+  if(!st.rs&&it.rs){delete it.rs;changed=true;}
+  if(st.no!==(+it.rsNo||0)){if(st.no)it.rsNo=st.no;else delete it.rsNo;changed=true;}
+  if(changed)it.rev=nextRev();
+  return st.k;
+}
+// Auf den Zettel mit Herkunft „aus dem Vorrat“ und Grund; Menge = üblicher
+// Kauf, mindestens bis zur Mindestmenge. Steht der Artikel schon offen auf dem
+// Zettel (von Hand oder per Rezept), bleibt der Eintrag, wie er ist.
+function putOnList(it,reason){
+  if(!window.NTShop)return null;
+  var ex=shopByName(it.n);
+  if(!ex){
+    var q=Math.max(pantryUsualBuy(logArr(),it.id,+it.g||0),pantryNeed(it.q,it.min));
+    ex=NTShop.add(it.n,fmtN(q)+' Stück',catOf(it),it.ic||'',{id:autoShopId(it),pantry:reason});
+  }
+  if(!ex)return null;
+  it.rs={s:ex.id,t:Date.now()};
+  delete it.rsNo;
+  it.rev=nextRev();
+  return ex;
+}
+// Ein Dauerartikel nach einer Buchung oder im täglichen Lauf: Markierung
+// nachführen, dann setzen, wenn er unter die Mindestmenge fällt oder laut
+// Prognose in lead() Tagen ausgeht. Rückgabe: Grund, wenn gesetzt, sonst ''.
+// Speichert nicht (der Aufrufer bündelt).
+function restockItem(it){
+  var k=autoState(it);
+  if(!it.auto||k!=='free')return '';
+  var why=pantryRestockWhy(+it.q||0,+it.min||0,runout(it),lead());
+  if(!why)return '';
+  var reason=whyText(why);
+  return putOnList(it,reason)?reason:'';
+}
+// Täglicher Lauf (beim Öffnen, höchstens einmal am Tag): alle Dauerartikel und
+// alle mit Markierung/Sperre. Was er setzt, nennt die tägliche Meldung.
+function restockDaily(){
+  var feature=NTFeat.byId('pantry');
+  if(feature&&NTFeat.isOff(feature))return;
+  var d=today();
+  if(S.pantryRestockDay===d)return;
+  S.pantryRestockDay=d;
+  var added=[],dirty=false;
+  items().forEach(function(it){
+    if(!it.auto&&!it.rs&&!it.rsNo)return;
+    var r0=it.rev,why=restockItem(it);
+    if(why)added.push((it.ic||'')+' '+it.n+' ('+why+')');
+    if(it.rev!==r0)dirty=true;
+  });
+  if(added.length)S.pantryRestockNews={d:d,n:added};
+  saveS();
+  if(dirty){Sync.schedule();render();}
 }
 function touch(it){it.rev=nextRev();saveS();Sync.schedule();render();}
 
@@ -191,7 +314,9 @@ function touch(it){it.rev=nextRev();saveS();Sync.schedule();render();}
 function log(it,d,k,src){
   d=roundQty(d);
   if(!d)return null;
+  /** @type {any} */
   var e={id:uid('l'),t:Date.now(),pid:it.id,n:it.n,ic:it.ic||'',d:d,k:k,src:src||'hand',u:0,rev:nextRev()};
+  if(+it.g>0)e.g=+it.g;
   logArr().unshift(e);
   return e;
 }
@@ -210,6 +335,8 @@ function refill(it,n,src,mhd,vd){
   var days=!mhd&&!vd?estimateDays(it):0;
   var lot={id:uid('charge'),q:n,mhd:mhd||(days?addDays(today(),days):''),vd:vd||'',estimated:!!days,in:today()};
   appendLots(it,[lot]);
+  // Eingebucht = Nachkauf-Zyklus erledigt: Markierung und „diesmal nicht“ fallen weg.
+  delete it.rs;delete it.rsNo;
   var e=log(it,n,'kauf',src);e.lots=[lot];return e;
 }
 // Abziehen um `n` Stück (nie unter 0), älteste Charge zuerst oder nur `lotId`.
@@ -483,7 +610,7 @@ function render(){
 function setFilter(id){
   id=id||'';
   if(!id){_tile='';_filter='';}
-  else if(id===EXP||id===LOW)_tile=id;
+  else if(id===EXP||id===LOW||id===SOON)_tile=id;
   else _filter=id;
   renderList();
 }
@@ -515,14 +642,18 @@ function addQuery(){
 function chipLoc(){return _filter&&_filter.indexOf(CAT_CHIP)!==0?_filter:'';}
 function chipCat(){return _filter.indexOf(CAT_CHIP)===0?_filter.slice(CAT_CHIP.length):'';}
 function dueOf(it){var e=(+it.q||0)>0?expiry(it):null;return e?e.d:'';}
-function row(it){
+// Listenzeile; `ro` = Prognose (Tage, null = keine Aussage), dezent und nur,
+// wenn sie in den nächsten ROW_DAYS Tagen etwas bedeutet.
+function row(it,ro){
   var lw=low(it),e=(+it.q||0)>0?expiry(it):null;
+  var soon=ro!==null&&ro!==undefined&&(+it.q||0)>0&&ro<=ROW_DAYS;
   return '<div style="display:flex;align-items:center;gap:8px;padding:9px 2px;border-bottom:1px solid var(--br);">'
     +'<div style="font-size:20px;flex-shrink:0;">'+esc(it.ic||'🥫')+'</div>'
     +'<div style="flex:1;min-width:0;cursor:pointer;" data-act="NTPantry.openItem" data-args="'+args([it.id])+'">'
-      +'<div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(it.n)+'</div>'
+      +'<div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+(it.auto?'<span title="Dauerartikel: immer nachkaufen" aria-label="Dauerartikel">🔁 </span>':'')+esc(it.n)+'</div>'
       +'<div style="font-size:11px;color:'+(lw?'var(--or)':'var(--mu)')+';margin-top:1px;">'+esc(amountText(it))
-        +(+it.min>0?' · mind. '+fmtN(it.min)+(lw?' ⚠️':''):'')+'</div>'
+        +(+it.min>0?' · mind. '+fmtN(it.min)+(lw?' ⚠️':''):'')
+        +(soon?'<span style="color:'+(ro<=lead()?'var(--or)':'var(--mu)')+';"> · '+(ro<=0?'geht heute aus':'reicht ca. '+ro+(ro===1?' Tag':' Tage'))+'</span>':'')+'</div>'
       +(e?'<div style="font-size:11px;font-weight:'+(e.lvl==='ok'?'400':'700')+';color:'+expiryColor(e)+';margin-top:1px;">'+esc(expiryText(e))+'</div>':'')
     +'</div>'
     +'<button type="button" class="pt-st" data-act="NTPantry.step" data-args="'+args([it.id,-1])+'">−</button>'
@@ -542,16 +673,64 @@ function renderStats(a,ex,miss){
     +stat(LOW,miss.length,'Fehlt',miss.length?'var(--or)':'var(--mu)')
     +stat('',a.length,'Artikel','var(--tx)');
 }
+// Nachkaufen (B2/C3): was laut Prognose in SOON_DAYS Tagen ausgeht (mit
+// Bestand — leer steht schon unter „Fehlt“) und was automatisch auf dem
+// Zettel steht. `ros` = Prognose je Artikel-ID.
+function soonList(a,ros){
+  return a.filter(function(it){
+    var ro=ros[it.id];
+    return !!(it.rs&&it.rs.s)||((+it.q||0)>0&&ro!==null&&ro!==undefined&&ro<=Math.max(SOON_DAYS,lead()));
+  }).sort(function(x,y){
+    var rx=ros[x.id],ry=ros[y.id];
+    return (rx===null||rx===undefined?99:rx)-(ry===null||ry===undefined?99:ry)||String(x.n).localeCompare(String(y.n),'de');
+  });
+}
+// Ruhiger Hinweis unter den Kennzahlen, nur wenn es etwas gibt; antippen filtert.
+function renderSoon(soon){
+  var el=document.getElementById('pantrySoon');
+  if(!el)return;
+  var listed=soon.filter(function(it){return it.rs&&it.rs.s;}).length,going=soon.length-listed;
+  if(!soon.length){el.innerHTML='';return;}
+  var parts=[];
+  if(going)parts.push(going+(going===1?' geht':' gehen')+' bald aus');
+  if(listed)parts.push('🛒 '+listed+' auf dem Zettel');
+  el.innerHTML='<button type="button" class="pantry-soon" data-act="NTPantry.pickTile" data-args="'+args([SOON])+'" aria-pressed="'+(_tile===SOON)+'">'
+    +'<span aria-hidden="true">⏳</span><span>'+esc(parts.join(' · '))+'</span><span aria-hidden="true">'+(_tile===SOON?'✕':'›')+'</span></button>';
+}
+// Eine Zeile der Nachkaufen-Ansicht: Zeile wie in der Liste, darunter Stand und Knöpfe.
+function soonRow(it,ro){
+  var listed=!!(it.rs&&it.rs.s),blocked=!listed&&+it.rsNo>0&&autoBlocked(it);
+  var t;
+  if(listed)t='🛒 Steht auf dem Einkaufszettel (aus dem Vorrat)';
+  else if(blocked)t='Diesmal nicht — wieder nach dem nächsten Einkauf';
+  else if(it.auto&&ro!==null&&ro!==undefined)t=ro-lead()<=0?'Kommt gleich auf den Zettel':'Kommt ca. am '+fmtD(addDays(today(),ro-lead()))+' auf den Zettel';
+  else t='Kein Dauerartikel — kommt nicht von selbst auf den Zettel';
+  return '<div class="pantry-soon-item">'+row(it,ro)
+    +'<div class="pantry-soon-row"><div class="pantry-charge-note">'+esc(t)+'</div><div class="pantry-charge-acts">'
+      +(listed?'<span></span>':'<button type="button" class="seb" data-act="NTPantry.restockNow" data-args="'+args([it.id])+'">🛒 Auf den Zettel</button>')
+      +(listed||(it.auto&&!blocked)?'<button type="button" class="seb" data-act="NTPantry.skipRestock" data-args="'+args([it.id])+'">Diesmal nicht</button>':'<span></span>')
+    +'</div></div></div>';
+}
+function autoBlocked(it){
+  var b=lastBuy(it);
+  return pantryAutoState(null,+it.rsNo||0,null,b?+b.t||0:0,Date.now(),BLOCK_DAYS).k==='blocked';
+}
 function groupHead(t){return '<div style="font-size:12px;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin:14px 2px 2px;">'+esc(t)+'</div>';}
 function renderList(){
   var el=document.getElementById('pantryList');
   if(!el)return;
   var a=items(),lo=a.filter(low),ex=expiring(),miss=a.filter(pantryMissing),ord=order();
+  var ros={},logFromMs=logFrom(),now=Date.now();
+  a.forEach(function(it){ros[it.id]=pantryRunout(+it.q||0,pantryUseRate(logArr(),it.id,{now:now,q:+it.q||0,g:+it.g||0,from:logFromMs}));});
+  var soon=soonList(a,ros);
   if(_tile===EXP&&!ex.length)_tile='';
   if(_tile===LOW&&!miss.length)_tile='';
+  if(_tile===SOON&&!soon.length)_tile='';
   var sub=document.getElementById('pantryOvSub');
   if(sub)sub.textContent=a.length?(a.length+' Artikel'+(lo.length?' · '+lo.length+' knapp':'')+(ex.length?' · '+ex.length+' läuft ab':'')+(Sync.active()?' · geteilt':'')):'Noch nichts eingetragen';
   renderStats(a,ex,miss);
+  renderSoon(soon);
+  function rowOf(it){return row(it,ros[it.id]);}
   var sel=/** @type {HTMLSelectElement} */ (document.getElementById('pantryOrder'));
   if(sel){
     if(!sel.options.length)sel.innerHTML=ORDERS.map(function(o){return '<option value="'+o[0]+'">'+esc(o[1])+'</option>';}).join('');
@@ -577,9 +756,14 @@ function renderList(){
     if(fc&&catOf(it)!==fc)return false;
     return !q||String(it.n||'').toLocaleLowerCase('de').indexOf(q)>=0;
   });
-  if(_tile===EXP){
+  if(_tile===EXP||_tile===SOON){
     var ok={};shown.forEach(function(it){ok[it.id]=1;});
-    shown=ex.filter(function(x){return ok[x.it.id];}).map(function(x){return x.it;});
+    shown=_tile===EXP?ex.filter(function(x){return ok[x.it.id];}).map(function(x){return x.it;}):soon.filter(function(it){return ok[it.id];});
+  }
+  if(_tile===SOON&&shown.length){
+    el.innerHTML='<div class="pantry-charge-note" style="margin:4px 2px 2px;">Nachkaufen — geschätzt aus dem Verbrauch. 🔁 Dauerartikel kommen '+lead()+(lead()===1?' Tag':' Tage')+' vorher von selbst auf den Zettel.</div>'
+      +shown.map(function(it){return soonRow(it,ros[it.id]);}).join('');
+    return;
   }
   if(!shown.length){
     el.innerHTML='<div style="font-size:13px;color:var(--mu);font-style:italic;padding:14px 2px;line-height:1.5;">'
@@ -589,7 +773,7 @@ function renderList(){
   }
   // Läuft ab: dringendstes zuerst; sonst flach sortiert oder nach Ort/Kategorie gruppiert.
   if(_tile===EXP||ord==='exp'||ord==='name'||ord==='qty'){
-    el.innerHTML=(_tile===EXP?shown:pantrySort(shown,ord,dueOf)).map(row).join('');
+    el.innerHTML=(_tile===EXP?shown:pantrySort(shown,ord,dueOf)).map(rowOf).join('');
     return;
   }
   var groups=byCat
@@ -604,7 +788,7 @@ function renderList(){
   groups.forEach(function(g){
     if(!g.a.length)return;
     html+=groupHead(g.t);
-    pantrySort(g.a,'name').forEach(function(it){html+=row(it);});
+    pantrySort(g.a,'name').forEach(function(it){html+=rowOf(it);});
   });
   el.innerHTML=html;
 }
@@ -712,11 +896,32 @@ function renderItemSum(it){
     +cell('Mindestmenge',+it.min>0?fmtN(it.min)+' Stück':'–')
     +'</div>'
     +(e?'<div class="pantry-sum-exp" style="color:'+expiryColor(e)+';">'+esc(expiryText(e))+'</div>':'')
+    +useText(it)
     +'<div class="pantry-sum-acts">'
       +'<button type="button" class="seb" data-act="NTPantry.toShop">🛒 Auf den Zettel</button>'
       +'<button type="button" class="seb" data-act="NTPantry.editFields">✏️ Bearbeiten</button>'
     +'</div></div>';
 }
+// Verbrauch und Prognose im Artikel-Detail (B2), ausdrücklich als Schätzung.
+function useText(it){
+  var r=usage(it);
+  if(!r)return '<div class="pantry-sum-use">📈 Verbrauch: noch keine Schätzung — dafür braucht es mindestens 3 Entnahmen über eine Woche.</div>';
+  var ro=pantryRunout(+it.q||0,r);
+  var t='📈 Verbrauch ca. '+fmtUse(r.perWeek)+' Stück pro Woche'+(r.gPerWeek>0?' ('+fmtUse(r.gPerWeek>=1000?r.gPerWeek/1000:r.gPerWeek)+(r.gPerWeek>=1000?' kg)':' g)'):'');
+  if(ro!==null&&(+it.q||0)>0)t+=' · '+(ro<=0?'geht heute aus':'reicht bis ca. '+fmtD(addDays(today(),ro)));
+  return '<div class="pantry-sum-use">'+esc(t)+'<small>Schätzung aus '+r.n+' Entnahmen in '+r.days+' Tagen'+(it.auto?' · 🔁 Dauerartikel':'')+'</small></div>';
+}
+// Mindestmenge vorschlagen (B3): Bedarf für eine Woche, nur per Tipp übernommen.
+function renderMinSug(it){
+  var el=document.getElementById('pantryItemMinSug');
+  if(!el)return;
+  var s=it?pantryMinSuggest(usage(it),7):0;
+  if(!s||s===+it.min){el.innerHTML='';return;}
+  el.innerHTML='<div class="pantry-min-sug"><span>Vorschlag aus dem Verbrauch: <b>'+s+' Stück</b> (eine Woche)</span>'
+    +'<button type="button" class="seb" data-act="NTPantry.takeMinSug" data-args="'+args([s])+'">Übernehmen</button></div>';
+}
+/** @param {number} s */
+function takeMinSug(s){setVal('pantryItemMin',String(s));showToast('Mindestmenge '+s+' Stück eingetragen — mit „Speichern“ übernehmen');}
 // Letzte Buchungen dieses Artikels, mit Rückgängig.
 function renderItemLog(it){
   var el=document.getElementById('pantryItemLog');
@@ -731,6 +936,7 @@ function refreshItem(it){
   renderCharges(it);
   renderItemExtras(it);
   renderItemLog(it);
+  renderMinSug(it);
 }
 function current(){return _editId?byId(_editId):null;}
 // D2: Charge heute geöffnet (Datum danach im Feld änderbar).
@@ -759,6 +965,48 @@ function toShop(){
   var need=pantryNeed(it.q,it.min);
   NTShop.add(it.n,need>0?need+' Stück':'',catOf(it),it.ic||'');
   showToast('🛒 '+(it.ic||'')+' '+it.n+' steht auf dem Einkaufszettel');
+}
+// Nachkaufen-Ansicht (C3): „Auf den Zettel“ jetzt — auch gegen ein früheres
+// „diesmal nicht“ — und „Diesmal nicht“.
+/** @param {string} id */
+function restockNow(id){
+  var it=byId(id);if(!it)return;
+  autoState(it);
+  var w=pantryRestockWhy(+it.q||0,+it.min||0,runout(it),Infinity);
+  var ex=putOnList(it,w?whyText(w):'nachkaufen');
+  if(!ex)return;
+  touch(it);
+  showToast('🛒 '+(it.ic||'')+' '+it.n+' steht auf dem Einkaufszettel');
+}
+/** @param {string} id */
+function skipRestock(id){
+  var it=byId(id);if(!it)return;
+  var s=it.rs&&it.rs.s?shopById(it.rs.s):null,kept=false;
+  // Nur einen rein automatischen Eintrag entfernen; braucht ihn ein Rezept, bleibt er.
+  if(s&&!s.d&&s.pv&&window.NTShop){if(s.rc&&s.rc.length)kept=true;else NTShop.remove(s.id);}
+  delete it.rs;it.rsNo=Date.now();
+  touch(it);
+  showToast(kept?'Bleibt für ein Rezept auf dem Zettel · kommt sonst erst nach dem nächsten Einkauf wieder':'Diesmal nicht · kommt nach dem nächsten Einkauf wieder in Frage');
+}
+// ⋯ Mehr: selten Gebrauchtes (Lagerorte, Teilen, Verlauf) und der Vorlauf.
+function openMore(){renderMore();openOv('pantryMoreOv');}
+function renderMore(){
+  var sel=/** @type {HTMLSelectElement} */ (document.getElementById('pantryLead'));
+  if(sel){
+    if(!sel.options.length)sel.innerHTML=LEADS.map(function(n){return '<option value="'+n+'">'+n+(n===1?' Tag':' Tage')+' vorher</option>';}).join('');
+    sel.value=String(lead());
+  }
+}
+// Aus ⋯ Mehr geöffnet: das kleine Blatt schließt, damit „zurück“ in der Liste landet.
+function leaveMore(){if(isOpen('pantryMoreOv'))closeOv('pantryMoreOv');}
+/** @param {string} v */
+function setLead(v){
+  var n=+v;if(LEADS.indexOf(n)<0)return;
+  S.pantryLead=n;saveS();
+  // Neuer Vorlauf gilt sofort für alle Dauerartikel.
+  items().forEach(function(it){if(it.auto)restockItem(it);});
+  saveS();Sync.schedule();render();
+  showToast('Nachkaufen '+n+(n===1?' Tag':' Tage')+' vorher');
 }
 function editFields(){
   var box=document.getElementById('pantryItemEdit');
@@ -796,6 +1044,10 @@ function openItem(id){
   setVal('pantryItemMin',it&&+it.min>0?fmtN(it.min):'');
   setVal('pantryItemHd',it&&+it.hd>0?String(Math.round(it.hd)):'');
   setVal('pantryItemUseQ','1');
+  var au=/** @type {HTMLInputElement} */ (document.getElementById('pantryItemAuto'));
+  if(au)au.checked=!!(it&&it.auto);
+  var ld=document.getElementById('pantryItemLead');
+  if(ld)ld.textContent=lead()+(lead()===1?' Tag':' Tage');
   _pendingBc='';
   var sel=document.getElementById('pantryItemLoc');
   if(sel)sel.innerHTML=locOptions(it?it.loc:chipLoc());
@@ -811,6 +1063,7 @@ function openItem(id){
   renderCharges(it);
   renderItemExtras(it);
   renderItemLog(it);
+  renderMinSug(it);
   openOv('pantryItemOv');
 }
 function num(s){var v=parseFloat(String(s||'').replace(',','.'));return isFinite(v)&&v>0?v:0;}
@@ -885,6 +1138,9 @@ function saveItem(){
   it.min=num(val('pantryItemMin'));
   it.hd=Math.round(num(val('pantryItemHd')));
   if(!it.hd)delete it.hd;
+  var auto=/** @type {HTMLInputElement} */ (document.getElementById('pantryItemAuto'));
+  if(auto&&auto.checked)it.auto=1;
+  else if(auto){delete it.auto;delete it.rsNo;}
   var lots=stockLots(it).map(function(lot){return Object.assign({},lot);}),newRows=[],fixes=[];
   /** @type {any} */
   var firstNew=null;
@@ -979,7 +1235,7 @@ function scanUnknown(code,prod){
 // ════════ Verlauf (#336) ════════
 var KIND={kauf:'＋ Gekauft',verbrauch:'🍽️ Verbraucht',verderb:'🗑️ Weggeworfen',kochen:'👨‍🍳 Gekocht',korrektur:'✏️ Korrigiert'};
 var SRC={hand:'',zettel:'vom Einkaufszettel',scan:'per Scan',foto:'vom Foto'};
-function openLog(){trimLog();openOv('pantryLogOv');renderLog();}
+function openLog(){leaveMore();trimLog();openOv('pantryLogOv');renderLog();}
 function monthKey(d){return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2);}
 function renderLog(){
   var el=document.getElementById('pantryLogList'),ws=document.getElementById('pantryWaste');
@@ -1059,18 +1315,29 @@ function checkRemind(){
   if(S.pantryRemindDay===d)return;
   if(!('Notification' in window)||Notification.permission!=='granted')return;
   var ex=expiring();
-  if(!ex.length)return;
+  // C4: eine Meldung für beides — Ablaufendes und was der tägliche Nachkauf-Lauf
+  // heute auf den Zettel gesetzt hat.
+  var news=S.pantryRestockNews&&S.pantryRestockNews.d===d&&Array.isArray(S.pantryRestockNews.n)?S.pantryRestockNews.n:[];
+  if(!ex.length&&!news.length)return;
   S.pantryRemindDay=d;saveS();
   var names=ex.slice(0,4).map(function(x){return (x.it.ic||'')+' '+x.it.n+' ('+(x.e.days<0?'abgelaufen':(x.e.days===0?'heute':(x.e.days===1?'morgen':fmtD(x.e.d))))+')';});
-  NTRemind.notify('🥫 '+ex.length+' Artikel '+(ex.length===1?'läuft':'laufen')+' bald ab',{body:names.join(', ')+(ex.length>4?' …':''),tag:'nt-pantry-exp'});
+  var title=[];
+  if(ex.length)title.push(ex.length+' Artikel '+(ex.length===1?'läuft':'laufen')+' bald ab');
+  if(news.length)title.push(news.length+' auf dem Einkaufszettel');
+  var body=[];
+  if(names.length)body.push(names.join(', ')+(ex.length>4?' …':''));
+  if(news.length)body.push('Nachkaufen: '+news.slice(0,4).join(', ')+(news.length>4?' …':''));
+  NTRemind.notify('🥫 '+title.join(' · '),{body:body.join('\n'),tag:'nt-pantry-exp'});
 }
+// Einmal am Tag: erst nachkaufen, dann die eine Meldung (sie nennt beides).
+function daily(){restockDaily();checkRemind();}
 
 // Einkaufszettel: nur, was der Vorrat nicht deckt (#334).
 /** @param {Array<any>} ings */
 function shortfall(ings){return pantryShortfall(ings,items());}
 
 // ════════ Lagerorte ════════
-function openLocs(){openOv('pantryLocsOv');renderLocs();}
+function openLocs(){leaveMore();openOv('pantryLocsOv');renderLocs();}
 function renderLocs(){
   var el=document.getElementById('pantryLocsList');
   if(!el)return;
@@ -1326,10 +1593,12 @@ function boot(){
   trimLog();
   render();
   Sync.run();
-  checkRemind();
-  setInterval(checkRemind,30*60000);
+  // Der tägliche Nachkauf (und danach die Meldung) wartet auf den ersten Abgleich, damit er sieht, was
+  // das andere Gerät schon auf den Zettel gesetzt hat.
+  setTimeout(daily,5000);
+  setInterval(daily,30*60000);
 }
-document.addEventListener('visibilitychange',function(){if(!document.hidden){Sync.run();checkRemind();}});
+document.addEventListener('visibilitychange',function(){if(!document.hidden){Sync.run();setTimeout(daily,3000);}});
 
 window.NTPantry={
   boot:boot,open:open,close:close,render:render,renderCard:renderCard,setFilter:setFilter,
@@ -1343,7 +1612,9 @@ window.NTPantry={
   openCook:openCook,openRecipe:openRecipe,aiIdeas:aiIdeas,openExpiring:openExpiring,expiring:expiring,
   onBought:onBought,useRecipe:useRecipe,offerMeal:offerMeal,confirmMeal:confirmMeal,shortfall:shortfall,
   consume:consume,dropBarcodes:dropBarcodes,scan:scan,openLog:openLog,undo:undo,
-  remindOn:remindOn,setRemind:setRemind,checkRemind:checkRemind,
+  remindOn:remindOn,setRemind:setRemind,checkRemind:checkRemind,daily:daily,restockDaily:restockDaily,
+  restockNow:restockNow,skipRestock:skipRestock,takeMinSug:takeMinSug,openMore:openMore,setLead:setLead,
+  usage:function(id){var it=byId(id);return it?usage(it):null;},
   count:function(){return items().length;},lowCount:function(){return items().filter(low).length;},
   Sync:Sync
 };

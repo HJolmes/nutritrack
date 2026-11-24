@@ -54,6 +54,12 @@ module.exports=async function domains(page,output,width){
   assert.equal(await page.evaluate(id=>S.pantry.find(p=>p.id===id).q,item.id),1);
   await page.evaluate(id=>{const e=S.pantryLog.find(e=>e.pid===id&&e.k==='verbrauch');NTPantry.undo(e.id);closeOv('pantryItemOv');},item.id);
   assert.equal(await page.evaluate(id=>S.pantry.find(p=>p.id===id).q,item.id),2,'Undo restores the quantity');
+  // Selten Gebrauchtes liegt hinter ⋯ Mehr: Verlauf per Klick erreichbar, Kopf mit vier Werkzeugen.
+  await page.locator('#pantryOv.open [data-act="NTPantry.openMore"]').click();
+  await page.locator('#pantryMoreOv.open').getByRole('button',{name:'Verlauf'}).click();
+  await page.locator('#pantryLogOv.open').waitFor();
+  assert.equal(await page.locator('#pantryOv .pantry-tools .nt-tool').count(),4);
+  await page.evaluate(()=>closeOv('pantryLogOv'));
   await page.evaluate(id=>{S.pantry.find(p=>p.id===id).mhd=NTBaby.today();NTUI.go('household');},item.id);
   await page.locator('.b3-expiry').getByRole('button',{name:'Artikel anzeigen'}).click();
   assert.match(await page.locator('#pantryOv.open #pantryStats [aria-pressed="true"]').textContent(),/Läuft ab/);

@@ -1394,6 +1394,117 @@ function pantrySort(items,mode,dueOf){
   return a.sort(byName);
 }
 
+// ── Vorrat: Verbrauch lernen, Prognose, Nachkauf ──
+// Als Verbrauch zählt nur, was gegessen oder gekocht wurde: Buchungen mit
+// k 'verbrauch' (−, Verbraucht, Scan, Mahlzeit) oder 'kochen' und d < 0.
+// Nicht: 'verderb' (weggeworfen), 'korrektur' (Zählfehler, Charge entfernt),
+// 'kauf' und alles, was rückgängig gemacht wurde (u). Gelesen wird nur der
+// geteilte Verlauf S.pantryLog — jede Buchung hat dort eine eigene ID, zwei
+// Geräte zählen also nichts doppelt. Das Fenster (8 Wochen) liegt innerhalb der
+// 90 Tage, die der Verlauf behält; eine eigene, verdichtete Statistik braucht
+// es deshalb nicht.
+var PANTRY_USE_KINDS=['verbrauch','kochen'];
+var PANTRY_USE_DAYS=56,PANTRY_USE_MIN_N=3,PANTRY_USE_MIN_DAYS=7;
+// Menge einer Buchung in Stück des HEUTIGEN Artikels: wurde die Packungsgröße
+// (Gramm je Stück) seitdem geändert, rechnet `e.g` (Gramm je Stück zur Zeit der
+// Buchung) über Gramm um. Ohne Gramm zählt das Stück, wie es gebucht wurde.
+/** @param {any} e @param {number} g */
+function _pantryPieces(e,g){
+  var a=Math.abs(+e.d||0),eg=+e.g||0;
+  return g>0&&eg>0?a*eg/g:a;
+}
+// Verbrauch eines Artikels pro Tag aus dem Verlauf. `opts.now` (ms) ist das
+// Ende, `opts.q` der heutige Bestand, `opts.g` Gramm je Stück, `opts.from` (ms)
+// der Beginn des lückenlosen Verlaufs (älter ist gekappt). Zeiten, in denen der
+// Bestand laut Verlauf leer war, zählen nicht (es gab nichts zu verbrauchen);
+// war der Artikel zu Fensterbeginn schon da, zählt das Fenster ab Beginn.
+// Ohne mindestens `minN` Entnahmen über `minDays` Tage: null (noch keine Aussage).
+/**
+ * @param {Array<any>} log
+ * @param {string} pid
+ * @param {{now:number,q?:number,g?:number,from?:number,days?:number,minN?:number,minDays?:number}} opts
+ * @returns {{perDay:number,perWeek:number,gPerWeek:number,n:number,days:number,total:number}|null}
+ */
+function pantryUseRate(log,pid,opts){
+  var now=+opts.now,g=+(opts.g||0);
+  var start=Math.max(now-(opts.days||PANTRY_USE_DAYS)*864e5,+(opts.from||0));
+  var es=(log||[]).filter(function(e){var t=+(e&&e.t)||0;return e&&e.pid===pid&&!e.u&&t>=start&&t<=now;})
+    .sort(function(a,b){return (+b.t||0)-(+a.t||0);});
+  var uses=es.filter(function(e){return PANTRY_USE_KINDS.indexOf(e.k)>=0&&(+e.d||0)<0;});
+  if(uses.length<(opts.minN||PANTRY_USE_MIN_N))return null;
+  // Bestand rückwärts aus dem heutigen Stand: zwischen zwei Buchungen gilt der
+  // Bestand nach der älteren. Leer (0) = Lücke. Fehlt eine Buchung (negativ),
+  // ist der Bestand unbekannt und zählt nicht als Lücke.
+  var stock=+(opts.q||0),gap=0,newer=now;
+  es.forEach(function(e){
+    if(Math.abs(stock)<1e-6)gap+=newer-(+e.t||0);
+    stock=_pantryR3(stock-(+e.d||0));
+    newer=+e.t||0;
+  });
+  var begin=stock>1e-6?start:newer;
+  var days=(now-begin-gap)/864e5;
+  if(days<(opts.minDays||PANTRY_USE_MIN_DAYS))return null;
+  var total=uses.reduce(function(s,e){return s+_pantryPieces(e,g);},0);
+  var perDay=total/days;
+  return {perDay:perDay,perWeek:perDay*7,gPerWeek:g>0?perDay*7*g:0,n:uses.length,days:Math.round(days),total:_pantryR3(total)};
+}
+// Reicht noch ca. … ganze Tage (0 = geht heute aus), null ohne Verbrauchsrate.
+/** @param {number} q @param {any} rate */
+function pantryRunout(q,rate){
+  if(!rate||!(rate.perDay>0))return null;
+  return Math.max(0,Math.floor((+q||0)/rate.perDay+1e-9));
+}
+// Üblicher Kauf: Median der letzten fünf Einbuchungen (nicht rückgängig), in
+// Stück des heutigen Artikels, ganzzahlig, mindestens 1. Ohne Einbuchung 1.
+/** @param {Array<any>} log @param {string} pid @param {number} [g] */
+function pantryUsualBuy(log,pid,g){
+  var a=(log||[]).filter(function(e){return e&&e.pid===pid&&e.k==='kauf'&&!e.u&&(+e.d||0)>0;})
+    .sort(function(x,y){return (+y.t||0)-(+x.t||0);}).slice(0,5)
+    .map(function(e){return _pantryPieces(e,+(g||0));}).sort(function(x,y){return x-y;});
+  if(!a.length)return 1;
+  var m=a.length%2?a[(a.length-1)/2]:(a[a.length/2-1]+a[a.length/2])/2;
+  return Math.max(1,Math.round(m));
+}
+// Mindestmenge vorschlagen: Bedarf für `days` Tage (Standard eine Woche),
+// aufgerundet, mindestens 1. 0 = kein Vorschlag (keine Rate).
+/** @param {any} rate @param {number} [days] */
+function pantryMinSuggest(rate,days){
+  if(!rate||!(rate.perDay>0))return 0;
+  return Math.max(1,Math.ceil(rate.perDay*(days||7)-1e-9));
+}
+// Muss ein Dauerartikel auf den Zettel? {k:'min',need} unter der Mindestmenge,
+// {k:'soon',days} wenn er laut Prognose in höchstens `lead` Tagen ausgeht,
+// sonst null. `runout` aus pantryRunout (null = keine Prognose).
+/** @param {number} q @param {number} min @param {number|null} runout @param {number} lead */
+function pantryRestockWhy(q,min,runout,lead){
+  var need=pantryNeed(q,min);
+  if(need>0)return {k:'min',need:need,days:runout};
+  if(runout!==null&&runout!==undefined&&runout<=lead)return {k:'soon',need:0,days:runout};
+  return null;
+}
+// Zustand des automatischen Nachkaufs eines Artikels. `rs` = {s: ID auf dem
+// Zettel, t: gesetzt am (ms)} oder leer, `no` = „diesmal nicht“ seit (ms) oder 0,
+// `shop` = der Zettel-Eintrag {open, done, gone (Grabstein)} oder null (nicht
+// da — etwa weil der Sync des Zettels noch aussteht), `boughtAt` = letzte
+// Einbuchung (ms). Rückgabe {k, rs, no}: k 'listed' (steht drauf), 'wait'
+// (noch nicht da, nicht erneut setzen), 'blocked' (vom Zettel genommen oder
+// „diesmal nicht“: bis zur nächsten Einbuchung oder `blockDays`), 'free' (darf
+// gesetzt werden); rs/no sind die neuen Werte (rs false = Markierung weg).
+/** @param {any} rs @param {number} no @param {any} shop @param {number} boughtAt @param {number} now @param {number} blockDays @param {number} [waitDays] */
+function pantryAutoState(rs,no,shop,boughtAt,now,blockDays,waitDays){
+  no=+no||0;boughtAt=+boughtAt||0;
+  var block=(blockDays||14)*864e5;
+  if(rs&&rs.s){
+    if(shop&&shop.open)return {k:'listed',rs:true,no:0};
+    if(boughtAt>(+rs.t||0)||(shop&&shop.done))return {k:'free',rs:false,no:0};
+    if(shop&&shop.gone)return {k:'blocked',rs:false,no:now};
+    if(now-(+rs.t||0)<(waitDays||1)*864e5)return {k:'wait',rs:true,no:0};
+    return {k:'free',rs:false,no:0};
+  }
+  if(no&&boughtAt<=no&&now-no<block)return {k:'blocked',rs:false,no:no};
+  return {k:'free',rs:false,no:0};
+}
+
 // ── Baby: Ende einer Mahlzeit ──
 // „Letzte Mahlzeit vor …" zählt ab dem Ende: Beim Stillen liegt e.ts am Beginn,
 // e.min ist die Stilldauer – Ende = Beginn + Dauer. Laufende Stoppuhr (e.run)

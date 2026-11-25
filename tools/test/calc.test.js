@@ -1484,14 +1484,22 @@ test('pantryOpenOne: ein Stück abteilen, Abbuchen per Charge trifft das abgetei
   assert.equal(r1.lots.find(l => l.id === 'b').op, '2026-11-25');
   assert.equal(lots[1].op, undefined);                                            // Eingabe unverändert
   const r2 = C.pantryOpenOne(lots, 'a', '2026-11-25', 3);
-  assert.equal(r2.id, 'a~o2026-11-25');
-  assert.deepEqual(plain(r2.lots.map(l => [l.id, l.q, l.op || ''])), [['a', 2, ''], ['a~o2026-11-25', 1, '2026-11-25'], ['b', 1, '']]);
+  assert.equal(r2.id, 'a~o1');
+  assert.deepEqual(plain(r2.lots.map(l => [l.id, l.q, l.op || ''])), [['a', 2, ''], ['a~o1', 1, '2026-11-25'], ['b', 1, '']]);
   const r3 = C.pantryOpenOne(r2.lots, 'a', '2026-11-25', 3);
-  assert.equal(r3.id, 'a~o2026-11-25-2');
+  assert.equal(r3.id, 'a~o2');
   const d = C.pantryDebit(r2.lots, 3, 'a', 3);                                    // Kauf von „a“ rückgängig
   assert.equal(d.lots.filter(l => l.id !== 'b').reduce((n, l) => n + l.q, 0), 0);
   assert.equal(d.lots.find(l => l.id === 'b').q, 1);
   assert.equal(C.pantryOpenOne([{ id: 'x', q: 1, op: '2026-11-20' }], '', '2026-11-25', 3), null);
+});
+test('pantrySplitOne: ein Stück mit denselben Daten abteilen, nur bei mehr als einem', () => {
+  const C = load({});
+  const r = C.pantrySplitOne([{ id: 'a', q: 3, mhd: '2026-12-06', in: '2026-11-25' }], 'a', 's');
+  assert.deepEqual(plain(r.lots), [{ id: 'a', q: 2, mhd: '2026-12-06', in: '2026-11-25' }, { id: 'a~s1', q: 1, mhd: '2026-12-06', in: '2026-11-25' }]);
+  assert.equal(C.pantrySplitOne(r.lots, 'a~s1', 's'), null);
+  assert.equal(C.pantrySplitOne([{ id: 'a', q: 1.5 }], 'a', 's').lots[0].q, 0.5);
+  assert.equal(C.pantrySplitOne([], 'a', 's'), null);
 });
 test('pantryScanAccept: gleicher Code erst nach der Pause erneut', () => {
   const C = load({});

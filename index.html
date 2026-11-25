@@ -3221,7 +3221,7 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
         <div id="pantryFirstCharge" class="lbl">Haltbarkeit</div>
         <div id="pantryCharges"></div>
         <button type="button" class="seb" data-act="NTPantry.addChargeRow">＋ Charge mit eigenem Datum</button>
-        <div style="font-size:12px;color:var(--mu);line-height:1.5;margin:8px 0;">Weitere Chargen erhöhen den Bestand. Abgezogen wird zuerst aus geöffneten Chargen, dann aus der, die am frühesten abläuft. „Geschätzt“ ist ein vorsichtiger Richtwert, kein Packungsdatum.</div>
+        <div style="font-size:12px;color:var(--mu);line-height:1.5;margin:8px 0;">Andere Daten? „＋ Charge“ — ohne Bestand teilen sich die Zeilen die Stückzahl oben, sonst kommen sie dazu. „✂️ 1 Stück abteilen“ trennt nachträglich. Abgezogen wird zuerst aus angebrochenen Chargen, dann aus der, die am frühesten abläuft. „Geschätzt“ ist ein vorsichtiger Richtwert, kein Packungsdatum.</div>
       </div>
       <div id="pantryItemLog"></div>
       <div id="pantryItemEdit">
@@ -3243,7 +3243,7 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
         <div style="display:flex;gap:8px;">
           <div style="flex:1;min-width:0;">
             <label class="lbl" for="pantryItemQ">Stück</label>
-            <div class="sf"><input type="text" class="sinp" id="pantryItemQ" inputmode="decimal" autocomplete="off"></div>
+            <div class="sf"><input type="text" class="sinp" id="pantryItemQ" inputmode="decimal" autocomplete="off" oninput="NTPantry.qtySync(true)"></div>
           </div>
           <div style="flex:1;min-width:0;">
             <label class="lbl" for="pantryItemG">Gramm je Stück</label>

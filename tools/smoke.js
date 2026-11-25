@@ -812,6 +812,25 @@ const EXPECTED_NAMESPACES = [
       NTPantry.saveItem();
       const cf = S.pantry.find((x) => x.n === 'Smoke-Cremefine');
       out.learn = !!cf && cf.hd === 12 && cf.loc === 'kuehl' && cf.lots[0].estimated === false;
+      // 3 Joghurt: 2 × Datum A, 1 × Datum B in einem Zug; danach 1 Stück abteilen
+      NTPantry.openItem('');
+      document.getElementById('pantryItemName').value = 'Smoke-Joghurt';
+      document.getElementById('pantryItemQ').value = '3';
+      NTPantry.qtySync(true);
+      document.getElementById('pantryItemMhd').value = addDays(today(), 11);
+      NTPantry.addChargeRow();
+      const last = [...document.querySelectorAll('#pantryCharges .pantry-charge')].pop();
+      last.querySelector('.pantry-charge-mhd').value = addDays(today(), 7);
+      const q1 = document.getElementById('pantryItemQ1').value;
+      NTPantry.saveItem();
+      const jo = S.pantry.find((x) => x.n === 'Smoke-Joghurt');
+      const dates = jo ? jo.lots.map((l) => l.q + '×' + l.mhd).sort().join('|') : '';
+      NTPantry.openItem(jo.id);
+      const big = jo.lots.find((l) => l.q === 2);
+      NTPantry.splitLot(big.id);
+      out.multiDate = q1 === '2' && jo.q === 3 && dates === [ '1×' + addDays(today(), 7), '2×' + addDays(today(), 11) ].sort().join('|')
+        && jo.lots.length === 3 && jo.lots.every((l) => l.q === 1) && jo.q === 3;
+      closeOv('pantryItemOv');
       // Ablauf-Meldung einmal am Tag (Notification gestellt)
       const realN = window.Notification, realNotify = NTRemind.notify; let sent = 0;
       window.Notification = /** @type {any} */ ({ permission: 'granted' });
@@ -877,7 +896,8 @@ const EXPECTED_NAMESPACES = [
       hd: 'gelernte Haltedauer 5 Tage: leer aufgefüllt → MHD heute + 5 (#337)',
       opened: '📂 in der Liste teilt ein Stück ab, eigene Angebrochen-Frist zählt',
       estPrefill: 'neue Packung: „ca.“-MHD im Feld, Lagerort Kühlschrank vorgeschlagen',
-      learn: 'Packungsdatum beim Kauf lehrt die Haltedauer, gilt nicht als geschätzt', remind: 'Ablauf-Meldung höchstens einmal am Tag',
+      learn: 'Packungsdatum beim Kauf lehrt die Haltedauer, gilt nicht als geschätzt',
+      multiDate: 'neuer Artikel: Stück je Zeile (2 × A, 1 × B), ✂️ 1 Stück abteilen', remind: 'Ablauf-Meldung höchstens einmal am Tag',
       remindChk: 'Schalter in Einstellungen → Erinnerungen', scanKnown: 'bekannter Barcode ＋1, Scanner bleibt offen (#335)',
       scanNew: 'neuer Barcode → Rückfrage unter dem Sucherbild, Scanner bleibt offen, „Zuordnen“ → Artikel-Dialog mit Name und Gramm aus Open Food Facts', scanSaved: 'Artikel mit Barcode gespeichert',
       sync: 'eigener Topf „Vorrat“ im Sync-Kern' })) {

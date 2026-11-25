@@ -1178,7 +1178,8 @@ function chargeRow(it,lot,first){
   if(!lot){
     var id=first?'':uid('charge-row');
     return '<div class="pantry-charge"'+(id?' id="'+id+'"':' data-new-first="1"')+' data-lot-id="">'
-      +(first?'<div id="pantryItemEst" class="pantry-charge-note"></div>':'<label>Stück<input class="sinp pantry-charge-qty" inputmode="decimal" value="1"></label>')
+      +(first?'<div id="pantryItemEst" class="pantry-charge-note"></div>':'')
+      +'<label>Stück<input class="sinp pantry-charge-qty"'+(first?' id="pantryItemQ1"':'')+' inputmode="decimal" value="1" oninput="NTPantry.qtySync(false)"></label>'
       +'<label><span class="pantry-mhd-lbl">MHD</span><input type="date" class="sinp pantry-charge-mhd"'+ids.mhd+' value="" onchange="NTPantry.formChanged()"></label>'
       +'<label>Verbrauchsdatum<input type="date" class="sinp pantry-charge-vd"'+ids.vd+' value=""></label>'
       +(id?'<button type="button" class="seb" data-act="NTPantry.removeChargeRow" data-args="'+args([id])+'">Zeile entfernen</button>':'')+'</div>';
@@ -1199,6 +1200,7 @@ function chargeRow(it,lot,first){
     +'<div class="pantry-charge-acts">'
       +(lot.op?'<span></span>':'<button type="button" class="seb" data-act="NTPantry.openLot" data-args="'+args([lot.id])+'" aria-label="Heute angebrochen markieren">📂 Angebrochen</button>')
       +'<button type="button" class="seb" data-act="NTPantry.dropLot" data-args="'+args([lot.id])+'">🗑️ Entfernen</button>'
+      +((+lot.q||0)>1?'<button type="button" class="seb" data-act="NTPantry.splitLot" data-args="'+args([lot.id])+'">✂️ 1 Stück abteilen</button>':'')
     +'</div></div>';
 }
 function renderCharges(it){
@@ -1209,10 +1211,34 @@ function renderCharges(it){
   if(el)el.innerHTML=lots.length?lots.map(function(lot,i){return chargeRow(it,lot,i===0);}).join(''):chargeRow(it,null,true);
   formChanged();
 }
-function addChargeRow(){document.getElementById('pantryCharges').insertAdjacentHTML('beforeend',chargeRow(null,null,false));formChanged();}
+function addChargeRow(){document.getElementById('pantryCharges').insertAdjacentHTML('beforeend',chargeRow(null,null,false));qtySync(true);formChanged();}
+// Ohne Bestand trägt jede neue Zeile „Stück + Datum“; die Gesamtzahl oben ist
+// ihre Summe. `fromTotal`: oben geändert → die erste Zeile nimmt den Rest.
+/** @param {boolean} fromTotal */
+function qtySync(fromTotal){
+  var q1=/** @type {HTMLInputElement} */ (document.getElementById('pantryItemQ1'));
+  if(!q1)return;
+  var others=0;
+  document.querySelectorAll('#pantryCharges .pantry-charge[data-lot-id=""]:not([data-new-first]) .pantry-charge-qty').forEach(function(el){others+=num(/** @type {HTMLInputElement} */ (el).value);});
+  if(fromTotal){
+    var rest=roundQty(num(val('pantryItemQ'))-others);
+    q1.value=fmtN(rest>0?rest:0);
+    if(!(rest>0))setVal('pantryItemQ',fmtN(others));
+  }else setVal('pantryItemQ',fmtN(roundQty(num(q1.value)+others)));
+}
+// ✂️ Ein Stück einer Charge abteilen, z. B. für ein anderes MHD (pantrySplitOne).
+/** @param {string} lotId */
+function splitLot(lotId){
+  var it=current();if(!it)return;
+  var r=pantrySplitOne(stockLots(it),lotId,'s');
+  if(!r)return;
+  writeLots(it,r.lots);touch(it);refreshItem(it);
+  showToast('✂️ 1 Stück abgeteilt — Datum in der neuen Charge anpassen und speichern');
+}
 function removeChargeRow(id){
   var row=document.getElementById(id);
   if(row&&row.classList.contains('pantry-charge')&&!row.getAttribute('data-lot-id'))row.remove();
+  qtySync(true);
 }
 // Kopf der Detailansicht (A4): Bestand, Ort, Kategorie, Mindestmenge, Haltbarkeit, Aktionen.
 function renderItemSum(it){
@@ -1262,7 +1288,7 @@ function renderItemLog(it){
   el.innerHTML=a.length?'<div class="lbl" style="margin-top:12px;">Letzte Buchungen</div>'+a.map(function(e){return logRow(e,true);}).join(''):'';
 }
 function refreshItem(it){
-  _shownQ=fmtN(it.q);
+  _shownQ=fmtN((+it.q||0)>0?it.q:1);
   setVal('pantryItemQ',_shownQ);
   renderItemSum(it);
   renderCharges(it);
@@ -1555,7 +1581,11 @@ function saveItem(){
     if(f.d<0)take(it,-f.d,'korrektur','hand',f.lot.id);
     else if(f.d>0)bumpLot(it,f.lot,f.d);
   });
-  if(totalChanged){
+  if(firstNew){
+    // Ohne Bestand: erste Zeile = Gesamtzahl minus die weiteren Zeilen (qtySync).
+    var rest=roundQty(wanted-newRows.reduce(function(n,r){return n+r.q;},0));
+    if(rest>0)refill(it,rest,isNew&&_pendingBc?'scan':'hand',firstNew.mhd,firstNew.vd);
+  }else if(totalChanged){
     var cur=+it.q||0;
     if(wanted>cur)refill(it,wanted-cur,isNew&&_pendingBc?'scan':'hand',firstNew?firstNew.mhd:'',firstNew?firstNew.vd:'');
     if(wanted<cur&&!isNew)take(it,cur-wanted,'korrektur','hand');
@@ -2348,7 +2378,7 @@ document.addEventListener('visibilitychange',function(){if(!document.hidden){Syn
 window.NTPantry={
   boot:boot,open:open,close:close,render:render,renderCard:renderCard,setFilter:setFilter,
   pickTile:pickTile,setOrder:setOrder,search:search,addQuery:addQuery,
-  openLot:openLot,openNext:openNext,locPicked:locPicked,dropLot:dropLot,toShop:toShop,editFields:editFields,formChanged:formChanged,
+  openLot:openLot,openNext:openNext,splitLot:splitLot,qtySync:qtySync,locPicked:locPicked,dropLot:dropLot,toShop:toShop,editFields:editFields,formChanged:formChanged,
   add:add,step:step,remove:remove,submitInput:submitInput,inputKey:inputKey,
   openItem:openItem,saveItem:saveItem,deleteItem:deleteItem,addChargeRow:addChargeRow,removeChargeRow:removeChargeRow,
   openLocs:openLocs,locAdd:locAdd,locSave:locSave,locMove:locMove,locDelete:locDelete,

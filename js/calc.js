@@ -1498,26 +1498,35 @@ function pantryLearnHd(prev,mhd,vd,todayStr){
   var n=d?pantryDays(d,todayStr):null;
   return n!==null&&n>0&&n<=1825?n:(Math.round(+prev||0)||0);
 }
+// Ein Stück einer Charge abteilen (z. B. für ein anderes MHD): Die Kopie
+// trägt die ID `<Charge>~<tag><Nr>` (Abbuchen per Charge trifft sie mit,
+// siehe pantryDebit) und steht direkt hinter dem Rest. Nur bei mehr als
+// einem Stück; Rückgabe {lots: Kopien, id: ID des abgeteilten Stücks} oder null.
+/** @param {Array<any>} lots @param {string} lotId @param {string} tag @param {any} [patch] */
+function pantrySplitOne(lots,lotId,tag,patch){
+  var copy=(lots||[]).map(function(lot){return Object.assign({},lot);});
+  var lot=copy.find(function(x){return x.id===lotId;});
+  if(!lot||!((+lot.q||0)>1))return null;
+  var base=String(lot.id)+'~'+tag,n=1,id=base+n;
+  while(copy.some(function(x){return x.id===id;}))id=base+(++n);
+  var part=Object.assign({},lot,{id:id,q:1},patch||{});
+  lot.q=_pantryR3(lot.q-1);
+  copy.splice(copy.indexOf(lot)+1,0,part);
+  return {lots:copy,id:id};
+}
 // „Angebrochen“ für eine Packung: Von einer Charge mit mehr als einem Stück
-// wird eines abgeteilt (ID `<Charge>~o<Datum>`, Abbuchen per Charge trifft
-// es mit, siehe pantryDebit) und als geöffnet markiert; sonst die ganze
-// Charge. Ohne `lotId` die Charge, die als nächste verbraucht wird.
+// wird eines abgeteilt (pantrySplitOne) und als geöffnet markiert; sonst die
+// ganze Charge. Ohne `lotId` die Charge, die als nächste verbraucht wird.
 // Rückgabe {lots: Kopien, id: ID der geöffneten Charge} oder null.
 /** @param {Array<any>} lots @param {string} lotId @param {string} todayStr @param {number} [openDays] */
 function pantryOpenOne(lots,lotId,todayStr,openDays){
-  var copy=(lots||[]).map(function(lot){return Object.assign({},lot);});
-  var free=pantryLotOrder(copy,+openDays||0).filter(function(lot){return !lot.op&&(+lot.q||0)>0&&(!lotId||lot.id===lotId);});
+  var free=pantryLotOrder(lots,+openDays||0).filter(function(lot){return !lot.op&&(+lot.q||0)>0&&(!lotId||lot.id===lotId);});
   var lot=free[0];
   if(!lot)return null;
-  if((+lot.q||0)>1){
-    var id=String(lot.id)+'~o'+todayStr,n=2;
-    while(copy.some(function(x){return x.id===id;}))id=String(lot.id)+'~o'+todayStr+'-'+(n++);
-    var part=Object.assign({},lot,{id:id,q:1,op:todayStr});
-    lot.q=_pantryR3(lot.q-1);
-    copy.splice(copy.indexOf(lot)+1,0,part);
-    return {lots:copy,id:id};
-  }
-  lot.op=todayStr;
+  var r=pantrySplitOne(lots,lot.id,'o',{op:todayStr});
+  if(r)return r;
+  var copy=(lots||[]).map(function(x){return Object.assign({},x);});
+  copy.find(function(x){return x.id===lot.id;}).op=todayStr;
   return {lots:copy,id:String(lot.id)};
 }
 // Maßgebliches Datum einer Charge: das früheste aus MHD, Verbrauchsdatum und

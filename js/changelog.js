@@ -2,6 +2,15 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.359',items:[
+    {icon:'📂',text:'<b>Angebrochen</b>: Ein Tipp auf 📂 in der Vorratsliste markiert eine Packung als angebrochen. Wie lange sie dann hält, kannst du je Artikel unter „Angebrochen haltbar“ eintragen, sonst gilt ein Richtwert.',where:'Vorrat'},
+    {icon:'📅',text:'<b>MHD ca.</b>: Eine neue Packung bekommt gleich ein geschätztes MHD ins Datumsfeld. Trägst du das Datum von der Packung ein, lernt die App daraus. Das Feld „Hält nach dem Kauf“ entfällt.',where:'Vorrat'},
+    {icon:'✂️',text:'<b>Verschiedene MHDs leichter</b>: Jede Zeile hat „Stück + MHD“ (z. B. 2 × 06.12., 1 × 02.12.), und „1 Stück abteilen“ trennt eine Charge nachträglich. „📂 Angebrochen“ teilt automatisch nur ein Stück ab.',where:'Vorrat'},
+    {icon:'🫙',text:'<b>Nach dem Öffnen lagern in</b>: Gläser, Konserven, Soßen und Säfte kommen angebrochen automatisch in den Kühlschrank und stehen dort in der Liste, die geschlossenen bleiben im Schrank. Beim Einbuchen gibt es „Schon angebrochen am“; Frist und „gekühlt“ übernimmt die App vom Lagerhinweis der Packung, wenn Open Food Facts ihn kennt.',where:'Vorrat'},
+    {icon:'📚',text:'<b>Richtwerte mit Quelle</b>: Haltbarkeiten abgeglichen mit BMEL („Zu gut für die Tonne“), BZfE und Verbraucherzentrale — z. B. Joghurt angebrochen 4 statt 3 Tage, Pflanzendrink 14 Tage, Joghurt und Salat nicht einfrieren.',where:'Vorrat'},
+    {icon:'📜',text:'<b>Letzte Buchungen</b> stehen im Vorrats-Artikel jetzt ganz unten.',where:'Vorrat'},
+    {icon:'🧊',text:'<b>Lagerort wird vorgeschlagen</b>: Kühl- und TK-Artikel landen beim Anlegen und Scannen direkt im Kühlschrank bzw. Tiefkühler, auch mit den Kategorien von Open Food Facts.',where:'Vorrat'}
+  ]},
   {v:'0.358',items:[
     {icon:'📷',text:'<b>Rezept-Foto am Einkaufszettel</b>: Rezept abfotografieren, prüfen, ins Kochbuch speichern und gleich auswählen, welche Zutaten auf den Zettel kommen.',where:'Einkaufszettel'},
     {icon:'🛒',text:'<b>Vorschau „Zutaten auf den Zettel“</b>: rechnet auf deine Portionen um und lässt Vorrätiges sowie Grundzutaten wie Salz und Öl erst einmal weg. Jede Zeile kannst du an- oder abwählen.',where:'Einkaufszettel · Kochbuch'},

@@ -1268,12 +1268,27 @@ function parsePantryReceipt(text,locIds){
 }
 // Üblicher Lagerort für einen Artikel (Vorbelegung, G1): der erste Ort, dessen
 // Art (pantryPlace) zum üblichen Ort der Produktart passt; sonst ''.
-/** @param {string} name @param {string} cat @param {Array<any>} locs */
-function pantryHomeLoc(name,cat,locs){
-  var s=pantryShelfKind(name,cat);
-  if(!s)return '';
+// Reihenfolge: Produktart aus dem Namen → `hint` (Art laut Open Food Facts,
+// pantryOffPlace) → Rückfall über die Einkaufs-Kategorie.
+/** @param {string} name @param {string} cat @param {Array<any>} locs @param {string} [hint] 'k'|'t'|'v' */
+function pantryHomeLoc(name,cat,locs,hint){
+  var s=pantryShelfKind(name,''),c=s?null:pantryShelfKind('',cat);
+  var h=s?s.h:(hint==='k'||hint==='t'||hint==='v'?hint:(c?c.h:''));
+  if(!h)return '';
   var a=(locs||[]).slice().sort(function(x,y){return (+(x&&x.pos)||0)-(+(y&&y.pos)||0);});
-  for(var i=0;i<a.length;i++)if(a[i]&&pantryPlace(a[i])===s.h)return String(a[i].id);
+  for(var i=0;i<a.length;i++)if(a[i]&&pantryPlace(a[i])===h)return String(a[i].id);
+  return '';
+}
+// Üblicher Ort laut Open-Food-Facts-Kategorien (`categories_tags`, z. B.
+// 'en:frozen-foods'): 't' Tiefkühler, 'k' Kühlschrank, 'v' Vorratsschrank,
+// '' ohne Aussage. Tiefkühl schlägt Kühl schlägt Vorrat.
+/** @param {Array<string>} tags */
+function pantryOffPlace(tags){
+  var t=(Array.isArray(tags)?tags:[]).map(function(x){return String(x||'').toLowerCase().replace(/^[a-z]{2}:/,'');});
+  function any(re){return t.some(function(x){return re.test(x);});}
+  if(any(/frozen|surgel|tiefkuehl|tiefgekuehlt|ice-creams/))return 't';
+  if(any(/^(dairies|cheeses|yogurts|fermented-milk-products|creams|cooking-creams|plant-based-creams|butters|meats|prepared-meats|hams|sausages|fishes|seafood|smoked-fishes|eggs|tofu|fresh-|chilled|refrigerated|desserts|dairy-desserts|salads|fresh-pasta)/))return 'k';
+  if(any(/^(canned|cereals|pastas|rices|beverages|snacks|sweet-snacks|salty-snacks|condiments|sauces|spreads|breakfast-cereals|flours|sugars|coffees|teas|baby-foods)/))return 'v';
   return '';
 }
 // Serienscan (G2): Zählt dieser Treffer? Derselbe Code direkt hintereinander
@@ -1374,8 +1389,18 @@ function pantryWasteTip(w,o){
 function pantryMissing(it){return !((+(it&&it.q)||0)>0)||pantryNeed(it&&it.q,it&&it.min)>0;}
 
 // ── Vorrat: Haltbarkeit schätzen, Geöffnet-Frist, älteste Charge zuerst ──
-// RICHTWERTE, von Hand gepflegt und bewusst vorsichtig (eher zu kurz als zu
-// lang) — keine amtliche Angabe und keine Quelle. Sie füllen nur ein Datum
+// RICHTWERTE, bewusst vorsichtig (eher zu kurz als zu lang; bei Spannen der
+// untere Wert). Abgeglichen am 25.11.2026 mit Zu gut für die Tonne (BMEL,
+// zugutfuerdietonne.de/lebensmittel-az), BZfE (bzfe.de, „Lebensmittel richtig
+// lagern“, Milch/Eier/Brot/Schweinefleisch „vom Einkauf in die Küche“,
+// Einfache Sprache „Lagerung“) und Verbraucherzentrale (verbraucherzentrale.de,
+// Haltbarkeit je Produktgruppe). Daraus u. a.: Joghurt geöffnet 4–6 Tage;
+// Joghurt, Dickmilch, saure Sahne, Blattsalat, rohe Kartoffeln/Zwiebeln/Äpfel
+// nicht einfrieren (t = 0); Pflanzendrink geöffnet bis 14 Tage; Aufschnitt 3,
+// Fleisch 1–2, Möhren 7–10 Tage; Hack im TK 2–12 Wochen; Eier in den
+// Kühlschrank. OHNE QUELLE (eigene vorsichtige Werte): feinkost, teig, tofu
+// außer t/o, Pesto, Kochcreme, Honig/Nussnougat, Chips. Herstellerangaben auf
+// der Packung und eigene Angaben im Artikel (`od`) gehen immer vor. Sie füllen nur ein Datum
 // vor, wenn auf der Packung keins eingetragen ist; die Oberfläche zeigt es als
 // „geschätzt“. Je Produktart: [art, Muster auf dem Namen, üblicher Ort,
 // Tage im Kühlschrank (k), im Tiefkühler (t), im Vorratsschrank (v), Tage
@@ -1385,33 +1410,59 @@ function pantryMissing(it){return !((+(it&&it.q)||0)>0)||pantryNeed(it&&it.q,it&
 // Gesucht wird im Namen ohne Umlaute, klein, Satzzeichen als Leerzeichen.
 var PANTRY_SHELF=[
   ['tk',        /(^| )tk( |$)|tiefkuehl|tiefgekuehlt|gefroren|fischstaebchen|speiseeis|(^| )eis( |$)/, 't', 1,90,0,0],
+  ['feinkost',  /feinkost|kartoffelsalat|nudelsalat|fleischsalat|eiersalat|thunfischsalat|krautsalat|wurstsalat|hummus|tzatziki/, 'k', 3,0,0,2],
   ['hmilch',    /(^| )h ?(voll|mager|fettarme?)? ?milch|haltbare ?milch|(^| )uht( |$)/,            'v', 90,90,90,3],
-  ['drink',     /(hafer|soja|mandel|reis|kokos|dinkel)(milch|drink)/,                              'v', 90,0,90,4],
+  ['drink',     /(hafer|soja|mandel|reis|kokos|dinkel)(milch|drink)/,                              'v', 90,0,90,14],
   ['suess',     /schokolade|keks|chips|gummibaer|praline|bonbon|riegel|kuchen/,                    'v', 0,0,90,14],
-  ['konserve',  /(^| )dosen?( |$)|konserve|(^| )glas( |$)|eingelegt|thunfisch|(^| )mais( |$)|kichererbse|passiert|tomatenmark|apfelmus|sauerkraut|rotkohl glas/, 'v', 0,0,365,3],
+  ['konserve',  /(^| )dosen?( |$)|konserve|(^| )glas( |$)|eingelegt|getrocknete tomate|oliven|antipast|kapern|thunfisch|(^| )mais( |$)|kichererbse|passiert|tomatenmark|apfelmus|sauerkraut|rotkohl glas/, 'v', 0,0,365,3],
   ['aufstrich', /marmelade|konfituere|gelee|honig|nougat|nutella|erdnussbutter/,                   'v', 0,0,180,30],
   ['sosse',     /ketchup|senf|mayo|remoulade|sauce|sosse|pesto|dressing|essiggurke/,               'v', 0,0,180,7],
-  ['saft',      /saft|smoothie|nektar/,                                                            'v', 7,0,90,4],
+  ['saft',      /saft|smoothi|nektar/,                                                            'v', 7,0,90,4],
   ['frischkaese',/frischkaese|quark|skyr|mascarpone|ricotta|huettenkaese|mozzarella|feta/,         'k', 7,60,0,3],
-  ['joghurt',   /joghurt|jogurt|kefir|buttermilch|dickmilch|pudding|dessert/,                      'k', 10,60,0,3],
-  ['sahne',     /sahne|schmand|creme fraiche/,                                                     'k', 7,60,0,3],
+  ['joghurt',   /joghurt|jogurt|kefir|buttermilch|dickmilch|pudding|dessert/,                      'k', 10,0,0,4],
+  ['sahne',     /sahne|schmand|creme fraiche|cremefin|kochcreme|cuisine|schlagcreme|creme vega/,  'k', 7,0,0,3],
+  ['tofu',      /tofu|tempeh|seitan/,                                                              'k', 14,90,0,3],
+  ['teig',      /blaetterteig|pizzateig|quicheteig|fertigteig|strudelteig|flammkuchenteig|frischhefe|hefewuerfel/, 'k', 7,60,0,1],
   ['butter',    /butter|margarine/,                                                                'k', 30,90,0,14],
-  ['aufschnitt',/aufschnitt|salami|schinken|wurst|mortadella|lyoner|leberkaese|speck/,             'k', 5,30,0,2],
+  ['aufschnitt',/aufschnitt|salami|schinken|wurst|mortadella|lyoner|leberkaese|speck/,             'k', 3,30,0,2],
   ['kaese',     /kaese|gouda|emmentaler|parmesan|camembert|brie|bergkaese/,                        'k', 14,60,0,7],
   ['beeren',    /beere|kirsche/,                                                                   'k', 3,180,1,1],
   ['trocken',   /nudel|pasta|spaghetti|penne|milchreis|reis( |$)|mehl|haferflocken|muesli|cornflakes|linsen|griess|zucker|knaeckebrot|zwieback|couscous|bulgur|quinoa|polenta|kaffee|(^| )tee( |$)|kakao|backpulver|trockenhefe/, 'v', 0,0,180,90],
   ['milch',     /milch/,                                                                           'k', 5,30,0,3],
-  ['hack',      /hack|gehacktes|(^| )mett( |$)/,                                                   'k', 1,60,0,1],
+  ['hack',      /hack|gehacktes|(^| )mett( |$)/,                                                   'k', 1,14,0,1],
   ['gefluegel', /haehnchen|huhn|huehner|pute|gefluegel|(^| )ente( |$)|entenbrust/,                                      'k', 1,90,0,1],
   ['fisch',     /fisch|lachs|forelle|kabeljau|seelachs|garnele|shrimp|scampi/,                     'k', 1,60,0,1],
-  ['fleisch',   /fleisch|steak|schnitzel|gulasch|braten|(^| )rind|schwein|kotelett|filet/,         'k', 2,90,0,2],
-  ['eier',      /(^| )ei( |$)|eier/,                                                           'k', 21,0,14,1],
+  ['fleisch',   /fleisch|steak|schnitzel|gulasch|braten|(^| )rind|schwein|kotelett|filet/,         'k', 1,90,0,2],
+  ['eier',      /(^| )ei( |$)|eier/,                                                           'k', 21,0,0,1],
   ['toast',     /toast|sandwich/,                                                                  'v', 7,60,5,5],
   ['brot',      /brot|broetchen|baguette|brezel|semmel|croissant|ciabatta/,                        'v', 4,60,3,3],
-  ['salat',     /salat|rucola|spinat|kraeuter|petersilie|schnittlauch|basilikum|sprossen/,        'k', 3,180,1,2],
-  ['lagergemuese',/kartoffel|zwiebel|knoblauch|apfel|aepfel|kuerbis|karotte|moehre|kohl|rote bete/, 'v', 21,180,14,3],
+  ['salat',     /salat|rucola|spinat|kraeuter|petersilie|schnittlauch|basilikum|sprossen/,        'k', 3,0,1,2],
+  ['lagergemuese',/kartoffel|zwiebel|knoblauch|apfel|aepfel|kuerbis|karotte|moehre|kohl|rote bete/, 'v', 7,0,14,3],
   ['obstgemuese',/obst|gemuese|banane|birne|tomate|gurke|paprika|zucchini|pilz|champignon|orange|zitrone|mandarine|traube|pfirsich|avocado|brokkoli|blumenkohl|lauch|porree|aubergine|mango|kiwi|ananas|melone|radieschen|sellerie|bohne|erbse/, 'k', 5,180,4,2]
 ];
+// Produktarten, die ungeöffnet im Schrank stehen, angebrochen aber in den
+// Kühlschrank gehören (Vorschlag für „Nach dem Öffnen lagern in“).
+var PANTRY_OPEN_COOL=['hmilch','drink','konserve','sosse','saft'];
+// 'k', wenn eine angebrochene Packung in den Kühlschrank gehört, sonst ''.
+/** @param {string} name @param {string} [cat] */
+function pantryOpenPlace(name,cat){
+  var s=pantryShelfKind(name,cat);
+  return s&&PANTRY_OPEN_COOL.indexOf(s.id)>=0?'k':'';
+}
+// Lagerhinweis der Packung (Open Food Facts `conservation_conditions`, z. B.
+// „Nach dem Öffnen gekühlt lagern und innerhalb von 3 Tagen verzehren“):
+// {days, cool} — days = Frist nach dem Öffnen (0 = keine erkannt), cool =
+// gekühlt lagern. null ohne Bezug aufs Öffnen.
+/** @param {string} text */
+function pantryOffOpen(text){
+  var t=String(text||'').toLowerCase();
+  if(!/(ö|oe)ffnen|angebrochen|ge(ö|oe)ffnet/.test(t))return null;
+  var m=/(?:innerhalb|binnen)\s+(?:von\s+)?(\d{1,3})\s*(tag|tagen|woche|wochen)\b/.exec(t)||/(\d{1,3})\s*(tage|tagen|wochen)\s+(?:verbrauchen|verzehren|aufbrauchen)/.exec(t);
+  var days=m?(+m[1])*(/^woche/.test(m[2])?7:1):0;
+  var cool=/gek(ü|ue)hlt|k(ü|ue)hlschrank|bei\s*(max\.?\s*)?\+?\d\s*°?\s*c/.test(t);
+  if(!days&&!cool)return null;
+  return {days:days>0&&days<=365?days:0,cool:cool};
+}
 // Ohne Treffer im Namen: Rückfall über die Einkaufs-Kategorie (NTShop) auf
 // die vorsichtigste passende Art; Getränke, Haushalt usw. bleiben ohne Schätzung.
 var PANTRY_SHELF_CAT={obst:'obstgemuese',brot:'brot',milch:'milch',fleisch:'hack',tk:'tk',vorrat:'trocken',suess:'suess'};
@@ -1462,6 +1513,55 @@ function pantryEstimateDays(it,place){
   var s=pantryShelf(it&&it.n,it&&it.c,place);
   return s?s.days:0;
 }
+// Tage, die ein angebrochener Artikel hält: im Tiefkühler keine Frist (0),
+// sonst die eigene Angabe `od` vor dem Richtwert für Art und Ort.
+/** @param {any} it {n,c,od} @param {string} [place] */
+function pantryOpenDays(it,place){
+  if(place==='t')return 0;
+  if(+(it&&it.od)>0)return Math.round(+it.od);
+  var s=pantryShelf(it&&it.n,it&&it.c,place);
+  return s?s.open:0;
+}
+// Haltedauer `hd` lernen: Beim Kauf mit Datum von der Packung gilt der Abstand
+// heute → früheres Datum (MHD/Verbrauchsdatum) als neue Haltedauer; ohne
+// brauchbares Datum (leer, heute oder älter, über 5 Jahre) bleibt `prev`.
+/** @param {number} prev @param {string} mhd @param {string} vd @param {string} todayStr */
+function pantryLearnHd(prev,mhd,vd,todayStr){
+  var d=[mhd,vd].reduce(function(b,x){return x&&(!b||x<b)?x:b;},'');
+  var n=d?pantryDays(d,todayStr):null;
+  return n!==null&&n>0&&n<=1825?n:(Math.round(+prev||0)||0);
+}
+// Ein Stück einer Charge abteilen (z. B. für ein anderes MHD): Die Kopie
+// trägt die ID `<Charge>~<tag><Nr>` (Abbuchen per Charge trifft sie mit,
+// siehe pantryDebit) und steht direkt hinter dem Rest. Nur bei mehr als
+// einem Stück; Rückgabe {lots: Kopien, id: ID des abgeteilten Stücks} oder null.
+/** @param {Array<any>} lots @param {string} lotId @param {string} tag @param {any} [patch] */
+function pantrySplitOne(lots,lotId,tag,patch){
+  var copy=(lots||[]).map(function(lot){return Object.assign({},lot);});
+  var lot=copy.find(function(x){return x.id===lotId;});
+  if(!lot||!((+lot.q||0)>1))return null;
+  var base=String(lot.id)+'~'+tag,n=1,id=base+n;
+  while(copy.some(function(x){return x.id===id;}))id=base+(++n);
+  var part=Object.assign({},lot,{id:id,q:1},patch||{});
+  lot.q=_pantryR3(lot.q-1);
+  copy.splice(copy.indexOf(lot)+1,0,part);
+  return {lots:copy,id:id};
+}
+// „Angebrochen“ für eine Packung: Von einer Charge mit mehr als einem Stück
+// wird eines abgeteilt (pantrySplitOne) und als geöffnet markiert; sonst die
+// ganze Charge. Ohne `lotId` die Charge, die als nächste verbraucht wird.
+// Rückgabe {lots: Kopien, id: ID der geöffneten Charge} oder null.
+/** @param {Array<any>} lots @param {string} lotId @param {string} todayStr @param {number} [openDays] */
+function pantryOpenOne(lots,lotId,todayStr,openDays){
+  var free=pantryLotOrder(lots,+openDays||0).filter(function(lot){return !lot.op&&(+lot.q||0)>0&&(!lotId||lot.id===lotId);});
+  var lot=free[0];
+  if(!lot)return null;
+  var r=pantrySplitOne(lots,lot.id,'o',{op:todayStr});
+  if(r)return r;
+  var copy=(lots||[]).map(function(x){return Object.assign({},x);});
+  copy.find(function(x){return x.id===lot.id;}).op=todayStr;
+  return {lots:copy,id:String(lot.id)};
+}
 // Maßgebliches Datum einer Charge: das früheste aus MHD, Verbrauchsdatum und
 // „geöffnet am“ + Geöffnet-Frist. Leer, wenn nichts davon bekannt ist.
 /** @param {any} lot {mhd,vd,op} @param {number} openDays */
@@ -1487,9 +1587,12 @@ function _pantryR3(v){return Math.round(v*1000)/1000;}
 function pantryDebit(lots,n,lotId,openDays){
   var copy=(lots||[]).map(function(lot){return Object.assign({},lot);});
   var removed=[];
+  // '=<ID>': nur genau diese Charge, ohne abgeteilte Stücke (<ID>~…).
+  var exact=!!lotId&&String(lotId).charAt(0)==='=';
+  if(exact)lotId=String(lotId).slice(1);
   n=_pantryR3(+n||0);
   pantryLotOrder(copy,+openDays||0).forEach(function(lot){
-    if(n<=0||(lotId&&lot.id!==lotId))return;
+    if(n<=0||(lotId&&lot.id!==lotId&&(exact||String(lot.id).indexOf(lotId+'~')!==0)))return;
     var amount=_pantryR3(Math.min(n,+lot.q||0));
     if(!(amount>0))return;
     removed.push(Object.assign({},lot,{q:amount}));

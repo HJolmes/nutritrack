@@ -1429,6 +1429,112 @@ test('pantryHomeLoc: üblicher Ort der Produktart, nach Position', () => {
   assert.equal(C.pantryHomeLoc('TK-Erbsen', 'tk', locs), '');                    // kein Tiefkühler angelegt
   assert.equal(C.pantryHomeLoc('Spülmittel', 'haushalt', locs), '');             // keine Produktart
 });
+test('pantryHomeLoc: Hinweis aus Open Food Facts nur ohne Namenstreffer, vor der Kategorie', () => {
+  const C = load({});
+  const locs = [{ id: 'kuehl', label: 'Kühlschrank', pos: 1 }, { id: 'tk', label: 'Tiefkühler', pos: 2 }, { id: 'vorrat', label: 'Vorratsschrank', pos: 3 }];
+  assert.equal(C.pantryHomeLoc('Cremefin', '', locs), 'kuehl');                    // neue Produktart Sahne-Ersatz
+  assert.equal(C.pantryHomeLoc('Rama Cremefine 15 %', '', locs), 'kuehl');
+  assert.equal(C.pantryHomeLoc('Markenname XY', '', locs, 't'), 'tk');            // nur OFF weiß es
+  assert.equal(C.pantryHomeLoc('Joghurt', '', locs, 'v'), 'kuehl');              // Name schlägt OFF
+  assert.equal(C.pantryHomeLoc('Markenname XY', 'vorrat', locs, 'k'), 'kuehl');  // OFF schlägt Kategorie
+  assert.equal(C.pantryHomeLoc('Markenname XY', 'vorrat', locs), 'vorrat');
+  assert.equal(C.pantryHomeLoc('Markenname XY', '', locs), '');
+});
+test('pantryOffPlace: Tiefkühl vor Kühl vor Vorrat, sonst leer', () => {
+  const C = load({});
+  assert.equal(C.pantryOffPlace(['en:plant-based-foods', 'en:frozen-foods', 'en:dairies']), 't');
+  assert.equal(C.pantryOffPlace(['en:dairies', 'en:creams', 'en:cooking-creams']), 'k');
+  assert.equal(C.pantryOffPlace(['de:kuehlprodukte', 'en:yogurts']), 'k');
+  assert.equal(C.pantryOffPlace(['en:snacks', 'en:sweet-snacks']), 'v');
+  assert.equal(C.pantryOffPlace(['en:plant-based-foods-and-beverages']), '');
+  assert.equal(C.pantryOffPlace(undefined), '');
+});
+test('pantryShelf: neue Produktarten (Cremefine, Tofu, Teig, Feinkost, Smoothie)', () => {
+  const C = load({});
+  assert.equal(C.pantryShelfKind('Cremefine zum Kochen', '').id, 'sahne');
+  assert.equal(C.pantryShelfKind('Bio Tofu natur', '').id, 'tofu');
+  assert.equal(C.pantryShelfKind('Blätterteig', '').id, 'teig');
+  assert.equal(C.pantryShelfKind('Trockenhefe', '').id, 'trocken');               // nicht die frische Hefe
+  assert.equal(C.pantryShelfKind('Kartoffelsalat', '').id, 'feinkost');
+  assert.equal(C.pantryShelfKind('Eiersalat', '').id, 'feinkost');
+  assert.equal(C.pantryShelfKind('Mama Smoothi Baby love', '').id, 'saft');
+});
+test('pantryOpenDays: eigene Angabe vor Richtwert, im Tiefkühler keine Frist', () => {
+  const C = load({});
+  assert.equal(C.pantryOpenDays({ n: 'Milch' }, 'k'), 3);
+  assert.equal(C.pantryOpenDays({ n: 'Milch', od: 2 }, 'k'), 2);
+  assert.equal(C.pantryOpenDays({ n: 'Milch', od: 2 }, 't'), 0);
+  assert.equal(C.pantryOpenDays({ n: 'Ding XY' }, 'k'), 0);
+  assert.equal(C.pantryOpenDays({ n: 'Ding XY', od: 5 }, ''), 5);
+});
+test('pantryLearnHd: Abstand bis zum früheren Packungsdatum, sonst bleibt der alte Wert', () => {
+  const C = load({});
+  assert.equal(C.pantryLearnHd(0, '2026-12-05', '', '2026-11-25'), 10);
+  assert.equal(C.pantryLearnHd(7, '2026-12-05', '2026-11-30', '2026-11-25'), 5);
+  assert.equal(C.pantryLearnHd(7, '', '', '2026-11-25'), 7);
+  assert.equal(C.pantryLearnHd(7, '2026-11-25', '', '2026-11-25'), 7);           // heute: keine Aussage
+  assert.equal(C.pantryLearnHd(7, '2020-01-01', '', '2026-11-25'), 7);
+  assert.equal(C.pantryLearnHd(0, '2040-01-01', '', '2026-11-25'), 0);           // über 5 Jahre: Tippfehler
+});
+test('pantryOpenOne: ein Stück abteilen, Abbuchen per Charge trifft das abgeteilte mit', () => {
+  const C = load({});
+  const lots = [{ id: 'a', q: 3, mhd: '2026-12-10' }, { id: 'b', q: 1, mhd: '2026-12-01' }];
+  const r1 = C.pantryOpenOne(lots, '', '2026-11-25', 3);
+  assert.equal(r1.id, 'b');                                                       // die zuerst fällige
+  assert.equal(r1.lots.find(l => l.id === 'b').op, '2026-11-25');
+  assert.equal(lots[1].op, undefined);                                            // Eingabe unverändert
+  const r2 = C.pantryOpenOne(lots, 'a', '2026-11-25', 3);
+  assert.equal(r2.id, 'a~o1');
+  assert.deepEqual(plain(r2.lots.map(l => [l.id, l.q, l.op || ''])), [['a', 2, ''], ['a~o1', 1, '2026-11-25'], ['b', 1, '']]);
+  const r3 = C.pantryOpenOne(r2.lots, 'a', '2026-11-25', 3);
+  assert.equal(r3.id, 'a~o2');
+  const d = C.pantryDebit(r2.lots, 3, 'a', 3);                                    // Kauf von „a“ rückgängig
+  assert.equal(d.lots.filter(l => l.id !== 'b').reduce((n, l) => n + l.q, 0), 0);
+  assert.equal(d.lots.find(l => l.id === 'b').q, 1);
+  const ex = C.pantryDebit(r2.lots, 1, '=a', 3);                                  // genau „a“, nicht das angebrochene
+  assert.deepEqual(plain(ex.lots.map(l => l.q)), [1, 1, 1]);
+  assert.equal(ex.removed[0].id, 'a');
+  assert.equal(C.pantryOpenOne([{ id: 'x', q: 1, op: '2026-11-20' }], '', '2026-11-25', 3), null);
+});
+test('pantrySplitOne: ein Stück mit denselben Daten abteilen, nur bei mehr als einem', () => {
+  const C = load({});
+  const r = C.pantrySplitOne([{ id: 'a', q: 3, mhd: '2026-12-06', in: '2026-11-25' }], 'a', 's');
+  assert.deepEqual(plain(r.lots), [{ id: 'a', q: 2, mhd: '2026-12-06', in: '2026-11-25' }, { id: 'a~s1', q: 1, mhd: '2026-12-06', in: '2026-11-25' }]);
+  assert.equal(C.pantrySplitOne(r.lots, 'a~s1', 's'), null);
+  assert.equal(C.pantrySplitOne([{ id: 'a', q: 1.5 }], 'a', 's').lots[0].q, 0.5);
+  assert.equal(C.pantrySplitOne([], 'a', 's'), null);
+});
+test('pantryShelf: Richtwerte nach BMEL/BZfE/VZ (25.11.2026)', () => {
+  const C = load({});
+  assert.equal(C.pantryShelf('Joghurt', '', 'k').open, 4);                         // ZT: geöffnet 4–6 Tage
+  assert.equal(C.pantryShelf('Joghurt', '', 't').days, 10);                        // nicht einfrieren → Kühlschrank-Wert
+  assert.equal(C.pantryShelf('Haferdrink', '', 'v').open, 14);
+  assert.equal(C.pantryShelf('Salami', '', 'k').days, 3);
+  assert.equal(C.pantryShelf('Schnitzel', '', 'k').days, 1);
+  assert.equal(C.pantryShelf('Hackfleisch', '', 't').days, 14);
+  assert.equal(C.pantryShelf('Eier', '', 'v').days, 21);                           // Eier gehören in den Kühlschrank
+  assert.equal(C.pantryShelf('Möhren', '', 'k').days, 7);
+  assert.equal(C.pantryShelf('Kartoffeln', '', 't').days, 7);
+});
+test('pantryOpenPlace: Glas/Konserve/Soße/Saft angebrochen in den Kühlschrank', () => {
+  const C = load({});
+  assert.equal(C.pantryOpenPlace('Getrocknete Tomaten im Glas', ''), 'k');
+  assert.equal(C.pantryOpenPlace('Ketchup', ''), 'k');
+  assert.equal(C.pantryShelfKind('Getrocknete Tomaten', '').id, 'konserve');        // nicht frisches Gemüse
+  assert.equal(C.pantryOpenPlace('Getrocknete Tomaten', ''), 'k');
+  assert.equal(C.pantryOpenPlace('H-Milch', ''), 'k');
+  assert.equal(C.pantryOpenPlace('Nudeln', ''), '');
+  assert.equal(C.pantryOpenPlace('Joghurt', ''), '');                              // steht schon im Kühlschrank
+});
+test('pantryOffOpen: Frist und Kühlung aus dem Lagerhinweis der Packung', () => {
+  const C = load({});
+  assert.deepEqual(plain(C.pantryOffOpen('Nach dem Öffnen gekühlt lagern und innerhalb von 3 Tagen verzehren.')), { days: 3, cool: true });
+  assert.deepEqual(plain(C.pantryOffOpen('Nach dem Öffnen im Kühlschrank aufbewahren und binnen 2 Wochen verbrauchen')), { days: 14, cool: true });
+  assert.deepEqual(plain(C.pantryOffOpen('Geöffnet 5 Tage verzehren')), { days: 5, cool: false });
+  assert.deepEqual(plain(C.pantryOffOpen('Nach dem Öffnen bei max. +7 °C lagern')), { days: 0, cool: true });
+  assert.equal(C.pantryOffOpen('Trocken und kühl lagern.'), null);
+  assert.equal(C.pantryOffOpen(''), null);
+});
 test('pantryScanAccept: gleicher Code erst nach der Pause erneut', () => {
   const C = load({});
   assert.equal(C.pantryScanAccept(null, '4001', 0), true);

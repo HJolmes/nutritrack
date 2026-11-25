@@ -785,13 +785,72 @@ const EXPECTED_NAMESPACES = [
       NTPantry.undo(ve.id);
       out.undo = milk.q === 2 && ve.u === 1 && !document.querySelector('#pantryLogList [data-args*="' + ve.id + '"]');
       closeOv('pantryLogOv');
-      // #337: „Hält ca. 5 Tage“, leer aufgefüllt → MHD heute + 5
+      // #337: gelernte Haltedauer 5 Tage, leer aufgefüllt → MHD heute + 5
+      milk.hd = 5;
       NTPantry.openItem(milk.id);
-      document.getElementById('pantryItemHd').value = '5';
       document.getElementById('pantryItemQ').value = '0';
       NTPantry.saveItem();
       NTPantry.step(milk.id, 1);
       out.hd = milk.hd === 5 && milk.mhd === addDays(today(), 5) && S.pantryLog[0].k === 'kauf';
+      // Angebrochen: 📂 in der Liste teilt ein Stück ab, eigene Frist im Artikel
+      NTPantry.step(milk.id, 1);
+      NTPantry.openItem(milk.id);
+      document.getElementById('pantryItemOd').value = '2';
+      NTPantry.saveItem();
+      NTPantry.openNext(milk.id);
+      const opened = milk.lots.filter((l) => l.op === today());
+      out.opened = milk.od === 2 && opened.length === 1 && opened[0].q === 1 && milk.q === 2
+        && /Angebrochen · bis/.test(document.getElementById('pantryList').textContent);
+      // Packungsdatum beim Kauf: geschätztes „ca.“-Datum bleibt geschätzt, ein eingetragenes lehrt die Haltedauer
+      NTPantry.openItem('');
+      document.getElementById('pantryItemName').value = 'Smoke-Cremefine';
+      NTPantry.formChanged();
+      const estIn = document.getElementById('pantryItemMhd');
+      out.estPrefill = !!estIn.value && estIn.value === estIn.getAttribute('data-est')
+        && document.getElementById('pantryItemLoc').value === 'kuehl';
+      estIn.value = addDays(today(), 12);
+      NTPantry.saveItem();
+      const cf = S.pantry.find((x) => x.n === 'Smoke-Cremefine');
+      out.learn = !!cf && cf.hd === 12 && cf.loc === 'kuehl' && cf.lots[0].estimated === false;
+      // 3 Joghurt: 2 × Datum A, 1 × Datum B in einem Zug; danach 1 Stück abteilen
+      NTPantry.openItem('');
+      document.getElementById('pantryItemName').value = 'Smoke-Joghurt';
+      document.getElementById('pantryItemQ').value = '3';
+      NTPantry.qtySync(true);
+      document.getElementById('pantryItemMhd').value = addDays(today(), 11);
+      NTPantry.addChargeRow();
+      const last = [...document.querySelectorAll('#pantryCharges .pantry-charge')].pop();
+      last.querySelector('.pantry-charge-mhd').value = addDays(today(), 7);
+      const q1 = document.getElementById('pantryItemQ1').value;
+      NTPantry.saveItem();
+      const jo = S.pantry.find((x) => x.n === 'Smoke-Joghurt');
+      const dates = jo ? jo.lots.map((l) => l.q + '×' + l.mhd).sort().join('|') : '';
+      NTPantry.openItem(jo.id);
+      const big = jo.lots.find((l) => l.q === 2);
+      NTPantry.splitLot(big.id);
+      out.multiDate = q1 === '2' && jo.q === 3 && dates === [ '1×' + addDays(today(), 7), '2×' + addDays(today(), 11) ].sort().join('|')
+        && jo.lots.length === 3 && jo.lots.every((l) => l.q === 1) && jo.q === 3;
+      closeOv('pantryItemOv');
+      // Glas im Schrank, angebrochen in den Kühlschrank: Liste an zwei Orten, − je Ort
+      const gtom = NTPantry.add('Smoke getrocknete Tomaten', 2, 280, 'vorrat');
+      NTPantry.openNext(gtom.id);
+      S.pantryOrder = 'loc'; NTPantry.setFilter('');
+      let grp = '', where = [];
+      [...document.getElementById('pantryList').children].forEach((e) => {
+        if (!e.querySelector('[data-act]')) grp = e.textContent; else if (/Smoke getrocknete Tomaten/.test(e.textContent)) where.push(grp + ':' + (/angebrochen/.test(e.textContent) ? 'o' : 'c'));
+      });
+      const fridgeRow = where.length === 2 && where.some((w) => /Kühlschrank:o$/.test(w)) && where.some((w) => /Vorratsschrank:c$/.test(w));
+      NTPantry.step(gtom.id, -1, "c");
+      out.openLoc = fridgeRow && gtom.q === 1 && gtom.lots.length === 1 && !!gtom.lots[0].op;
+      // Einbuchen mit „Schon angebrochen am“
+      NTPantry.openItem('');
+      document.getElementById('pantryItemName').value = 'Smoke-Pesto';
+      document.getElementById('pantryItemQ').value = '2';
+      NTPantry.qtySync(true);
+      document.querySelector('#pantryCharges .pantry-charge[data-new-first] .pantry-charge-op').value = today();
+      NTPantry.saveItem();
+      const pe = S.pantry.find((x) => x.n === 'Smoke-Pesto');
+      out.opIn = !!pe && pe.q === 2 && pe.lots.filter((l) => l.op === today()).length === 1;
       // Ablauf-Meldung einmal am Tag (Notification gestellt)
       const realN = window.Notification, realNotify = NTRemind.notify; let sent = 0;
       window.Notification = /** @type {any} */ ({ permission: 'granted' });
@@ -854,7 +913,13 @@ const EXPECTED_NAMESPACES = [
       applied: 'nur ausgewählte Artikel übernommen, mit Menge, Gramm, Ort und MHD',
       shortfall: 'Rezept → Zettel ohne Gedecktes, Teil mit Restmenge (#334)', log: 'Verlauf: Kauf, Verbrauch, Zettel, Kochen, Foto (#336)',
       waste: '🗑️ Weggeworfen bucht ab, Monatszeile im Verlauf', undo: '↩️ macht die Buchung rückgängig',
-      hd: '„Hält ca. 5 Tage“: leer aufgefüllt → MHD heute + 5 (#337)', remind: 'Ablauf-Meldung höchstens einmal am Tag',
+      hd: 'gelernte Haltedauer 5 Tage: leer aufgefüllt → MHD heute + 5 (#337)',
+      opened: '📂 in der Liste teilt ein Stück ab, eigene Angebrochen-Frist zählt',
+      estPrefill: 'neue Packung: „ca.“-MHD im Feld, Lagerort Kühlschrank vorgeschlagen',
+      learn: 'Packungsdatum beim Kauf lehrt die Haltedauer, gilt nicht als geschätzt',
+      multiDate: 'neuer Artikel: Stück je Zeile (2 × A, 1 × B), ✂️ 1 Stück abteilen',
+      openLoc: 'Glas angebrochen → zusätzlich unter Kühlschrank, − am Schrank nimmt das geschlossene',
+      opIn: 'Einbuchen mit „Schon angebrochen am“ öffnet genau ein Stück', remind: 'Ablauf-Meldung höchstens einmal am Tag',
       remindChk: 'Schalter in Einstellungen → Erinnerungen', scanKnown: 'bekannter Barcode ＋1, Scanner bleibt offen (#335)',
       scanNew: 'neuer Barcode → Rückfrage unter dem Sucherbild, Scanner bleibt offen, „Zuordnen“ → Artikel-Dialog mit Name und Gramm aus Open Food Facts', scanSaved: 'Artikel mit Barcode gespeichert',
       sync: 'eigener Topf „Vorrat“ im Sync-Kern' })) {
@@ -938,7 +1003,7 @@ const EXPECTED_NAMESPACES = [
       const lots0 = await page.evaluate((id) => S.pantry.find((x) => x.id === id).lots.map((l) => l.id), milkId);
       await page.click('#pantryCharges [data-act="NTPantry.openLot"][data-args=\'["' + lots0[1] + '"]\']');
       const op = await page.evaluate((id) => { const m = S.pantry.find((x) => x.id === id); return { op: m.lots.find((l) => l.op), exp: NTPantry.expiring().length, sum: document.getElementById('pantryItemSum').textContent }; }, milkId);
-      out.opened = !!op.op && op.op.id === lots0[1] && op.op.op === T.t && op.exp === 1 && /Geöffnet · bis/.test(op.sum);
+      out.opened = !!op.op && op.op.id === lots0[1] && op.op.op === T.t && op.exp === 1 && /Angebrochen · bis/.test(op.sum);
       // D3: „−“ in der Liste nimmt die geöffnete Charge, obwohl beide gleich lange halten
       await page.evaluate(() => closeOv('pantryItemOv'));
       await page.click('#pantryOv [data-act="NTPantry.step"][data-args=\'["' + milkId + '",-1]\']');

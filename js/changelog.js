@@ -6,6 +6,7 @@ window.CHANGELOG=[
     {icon:'📂',text:'<b>Angebrochen</b>: Ein Tipp auf 📂 in der Vorratsliste markiert eine Packung als angebrochen. Wie lange sie dann hält, kannst du je Artikel unter „Angebrochen haltbar“ eintragen, sonst gilt ein Richtwert.',where:'Vorrat'},
     {icon:'📅',text:'<b>MHD ca.</b>: Eine neue Packung bekommt gleich ein geschätztes MHD ins Datumsfeld. Trägst du das Datum von der Packung ein, lernt die App daraus. Das Feld „Hält nach dem Kauf“ entfällt.',where:'Vorrat'},
     {icon:'✂️',text:'<b>Verschiedene MHDs leichter</b>: Jede Zeile hat „Stück + MHD“ (z. B. 2 × 06.12., 1 × 02.12.), und „1 Stück abteilen“ trennt eine Charge nachträglich. „📂 Angebrochen“ teilt automatisch nur ein Stück ab.',where:'Vorrat'},
+    {icon:'📜',text:'<b>Letzte Buchungen</b> stehen im Vorrats-Artikel jetzt ganz unten.',where:'Vorrat'},
     {icon:'🧊',text:'<b>Lagerort wird vorgeschlagen</b>: Kühl- und TK-Artikel landen beim Anlegen und Scannen direkt im Kühlschrank bzw. Tiefkühler, auch mit den Kategorien von Open Food Facts.',where:'Vorrat'}
   ]},
   {v:'0.358',items:[

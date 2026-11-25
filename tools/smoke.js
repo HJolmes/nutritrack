@@ -746,7 +746,7 @@ const EXPECTED_NAMESPACES = [
       // Fotos: KI gestellt, übernommen wird erst nach Bestätigung
       const realAi = window.callClaude, realCan = window.canUseAi;
       window.canUseAi = () => true;
-      window.callClaude = (m, content, t, ok) => ok('{"artikel":[{"name":"Milch","stueck":2,"g":1000,"ort":"kuehl","mhd":"2030-01-31"},{"name":"Senf","stueck":1,"ort":"kuehl"}]}');
+      window.callClaude = (m, content, t, ok) => ok('{"artikel":[{"name":"Milch","stueck":2,"g":1000,"ort":"kuehl","mhd":"2030-01-31"},{"name":"Senf","stueck":1,"ort":"kuehl"},{"name":"Smoke-Eier","stueck":1,"ort":"kuehl","mhd":"2024-06-15"}]}');
       NTPantry.openPhotos();
       out.camera = document.getElementById('pantryCamFile').getAttribute('capture') === 'environment'
         && !!document.querySelector('#pantryPhotoThumbs [data-act="NTPantry.takePhoto"]');
@@ -759,9 +759,15 @@ const EXPECTED_NAMESPACES = [
       NTPantry.photosChosen({ files: [new File([Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))], 'k.jpg', { type: 'image/jpeg' })] });
       await wait(300);
       NTPantry.analyzePhotos();
-      out.notYet = S.pantry.length === n0 && document.querySelectorAll('#pantryFound input[type=checkbox]').length === 2;
+      out.notYet = S.pantry.length === n0 && document.querySelectorAll('#pantryFound input[type=checkbox]').length === 3;
       NTPantry.foundSet(1, 'on', false);
       NTPantry.foundApply();
+      // Datum über 30 Tage zurück (KI hat falsch gelesen?): erst Rückfrage, dann ohne dieses Datum übernehmen
+      out.oldAsk = !!document.querySelector('#pantryFound .pantry-found-old') && !!document.querySelector('#pantryFound .pantry-old-ask')
+        && S.pantry.length === n0;
+      NTPantry.foundApply('clear');
+      const oe = S.pantry.find((x) => x.n === 'Smoke-Eier');
+      out.oldAsk = out.oldAsk && !!oe && oe.mhd !== '2024-06-15' && !!oe.mhd;
       const milk = S.pantry.find((x) => x.n === 'Milch');
       out.applied = !!milk && milk.q === 2 && milk.g === 1000 && milk.loc === 'kuehl' && milk.mhd === '2030-01-31' && !S.pantry.some((x) => x.n === 'Senf');
       window.callClaude = realAi; window.canUseAi = realCan;
@@ -930,6 +936,7 @@ const EXPECTED_NAMESPACES = [
       locs: 'Lagerort anlegen und löschen (Artikel bleibt, Grabstein für den Sync)',
       photoBtn: 'Auswerten ohne Foto gesperrt', notYet: 'Foto-Ergebnis erst nach Bestätigung im Vorrat',
       applied: 'nur ausgewählte Artikel übernommen, mit Menge, Gramm, Ort und MHD',
+      oldAsk: 'von der KI gelesenes Datum > 30 Tage alt: Hinweis, Rückfrage, „Ohne diese Daten“ schätzt neu',
       shortfall: 'Rezept → Zettel ohne Gedecktes, Teil mit Restmenge (#334)', log: 'Verlauf: Kauf, Verbrauch, Zettel, Kochen, Foto (#336)',
       waste: '🗑️ Weggeworfen bucht ab, Monatszeile im Verlauf', undo: '↩️ macht die Buchung rückgängig',
       hd: 'gelernte Haltedauer 5 Tage: leer aufgefüllt → MHD heute + 5 (#337)',

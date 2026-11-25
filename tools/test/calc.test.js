@@ -1527,6 +1527,14 @@ test('pantryOpenPlace: Glas/Konserve/Soße/Saft angebrochen in den Kühlschrank'
   assert.equal(C.pantryOpenPlace('Nudeln', ''), '');
   assert.equal(C.pantryOpenPlace('Joghurt', ''), '');                              // steht schon im Kühlschrank
 });
+test('pantryOldDate: nur Daten, die mehr als 30 Tage zurückliegen', () => {
+  const C = load({});
+  assert.equal(C.pantryOldDate('2024-06-15', '', '2026-11-25'), '2024-06-15');
+  assert.equal(C.pantryOldDate('2026-11-01', '', '2026-11-25'), '');               // 24 Tage: kein Verdacht
+  assert.equal(C.pantryOldDate('2026-12-01', '2026-10-01', '2026-11-25'), '2026-10-01');
+  assert.equal(C.pantryOldDate('', '', '2026-11-25'), '');
+  assert.equal(C.pantryOldDate('2026-11-15', '', '2026-11-25', 5), '2026-11-15');
+});
 test('pantryOffOpen: Frist und Kühlung aus dem Lagerhinweis der Packung', () => {
   const C = load({});
   assert.deepEqual(plain(C.pantryOffOpen('Nach dem Öffnen gekühlt lagern und innerhalb von 3 Tagen verzehren.')), { days: 3, cool: true });

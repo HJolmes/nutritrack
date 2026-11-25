@@ -2,6 +2,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.362',items:[
+    {icon:'⚠️',text:'<b>Altes Datum vom Foto</b>: Liest die KI ein MHD, das über 30 Tage zurückliegt, fragt die App vor dem Übernehmen nach — ohne dieses Datum übernehmen (die App schätzt dann), so übernehmen oder zurück zur Liste.',where:'Vorrat · Foto'}
+  ]},
   {v:'0.361',items:[
     {icon:'⏰',text:'<b>Vorrat nach Dringlichkeit</b>: oben „Zuerst aufbrauchen“ und „Angebrochen“, darunter der Vorrat nach Kategorie zum Aufklappen. Nach Lagerort sortieren geht weiterhin über ↕.',where:'Vorrat'},
     {icon:'👆',text:'<b>Kompakte Zeilen</b>: Ein Tipp auf einen Artikel zeigt 📂 − ＋ und Details. So passt viel mehr auf den Bildschirm.',where:'Vorrat'},

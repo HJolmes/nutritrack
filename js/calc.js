@@ -1454,6 +1454,15 @@ function pantryOpenPlace(name,cat){
   var s=pantryShelfKind(name,cat);
   return s&&PANTRY_OPEN_COOL.indexOf(s.id)>=0?'k':'';
 }
+// Von der KI gelesenes Datum (Foto/Kassenbon) liegt verdächtig weit zurück:
+// das frühere von MHD/Verbrauchsdatum, wenn es mehr als `days` (30) Tage vor
+// heute liegt — sonst ''. Dann fragt die App nach, bevor sie es übernimmt.
+/** @param {string} mhd @param {string} vd @param {string} todayStr @param {number} [days] */
+function pantryOldDate(mhd,vd,todayStr,days){
+  var d=[mhd,vd].reduce(function(b,x){return x&&(!b||x<b)?x:b;},'');
+  var n=d?pantryDays(d,todayStr):null;
+  return n!==null&&n<-(days===undefined?30:days)?d:'';
+}
 // Lagerhinweis der Packung (Open Food Facts `conservation_conditions`, z. B.
 // „Nach dem Öffnen gekühlt lagern und innerhalb von 3 Tagen verzehren“):
 // {days, cool} — days = Frist nach dem Öffnen (0 = keine erkannt), cool =

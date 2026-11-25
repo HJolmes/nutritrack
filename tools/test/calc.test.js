@@ -1491,6 +1491,9 @@ test('pantryOpenOne: ein Stück abteilen, Abbuchen per Charge trifft das abgetei
   const d = C.pantryDebit(r2.lots, 3, 'a', 3);                                    // Kauf von „a“ rückgängig
   assert.equal(d.lots.filter(l => l.id !== 'b').reduce((n, l) => n + l.q, 0), 0);
   assert.equal(d.lots.find(l => l.id === 'b').q, 1);
+  const ex = C.pantryDebit(r2.lots, 1, '=a', 3);                                  // genau „a“, nicht das angebrochene
+  assert.deepEqual(plain(ex.lots.map(l => l.q)), [1, 1, 1]);
+  assert.equal(ex.removed[0].id, 'a');
   assert.equal(C.pantryOpenOne([{ id: 'x', q: 1, op: '2026-11-20' }], '', '2026-11-25', 3), null);
 });
 test('pantrySplitOne: ein Stück mit denselben Daten abteilen, nur bei mehr als einem', () => {
@@ -1500,6 +1503,37 @@ test('pantrySplitOne: ein Stück mit denselben Daten abteilen, nur bei mehr als 
   assert.equal(C.pantrySplitOne(r.lots, 'a~s1', 's'), null);
   assert.equal(C.pantrySplitOne([{ id: 'a', q: 1.5 }], 'a', 's').lots[0].q, 0.5);
   assert.equal(C.pantrySplitOne([], 'a', 's'), null);
+});
+test('pantryShelf: Richtwerte nach BMEL/BZfE/VZ (25.11.2026)', () => {
+  const C = load({});
+  assert.equal(C.pantryShelf('Joghurt', '', 'k').open, 4);                         // ZT: geöffnet 4–6 Tage
+  assert.equal(C.pantryShelf('Joghurt', '', 't').days, 10);                        // nicht einfrieren → Kühlschrank-Wert
+  assert.equal(C.pantryShelf('Haferdrink', '', 'v').open, 14);
+  assert.equal(C.pantryShelf('Salami', '', 'k').days, 3);
+  assert.equal(C.pantryShelf('Schnitzel', '', 'k').days, 1);
+  assert.equal(C.pantryShelf('Hackfleisch', '', 't').days, 14);
+  assert.equal(C.pantryShelf('Eier', '', 'v').days, 21);                           // Eier gehören in den Kühlschrank
+  assert.equal(C.pantryShelf('Möhren', '', 'k').days, 7);
+  assert.equal(C.pantryShelf('Kartoffeln', '', 't').days, 7);
+});
+test('pantryOpenPlace: Glas/Konserve/Soße/Saft angebrochen in den Kühlschrank', () => {
+  const C = load({});
+  assert.equal(C.pantryOpenPlace('Getrocknete Tomaten im Glas', ''), 'k');
+  assert.equal(C.pantryOpenPlace('Ketchup', ''), 'k');
+  assert.equal(C.pantryShelfKind('Getrocknete Tomaten', '').id, 'konserve');        // nicht frisches Gemüse
+  assert.equal(C.pantryOpenPlace('Getrocknete Tomaten', ''), 'k');
+  assert.equal(C.pantryOpenPlace('H-Milch', ''), 'k');
+  assert.equal(C.pantryOpenPlace('Nudeln', ''), '');
+  assert.equal(C.pantryOpenPlace('Joghurt', ''), '');                              // steht schon im Kühlschrank
+});
+test('pantryOffOpen: Frist und Kühlung aus dem Lagerhinweis der Packung', () => {
+  const C = load({});
+  assert.deepEqual(plain(C.pantryOffOpen('Nach dem Öffnen gekühlt lagern und innerhalb von 3 Tagen verzehren.')), { days: 3, cool: true });
+  assert.deepEqual(plain(C.pantryOffOpen('Nach dem Öffnen im Kühlschrank aufbewahren und binnen 2 Wochen verbrauchen')), { days: 14, cool: true });
+  assert.deepEqual(plain(C.pantryOffOpen('Geöffnet 5 Tage verzehren')), { days: 5, cool: false });
+  assert.deepEqual(plain(C.pantryOffOpen('Nach dem Öffnen bei max. +7 °C lagern')), { days: 0, cool: true });
+  assert.equal(C.pantryOffOpen('Trocken und kühl lagern.'), null);
+  assert.equal(C.pantryOffOpen(''), null);
 });
 test('pantryScanAccept: gleicher Code erst nach der Pause erneut', () => {
   const C = load({});

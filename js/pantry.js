@@ -131,16 +131,33 @@ function guessCat(n){return (window.NTShop&&NTShop.guess)?NTShop.guess(n).c:'son
 function catOf(it){return it.c&&catInfo(it.c).id===it.c?it.c:guessCat(it.n);}
 function placeOf(it){return pantryPlace(loc(it.loc));}
 // Tage nach dem Öffnen (Richtwert für Art und Lagerort, 0 = keine Frist).
-function openDays(it){return pantryOpenDays({n:it.n,c:catOf(it),od:it.od},placeOf(it));}
+function openDays(it){var o=openLoc(it);return pantryOpenDays({n:it.n,c:catOf(it),od:it.od},o?pantryPlace(loc(o)):placeOf(it));}
+// Erster Kühlschrank unter den Lagerorten ('' = keiner angelegt).
+function fridgeLoc(){var a=sortedLocs();for(var i=0;i<a.length;i++)if(pantryPlace(a[i])==='k')return String(a[i].id);return '';}
+// Vorschlag „Nach dem Öffnen lagern in“: Kühlschrank für Glas, Konserve, Soße,
+// Saft (pantryOpenPlace) oder wenn die Packung „gekühlt“ sagt; sonst '-' (bleibt).
+/** @param {string} n @param {string} c @param {boolean} [cool] */
+function openLocSuggest(n,c,cool){return (cool||pantryOpenPlace(n,c)==='k')&&fridgeLoc()?fridgeLoc():'-';}
+// Ort angebrochener Packungen ('' = derselbe wie der Artikel): `ol` = Ort-ID,
+// '-' = bleibt am Lagerort, fehlt = Vorschlag (openLocSuggest).
+function openLoc(it){
+  var v=it.ol;
+  if(!v||(v!=='-'&&!loc(v)))v=openLocSuggest(it.n,catOf(it));
+  return v==='-'||v===(it.loc||'')?'':v;
+}
 // Frühestes „geöffnet am“ der vorhandenen Chargen, '' = nichts angebrochen.
 function openedOn(it){return stockLots(it).reduce(function(d,lot){return lot.op&&(!d||lot.op<d)?lot.op:d;},'');}
 // Üblicher Lagerort für einen neuen Artikel ('' = keiner passt), `hint` laut Open Food Facts.
 function homeLoc(n,c,hint){return pantryHomeLoc(n,c||guessCat(n),locs(),hint);}
 function estimateDays(it){return pantryEstimateDays({n:it.n,hd:it.hd,c:catOf(it)},placeOf(it));}
-function expiry(it){
-  var e=pantryDue(it,stockLots(it),openDays(it),today());
+function expiry(it){return expiryOf(it,stockLots(it));}
+// Haltbarkeit für einen Teil der Chargen (angebrochen / geschlossen getrennt angezeigt).
+/** @param {any} it @param {Array<any>} lots */
+function expiryOf(it,lots){
+  var p={mhd:lots.reduce(function(d,lot){return earlier(d,lot.mhd);},''),vd:lots.reduce(function(d,lot){return earlier(d,lot.vd);},'')};
+  var e=pantryDue(p,lots,openDays(it),today());
   if(e&&e.k==='mhd'){
-    var dated=stockLots(it).filter(function(lot){return lot.mhd===e.d;});
+    var dated=lots.filter(function(lot){return lot.mhd===e.d;});
     return Object.assign({},e,{estimated:dated.length>0&&dated.every(function(lot){return lot.estimated;})});
   }
   return e;
@@ -342,18 +359,25 @@ function trimLog(){
 // die Charge trägt dann `estimated` und die Oberfläche „geschätzt“.
 // `kind` 'korrektur' (Inventur: mehr da als gedacht) bucht dieselbe neue Charge,
 // zählt aber nicht als Kauf (kein Nachkauf-Zyklus, kein „üblicher Kauf“).
-/** @param {any} it @param {number} n @param {string} src @param {string} [mhd] @param {string} [vd] @param {string} [kind] */
-function refill(it,n,src,mhd,vd,kind){
+// `op` (angebrochen am): ein Stück der neuen Charge ist schon angebrochen.
+/** @param {any} it @param {number} n @param {string} src @param {string} [mhd] @param {string} [vd] @param {string} [kind] @param {string} [op] */
+function refill(it,n,src,mhd,vd,kind,op){
   n=roundQty(n);
   if(!(n>0))return null;
   var days=!mhd&&!vd?estimateDays(it):0;
   var lot={id:uid('charge'),q:n,mhd:mhd||(days?addDays(today(),days):''),vd:vd||'',estimated:!!days,in:today()};
-  appendLots(it,[lot]);
+  var added=[lot];
+  if(op&&pantryDays(op,op)!==null){
+    var sp=pantrySplitOne(added,lot.id,'o',{op:op});
+    if(sp)added=sp.lots;else lot.op=op;
+  }
+  appendLots(it,added);
+  lot=added[0];
   // Datum von der Packung beim Kauf: daraus lernt die App, wie lange der Artikel hält.
   if((mhd||vd)&&kind!=='korrektur'&&src!=='inventur'){var hd=pantryLearnHd(+it.hd||0,mhd||'',vd||'',today());if(hd>0)it.hd=hd;}
   // Eingebucht = Nachkauf-Zyklus erledigt: Markierung und „diesmal nicht“ fallen weg.
   if(kind!=='korrektur'){delete it.rs;delete it.rsNo;}
-  var e=log(it,n,kind||'kauf',src);e.lots=[lot];return e;
+  var e=log(it,n,kind||'kauf',src);e.lots=added;return e;
 }
 // Abziehen um `n` Stück (nie unter 0), älteste Charge zuerst oder nur `lotId`.
 /** @param {any} it @param {number} n @param {string} k @param {string} [src] @param {string} [lotId] */
@@ -389,10 +413,13 @@ function add(n,q,g,locId,ic,min,dates,src,c){
   touch(it);afterChange(it,0);
   return it;
 }
-function step(id,d){
+// `part` (Liste an zwei Orten): 'o' nimmt aus angebrochenen, 'c' aus geschlossenen Chargen.
+/** @param {string} id @param {number} d @param {string} [part] */
+function step(id,d,part){
   var it=byId(id);if(!it)return;
   var before=pantryNeed(it.q,it.min);
-  if(d>0)refill(it,d,'hand');else take(it,-d,'verbrauch','hand');
+  var lot=part?pantryLotOrder(stockLots(it),openDays(it)).find(function(l){return part==='o'?!!l.op:!l.op;}):null;
+  if(d>0)refill(it,d,'hand');else take(it,-d,'verbrauch','hand',lot?'='+lot.id:'');
   touch(it);afterChange(it,before);
 }
 // 🍽️ Verbraucht / 🗑️ Weggeworfen im Artikel-Dialog; Menge aus dem Feld daneben.
@@ -904,25 +931,43 @@ function chipCat(){return _filter.indexOf(CAT_CHIP)===0?_filter.slice(CAT_CHIP.l
 function dueOf(it){var e=(+it.q||0)>0?expiry(it):null;return e?e.d:'';}
 // Listenzeile; `ro` = Prognose (Tage, null = keine Aussage), dezent und nur,
 // wenn sie in den nächsten ROW_DAYS Tagen etwas bedeutet.
-function row(it,ro){
-  var lw=low(it),e=(+it.q||0)>0?expiry(it):null,op=openedOn(it);
+// `part` (nur in der Ansicht nach Lagerort, wenn angebrochene Packungen an
+// einem anderen Ort stehen, openLoc): 'c' = geschlossene Chargen am Lagerort,
+// 'o' = angebrochene am Ort nach dem Öffnen; fehlt = ganzer Artikel.
+/** @param {any} it @param {any} ro @param {string} [part] */
+function row(it,ro,part){
+  var all=stockLots(it),lots=part?all.filter(function(lot){return part==='o'?!!lot.op:!lot.op;}):all;
+  var q=roundQty(lots.reduce(function(n,lot){return n+lot.q;},0));
+  var lw=part!=='o'&&low(it),e=q>0?expiryOf(it,lots):null,op=part==='c'?'':openedOn(it);
   // 📂 nur, solange eine ungeöffnete Packung da ist und der Ort eine Frist kennt (nicht im Tiefkühler).
-  var canOpen=(+it.q||0)>0&&placeOf(it)!=='t'&&stockLots(it).some(function(lot){return !lot.op;});
-  var soon=ro!==null&&ro!==undefined&&(+it.q||0)>0&&ro<=ROW_DAYS;
+  var canOpen=part!=='o'&&q>0&&placeOf(it)!=='t'&&lots.some(function(lot){return !lot.op;});
+  var soon=part!=='o'&&ro!==null&&ro!==undefined&&(+it.q||0)>0&&ro<=ROW_DAYS;
+  var pa=part?[it.id,-1,part]:[it.id,-1];
   return '<div style="display:flex;align-items:center;gap:8px;padding:9px 2px;border-bottom:1px solid var(--br);">'
     +'<div style="font-size:20px;flex-shrink:0;">'+esc(it.ic||'🥫')+'</div>'
     +'<div style="flex:1;min-width:0;cursor:pointer;" data-act="NTPantry.openItem" data-args="'+args([it.id])+'">'
-      +'<div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+(it.auto?'<span title="Dauerartikel: immer nachkaufen" aria-label="Dauerartikel">🔁 </span>':'')+esc(it.n)+'</div>'
-      +'<div style="font-size:11px;color:'+(lw?'var(--or)':'var(--mu)')+';margin-top:1px;">'+esc(amountText(it))
-        +(+it.min>0?' · mind. '+fmtN(it.min)+(lw?' ⚠️':''):'')
+      +'<div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+(it.auto&&part!=='o'?'<span title="Dauerartikel: immer nachkaufen" aria-label="Dauerartikel">🔁 </span>':'')+esc(it.n)+'</div>'
+      +'<div style="font-size:11px;color:'+(lw?'var(--or)':'var(--mu)')+';margin-top:1px;">'+esc(part?(fmtN(q)+' Stück'+(+it.g>0?' à '+fmtN(it.g)+' g':'')+(part==='o'?' · angebrochen':'')):amountText(it))
+        +(part!=='o'&&+it.min>0?' · mind. '+fmtN(it.min)+(lw?' ⚠️':''):'')
         +(soon?'<span style="color:'+(ro<=lead()?'var(--or)':'var(--mu)')+';"> · '+(ro<=0?'geht heute aus':'reicht ca. '+ro+(ro===1?' Tag':' Tage'))+'</span>':'')+'</div>'
       +(e?'<div style="font-size:11px;font-weight:'+(e.lvl==='ok'?'400':'700')+';color:'+expiryColor(e)+';margin-top:1px;">'+esc(expiryText(e))+'</div>':'')
       +(op&&!(e&&e.k==='op')?'<div style="font-size:11px;color:var(--mu);margin-top:1px;">📂 Angebrochen seit '+esc(fmtD(op))+'</div>':'')
     +'</div>'
     +(canOpen?'<button type="button" class="pt-st pt-open" data-act="NTPantry.openNext" data-args="'+args([it.id])+'" aria-label="Eine Packung angebrochen" title="Eine Packung angebrochen">📂</button>':'')
-    +'<button type="button" class="pt-st" data-act="NTPantry.step" data-args="'+args([it.id,-1])+'">−</button>'
-    +'<button type="button" class="pt-st" data-act="NTPantry.step" data-args="'+args([it.id,1])+'">＋</button>'
+    +'<button type="button" class="pt-st" data-act="NTPantry.step" data-args="'+args(pa)+'">−</button>'
+    +(part==='o'?'':'<button type="button" class="pt-st" data-act="NTPantry.step" data-args="'+args([it.id,1])+'">＋</button>')
     +'</div>';
+}
+// Wo ein Artikel in der Ansicht nach Lagerort steht: [{loc, part}] — zwei
+// Einträge, wenn angebrochene Packungen an einem anderen Ort stehen.
+function placesOf(it){
+  var o=openLoc(it),lots=stockLots(it);
+  var nOp=lots.filter(function(lot){return !!lot.op;}).length;
+  if(!o||!nOp)return [{loc:it.loc||'',part:''}];
+  var out=[];
+  if(nOp<lots.length)out.push({loc:it.loc||'',part:'c'});
+  out.push({loc:o,part:'o'});
+  return out;
 }
 // Übersicht (A1): drei Kennzahlen, antippen filtert. Bei 0 in gedämpfter Farbe.
 function renderStats(a,ex,miss){
@@ -1079,7 +1124,7 @@ function renderList(){
   var fl=chipLoc(),fc=chipCat();
   var shown=a.filter(function(it){
     if(_tile===LOW&&!pantryMissing(it))return false;
-    if(fl&&it.loc!==fl)return false;
+    if(fl&&!placesOf(it).some(function(p){return p.loc===fl;}))return false;
     if(fc&&catOf(it)!==fc)return false;
     return !q||String(it.n||'').toLocaleLowerCase('de').indexOf(q)>=0;
   });
@@ -1111,15 +1156,19 @@ function renderList(){
     ?cats().map(function(c){return {id:c.id,t:c.ic+' '+c.label,a:[]};})
     :sortedLocs().map(function(l){return {id:l.id,t:l.ic+' '+l.label,a:[]};}).concat([{id:'',t:'📦 Ohne Lagerort',a:[]}]);
   shown.forEach(function(it){
-    var key=byCat?catOf(it):it.loc,g=null;
-    for(var i=0;i<groups.length;i++)if(groups[i].id===key)g=groups[i];
-    (g||groups[groups.length-1]).a.push(it);
+    (byCat?[{loc:catOf(it),part:''}]:placesOf(it)).forEach(function(p){
+      if(fl&&p.loc!==fl)return;
+      var g=null;
+      for(var i=0;i<groups.length;i++)if(groups[i].id===p.loc)g=groups[i];
+      (g||groups[groups.length-1]).a.push({it:it,part:p.part});
+    });
   });
   var html='';
   groups.forEach(function(g){
     if(!g.a.length)return;
     html+=groupHead(g.t);
-    pantrySort(g.a,'name').forEach(function(it){html+=rowOf(it);});
+    g.a.sort(function(x,y){return String(x.it.n).localeCompare(String(y.it.n),'de')||(x.part<y.part?-1:1);})
+      .forEach(function(x){html+=row(x.it,ros[x.it.id],x.part);});
   });
   el.innerHTML=html;
 }
@@ -1182,6 +1231,7 @@ function chargeRow(it,lot,first){
       +'<label>Stück<input class="sinp pantry-charge-qty"'+(first?' id="pantryItemQ1"':'')+' inputmode="decimal" value="1" oninput="NTPantry.qtySync(false)"></label>'
       +'<label><span class="pantry-mhd-lbl">MHD</span><input type="date" class="sinp pantry-charge-mhd"'+ids.mhd+' value="" onchange="NTPantry.formChanged()"></label>'
       +'<label>Verbrauchsdatum<input type="date" class="sinp pantry-charge-vd"'+ids.vd+' value=""></label>'
+      +'<label>Schon angebrochen am<input type="date" class="sinp pantry-charge-op" value=""></label>'
       +(id?'<button type="button" class="seb" data-act="NTPantry.removeChargeRow" data-args="'+args([id])+'">Zeile entfernen</button>':'')+'</div>';
   }
   var od=openDays(it),due=pantryLotDue(lot,od),bk=bookedOn(lot);
@@ -1249,7 +1299,7 @@ function renderItemSum(it){
   function cell(k,v,color){return '<div><small>'+k+'</small><b'+(color?' style="color:'+color+';"':'')+'>'+esc(v)+'</b></div>';}
   el.innerHTML='<div class="pantry-sum"><div class="pantry-sum-grid">'
     +cell('Bestand',amountText(it),lw?'var(--or)':'')
-    +cell('Lagerort',l?l.ic+' '+l.label:'📦 Ohne Lagerort')
+    +cell('Lagerort',(l?l.ic+' '+l.label:'📦 Ohne Lagerort')+(loc(openLoc(it))?' · angebrochen: '+loc(openLoc(it)).label:''))
     +cell('Kategorie',c.ic+' '+c.label)
     +cell('Mindestmenge',+it.min>0?fmtN(it.min)+' Stück':'–')
     +'</div>'
@@ -1313,7 +1363,8 @@ function markOpen(it,lotId){
   var od=openDays(it),r=pantryOpenOne(stockLots(it),lotId,today(),od);
   if(!r)return false;
   writeLots(it,r.lots);touch(it);
-  showToast('📂 '+(it.ic||'')+' '+it.n+' angebrochen'+(od>0?' · hält ca. bis '+fmtD(addDays(today(),od)):' · wie lange es angebrochen hält: im Artikel eintragen'));
+  var ol=loc(openLoc(it));
+  showToast('📂 '+(it.ic||'')+' '+it.n+' angebrochen'+(ol?' → '+ol.ic+' '+ol.label:'')+(od>0?' · hält ca. bis '+fmtD(addDays(today(),od)):' · wie lange es angebrochen hält: im Artikel eintragen'));
   return true;
 }
 // Charge ganz austragen: Korrektur im Verlauf, damit „Rückgängig“ sie zurückholt.
@@ -1396,7 +1447,10 @@ function editFields(){
 // Lagerort neu zu berechnen (D4).
 var _locTouched=false;// Lagerort im Artikel-Dialog von Hand gewählt
 var _offPlace='';     // Art laut Open Food Facts für den gescannten Code ('k'|'t'|'v')
+var _olTouched=false; // „Nach dem Öffnen lagern in“ von Hand gewählt
+var _offCool=false;   // Packung sagt „nach dem Öffnen gekühlt“ (Open Food Facts)
 function locPicked(){_locTouched=true;formChanged();}
+function olPicked(){_olTouched=true;formChanged();}
 function formChanged(){
   var it=current(),n=val('pantryItemName').trim();
   var probe={n:n,hd:it?+it.hd||0:0,c:val('pantryItemCat')||guessCat(n)};
@@ -1417,8 +1471,19 @@ function formChanged(){
     note.textContent=days?'MHD ca. '+fmtD(est)+' · geschätzt '+(probe.hd>0?'aus deinen letzten Einkäufen':'nach Richtwert für Produktart und Lagerort')+'. Datum von der Packung eintragen, wenn bekannt — daraus lernt die App.'
       :(n?'Für „'+n+'“ kennt die App keinen Richtwert — Datum von der Packung eintragen.':'Die App schätzt ein MHD nach Produktart und Lagerort.');
   }
+  var ols=/** @type {HTMLSelectElement} */ (document.getElementById('pantryItemOl'));
+  if(ols){
+    if(!ols.options.length||ols.getAttribute('data-n')!==String(locs().length)){
+      var keep=ols.value;
+      ols.innerHTML='<option value="-">Bleibt am Lagerort</option>'+sortedLocs().map(function(l){return '<option value="'+esc(l.id)+'">'+esc(l.ic+' '+l.label)+'</option>';}).join('');
+      ols.setAttribute('data-n',String(locs().length));
+      if(keep)ols.value=keep;
+    }
+    if(!_olTouched)ols.value=openLocSuggest(n,probe.c,_offCool);
+  }
   var od=document.getElementById('pantryItemOd'),odNote=document.getElementById('pantryItemOdNote');
-  var rw=place==='t'?0:pantryOpenDays({n:n,c:probe.c},place);
+  var olId=ols&&ols.value!=='-'?ols.value:'',oplace=olId?pantryPlace(loc(olId)):place;
+  var rw=pantryOpenDays({n:n,c:probe.c},oplace);place=oplace;
   if(od)/** @type {HTMLInputElement} */ (od).placeholder=rw?String(rw):'z. B. 3';
   if(odNote)odNote.textContent=place==='t'?'Im Tiefkühler gilt keine Frist nach dem Anbrechen.'
     :'So lange hält eine Packung, nachdem sie mit 📂 als angebrochen markiert wurde.'+(rw?' Richtwert: '+rw+(rw===1?' Tag':' Tage')+'.':' Für diesen Artikel kennt die App keinen Richtwert.');
@@ -1440,9 +1505,16 @@ function openItem(id){
   setVal('pantryItemQ',_shownQ);
   setVal('pantryItemG',it&&+it.g>0?fmtN(it.g):'');
   setVal('pantryItemMin',it&&+it.min>0?fmtN(it.min):'');
+  _locTouched=!it&&!!chipLoc();_offPlace='';_offCool=false;
+  _olTouched=!!(it&&it.ol);
+  var olSel=/** @type {HTMLSelectElement} */ (document.getElementById('pantryItemOl'));
+  if(olSel){
+    olSel.innerHTML='<option value="-">Bleibt am Lagerort</option>'+sortedLocs().map(function(l){return '<option value="'+esc(l.id)+'">'+esc(l.ic+' '+l.label)+'</option>';}).join('');
+    olSel.setAttribute('data-n',String(locs().length));
+    olSel.value=it&&it.ol&&(it.ol==='-'||loc(it.ol))?it.ol:(it?openLocSuggest(it.n,catOf(it)):'-');
+  }
   setVal('pantryItemOd',it?String(openDays(it)||''):'');
   _odShown=val('pantryItemOd');
-  _locTouched=!it&&!!chipLoc();_offPlace='';
   setVal('pantryItemUseQ','1');
   var au=/** @type {HTMLInputElement} */ (document.getElementById('pantryItemAuto'));
   if(au)au.checked=!!(it&&it.auto);
@@ -1536,12 +1608,15 @@ function saveItem(){
   it.c=val('pantryItemCat')||guessCat(n);
   it.g=num(val('pantryItemG'));
   it.min=num(val('pantryItemMin'));
+  // „Nach dem Öffnen lagern in“: gespeichert nur, was vom Vorschlag abweicht.
+  var olV=val('pantryItemOl')||'-';
+  if(olV===openLocSuggest(it.n,catOf(it),_offCool))delete it.ol;else it.ol=olV;
   // „Angebrochen haltbar“: gespeichert nur, was vom Richtwert abweicht oder
   // hier geändert wurde; leer = Richtwert.
   var odRaw=val('pantryItemOd').trim(),odV=Math.round(num(odRaw));
   if(!odRaw)delete it.od;
   else if(odRaw!==_odShown||+it.od>0){
-    var rw=pantryOpenDays({n:it.n,c:catOf(it)},placeOf(it));
+    var o=openLoc(it),rw=pantryOpenDays({n:it.n,c:catOf(it)},o?pantryPlace(loc(o)):placeOf(it));
     if(odV>0&&odV!==rw)it.od=odV;else delete it.od;
   }
   var auto=/** @type {HTMLInputElement} */ (document.getElementById('pantryItemAuto'));
@@ -1556,7 +1631,7 @@ function saveItem(){
     // Unverändertes „ca.“-Datum einer neuen Packung: geschätzt, nicht von der Packung.
     var mi=row.querySelector('.pantry-charge-mhd');
     if(!lotId&&mi&&d&&d===mi.getAttribute('data-est'))d='';
-    if(row.hasAttribute('data-new-first')){firstNew={mhd:d,vd:v};return;}
+    if(row.hasAttribute('data-new-first')){firstNew={mhd:d,vd:v,op:field(row,'.pantry-charge-op')};return;}
     var existing=lotId?lots.find(function(lot){return lot.id===lotId;}):null;
     if(existing){
       // Ein hier eingetragenes Datum ist echt; geschätzt bleibt nur, was unverändert ist.
@@ -1568,7 +1643,7 @@ function saveItem(){
         var nq=parseFloat(qv.replace(',','.'));
         if(isFinite(nq)&&nq>=0)fixes.push({lot:existing,d:roundQty(nq-existing.q)});
       }
-    }else if(!lotId)newRows.push({q:num(field(row,'.pantry-charge-qty')),mhd:d,vd:v});
+    }else if(!lotId)newRows.push({q:num(field(row,'.pantry-charge-qty')),mhd:d,vd:v,op:field(row,'.pantry-charge-op')});
   });
   // D4: neuer Lagerort → nur geschätzte Daten neu (Richtwert ab heute), echte bleiben.
   var reN=0;
@@ -1584,13 +1659,13 @@ function saveItem(){
   if(firstNew){
     // Ohne Bestand: erste Zeile = Gesamtzahl minus die weiteren Zeilen (qtySync).
     var rest=roundQty(wanted-newRows.reduce(function(n,r){return n+r.q;},0));
-    if(rest>0)refill(it,rest,isNew&&_pendingBc?'scan':'hand',firstNew.mhd,firstNew.vd);
+    if(rest>0)refill(it,rest,isNew&&_pendingBc?'scan':'hand',firstNew.mhd,firstNew.vd,'',firstNew.op);
   }else if(totalChanged){
     var cur=+it.q||0;
     if(wanted>cur)refill(it,wanted-cur,isNew&&_pendingBc?'scan':'hand',firstNew?firstNew.mhd:'',firstNew?firstNew.vd:'');
     if(wanted<cur&&!isNew)take(it,cur-wanted,'korrektur','hand');
   }
-  newRows.forEach(function(lot){refill(it,lot.q,'hand',lot.mhd,lot.vd);});
+  newRows.forEach(function(lot){refill(it,lot.q,'hand',lot.mhd,lot.vd,'',lot.op);});
   if(_pendingBc&&isNew){addBc(it,_pendingBc);scanDrop(_pendingBc);_pendingBc='';}
   touch(it);
   _editId=null;
@@ -1658,7 +1733,7 @@ function scanUnknown(code,prod){
   _scanLast={code:code,t:Date.now()};
   var q=scanAskOf(code);
   if(q)q.count++;
-  else _scanAsk.unshift({code:code,name:prod&&prod.name?String(prod.name):'',g:prod&&+prod.g>0?+prod.g:0,place:prod?pantryOffPlace(prod.cats):'',count:1,mode:_scanMode});
+  else _scanAsk.unshift({code:code,name:prod&&prod.name?String(prod.name):'',g:prod&&+prod.g>0?+prod.g:0,place:prod?pantryOffPlace(prod.cats):'',open:prod?pantryOffOpen(prod.keep):null,count:1,mode:_scanMode});
   renderScanList();
   return '🏷️ '+(prod&&prod.name?prod.name:'Unbekannter Code')+' — unten in der Liste zuordnen';
 }
@@ -1694,6 +1769,8 @@ function scanResolve(code){
   _scanMode=a.mode==='out'?'out':'in';
   openItem('');
   _pendingBc=code;_pendingN=a.count||1;_offPlace=a.place||'';
+  // Lagerhinweis der Packung: Frist und „gekühlt“ nach dem Öffnen (pantryOffOpen).
+  if(a.open){_offCool=!!a.open.cool;if(a.open.days)setVal('pantryItemOd',String(a.open.days));}
   setVal('pantryItemName',a.name||'');
   if(a.g)setVal('pantryItemG',String(a.g));
   setVal('pantryItemQ',_scanMode==='out'?'0':String(_pendingN));
@@ -2378,7 +2455,7 @@ document.addEventListener('visibilitychange',function(){if(!document.hidden){Syn
 window.NTPantry={
   boot:boot,open:open,close:close,render:render,renderCard:renderCard,setFilter:setFilter,
   pickTile:pickTile,setOrder:setOrder,search:search,addQuery:addQuery,
-  openLot:openLot,openNext:openNext,splitLot:splitLot,qtySync:qtySync,locPicked:locPicked,dropLot:dropLot,toShop:toShop,editFields:editFields,formChanged:formChanged,
+  openLot:openLot,openNext:openNext,olPicked:olPicked,splitLot:splitLot,qtySync:qtySync,locPicked:locPicked,dropLot:dropLot,toShop:toShop,editFields:editFields,formChanged:formChanged,
   add:add,step:step,remove:remove,submitInput:submitInput,inputKey:inputKey,
   openItem:openItem,saveItem:saveItem,deleteItem:deleteItem,addChargeRow:addChargeRow,removeChargeRow:removeChargeRow,
   openLocs:openLocs,locAdd:locAdd,locSave:locSave,locMove:locMove,locDelete:locDelete,

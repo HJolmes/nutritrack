@@ -831,6 +831,26 @@ const EXPECTED_NAMESPACES = [
       out.multiDate = q1 === '2' && jo.q === 3 && dates === [ '1×' + addDays(today(), 7), '2×' + addDays(today(), 11) ].sort().join('|')
         && jo.lots.length === 3 && jo.lots.every((l) => l.q === 1) && jo.q === 3;
       closeOv('pantryItemOv');
+      // Glas im Schrank, angebrochen in den Kühlschrank: Liste an zwei Orten, − je Ort
+      const gtom = NTPantry.add('Smoke getrocknete Tomaten', 2, 280, 'vorrat');
+      NTPantry.openNext(gtom.id);
+      S.pantryOrder = 'loc'; NTPantry.setFilter('');
+      let grp = '', where = [];
+      [...document.getElementById('pantryList').children].forEach((e) => {
+        if (!e.querySelector('[data-act]')) grp = e.textContent; else if (/Smoke getrocknete Tomaten/.test(e.textContent)) where.push(grp + ':' + (/angebrochen/.test(e.textContent) ? 'o' : 'c'));
+      });
+      const fridgeRow = where.length === 2 && where.some((w) => /Kühlschrank:o$/.test(w)) && where.some((w) => /Vorratsschrank:c$/.test(w));
+      NTPantry.step(gtom.id, -1, "c");
+      out.openLoc = fridgeRow && gtom.q === 1 && gtom.lots.length === 1 && !!gtom.lots[0].op;
+      // Einbuchen mit „Schon angebrochen am“
+      NTPantry.openItem('');
+      document.getElementById('pantryItemName').value = 'Smoke-Pesto';
+      document.getElementById('pantryItemQ').value = '2';
+      NTPantry.qtySync(true);
+      document.querySelector('#pantryCharges .pantry-charge[data-new-first] .pantry-charge-op').value = today();
+      NTPantry.saveItem();
+      const pe = S.pantry.find((x) => x.n === 'Smoke-Pesto');
+      out.opIn = !!pe && pe.q === 2 && pe.lots.filter((l) => l.op === today()).length === 1;
       // Ablauf-Meldung einmal am Tag (Notification gestellt)
       const realN = window.Notification, realNotify = NTRemind.notify; let sent = 0;
       window.Notification = /** @type {any} */ ({ permission: 'granted' });
@@ -897,7 +917,9 @@ const EXPECTED_NAMESPACES = [
       opened: '📂 in der Liste teilt ein Stück ab, eigene Angebrochen-Frist zählt',
       estPrefill: 'neue Packung: „ca.“-MHD im Feld, Lagerort Kühlschrank vorgeschlagen',
       learn: 'Packungsdatum beim Kauf lehrt die Haltedauer, gilt nicht als geschätzt',
-      multiDate: 'neuer Artikel: Stück je Zeile (2 × A, 1 × B), ✂️ 1 Stück abteilen', remind: 'Ablauf-Meldung höchstens einmal am Tag',
+      multiDate: 'neuer Artikel: Stück je Zeile (2 × A, 1 × B), ✂️ 1 Stück abteilen',
+      openLoc: 'Glas angebrochen → zusätzlich unter Kühlschrank, − am Schrank nimmt das geschlossene',
+      opIn: 'Einbuchen mit „Schon angebrochen am“ öffnet genau ein Stück', remind: 'Ablauf-Meldung höchstens einmal am Tag',
       remindChk: 'Schalter in Einstellungen → Erinnerungen', scanKnown: 'bekannter Barcode ＋1, Scanner bleibt offen (#335)',
       scanNew: 'neuer Barcode → Rückfrage unter dem Sucherbild, Scanner bleibt offen, „Zuordnen“ → Artikel-Dialog mit Name und Gramm aus Open Food Facts', scanSaved: 'Artikel mit Barcode gespeichert',
       sync: 'eigener Topf „Vorrat“ im Sync-Kern' })) {

@@ -1389,8 +1389,18 @@ function pantryWasteTip(w,o){
 function pantryMissing(it){return !((+(it&&it.q)||0)>0)||pantryNeed(it&&it.q,it&&it.min)>0;}
 
 // ── Vorrat: Haltbarkeit schätzen, Geöffnet-Frist, älteste Charge zuerst ──
-// RICHTWERTE, von Hand gepflegt und bewusst vorsichtig (eher zu kurz als zu
-// lang) — keine amtliche Angabe und keine Quelle. Sie füllen nur ein Datum
+// RICHTWERTE, bewusst vorsichtig (eher zu kurz als zu lang; bei Spannen der
+// untere Wert). Abgeglichen am 25.11.2026 mit Zu gut für die Tonne (BMEL,
+// zugutfuerdietonne.de/lebensmittel-az), BZfE (bzfe.de, „Lebensmittel richtig
+// lagern“, Milch/Eier/Brot/Schweinefleisch „vom Einkauf in die Küche“,
+// Einfache Sprache „Lagerung“) und Verbraucherzentrale (verbraucherzentrale.de,
+// Haltbarkeit je Produktgruppe). Daraus u. a.: Joghurt geöffnet 4–6 Tage;
+// Joghurt, Dickmilch, saure Sahne, Blattsalat, rohe Kartoffeln/Zwiebeln/Äpfel
+// nicht einfrieren (t = 0); Pflanzendrink geöffnet bis 14 Tage; Aufschnitt 3,
+// Fleisch 1–2, Möhren 7–10 Tage; Hack im TK 2–12 Wochen; Eier in den
+// Kühlschrank. OHNE QUELLE (eigene vorsichtige Werte): feinkost, teig, tofu
+// außer t/o, Pesto, Kochcreme, Honig/Nussnougat, Chips. Herstellerangaben auf
+// der Packung und eigene Angaben im Artikel (`od`) gehen immer vor. Sie füllen nur ein Datum
 // vor, wenn auf der Packung keins eingetragen ist; die Oberfläche zeigt es als
 // „geschätzt“. Je Produktart: [art, Muster auf dem Namen, üblicher Ort,
 // Tage im Kühlschrank (k), im Tiefkühler (t), im Vorratsschrank (v), Tage
@@ -1402,34 +1412,57 @@ var PANTRY_SHELF=[
   ['tk',        /(^| )tk( |$)|tiefkuehl|tiefgekuehlt|gefroren|fischstaebchen|speiseeis|(^| )eis( |$)/, 't', 1,90,0,0],
   ['feinkost',  /feinkost|kartoffelsalat|nudelsalat|fleischsalat|eiersalat|thunfischsalat|krautsalat|wurstsalat|hummus|tzatziki/, 'k', 3,0,0,2],
   ['hmilch',    /(^| )h ?(voll|mager|fettarme?)? ?milch|haltbare ?milch|(^| )uht( |$)/,            'v', 90,90,90,3],
-  ['drink',     /(hafer|soja|mandel|reis|kokos|dinkel)(milch|drink)/,                              'v', 90,0,90,4],
+  ['drink',     /(hafer|soja|mandel|reis|kokos|dinkel)(milch|drink)/,                              'v', 90,0,90,14],
   ['suess',     /schokolade|keks|chips|gummibaer|praline|bonbon|riegel|kuchen/,                    'v', 0,0,90,14],
-  ['konserve',  /(^| )dosen?( |$)|konserve|(^| )glas( |$)|eingelegt|thunfisch|(^| )mais( |$)|kichererbse|passiert|tomatenmark|apfelmus|sauerkraut|rotkohl glas/, 'v', 0,0,365,3],
+  ['konserve',  /(^| )dosen?( |$)|konserve|(^| )glas( |$)|eingelegt|getrocknete tomate|oliven|antipast|kapern|thunfisch|(^| )mais( |$)|kichererbse|passiert|tomatenmark|apfelmus|sauerkraut|rotkohl glas/, 'v', 0,0,365,3],
   ['aufstrich', /marmelade|konfituere|gelee|honig|nougat|nutella|erdnussbutter/,                   'v', 0,0,180,30],
   ['sosse',     /ketchup|senf|mayo|remoulade|sauce|sosse|pesto|dressing|essiggurke/,               'v', 0,0,180,7],
   ['saft',      /saft|smoothi|nektar/,                                                            'v', 7,0,90,4],
   ['frischkaese',/frischkaese|quark|skyr|mascarpone|ricotta|huettenkaese|mozzarella|feta/,         'k', 7,60,0,3],
-  ['joghurt',   /joghurt|jogurt|kefir|buttermilch|dickmilch|pudding|dessert/,                      'k', 10,60,0,3],
-  ['sahne',     /sahne|schmand|creme fraiche|cremefin|kochcreme|cuisine|schlagcreme|creme vega/,  'k', 7,60,0,3],
+  ['joghurt',   /joghurt|jogurt|kefir|buttermilch|dickmilch|pudding|dessert/,                      'k', 10,0,0,4],
+  ['sahne',     /sahne|schmand|creme fraiche|cremefin|kochcreme|cuisine|schlagcreme|creme vega/,  'k', 7,0,0,3],
   ['tofu',      /tofu|tempeh|seitan/,                                                              'k', 14,90,0,3],
   ['teig',      /blaetterteig|pizzateig|quicheteig|fertigteig|strudelteig|flammkuchenteig|frischhefe|hefewuerfel/, 'k', 7,60,0,1],
   ['butter',    /butter|margarine/,                                                                'k', 30,90,0,14],
-  ['aufschnitt',/aufschnitt|salami|schinken|wurst|mortadella|lyoner|leberkaese|speck/,             'k', 5,30,0,2],
+  ['aufschnitt',/aufschnitt|salami|schinken|wurst|mortadella|lyoner|leberkaese|speck/,             'k', 3,30,0,2],
   ['kaese',     /kaese|gouda|emmentaler|parmesan|camembert|brie|bergkaese/,                        'k', 14,60,0,7],
   ['beeren',    /beere|kirsche/,                                                                   'k', 3,180,1,1],
   ['trocken',   /nudel|pasta|spaghetti|penne|milchreis|reis( |$)|mehl|haferflocken|muesli|cornflakes|linsen|griess|zucker|knaeckebrot|zwieback|couscous|bulgur|quinoa|polenta|kaffee|(^| )tee( |$)|kakao|backpulver|trockenhefe/, 'v', 0,0,180,90],
   ['milch',     /milch/,                                                                           'k', 5,30,0,3],
-  ['hack',      /hack|gehacktes|(^| )mett( |$)/,                                                   'k', 1,60,0,1],
+  ['hack',      /hack|gehacktes|(^| )mett( |$)/,                                                   'k', 1,14,0,1],
   ['gefluegel', /haehnchen|huhn|huehner|pute|gefluegel|(^| )ente( |$)|entenbrust/,                                      'k', 1,90,0,1],
   ['fisch',     /fisch|lachs|forelle|kabeljau|seelachs|garnele|shrimp|scampi/,                     'k', 1,60,0,1],
-  ['fleisch',   /fleisch|steak|schnitzel|gulasch|braten|(^| )rind|schwein|kotelett|filet/,         'k', 2,90,0,2],
-  ['eier',      /(^| )ei( |$)|eier/,                                                           'k', 21,0,14,1],
+  ['fleisch',   /fleisch|steak|schnitzel|gulasch|braten|(^| )rind|schwein|kotelett|filet/,         'k', 1,90,0,2],
+  ['eier',      /(^| )ei( |$)|eier/,                                                           'k', 21,0,0,1],
   ['toast',     /toast|sandwich/,                                                                  'v', 7,60,5,5],
   ['brot',      /brot|broetchen|baguette|brezel|semmel|croissant|ciabatta/,                        'v', 4,60,3,3],
-  ['salat',     /salat|rucola|spinat|kraeuter|petersilie|schnittlauch|basilikum|sprossen/,        'k', 3,180,1,2],
-  ['lagergemuese',/kartoffel|zwiebel|knoblauch|apfel|aepfel|kuerbis|karotte|moehre|kohl|rote bete/, 'v', 21,180,14,3],
+  ['salat',     /salat|rucola|spinat|kraeuter|petersilie|schnittlauch|basilikum|sprossen/,        'k', 3,0,1,2],
+  ['lagergemuese',/kartoffel|zwiebel|knoblauch|apfel|aepfel|kuerbis|karotte|moehre|kohl|rote bete/, 'v', 7,0,14,3],
   ['obstgemuese',/obst|gemuese|banane|birne|tomate|gurke|paprika|zucchini|pilz|champignon|orange|zitrone|mandarine|traube|pfirsich|avocado|brokkoli|blumenkohl|lauch|porree|aubergine|mango|kiwi|ananas|melone|radieschen|sellerie|bohne|erbse/, 'k', 5,180,4,2]
 ];
+// Produktarten, die ungeöffnet im Schrank stehen, angebrochen aber in den
+// Kühlschrank gehören (Vorschlag für „Nach dem Öffnen lagern in“).
+var PANTRY_OPEN_COOL=['hmilch','drink','konserve','sosse','saft'];
+// 'k', wenn eine angebrochene Packung in den Kühlschrank gehört, sonst ''.
+/** @param {string} name @param {string} [cat] */
+function pantryOpenPlace(name,cat){
+  var s=pantryShelfKind(name,cat);
+  return s&&PANTRY_OPEN_COOL.indexOf(s.id)>=0?'k':'';
+}
+// Lagerhinweis der Packung (Open Food Facts `conservation_conditions`, z. B.
+// „Nach dem Öffnen gekühlt lagern und innerhalb von 3 Tagen verzehren“):
+// {days, cool} — days = Frist nach dem Öffnen (0 = keine erkannt), cool =
+// gekühlt lagern. null ohne Bezug aufs Öffnen.
+/** @param {string} text */
+function pantryOffOpen(text){
+  var t=String(text||'').toLowerCase();
+  if(!/(ö|oe)ffnen|angebrochen|ge(ö|oe)ffnet/.test(t))return null;
+  var m=/(?:innerhalb|binnen)\s+(?:von\s+)?(\d{1,3})\s*(tag|tagen|woche|wochen)\b/.exec(t)||/(\d{1,3})\s*(tage|tagen|wochen)\s+(?:verbrauchen|verzehren|aufbrauchen)/.exec(t);
+  var days=m?(+m[1])*(/^woche/.test(m[2])?7:1):0;
+  var cool=/gek(ü|ue)hlt|k(ü|ue)hlschrank|bei\s*(max\.?\s*)?\+?\d\s*°?\s*c/.test(t);
+  if(!days&&!cool)return null;
+  return {days:days>0&&days<=365?days:0,cool:cool};
+}
 // Ohne Treffer im Namen: Rückfall über die Einkaufs-Kategorie (NTShop) auf
 // die vorsichtigste passende Art; Getränke, Haushalt usw. bleiben ohne Schätzung.
 var PANTRY_SHELF_CAT={obst:'obstgemuese',brot:'brot',milch:'milch',fleisch:'hack',tk:'tk',vorrat:'trocken',suess:'suess'};
@@ -1554,9 +1587,12 @@ function _pantryR3(v){return Math.round(v*1000)/1000;}
 function pantryDebit(lots,n,lotId,openDays){
   var copy=(lots||[]).map(function(lot){return Object.assign({},lot);});
   var removed=[];
+  // '=<ID>': nur genau diese Charge, ohne abgeteilte Stücke (<ID>~…).
+  var exact=!!lotId&&String(lotId).charAt(0)==='=';
+  if(exact)lotId=String(lotId).slice(1);
   n=_pantryR3(+n||0);
   pantryLotOrder(copy,+openDays||0).forEach(function(lot){
-    if(n<=0||(lotId&&lot.id!==lotId&&String(lot.id).indexOf(lotId+'~')!==0))return;
+    if(n<=0||(lotId&&lot.id!==lotId&&(exact||String(lot.id).indexOf(lotId+'~')!==0)))return;
     var amount=_pantryR3(Math.min(n,+lot.q||0));
     if(!(amount>0))return;
     removed.push(Object.assign({},lot,{q:amount}));

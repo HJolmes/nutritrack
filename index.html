@@ -3255,6 +3255,8 @@ body.b3-on #pickerOv .picker-tabs.nt-tab-strip>.picker-tab{
         <div style="font-size:11px;color:var(--mu);line-height:1.5;margin:-2px 2px 8px;">Fällt der Bestand darunter, kommt der Artikel auf den Einkaufszettel. Mit Gramm je Stück zieht „Fertig gekocht“ im Kochbuch die verbrauchte Menge ab.</div>
         <label class="pantry-reloc pantry-auto"><input type="checkbox" id="pantryItemAuto">
           <span><b>🔁 Immer nachkaufen</b> (Dauerartikel): kommt von selbst auf den Einkaufszettel, ca. <span id="pantryItemLead">3 Tage</span> bevor er laut Verbrauch ausgeht — spätestens unter der Mindestmenge. Vorlauf unter ⋯ Mehr.</span></label>
+        <label class="lbl" for="pantryItemOl">Nach dem Öffnen lagern in</label>
+        <div class="sf"><select class="sinp" id="pantryItemOl" onchange="NTPantry.olPicked()"></select></div>
         <label class="lbl" for="pantryItemOd">Angebrochen haltbar ca. … Tage</label>
         <div class="sf"><input type="text" class="sinp" id="pantryItemOd" inputmode="numeric" placeholder="z. B. 3" autocomplete="off"></div>
         <div id="pantryItemOdNote" style="font-size:11px;color:var(--mu);line-height:1.5;margin:-2px 2px 8px;">So lange hält eine Packung, nachdem sie mit 📂 als angebrochen markiert wurde.</div>

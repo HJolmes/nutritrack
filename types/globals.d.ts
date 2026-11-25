@@ -32,7 +32,7 @@ interface Element { get style(): CSSStyleDeclaration; set style(cssText: string)
 interface Navigator { standalone?: boolean; }
 interface EventTarget { tagName?: string; }
 
-declare var NTUI: any; declare var NTUICatalog: any; declare var NTUIActions: any;
+declare var NTUI: any; declare var NTUICatalog: any; declare var NTUIActions: any; declare var NTDirty: any;
 
 declare var NTUIHome: any;
 

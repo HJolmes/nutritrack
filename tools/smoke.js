@@ -1026,6 +1026,19 @@ const EXPECTED_NAMESPACES = [
         const m = S.pantry.find((x) => x.id === id), d = m.lots.map((l) => l.mhd).sort();
         return m.loc === 'tk' && d[0] === T.d10 && d[1] === T.d30 && m.lots.find((l) => l.mhd === T.d10).estimated === false;
       }, { id: milkId, T });
+      // Ungespeicherte Änderungen (js/dirty.js): ✕ fragt, „Weiter bearbeiten“ bleibt, „Verwerfen“ schließt ohne Speichern
+      await page.click('#pantryList [data-act="NTPantry.openItem"][data-args=\'["' + milkId + '"]\']');
+      await page.locator('#pantryItemOv.open').waitFor();
+      const min0 = await page.evaluate((id) => S.pantry.find((x) => x.id === id).min || 0, milkId);
+      await page.fill('#pantryItemMin', '7');
+      await page.click('#pantryItemOv .mcl');
+      const asked = await page.isVisible('#dirtyOv.open');
+      await page.click('#dirtyOv .mbd [data-act="NTDirty.cancel"]');
+      const kept = await page.isVisible('#pantryItemOv.open') && !(await page.isVisible('#dirtyOv.open'));
+      await page.click('#pantryItemOv .mcl');
+      await page.click('#dirtyOv [data-act="NTDirty.discard"]');
+      out.dirty = asked && kept && !(await page.isVisible('#pantryItemOv.open'))
+        && await page.evaluate(({ id, m }) => (S.pantry.find((x) => x.id === id).min || 0) === m, { id: milkId, m: min0 });
     } catch (e) { record('Vorrat-Ausbau', e.message); }
     await page.evaluate((k) => {
       document.querySelectorAll('.ov.open').forEach((o) => o.classList.remove('open'));
@@ -1042,6 +1055,7 @@ const EXPECTED_NAMESPACES = [
       order: 'Ordnen nach Name (flach, gemerkt) und Kategorie (Gruppen und Chips)',
       detail: 'Detail mit Bestand, Ort, Kategorie, Chargen und Buchungen; Zettel übernimmt die Kategorie',
       opened: '„Geöffnet“ setzt das Datum, verkürzte Frist zählt in Kopf und „Läuft ab“',
+      dirty: 'ungespeicherte Änderung: ✕ fragt, Weiter bearbeiten bleibt, Verwerfen schließt ohne zu speichern',
       oldestFirst: '„−“ zieht von der geöffneten Charge ab', dropLot: 'Charge entfernen als Korrektur, ↩️ im Detail holt sie zurück',
       reloc: 'Ortswechsel schätzt nur das geschätzte Datum neu, eingetragenes bleibt' })) {
       if (!out[k]) { pantry2Fail++; console.log('  x   Vorrat-Ausbau: ' + v); }

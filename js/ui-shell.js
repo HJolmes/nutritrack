@@ -43,7 +43,7 @@ function nav(){
       return '<button type="button" class="b3-plus" data-act="NTUIActions.plus" aria-label="'+esc('Erfassen: '+label+(label.includes(visible)||visible==='Erfassen'?'':' · '+visible))+'"><span aria-hidden="true">＋</span><small>'+visible+'</small></button>';
     }
     var t=NTUICatalog.target(id),on=id===current,short=({baby:'Baby',shop:'Einkauf'})[id]||t.label;
-    return '<button type="button" aria-label="'+esc(t.label)+'"'+(on?' aria-current="page"':'')+' data-act="NTUI.go" data-args="'+esc(JSON.stringify([id]))+'"><span aria-hidden="true">'+t.ic+'</span><small>'+esc(short)+'</small></button>';
+    return '<button type="button" aria-label="'+esc(t.label)+'"'+(on?' aria-current="page"':'')+' data-act="NTUI.navGo" data-args="'+esc(JSON.stringify([id]))+'"><span aria-hidden="true">'+t.ic+'</span><small>'+esc(short)+'</small></button>';
   }
   function side(list){return '<div class="b3-nav-side">'+list.filter(NTUICatalog.available).map(navButton).join('')+'</div>';}
   var markup=side(ids.slice(0,2))+navButton('+')+side(ids.slice(3));
@@ -52,9 +52,11 @@ function nav(){
 }
 function status(){
   var top=overlays[overlays.length-1],blocked=!!top;
-  var modal=blocked&&!isPage(top);
   document.querySelectorAll('#b3Content,#b3Notices, body > .screen,[data-b3-inline]').forEach(function(el){el.toggleAttribute('inert',blocked);});
-  document.querySelectorAll('#b3Header,#b3Nav').forEach(function(el){el.toggleAttribute('inert',modal);});
+  // Kopfzeile und untere Leiste bleiben auch über einem Dialog bedienbar:
+  // ‹ schließt den obersten Dialog, die Leiste schließt alle (beides mit
+  // Rückfrage bei ungespeicherten Änderungen, js/dirty.js).
+  document.querySelectorAll('#b3Header,#b3Nav').forEach(function(el){el.removeAttribute('inert');});
   overlays.forEach(function(id){document.getElementById(id).toggleAttribute('inert',id!==top);});
   document.getElementById('b3Back').hidden=section==='home'&&!overlays.some(isPage);
   nav();
@@ -186,9 +188,18 @@ function closed(id){
   if(focus)focus.focus({preventScroll:true});
   if(!restoring&&isPage(id)&&!overlays.some(isPage)&&['baby','shop','pantry','plan','book'].indexOf(section)>=0)go(parents[section]||'home',true);
 }
+// Tipp auf die untere Leiste: offene Dialoge erst nach Rückfrage verlassen.
+/** @param {string} id */
+function navGo(id){NTDirty.guard(overlays.slice(),function(){go(id);});}
 function back(){
   if(overlays.indexOf('fileSaveOv')>=0)return;
-  if(overlays.length){var id=overlays[overlays.length-1];if(isPage(id)){history.back();return;}if(id==='babyOv')NTBaby.closeDiary();else closeOv(id);return;}
+  if(overlays.length){
+    var id=overlays[overlays.length-1];
+    if(isPage(id)){history.back();return;}
+    if(id==='dirtyOv'){NTDirty.cancel();return;}
+    NTDirty.guard([id],function(){if(id==='babyOv')NTBaby.closeDiary();else closeOv(id);});
+    return;
+  }
   if(section!=='home')history.back();
 }
 // Offenes Mahlzeit-Detail: Reiterleiste, Datum, Teilen und Hinweise treten
@@ -252,6 +263,13 @@ window.addEventListener('popstate',function(e){
   if(!e.state||!e.state.ntui){go('home',true);return;}
   var desired=e.state;
   if(signature(desired)===signature(state())){history.back();return;}
+  // Android-Zurück über einem geänderten Dialog: Ansicht wiederherstellen und fragen.
+  var leaving=overlays.filter(function(id){return desired.overlays.indexOf(id)<0;});
+  if(NTDirty.dirtyAmong(leaving).length){
+    writeHistory(false);
+    NTDirty.guard(leaving,function(){leaving.slice().reverse().forEach(function(id){if(id==='babyOv')NTBaby.closeDiary();else if(id==='planOv')NTPlan.close();else closeOv(id);});});
+    return;
+  }
   restoring=true;
   overlays.slice().reverse().forEach(function(id){if(desired.overlays.indexOf(id)<0){if(id==='babyOv')NTBaby.closeDiary();else if(id==='planOv')NTPlan.close();else closeOv(id);}});
   if(desired.section!==section){go(desired.section,true);}
@@ -260,5 +278,5 @@ window.addEventListener('popstate',function(e){
   if(desired.overlays.indexOf('babyOv')>=0&&window.NTUIBaby){NTUIBaby.select(desired.babyTab||'today',false);if(desired.babyTab==='development')NTUIBaby.development(desired.babyDetail||'growth',false);}
   restoring=false;status();
 });
-window.NTUI={importFile:importFile,templates:templates,fast:fast,stopFast:stopFast,noteView:noteView,refresh:refresh,changeDay:changeDay,boot:boot,enabled:enabled,prefs:prefs,context:context,go:go,back:back,render:render,opened:opened,closed:closed,legacy:legacy,dispatch:dispatch,openPreferences:openPreferences,savePreferences:savePreferences,classic:classic,enable:enable};
+window.NTUI={navGo:navGo,importFile:importFile,templates:templates,fast:fast,stopFast:stopFast,noteView:noteView,refresh:refresh,changeDay:changeDay,boot:boot,enabled:enabled,prefs:prefs,context:context,go:go,back:back,render:render,opened:opened,closed:closed,legacy:legacy,dispatch:dispatch,openPreferences:openPreferences,savePreferences:savePreferences,classic:classic,enable:enable};
 })();

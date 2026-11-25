@@ -2,6 +2,10 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.360',items:[
+    {icon:'‹',text:'<b>Zurück und untere Leiste</b> funktionieren jetzt auch, wenn ein Dialog offen ist: ‹ schließt den Dialog, die Leiste wechselt direkt den Bereich.',where:'Überall'},
+    {icon:'💾',text:'<b>Ungespeicherte Änderungen</b>: Wer einen geänderten Dialog verlässt, wird gefragt — Speichern, Verwerfen oder weiter bearbeiten.',where:'Alle Dialoge mit Speichern'}
+  ]},
   {v:'0.359',items:[
     {icon:'📂',text:'<b>Angebrochen</b>: Ein Tipp auf 📂 in der Vorratsliste markiert eine Packung als angebrochen. Wie lange sie dann hält, kannst du je Artikel unter „Angebrochen haltbar“ eintragen, sonst gilt ein Richtwert.',where:'Vorrat'},
     {icon:'📅',text:'<b>MHD ca.</b>: Eine neue Packung bekommt gleich ein geschätztes MHD ins Datumsfeld. Trägst du das Datum von der Packung ein, lernt die App daraus. Das Feld „Hält nach dem Kauf“ entfällt.',where:'Vorrat'},

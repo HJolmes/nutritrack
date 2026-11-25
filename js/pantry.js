@@ -2207,8 +2207,10 @@ function foundRow(x){
   var c=ex?catOf(ex):guessCat(x.n);
   var l=bon?((ex&&ex.loc)||x.loc||pantryHomeLoc(x.n,c,locs())):(x.loc||(ex&&ex.loc)||'');
   var sh=bon?shopByName(x.n):null;
-  return {n:x.n,q:x.q,g:x.g||(ex&&+ex.g>0?+ex.g:0),loc:l,c:c,mhd:x.mhd||'',vd:x.vd||'',bon:x.bon||'',on:true,ex:!!ex,shop:sh?sh.id:''};
+  return {n:x.n,q:x.q,g:x.g||(ex&&+ex.g>0?+ex.g:0),loc:l,c:c,mhd:x.mhd||'',vd:x.vd||'',bon:x.bon||'',on:true,ex:!!ex,shop:sh?sh.id:'',
+    old:pantryOldDate(x.mhd||'',x.vd||'',today())};
 }
+var _oldAsk=false;   // Rückfrage vor dem Übernehmen: von der KI gelesene Daten liegen lange zurück
 function analyzePhotos(){
   if(!_photos.length)return;
   var no=noAiText();
@@ -2225,7 +2227,7 @@ function analyzePhotos(){
     var ids=locs().map(function(l){return l.id;}),partial=false,list;
     if(bon){var r=parsePantryReceipt(text,ids);list=r.items;partial=r.partial;}
     else list=parsePantryPhoto(text,ids);
-    _found=list.map(foundRow);
+    _found=list.map(foundRow);_oldAsk=false;
     var n=_found.length;
     photoStatus(n?(n+(bon?' Artikel vom Bon gelesen':' Lebensmittel erkannt')+(partial?' — die Antwort war unvollständig, bitte mit dem Bon vergleichen':'')+' — prüfen, anpassen, übernehmen.')
       :(bon?'Auf dem Foto war kein Kassenbon zu lesen. Den Bon glatt und ganz aufs Bild, bei langen Bons in zwei Fotos.':'Nichts erkannt. Ein schärferes Foto hilft.'),!n||partial);
@@ -2252,9 +2254,10 @@ function renderFound(){
         +'<select class="sinp pantry-found-loc" onchange="NTPantry.foundSet('+i+',\'loc\',this.value)" aria-label="Lagerort">'+locOptions(x.loc)+'</select>'
         +'<select class="sinp pantry-found-cat" onchange="NTPantry.foundSet('+i+',\'c\',this.value)" aria-label="Kategorie">'+catOptions(x.c).replace(/^<option value="">[^<]*<\/option>/,'')+'</select>'
         +(notes.length?'<small>'+esc(notes.join(' · '))+'</small>':'')
+        +(x.old?'<small class="pantry-found-old">⚠️ '+esc(fmtD(x.old))+' liegt über 30 Tage zurück — vielleicht falsch gelesen. <button type="button" class="seb" data-act="NTPantry.foundClearDate" data-args="'+args([i])+'">Datum entfernen</button></small>':'')
         +'</div>';
     }).join('')
-    +'<button type="button" class="svb" data-act="NTPantry.foundApply">✓ Ausgewählte '+(bon?'einbuchen':'übernehmen')+'</button>';
+    +(_oldAsk?oldAskHtml():'<button type="button" class="svb" data-act="NTPantry.foundApply">✓ Ausgewählte '+(bon?'einbuchen':'übernehmen')+'</button>');
 }
 function foundSet(i,k,v){
   var x=_found[i];if(!x)return;
@@ -2284,7 +2287,26 @@ function bonApply(x){
   if(s&&!s.stock&&window.NTShop){s.stock={pid:it.id,n:e.d,log:e.id,lot:e.lots[0].id};NTShop.toggle(s.id);return 2;}
   return e?1:0;
 }
-function foundApply(){
+// Ausgewählte Zeilen mit verdächtig altem Datum (siehe pantryOldDate).
+function oldOnes(){return _found.filter(function(x){return x.on&&x.n&&x.old;});}
+function oldAskHtml(){
+  var a=oldOnes();
+  return '<div class="pantry-old-ask"><b>'+a.length+(a.length===1?' Datum liegt':' Daten liegen')+' über 30 Tage zurück</b>'
+    +'<small>'+esc(a.map(function(x){return x.n+' ('+fmtD(x.old)+')';}).join(', '))+' — so übernommen, gelten '+(a.length===1?'es':'sie')+' sofort als abgelaufen.</small>'
+    +'<button type="button" class="svb" data-act="NTPantry.foundApply" data-args=\'["clear"]\'>Ohne diese Daten übernehmen</button>'
+    +'<button type="button" class="seb" data-act="NTPantry.foundApply" data-args=\'["keep"]\'>So übernehmen</button>'
+    +'<button type="button" class="seb" data-act="NTPantry.foundBack">Zurück zur Liste</button></div>';
+}
+/** @param {number} i */
+function foundClearDate(i){var x=_found[i];if(!x)return;x.mhd='';x.vd='';x.old='';if(!oldOnes().length)_oldAsk=false;renderFound();}
+function foundBack(){_oldAsk=false;renderFound();}
+// `how`: fehlt = erst fragen, wenn Daten lange zurückliegen; 'clear' = diese
+// Daten weglassen (die App schätzt dann); 'keep' = so übernehmen.
+/** @param {string} [how] */
+function foundApply(how){
+  if(!how&&oldOnes().length){_oldAsk=true;renderFound();return;}
+  if(how==='clear')oldOnes().forEach(function(x){x.mhd='';x.vd='';x.old='';});
+  _oldAsk=false;
   var n=0,ticked=0,bon=_photoMode==='bon';
   _found.forEach(function(x){
     if(!x.on||!x.n)return;
@@ -2526,7 +2548,7 @@ document.addEventListener('visibilitychange',function(){if(!document.hidden){Syn
 window.NTPantry={
   boot:boot,open:open,close:close,render:render,renderCard:renderCard,setFilter:setFilter,
   pickTile:pickTile,setOrder:setOrder,search:search,addQuery:addQuery,
-  openLot:openLot,openNext:openNext,toggleRow:toggleRow,fold:fold,olPicked:olPicked,splitLot:splitLot,qtySync:qtySync,locPicked:locPicked,dropLot:dropLot,toShop:toShop,editFields:editFields,formChanged:formChanged,
+  openLot:openLot,openNext:openNext,foundClearDate:foundClearDate,foundBack:foundBack,toggleRow:toggleRow,fold:fold,olPicked:olPicked,splitLot:splitLot,qtySync:qtySync,locPicked:locPicked,dropLot:dropLot,toShop:toShop,editFields:editFields,formChanged:formChanged,
   add:add,step:step,remove:remove,submitInput:submitInput,inputKey:inputKey,
   openItem:openItem,saveItem:saveItem,deleteItem:deleteItem,addChargeRow:addChargeRow,removeChargeRow:removeChargeRow,
   openLocs:openLocs,locAdd:locAdd,locSave:locSave,locMove:locMove,locDelete:locDelete,

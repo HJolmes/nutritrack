@@ -684,6 +684,7 @@ const EXPECTED_NAMESPACES = [
       const wait = (ms) => new Promise((res) => setTimeout(res, ms));
       const out = {};
       const shop0 = JSON.stringify(S.shopList), pant0 = JSON.stringify(S.pantry || []);
+      S.pantryOrder = 'loc'; // Ansicht nach Lagerort (Dringlichkeit klappt den Vorrat zu, eigener Test unten)
       NTPantry.open();
       out.seedLocs = S.pantryLocs.length === 3 && !!document.querySelector('#pantryLocChips .stab');
       const inp = document.getElementById('pantryInput');
@@ -837,7 +838,7 @@ const EXPECTED_NAMESPACES = [
       S.pantryOrder = 'loc'; NTPantry.setFilter('');
       let grp = '', where = [];
       [...document.getElementById('pantryList').children].forEach((e) => {
-        if (!e.querySelector('[data-act]')) grp = e.textContent; else if (/Smoke getrocknete Tomaten/.test(e.textContent)) where.push(grp + ':' + (/angebrochen/.test(e.textContent) ? 'o' : 'c'));
+        if (!e.querySelector('[data-act]')) grp = e.textContent; else if (/Smoke getrocknete Tomaten/.test(e.textContent)) where.push(grp + ':' + (/angebrochen/i.test(e.textContent) ? 'o' : 'c'));
       });
       const fridgeRow = where.length === 2 && where.some((w) => /Kühlschrank:o$/.test(w)) && where.some((w) => /Vorratsschrank:c$/.test(w));
       NTPantry.step(gtom.id, -1, "c");
@@ -851,6 +852,24 @@ const EXPECTED_NAMESPACES = [
       NTPantry.saveItem();
       const pe = S.pantry.find((x) => x.n === 'Smoke-Pesto');
       out.opIn = !!pe && pe.q === 2 && pe.lots.filter((l) => l.op === today()).length === 1;
+      // Dringlichkeit (Standard): Zuerst aufbrauchen → Angebrochen → Vorrat je Kategorie zugeklappt → Nicht da zugeklappt
+      const sv = (n, q, mhd) => { const it = NTPantry.add(n, q, 0, 'kuehl', '', 0, { mhd }); return it; };
+      const sUrg = sv('Smoke-Dringend', 1, addDays(today(), 1)), sRest = sv('Smoke-Ruhig', 1, addDays(today(), 40)), sGone = sv('Smoke-Weg', 1, addDays(today(), 40));
+      NTPantry.step(sGone.id, -1);
+      delete S.pantryOrder; delete S.pantryFold; NTPantry.setFilter('');
+      const L = () => document.getElementById('pantryList').textContent;
+      const t0 = L(), iU = t0.indexOf('Zuerst aufbrauchen'), iA = t0.indexOf('Angebrochen'), iV = t0.indexOf('Vorrat'), iN = t0.indexOf('Nicht da');
+      const restHidden = !/Smoke-Ruhig/.test(t0) && !/Smoke-Weg/.test(t0) && /Smoke-Dringend/.test(t0);
+      const catKey = 'cat:' + (S.pantry.find((x) => x.id === sRest.id).c);
+      NTPantry.fold(catKey); NTPantry.fold('nd');
+      const t1 = L();
+      NTPantry.toggleRow(sUrg.id);
+      const acts = !!document.querySelector('#pantryList .pt-row.is-open [data-act="NTPantry.step"]') && !!document.querySelector('#pantryList .pt-row.is-open [data-act="NTPantry.openItem"]');
+      NTPantry.toggleRow(sUrg.id);
+      const missGone = !pantryMissing(S.pantry.find((x) => x.id === sGone.id));
+      out.smart = iU >= 0 && iU < iA && iA < iV && iV < iN && restHidden && /Smoke-Ruhig/.test(t1) && /Smoke-Weg/.test(t1) && acts && missGone
+        && !document.querySelector('#pantryList .pt-row.is-open');
+      S.pantryOrder = 'loc';
       // Ablauf-Meldung einmal am Tag (Notification gestellt)
       const realN = window.Notification, realNotify = NTRemind.notify; let sent = 0;
       window.Notification = /** @type {any} */ ({ permission: 'granted' });
@@ -919,7 +938,8 @@ const EXPECTED_NAMESPACES = [
       learn: 'Packungsdatum beim Kauf lehrt die Haltedauer, gilt nicht als geschätzt',
       multiDate: 'neuer Artikel: Stück je Zeile (2 × A, 1 × B), ✂️ 1 Stück abteilen',
       openLoc: 'Glas angebrochen → zusätzlich unter Kühlschrank, − am Schrank nimmt das geschlossene',
-      opIn: 'Einbuchen mit „Schon angebrochen am“ öffnet genau ein Stück', remind: 'Ablauf-Meldung höchstens einmal am Tag',
+      opIn: 'Einbuchen mit „Schon angebrochen am“ öffnet genau ein Stück',
+      smart: 'Dringlichkeit: Reihenfolge der Abschnitte, Vorrat/Nicht da zugeklappt und aufklappbar, Knöpfe nach Tipp, Aufgebrauchtes fehlt nicht', remind: 'Ablauf-Meldung höchstens einmal am Tag',
       remindChk: 'Schalter in Einstellungen → Erinnerungen', scanKnown: 'bekannter Barcode ＋1, Scanner bleibt offen (#335)',
       scanNew: 'neuer Barcode → Rückfrage unter dem Sucherbild, Scanner bleibt offen, „Zuordnen“ → Artikel-Dialog mit Name und Gramm aus Open Food Facts', scanSaved: 'Artikel mit Barcode gespeichert',
       sync: 'eigener Topf „Vorrat“ im Sync-Kern' })) {
@@ -953,6 +973,9 @@ const EXPECTED_NAMESPACES = [
       const T = await page.evaluate(() => ({ d5: addDays(today(), 5), d3: addDays(today(), 3), d10: addDays(today(), 10), d30: addDays(today(), 30), t: today() }));
       const type = async (txt) => { await page.fill('#pantryInput', txt); await page.click('#pantryOv [data-act="NTPantry.submitInput"]'); };
       const listText = () => page.evaluate(() => document.getElementById('pantryList').textContent);
+      // Listenzeilen sind kompakt: Knöpfe erst nach einem Tipp auf die Zeile (v0.361). Hier die Ansicht nach Lagerort.
+      await page.evaluate(() => { S.pantryOrder = 'loc'; NTPantry.render(); });
+      const ptOpen = (id) => page.evaluate((id) => { const b = document.querySelector('#pantryList .pt-main[data-args=\'["' + id + '"]\']'); if (b && b.getAttribute('aria-expanded') !== 'true') b.click(); }, id);
       // D1: im Kühlschrank eingebucht → MHD heute + 5, als geschätzt markiert
       await page.click('#pantryLocChips [data-args=\'["kuehl"]\']');
       await type('Milch');
@@ -984,20 +1007,22 @@ const EXPECTED_NAMESPACES = [
         && await page.evaluate(() => S.pantry.length === 4 && !!S.pantry.find((x) => x.n === 'Quark') && document.getElementById('pantrySearch').value === '');
       // A2/A3: ordnen nach Name (flach, gemerkt) und nach Kategorie (Gruppen + Kategorie-Chips)
       await page.selectOption('#pantryOrder', 'name');
-      const byName = await page.evaluate(() => [...document.querySelectorAll('#pantryList [data-act="NTPantry.openItem"] > div:first-child')].map((d) => d.textContent));
+      const byName = await page.evaluate(() => [...document.querySelectorAll('#pantryList .pt-n')].map((d) => d.textContent));
       await page.selectOption('#pantryOrder', 'cat');
       const byCat = await page.evaluate(() => ({ list: document.getElementById('pantryList').textContent, chips: document.getElementById('pantryLocChips').textContent, order: S.pantryOrder }));
       await page.selectOption('#pantryOrder', 'loc');
-      out.order = byName.join('|') === 'Milch|Nudeln|Quark|Smoke-Schwamm' && byCat.order === 'cat' && /Milch & Käse/.test(byCat.list) && /Milch & Käse/.test(byCat.chips)
+      out.order = byName.join('|') === 'Milch|Nudeln|Quark|Smoke-Schwamm' && byCat.order === 'cat' && /Milch, Käse & Eier/.test(byCat.list) && /Milch, Käse & Eier/.test(byCat.chips)
         && await page.evaluate(() => S.pantryOrder === 'loc');
       // A4 + A3: Detail öffnen, Kategorie auf den Zettel
       const milkId = await page.evaluate(() => S.pantry.find((x) => x.n === 'Milch').id);
+      await ptOpen(milkId);
       await page.click('#pantryOv [data-act="NTPantry.step"][data-args=\'["' + milkId + '",1]\']');
+      await ptOpen(milkId);
       await page.click('#pantryList [data-act="NTPantry.openItem"][data-args=\'["' + milkId + '"]\']');
       await page.locator('#pantryItemOv.open').waitFor();
       const det = await page.evaluate(() => ({ sum: document.getElementById('pantryItemSum').textContent, cards: document.querySelectorAll('#pantryCharges .pantry-charge[data-lot-id]:not([data-lot-id=""])').length, log: document.getElementById('pantryItemLog').textContent }));
       await page.click('#pantryItemOv [data-act="NTPantry.toShop"]');
-      out.detail = /Bestand/.test(det.sum) && /Kühlschrank/.test(det.sum) && /Milch & Käse/.test(det.sum) && det.cards === 2 && /Gekauft/.test(det.log)
+      out.detail = /Bestand/.test(det.sum) && /Kühlschrank/.test(det.sum) && /Milch, Käse & Eier/.test(det.sum) && det.cards === 2 && /Gekauft/.test(det.log)
         && await page.evaluate(() => { const m = S.pantry.find((x) => x.n === 'Milch'), si = S.shopList.find((x) => x.n === 'Milch' && !x.d); return !!si && si.c === m.c; });
       // D2: zweite Charge „Geöffnet“ → Frist heute + 3 zählt, Kennzahl „Läuft ab“
       const lots0 = await page.evaluate((id) => S.pantry.find((x) => x.id === id).lots.map((l) => l.id), milkId);
@@ -1006,9 +1031,11 @@ const EXPECTED_NAMESPACES = [
       out.opened = !!op.op && op.op.id === lots0[1] && op.op.op === T.t && op.exp === 1 && /Angebrochen · bis/.test(op.sum);
       // D3: „−“ in der Liste nimmt die geöffnete Charge, obwohl beide gleich lange halten
       await page.evaluate(() => closeOv('pantryItemOv'));
+      await ptOpen(milkId);
       await page.click('#pantryOv [data-act="NTPantry.step"][data-args=\'["' + milkId + '",-1]\']');
       out.oldestFirst = await page.evaluate(({ id, keepLot }) => { const m = S.pantry.find((x) => x.id === id); return m.q === 1 && m.lots.length === 1 && m.lots[0].id === keepLot && S.pantryLog[0].lots[0].op; }, { id: milkId, keepLot: lots0[0] });
       // A4: Charge entfernen bucht eine Korrektur, ↩️ in „Letzte Buchungen“ holt sie zurück
+      await ptOpen(milkId);
       await page.click('#pantryList [data-act="NTPantry.openItem"][data-args=\'["' + milkId + '"]\']');
       await page.click('#pantryCharges [data-act="NTPantry.dropLot"]');
       const dropped = await page.evaluate((id) => ({ q: S.pantry.find((x) => x.id === id).q, k: S.pantryLog[0].k }), milkId);
@@ -1018,6 +1045,7 @@ const EXPECTED_NAMESPACES = [
       await page.click('#pantryItemOv [data-act="NTPantry.addChargeRow"]');
       await page.fill('#pantryCharges .pantry-charge-mhd >> nth=-1', T.d10);
       await page.click('#pantryItemOv [data-act="NTPantry.saveItem"]');
+      await ptOpen(milkId);
       await page.click('#pantryList [data-act="NTPantry.openItem"][data-args=\'["' + milkId + '"]\']');
       await page.selectOption('#pantryItemLoc', 'tk');
       const offer = await page.isVisible('#pantryItemRelocChk');
@@ -1027,6 +1055,7 @@ const EXPECTED_NAMESPACES = [
         return m.loc === 'tk' && d[0] === T.d10 && d[1] === T.d30 && m.lots.find((l) => l.mhd === T.d10).estimated === false;
       }, { id: milkId, T });
       // Ungespeicherte Änderungen (js/dirty.js): ✕ fragt, „Weiter bearbeiten“ bleibt, „Verwerfen“ schließt ohne Speichern
+      await ptOpen(milkId);
       await page.click('#pantryList [data-act="NTPantry.openItem"][data-args=\'["' + milkId + '"]\']');
       await page.locator('#pantryItemOv.open').waitFor();
       const min0 = await page.evaluate((id) => S.pantry.find((x) => x.id === id).min || 0, milkId);
@@ -1094,6 +1123,9 @@ const EXPECTED_NAMESPACES = [
         return k;
       });
       const listText = () => page.evaluate(() => document.getElementById('pantryList').textContent);
+      // Listenzeilen sind kompakt: Knöpfe erst nach einem Tipp auf die Zeile (v0.361). Hier die Ansicht nach Lagerort.
+      await page.evaluate(() => { S.pantryOrder = 'loc'; NTPantry.render(); });
+      const ptOpen = (id) => page.evaluate((id) => { const b = document.querySelector('#pantryList .pt-main[data-args=\'["' + id + '"]\']'); if (b && b.getAttribute('aria-expanded') !== 'true') b.click(); }, id);
       const shopOf = () => page.evaluate(() => S.shopList.filter((x) => x.n === 'Smoke-Kaffee' && !x.d).map((x) => ({ id: x.id, q: x.q, pv: x.pv })));
       const kaffee = () => page.evaluate(() => { const k = S.pantry.find((x) => x.id === 'smoke-kaffee'); return { q: k.q, min: k.min, auto: k.auto, rs: k.rs || null, rsNo: k.rsNo || 0 }; });
       // B2: Zeile dezent, Hinweis „geht bald aus“ filtert
@@ -1105,6 +1137,7 @@ const EXPECTED_NAMESPACES = [
         && await page.getAttribute('#pantrySoon .pantry-soon', 'aria-pressed') === 'true';
       await page.click('#pantrySoon .pantry-soon'); // zweiter Tipp hebt den Filter auf
       // B2/B3: Detail mit Verbrauch pro Woche (ohne Weggeworfenes/Rückgängiges), Vorschlag übernehmen
+      await ptOpen('smoke-kaffee');
       await page.click('#pantryList [data-act="NTPantry.openItem"][data-args=\'["smoke-kaffee"]\']');
       await page.locator('#pantryItemOv.open').waitFor();
       const sum = await page.textContent('#pantryItemSum');
@@ -1124,6 +1157,7 @@ const EXPECTED_NAMESPACES = [
       out.noDup = (await shopOf()).length === 1;
       // Vom Zettel genommen → „−“ bringt ihn nicht zurück (gesperrt bis zum Einbuchen)
       await page.evaluate((id) => NTShop.remove(id), s1[0].id);
+      await ptOpen('smoke-kaffee');
       await page.click('#pantryOv [data-act="NTPantry.step"][data-args=\'["smoke-kaffee",-1]\']');
       const k2 = await kaffee();
       out.blocked = (await shopOf()).length === 0 && k2.q === 1 && !k2.rs && k2.rsNo > 0;
@@ -1138,6 +1172,7 @@ const EXPECTED_NAMESPACES = [
         && (await shopOf()).length === 0 && !k3.rs && k3.rsNo > 0;
       // Einbuchen hebt die Sperre auf → wieder unter Mindestmenge → neuer Eintrag; Abhaken füllt auf und löst die Markierung
       await page.evaluate(() => NTPantry.setFilter(''));
+      await ptOpen('smoke-kaffee');
       await page.click('#pantryOv [data-act="NTPantry.step"][data-args=\'["smoke-kaffee",1]\']');
       const s4 = await shopOf(), k4 = await kaffee();
       await page.evaluate((id) => NTShop.toggle(id), s4[0] && s4[0].id);

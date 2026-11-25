@@ -1466,6 +1466,7 @@ test('pantryOpenDays: eigene Angabe vor Richtwert, im Tiefkühler keine Frist', 
   assert.equal(C.pantryOpenDays({ n: 'Milch', od: 2 }, 't'), 0);
   assert.equal(C.pantryOpenDays({ n: 'Ding XY' }, 'k'), 0);
   assert.equal(C.pantryOpenDays({ n: 'Ding XY', od: 5 }, ''), 5);
+  assert.equal(C.pantryOpenDays({ n: 'Milch', od: 0 }, 'k'), 0);                     // 0 = hält bis zum MHD
 });
 test('pantryLearnHd: Abstand bis zum früheren Packungsdatum, sonst bleibt der alte Wert', () => {
   const C = load({});
@@ -1615,9 +1616,12 @@ test('pantryWasteTip: Vorschlag nur aus den Daten', () => {
 });
 
 // ── Vorrat: Übersicht, Haltbarkeit schätzen, Geöffnet, älteste Charge zuerst
-test('pantryMissing: leer oder unter Mindestmenge', () => {
+test('pantryMissing: nur Immer-da-Artikel (Mindestmenge, Dauerartikel)', () => {
   const C = load({});
-  assert.equal(C.pantryMissing({ q: 0 }), true);
+  assert.equal(C.pantryMissing({ q: 0 }), false);                                  // aufgebraucht, soll nicht immer da sein
+  assert.equal(C.pantryMissing({ q: 0, auto: 1 }), true);
+  assert.equal(C.pantryMissing({ q: 1, auto: 1 }), false);
+  assert.equal(C.pantryMissing({ q: 0, min: 1 }), true);
   assert.equal(C.pantryMissing({ q: 1, min: 2 }), true);
   assert.equal(C.pantryMissing({ q: 2, min: 2 }), false);
   assert.equal(C.pantryMissing({ q: 0.5 }), false);

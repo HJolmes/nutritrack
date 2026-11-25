@@ -150,11 +150,12 @@ function openedOn(it){return stockLots(it).reduce(function(d,lot){return lot.op&
 // Üblicher Lagerort für einen neuen Artikel ('' = keiner passt), `hint` laut Open Food Facts.
 function homeLoc(n,c,hint){return pantryHomeLoc(n,c||guessCat(n),locs(),hint);}
 function estimateDays(it){return pantryEstimateDays({n:it.n,hd:it.hd,c:catOf(it)},placeOf(it));}
-function expiry(it){return expiryOf(it,stockLots(it));}
+function expiry(it){return expiryOf(it,stockLots(it),true);}
 // Haltbarkeit für einen Teil der Chargen (angebrochen / geschlossen getrennt angezeigt).
-/** @param {any} it @param {Array<any>} lots */
-function expiryOf(it,lots){
-  var p={mhd:lots.reduce(function(d,lot){return earlier(d,lot.mhd);},''),vd:lots.reduce(function(d,lot){return earlier(d,lot.vd);},'')};
+// `whole`: ganzer Artikel — dann zählen wie bisher auch it.mhd/it.vd.
+/** @param {any} it @param {Array<any>} lots @param {boolean} [whole] */
+function expiryOf(it,lots,whole){
+  var p=whole?it:{mhd:lots.reduce(function(d,lot){return earlier(d,lot.mhd);},''),vd:lots.reduce(function(d,lot){return earlier(d,lot.vd);},'')};
   var e=pantryDue(p,lots,openDays(it),today());
   if(e&&e.k==='mhd'){
     var dated=lots.filter(function(lot){return lot.mhd===e.d;});
@@ -938,7 +939,7 @@ function dueOf(it){var e=(+it.q||0)>0?expiry(it):null;return e?e.d:'';}
 function row(it,ro,part){
   var all=stockLots(it),lots=part?all.filter(function(lot){return part==='o'?!!lot.op:!lot.op;}):all;
   var q=roundQty(lots.reduce(function(n,lot){return n+lot.q;},0));
-  var lw=part!=='o'&&low(it),e=q>0?expiryOf(it,lots):null,op=part==='c'?'':openedOn(it);
+  var lw=part!=='o'&&low(it),e=q>0?expiryOf(it,lots,!part):null,op=part==='c'?'':openedOn(it);
   // 📂 nur, solange eine ungeöffnete Packung da ist und der Ort eine Frist kennt (nicht im Tiefkühler).
   var canOpen=part!=='o'&&q>0&&placeOf(it)!=='t'&&lots.some(function(lot){return !lot.op;});
   var soon=part!=='o'&&ro!==null&&ro!==undefined&&(+it.q||0)>0&&ro<=ROW_DAYS;

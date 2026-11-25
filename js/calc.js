@@ -1385,8 +1385,13 @@ function pantryWasteTip(w,o){
   if(o.canFreeze)return 'freeze';
   return 'rarer';
 }
-// Fehlt im Vorrat: leer oder unter der Mindestmenge (Kennzahl „Fehlt“).
-function pantryMissing(it){return !((+(it&&it.q)||0)>0)||pantryNeed(it&&it.q,it&&it.min)>0;}
+// Fehlt im Vorrat (Kennzahl „Fehlt“): nur Artikel, die immer da sein sollen —
+// unter der Mindestmenge, oder Dauerartikel („immer nachkaufen“) leer. Ein
+// sonst aufgebrauchter Artikel fehlt nicht, er ist nur „nicht da“.
+function pantryMissing(it){
+  var q=+(it&&it.q)||0;
+  return pantryNeed(q,it&&it.min)>0||(!!(it&&it.auto)&&!(q>0));
+}
 
 // ── Vorrat: Haltbarkeit schätzen, Geöffnet-Frist, älteste Charge zuerst ──
 // RICHTWERTE, bewusst vorsichtig (eher zu kurz als zu lang; bei Spannen der
@@ -1514,10 +1519,12 @@ function pantryEstimateDays(it,place){
   return s?s.days:0;
 }
 // Tage, die ein angebrochener Artikel hält: im Tiefkühler keine Frist (0),
-// sonst die eigene Angabe `od` vor dem Richtwert für Art und Ort.
+// sonst die eigene Angabe `od` vor dem Richtwert für Art und Ort. `od` = 0
+// heißt ausdrücklich „keine eigene Frist, hält bis zum MHD“ (Ergebnis 0).
 /** @param {any} it {n,c,od} @param {string} [place] */
 function pantryOpenDays(it,place){
   if(place==='t')return 0;
+  if(it&&(it.od===0||it.od==='0'))return 0;
   if(+(it&&it.od)>0)return Math.round(+it.od);
   var s=pantryShelf(it&&it.n,it&&it.c,place);
   return s?s.open:0;

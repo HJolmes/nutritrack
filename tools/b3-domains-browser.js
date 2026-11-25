@@ -58,6 +58,19 @@ module.exports=async function domains(page,output,width){
   assert.equal(await page.evaluate(id=>S.pantry.find(p=>p.id===id).q,item.id),1);
   await page.evaluate(id=>{const e=S.pantryLog.find(e=>e.pid===id&&e.k==='verbrauch');NTPantry.undo(e.id);closeOv('pantryItemOv');},item.id);
   assert.equal(await page.evaluate(id=>S.pantry.find(p=>p.id===id).q,item.id),2,'Undo restores the quantity');
+  // Über einem Dialog bleiben ‹ und die untere Leiste bedienbar; geänderte Dialoge fragen erst (js/dirty.js).
+  await page.evaluate(id=>NTPantry.openItem(id),item.id);
+  await page.locator('#pantryItemMin').fill('9');
+  await page.locator('#b3Back').click();
+  await page.locator('#dirtyOv.open').waitFor();
+  await page.locator('#dirtyOv [data-act="NTDirty.discard"]').click();
+  assert.equal(await page.locator('#pantryItemOv.open').count(),0,'Back closes the edited dialog after Discard');
+  assert.ok(await page.locator('#pantryOv.open').isVisible(),'the page below stays open');
+  await page.evaluate(id=>NTPantry.openItem(id),item.id);
+  await page.locator('#b3Nav').getByRole('button',{name:'Heute',exact:true}).click();
+  assert.equal(await page.locator('#pantryItemOv.open').count(),0,'navigation closes an unchanged dialog without asking');
+  assert.equal(await page.locator('#dirtyOv.open').count(),0);
+  await page.evaluate(()=>NTUI.go('pantry'));
   // Selten Gebrauchtes liegt hinter ⋯ Mehr: Verlauf per Klick erreichbar, Kopf mit vier Werkzeugen.
   await page.locator('#pantryOv.open [data-act="NTPantry.openMore"]').click();
   await page.locator('#pantryMoreOv.open').getByRole('button',{name:'Verlauf'}).click();

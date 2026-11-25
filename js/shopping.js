@@ -18,7 +18,7 @@
 var BUILTIN=[
   {id:'obst',     ic:'🥦', label:'Obst & Gemüse'},
   {id:'brot',     ic:'🥖', label:'Brot & Backwaren'},
-  {id:'milch',    ic:'🧀', label:'Milch & Käse'},
+  {id:'milch',    ic:'🧀', label:'Milch, Käse & Eier'},
   {id:'fleisch',  ic:'🥩', label:'Fleisch & Fisch'},
   {id:'vorrat',   ic:'🥫', label:'Vorrat & Trockenes'},
   {id:'tk',       ic:'🧊', label:'Tiefkühl'},
@@ -108,7 +108,7 @@ var CATALOG=[
   ['Schokolade','🍫','suess'],['Kekse','🍪','suess'],['Chips','🥔','suess'],['Nüsse','🥜','suess'],
   ['Gummibärchen','🍬','suess'],['Riegel','🍫','suess'],['Salzstangen','🥨','suess'],['Popcorn','🍿','suess'],
 
-  ['Wasser','💧','getraenke'],['Sprudel','🫧','getraenke'],['Saft','🧃','getraenke'],['Cola','🥤','getraenke'],
+  ['Wasser','💧','getraenke'],['Sprudel','🫧','getraenke'],['Saft','🧃','getraenke'],['Zitronensaft','🍋','vorrat'],['Cola','🥤','getraenke'],
   ['Kaffee','☕','getraenke'],['Tee','🍵','getraenke'],['Bier','🍺','getraenke'],['Wein','🍷','getraenke'],
   ['Milchkaffee','☕','getraenke'],['Limonade','🥤','getraenke'],
 

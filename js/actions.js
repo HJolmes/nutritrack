@@ -95,7 +95,8 @@ function onClick(e){
   //    schliessen. Das ist dieselbe Bedingung, die bgClose() vorher stellte.
   if(t.hasAttribute&&t.hasAttribute('data-bg-close')){
     var id=t.getAttribute('data-bg-close')||t.id;
-    if(id&&typeof window.closeOv==='function'){window.closeOv(id);}
+    // Mit Rückfrage, wenn der Dialog ungespeicherte Änderungen hat (js/dirty.js).
+    if(id&&typeof window.closeOv==='function'){var cid=id;if(window.NTDirty)window.NTDirty.guard([cid],function(){window.closeOv(cid);});else window.closeOv(cid);}
     return;
   }
 
@@ -119,6 +120,11 @@ function onClick(e){
   // ist der Fall stattdessen im Rauchtest: er verlangt, dass eine data-stop-
   // Aktion GENAU einmal laeuft, und wird rot, sobald jemand das
   // stopPropagation() entfernt.
+  // ✕ eines Dialogs: erst fragen, wenn er ungespeicherte Änderungen hat.
+  if(el.getAttribute('data-act')==='closeOv'&&window.NTDirty){
+    var a=args(el),act=el;
+    if(typeof a[0]==='string'){window.NTDirty.guard([a[0]],function(){run('closeOv',act,e);});return;}
+  }
   run(el.getAttribute('data-act'),el,e);
 }
 

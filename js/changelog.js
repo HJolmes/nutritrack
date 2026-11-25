@@ -2,6 +2,17 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.361',items:[
+    {icon:'⏰',text:'<b>Vorrat nach Dringlichkeit</b>: oben „Zuerst aufbrauchen“ und „Angebrochen“, darunter der Vorrat nach Kategorie zum Aufklappen. Nach Lagerort sortieren geht weiterhin über ↕.',where:'Vorrat'},
+    {icon:'👆',text:'<b>Kompakte Zeilen</b>: Ein Tipp auf einen Artikel zeigt 📂 − ＋ und Details. So passt viel mehr auf den Bildschirm.',where:'Vorrat'},
+    {icon:'∅',text:'<b>Nicht da</b>: Aufgebrauchte Artikel wandern in eine zugeklappte Gruppe am Ende. „Fehlt“ zählt nur noch Artikel mit Mindestmenge oder „Immer nachkaufen“.',where:'Vorrat'},
+    {icon:'📂',text:'<b>Angebrochen haltbar 0</b> heißt jetzt: hält auch angebrochen bis zum MHD.',where:'Vorrat'},
+    {icon:'🥚',text:'Die Kategorie heißt jetzt <b>„Milch, Käse & Eier“</b>; Zitronensaft steht unter Vorrat statt unter Obst.',where:'Einkaufszettel · Vorrat'}
+  ]},
+  {v:'0.360',items:[
+    {icon:'‹',text:'<b>Zurück und untere Leiste</b> funktionieren jetzt auch, wenn ein Dialog offen ist: ‹ schließt den Dialog, die Leiste wechselt direkt den Bereich.',where:'Überall'},
+    {icon:'💾',text:'<b>Ungespeicherte Änderungen</b>: Wer einen geänderten Dialog verlässt, wird gefragt — Speichern, Verwerfen oder weiter bearbeiten.',where:'Alle Dialoge mit Speichern'}
+  ]},
   {v:'0.359',items:[
     {icon:'📂',text:'<b>Angebrochen</b>: Ein Tipp auf 📂 in der Vorratsliste markiert eine Packung als angebrochen. Wie lange sie dann hält, kannst du je Artikel unter „Angebrochen haltbar“ eintragen, sonst gilt ein Richtwert.',where:'Vorrat'},
     {icon:'📅',text:'<b>MHD ca.</b>: Eine neue Packung bekommt gleich ein geschätztes MHD ins Datumsfeld. Trägst du das Datum von der Packung ein, lernt die App daraus. Das Feld „Hält nach dem Kauf“ entfällt.',where:'Vorrat'},

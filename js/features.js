@@ -67,6 +67,7 @@ var FEATURES=[
    sub:'Was noch gekauft werden muss',
    actions:[
      {ic:'🛒', label:'Zettel öffnen', hint:'Artikel abhaken und ergänzen', act:'NTShop.open'},
+     {ic:'📷', label:'Rezept-Foto',   hint:'Rezept abfotografieren, Zutaten auf den Zettel', act:'NTShop.recipePhoto'},
      {ic:'🔗', label:'Verbindungen',  hint:'Zettel mit jemandem teilen', act:'NTSync.open'}
    ]},
 
@@ -76,6 +77,9 @@ var FEATURES=[
      {ic:'🥫', label:'Vorrat öffnen',          hint:'Artikel, Lagerorte, Mindestmengen', act:'NTPantry.open'},
      {ic:'📷', label:'Fotos auswerten',        hint:'Kühlschrank und Schrank fotografieren', act:'NTPantry.openPhotos'},
      {ic:'👨‍🍳', label:'Was kann ich kochen?', hint:'Passende Rezepte, dann Ideen der KI', act:'NTPantry.openCook'},
+     {ic:'🧾', label:'Kassenbon einlesen',     hint:'Gekaufte Artikel auf einmal einbuchen', act:'NTPantry.openReceipt'},
+     {ic:'📋', label:'Inventur',               hint:'Lagerort für Lagerort nachzählen', act:'NTPantry.openStock'},
+     {ic:'📊', label:'Auswertung',             hint:'Verbraucht und weggeworfen je Monat', act:'NTPantry.openReport'},
      {ic:'🔗', label:'Verbindungen',           hint:'Vorrat mit jemandem teilen', act:'NTSync.open'}
    ]},
 

@@ -67,7 +67,11 @@ function applyRecurringMeals(dateKey){
     if((r.weekdays||[]).indexOf(wd)<0)return;
     if(day._recurMarks.indexOf(r.id)>=0)return;
     var copies=JSON.parse(JSON.stringify(r.entries||[]));
-    copies.forEach(function(e){e._recurId=r.id;});
+    copies.forEach(function(e){
+      e._recurId=r.id;
+      // Ohne anwesenden Nutzer: nie abbuchen, nur ein offener Vorratsvorschlag.
+      if(window.NTPantry)NTPantry.queueMeal(e,dateKey,r.meal,'wdh');
+    });
     if(!day.meals[r.meal])day.meals[r.meal]=[];
     day.meals[r.meal]=day.meals[r.meal].concat(copies);
     day._recurMarks.push(r.id);

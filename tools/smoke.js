@@ -721,7 +721,7 @@ const EXPECTED_NAMESPACES = [
       NTPantry.saveItem();
       NTPantry.setFilter('__exp');
       out.expiry = tom.vd === addDays(today(), 1) && /Verbr\. bis .* morgen/.test(document.getElementById('pantryList').textContent)
-        && /Läuft ab/.test(document.getElementById('pantryLocChips').textContent)
+        && /Läuft ab/.test(document.querySelector('#pantryStats [aria-pressed="true"]').textContent)
         && /Läuft ab:[\s\S]*Tomaten · morgen/.test(document.getElementById('pantryCardBody').textContent);
       NTPantry.setFilter('');
       // 🐛 bleibt über dem offenen Dialog sichtbar, nur im Feedback-Dialog weg
@@ -823,7 +823,11 @@ const EXPECTED_NAMESPACES = [
       NTPicker.pickerSubmitManualBarcode();
       await wait(50);
       window.fetchT = realFetch;
-      out.scanNew = !isOpen('pickerOv') && isOpen('pantryItemOv') && document.getElementById('pantryItemName').value === 'Smoke-Haferflocken'
+      // Paket 4 (G2): Serienscan — ein neuer Code unterbricht den Scan nicht mehr,
+      // er steht als Rückfrage unter dem Sucherbild; „Zuordnen“ öffnet den Artikel-Dialog.
+      const stillOpen = isOpen('pickerOv') && /Smoke-Haferflocken/.test(document.getElementById('pickerScanList').textContent);
+      document.querySelector('#pickerScanList [data-act="NTPantry.scanResolve"]').click();
+      out.scanNew = stillOpen && !isOpen('pickerOv') && isOpen('pantryItemOv') && document.getElementById('pantryItemName').value === 'Smoke-Haferflocken'
         && document.getElementById('pantryItemG').value === '500' && !!document.getElementById('pantryItemAssign');
       NTPantry.saveItem();
       const oat = S.pantry.find((x) => x.n === 'Smoke-Haferflocken');
@@ -852,13 +856,842 @@ const EXPECTED_NAMESPACES = [
       waste: '🗑️ Weggeworfen bucht ab, Monatszeile im Verlauf', undo: '↩️ macht die Buchung rückgängig',
       hd: '„Hält ca. 5 Tage“: leer aufgefüllt → MHD heute + 5 (#337)', remind: 'Ablauf-Meldung höchstens einmal am Tag',
       remindChk: 'Schalter in Einstellungen → Erinnerungen', scanKnown: 'bekannter Barcode ＋1, Scanner bleibt offen (#335)',
-      scanNew: 'neuer Barcode → Artikel-Dialog mit Name und Gramm aus Open Food Facts', scanSaved: 'Artikel mit Barcode gespeichert',
+      scanNew: 'neuer Barcode → Rückfrage unter dem Sucherbild, Scanner bleibt offen, „Zuordnen“ → Artikel-Dialog mit Name und Gramm aus Open Food Facts', scanSaved: 'Artikel mit Barcode gespeichert',
       sync: 'eigener Topf „Vorrat“ im Sync-Kern' })) {
       if (!r[k]) { pantryFail++; console.log('  x   Vorrat: ' + v); }
     }
     const newErr = errors.length - errBefore;
     if (newErr) { pantryFail++; console.log(`  x   Vorrat: ${newErr} neue(r) Fehler, siehe unten.`); }
     if (!pantryFail) console.log('  ok  Vorrat: Eintippen, Mindestmenge → Einkaufszettel, Abhaken füllt auf, Kochen zieht ab, Haltbarkeit, 🐛 im Dialog, Lagerorte, Kamera, Fotos erst nach Bestätigung, Zettel minus Vorrat, Verlauf/Weggeworfen/Rückgängig, Hält-ca.-Tage, Ablauf-Meldung, Barcode, Kochvorschläge, eigener Sync-Topf.');
+  }
+
+  // 12c. Vorrat-Ausbau: Übersicht (Läuft ab/Fehlt/Artikel), Suche getrennt vom
+  //      Einbuchen, Ordnen nach Name/Kategorie, Kategorie auf den Zettel,
+  //      Detail mit Chargen, geschätztes MHD, „Geöffnet“ verkürzt die Frist,
+  //      geöffnete Charge zuerst abgezogen, Charge entfernen + Rückgängig,
+  //      Ortswechsel schätzt nur geschätzte Daten neu. Alles per Klick.
+  let pantry2Fail = 0;
+  {
+    const errBefore = errors.length;
+    const onDialog = (d) => d.accept();
+    page.on('dialog', onDialog);
+    const out = {};
+    let keep = null;
+    try {
+      keep = await page.evaluate(() => {
+        const k = JSON.stringify({ shop: S.shopList, pantry: S.pantry || [], log: S.pantryLog || [], order: S.pantryOrder === undefined ? null : S.pantryOrder });
+        document.querySelectorAll('.ov.open').forEach((o) => o.classList.remove('open'));
+        S.pantry = []; S.pantryLog = []; S.pantryLocs = null; delete S.pantryOrder;
+        NTPantry.open(); NTPantry.setFilter('');
+        return k;
+      });
+      const T = await page.evaluate(() => ({ d5: addDays(today(), 5), d3: addDays(today(), 3), d10: addDays(today(), 10), d30: addDays(today(), 30), t: today() }));
+      const type = async (txt) => { await page.fill('#pantryInput', txt); await page.click('#pantryOv [data-act="NTPantry.submitInput"]'); };
+      const listText = () => page.evaluate(() => document.getElementById('pantryList').textContent);
+      // D1: im Kühlschrank eingebucht → MHD heute + 5, als geschätzt markiert
+      await page.click('#pantryLocChips [data-args=\'["kuehl"]\']');
+      await type('Milch');
+      await page.click('#pantryLocChips [data-args=\'[""]\']');
+      await type('2 Nudeln');
+      await type('Smoke-Schwamm');
+      const st = await page.evaluate(() => {
+        const m = S.pantry.find((x) => x.n === 'Milch'), s = S.pantry.find((x) => x.n === 'Smoke-Schwamm');
+        s.min = 3; NTPantry.render();
+        return { m: { loc: m.loc, mhd: m.mhd, est: m.lots[0].estimated, c: m.c, in: m.lots[0].in }, s: { mhd: s.mhd }, row: document.getElementById('pantryList').textContent };
+      });
+      out.estimate = st.m.loc === 'kuehl' && st.m.mhd === T.d5 && st.m.est === true && st.m.in === T.t && st.s.mhd === '' && /geschätzt/.test(st.row);
+      // A1: Kennzahlen, „Fehlt“ filtert, zweiter Tipp hebt auf
+      const tiles = await page.evaluate(() => [...document.querySelectorAll('#pantryStats .nt-tool')].map((b) => b.textContent));
+      await page.click('#pantryStats [data-args=\'["__low"]\']');
+      const low = await listText();
+      const pressed = await page.getAttribute('#pantryStats [data-args=\'["__low"]\']', 'aria-pressed');
+      await page.click('#pantryStats [data-args=\'["__low"]\']');
+      out.stats = tiles[0] === '0Läuft ab' && tiles[1] === '1Fehlt' && tiles[2] === '3Artikel'
+        && /Smoke-Schwamm/.test(low) && !/Nudeln/.test(low) && pressed === 'true' && /Nudeln/.test(await listText());
+      // A2: Suche legt nichts an; „nicht gefunden“ bietet das Einbuchen an
+      await page.fill('#pantrySearch', 'nud');
+      const found = await listText();
+      await page.fill('#pantrySearch', 'Quark');
+      const n0 = await page.evaluate(() => S.pantry.length);
+      const miss = await listText();
+      await page.click('#pantryList [data-act="NTPantry.addQuery"]');
+      out.search = /Nudeln/.test(found) && !/Milch/.test(found) && /Nichts gefunden/.test(miss) && n0 === 3
+        && await page.evaluate(() => S.pantry.length === 4 && !!S.pantry.find((x) => x.n === 'Quark') && document.getElementById('pantrySearch').value === '');
+      // A2/A3: ordnen nach Name (flach, gemerkt) und nach Kategorie (Gruppen + Kategorie-Chips)
+      await page.selectOption('#pantryOrder', 'name');
+      const byName = await page.evaluate(() => [...document.querySelectorAll('#pantryList [data-act="NTPantry.openItem"] > div:first-child')].map((d) => d.textContent));
+      await page.selectOption('#pantryOrder', 'cat');
+      const byCat = await page.evaluate(() => ({ list: document.getElementById('pantryList').textContent, chips: document.getElementById('pantryLocChips').textContent, order: S.pantryOrder }));
+      await page.selectOption('#pantryOrder', 'loc');
+      out.order = byName.join('|') === 'Milch|Nudeln|Quark|Smoke-Schwamm' && byCat.order === 'cat' && /Milch & Käse/.test(byCat.list) && /Milch & Käse/.test(byCat.chips)
+        && await page.evaluate(() => S.pantryOrder === 'loc');
+      // A4 + A3: Detail öffnen, Kategorie auf den Zettel
+      const milkId = await page.evaluate(() => S.pantry.find((x) => x.n === 'Milch').id);
+      await page.click('#pantryOv [data-act="NTPantry.step"][data-args=\'["' + milkId + '",1]\']');
+      await page.click('#pantryList [data-act="NTPantry.openItem"][data-args=\'["' + milkId + '"]\']');
+      await page.locator('#pantryItemOv.open').waitFor();
+      const det = await page.evaluate(() => ({ sum: document.getElementById('pantryItemSum').textContent, cards: document.querySelectorAll('#pantryCharges .pantry-charge[data-lot-id]:not([data-lot-id=""])').length, log: document.getElementById('pantryItemLog').textContent }));
+      await page.click('#pantryItemOv [data-act="NTPantry.toShop"]');
+      out.detail = /Bestand/.test(det.sum) && /Kühlschrank/.test(det.sum) && /Milch & Käse/.test(det.sum) && det.cards === 2 && /Gekauft/.test(det.log)
+        && await page.evaluate(() => { const m = S.pantry.find((x) => x.n === 'Milch'), si = S.shopList.find((x) => x.n === 'Milch' && !x.d); return !!si && si.c === m.c; });
+      // D2: zweite Charge „Geöffnet“ → Frist heute + 3 zählt, Kennzahl „Läuft ab“
+      const lots0 = await page.evaluate((id) => S.pantry.find((x) => x.id === id).lots.map((l) => l.id), milkId);
+      await page.click('#pantryCharges [data-act="NTPantry.openLot"][data-args=\'["' + lots0[1] + '"]\']');
+      const op = await page.evaluate((id) => { const m = S.pantry.find((x) => x.id === id); return { op: m.lots.find((l) => l.op), exp: NTPantry.expiring().length, sum: document.getElementById('pantryItemSum').textContent }; }, milkId);
+      out.opened = !!op.op && op.op.id === lots0[1] && op.op.op === T.t && op.exp === 1 && /Geöffnet · bis/.test(op.sum);
+      // D3: „−“ in der Liste nimmt die geöffnete Charge, obwohl beide gleich lange halten
+      await page.evaluate(() => closeOv('pantryItemOv'));
+      await page.click('#pantryOv [data-act="NTPantry.step"][data-args=\'["' + milkId + '",-1]\']');
+      out.oldestFirst = await page.evaluate(({ id, keepLot }) => { const m = S.pantry.find((x) => x.id === id); return m.q === 1 && m.lots.length === 1 && m.lots[0].id === keepLot && S.pantryLog[0].lots[0].op; }, { id: milkId, keepLot: lots0[0] });
+      // A4: Charge entfernen bucht eine Korrektur, ↩️ in „Letzte Buchungen“ holt sie zurück
+      await page.click('#pantryList [data-act="NTPantry.openItem"][data-args=\'["' + milkId + '"]\']');
+      await page.click('#pantryCharges [data-act="NTPantry.dropLot"]');
+      const dropped = await page.evaluate((id) => ({ q: S.pantry.find((x) => x.id === id).q, k: S.pantryLog[0].k }), milkId);
+      await page.click('#pantryItemLog [data-act="NTPantry.undo"]');
+      out.dropLot = dropped.q === 0 && dropped.k === 'korrektur' && await page.evaluate((id) => S.pantry.find((x) => x.id === id).q === 1 && /Bestand/.test(document.getElementById('pantryItemSum').textContent), milkId);
+      // D4: echte Charge (Datum eingetragen) bleibt, geschätzte wird für den Tiefkühler neu berechnet
+      await page.click('#pantryItemOv [data-act="NTPantry.addChargeRow"]');
+      await page.fill('#pantryCharges .pantry-charge-mhd >> nth=-1', T.d10);
+      await page.click('#pantryItemOv [data-act="NTPantry.saveItem"]');
+      await page.click('#pantryList [data-act="NTPantry.openItem"][data-args=\'["' + milkId + '"]\']');
+      await page.selectOption('#pantryItemLoc', 'tk');
+      const offer = await page.isVisible('#pantryItemRelocChk');
+      await page.click('#pantryItemOv [data-act="NTPantry.saveItem"]');
+      out.reloc = offer && await page.evaluate(({ id, T }) => {
+        const m = S.pantry.find((x) => x.id === id), d = m.lots.map((l) => l.mhd).sort();
+        return m.loc === 'tk' && d[0] === T.d10 && d[1] === T.d30 && m.lots.find((l) => l.mhd === T.d10).estimated === false;
+      }, { id: milkId, T });
+    } catch (e) { record('Vorrat-Ausbau', e.message); }
+    await page.evaluate((k) => {
+      document.querySelectorAll('.ov.open').forEach((o) => o.classList.remove('open'));
+      if (!k) return;
+      const o = JSON.parse(k);
+      S.shopList = o.shop; S.pantry = o.pantry; S.pantryLog = o.log; S.pantryLocs = null; S.pantryTomb = {};
+      if (o.order === null) delete S.pantryOrder; else S.pantryOrder = o.order;
+      saveS(); NTShop.render(); NTPantry.render();
+    }, keep).catch(() => {});
+    page.off('dialog', onDialog);
+    for (const [k, v] of Object.entries({ estimate: 'Milch im Kühlschrank → MHD heute + 5, „geschätzt“, eingebucht heute; ohne Richtwert kein Datum',
+      stats: 'Übersicht Läuft ab/Fehlt/Artikel, „Fehlt“ filtert und hebt beim zweiten Tipp auf',
+      search: 'Suche filtert ohne anzulegen, „nicht gefunden“ bucht auf Wunsch ein',
+      order: 'Ordnen nach Name (flach, gemerkt) und Kategorie (Gruppen und Chips)',
+      detail: 'Detail mit Bestand, Ort, Kategorie, Chargen und Buchungen; Zettel übernimmt die Kategorie',
+      opened: '„Geöffnet“ setzt das Datum, verkürzte Frist zählt in Kopf und „Läuft ab“',
+      oldestFirst: '„−“ zieht von der geöffneten Charge ab', dropLot: 'Charge entfernen als Korrektur, ↩️ im Detail holt sie zurück',
+      reloc: 'Ortswechsel schätzt nur das geschätzte Datum neu, eingetragenes bleibt' })) {
+      if (!out[k]) { pantry2Fail++; console.log('  x   Vorrat-Ausbau: ' + v); }
+    }
+    const newErr = errors.length - errBefore;
+    if (newErr) { pantry2Fail++; console.log(`  x   Vorrat-Ausbau: ${newErr} neue(r) Fehler, siehe unten.`); }
+    if (!pantry2Fail) console.log('  ok  Vorrat-Ausbau: Übersicht und Filter, Suche getrennt vom Einbuchen, Ordnen nach Name/Kategorie, Detail mit Chargen und Buchungen, Kategorie auf den Zettel, geschätztes MHD, Geöffnet-Frist, geöffnete Charge zuerst, Charge entfernen/Rückgängig, Ortswechsel.');
+  }
+
+  // 12d. Vorrat Paket 2: Verbrauch lernen (Weggeworfenes zählt nicht),
+  //      Prognose in Zeile und Detail, „Geht bald aus“, Mindestmenge
+  //      vorschlagen, Dauerartikel → Zettel mit Herkunft, vom Zettel genommen →
+  //      gesperrt bis zum Einbuchen, Nachkaufen-Ansicht, täglicher Lauf ohne
+  //      Dublette, eine Meldung, ⋯ Mehr mit Orten/Verlauf/Vorlauf. Per Klick.
+  let pantry3Fail = 0;
+  {
+    const errBefore = errors.length;
+    const out = {};
+    let keep = null;
+    try {
+      keep = await page.evaluate(() => {
+        const k = JSON.stringify({ shop: S.shopList, shopTomb: S.shopTomb || {}, pantry: S.pantry || [], log: S.pantryLog || [], tomb: S.pantryTomb || {} });
+        document.querySelectorAll('.ov.open').forEach((o) => o.classList.remove('open'));
+        S.shopList = []; S.shopTomb = {}; S.pantryTomb = {}; S.pantryLocs = null;
+        ['pantryLead', 'pantryRestockDay', 'pantryRestockNews', 'pantryRemindDay'].forEach((x) => delete S[x]);
+        // 30 Tage Verlauf: 14 gekauft, 6 × 1,5 verbraucht/gekocht, 3 weggeworfen,
+        // eine rückgängig gemachte Entnahme → 2 da, 0,3 Stück/Tag → reicht ca. 6 Tage.
+        const day = 864e5, now = Date.now();
+        S.pantry = [{ id: 'smoke-kaffee', n: 'Smoke-Kaffee', ic: '☕', loc: 'vorrat', c: 'vorrat', q: 2, g: 500, min: 0, mhd: '', vd: '', rev: 1 }];
+        S.pantryLog = [{ id: 'sk0', t: now - 30 * day, pid: 'smoke-kaffee', n: 'Smoke-Kaffee', d: 14, k: 'kauf', src: 'hand', u: 0, rev: 1 }];
+        [28, 24, 20, 16, 12, 8].forEach((d, i) => S.pantryLog.push({ id: 'sk' + (i + 1), t: now - d * day, pid: 'smoke-kaffee', n: 'Smoke-Kaffee', d: -1.5, k: i % 2 ? 'kochen' : 'verbrauch', src: 'hand', u: 0, rev: 1 }));
+        S.pantryLog.push({ id: 'sk7', t: now - 5 * day, pid: 'smoke-kaffee', n: 'Smoke-Kaffee', d: -3, k: 'verderb', src: 'hand', u: 0, rev: 1 });
+        S.pantryLog.push({ id: 'sk8', t: now - 4 * day, pid: 'smoke-kaffee', n: 'Smoke-Kaffee', d: -2, k: 'verbrauch', src: 'hand', u: 1, rev: 1 });
+        S.pantryLog.sort((a, b) => b.t - a.t);
+        NTPantry.open(); NTPantry.setFilter('');
+        return k;
+      });
+      const listText = () => page.evaluate(() => document.getElementById('pantryList').textContent);
+      const shopOf = () => page.evaluate(() => S.shopList.filter((x) => x.n === 'Smoke-Kaffee' && !x.d).map((x) => ({ id: x.id, q: x.q, pv: x.pv })));
+      const kaffee = () => page.evaluate(() => { const k = S.pantry.find((x) => x.id === 'smoke-kaffee'); return { q: k.q, min: k.min, auto: k.auto, rs: k.rs || null, rsNo: k.rsNo || 0 }; });
+      // B2: Zeile dezent, Hinweis „geht bald aus“ filtert
+      const row0 = await listText();
+      const hint = await page.textContent('#pantrySoon .pantry-soon');
+      await page.click('#pantrySoon .pantry-soon');
+      const soonView = await listText();
+      out.forecast = /reicht ca\. 6 Tage/.test(row0) && /1 geht bald aus/.test(hint) && /Smoke-Kaffee/.test(soonView) && /Kein Dauerartikel/.test(soonView)
+        && await page.getAttribute('#pantrySoon .pantry-soon', 'aria-pressed') === 'true';
+      await page.click('#pantrySoon .pantry-soon'); // zweiter Tipp hebt den Filter auf
+      // B2/B3: Detail mit Verbrauch pro Woche (ohne Weggeworfenes/Rückgängiges), Vorschlag übernehmen
+      await page.click('#pantryList [data-act="NTPantry.openItem"][data-args=\'["smoke-kaffee"]\']');
+      await page.locator('#pantryItemOv.open').waitFor();
+      const sum = await page.textContent('#pantryItemSum');
+      const sug = await page.textContent('#pantryItemMinSug');
+      await page.click('#pantryItemMinSug [data-act="NTPantry.takeMinSug"]');
+      out.detail = /Verbrauch ca\. 2,1 Stück pro Woche \(1 kg\)/.test(sum) && /reicht bis ca\./.test(sum) && /6 Entnahmen in 30 Tagen/.test(sum)
+        && /3 Stück/.test(sug) && await page.inputValue('#pantryItemMin') === '3' && (await kaffee()).min === 0;
+      // C1/C2: Dauerartikel → unter Mindestmenge → Zettel mit fester ID, Herkunft und üblicher Menge
+      await page.check('#pantryItemAuto');
+      await page.click('#pantryItemOv [data-act="NTPantry.saveItem"]');
+      let s1 = await shopOf(), k1 = await kaffee();
+      out.auto = k1.auto === 1 && k1.min === 3 && s1.length === 1 && /^vorrat-smoke-kaffee-sk0$/.test(s1[0].id) && s1[0].q === '14 Stück'
+        && s1[0].pv === 'unter Mindestmenge' && k1.rs && k1.rs.s === s1[0].id;
+      await page.evaluate(() => { NTShop.open(); });
+      out.shopSrc = /aus dem Vorrat · unter Mindestmenge/.test(await page.textContent('#shopList'));
+      await page.evaluate(() => { NTShop.close(); delete S.pantryRestockDay; NTPantry.daily(); NTPantry.open(); });
+      out.noDup = (await shopOf()).length === 1;
+      // Vom Zettel genommen → „−“ bringt ihn nicht zurück (gesperrt bis zum Einbuchen)
+      await page.evaluate((id) => NTShop.remove(id), s1[0].id);
+      await page.click('#pantryOv [data-act="NTPantry.step"][data-args=\'["smoke-kaffee",-1]\']');
+      const k2 = await kaffee();
+      out.blocked = (await shopOf()).length === 0 && k2.q === 1 && !k2.rs && k2.rsNo > 0;
+      // C3: Nachkaufen-Ansicht — gesperrt, „Auf den Zettel“ holt ihn trotzdem (neue ID wegen Grabstein), „Diesmal nicht“ nimmt ihn weg
+      await page.click('#pantrySoon .pantry-soon');
+      const sv = await listText();
+      await page.click('#pantryList [data-act="NTPantry.restockNow"][data-args=\'["smoke-kaffee"]\']');
+      const s3 = await shopOf();
+      await page.click('#pantryList [data-act="NTPantry.skipRestock"][data-args=\'["smoke-kaffee"]\']');
+      const k3 = await kaffee();
+      out.soonActs = /Diesmal nicht — wieder nach dem nächsten Einkauf/.test(sv) && s3.length === 1 && s3[0].id === 'vorrat-smoke-kaffee-sk0-2' && !!s3[0].pv
+        && (await shopOf()).length === 0 && !k3.rs && k3.rsNo > 0;
+      // Einbuchen hebt die Sperre auf → wieder unter Mindestmenge → neuer Eintrag; Abhaken füllt auf und löst die Markierung
+      await page.evaluate(() => NTPantry.setFilter(''));
+      await page.click('#pantryOv [data-act="NTPantry.step"][data-args=\'["smoke-kaffee",1]\']');
+      const s4 = await shopOf(), k4 = await kaffee();
+      await page.evaluate((id) => NTShop.toggle(id), s4[0] && s4[0].id);
+      const k5 = await kaffee();
+      out.cycle = s4.length === 1 && s4[0].id !== 'vorrat-smoke-kaffee-sk0' && k4.q === 2 && !k4.rsNo && k4.rs && k4.rs.s === s4[0].id
+        && s4[0].q === '8 Stück' // üblicher Kauf: Median aus 14 und 1
+        && k5.q === 10 && !k5.rs && (await shopOf()).length === 0;
+      // C2/C4: täglicher Lauf setzt einen Dauerartikel und die EINE Meldung nennt ihn
+      const daily = await page.evaluate(() => {
+        S.pantry.push({ id: 'smoke-tee', n: 'Smoke-Tee', ic: '🍵', loc: 'vorrat', q: 0, g: 0, min: 1, auto: 1, rev: 1 });
+        delete S.pantryRestockDay; delete S.pantryRemindDay; S.pantryRemindOff = false;
+        const realN = window.Notification, realNotify = NTRemind.notify, sent = [];
+        window.Notification = /** @type {any} */ ({ permission: 'granted' });
+        NTRemind.notify = (t, o) => { sent.push(t + ' | ' + o.body); };
+        NTPantry.daily(); NTPantry.daily();
+        window.Notification = realN; NTRemind.notify = realNotify;
+        const tee = S.shopList.filter((x) => x.n === 'Smoke-Tee' && !x.d);
+        return { tee: tee.length, pv: tee[0] && tee[0].pv, news: S.pantryRestockNews, sent, early: new Date().getHours() < 7 };
+      });
+      out.daily = daily.tee === 1 && daily.pv === 'unter Mindestmenge' && /Smoke-Tee/.test(daily.news.n.join())
+        && (daily.early ? daily.sent.length === 0 : (daily.sent.length === 1 && /1 auf dem Einkaufszettel/.test(daily.sent[0]) && /Nachkaufen: .*Smoke-Tee/.test(daily.sent[0])));
+      // Kopf: ⋯ Mehr führt zu Verlauf, Orten und dem Vorlauf
+      await page.click('#pantryOv [data-act="NTPantry.openMore"]');
+      await page.click('#pantryMoreOv [data-act="NTPantry.openLog"]');
+      const logOpen = await page.evaluate(() => document.getElementById('pantryLogOv').classList.contains('open') && !document.getElementById('pantryMoreOv').classList.contains('open'));
+      await page.evaluate(() => closeOv('pantryLogOv'));
+      await page.click('#pantryOv [data-act="NTPantry.openMore"]');
+      await page.selectOption('#pantryLead', '5');
+      await page.click('#pantryMoreOv [data-act="NTPantry.openLocs"]');
+      out.more = logOpen && await page.evaluate(() => S.pantryLead === 5 && document.getElementById('pantryLocsOv').classList.contains('open'))
+        && await page.evaluate(() => document.querySelectorAll('#pantryOv .pantry-tools .nt-tool').length === 4);
+    } catch (e) { record('Vorrat Nachkauf', e.message); }
+    await page.evaluate((k) => {
+      document.querySelectorAll('.ov.open').forEach((o) => o.classList.remove('open'));
+      ['pantryLead', 'pantryRestockDay', 'pantryRestockNews', 'pantryRemindDay'].forEach((x) => delete S[x]);
+      if (!k) return;
+      const o = JSON.parse(k);
+      S.shopList = o.shop; S.shopTomb = o.shopTomb; S.pantry = o.pantry; S.pantryLog = o.log; S.pantryTomb = o.tomb; S.pantryLocs = null;
+      saveS(); NTShop.render(); NTPantry.render();
+    }, keep).catch(() => {});
+    for (const [k, v] of Object.entries({ forecast: 'Zeile „reicht ca. 6 Tage“, Hinweis „geht bald aus“ filtert auf Nachkaufen',
+      detail: 'Detail: Verbrauch pro Woche ohne Weggeworfenes/Rückgängiges, Vorschlag Mindestmenge nur per Tipp',
+      auto: 'Dauerartikel unter Mindestmenge → Zettel mit fester ID, üblicher Menge und Herkunft',
+      shopSrc: 'Zettel zeigt „aus dem Vorrat“ mit Grund', noDup: 'täglicher Lauf setzt nichts doppelt',
+      blocked: 'vom Zettel genommen → kommt nach „−“ nicht wieder', soonActs: 'Nachkaufen: „Auf den Zettel“ und „Diesmal nicht“',
+      cycle: 'Einbuchen hebt die Sperre auf, Abhaken füllt auf und löst die Markierung',
+      daily: 'täglicher Lauf setzt Dauerartikel, eine Meldung nennt Ablauf und Nachkauf', more: '⋯ Mehr: Verlauf, Orte, Vorlauf; vier Werkzeuge im Kopf' })) {
+      if (!out[k]) { pantry3Fail++; console.log('  x   Vorrat Nachkauf: ' + v); }
+    }
+    const newErr = errors.length - errBefore;
+    if (newErr) { pantry3Fail++; console.log(`  x   Vorrat Nachkauf: ${newErr} neue(r) Fehler, siehe unten.`); }
+    if (!pantry3Fail) console.log('  ok  Vorrat Nachkauf: Verbrauch lernen, Prognose in Zeile/Detail, Geht bald aus, Mindestmenge vorschlagen, Dauerartikel mit Herkunft auf den Zettel, Sperre nach Entfernen, Nachkaufen-Ansicht, täglicher Lauf ohne Dublette, eine Meldung, ⋯ Mehr.');
+  }
+
+  // 12e. Vorrat Paket 3: Tagebuch ↔ Vorrat und Wochenplan ↔ Vorrat. Ein
+  //      Rezept ins Tagebuch → EIN Vorschlag mit allen Artikeln (Gramm/Stück,
+  //      abwählbar), Mehrdeutiges zur Auswahl und gemerkt, dreimal abgelehnt →
+  //      nicht mehr gefragt (⋯ Mehr setzt zurück), Schalter aus → keine Frage,
+  //      Wiederkehrende → nur offener Vorschlag im Vorrat (kein Dialog, kein
+  //      Abzug), schon gebucht → entdoppelt, Portionen halbiert → Rückbuchung,
+  //      Läuft ab → „Rezept dazu finden“ → Einplanen, „Füllen“ mit Vorrats-
+  //      Merkmal, Woche → Zettel mit Zusammenfassung, Vorrat nur einmal.
+  let pantry4Fail = 0;
+  {
+    const errBefore = errors.length;
+    const onDialog = (d) => d.accept();
+    page.on('dialog', onDialog);
+    const out = {};
+    let keep = null;
+    const tick = () => page.evaluate(() => new Promise((r) => setTimeout(r, 30)));
+    const isOpen = (id) => page.evaluate((id) => document.getElementById(id).classList.contains('open'), id);
+    try {
+      keep = await page.evaluate(() => {
+        const k = JSON.stringify({ shop: S.shopList, shopTomb: S.shopTomb || {}, pantry: S.pantry || [], log: S.pantryLog || [], tomb: S.pantryTomb || {},
+          ask: S.pantryAsk || null, map: S.pantryMap || null, off: !!S.pantryAskOff, days: S.days, plan: S.mealPlan || {}, planTomb: S.planTomb || {},
+          applied: S.planApplied || {}, recur: S.recurringMeals || [], cook: S.cookLog || {}, goal: S.goal, cur: S.currentDate, recipes });
+        document.querySelectorAll('.ov.open').forEach((o) => o.classList.remove('open'));
+        const p = (kcal) => ({ kcal, protein: 5, carbs: 10, fat: 3, sugar: 0, fiber: 0, salt: 0 });
+        S.currentDate = today(); S.goal = 2000; S.days = {}; S.mealPlan = {}; S.planApplied = {}; S.recurringMeals = []; S.cookLog = {};
+        delete S.pantryAsk; delete S.pantryMap; delete S.pantryAskOff;
+        S.shopList = []; S.pantryLog = []; S.pantryTomb = {}; S.pantryLocs = null;
+        S.pantry = [
+          { id: 'sm-milch', n: 'Milch', ic: '🥛', loc: 'kuehl', q: 2, g: 1000, min: 0, lots: [{ id: 'sm-l1', q: 2, mhd: addDays(today(), 1), vd: '' }], mhd: addDays(today(), 1), vd: '', rev: 1 },
+          { id: 'sm-hafer', n: 'Haferflocken', ic: '🌾', loc: 'vorrat', q: 1, g: 500, min: 0, rev: 1 },
+          { id: 'sm-toast', n: 'Smoke-Toast', ic: '🍞', loc: 'vorrat', q: 3, g: 0, min: 0, rev: 1 },
+          { id: 'sm-pizza', n: 'Smoke-Pizza', ic: '🍕', loc: 'tk', q: 2, g: 0, min: 0, rev: 1 },
+        ];
+        recipes.splice(0, recipes.length,
+          { id: 'sm-muesli', name: 'Smoke-Müsli', emoji: '🥣', meal: ['breakfast'], ingredients: [
+            { name: 'Haferflocken', amount: 60, per100: p(370) }, { name: 'Milch', amount: 200, per100: p(64) },
+            { name: 'Smoke-Toast', amount: 50, per100: p(260) }, { name: 'Zimt', amount: 2, per100: p(250) }] },
+          { id: 'sm-pudding', name: 'Smoke-Pudding', emoji: '🍮', meal: ['lunch'], ingredients: [{ name: 'Milch', amount: 1000, per100: p(70) }] },
+          { id: 'sm-reis', name: 'Smoke-Reis', emoji: '🍚', meal: ['dinner'], ingredients: [{ name: 'Reis', amount: 100, per100: p(350) }] });
+        saveS(); renderAll();
+        return k;
+      });
+      // E1: Rezept ins Tagebuch → ein Vorschlag, Gramm vorgeschlagen, Stück leer und abgewählt
+      await page.evaluate(() => NTPicker.addRecipeEntry('sm-muesli', 'breakfast', 1));
+      await page.locator('#pantryMealOv.open').waitFor();
+      const rows = await page.evaluate(() => [...document.querySelectorAll('#pantryMealRows .pantry-meal-row')].map((r) => ({
+        it: r.querySelector('select').value, q: r.querySelector('.pantry-meal-q input').value, unit: r.querySelector('.pantry-meal-q span').textContent,
+        on: r.querySelector('.pantry-meal-on input').checked })));
+      out.offer = rows.length === 3 && JSON.stringify(rows) === JSON.stringify([
+        { it: 'sm-hafer', q: '60', unit: 'g', on: true }, { it: 'sm-milch', q: '200', unit: 'g', on: true }, { it: 'sm-toast', q: '', unit: 'Stück', on: false }])
+        && await page.textContent('#pantryMealOk') === 'Abziehen' && await page.textContent('#pantryMealNo') === 'Nicht aus dem Vorrat'
+        && await page.evaluate(() => S.pantry.find((x) => x.id === 'sm-milch').q === 2);
+      // abwählen und ergänzen: Haferflocken nicht, Toast 1 Stück
+      await page.click('#pantryMealRows .pantry-meal-row:nth-child(1) .pantry-meal-on');
+      await page.fill('#pantryMealRows .pantry-meal-row:nth-child(3) .pantry-meal-q input', '1');
+      await page.click('#pantryMealRows .pantry-meal-row:nth-child(3) .pantry-meal-on');
+      await page.click('#pantryMealOk');
+      out.booked = await page.evaluate(() => {
+        const q = (id) => S.pantry.find((x) => x.id === id).q, e = getDay().meals.breakfast[0];
+        const evs = S.pantryLog.filter((l) => l.ev === e._vid).map((l) => l.pid + ':' + l.d).sort().join();
+        return q('sm-milch') === 1.8 && q('sm-toast') === 2 && q('sm-hafer') === 1 && evs === 'sm-milch:-0.2,sm-toast:-1'
+          && S.pantryMap.milch.ok === 1 && S.pantryMap.milch.p === 'sm-milch' && S.pantryMap[pantryKey('Haferflocken')].no === 1
+          && !document.getElementById('pantryMealOv').classList.contains('open');
+      });
+      // E2: mehrdeutig → zur Auswahl, nichts vorgewählt; Wahl wird gemerkt
+      const amb = { name: 'Haferflocken mit Milch', emoji: '🥣', amount: 250, per100: { kcal: 90, protein: 3, carbs: 12, fat: 3 }, kcal: 225, protein: 8, carbs: 30, fat: 8 };
+      await page.evaluate((amb) => { const e = JSON.parse(JSON.stringify(amb)); getDay().meals.snack.push(e); NTPantry.offerMeal(e); }, amb);
+      await page.locator('#pantryMealOv.open').waitFor();
+      const ambRow = await page.evaluate(() => ({ n: document.querySelectorAll('#pantryMealRows .pantry-meal-row').length, sel: document.querySelector('#pantryMealRows select').value,
+        on: document.querySelector('#pantryMealRows .pantry-meal-on input').checked, note: document.querySelector('#pantryMealRows small').textContent }));
+      await page.selectOption('#pantryMealRows select', 'sm-milch');
+      const picked = await page.inputValue('#pantryMealRows .pantry-meal-q input');
+      await page.click('#pantryMealOk');
+      await page.evaluate((amb) => { const e = JSON.parse(JSON.stringify(amb)); getDay().meals.snack.push(e); NTPantry.offerMeal(e); }, amb);
+      await page.locator('#pantryMealOv.open').waitFor();
+      const again = await page.evaluate(() => ({ sel: document.querySelector('#pantryMealRows select').value, on: document.querySelector('#pantryMealRows .pantry-meal-on input').checked }));
+      await page.click('#pantryMealNo');
+      out.choice = ambRow.n === 1 && ambRow.sel === '' && !ambRow.on && /Mehrdeutig/.test(ambRow.note) && picked === '250'
+        && again.sel === 'sm-milch' && again.on && await page.evaluate(() => S.pantry.find((x) => x.id === 'sm-milch').q === 1.55);
+      // E2: dreimal „Nicht aus dem Vorrat“ für denselben Namen → keine Frage mehr; ⋯ Mehr setzt zurück
+      const pizza = { name: 'Smoke-Pizza', emoji: '🍕', amount: 300, per100: { kcal: 250, protein: 10, carbs: 30, fat: 10 }, kcal: 750, protein: 30, carbs: 90, fat: 30 };
+      for (let i = 0; i < 3; i++) {
+        await page.evaluate((x) => { const e = JSON.parse(JSON.stringify(x)); getDay().meals.dinner.push(e); NTPantry.offerMeal(e); }, pizza);
+        await page.locator('#pantryMealOv.open').waitFor();
+        await page.click('#pantryMealNo');
+      }
+      await page.evaluate((x) => { const e = JSON.parse(JSON.stringify(x)); getDay().meals.dinner.push(e); NTPantry.offerMeal(e); }, pizza);
+      await tick();
+      const muted = !(await isOpen('pantryMealOv'));
+      await page.evaluate(() => { NTPantry.open(); NTPantry.openMore(); });
+      const muteNote = await page.textContent('#pantryAskMuted');
+      await page.click('#pantryAskMuted [data-act="NTPantry.askUnmute"]');
+      out.mute = muted && /Für 1 Namen fragt die App nicht mehr/.test(muteNote) && await page.evaluate(() => !S.pantryMap[pantryKey('Smoke-Pizza')]);
+      // E5: Schalter aus → keine Frage (gerätelokal), an → wieder
+      await page.uncheck('#pantryAskChk');
+      await page.evaluate((x) => { const e = JSON.parse(JSON.stringify(x)); getDay().meals.dinner.push(e); NTPantry.offerMeal(e); }, pizza);
+      await tick();
+      out.toggle = !(await isOpen('pantryMealOv')) && await page.evaluate(() => S.pantryAskOff === true);
+      await page.check('#pantryAskChk');
+      await page.evaluate(() => { closeOv('pantryMoreOv'); });
+      // E3: Wiederkehrende Mahlzeit → kein Dialog, kein Abzug, offener Vorschlag im Vorrat
+      await page.evaluate(() => {
+        S.recurringMeals = [{ id: 'sm-rec', active: true, meal: 'lunch', weekdays: [0, 1, 2, 3, 4, 5, 6], startDate: addDays(today(), -1),
+          entries: [{ name: 'Smoke-Toast', emoji: '🍞', amount: 50, per100: { kcal: 260, protein: 8, carbs: 48, fat: 3 }, kcal: 130, protein: 4, carbs: 24, fat: 2, _vid: 'alt' }] }];
+        NTRecur.apply(today()); saveS(); NTPantry.render();
+      });
+      await tick();
+      const e3 = await page.evaluate(() => ({ open: document.getElementById('pantryMealOv').classList.contains('open'), toast: S.pantry.find((x) => x.id === 'sm-toast').q,
+        ask: (S.pantryAsk || []).length, vid: getDay().meals.lunch[0]._vid, hint: document.getElementById('pantryAskHint').textContent }));
+      await page.click('#pantryAskHint .pantry-soon');
+      await page.locator('#pantryMealOv.open').waitFor();
+      const e3sub = await page.textContent('#pantryMealSub');
+      await page.fill('#pantryMealRows .pantry-meal-q input', '1');
+      await page.check('#pantryMealRows .pantry-meal-on input');
+      await page.click('#pantryMealOk');
+      out.pending = !e3.open && e3.toast === 2 && e3.ask === 1 && e3.vid !== 'alt' && /1 Mahlzeit: aus dem Vorrat abziehen\?/.test(e3.hint) && /Ohne dich eingetragen/.test(e3sub)
+        && await page.evaluate(() => S.pantry.find((x) => x.id === 'sm-toast').q === 1 && !(S.pantryAsk || []).length && !document.getElementById('pantryAskHint').textContent);
+      // E3: derselbe Eintrag schon gebucht (anderes Gerät, Verlauf per Sync) → Vorschlag fällt weg; zu alte Tage gar nicht erst
+      out.dedup = await page.evaluate(() => {
+        const e = { name: 'Smoke-Toast', amount: 50, per100: { kcal: 260, protein: 8, carbs: 48, fat: 3 }, kcal: 130 };
+        getDay().meals.snack.push(e); NTPantry.queueMeal(e, today(), 'snack', 'alexa');
+        const before = S.pantryAsk.length;
+        S.pantryLog.unshift({ id: 'fremd', t: Date.now(), pid: 'sm-toast', n: 'Smoke-Toast', d: -1, k: 'verbrauch', src: 'Mahlzeit', ev: e._vid, u: 0, rev: 1 });
+        NTPantry.render();
+        const old = { name: 'Smoke-Toast', amount: 50 }; NTPantry.queueMeal(old, addDays(today(), -5), 'snack', 'alexa');
+        return before === 1 && !S.pantryAsk.length && !document.getElementById('pantryAskHint').textContent;
+      });
+      // E4: Portionen halbiert → Rückbuchung anbieten, Gramm/Stück zurück, im Verlauf mit Bezug
+      await page.evaluate(() => { closeOv('pantryOv'); openEditEntry('breakfast', 0); document.getElementById('editPortions').value = '0.5'; saveEditEntry(); });
+      await page.locator('#pantryMealOv.open').waitFor();
+      const back = await page.evaluate(() => ({ t: document.getElementById('pantryMealTitle').textContent,
+        q: [...document.querySelectorAll('#pantryMealRows .pantry-meal-q input')].map((i) => i.value).sort().join('|') }));
+      await page.click('#pantryMealOk');
+      out.rebook = /anpassen/.test(back.t) && back.q === '0,5|100' && await page.evaluate(() => {
+        const q = (id) => S.pantry.find((x) => x.id === id).q, v = getDay().meals.breakfast[0]._vid;
+        return q('sm-milch') === 1.65 && q('sm-toast') === 1.5 && S.pantryLog.some((l) => l.ev === v && l.k === 'korrektur' && l.d === 0.1);
+      });
+      // F3: Läuft ab → „Rezept dazu finden“ → nur Rezepte mit Milch → Einplanen öffnet das Kochbuch mit Einplanen-Feld
+      await page.evaluate(() => { NTPantry.open(); NTPantry.setFilter('__exp'); });
+      await page.click('#pantryList [data-act="NTPantry.openCook"][data-args=\'["sm-milch"]\']');
+      await page.locator('#pantryCookOv.open').waitFor();
+      const cook = await page.textContent('#pantryCookList');
+      await page.click('#pantryCookList [data-act="NTPantry.planRecipe"][data-args=\'["sm-pudding"]\']');
+      await page.locator('#bookDetailOv.open').waitFor();
+      out.cookFor = /Mit 🥛 Milch/.test(cook) && /Smoke-Pudding/.test(cook) && /Smoke-Müsli/.test(cook) && !/Smoke-Reis/.test(cook)
+        && await page.isVisible('#bookPlanDate');
+      // F1: „Füllen“ nimmt das Rezept mit ablaufender Milch und sagt warum
+      out.fill = await page.evaluate(() => {
+        document.querySelectorAll('.ov.open').forEach((o) => o.classList.remove('open'));
+        S.days = {}; S.mealPlan = {};
+        recipes.splice(0, recipes.length, recipes.find((r) => r.id === 'sm-pudding') || { id: 'x' });
+        recipes[0].ingredients[0].amount = 1000; // 700 kcal ≈ 35 % von 2000
+        NTPlan.open(today()); NTPlan.autoFill();
+        const it = (S.mealPlan[today()] || {}).lunch || [];
+        return it.length === 1 && it[0].w === 'verbraucht Milch (läuft ab)' && /🥫 verbraucht Milch/.test(document.getElementById('planDays').textContent);
+      });
+      // F2: zwei Rezepte à 1000 g Milch bei 1500 g Vorrat → 500 g fehlen; vergangene Tage zählen nicht; erst Zusammenfassung
+      await page.evaluate(() => {
+        S.mealPlan = {}; S.pantry.find((x) => x.id === 'sm-milch').q = 1.5; S.pantry.find((x) => x.id === 'sm-milch').lots = [{ id: 'sm-l1', q: 1.5, mhd: '', vd: '' }];
+        NTPlan.planRecipe(today(), 'lunch', 'sm-pudding', 1); NTPlan.planRecipe(today(), 'dinner', 'sm-pudding', 1);
+        if (NTPlan.visibleDates().indexOf(addDays(today(), -1)) >= 0) NTPlan.planRecipe(addDays(today(), -1), 'lunch', 'sm-pudding', 3);
+        NTPlan.render(); NTPlan.weekToShop();
+      });
+      await page.locator('#planShopOv.open').waitFor();
+      const shopSum = await page.textContent('#planShopSum');
+      const shop0 = await page.evaluate(() => S.shopList.length);
+      await page.click('#planShopGo');
+      out.weekShop = /1 Zutat auf den Zettel, 0 sind im Vorrat/.test(shopSum) && /1 davon nur teilweise/.test(shopSum) && shop0 === 0
+        && await page.evaluate(() => { const m = S.shopList.find((x) => x.n === 'Milch'); return !!m && /^500 g$/.test(m.q); });
+    } catch (e) { record('Vorrat Tagebuch/Plan', e.message); }
+    await page.evaluate((k) => {
+      document.querySelectorAll('.ov.open').forEach((o) => o.classList.remove('open'));
+      if (!k) return;
+      const o = JSON.parse(k);
+      S.shopList = o.shop; S.shopTomb = o.shopTomb; S.pantry = o.pantry; S.pantryLog = o.log; S.pantryTomb = o.tomb; S.pantryLocs = null;
+      if (o.ask) S.pantryAsk = o.ask; else delete S.pantryAsk;
+      if (o.map) S.pantryMap = o.map; else delete S.pantryMap;
+      if (o.off) S.pantryAskOff = true; else delete S.pantryAskOff;
+      S.days = o.days; S.mealPlan = o.plan; S.planTomb = o.planTomb; S.planApplied = o.applied; S.recurringMeals = o.recur; S.cookLog = o.cook; S.goal = o.goal; S.currentDate = o.cur;
+      recipes.splice(0, recipes.length, ...o.recipes);
+      saveS(); renderAll(); NTShop.render(); NTPantry.render();
+    }, keep).catch(() => {});
+    page.off('dialog', onDialog);
+    for (const [k, v] of Object.entries({ offer: 'Rezept ins Tagebuch → ein Vorschlag mit allen Artikeln, Gramm vorgeschlagen, Stück leer und abgewählt',
+      booked: '„Abziehen“ bucht nur Gewähltes, Buchung kennt den Eintrag, Zuordnung/Ablehnung gemerkt',
+      choice: 'mehrdeutiger Name zur Auswahl, Wahl gemerkt und beim nächsten Mal vorgewählt',
+      mute: 'dreimal abgelehnt → keine Frage mehr, ⋯ Mehr setzt zurück', toggle: 'Schalter „Beim Eintragen nach Vorratsabzug fragen“ aus → keine Frage',
+      pending: 'Wiederkehrende → kein Dialog, kein Abzug, Hinweis im Vorrat, dort bestätigt', dedup: 'schon gebucht (anderes Gerät) entdoppelt, zu alte Tage nicht gefragt',
+      rebook: 'Portionen halbiert → Rückbuchung angeboten und im Verlauf mit Bezug', cookFor: 'Läuft ab → Rezept dazu finden → Einplanen',
+      fill: '„Füllen“ mit Vorrats-Merkmal am Planeintrag', weekShop: 'Woche → Zettel: Zusammenfassung, Vorrat nur einmal verrechnet' })) {
+      if (!out[k]) { pantry4Fail++; console.log('  x   Vorrat Tagebuch/Plan: ' + v); }
+    }
+    const newErr = errors.length - errBefore;
+    if (newErr) { pantry4Fail++; console.log(`  x   Vorrat Tagebuch/Plan: ${newErr} neue(r) Fehler, siehe unten.`); }
+    if (!pantry4Fail) console.log('  ok  Vorrat Tagebuch/Plan: ein bestätigter Vorschlag je Mahlzeit, Auswahl bei Mehrdeutigem, gemerkte Zuordnung, Ablehnen dämpft, Schalter, offene Vorschläge ohne Dialog, Entdoppeln, Rückbuchung, Rezept zu Ablaufendem, Füllen mit Merkmal, Woche → Zettel mit Zusammenfassung.');
+  }
+
+  // 12f. Vorrat Paket 4: Kassenbon (gestellte KI-Antwort mit Kürzeln, Pfand,
+  //      Rabatt, Tüte, Summe und Preisen → Bestätigungsliste mit Ort/Kategorie,
+  //      Einbuchen + Abhaken ohne Doppelbuchung, Ent-haken nimmt genau diese
+  //      Buchung zurück; ohne KI klare Meldung), Serienscan ohne Kamera über
+  //      „Code manuell eingeben“ (bekannt ±1, gleicher Code gesperrt, neuer Code
+  //      in die Liste, Mitschrift mit Rückgängig), Inventur (Entwurf überlebt das
+  //      Schließen, EINE Bestätigung bucht Korrekturen, die nicht als Verbrauch
+  //      zählen; Abbrechen bucht nichts), Auswertung im Verlauf, Monatsrückblick,
+  //      Hinweise gebündelt. Per Klick, wo es einen Knopf gibt.
+  let pantry5Fail = 0;
+  {
+    const errBefore = errors.length;
+    const out = {};
+    let keep = null;
+    const ev = (fn, a) => page.evaluate(fn, a);
+    try {
+      keep = await ev(() => {
+        const k = JSON.stringify({ shop: S.shopList, shopTomb: S.shopTomb || {}, pantry: S.pantry || [], log: S.pantryLog || [], tomb: S.pantryTomb || {},
+          ask: S.pantryAsk || null, seen: S.pantryMonthSeen === undefined ? null : S.pantryMonthSeen, news: S.pantryMonthNews || null,
+          draft: S.pantryStockDraft || null, remindOff: !!S.pantryRemindOff });
+        document.querySelectorAll('.ov.open').forEach((o) => o.classList.remove('open'));
+        S.shopList = []; S.shopTomb = {}; S.pantryTomb = {}; S.pantryLocs = null; S.pantryLog = [];
+        delete S.pantryAsk; delete S.pantryStockDraft; delete S.pantryMonthNews; S.pantryRemindOff = false;
+        S.pantry = [
+          { id: 'p4-milch', n: 'H-Milch', ic: '🥛', loc: 'vorrat', c: 'milch', q: 1, g: 1000, min: 0, rev: 1 },
+          { id: 'p4-jog', n: 'Joghurt', ic: '🥛', loc: 'kuehl', c: 'milch', q: 2, g: 150, min: 0, rev: 1 },
+          { id: 'p4-butter', n: 'Butter', ic: '🧈', loc: 'kuehl', c: 'milch', q: 1, g: 250, min: 0, rev: 1 },
+        ];
+        saveS(); NTPantry.open(); NTPantry.setFilter('');
+        return k;
+      });
+      // G1 ohne KI: klare Meldung schon beim Öffnen, kein leeres Ergebnis
+      await ev(() => { window.__p4 = { c: window.callClaude, u: window.canUseAi }; window.canUseAi = () => false; });
+      await page.click('#pantryOv [data-act="NTPantry.openPhotos"]');
+      await page.click('#pantryPhotoMode [data-args=\'["bon"]\']');
+      out.noAi = /braucht es die KI/.test(await page.textContent('#pantryPhotoStatus')) && /Kassenbon/.test(await page.textContent('#pantryPhotoTitle'));
+      // G1: gestellte Antwort
+      const shopIds = await ev(() => {
+        window.canUseAi = () => true;
+        window.callClaude = (m, content, max, ok) => ok('Erkannt:\n' + JSON.stringify({ artikel: [
+          { bon: 'H-MILCH FETTARM 1,5%', name: 'H-Milch', stueck: 2, g: 1000, preis: 1.98 },
+          { bon: 'PFAND 0,25', name: 'Pfand', stueck: 6 }, { bon: 'RABATT 10%', name: 'Rabatt', stueck: 1 },
+          { bon: 'TRAGETASCHE', name: 'Tragetasche', stueck: 1 }, { bon: 'SUMME EUR', name: 'Summe', stueck: 1 },
+          { bon: 'JOGH.NAT.3,8%', name: 'Joghurt natur', stueck: 4, g: 500 },
+          { bon: 'BANANEN', name: 'Bananen', stueck: 1, g: 612 },
+          { bon: 'ZEITSCHRIFT', name: 'Zeitschrift', stueck: 1, vorrat: false },
+          { bon: 'TK SPINAT', name: 'TK-Spinat', stueck: 1, g: 450 }] }));
+        const a = NTShop.add('H-Milch', '2 Stück', '', '🥛'), b = NTShop.add('Bananen', '', '', '');
+        const fake = document.createElement('canvas'); fake.width = 4; fake.height = 4;
+        const b64 = fake.toDataURL('image/jpeg').split(',')[1];
+        NTPantry.photosChosen({ files: [new File([Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))], 'bon.jpg', { type: 'image/jpeg' })] });
+        return [a.id, b.id];
+      });
+      await page.waitForFunction(() => !document.getElementById('pantryPhotoBtn').disabled);
+      await page.click('#pantryPhotoBtn');
+      const rows = await ev(() => [...document.querySelectorAll('#pantryFound .pantry-found')].map((r) => ({
+        n: r.querySelector('.pantry-found-n').value, q: r.querySelector('.pantry-found-q input').value,
+        loc: r.querySelector('.pantry-found-loc').value, cat: r.querySelector('.pantry-found-cat').value, note: (r.querySelector('small') || {}).textContent || '' })));
+      out.bonRows = rows.length === 4 && rows.map((r) => r.n).join('|') === 'H-Milch|Joghurt natur|Bananen|TK-Spinat'
+        && rows[0].q === '2' && rows[0].loc === 'vorrat' && /Zettel — wird abgehakt/.test(rows[0].note) && /Bon: H-MILCH FETTARM/.test(rows[0].note)
+        && rows[1].loc === 'kuehl' && rows[1].cat === 'milch' && rows[3].loc === 'tk' && /abgehakt/.test(rows[2].note)
+        && !JSON.stringify(rows).includes('1,98') && !JSON.stringify(rows).includes('1.98');
+      // TK-Spinat abwählen, Joghurt-Menge ändern, einbuchen
+      await page.click('#pantryFound .pantry-found >> nth=3 >> .pantry-found-on');
+      await page.fill('#pantryFound .pantry-found >> nth=1 >> .pantry-found-q input', '3');
+      await page.dispatchEvent('#pantryFound .pantry-found >> nth=1 >> .pantry-found-q input', 'change');
+      await page.click('#pantryFound [data-act="NTPantry.foundApply"]');
+      const bon = await ev((ids) => {
+        const by = (n) => S.pantry.find((x) => x.n === n), milk = by('H-Milch'), sm = S.shopList.find((x) => x.id === ids[0]), sb = S.shopList.find((x) => x.id === ids[1]);
+        const kauf = S.pantryLog.filter((e) => e.pid === milk.id && e.k === 'kauf');
+        return { milk: milk.q, kauf: kauf.length, src: kauf[0] && kauf[0].src, est: milk.lots.some((l) => l.estimated), jog: by('Joghurt natur') && by('Joghurt natur').q,
+          jogLoc: by('Joghurt natur') && by('Joghurt natur').loc, ban: by('Bananen') && by('Bananen').q, spinat: !!by('TK-Spinat'), pfand: !!by('Pfand'),
+          ticked: !!(sm && sm.d && sb && sb.d), stock: sm && sm.stock && sm.stock.log === (kauf[0] && kauf[0].id), price: JSON.stringify(S).includes('1.98'),
+          closed: !document.getElementById('pantryPhotoOv').classList.contains('open') };
+      }, shopIds);
+      out.bonApply = bon.milk === 3 && bon.kauf === 1 && bon.src === 'bon' && bon.est && bon.jog === 3 && bon.jogLoc === 'kuehl' && bon.ban === 1
+        && !bon.spinat && !bon.pfand && bon.ticked && bon.stock && !bon.price && bon.closed;
+      // Ent-haken auf dem Zettel nimmt genau die Bon-Buchung zurück (keine zweite Buchung beim Abhaken)
+      out.bonUntick = await ev((id) => { NTShop.toggle(id); const m = S.pantry.find((x) => x.n === 'H-Milch'); return m.q === 1 && S.pantryLog.filter((e) => e.pid === m.id && e.k === 'kauf' && !e.u).length === 0; }, shopIds[0]);
+      await ev(() => { window.callClaude = window.__p4.c; window.canUseAi = window.__p4.u; });
+      // G2: Serienscan — Codes ohne Kamera über die manuelle Eingabe einspeisen
+      const codes = await ev(() => {
+        const ean = (d12) => d12 + ((10 - (d12.split('').reduce((a, c, i) => a + (+c) * (i % 2 ? 3 : 1), 0) % 10)) % 10);
+        const a = ean('400638100001'), b = ean('400638100002'), nu = ean('400000000999');
+        S.pantry.find((x) => x.id === 'p4-jog').bc = [a]; S.pantry.find((x) => x.id === 'p4-butter').bc = [b];
+        return { a, b, nu };
+      });
+      const feed = async (code) => ev((code) => { NTPicker.pickerStopScan(); NTPicker.pickerOpenManualBarcode(); document.getElementById('bcDirectInput').value = code; NTPicker.pickerSubmitManualBarcode(); }, code);
+      await page.click('#pantryOv [data-act="NTPantry.scan"][data-args=\'["in"]\']');
+      await page.locator('#pickerOv.open').waitFor();
+      await feed(codes.a); await feed(codes.a); await feed(codes.b);
+      const s1 = await ev(() => ({ jog: S.pantry.find((x) => x.id === 'p4-jog').q, butter: S.pantry.find((x) => x.id === 'p4-butter').q,
+        msg: document.getElementById('pickerBarcodeResult').textContent, rows: document.querySelectorAll('#pickerScanList [data-act="NTPantry.scanUndo"]').length }));
+      await page.waitForTimeout(2100);
+      await feed(codes.a);
+      const realFetch = await ev(() => { window.__p4f = window.fetchT; window.fetchT = () => Promise.resolve({ json: () => ({ status: 1, product: { product_name: 'P4-Linsen', product_quantity: 500, product_quantity_unit: 'g' } }) }); return true; });
+      await feed(codes.nu);
+      await page.waitForFunction(() => /P4-Linsen/.test(document.getElementById('pickerScanList').textContent));
+      await feed(codes.nu); // gleich wieder: nicht doppelt
+      await ev(() => { window.fetchT = window.__p4f; });
+      const s2 = await ev(() => ({ open: document.getElementById('pickerOv').classList.contains('open'), jog: S.pantry.find((x) => x.id === 'p4-jog').q,
+        list: document.getElementById('pickerScanList').textContent }));
+      await page.click('#pickerScanList [data-act="NTPantry.scanUndo"] >> nth=0');
+      const s3 = await ev(() => ({ jog: S.pantry.find((x) => x.id === 'p4-jog').q, undone: document.querySelectorAll('#pickerScanList .pantry-scan-row.is-undone').length }));
+      out.serial = realFetch && s1.jog === 3 && s1.butter === 2 && s1.rows === 2 && /gerade gezählt|＋/.test(s1.msg)
+        && s2.open && s2.jog === 4 && /P4-Linsen/.test(s2.list) && !/2×/.test(s2.list) && s3.jog === 3 && s3.undone === 1;
+      await page.click('#pickerScanList [data-act="NTPantry.scanResolve"]');
+      await page.locator('#pantryItemOv.open').waitFor();
+      await page.click('#pantryItemOv [data-act="NTPantry.saveItem"]');
+      out.serialNew = await ev((nu) => { const l = S.pantry.find((x) => x.n === 'P4-Linsen'); return !!l && l.q === 1 && l.g === 500 && l.bc[0] === nu; }, codes.nu);
+      // G3: Inventur im Kühlschrank — Joghurt 3 → 1, Butter „Ist weg“, Joghurt natur „stimmt“
+      await ev(() => { document.querySelectorAll('.ov.open').forEach((o) => o.classList.remove('open')); NTPantry.open(); NTPantry.openMore(); });
+      await page.click('#pantryMoreOv [data-act="NTPantry.openStock"]');
+      await page.click('#pantryStockBody [data-act="NTPantry.stockStart"][data-args=\'["kuehl"]\']');
+      // Artikel für Artikel: Butter „Ist weg“, Joghurt zweimal − (dazwischen zu
+      // und wieder auf: der Durchgang ist noch da), alles andere „Stimmt“.
+      let first = '', resumed = null;
+      for (let guard = 0; guard < 10; guard++) {
+        const name = await ev(() => { const el = document.querySelector('#pantryStockBody .pantry-stock-name'); return el ? el.textContent : ''; });
+        if (!name) break;
+        if (!first) first = name;
+        if (/Butter/.test(name)) await page.click('#pantryStockBody [data-act="NTPantry.stockSet"][data-args=\'["gone"]\']');
+        else if (/Joghurt$/.test(name)) {
+          await page.click('#pantryStockBody [data-act="NTPantry.stockStep"][data-args="[-1]"]');
+          await page.click('#pantryStockBody [data-act="NTPantry.stockStep"][data-args="[-1]"]');
+          await page.click('#pantryStockOv .mcl');
+          await ev(() => NTPantry.openStock());
+          resumed = await ev(() => ({ name: document.querySelector('#pantryStockBody .pantry-stock-name').textContent, ist: document.getElementById('pantryStockIst').value, draft: !!S.pantryStockDraft }));
+          await page.click('#pantryStockBody [data-act="NTPantry.stockSet"][data-args=\'["next"]\']');
+        } else await page.click('#pantryStockBody [data-act="NTPantry.stockSet"][data-args=\'["ok"]\']');
+      }
+      resumed = resumed || { name: '', ist: '', draft: false };
+      const summary = await page.textContent('#pantryStockBody');
+      const before = await ev(() => ({ q: S.pantry.find((x) => x.id === 'p4-jog').q, use: NTPantry.usage('p4-jog') }));
+      await page.click('#pantryStockBody [data-act="NTPantry.stockBook"]');
+      out.stock = !!first && /Joghurt/.test(resumed.name) && resumed.ist === '1' && resumed.draft && /2 Abweichungen/.test(summary) && /3 → 1/.test(summary)
+        && before.q === 3 && await ev(() => {
+          const j = S.pantry.find((x) => x.id === 'p4-jog'), b = S.pantry.find((x) => x.id === 'p4-butter');
+          const ks = S.pantryLog.filter((e) => e.src === 'inventur').map((e) => e.k + ':' + e.d).sort().join();
+          return j.q === 1 && b.q === 0 && ks === 'korrektur:-2,korrektur:-2' && !S.pantryStockDraft && NTPantry.usage('p4-jog') === null
+            && !document.getElementById('pantryStockOv').classList.contains('open');
+        });
+      // Abbrechen bucht nichts
+      await ev(() => NTPantry.openStock());
+      await page.click('#pantryStockBody [data-act="NTPantry.stockStart"][data-args=\'["vorrat"]\']');
+      await page.click('#pantryStockBody [data-act="NTPantry.stockSet"][data-args=\'["gone"]\']');
+      const n0 = await ev(() => S.pantryLog.length);
+      await page.click('#pantryStockBody [data-act="NTPantry.stockCancel"]');
+      out.stockCancel = await ev((n0) => S.pantryLog.length === n0 && !S.pantryStockDraft && S.pantry.find((x) => x.n === 'H-Milch').q === 1
+        && !!document.querySelector('#pantryStockBody [data-act="NTPantry.stockStart"]'), n0);
+      await ev(() => closeOv('pantryStockOv'));
+      // H1/H2: Verlauf über Monatsgrenze — Rückblick einmal, Auswertung im Verlauf
+      const prevM = await ev(() => {
+        const now = new Date(), prev = new Date(now.getFullYear(), now.getMonth() - 1, 15, 12).getTime();
+        const prevKey = pantryMonthShift(now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0'), -1);
+        const add = (id, t, k, d, n, pid) => S.pantryLog.push({ id, t, pid, n, ic: '🥛', d, k, src: 'hand', u: 0, rev: 1 });
+        add('p4w1', prev, 'verderb', -1, 'Joghurt', 'p4-jog'); add('p4w2', prev + 3600e3, 'verderb', -1, 'Joghurt', 'p4-jog');
+        add('p4w3', prev + 7200e3, 'verderb', -1, 'H-Milch', 'p4-milch'); add('p4u1', prev - 864e5 * 5, 'verbrauch', -3, 'H-Milch', 'p4-milch');
+        add('p4k0', prev - 864e5 * 40, 'kauf', 4, 'H-Milch', 'p4-milch');
+        S.pantryLog.sort((a, b) => b.t - a.t);
+        S.pantryMonthSeen = prevKey; delete S.pantryMonthNews;
+        NTPantry.monthCheck(); NTPantry.monthCheck();
+        return prevKey;
+      });
+      const hint = await ev(() => ({ t: document.getElementById('pantryMonthHint').textContent, news: !!S.pantryMonthNews }));
+      // drei Hinweise anlegen (geht bald aus, offene Mahlzeit, Rückblick) → eine Zeile
+      const many = await ev(() => {
+        const s = NTShop.add('Butter', '1 Stück', '', '🧈'); S.pantry.find((x) => x.id === 'p4-butter').rs = { s: s.id, t: Date.now() };
+        NTPantry.render();
+        return { sum: document.getElementById('pantryHintSum').textContent, hidden: document.getElementById('pantryHintList').hidden, soon: document.getElementById('pantrySoon').textContent, month: document.getElementById('pantryMonthHint').textContent };
+      });
+      await page.click('#pantryHintSum .pantry-hint-sum');
+      const opened = await ev(() => !document.getElementById('pantryHintList').hidden);
+      await page.click('#pantryMonthHint [data-act="NTPantry.openReport"]');
+      await page.locator('#pantryLogOv.open').waitFor();
+      const rep = await ev(() => ({ open: document.getElementById('pantryReport').open, t: document.getElementById('pantryReport').textContent, waste: document.getElementById('pantryWaste').textContent }));
+      out.month = !!prevM && hint.news && /weggeworfen: 2 Artikel — am häufigsten Joghurt/.test(hint.t);
+      out.hints = /2 Hinweise|3 Hinweise/.test(many.sum) && many.hidden && opened;
+      out.report = rep.open && /Daten seit/.test(rep.t) && /Weggeworfen: 3 Packungen/.test(rep.t) && /Anteil weggeworfen: 50 %/.test(rep.t)
+        && /Läuft oft ab/.test(rep.t) && /Joghurt/.test(rep.t) && /Vorschlag:/.test(rep.t) && /Diesen Monat/.test(rep.waste);
+      await ev(() => closeOv('pantryLogOv'));
+      await page.click('#pantryMonthHint [data-act="NTPantry.monthDismiss"]');
+      out.monthGone = await ev(() => !S.pantryMonthNews && !document.getElementById('pantryMonthHint').textContent);
+    } catch (e) { record('Vorrat Paket 4', e.message); }
+    await ev((k) => {
+      document.querySelectorAll('.ov.open').forEach((o) => o.classList.remove('open'));
+      if (window.__p4) { window.callClaude = window.__p4.c; window.canUseAi = window.__p4.u; }
+      if (window.__p4f) window.fetchT = window.__p4f;
+      if (!k) return;
+      const o = JSON.parse(k);
+      S.shopList = o.shop; S.shopTomb = o.shopTomb; S.pantry = o.pantry; S.pantryLog = o.log; S.pantryTomb = o.tomb; S.pantryLocs = null;
+      if (o.ask) S.pantryAsk = o.ask; else delete S.pantryAsk;
+      if (o.seen === null) delete S.pantryMonthSeen; else S.pantryMonthSeen = o.seen;
+      if (o.news) S.pantryMonthNews = o.news; else delete S.pantryMonthNews;
+      if (o.draft) S.pantryStockDraft = o.draft; else delete S.pantryStockDraft;
+      S.pantryRemindOff = o.remindOff;
+      saveS(); NTShop.render(); NTPantry.render();
+    }, keep).catch(() => {});
+    for (const [k, v] of Object.entries({ noAi: 'Kassenbon ohne KI: klare Meldung beim Öffnen',
+      bonRows: 'Bon → nur Artikel (kein Pfand/Rabatt/Tüte/Summe/Preis), Ort und Kategorie vorbelegt, Zettel-Treffer markiert',
+      bonApply: 'Bon einbuchen: Menge geändert, Abgewähltes nicht, geschätztes Datum, Zettel abgehakt, EINE Buchung je Artikel, kein Preis gespeichert',
+      bonUntick: 'Ent-haken nimmt genau die Bon-Buchung zurück',
+      serial: 'Serienscan: Scanner bleibt offen, ±1, gleicher Code nicht doppelt, neuer Code in die Liste, Rückgängig je Zeile',
+      serialNew: 'neuer Code aus der Liste zugeordnet und eingebucht',
+      stock: 'Inventur: Entwurf überlebt das Schließen, Zusammenfassung, EINE Bestätigung bucht Korrekturen (kein Verbrauch)',
+      stockCancel: 'Inventur abbrechen bucht nichts', month: 'Monatsrückblick einmal nach dem Monatswechsel',
+      hints: 'mehrere Hinweise → eine aufklappbare Zeile', report: 'Auswertung im Verlauf: Daten seit, Packungen, Anteil, läuft oft ab mit Vorschlag',
+      monthGone: 'Rückblick lässt sich ausblenden' })) {
+      if (!out[k]) { pantry5Fail++; console.log('  x   Vorrat Paket 4: ' + v); }
+    }
+    const newErr = errors.length - errBefore;
+    if (newErr) { pantry5Fail++; console.log(`  x   Vorrat Paket 4: ${newErr} neue(r) Fehler, siehe unten.`); }
+    if (!pantry5Fail) console.log('  ok  Vorrat Paket 4: Kassenbon ohne Preise mit Bestätigung und Abhaken ohne Doppelbuchung, Serienscan mit Sperre/Liste/Rückgängig, Inventur mit Entwurf und einer Bestätigung, Monatsrückblick, gebündelte Hinweise, Auswertung im Verlauf.');
+  }
+
+  // 7b6. Paket 5: Rezept-Foto am Einkaufszettel. Ganzer Weg per Klick mit
+  //      gestellter KI-Antwort: Kachel am Zettel → Foto → Editor (Entwurf) →
+  //      Speichern → Rezept im Kochbuch → Vorschau (Vorrat abgewählt, Rest,
+  //      Grundzutat, ohne Menge, Portionen) → „Auf den Zettel“ → Artikel mit
+  //      Herkunft. Dazu die Abbruch-Wege (ohne KI, Editor ✕, Vorschau), das
+  //      Angebot nach dem Anlegen im Kochbuch und der Dubletten-Fall.
+  let shop5Fail = 0;
+  {
+    const errBefore = errors.length;
+    const out = {};
+    let keep = null;
+    const ev = (fn, a) => page.evaluate(fn, a);
+    let answer = () => true;
+    const dialogs = [];
+    const onDialog = (d) => { dialogs.push(d.message()); return answer(d.message()) ? d.accept() : d.dismiss(); };
+    page.on('dialog', onDialog);
+    const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAD0lEQVR4nGP4jwQYiOMAANuQL9FuRbCyAAAAAElFTkSuQmCC', 'base64');
+    const shot = async () => {
+      await page.locator('#shopOv.open [data-act="NTShop.recipePhoto"]').click();
+      await page.locator('#recPhotoOv.open').waitFor();
+      await page.setInputFiles('#recPhotoGal', { name: 'rezept.png', mimeType: 'image/png', buffer: PNG });
+      await page.locator('#recPhotoBtn:not([disabled])').waitFor();
+      await page.click('#recPhotoBtn');
+      await page.locator('#recEditOv.open').waitFor();
+    };
+    const state = () => ev(() => ({ n: recipes.filter((r) => /^Smoke-Foto/.test(r.name)).length, shop: S.shopList.length,
+      edit: document.getElementById('recEditOv').classList.contains('open'), photo: document.getElementById('recPhotoOv').classList.contains('open'),
+      prev: document.getElementById('planShopOv').classList.contains('open'), det: document.getElementById('bookDetailOv').classList.contains('open') }));
+    try {
+      keep = await ev(() => {
+        const k = JSON.stringify({ shop: S.shopList, shopTomb: S.shopTomb || {}, pantry: S.pantry || [], log: S.pantryLog || [], tomb: S.pantryTomb || {} });
+        document.querySelectorAll('.ov.open').forEach((o) => o.classList.remove('open'));
+        window.__p5 = { c: window.callClaude, u: window.canUseAi, l: window.lookupNutrients };
+        S.shopList = []; S.shopTomb = {}; S.pantryTomb = {}; S.pantryLog = [];
+        S.pantry = [
+          { id: 'p5-milch', n: 'Milch', ic: '🥛', loc: 'kuehl', q: 2, g: 500, min: 0, rev: 1 },
+          { id: 'p5-zwiebel', n: 'Zwiebeln', ic: '🧅', loc: 'vorrat', q: 1, g: 80, min: 0, rev: 1 },
+        ];
+        window.lookupNutrients = (list, cb) => cb(list.map((z) => ({ name: z.name, emoji: '', amount: z.g || 0, per100: { kcal: 100, protein: 2, carbs: 10, fat: 3 } })));
+        window.callClaude = (m, content, max, ok) => ok('```json\n' + JSON.stringify({ titel: 'Smoke-Foto-Auflauf', portionen: 4, minuten: 40,
+          zutaten: [{ name: 'Milch', g: 500 }, { name: 'Zwiebel', g: 240 }, { name: 'Nudeln', g: 400 }, { name: 'Salz', g: 5 }, { name: 'Muskat', g: null }],
+          anleitung: '1. Kochen.\n2. Backen.' }) + '\n```');
+        saveS(); NTShop.open();
+        return k;
+      });
+      // Ohne KI: klare Meldung beim Einstieg; „Abbrechen“ lässt alles, wie es ist …
+      await ev(() => { window.canUseAi = () => false; });
+      answer = () => false;
+      await page.locator('#shopOv.open [data-act="NTShop.recipePhoto"]').click();
+      let s = await state();
+      out.noAi = /Rezept-Foto braucht/.test(dialogs[dialogs.length - 1] || '') && /selbst zusammenstellen/.test(dialogs[dialogs.length - 1] || '')
+        && !s.photo && !s.edit && s.n === 0 && s.shop === 0;
+      // … „OK“ öffnet den leeren Editor mit Hinweis auf den Zettel; ✕ legt nichts an.
+      answer = () => true;
+      await page.locator('#shopOv.open [data-act="NTShop.recipePhoto"]').click();
+      await page.locator('#recEditOv.open').waitFor();
+      const hint = await page.textContent('#recEditHint');
+      await page.click('#recEditOv [data-act="closeOv"]');
+      s = await state();
+      out.noAiBlank = /Einkaufszettel/.test(hint) && !s.edit && s.n === 0 && s.shop === 0;
+      // Mit KI: Foto → Editor mit dem Entwurf; noch nichts angelegt. ✕ im Editor bricht ab.
+      await ev(() => { window.canUseAi = () => true; });
+      await shot();
+      const draft = await ev(() => ({ name: document.getElementById('recEditName').value, serv: document.getElementById('recEditServ').value,
+        hint: document.getElementById('recEditHint').textContent, rows: document.querySelectorAll('#recEditIngList input.ing-amt').length }));
+      s = await state();
+      out.editor = draft.name === 'Smoke-Foto-Auflauf' && draft.serv === '4' && draft.rows === 5 && /Einkaufszettel/.test(draft.hint) && s.n === 0 && !s.photo;
+      await page.click('#recEditOv [data-act="closeOv"]');
+      s = await state();
+      out.editCancel = !s.edit && !s.prev && s.n === 0 && s.shop === 0;
+      // Noch einmal, jetzt speichern (Rückfrage „keine Grammangabe“ für Muskat → OK).
+      await shot();
+      dialogs.length = 0;
+      await page.click('#recEditOv [data-act="NTBook.editSave"]');
+      await page.locator('#planShopOv.open').waitFor();
+      s = await state();
+      const pv = await ev(() => ({ t: document.getElementById('planShopTitle').textContent, no: document.getElementById('planShopNo').textContent,
+        sum: document.getElementById('planShopSum').textContent, p: document.getElementById('planShopP').textContent,
+        rows: Array.from(document.querySelectorAll('#planShopRows .shop-prev-row')).map((r) => ({ t: r.textContent, on: r.querySelector('input').checked })),
+        rec: (recipes.find((r) => r.name === 'Smoke-Foto-Auflauf') || {}) }));
+      const row = (re) => pv.rows.find((r) => re.test(r.t)) || {};
+      out.saved = s.n === 1 && !s.edit && !s.det && pv.rec.baseServings === 4 && pv.rec.ingredients.length === 5 && /keine Grammangabe/.test(dialogs.join('|'));
+      out.preview = /Zutaten auf den Zettel/.test(pv.t) && pv.no === 'Nur Rezept speichern' && pv.p === '4' && pv.rows.length === 5
+        && /^3 Zutaten auf den Zettel, 1 ist im Vorrat\./.test(pv.sum) && /1 davon nur teilweise/.test(pv.sum)
+        && row(/Milch/).on === false && /im Vorrat/.test(row(/Milch/).t)
+        && row(/Zwiebel/).on === true && /fehlen 160 von 240 g/.test(row(/Zwiebel/).t)
+        && row(/Salz/).on === false && /Grundzutat/.test(row(/Salz/).t)
+        && row(/Muskat/).on === true && /ohne Mengenangabe/.test(row(/Muskat/).t) && /—/.test(row(/Muskat/).t)
+        && row(/Nudeln/).on === true && /400 g/.test(row(/Nudeln/).t);
+      // Portionen umrechnen (5 → Nudeln 500 g), zurück auf 4; Nudeln von Hand abwählen.
+      await page.click('#planShopPort [data-act="NTShop.previewPortions"][data-args="[1]"]');
+      const p5 = await page.textContent('#planShopRows');
+      await page.click('#planShopPort [data-act="NTShop.previewPortions"][data-args="[-1]"]');
+      await page.locator('#planShopRows .shop-prev-row', { hasText: 'Nudeln' }).locator('.shop-prev-n').click();
+      const after = await ev(() => document.getElementById('planShopSum').textContent);
+      out.portions = /500 g/.test(p5) && /^2 Zutaten auf den Zettel/.test(after);
+      await page.click('#planShopGo');
+      const list = await ev(() => S.shopList.map((x) => ({ n: x.n, q: x.q, rc: x.rc || [] })));
+      const it = (n) => list.find((x) => x.n === n);
+      s = await state();
+      out.onList = !s.prev && list.length === 2 && it('Zwiebel') && it('Zwiebel').q === '160 g' && it('Zwiebel').rc[0] === 'Smoke-Foto-Auflauf'
+        && it('Muskat') && it('Muskat').q === '' && it('Muskat').rc[0] === 'Smoke-Foto-Auflauf' && !it('Milch') && !it('Salz') && !it('Nudeln')
+        && await page.isVisible('#shopOv.open');
+      // Rezeptansicht → 🛒 Einkaufen: dieselbe Vorschau, „Abbrechen“ legt nichts auf den Zettel.
+      await ev(() => NTBook.detail(recipes.find((r) => r.name === 'Smoke-Foto-Auflauf').id));
+      out.noFreshOnReopen = !(await page.isVisible('#bookFreshShop'));
+      await page.click('#bookDetailOv [data-act="NTBook.toShop"]');
+      await page.locator('#planShopOv.open').waitFor();
+      const detNo = await page.textContent('#planShopNo');
+      const top = await ev(() => { const a = document.getElementById('planShopOv').getBoundingClientRect(); const e = document.elementFromPoint(a.left + a.width / 2, window.innerHeight - 40); return !!(e && e.closest('#planShopOv')); });
+      await page.click('#planShopNo');
+      s = await state();
+      out.detailCancel = detNo === 'Abbrechen' && top && !s.prev && s.shop === 2;
+      await ev(() => NTBook.closeDetail());
+      // Kochbuch-Weg: neues Rezept gespeichert → ruhiges Angebot oben, kein Pflicht-Dialog; ✕ der Vorschau legt nichts ab.
+      await ev(() => NTBook.editDraft({ name: 'Smoke-Foto-Kochbuch', baseServings: 2, ingredients: [{ name: 'Reis', emoji: '🍚', amount: 300, per100: { kcal: 350, protein: 7, carbs: 77, fat: 1 } }] }, { from: 'library' }));
+      await page.click('#recEditOv [data-act="NTBook.editSave"]');
+      await page.locator('#bookDetailOv.open #bookFreshShop').waitFor();
+      s = await state();
+      const offer = !s.prev;
+      await page.click('#bookFreshShop [data-act="NTBook.toShop"]');
+      await page.locator('#planShopOv.open').waitFor();
+      const reis = await page.textContent('#planShopRows');
+      await page.click('#planShopOv [data-act="closeOv"]');
+      s = await state();
+      out.bookOffer = offer && /Reis/.test(reis) && /300 g/.test(reis) && !s.prev && s.shop === 2 && !(await page.isVisible('#bookFreshShop'));
+      await ev(() => NTBook.closeDetail());
+      // Dublette: dasselbe Foto noch einmal → „nicht zusätzlich anlegen“ → das vorhandene Rezept in die Vorschau.
+      dialogs.length = 0;
+      answer = (m) => !/trotzdem zusätzlich anlegen/.test(m);
+      await shot();
+      await page.click('#recEditOv [data-act="NTBook.editSave"]');
+      await page.locator('#planShopOv.open').waitFor();
+      s = await state();
+      const dupSub = await page.textContent('#planShopSub');
+      out.dup = s.n === 2 && !s.edit && /Smoke-Foto-Auflauf/.test(dupSub) && dialogs.some((m) => /Stattdessen die Zutaten von „Smoke-Foto-Auflauf“/.test(m))
+        && await page.textContent('#planShopNo') === 'Abbrechen';
+      await page.click('#planShopNo');
+      s = await state();
+      out.dupCancel = s.shop === 2 && !s.prev;
+    } catch (e) { record('Rezept-Foto → Einkaufszettel', e.message); }
+    page.off('dialog', onDialog);
+    await ev((k) => {
+      document.querySelectorAll('.ov.open').forEach((o) => o.classList.remove('open'));
+      if (window.__p5) { window.callClaude = window.__p5.c; window.canUseAi = window.__p5.u; window.lookupNutrients = window.__p5.l; }
+      for (let i = recipes.length - 1; i >= 0; i--) if (/^Smoke-Foto/.test(recipes[i].name)) recipes.splice(i, 1);
+      saveX();
+      if (!k) return;
+      const o = JSON.parse(k);
+      S.shopList = o.shop; S.shopTomb = o.shopTomb; S.pantry = o.pantry; S.pantryLog = o.log; S.pantryTomb = o.tomb; S.pantryLocs = null;
+      saveS(); NTShop.render(); NTPantry.render(); NTBook.render();
+    }, keep).catch(() => {});
+    for (const [k, v] of Object.entries({ noAi: 'ohne KI: klare Meldung beim Einstieg mit Hinweis „selbst zusammenstellen“, Abbrechen legt nichts an',
+      noAiBlank: 'ohne KI → leerer Editor mit Zettel-Hinweis, ✕ legt nichts an',
+      editor: 'Foto → KI → Editor mit Titel/Portionen/Zutaten als Entwurf, noch kein Rezept',
+      editCancel: '✕ im Editor: kein Rezept, kein Zettel-Eintrag',
+      saved: 'Speichern legt das Rezept im Kochbuch an (Rückfrage ohne Grammangabe), keine Rezeptansicht',
+      preview: 'Vorschau: Vorrätiges abgewählt, Rest, Grundzutat abgewählt, ohne Menge gewählt, „Nur Rezept speichern“',
+      portions: 'Portionen rechnen um, Abwählen zählt mit', onList: '„Auf den Zettel“: nur Gewähltes, Rest in Gramm, ohne Menge leer, Herkunft rc',
+      noFreshOnReopen: 'Angebot erscheint nur direkt nach dem Anlegen', detailCancel: 'Rezeptansicht → 🛒 Einkaufen: dieselbe Vorschau obenauf, Abbrechen legt nichts ab',
+      bookOffer: 'Kochbuch-Weg: Angebot „🛒 Zutaten auf den Zettel“ nach dem Speichern, ✕ legt nichts ab',
+      dup: 'Dublette: vorhandenes Rezept statt eines zweiten', dupCancel: 'Dubletten-Vorschau abbrechen legt nichts ab' })) {
+      if (!out[k]) { shop5Fail++; console.log('  x   Rezept-Foto → Zettel: ' + v); }
+    }
+    const newErr = errors.length - errBefore;
+    if (newErr) { shop5Fail++; console.log(`  x   Rezept-Foto → Zettel: ${newErr} neue(r) Fehler, siehe unten.`); }
+    if (!shop5Fail) console.log('  ok  Rezept-Foto → Zettel: Kachel am Zettel, Foto → Editor → Kochbuch → Vorschau (Vorrat/Grundzutat/ohne Menge/Portionen) → Artikel mit Herkunft; Abbrüche ohne Reste, Angebot im Kochbuch, Dublette nimmt das vorhandene Rezept.');
   }
 
   // 7c. App-Tour: aus der Hilfe von vorn bis „Fertig“ per Klick, dann an
@@ -1158,10 +1991,10 @@ const EXPECTED_NAMESPACES = [
 
   await browser.close();
 
-  if (errors.length || nsFail || badExports.length || deadHandlers.length || delegationFail || stack.length || deadFeatActs.length || remindFail || tabFail || kbFail || dietFail || pickFail || bookFail || pantryFail || tourFail) {
+  if (errors.length || nsFail || badExports.length || deadHandlers.length || delegationFail || stack.length || deadFeatActs.length || remindFail || tabFail || kbFail || dietFail || pickFail || bookFail || pantryFail || pantry2Fail || pantry3Fail || pantry4Fail || pantry5Fail || shop5Fail || tourFail) {
     console.error('\nFEHLER:');
     [...new Set(errors)].forEach((e) => console.error('  x   ' + e));
-    console.error(`\n${errors.length + nsFail + badExports.length + deadHandlers.length + delegationFail + stack.length + deadFeatActs.length + remindFail + tabFail + kbFail + dietFail + pickFail + bookFail + pantryFail + tourFail} Problem(e).`);
+    console.error(`\n${errors.length + nsFail + badExports.length + deadHandlers.length + delegationFail + stack.length + deadFeatActs.length + remindFail + tabFail + kbFail + dietFail + pickFail + bookFail + pantryFail + pantry2Fail + pantry3Fail + pantry4Fail + pantry5Fail + shop5Fail + tourFail} Problem(e).`);
     process.exit(1);
   }
   console.log('\nRauchtest bestanden.');

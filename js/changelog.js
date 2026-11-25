@@ -2,6 +2,39 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.358',items:[
+    {icon:'📷',text:'<b>Rezept-Foto am Einkaufszettel</b>: Rezept abfotografieren, prüfen, ins Kochbuch speichern und gleich auswählen, welche Zutaten auf den Zettel kommen.',where:'Einkaufszettel'},
+    {icon:'🛒',text:'<b>Vorschau „Zutaten auf den Zettel“</b>: rechnet auf deine Portionen um und lässt Vorrätiges sowie Grundzutaten wie Salz und Öl erst einmal weg. Jede Zeile kannst du an- oder abwählen.',where:'Einkaufszettel · Kochbuch'},
+    {icon:'📖',text:'<b>„Einkaufen“ im Kochbuch</b> öffnet jetzt dieselbe Vorschau, statt alles sofort auf den Zettel zu legen. Ein neu angelegtes Rezept bietet sie direkt an.',where:'Kochbuch'},
+  ]},
+  {v:'0.357',items:[
+    {icon:'🧾',text:'<b>Kassenbon fotografieren</b>: Die gekauften Artikel landen nach deiner Bestätigung auf einmal im Vorrat und werden auf dem Einkaufszettel abgehakt. Preise werden nicht gespeichert.',where:'Vorrat · Foto/Bon'},
+    {icon:'🏷️',text:'<b>Barcode-Serienscan</b>: Der Scanner bleibt offen, jeder Code zählt ＋1 oder −1, mit Mitschrift und Rückgängig. Neue Codes sammeln sich zum Zuordnen.',where:'Vorrat · Einbuchen/Verbrauchen'},
+    {icon:'📋',text:'<b>Inventur</b>: einen Lagerort Artikel für Artikel nachzählen und alle Abweichungen mit einer Bestätigung korrigieren.',where:'Vorrat · ⋯'},
+    {icon:'📊',text:'<b>Auswertung im Verlauf</b>: was je Monat verbraucht und weggeworfen wurde, mit Vorschlägen für oft Ablaufendes. Nach dem Monatswechsel gibt es einmal einen kurzen Rückblick.',where:'Vorrat · ⋯'},
+    {icon:'🧹',text:'<b>Aufgeräumter Vorrat</b>: Mehrere Hinweise stehen in einer Zeile, die Liste beginnt weiter oben. Hilfe und Tour beschreiben den neuen Vorrat.',where:'Vorrat'},
+  ]},
+  {v:'0.356',items:[
+    {icon:'🍽️',text:'<b>Nach dem Eintragen fragt die App, was aus dem Vorrat weg ist</b>. Du bestätigst, änderst die Menge oder tippst „Nicht aus dem Vorrat“ – abgezogen wird nie ohne dich.',where:'Tagebuch · Vorrat'},
+    {icon:'🕓',text:'<b>Alexa, wiederkehrende und geteilte Mahlzeiten</b> warten als Hinweis im Vorrat, statt still abzubuchen. Nach drei Tagen verfällt der Hinweis.',where:'Vorrat'},
+    {icon:'↩️',text:'<b>Eintrag gelöscht oder Menge geändert?</b> Der Vorrat bietet an, die Buchung zurückzunehmen oder anzupassen.',where:'Tagebuch'},
+    {icon:'🎲',text:'<b>„Füllen“ im Wochenplan</b> bevorzugt Rezepte, die bald Ablaufendes verbrauchen, und sagt, warum.',where:'Wochenplan'},
+    {icon:'🛒',text:'<b>Wocheneinkauf mit Vorschau</b>: wie viel auf den Zettel kommt und was schon im Vorrat ist. Vergangene Tage zählen nicht mehr mit. Zu Ablaufendem findest du passende Rezepte.',where:'Wochenplan · Vorrat'},
+  ]},
+  {v:'0.355',items:[
+    {icon:'📈',text:'<b>Der Vorrat lernt aus deinem Verbrauch</b> und schätzt, wie lange ein Artikel noch reicht – kurz in der Liste, ausführlich im Artikel.',where:'Vorrat'},
+    {icon:'⏳',text:'<b>„Geht bald aus“</b> zeigt gesammelt, was demnächst leer wird, mit „Auf den Zettel“ und „Diesmal nicht“.',where:'Vorrat'},
+    {icon:'🔁',text:'<b>„Immer nachkaufen“</b>: Dauerartikel kommen ein paar Tage, bevor sie ausgehen, von selbst auf den Einkaufszettel – erkennbar an „aus dem Vorrat“ mit Grund.',where:'Vorrat · Artikel'},
+    {icon:'🎯',text:'<b>Mindestmenge als Vorschlag</b> aus deinem Verbrauch; übernommen wird sie nur per Tipp.',where:'Vorrat · Artikel'},
+    {icon:'⋯',text:'<b>Orte, Teilen und Verlauf</b> liegen jetzt unter „⋯“ neben der Suche. Die tägliche Meldung nennt auch, was auf den Zettel kam.',where:'Vorrat'},
+  ]},
+  {v:'0.354',items:[
+    {icon:'🥫',text:'<b>Vorrat mit Übersicht</b>. Oben steht, was bald abläuft, was fehlt und wie viele Artikel da sind – ein Tipp filtert die Liste.',where:'Vorrat'},
+    {icon:'🔎',text:'<b>Suchen und Ordnen</b> nach Lagerort, Kategorie, Haltbarkeit, Name oder Menge.',where:'Vorrat'},
+    {icon:'📦',text:'<b>Artikel-Detail mit allen Packungen</b>: Datum, letzte Buchungen und „Auf den Zettel“. Einzelne Packungen lassen sich korrigieren oder entfernen.',where:'Vorrat · Artikel'},
+    {icon:'📅',text:'<b>Haltbarkeit wird geschätzt</b>, wenn kein Datum eingetragen ist – vorsichtig nach Produktart und Lagerort, als „geschätzt“ markiert. Beim Umräumen, z. B. in den Tiefkühler, wird auf Wunsch neu gerechnet.',where:'Vorrat'},
+    {icon:'📂',text:'<b>„Geöffnet“ verkürzt die Frist</b>. Beim Verbrauchen wird zuerst die geöffnete, dann die älteste Packung abgezogen.',where:'Vorrat · Artikel'},
+  ]},
   {v:'0.353',items:[
     {icon:'🔤',text:'<b>Knöpfe brechen nicht mehr mitten im Wort um</b>. Lagerort-Filter, Reiter und Artikelkacheln bleiben einzeilig oder lassen sich quer wischen – auch bei großer Schrift.',where:'Vorrat · Einkauf · Baby'},
     {icon:'🧰',text:'<b>Einheitliche Werkzeugleisten</b>. Vorrat, Einkaufszettel und Wochenplan zeigen ihre Aktionen als gleich große Kacheln mit Symbol und Beschriftung.',where:'Haushalt'},

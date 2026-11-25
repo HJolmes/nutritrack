@@ -1099,13 +1099,14 @@ function pantryExpiry(it,todayStr){
   return best;
 }
 // Artikel mit Bestand, die abgelaufen sind oder in `within` Tagen ablaufen,
-// das Dringendste zuerst.
-/** @param {Array<any>} items @param {string} todayStr @param {number} within */
-function pantryExpiring(items,todayStr,within){
+// das Dringendste zuerst. `expOf(it)` ersetzt pantryExpiry (der Vorrat gibt
+// pantryDue mit, damit die Geöffnet-Frist zählt).
+/** @param {Array<any>} items @param {string} todayStr @param {number} within @param {(it:any)=>any} [expOf] */
+function pantryExpiring(items,todayStr,within,expOf){
   var out=[];
   (items||[]).forEach(function(it){
     if(!((+(it&&it.q)||0)>0))return;
-    var e=pantryExpiry(it,todayStr);
+    var e=expOf?expOf(it):pantryExpiry(it,todayStr);
     if(e&&e.days<=within)out.push({it:it,e:e});
   });
   out.sort(function(a,b){return a.e.days-b.e.days||String(a.it.n).localeCompare(String(b.it.n),'de');});
@@ -1223,6 +1224,704 @@ function pantryWaste(log,month){
   var top=Object.keys(by).map(function(k){return by[k];})
     .sort(function(a,b){return b.count-a.count||b.q-a.q||a.n.localeCompare(b.n,'de');});
   return {n:n,q:_pantryR1(q),top:top};
+}
+
+// ── Vorrat Paket 4: Kassenbon, Serienscan, Inventur, Auswertung ──
+// JSON-Liste `key` aus einer KI-Antwort. Ist die Antwort abgeschnitten oder
+// kaputt, werden die einzelnen flachen Objekte gerettet (`partial`).
+/** @param {string} text @param {string} key @returns {{list:Array<any>,partial:boolean}} */
+function _pantryJsonList(text,key){
+  var s=String(text||''),a=s.indexOf('{'),b=s.lastIndexOf('}');
+  if(a>=0&&b>a){
+    try{var d=JSON.parse(s.slice(a,b+1));if(d&&Array.isArray(d[key]))return {list:d[key],partial:false};}catch(e){}
+  }
+  var out=[],m,re=/\{[^{}]*\}/g;
+  while((m=re.exec(s))){try{var o=JSON.parse(m[0]);if(o&&typeof o==='object'&&!Array.isArray(o)&&!(key in o))out.push(o);}catch(e){}}
+  return {list:out,partial:a>=0};
+}
+// Bon-Zeilen ohne Vorratsbezug: Pfand, Rabatte, Tüten, Summen, Zahlung,
+// Steuer. Die KI soll sie schon weglassen; das hier fängt ab, was durchrutscht.
+var PANTRY_BON_SKIP=/pfand|leergut|rabatt|gutschein|coupon|zwischensumme|gesamtsumme|rueckgeld|wechselgeld|kartenzahlung|girocard|preisvorteil|ersparnis|tragetasche|tragetuete|einkaufstasche|papiertasche|payback|kassenbon/;
+var PANTRY_BON_WORD=/(^| )(summe|gesamt|bar|ec|ec karte|mwst|ust|steuer|netto|brutto|tuete|tueten|beutel|tasche|nachlass|zu zahlen|visa|mastercard|total)( |$)/;
+// KI-Antwort der Kassenbon-Erkennung (G1) → {items:[{n,bon,q,g,loc}], partial}.
+// Preise liest die Funktion nie und gibt sie nie zurück (Nutzerentscheidung:
+// keine Geldbeträge). Gleiche Artikel auf mehreren Zeilen werden zusammengezählt.
+// `vorrat:false` (Zeitschrift, Blumen …) und die Ausschlussliste fallen weg.
+/** @param {string} text @param {Array<string>} locIds */
+function parsePantryReceipt(text,locIds){
+  var r=_pantryJsonList(text,'artikel'),out=[],by={};
+  r.list.forEach(function(x){
+    if(!x||x.vorrat===false||x.lebensmittel===false)return;
+    var n=String(x.name||'').replace(/\s+/g,' ').trim().slice(0,40);
+    var bon=String(x.bon||'').replace(/\s+/g,' ').trim().slice(0,40);
+    var norm=_pantryShelfNorm(n+' '+bon);
+    if(!n||!/[a-zäöüß]/i.test(n)||PANTRY_BON_SKIP.test(norm)||PANTRY_BON_WORD.test(_pantryShelfNorm(n)))return;
+    var q=Math.round(parseFloat(String(x.stueck===undefined?1:x.stueck).replace(',','.')));
+    var g=Math.round(parseFloat(String(x.g===undefined?0:x.g).replace(',','.')));
+    var loc=String(x.ort||'');
+    var k=pantryKey(n);
+    if(by[k]){by[k].q=Math.min(99,by[k].q+(q>0?q:1));if(!by[k].g&&g>0&&g<=50000)by[k].g=g;return;}
+    var it={n:n,bon:bon&&pantryKey(bon)!==k?bon:'',q:q>0?Math.min(99,q):1,g:g>0&&g<=50000?g:0,loc:(locIds||[]).indexOf(loc)>=0?loc:''};
+    by[k]=it;out.push(it);
+  });
+  return {items:out,partial:r.partial&&out.length>0};
+}
+// Üblicher Lagerort für einen Artikel (Vorbelegung, G1): der erste Ort, dessen
+// Art (pantryPlace) zum üblichen Ort der Produktart passt; sonst ''.
+/** @param {string} name @param {string} cat @param {Array<any>} locs */
+function pantryHomeLoc(name,cat,locs){
+  var s=pantryShelfKind(name,cat);
+  if(!s)return '';
+  var a=(locs||[]).slice().sort(function(x,y){return (+(x&&x.pos)||0)-(+(y&&y.pos)||0);});
+  for(var i=0;i<a.length;i++)if(a[i]&&pantryPlace(a[i])===s.h)return String(a[i].id);
+  return '';
+}
+// Serienscan (G2): Zählt dieser Treffer? Derselbe Code direkt hintereinander
+// erst wieder `pauseMs` nach dem zuletzt gezählten (kein Doppelzählen, wenn die
+// Kamera denselben Strichcode zweimal liest). `last` = {code,t} oder null.
+var PANTRY_SCAN_PAUSE=2000;
+/** @param {any} last @param {string} code @param {number} now @param {number} [pauseMs] */
+function pantryScanAccept(last,code,now,pauseMs){
+  if(!last||last.code!==code)return true;
+  return now-(+last.t||0)>=(pauseMs===undefined?PANTRY_SCAN_PAUSE:pauseMs);
+}
+// Inventur (G3): gezählte Ist-Mengen gegen den heutigen Bestand. `counts` =
+// {Artikel-ID: Ist} (nur, was gezählt wurde). Rückgabe [{id,n,ic,soll,ist,d}]
+// mit Abweichung d ≠ 0, in der Reihenfolge von `items`.
+/** @param {Array<any>} items @param {Object<string,any>} counts */
+function pantryInventoryDiff(items,counts){
+  var c=counts||{},out=[];
+  (items||[]).forEach(function(it){
+    if(!it||!Object.prototype.hasOwnProperty.call(c,it.id))return;
+    var ist=_pantryR3(Math.max(0,+c[it.id]||0)),soll=_pantryR3(+it.q||0),d=_pantryR3(ist-soll);
+    if(d)out.push({id:it.id,n:String(it.n||''),ic:String(it.ic||''),soll:soll,ist:ist,d:d});
+  });
+  return out;
+}
+// Monat 'JJJJ-MM' um `delta` Monate verschoben.
+/** @param {string} m @param {number} delta */
+function pantryMonthShift(m,delta){
+  var p=String(m||'').split('-'),d=new Date(+p[0],+p[1]-1+(+delta||0),1);
+  return d.getFullYear()+'-'+pad(d.getMonth()+1);
+}
+// Auswertung „Vorrat im Monat“ (H1) aus dem geteilten Verlauf. Weggeworfen =
+// k 'verderb', verbraucht = 'verbrauch'/'kochen' (wie pantryUseRate); Kauf,
+// Korrektur (Inventur, Zählfehler) und Rückgängiges zählen nicht. Monate nach
+// Ortszeit. `opts.now` (ms) Ende, `opts.from` (ms) Beginn des lückenlosen
+// Verlaufs (älter ist gekappt). `since` = Tag der ersten Buchung, bei
+// gekapptem Verlauf `from`: Davor weiß die App nichts. Gezeigt wird der laufende Monat (`running`)
+// und jeder frühere, dem höchstens `slack` Tage (Standard 7) am Anfang fehlen
+// (`partFrom` = ab wann, wenn ihm Tage fehlen), höchstens `max` (Standard 3).
+// `often` = Artikel, die im ganzen Zeitraum mindestens zweimal weggeworfen wurden.
+/** @param {Array<any>} log @param {{now:number,from?:number,slack?:number,max?:number}} opts */
+function pantryReport(log,opts){
+  var now=+opts.now,from=+(opts.from||0),slack=opts.slack===undefined?7:+opts.slack,max=opts.max||3;
+  var es=(log||[]).filter(function(e){var t=+(e&&e.t)||0;return e&&!e.u&&t>=from&&t<=now;});
+  if(!es.length)return {since:'',months:[],often:[]};
+  // Gibt es Älteres als `from` (gekappt), beginnt das Wissen bei `from`.
+  var cut=(log||[]).some(function(e){return e&&(+e.t||0)<from;});
+  var first=cut?from:es.reduce(function(m,e){return Math.min(m,+e.t||0);},Infinity);
+  var fd=new Date(first),since=fd.getFullYear()+'-'+pad(fd.getMonth()+1)+'-'+pad(fd.getDate());
+  var nd=new Date(now),cur=nd.getFullYear()+'-'+pad(nd.getMonth()+1);
+  var USE=['verbrauch','kochen'];
+  function key(e){var d=new Date(+e.t||0);return d.getFullYear()+'-'+pad(d.getMonth()+1);}
+  function sum(list){
+    /** @type {Object<string,any>} */
+    var by={};var q=0,g=0;
+    list.forEach(function(e){
+      var a=Math.abs(+e.d||0),k=pantryKey(e.n)||String(e.n||'');
+      q+=a;g+=a*(+e.g||0);
+      if(!by[k])by[k]={n:String(e.n||''),ic:String(e.ic||''),pid:String(e.pid||''),count:0,q:0};
+      by[k].count++;by[k].q=_pantryR3(by[k].q+a);
+    });
+    var top=Object.keys(by).map(function(k){return by[k];}).sort(function(a,b){return b.q-a.q||b.count-a.count||a.n.localeCompare(b.n,'de');});
+    return {n:list.length,q:_pantryR1(q),g:Math.round(g),top:top};
+  }
+  var months=[];
+  for(var m=cur,i=0;i<24&&months.length<max+1;i++,m=pantryMonthShift(m,-1)){
+    var start=m+'-01';
+    var running=m===cur;
+    if(!running&&pantryDays(addDays(start,slack),since)<0)break;
+    var mine=es.filter(function(e){return key(e)===m;});
+    var waste=sum(mine.filter(function(e){return e.k==='verderb'&&(+e.d||0)<0;}));
+    var used=sum(mine.filter(function(e){return USE.indexOf(e.k)>=0&&(+e.d||0)<0;}));
+    var all=waste.q+used.q;
+    months.push({m:m,running:running,partFrom:since>start?since:'',waste:waste,used:used,share:all>0?Math.round(waste.q/all*100):null});
+  }
+  var often=sum(es.filter(function(e){return e.k==='verderb'&&(+e.d||0)<0;})).top
+    .filter(function(x){return x.count>=2;}).sort(function(a,b){return b.count-a.count||b.q-a.q||a.n.localeCompare(b.n,'de');});
+  return {since:since,months:months,often:often};
+}
+// Vorschlag zu einem weggeworfenen Artikel (H2), nur aus den Daten, keine
+// Belehrung. `w` = {count: wie oft weggeworfen, q: Stück gesamt}, `o` =
+// {auto: Dauerartikel, autoBuys: Einbuchungen vom Zettel, usual: üblicher Kauf
+// in Stück (pantryUsualBuy), canFreeze: lässt sich einfrieren und liegt nicht im
+// Tiefkühler}. 'auto' Dauerartikel, nachgekauft und dann weggeworfen; ab dem
+// zweiten Mal: 'smaller' meist nur ein Teil des Kaufs, 'freeze' einfrierbar,
+// 'rarer' ganze Käufe; '' kein Vorschlag (einmal ist kein Muster).
+/** @param {any} w @param {any} o */
+function pantryWasteTip(w,o){
+  o=o||{};
+  if(!w||!(+w.count>0))return '';
+  if(o.auto&&+o.autoBuys>0)return 'auto';
+  if(+w.count<2)return '';
+  var per=(+w.q||0)/(+w.count);
+  if(per<Math.max(1,+o.usual||1)-1e-9)return 'smaller';
+  if(o.canFreeze)return 'freeze';
+  return 'rarer';
+}
+// Fehlt im Vorrat: leer oder unter der Mindestmenge (Kennzahl „Fehlt“).
+function pantryMissing(it){return !((+(it&&it.q)||0)>0)||pantryNeed(it&&it.q,it&&it.min)>0;}
+
+// ── Vorrat: Haltbarkeit schätzen, Geöffnet-Frist, älteste Charge zuerst ──
+// RICHTWERTE, von Hand gepflegt und bewusst vorsichtig (eher zu kurz als zu
+// lang) — keine amtliche Angabe und keine Quelle. Sie füllen nur ein Datum
+// vor, wenn auf der Packung keins eingetragen ist; die Oberfläche zeigt es als
+// „geschätzt“. Je Produktart: [art, Muster auf dem Namen, üblicher Ort,
+// Tage im Kühlschrank (k), im Tiefkühler (t), im Vorratsschrank (v), Tage
+// nach dem Öffnen (o)]. 0 = an dem Ort nicht vorgesehen → Kühlschrank-Wert,
+// ohne den der Schrank-Wert. Die Reihenfolge zählt: der erste Treffer gilt
+// („H-Milch“ vor „Milch“, „Frischkäse“ vor „Käse“, „TK-Erbsen“ vor Gemüse).
+// Gesucht wird im Namen ohne Umlaute, klein, Satzzeichen als Leerzeichen.
+var PANTRY_SHELF=[
+  ['tk',        /(^| )tk( |$)|tiefkuehl|tiefgekuehlt|gefroren|fischstaebchen|speiseeis|(^| )eis( |$)/, 't', 1,90,0,0],
+  ['hmilch',    /(^| )h ?(voll|mager|fettarme?)? ?milch|haltbare ?milch|(^| )uht( |$)/,            'v', 90,90,90,3],
+  ['drink',     /(hafer|soja|mandel|reis|kokos|dinkel)(milch|drink)/,                              'v', 90,0,90,4],
+  ['suess',     /schokolade|keks|chips|gummibaer|praline|bonbon|riegel|kuchen/,                    'v', 0,0,90,14],
+  ['konserve',  /(^| )dosen?( |$)|konserve|(^| )glas( |$)|eingelegt|thunfisch|(^| )mais( |$)|kichererbse|passiert|tomatenmark|apfelmus|sauerkraut|rotkohl glas/, 'v', 0,0,365,3],
+  ['aufstrich', /marmelade|konfituere|gelee|honig|nougat|nutella|erdnussbutter/,                   'v', 0,0,180,30],
+  ['sosse',     /ketchup|senf|mayo|remoulade|sauce|sosse|pesto|dressing|essiggurke/,               'v', 0,0,180,7],
+  ['saft',      /saft|smoothie|nektar/,                                                            'v', 7,0,90,4],
+  ['frischkaese',/frischkaese|quark|skyr|mascarpone|ricotta|huettenkaese|mozzarella|feta/,         'k', 7,60,0,3],
+  ['joghurt',   /joghurt|jogurt|kefir|buttermilch|dickmilch|pudding|dessert/,                      'k', 10,60,0,3],
+  ['sahne',     /sahne|schmand|creme fraiche/,                                                     'k', 7,60,0,3],
+  ['butter',    /butter|margarine/,                                                                'k', 30,90,0,14],
+  ['aufschnitt',/aufschnitt|salami|schinken|wurst|mortadella|lyoner|leberkaese|speck/,             'k', 5,30,0,2],
+  ['kaese',     /kaese|gouda|emmentaler|parmesan|camembert|brie|bergkaese/,                        'k', 14,60,0,7],
+  ['beeren',    /beere|kirsche/,                                                                   'k', 3,180,1,1],
+  ['trocken',   /nudel|pasta|spaghetti|penne|milchreis|reis( |$)|mehl|haferflocken|muesli|cornflakes|linsen|griess|zucker|knaeckebrot|zwieback|couscous|bulgur|quinoa|polenta|kaffee|(^| )tee( |$)|kakao|backpulver|trockenhefe/, 'v', 0,0,180,90],
+  ['milch',     /milch/,                                                                           'k', 5,30,0,3],
+  ['hack',      /hack|gehacktes|(^| )mett( |$)/,                                                   'k', 1,60,0,1],
+  ['gefluegel', /haehnchen|huhn|huehner|pute|gefluegel|(^| )ente( |$)|entenbrust/,                                      'k', 1,90,0,1],
+  ['fisch',     /fisch|lachs|forelle|kabeljau|seelachs|garnele|shrimp|scampi/,                     'k', 1,60,0,1],
+  ['fleisch',   /fleisch|steak|schnitzel|gulasch|braten|(^| )rind|schwein|kotelett|filet/,         'k', 2,90,0,2],
+  ['eier',      /(^| )ei( |$)|eier/,                                                           'k', 21,0,14,1],
+  ['toast',     /toast|sandwich/,                                                                  'v', 7,60,5,5],
+  ['brot',      /brot|broetchen|baguette|brezel|semmel|croissant|ciabatta/,                        'v', 4,60,3,3],
+  ['salat',     /salat|rucola|spinat|kraeuter|petersilie|schnittlauch|basilikum|sprossen/,        'k', 3,180,1,2],
+  ['lagergemuese',/kartoffel|zwiebel|knoblauch|apfel|aepfel|kuerbis|karotte|moehre|kohl|rote bete/, 'v', 21,180,14,3],
+  ['obstgemuese',/obst|gemuese|banane|birne|tomate|gurke|paprika|zucchini|pilz|champignon|orange|zitrone|mandarine|traube|pfirsich|avocado|brokkoli|blumenkohl|lauch|porree|aubergine|mango|kiwi|ananas|melone|radieschen|sellerie|bohne|erbse/, 'k', 5,180,4,2]
+];
+// Ohne Treffer im Namen: Rückfall über die Einkaufs-Kategorie (NTShop) auf
+// die vorsichtigste passende Art; Getränke, Haushalt usw. bleiben ohne Schätzung.
+var PANTRY_SHELF_CAT={obst:'obstgemuese',brot:'brot',milch:'milch',fleisch:'hack',tk:'tk',vorrat:'trocken',suess:'suess'};
+function _pantryShelfNorm(s){
+  return String(s||'').toLowerCase().replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss')
+    .replace(/[^a-z0-9]+/g,' ').trim();
+}
+function _pantryShelfRow(id){for(var i=0;i<PANTRY_SHELF.length;i++)if(PANTRY_SHELF[i][0]===id)return PANTRY_SHELF[i];return null;}
+// Produktart zu Name (und Kategorie als Rückfall): {id,h,k,t,v,o} oder null.
+/** @param {string} name @param {string} [cat] */
+function pantryShelfKind(name,cat){
+  var n=_pantryShelfNorm(name),row=null;
+  if(n)for(var i=0;i<PANTRY_SHELF.length;i++)if(/** @type {RegExp} */ (PANTRY_SHELF[i][1]).test(n)){row=PANTRY_SHELF[i];break;}
+  if(!row&&cat&&PANTRY_SHELF_CAT[cat])row=_pantryShelfRow(PANTRY_SHELF_CAT[cat]);
+  if(!row)return null;
+  return {id:String(row[0]),h:String(row[2]),k:+row[3],t:+row[4],v:+row[5],o:+row[6]};
+}
+// Art des Lagerorts: 'k' Kühlschrank, 't' Tiefkühler, 'v' Vorratsschrank,
+// '' unbekannt. Die drei Start-Orte über ihre feste ID, eigene über den Namen.
+/** @param {any} loc {id,label} oder null */
+function pantryPlace(loc){
+  if(!loc)return '';
+  var id=String(loc.id||'');
+  if(id==='kuehl')return 'k';
+  if(id==='tk')return 't';
+  if(id==='vorrat')return 'v';
+  var l=_pantryShelfNorm(loc.label);
+  if(/tiefk|gefrier|froster|(^| )tk( |$)|truhe/.test(l))return 't';
+  if(/kuehl/.test(l))return 'k';
+  if(/schrank|keller|vorrat|speis|regal|kammer|schublade|kueche/.test(l))return 'v';
+  return '';
+}
+// Richtwert für Artikel `name` am Ort `place`: {kind, days, open} oder null.
+// `open` = Tage nach dem Öffnen; im Tiefkühler gilt keine Geöffnet-Frist (0).
+/** @param {string} name @param {string} [cat] @param {string} [place] */
+function pantryShelf(name,cat,place){
+  var s=pantryShelfKind(name,cat);
+  if(!s)return null;
+  var p=place==='k'||place==='t'||place==='v'?place:s.h;
+  var days=s[p]>0?s[p]:(s.k>0?s.k:s.v);
+  return {kind:s.id,days:days,open:p==='t'?0:s.o};
+}
+// Tage für eine neue Packung ohne Datum: die eigene Haltedauer `hd` des
+// Artikels hat Vorrang, sonst der Richtwert, sonst 0 (kein Datum).
+/** @param {any} it {n,hd,c} @param {string} [place] */
+function pantryEstimateDays(it,place){
+  if(+(it&&it.hd)>0)return Math.round(+it.hd);
+  var s=pantryShelf(it&&it.n,it&&it.c,place);
+  return s?s.days:0;
+}
+// Maßgebliches Datum einer Charge: das früheste aus MHD, Verbrauchsdatum und
+// „geöffnet am“ + Geöffnet-Frist. Leer, wenn nichts davon bekannt ist.
+/** @param {any} lot {mhd,vd,op} @param {number} openDays */
+function pantryLotDue(lot,openDays){
+  var c=[lot&&lot.mhd,lot&&lot.vd];
+  if(lot&&lot.op&&openDays>0&&pantryDays(lot.op,lot.op)!==null)c.push(addDays(lot.op,openDays));
+  return c.reduce(function(best,d){return d&&(!best||d<best)?d:best;},'');
+}
+// Abbuch-Reihenfolge (D3): geöffnete Chargen zuerst, dann das früheste
+// maßgebliche Datum, Chargen ohne Datum zuletzt; bei Gleichstand die früher
+// eingebuchte, dann die gespeicherte Reihenfolge.
+/** @param {Array<any>} lots @param {number} openDays */
+function pantryLotOrder(lots,openDays){
+  return (lots||[]).map(function(lot,i){return {lot:lot,i:i,o:lot&&lot.op?0:1,d:pantryLotDue(lot,openDays)||'9999-12-31',t:String((lot&&lot.in)||'')};})
+    .sort(function(a,b){return a.o-b.o||a.d.localeCompare(b.d)||a.t.localeCompare(b.t)||a.i-b.i;})
+    .map(function(x){return x.lot;});
+}
+function _pantryR3(v){return Math.round(v*1000)/1000;}
+// `n` Stück abbuchen, älteste Charge zuerst (oder nur Charge `lotId`).
+// Rückgabe: {lots: Kopien in gespeicherter Reihenfolge mit Restmenge (auch 0),
+// removed: die abgezogenen Teilmengen je Charge in Abbuch-Reihenfolge}.
+/** @param {Array<any>} lots @param {number} n @param {string} [lotId] @param {number} [openDays] */
+function pantryDebit(lots,n,lotId,openDays){
+  var copy=(lots||[]).map(function(lot){return Object.assign({},lot);});
+  var removed=[];
+  n=_pantryR3(+n||0);
+  pantryLotOrder(copy,+openDays||0).forEach(function(lot){
+    if(n<=0||(lotId&&lot.id!==lotId))return;
+    var amount=_pantryR3(Math.min(n,+lot.q||0));
+    if(!(amount>0))return;
+    removed.push(Object.assign({},lot,{q:amount}));
+    lot.q=_pantryR3(lot.q-amount);n=_pantryR3(n-amount);
+  });
+  return {lots:copy,removed:removed};
+}
+// Haltbarkeit eines Artikels wie pantryExpiry, dazu die Geöffnet-Frist seiner
+// Chargen (k:'op', mit `op` = geöffnet am): das Früheste zählt.
+/** @param {any} it @param {Array<any>} lots @param {number} openDays @param {string} todayStr */
+function pantryDue(it,lots,openDays,todayStr){
+  /** @type {any} */
+  var best=pantryExpiry(it,todayStr);
+  if(!(openDays>0))return best;
+  (lots||[]).forEach(function(lot){
+    if(!lot||!lot.op||!((+lot.q||0)>0))return;
+    var d=addDays(lot.op,openDays),n=pantryDays(d,todayStr);
+    if(n!==null&&(!best||n<best.days))best={k:'op',d:d,days:n,lvl:n<0?'over':(n<=3?'soon':'ok'),op:lot.op};
+  });
+  return best;
+}
+// Lagerort gewechselt (D4): geschätzte Daten ab heute neu, mit `days` Tagen
+// für den neuen Ort. Ein eingetragenes (nicht geschätztes) Datum bleibt immer.
+// Rückgabe {lots: Kopien, n: Anzahl neu geschätzter Chargen}.
+/** @param {Array<any>} lots @param {number} days @param {string} todayStr */
+function pantryReestimate(lots,days,todayStr){
+  var n=0;
+  var out=(lots||[]).map(function(lot){
+    var c=Object.assign({},lot);
+    if(c.estimated&&days>0&&!c.vd){var d=addDays(todayStr,days);if(d!==c.mhd){c.mhd=d;n++;}}
+    return c;
+  });
+  return {lots:out,n:n};
+}
+// Vorratsliste sortieren: 'name' (A–Z), 'qty' (wenig zuerst), 'exp' (bald
+// ablaufend zuerst, ohne Datum zuletzt; `dueOf(it)` liefert das maßgebliche
+// Datum JJJJ-MM-TT oder ''). Gibt eine Kopie zurück.
+/** @param {Array<any>} items @param {string} mode @param {(it:any)=>string} [dueOf] */
+function pantrySort(items,mode,dueOf){
+  var byName=function(a,b){return String(a.n||'').localeCompare(String(b.n||''),'de');};
+  var a=(items||[]).slice();
+  if(mode==='qty')return a.sort(function(x,y){return (+x.q||0)-(+y.q||0)||byName(x,y);});
+  if(mode==='exp'){
+    var due=function(it){return (dueOf&&dueOf(it))||'9999-12-31';};
+    return a.sort(function(x,y){return due(x).localeCompare(due(y))||byName(x,y);});
+  }
+  return a.sort(byName);
+}
+
+// ── Vorrat: Verbrauch lernen, Prognose, Nachkauf ──
+// Als Verbrauch zählt nur, was gegessen oder gekocht wurde: Buchungen mit
+// k 'verbrauch' (−, Verbraucht, Scan, Mahlzeit) oder 'kochen' und d < 0.
+// Nicht: 'verderb' (weggeworfen), 'korrektur' (Zählfehler, Charge entfernt),
+// 'kauf' und alles, was rückgängig gemacht wurde (u). Gelesen wird nur der
+// geteilte Verlauf S.pantryLog — jede Buchung hat dort eine eigene ID, zwei
+// Geräte zählen also nichts doppelt. Das Fenster (8 Wochen) liegt innerhalb der
+// 90 Tage, die der Verlauf behält; eine eigene, verdichtete Statistik braucht
+// es deshalb nicht.
+var PANTRY_USE_KINDS=['verbrauch','kochen'];
+var PANTRY_USE_DAYS=56,PANTRY_USE_MIN_N=3,PANTRY_USE_MIN_DAYS=7;
+// Menge einer Buchung in Stück des HEUTIGEN Artikels: wurde die Packungsgröße
+// (Gramm je Stück) seitdem geändert, rechnet `e.g` (Gramm je Stück zur Zeit der
+// Buchung) über Gramm um. Ohne Gramm zählt das Stück, wie es gebucht wurde.
+/** @param {any} e @param {number} g */
+function _pantryPieces(e,g){
+  var a=Math.abs(+e.d||0),eg=+e.g||0;
+  return g>0&&eg>0?a*eg/g:a;
+}
+// Verbrauch eines Artikels pro Tag aus dem Verlauf. `opts.now` (ms) ist das
+// Ende, `opts.q` der heutige Bestand, `opts.g` Gramm je Stück, `opts.from` (ms)
+// der Beginn des lückenlosen Verlaufs (älter ist gekappt). Zeiten, in denen der
+// Bestand laut Verlauf leer war, zählen nicht (es gab nichts zu verbrauchen);
+// war der Artikel zu Fensterbeginn schon da, zählt das Fenster ab Beginn.
+// Ohne mindestens `minN` Entnahmen über `minDays` Tage: null (noch keine Aussage).
+/**
+ * @param {Array<any>} log
+ * @param {string} pid
+ * @param {{now:number,q?:number,g?:number,from?:number,days?:number,minN?:number,minDays?:number}} opts
+ * @returns {{perDay:number,perWeek:number,gPerWeek:number,n:number,days:number,total:number}|null}
+ */
+function pantryUseRate(log,pid,opts){
+  var now=+opts.now,g=+(opts.g||0);
+  var start=Math.max(now-(opts.days||PANTRY_USE_DAYS)*864e5,+(opts.from||0));
+  var es=(log||[]).filter(function(e){var t=+(e&&e.t)||0;return e&&e.pid===pid&&!e.u&&t>=start&&t<=now;})
+    .sort(function(a,b){return (+b.t||0)-(+a.t||0);});
+  var uses=es.filter(function(e){return PANTRY_USE_KINDS.indexOf(e.k)>=0&&(+e.d||0)<0;});
+  if(uses.length<(opts.minN||PANTRY_USE_MIN_N))return null;
+  // Bestand rückwärts aus dem heutigen Stand: zwischen zwei Buchungen gilt der
+  // Bestand nach der älteren. Leer (0) = Lücke. Fehlt eine Buchung (negativ),
+  // ist der Bestand unbekannt und zählt nicht als Lücke.
+  var stock=+(opts.q||0),gap=0,newer=now;
+  es.forEach(function(e){
+    if(Math.abs(stock)<1e-6)gap+=newer-(+e.t||0);
+    stock=_pantryR3(stock-(+e.d||0));
+    newer=+e.t||0;
+  });
+  var begin=stock>1e-6?start:newer;
+  var days=(now-begin-gap)/864e5;
+  if(days<(opts.minDays||PANTRY_USE_MIN_DAYS))return null;
+  var total=uses.reduce(function(s,e){return s+_pantryPieces(e,g);},0);
+  var perDay=total/days;
+  return {perDay:perDay,perWeek:perDay*7,gPerWeek:g>0?perDay*7*g:0,n:uses.length,days:Math.round(days),total:_pantryR3(total)};
+}
+// Reicht noch ca. … ganze Tage (0 = geht heute aus), null ohne Verbrauchsrate.
+/** @param {number} q @param {any} rate */
+function pantryRunout(q,rate){
+  if(!rate||!(rate.perDay>0))return null;
+  return Math.max(0,Math.floor((+q||0)/rate.perDay+1e-9));
+}
+// Üblicher Kauf: Median der letzten fünf Einbuchungen (nicht rückgängig), in
+// Stück des heutigen Artikels, ganzzahlig, mindestens 1. Ohne Einbuchung 1.
+/** @param {Array<any>} log @param {string} pid @param {number} [g] */
+function pantryUsualBuy(log,pid,g){
+  var a=(log||[]).filter(function(e){return e&&e.pid===pid&&e.k==='kauf'&&!e.u&&(+e.d||0)>0;})
+    .sort(function(x,y){return (+y.t||0)-(+x.t||0);}).slice(0,5)
+    .map(function(e){return _pantryPieces(e,+(g||0));}).sort(function(x,y){return x-y;});
+  if(!a.length)return 1;
+  var m=a.length%2?a[(a.length-1)/2]:(a[a.length/2-1]+a[a.length/2])/2;
+  return Math.max(1,Math.round(m));
+}
+// Mindestmenge vorschlagen: Bedarf für `days` Tage (Standard eine Woche),
+// aufgerundet, mindestens 1. 0 = kein Vorschlag (keine Rate).
+/** @param {any} rate @param {number} [days] */
+function pantryMinSuggest(rate,days){
+  if(!rate||!(rate.perDay>0))return 0;
+  return Math.max(1,Math.ceil(rate.perDay*(days||7)-1e-9));
+}
+// Muss ein Dauerartikel auf den Zettel? {k:'min',need} unter der Mindestmenge,
+// {k:'soon',days} wenn er laut Prognose in höchstens `lead` Tagen ausgeht,
+// sonst null. `runout` aus pantryRunout (null = keine Prognose).
+/** @param {number} q @param {number} min @param {number|null} runout @param {number} lead */
+function pantryRestockWhy(q,min,runout,lead){
+  var need=pantryNeed(q,min);
+  if(need>0)return {k:'min',need:need,days:runout};
+  if(runout!==null&&runout!==undefined&&runout<=lead)return {k:'soon',need:0,days:runout};
+  return null;
+}
+// Zustand des automatischen Nachkaufs eines Artikels. `rs` = {s: ID auf dem
+// Zettel, t: gesetzt am (ms)} oder leer, `no` = „diesmal nicht“ seit (ms) oder 0,
+// `shop` = der Zettel-Eintrag {open, done, gone (Grabstein)} oder null (nicht
+// da — etwa weil der Sync des Zettels noch aussteht), `boughtAt` = letzte
+// Einbuchung (ms). Rückgabe {k, rs, no}: k 'listed' (steht drauf), 'wait'
+// (noch nicht da, nicht erneut setzen), 'blocked' (vom Zettel genommen oder
+// „diesmal nicht“: bis zur nächsten Einbuchung oder `blockDays`), 'free' (darf
+// gesetzt werden); rs/no sind die neuen Werte (rs false = Markierung weg).
+/** @param {any} rs @param {number} no @param {any} shop @param {number} boughtAt @param {number} now @param {number} blockDays @param {number} [waitDays] */
+function pantryAutoState(rs,no,shop,boughtAt,now,blockDays,waitDays){
+  no=+no||0;boughtAt=+boughtAt||0;
+  var block=(blockDays||14)*864e5;
+  if(rs&&rs.s){
+    if(shop&&shop.open)return {k:'listed',rs:true,no:0};
+    if(boughtAt>(+rs.t||0)||(shop&&shop.done))return {k:'free',rs:false,no:0};
+    if(shop&&shop.gone)return {k:'blocked',rs:false,no:now};
+    if(now-(+rs.t||0)<(waitDays||1)*864e5)return {k:'wait',rs:true,no:0};
+    return {k:'free',rs:false,no:0};
+  }
+  if(no&&boughtAt<=no&&now-no<block)return {k:'blocked',rs:false,no:no};
+  return {k:'free',rs:false,no:0};
+}
+
+// ── Vorrat ↔ Tagebuch (Paket 3, E1–E4) ──
+// Ein Tagebucheintrag bucht NIE selbst ab: Diese Funktionen rechnen nur den
+// Vorschlag „Aus dem Vorrat abziehen?“, den der Nutzer bestätigt (man kann
+// bestellt oder auswärts gegessen haben).
+var PANTRY_ASK_NO=3;      // so oft in Folge abgelehnt und nie bestätigt → nicht mehr fragen
+var PANTRY_ASK_DAYS=3;    // offene Vorschläge (Alexa, Wiederkehrende, Import) verfallen danach
+var PANTRY_ASK_COOKED=1;  // Rezept heute/gestern „Fertig gekocht“ → schon abgezogen
+// Die Zeilen eines Eintrags als {name, grams}: Rezept je Zutat (Gramm × Portionen),
+// sonst der Eintrag selbst. Ketten-Portionen (pu) haben keine Gramm → 0.
+/** @param {any} entry */
+function pantryEntryLines(entry){
+  if(!entry)return [];
+  var ings=Array.isArray(entry.ingredients)&&entry.ingredients.length?entry.ingredients:null;
+  var p=ings?(+entry.portions||1):1;
+  return (ings||[entry]).map(function(g){
+    return {name:String(bookIngShort(g)||(g&&g.name)||''),grams:g&&!g.pu&&!entry.pu&&+g.amount>0?+g.amount*p:0};
+  }).filter(function(l){return !!pantryKey(l.name);});
+}
+// Für diesen Namen nicht mehr fragen: PANTRY_ASK_NO-mal in Folge abgelehnt
+// und nie bestätigt. Wer einmal bestätigt hat, wird weiter gefragt.
+/** @param {any} m */
+function pantryAskMuted(m){return !!m&&!(+m.ok>0)&&(+m.no||0)>=PANTRY_ASK_NO;}
+// Gemerkte Antwort zu einem Tagebuch-Namen: {p: Artikel-ID, ok, no}.
+// Bestätigt merkt den Artikel und setzt die Ablehnungen zurück.
+/** @param {any} m @param {boolean} ok @param {string} [itemId] */
+function pantryAskLearn(m,ok,itemId){
+  m=m||{};
+  var p=ok&&itemId?itemId:(m.p||'');
+  /** @type {any} */
+  var r=ok?{ok:(+m.ok||0)+1,no:0}:{ok:+m.ok||0,no:(+m.no||0)+1};
+  if(p)r.p=p;
+  return r;
+}
+// Vorrats-Artikel (mit Bestand) zu einem Tagebuch-Namen. src: 'mem' gemerkt,
+// 'name' gleicher Name bzw. eindeutig als ganzes Wort (in beide Richtungen),
+// 'choice' mehrdeutig (zur Auswahl, nichts vorgewählt), 'muted'; sonst null.
+/** @param {Array<any>} items @param {string} name @param {any} [mem] */
+function pantryMatch(items,name,mem){
+  var k=pantryKey(name);
+  if(!k)return null;
+  var have=(items||[]).filter(function(it){return (+(it&&it.q)||0)>0;});
+  var m=mem&&mem[k];
+  if(m&&m.p){
+    var hit=have.filter(function(it){return it.id===m.p;})[0];
+    if(hit)return {it:hit,cands:[hit],src:'mem'};
+  }
+  if(pantryAskMuted(m))return {it:null,cands:[],src:'muted'};
+  var exact=have.filter(function(it){return pantryKey(it.n)===k;});
+  var hay=' '+k+' ';
+  var cands=exact.length?exact:have.filter(function(it){
+    var ik=pantryKey(it.n);
+    return !!ik&&(hay.indexOf(' '+ik+' ')>=0||(' '+ik+' ').indexOf(hay)>=0);
+  });
+  if(!cands.length)return null;
+  return cands.length===1?{it:cands[0],cands:cands,src:'name'}:{it:null,cands:cands,src:'choice'};
+}
+// Vorschlag für einen Eintrag: eine Zeile je Vorrats-Artikel (gleiche Artikel
+// zusammengefasst), mehrdeutige Namen als eigene Auswahl-Zeile.
+// {keys, names, it, cands, src, grams, known}: known = Gramm aller Zeilen bekannt.
+/** @param {any} entry @param {Array<any>} items @param {any} [mem] */
+function pantryMealRows(entry,items,mem){
+  /** @type {Array<any>} */
+  var rows=[];
+  /** @type {Object<string,any>} */
+  var byId={};
+  pantryEntryLines(entry).forEach(function(l){
+    var m=pantryMatch(items,l.name,mem);
+    if(!m||m.src==='muted')return;
+    var k=pantryKey(l.name);
+    var r=m.it?byId[m.it.id]:null;
+    if(r){
+      if(r.keys.indexOf(k)<0)r.keys.push(k);
+      r.names.push(l.name);r.grams+=l.grams;r.known=r.known&&l.grams>0;
+      if(m.src==='name'&&r.src==='mem')r.src='name';
+      return;
+    }
+    r={keys:[k],names:[l.name],it:m.it,cands:m.cands,src:m.src,grams:l.grams,known:l.grams>0};
+    if(m.it)byId[m.it.id]=r;
+    rows.push(r);
+  });
+  return rows;
+}
+// Vorgeschlagene Menge für den Artikel: in Gramm, wenn er Gramm je Stück
+// kennt (höchstens der Bestand), sonst in Stück; q null = unbekannt (leer lassen).
+/** @param {any} it @param {number} grams @param {boolean} known */
+function pantryAskQty(it,grams,known){
+  var g=+(it&&it.g)||0,q=+(it&&it.q)||0;
+  if(g>0)return {unit:'g',q:known&&grams>0?Math.round(Math.min(grams,q*g)):null};
+  return {unit:'Stück',q:null};
+}
+// Eingabe → Stück (nie mehr als der Bestand).
+/** @param {any} it @param {number} v @param {string} unit */
+function pantryAskPieces(it,v,unit){
+  var g=+(it&&it.g)||0,q=+(it&&it.q)||0;
+  v=+v||0;
+  if(!(v>0))return 0;
+  return _pantryR3(Math.min(q,unit==='g'?(g>0?v/g:0):v));
+}
+// Rezept heute oder gestern „Fertig gekocht“: Die Zutaten sind schon über den
+// Kochmodus abgezogen — kein zweiter Vorschlag.
+/** @param {any} entry @param {any} cookLog @param {string} todayStr */
+function pantryAskSkip(entry,cookLog,todayStr){
+  var id=entry&&entry.recipeId,l=id&&cookLog?cookLog[id]:null;
+  if(!l||!l.last)return false;
+  var n=pantryDays(l.last,todayStr);
+  return n!==null&&n<=0&&n>=-PANTRY_ASK_COOKED;
+}
+// Offene Vorschläge, die noch gelten: Tag nicht in der Zukunft und höchstens
+// `days` Tage alt.
+/** @param {Array<any>} list @param {string} todayStr @param {number} [days] */
+function pantryAskOpen(list,todayStr,days){
+  var lim=days||PANTRY_ASK_DAYS;
+  return (list||[]).filter(function(a){
+    var n=a&&a.v?pantryDays(a.d,todayStr):null;
+    return n!==null&&n<=0&&n>=-lim;
+  });
+}
+// Netto vom Eintrag `vid` abgezogene Stück je Artikel-ID: Abzüge minus
+// Rückbuchungen, Rückgängiges zählt nicht.
+/** @param {Array<any>} log @param {string} vid */
+function pantryBooked(log,vid){
+  /** @type {Object<string,number>} */
+  var out={};
+  if(!vid)return out;
+  (log||[]).forEach(function(e){
+    if(!e||e.ev!==vid||e.u)return;
+    out[e.pid]=_pantryR3((out[e.pid]||0)-(+e.d||0));
+  });
+  Object.keys(out).forEach(function(k){if(!(out[k]>0))delete out[k];});
+  return out;
+}
+// Menge des Eintrags geändert (alt → neu, 0 = gelöscht): Stück, die in den
+// Vorrat zurückgehen (> 0) bzw. zusätzlich abgehen (< 0).
+/** @param {number} net @param {number} oldAmt @param {number} newAmt */
+function pantryRebook(net,oldAmt,newAmt){
+  net=+net||0;oldAmt=+oldAmt||0;newAmt=+newAmt||0;
+  if(!(net>0))return 0;
+  if(!(newAmt>0))return net;
+  if(!(oldAmt>0)||newAmt===oldAmt)return 0;
+  return _pantryR3(net-net*newAmt/oldAmt);
+}
+// `n` Stück aus abgebuchten Chargen zurück (in der gebuchten Reihenfolge);
+// rest = was ohne Charge zurückgeht (ältere Buchungen ohne Chargen).
+/** @param {Array<any>} lots @param {number} n */
+function pantryLotsPart(lots,n){
+  var left=_pantryR3(+n||0),out=[];
+  (lots||[]).forEach(function(l){
+    if(!(left>0)||!l||!(+l.q>0))return;
+    var q=Math.min(+l.q,left);
+    out.push(Object.assign({},l,{q:_pantryR3(q)}));
+    left=_pantryR3(left-q);
+  });
+  return {lots:out,rest:Math.max(0,left)};
+}
+
+// ── Wochenplan ↔ Vorrat (Paket 3, F1/F2) ──
+// „Füllen“ bevorzugt Rezepte, die Vorrätiges und vor allem bald Ablaufendes
+// verbrauchen — als begrenzter Bonus, der nur greift, wenn die Kalorien schon
+// passen (Abweichung ≤ PLAN_PANTRY_FIT), damit das Tagesziel nicht leidet.
+var PLAN_PANTRY_MAX=0.12,PLAN_PANTRY_FIT=0.1,PLAN_PANTRY_EXP=0.06,PLAN_PANTRY_HAVE=0.02;
+// {bonus, use:[{n, exp}]}: verwendete Vorrats-Artikel (Ablaufendes zuerst).
+// `expOf(it)` → {k, days}|null; `within` = „läuft ab“-Grenze in Tagen.
+// Grundzutaten (Salz, Öl …) und Abgelaufenes mit Verbrauchsdatum zählen nicht.
+/** @param {Array<string>} ingNames @param {Array<any>} items @param {(it:any)=>any} [expOf] @param {number} [within] */
+function planPantryScore(ingNames,items,expOf,within){
+  var have=(items||[]).filter(function(it){return (+(it&&it.q)||0)>0;});
+  var lim=within===undefined?3:within;
+  /** @type {Object<string,number>} */
+  var seen={};
+  /** @type {Array<{n:string,exp:boolean}>} */
+  var use=[];
+  (ingNames||[]).forEach(function(n){
+    var k=pantryKey(n);
+    if(!k||PANTRY_BASICS.indexOf(k)>=0)return;
+    var it=pantryFind(have,n);
+    if(!it)return;
+    var id=String(it.id||it.n);
+    if(seen[id])return;
+    seen[id]=1;
+    var e=expOf?expOf(it):null;
+    use.push({n:String(it.n),exp:!!e&&e.days<=lim&&!(e.k==='vd'&&e.days<0)});
+  });
+  use.sort(function(a,b){return (b.exp?1:0)-(a.exp?1:0);});
+  var x=use.filter(function(u){return u.exp;}).length;
+  var bonus=Math.min(PLAN_PANTRY_MAX,x*PLAN_PANTRY_EXP+(use.length-x)*PLAN_PANTRY_HAVE);
+  return {bonus:Math.round(bonus*1000)/1000,use:use};
+}
+// Bewertung eines Kandidaten (kleiner = besser): Abweichung vom Slot-Ziel als
+// Anteil plus Aufschläge, minus Vorrats-Bonus nur bei passenden Kalorien.
+/** @param {number} fit @param {number} penalty @param {number} bonus */
+function planCandScore(fit,penalty,bonus){
+  return fit+(penalty||0)-(fit<=PLAN_PANTRY_FIT?(bonus||0):0);
+}
+// Merkmal am Planeintrag: warum das Rezept gewählt wurde.
+/** @param {Array<{n:string,exp:boolean}>} use */
+function planPantryWhy(use){
+  if(!use||!use.length)return '';
+  var exp=use.filter(function(u){return u.exp;}).map(function(u){return u.n;});
+  if(exp.length)return 'verbraucht '+exp.slice(0,2).join(', ')+' (läuft ab)';
+  return 'nutzt Vorrat: '+use.slice(0,2).map(function(u){return u.n;}).join(', ');
+}
+// Einkaufszettel aus dem Plan: nur heute und später — Vergangenes ist gegessen
+// oder verworfen und braucht nichts mehr.
+/** @param {Array<string>} dates @param {string} todayStr */
+function planShopDates(dates,todayStr){
+  return (dates||[]).filter(function(d){return String(d)>=String(todayStr);});
+}
+
+// ── Rezept → Einkaufszettel: Vorschau (Paket 5) ──
+// Zeilen der Vorschau „Zutaten auf den Einkaufszettel“: Zutaten je Portion
+// (`amount` in g) × Portionen, gleiche Namen zusammengefasst, dann gegen den
+// Vorrat mit derselben Rechnung wie der Zettel (pantryShortfall).
+// `st`: 'buy' fehlt · 'part' Vorrat deckt einen Teil, `amount` = Rest ·
+// 'have' deckt der Vorrat (abgewählt) · 'unk' auch im Vorrat, aber ohne
+// verrechenbare Menge (gewählt — lieber zu viel als zu wenig, wie der Zettel) ·
+// 'basic' Grundzutat wie Salz, Öl, Wasser (PANTRY_BASICS, abgewählt) ·
+// 'noqty' ohne Mengenangabe (gewählt, kommt ohne Menge auf den Zettel).
+// `full` = Menge für die gewählten Portionen, `on` = Vorauswahl.
+/** @param {Array<any>} ings @param {number} portions @param {Array<any>} items */
+function shopRecipeRows(ings,portions,items){
+  var p=+portions>0?+portions:1;
+  var have=(items||[]).filter(function(it){return (+(it&&it.q)||0)>0;});
+  /** @type {Object<string,any>} */
+  var agg={};
+  /** @type {Array<{name:string,emoji:string,full:number,amount:number,st:string,on:boolean}>} */
+  var rows=[];
+  (ings||[]).forEach(function(g){
+    var nm=String((g&&(g.name||g.n))||'').trim(),k=nm.toLowerCase();
+    if(!k)return;
+    if(!agg[k]){agg[k]={name:nm,emoji:String((g&&(g.emoji||g.ic))||''),full:0,amount:0,st:'buy',on:true};rows.push(agg[k]);}
+    var a=(+(g&&g.amount)||0)*p;
+    if(a>0)agg[k].full+=a;
+  });
+  /** @type {Array<{name:string,amount:number,_i:number}>} */
+  var calc=[];
+  rows.forEach(function(r,i){
+    r.full=Math.round(r.full);r.amount=r.full;
+    if(PANTRY_BASICS.indexOf(pantryKey(r.name))>=0){r.st='basic';r.on=false;return;}
+    if(!(r.full>0)){var f=pantryFind(have,r.name);r.st=f?'have':'noqty';r.on=!f;return;}
+    calc.push({name:r.name,amount:r.full,_i:i});
+  });
+  /** @type {Object<number,any>} */
+  var left={};
+  pantryShortfall(calc,items).ings.forEach(function(c){left[c._i]=c;});
+  calc.forEach(function(c){
+    var r=rows[c._i],o=left[c._i];
+    if(!o){r.st='have';r.on=false;return;}
+    if(o.amount<c.amount){r.st='part';r.amount=o.amount;return;}
+    if(pantryFind(have,r.name))r.st='unk';
+  });
+  return rows;
+}
+// Gewählte Zeilen → Zutaten für NTShop.addIngredients (ohne zweiten
+// Vorratsabzug). Wer „im Vorrat“ oder eine Grundzutat bewusst anhakt, will die
+// volle Menge kaufen; ohne Menge bleibt `amount` 0 (Artikel ohne Mengenangabe).
+/** @param {Array<any>} rows */
+function shopRowsPick(rows){
+  return (rows||[]).filter(function(r){return r&&r.on;}).map(function(r){
+    return {name:r.name,emoji:r.emoji||'',amount:(r.st==='have'||r.st==='basic')?(r.full||0):(r.amount||0)};
+  });
+}
+// Kopfzeile der Vorschau: gewählt (n), ganz im Vorrat (have), teilweise (part).
+/** @param {Array<any>} rows */
+function shopRowsCount(rows){
+  var n=0,have=0,part=0;
+  (rows||[]).forEach(function(r){
+    if(!r)return;
+    if(r.on)n++;
+    if(r.st==='have')have++;
+    if(r.st==='part'&&r.on)part++;
+  });
+  return {n:n,have:have,part:part};
 }
 
 // ── Baby: Ende einer Mahlzeit ──

@@ -34,6 +34,10 @@ module.exports=async function domains(page,output,width){
   await page.locator('#planPickList [onclick^="NTPlan.addToSlot"]').click();
   assert.ok(await page.evaluate(id=>S.mealPlan[S.currentDate].lunch.some(e=>e.r===id),recipe.id));
   await page.locator('#planOv [data-act="NTPlan.weekToShop"]').click();
+  // F2: erst die Zusammenfassung (X auf den Zettel, Y im Vorrat), dann übernehmen.
+  await page.locator('#planShopOv.open').waitFor();
+  assert.match(await page.locator('#planShopSum').textContent(),/^\d+ Zutat(en)? auf den Zettel, \d+ (ist|sind) im Vorrat\./);
+  await page.locator('#planShopGo').click();
   assert.match(await page.evaluate(()=>S.shopList.find(e=>e.n==='Demo Lebensmittel').q),/100\s*g/);
   page.removeAllListeners('dialog');page.on('dialog',d=>d.message().includes('schon im Tagebuch')?d.dismiss():d.accept());
   await page.evaluate(()=>NTPlan.toDiary(S.currentDate));const count=await page.evaluate(()=>getDay().meals.lunch.length);
@@ -54,9 +58,15 @@ module.exports=async function domains(page,output,width){
   assert.equal(await page.evaluate(id=>S.pantry.find(p=>p.id===id).q,item.id),1);
   await page.evaluate(id=>{const e=S.pantryLog.find(e=>e.pid===id&&e.k==='verbrauch');NTPantry.undo(e.id);closeOv('pantryItemOv');},item.id);
   assert.equal(await page.evaluate(id=>S.pantry.find(p=>p.id===id).q,item.id),2,'Undo restores the quantity');
+  // Selten Gebrauchtes liegt hinter ⋯ Mehr: Verlauf per Klick erreichbar, Kopf mit vier Werkzeugen.
+  await page.locator('#pantryOv.open [data-act="NTPantry.openMore"]').click();
+  await page.locator('#pantryMoreOv.open').getByRole('button',{name:'Verlauf'}).click();
+  await page.locator('#pantryLogOv.open').waitFor();
+  assert.equal(await page.locator('#pantryOv .pantry-tools .nt-tool').count(),4);
+  await page.evaluate(()=>closeOv('pantryLogOv'));
   await page.evaluate(id=>{S.pantry.find(p=>p.id===id).mhd=NTBaby.today();NTUI.go('household');},item.id);
   await page.locator('.b3-expiry').getByRole('button',{name:'Artikel anzeigen'}).click();
-  assert.match(await page.locator('#pantryOv.open .stab.act').textContent(),/Läuft ab/);
+  assert.match(await page.locator('#pantryOv.open #pantryStats [aria-pressed="true"]').textContent(),/Läuft ab/);
   assert.ok(await page.locator('#pantryOv.open').getByText('B3 Mindestvorrat',{exact:true}).isVisible());
   await page.evaluate(()=>{NTPantry.setFilter('');NTUI.go('household');});
   await page.getByRole('button',{name:'Rezepte aus dem Vorrat finden'}).click();
@@ -94,12 +104,23 @@ module.exports=async function domains(page,output,width){
       document.getElementById('ownKcal').value='65';document.getElementById('ownOnce').checked=true;NTPicker.pickerSaveOwn();
     });
     await page.locator('#pantryMealOv.open').waitFor();
-    assert.equal(await page.locator('#pantryMealRows input').inputValue(),'0,1');
-    await page.getByRole('button',{name:accept?'Vom Vorrat abziehen':'Nur im Tagebuch lassen',exact:true}).click();
+    // E1: eine Zeile je Artikel, Menge in Gramm (Artikel kennt Gramm je Stück), vorgewählt.
+    assert.equal(await page.locator('#pantryMealRows .pantry-meal-q input').inputValue(),'100');
+    assert.ok(await page.locator('#pantryMealRows .pantry-meal-on input').isChecked());
+    await page.getByRole('button',{name:accept?'Abziehen':'Nicht aus dem Vorrat',exact:true}).click();
     const state=await page.evaluate(id=>S.pantry.find(p=>p.id===id),milk.id);
     assert.equal(state.q,accept?3.9:4);
     assert.equal(state.lots.find(lot=>lot.mhd===undoCheck.first).q,accept?0.9:1,'earliest lot is used first');
   }
+  // E4: Eintrag gelöscht → Rücknahme anbieten, über Rückgängig sichtbar im Verlauf.
+  const booked=await page.evaluate(id=>{const e=S.pantryLog.find(l=>l.pid===id&&l.ev&&!l.u);return {ev:e.ev,idx:getDay().meals.breakfast.findIndex(x=>x._vid===e.ev)};},milk.id);
+  assert.ok(booked.idx>=0,'the booking knows its diary entry');
+  await page.evaluate(idx=>{openEditEntry('breakfast',idx);deleteEntry();},booked.idx);
+  await page.locator('#pantryMealOv.open').waitFor();
+  assert.match(await page.locator('#pantryMealTitle').textContent(),/zurücknehmen/);
+  await page.getByRole('button',{name:'Zurückbuchen',exact:true}).click();
+  assert.equal(await page.evaluate(id=>S.pantry.find(p=>p.id===id).q,milk.id),4,'deleting the entry gives the stock back after confirmation');
+  assert.ok(await page.evaluate(ev=>S.pantryLog.some(l=>l.ev===ev&&l.u),booked.ev),'the reversal is visible in the history');
   const repeat=await page.evaluate(()=>{
     const first=NTShop.add('B3 Haferflocken','500 g','','');NTShop.toggle(first.id);
     const second=NTShop.add('B3 Haferflocken','200 g','','');NTShop.toggle(second.id);

@@ -55,6 +55,21 @@ module.exports=async function sync(browser,base){
     assert.equal(await B.page.evaluate(id=>S.pantry.find(x=>x.id===id).q,stock.id),2);
     await B.page.evaluate(id=>{NTPantry.openItem(id);document.getElementById('pantryItemQ').value='3';NTPantry.saveItem();},stock.id);await B.page.evaluate(()=>NTPantry.Sync.run(true));await A.page.evaluate(()=>NTPantry.Sync.run(true));
     assert.equal(await A.page.evaluate(id=>S.pantry.find(x=>x.id===id).q,stock.id),3);
+    // Dauerartikel: beide Geräte setzen ihn im täglichen Lauf, bevor der Zettel abgeglichen ist → EIN Eintrag (feste ID)
+    const auto=await A.page.evaluate(()=>{const it=NTPantry.add('B3 Dauerkaffee',1,500,'','',0);it.auto=1;it.min=3;it.rev=Date.now();saveS();return it;});
+    await A.page.evaluate(()=>NTPantry.Sync.run(true));await B.page.evaluate(()=>NTPantry.Sync.run(true));
+    for(const d of [A,B])await d.page.evaluate(()=>{delete S.pantryRestockDay;NTPantry.daily();});
+    assert.deepEqual(await Promise.all([A,B].map(d=>d.page.evaluate(()=>S.shopList.filter(x=>x.n==='B3 Dauerkaffee').length))),[1,1],'both devices set it independently');
+    for(let i=0;i<2;i++)for(const d of [A,B])await d.page.evaluate(()=>Promise.all([NTShop.Sync.run(true),NTPantry.Sync.run(true)]));
+    const autoCount=()=>Promise.all([A,B].map(d=>d.page.evaluate(()=>S.shopList.filter(x=>x.n==='B3 Dauerkaffee'&&!x.d).map(x=>x.id+'|'+x.pv))));
+    const both=await autoCount();
+    assert.equal(both[0].length,1,'auto restock on two devices: one entry on A '+both[0]);assert.deepEqual(both[1],both[0],'same single entry on B');
+    // Auf B vom Zettel genommen → A setzt ihn nicht wieder (Grabstein = gesperrt bis zum nächsten Einbuchen)
+    await B.page.evaluate(()=>{const e=S.shopList.find(x=>x.n==='B3 Dauerkaffee'&&!x.d);NTShop.remove(e.id);});
+    for(let i=0;i<2;i++)for(const d of [B,A])await d.page.evaluate(()=>Promise.all([NTShop.Sync.run(true),NTPantry.Sync.run(true)]));
+    await A.page.evaluate(()=>{delete S.pantryRestockDay;NTPantry.daily();});await A.page.evaluate(()=>Promise.all([NTShop.Sync.run(true),NTPantry.Sync.run(true)]));await B.page.evaluate(()=>NTShop.Sync.run(true));
+    assert.deepEqual(await autoCount(),[[],[]],'removed auto entry stays off the shared list');
+    assert.ok(await A.page.evaluate(id=>S.pantry.find(x=>x.id===id).rsNo>0,auto.id),'block travels with the pantry item');
     await A.page.evaluate(()=>{NTPlan.pick(S.currentDate,'lunch');document.getElementById('planPickQ').value='B3 Syncnotiz';NTPlan.addNote();});await A.page.evaluate(()=>NTPlan.Sync.run(true));await B.page.evaluate(()=>NTPlan.Sync.run(true));
     assert.ok(await B.page.evaluate(()=>S.mealPlan[S.currentDate].lunch.some(x=>x.x==='B3 Syncnotiz')));
     offlineA=true;await A.ctx.setOffline(true);const pending=await A.page.evaluate(()=>NTShop.add('B3 Offlineartikel','1'));await A.page.evaluate(()=>NTShop.Sync.run(true));await B.page.evaluate(()=>NTShop.Sync.run(true));
@@ -62,6 +77,6 @@ module.exports=async function sync(browser,base){
     offlineA=false;await A.ctx.setOffline(false);await A.page.evaluate(()=>NTShop.Sync.run(true));await B.page.evaluate(()=>NTShop.Sync.run(true));
     assert.ok(await B.page.evaluate(id=>S.shopList.some(x=>x.id===id),pending.id),'offline entry uploads after reconnect');
     assert.deepEqual(await A.page.evaluate(()=>({nav:S.ui.navSlots,actions:S.ui.homeActions})),uiA);assert.deepEqual(await B.page.evaluate(()=>({nav:S.ui.navSlots,actions:S.ui.homeActions})),uiB,'UI preferences never enter shared domain records');
-    console.log('B3 sync: independent stores + real AES-GCM, remote timer stop, stale revision/tombstone, shopping, pantry, plan, offline reconnect and local UI preferences OK');
+    console.log('B3 sync: independent stores + real AES-GCM, remote timer stop, stale revision/tombstone, shopping, pantry, pantry auto-restock without duplicates, plan, offline reconnect and local UI preferences OK');
   }finally{for(const ctx of contexts)await ctx.close();}
 };

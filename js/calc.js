@@ -1268,12 +1268,27 @@ function parsePantryReceipt(text,locIds){
 }
 // Üblicher Lagerort für einen Artikel (Vorbelegung, G1): der erste Ort, dessen
 // Art (pantryPlace) zum üblichen Ort der Produktart passt; sonst ''.
-/** @param {string} name @param {string} cat @param {Array<any>} locs */
-function pantryHomeLoc(name,cat,locs){
-  var s=pantryShelfKind(name,cat);
-  if(!s)return '';
+// Reihenfolge: Produktart aus dem Namen → `hint` (Art laut Open Food Facts,
+// pantryOffPlace) → Rückfall über die Einkaufs-Kategorie.
+/** @param {string} name @param {string} cat @param {Array<any>} locs @param {string} [hint] 'k'|'t'|'v' */
+function pantryHomeLoc(name,cat,locs,hint){
+  var s=pantryShelfKind(name,''),c=s?null:pantryShelfKind('',cat);
+  var h=s?s.h:(hint==='k'||hint==='t'||hint==='v'?hint:(c?c.h:''));
+  if(!h)return '';
   var a=(locs||[]).slice().sort(function(x,y){return (+(x&&x.pos)||0)-(+(y&&y.pos)||0);});
-  for(var i=0;i<a.length;i++)if(a[i]&&pantryPlace(a[i])===s.h)return String(a[i].id);
+  for(var i=0;i<a.length;i++)if(a[i]&&pantryPlace(a[i])===h)return String(a[i].id);
+  return '';
+}
+// Üblicher Ort laut Open-Food-Facts-Kategorien (`categories_tags`, z. B.
+// 'en:frozen-foods'): 't' Tiefkühler, 'k' Kühlschrank, 'v' Vorratsschrank,
+// '' ohne Aussage. Tiefkühl schlägt Kühl schlägt Vorrat.
+/** @param {Array<string>} tags */
+function pantryOffPlace(tags){
+  var t=(Array.isArray(tags)?tags:[]).map(function(x){return String(x||'').toLowerCase().replace(/^[a-z]{2}:/,'');});
+  function any(re){return t.some(function(x){return re.test(x);});}
+  if(any(/frozen|surgel|tiefkuehl|tiefgekuehlt|ice-creams/))return 't';
+  if(any(/^(dairies|cheeses|yogurts|fermented-milk-products|creams|cooking-creams|plant-based-creams|butters|meats|prepared-meats|hams|sausages|fishes|seafood|smoked-fishes|eggs|tofu|fresh-|chilled|refrigerated|desserts|dairy-desserts|salads|fresh-pasta)/))return 'k';
+  if(any(/^(canned|cereals|pastas|rices|beverages|snacks|sweet-snacks|salty-snacks|condiments|sauces|spreads|breakfast-cereals|flours|sugars|coffees|teas|baby-foods)/))return 'v';
   return '';
 }
 // Serienscan (G2): Zählt dieser Treffer? Derselbe Code direkt hintereinander
@@ -1385,16 +1400,19 @@ function pantryMissing(it){return !((+(it&&it.q)||0)>0)||pantryNeed(it&&it.q,it&
 // Gesucht wird im Namen ohne Umlaute, klein, Satzzeichen als Leerzeichen.
 var PANTRY_SHELF=[
   ['tk',        /(^| )tk( |$)|tiefkuehl|tiefgekuehlt|gefroren|fischstaebchen|speiseeis|(^| )eis( |$)/, 't', 1,90,0,0],
+  ['feinkost',  /feinkost|kartoffelsalat|nudelsalat|fleischsalat|eiersalat|thunfischsalat|krautsalat|wurstsalat|hummus|tzatziki/, 'k', 3,0,0,2],
   ['hmilch',    /(^| )h ?(voll|mager|fettarme?)? ?milch|haltbare ?milch|(^| )uht( |$)/,            'v', 90,90,90,3],
   ['drink',     /(hafer|soja|mandel|reis|kokos|dinkel)(milch|drink)/,                              'v', 90,0,90,4],
   ['suess',     /schokolade|keks|chips|gummibaer|praline|bonbon|riegel|kuchen/,                    'v', 0,0,90,14],
   ['konserve',  /(^| )dosen?( |$)|konserve|(^| )glas( |$)|eingelegt|thunfisch|(^| )mais( |$)|kichererbse|passiert|tomatenmark|apfelmus|sauerkraut|rotkohl glas/, 'v', 0,0,365,3],
   ['aufstrich', /marmelade|konfituere|gelee|honig|nougat|nutella|erdnussbutter/,                   'v', 0,0,180,30],
   ['sosse',     /ketchup|senf|mayo|remoulade|sauce|sosse|pesto|dressing|essiggurke/,               'v', 0,0,180,7],
-  ['saft',      /saft|smoothie|nektar/,                                                            'v', 7,0,90,4],
+  ['saft',      /saft|smoothi|nektar/,                                                            'v', 7,0,90,4],
   ['frischkaese',/frischkaese|quark|skyr|mascarpone|ricotta|huettenkaese|mozzarella|feta/,         'k', 7,60,0,3],
   ['joghurt',   /joghurt|jogurt|kefir|buttermilch|dickmilch|pudding|dessert/,                      'k', 10,60,0,3],
-  ['sahne',     /sahne|schmand|creme fraiche/,                                                     'k', 7,60,0,3],
+  ['sahne',     /sahne|schmand|creme fraiche|cremefin|kochcreme|cuisine|schlagcreme|creme vega/,  'k', 7,60,0,3],
+  ['tofu',      /tofu|tempeh|seitan/,                                                              'k', 14,90,0,3],
+  ['teig',      /blaetterteig|pizzateig|quicheteig|fertigteig|strudelteig|flammkuchenteig|frischhefe|hefewuerfel/, 'k', 7,60,0,1],
   ['butter',    /butter|margarine/,                                                                'k', 30,90,0,14],
   ['aufschnitt',/aufschnitt|salami|schinken|wurst|mortadella|lyoner|leberkaese|speck/,             'k', 5,30,0,2],
   ['kaese',     /kaese|gouda|emmentaler|parmesan|camembert|brie|bergkaese/,                        'k', 14,60,0,7],
@@ -1462,6 +1480,46 @@ function pantryEstimateDays(it,place){
   var s=pantryShelf(it&&it.n,it&&it.c,place);
   return s?s.days:0;
 }
+// Tage, die ein angebrochener Artikel hält: im Tiefkühler keine Frist (0),
+// sonst die eigene Angabe `od` vor dem Richtwert für Art und Ort.
+/** @param {any} it {n,c,od} @param {string} [place] */
+function pantryOpenDays(it,place){
+  if(place==='t')return 0;
+  if(+(it&&it.od)>0)return Math.round(+it.od);
+  var s=pantryShelf(it&&it.n,it&&it.c,place);
+  return s?s.open:0;
+}
+// Haltedauer `hd` lernen: Beim Kauf mit Datum von der Packung gilt der Abstand
+// heute → früheres Datum (MHD/Verbrauchsdatum) als neue Haltedauer; ohne
+// brauchbares Datum (leer, heute oder älter, über 5 Jahre) bleibt `prev`.
+/** @param {number} prev @param {string} mhd @param {string} vd @param {string} todayStr */
+function pantryLearnHd(prev,mhd,vd,todayStr){
+  var d=[mhd,vd].reduce(function(b,x){return x&&(!b||x<b)?x:b;},'');
+  var n=d?pantryDays(d,todayStr):null;
+  return n!==null&&n>0&&n<=1825?n:(Math.round(+prev||0)||0);
+}
+// „Angebrochen“ für eine Packung: Von einer Charge mit mehr als einem Stück
+// wird eines abgeteilt (ID `<Charge>~o<Datum>`, Abbuchen per Charge trifft
+// es mit, siehe pantryDebit) und als geöffnet markiert; sonst die ganze
+// Charge. Ohne `lotId` die Charge, die als nächste verbraucht wird.
+// Rückgabe {lots: Kopien, id: ID der geöffneten Charge} oder null.
+/** @param {Array<any>} lots @param {string} lotId @param {string} todayStr @param {number} [openDays] */
+function pantryOpenOne(lots,lotId,todayStr,openDays){
+  var copy=(lots||[]).map(function(lot){return Object.assign({},lot);});
+  var free=pantryLotOrder(copy,+openDays||0).filter(function(lot){return !lot.op&&(+lot.q||0)>0&&(!lotId||lot.id===lotId);});
+  var lot=free[0];
+  if(!lot)return null;
+  if((+lot.q||0)>1){
+    var id=String(lot.id)+'~o'+todayStr,n=2;
+    while(copy.some(function(x){return x.id===id;}))id=String(lot.id)+'~o'+todayStr+'-'+(n++);
+    var part=Object.assign({},lot,{id:id,q:1,op:todayStr});
+    lot.q=_pantryR3(lot.q-1);
+    copy.splice(copy.indexOf(lot)+1,0,part);
+    return {lots:copy,id:id};
+  }
+  lot.op=todayStr;
+  return {lots:copy,id:String(lot.id)};
+}
 // Maßgebliches Datum einer Charge: das früheste aus MHD, Verbrauchsdatum und
 // „geöffnet am“ + Geöffnet-Frist. Leer, wenn nichts davon bekannt ist.
 /** @param {any} lot {mhd,vd,op} @param {number} openDays */
@@ -1489,7 +1547,7 @@ function pantryDebit(lots,n,lotId,openDays){
   var removed=[];
   n=_pantryR3(+n||0);
   pantryLotOrder(copy,+openDays||0).forEach(function(lot){
-    if(n<=0||(lotId&&lot.id!==lotId))return;
+    if(n<=0||(lotId&&lot.id!==lotId&&String(lot.id).indexOf(lotId+'~')!==0))return;
     var amount=_pantryR3(Math.min(n,+lot.q||0));
     if(!(amount>0))return;
     removed.push(Object.assign({},lot,{q:amount}));

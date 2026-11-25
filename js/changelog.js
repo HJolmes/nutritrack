@@ -2,6 +2,11 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.359',items:[
+    {icon:'📂',text:'<b>Angebrochen</b>: Ein Tipp auf 📂 in der Vorratsliste markiert eine Packung als angebrochen. Wie lange sie dann hält, kannst du je Artikel unter „Angebrochen haltbar“ eintragen, sonst gilt ein Richtwert.',where:'Vorrat'},
+    {icon:'📅',text:'<b>MHD ca.</b>: Eine neue Packung bekommt gleich ein geschätztes MHD ins Datumsfeld. Trägst du das Datum von der Packung ein, lernt die App daraus. Das Feld „Hält nach dem Kauf“ entfällt.',where:'Vorrat'},
+    {icon:'🧊',text:'<b>Lagerort wird vorgeschlagen</b>: Kühl- und TK-Artikel landen beim Anlegen und Scannen direkt im Kühlschrank bzw. Tiefkühler, auch mit den Kategorien von Open Food Facts.',where:'Vorrat'}
+  ]},
   {v:'0.358',items:[
     {icon:'📷',text:'<b>Rezept-Foto am Einkaufszettel</b>: Rezept abfotografieren, prüfen, ins Kochbuch speichern und gleich auswählen, welche Zutaten auf den Zettel kommen.',where:'Einkaufszettel'},
     {icon:'🛒',text:'<b>Vorschau „Zutaten auf den Zettel“</b>: rechnet auf deine Portionen um und lässt Vorrätiges sowie Grundzutaten wie Salz und Öl erst einmal weg. Jede Zeile kannst du an- oder abwählen.',where:'Einkaufszettel · Kochbuch'},

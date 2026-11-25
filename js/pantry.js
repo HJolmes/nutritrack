@@ -8,11 +8,13 @@
 //   S.pantry      [{id,n,ic,loc,c,q,g,min,mhd,vd,hd,bc,lots,ts,rev,_sy}]  q = Stück, g =
 //                 Gramm je Stück, min = Mindestmenge in Stück (0 = keine), mhd/vd =
 //                 frühestes Mindesthaltbarkeits-/Verbrauchsdatum JJJJ-MM-TT (leer =
-//                 keins), hd = hält ca. … Tage (MHD beim Auffüllen), bc = Barcodes,
+//                 keins), hd = hält ca. … Tage (MHD beim Auffüllen; gelernt aus dem
+//                 Packungsdatum beim Kauf, pantryLearnHd), od = hält angebrochen ca.
+//                 … Tage (fehlt = Richtwert, pantryOpenDays), bc = Barcodes,
 //                 c = Kategorie des Einkaufszettels (NTShop, fehlt = geraten),
 //                 lots = Chargen [{id,q,mhd,vd,estimated,in,op}]: estimated = Datum
 //                 geschätzt (hd oder Richtwert pantryShelf), in = eingebucht am,
-//                 op = geöffnet am (verkürzte Frist laut pantryShelf().open)
+//                 op = geöffnet am (verkürzte Frist laut pantryOpenDays)
 //                 auto = Dauerartikel „immer nachkaufen“ (1, fehlt = nein),
 //                 rs = {s: ID auf dem Zettel, t: ms} automatisch gesetzt,
 //                 rsNo = ms „diesmal nicht“/vom Zettel genommen (Sperre bis zum
@@ -78,6 +80,7 @@ var _tile='';        // Kennzahl der Übersicht: '' = alle, EXP = läuft ab, LOW
 var _query='';       // Suche in der Liste (nur Anzeige, legt nichts an)
 var _shownQ='';      // Stückzahl, wie der Artikel-Dialog sie zuletzt zeigte
 var _openLoc='';     // Lagerort beim Öffnen des Artikel-Dialogs (D4)
+var _odShown='';     // „Angebrochen haltbar“, wie der Artikel-Dialog es zuletzt zeigte
 var EXP='__exp';
 var LOW='__low';
 var SOON='__soon';   // Nachkaufen: geht laut Prognose bald aus / automatisch auf dem Zettel
@@ -128,7 +131,11 @@ function guessCat(n){return (window.NTShop&&NTShop.guess)?NTShop.guess(n).c:'son
 function catOf(it){return it.c&&catInfo(it.c).id===it.c?it.c:guessCat(it.n);}
 function placeOf(it){return pantryPlace(loc(it.loc));}
 // Tage nach dem Öffnen (Richtwert für Art und Lagerort, 0 = keine Frist).
-function openDays(it){var s=pantryShelf(it.n,catOf(it),placeOf(it));return s?s.open:0;}
+function openDays(it){return pantryOpenDays({n:it.n,c:catOf(it),od:it.od},placeOf(it));}
+// Frühestes „geöffnet am“ der vorhandenen Chargen, '' = nichts angebrochen.
+function openedOn(it){return stockLots(it).reduce(function(d,lot){return lot.op&&(!d||lot.op<d)?lot.op:d;},'');}
+// Üblicher Lagerort für einen neuen Artikel ('' = keiner passt), `hint` laut Open Food Facts.
+function homeLoc(n,c,hint){return pantryHomeLoc(n,c||guessCat(n),locs(),hint);}
 function estimateDays(it){return pantryEstimateDays({n:it.n,hd:it.hd,c:catOf(it)},placeOf(it));}
 function expiry(it){
   var e=pantryDue(it,stockLots(it),openDays(it),today());
@@ -142,8 +149,8 @@ function expiring(){return pantryExpiring(items(),today(),EXP_DAYS,expiry);}
 // „MHD 02.11.26“ bzw. „Verbrauchen bis …“, abgelaufen/bald mit Hinweis.
 function expiryText(e){
   if(!e)return '';
-  var t=(e.k==='vd'?'Verbr. bis ':(e.k==='op'?'Geöffnet · bis ':'MHD '))+fmtD(e.d);
-  if(e.estimated)t+=' · geschätzt';
+  var t=(e.k==='vd'?'Verbr. bis ':(e.k==='op'?'📂 Angebrochen · bis ':'MHD '))+fmtD(e.d);
+  if(e.estimated)t='MHD ca. '+fmtD(e.d)+' · geschätzt';
   if(e.lvl==='over')t+=e.k==='vd'?' ⛔ abgelaufen':' ⚠️ abgelaufen';
   else if(e.days===0)t+=' ⏰ heute';
   else if(e.days===1)t+=' ⏰ morgen';
@@ -342,6 +349,8 @@ function refill(it,n,src,mhd,vd,kind){
   var days=!mhd&&!vd?estimateDays(it):0;
   var lot={id:uid('charge'),q:n,mhd:mhd||(days?addDays(today(),days):''),vd:vd||'',estimated:!!days,in:today()};
   appendLots(it,[lot]);
+  // Datum von der Packung beim Kauf: daraus lernt die App, wie lange der Artikel hält.
+  if((mhd||vd)&&kind!=='korrektur'&&src!=='inventur'){var hd=pantryLearnHd(+it.hd||0,mhd||'',vd||'',today());if(hd>0)it.hd=hd;}
   // Eingebucht = Nachkauf-Zyklus erledigt: Markierung und „diesmal nicht“ fallen weg.
   if(kind!=='korrektur'){delete it.rs;delete it.rsNo;}
   var e=log(it,n,kind||'kauf',src);e.lots=[lot];return e;
@@ -374,7 +383,7 @@ function add(n,q,g,locId,ic,min,dates,src,c){
     touch(ex);afterChange(ex,before);
     return ex;
   }
-  var it={id:uid('p'),n:n,ic:ic||guessIc(n),loc:locId||'',c:c||guessCat(n),q:0,g:+g>0?+g:0,min:+min>0?+min:0,mhd:'',vd:'',ts:Date.now(),rev:nextRev()};
+  var it={id:uid('p'),n:n,ic:ic||guessIc(n),loc:locId||homeLoc(n,c),c:c||guessCat(n),q:0,g:+g>0?+g:0,min:+min>0?+min:0,mhd:'',vd:'',ts:Date.now(),rev:nextRev()};
   items().push(it);
   refill(it,+q>0?+q:0,src||'hand',mhd,vd);
   touch(it);afterChange(it,0);
@@ -896,7 +905,9 @@ function dueOf(it){var e=(+it.q||0)>0?expiry(it):null;return e?e.d:'';}
 // Listenzeile; `ro` = Prognose (Tage, null = keine Aussage), dezent und nur,
 // wenn sie in den nächsten ROW_DAYS Tagen etwas bedeutet.
 function row(it,ro){
-  var lw=low(it),e=(+it.q||0)>0?expiry(it):null;
+  var lw=low(it),e=(+it.q||0)>0?expiry(it):null,op=openedOn(it);
+  // 📂 nur, solange eine ungeöffnete Packung da ist und der Ort eine Frist kennt (nicht im Tiefkühler).
+  var canOpen=(+it.q||0)>0&&placeOf(it)!=='t'&&stockLots(it).some(function(lot){return !lot.op;});
   var soon=ro!==null&&ro!==undefined&&(+it.q||0)>0&&ro<=ROW_DAYS;
   return '<div style="display:flex;align-items:center;gap:8px;padding:9px 2px;border-bottom:1px solid var(--br);">'
     +'<div style="font-size:20px;flex-shrink:0;">'+esc(it.ic||'🥫')+'</div>'
@@ -906,7 +917,9 @@ function row(it,ro){
         +(+it.min>0?' · mind. '+fmtN(it.min)+(lw?' ⚠️':''):'')
         +(soon?'<span style="color:'+(ro<=lead()?'var(--or)':'var(--mu)')+';"> · '+(ro<=0?'geht heute aus':'reicht ca. '+ro+(ro===1?' Tag':' Tage'))+'</span>':'')+'</div>'
       +(e?'<div style="font-size:11px;font-weight:'+(e.lvl==='ok'?'400':'700')+';color:'+expiryColor(e)+';margin-top:1px;">'+esc(expiryText(e))+'</div>':'')
+      +(op&&!(e&&e.k==='op')?'<div style="font-size:11px;color:var(--mu);margin-top:1px;">📂 Angebrochen seit '+esc(fmtD(op))+'</div>':'')
     +'</div>'
+    +(canOpen?'<button type="button" class="pt-st pt-open" data-act="NTPantry.openNext" data-args="'+args([it.id])+'" aria-label="Eine Packung angebrochen" title="Eine Packung angebrochen">📂</button>':'')
     +'<button type="button" class="pt-st" data-act="NTPantry.step" data-args="'+args([it.id,-1])+'">−</button>'
     +'<button type="button" class="pt-st" data-act="NTPantry.step" data-args="'+args([it.id,1])+'">＋</button>'
     +'</div>';
@@ -1166,24 +1179,25 @@ function chargeRow(it,lot,first){
     var id=first?'':uid('charge-row');
     return '<div class="pantry-charge"'+(id?' id="'+id+'"':' data-new-first="1"')+' data-lot-id="">'
       +(first?'<div id="pantryItemEst" class="pantry-charge-note"></div>':'<label>Stück<input class="sinp pantry-charge-qty" inputmode="decimal" value="1"></label>')
-      +'<label>MHD<input type="date" class="sinp pantry-charge-mhd"'+ids.mhd+' value=""></label>'
+      +'<label><span class="pantry-mhd-lbl">MHD</span><input type="date" class="sinp pantry-charge-mhd"'+ids.mhd+' value="" onchange="NTPantry.formChanged()"></label>'
       +'<label>Verbrauchsdatum<input type="date" class="sinp pantry-charge-vd"'+ids.vd+' value=""></label>'
       +(id?'<button type="button" class="seb" data-act="NTPantry.removeChargeRow" data-args="'+args([id])+'">Zeile entfernen</button>':'')+'</div>';
   }
   var od=openDays(it),due=pantryLotDue(lot,od),bk=bookedOn(lot);
   var n=due?pantryDays(due,today()):null;
   var dueTxt=lot.op?'Geöffnet am '+fmtD(lot.op)+(od>0?' · hält noch bis '+fmtD(addDays(lot.op,od)):''):'';
-  if(!lot.op&&due)dueTxt=(due===lot.vd?'Verbr. bis ':'MHD ')+fmtD(due)+(lot.estimated?' · geschätzt (Richtwert)':'');
+  if(lot.op&&!(od>0))dueTxt+=' · wie lange es angebrochen hält, unten unter „Angebrochen haltbar“ eintragen';
+  if(!lot.op&&due)dueTxt=(due===lot.vd?'Verbr. bis ':(lot.estimated&&due===lot.mhd?'MHD ca. ':'MHD '))+fmtD(due)+(lot.estimated&&due===lot.mhd?' · geschätzt':'');
   if(n!==null&&n<0)dueTxt+=' ⚠️ abgelaufen';else if(n!==null&&n<=EXP_DAYS)dueTxt+=' ⏰';
   return '<div class="pantry-charge" data-lot-id="'+esc(lot.id)+'">'
     +'<strong>'+fmtN(lot.q)+' Stück'+(bk?' · eingebucht '+fmtD(bk):'')+'</strong>'
     +(dueTxt?'<div class="pantry-charge-note" style="color:'+(n!==null&&n<=EXP_DAYS?(n<0?'var(--re)':'var(--or)'):'var(--mu)')+';">'+esc(dueTxt)+'</div>':'')
     +'<label>Stück<input class="sinp pantry-charge-q" inputmode="decimal" value="'+esc(fmtN(lot.q))+'"></label>'
-    +'<label>Geöffnet am<input type="date" class="sinp pantry-charge-op" value="'+esc(lot.op||'')+'"></label>'
+    +'<label>Angebrochen am<input type="date" class="sinp pantry-charge-op" value="'+esc(lot.op||'')+'"></label>'
     +'<label>MHD<input type="date" class="sinp pantry-charge-mhd"'+ids.mhd+' value="'+esc(lot.mhd||'')+'"></label>'
     +'<label>Verbrauchsdatum<input type="date" class="sinp pantry-charge-vd"'+ids.vd+' value="'+esc(lot.vd||'')+'"></label>'
     +'<div class="pantry-charge-acts">'
-      +(lot.op?'<span></span>':'<button type="button" class="seb" data-act="NTPantry.openLot" data-args="'+args([lot.id])+'" aria-label="Heute geöffnet markieren">📂 Geöffnet</button>')
+      +(lot.op?'<span></span>':'<button type="button" class="seb" data-act="NTPantry.openLot" data-args="'+args([lot.id])+'" aria-label="Heute angebrochen markieren">📂 Angebrochen</button>')
       +'<button type="button" class="seb" data-act="NTPantry.dropLot" data-args="'+args([lot.id])+'">🗑️ Entfernen</button>'
     +'</div></div>';
 }
@@ -1195,7 +1209,7 @@ function renderCharges(it){
   if(el)el.innerHTML=lots.length?lots.map(function(lot,i){return chargeRow(it,lot,i===0);}).join(''):chargeRow(it,null,true);
   formChanged();
 }
-function addChargeRow(){document.getElementById('pantryCharges').insertAdjacentHTML('beforeend',chargeRow(null,null,false));}
+function addChargeRow(){document.getElementById('pantryCharges').insertAdjacentHTML('beforeend',chargeRow(null,null,false));formChanged();}
 function removeChargeRow(id){
   var row=document.getElementById(id);
   if(row&&row.classList.contains('pantry-charge')&&!row.getAttribute('data-lot-id'))row.remove();
@@ -1261,12 +1275,20 @@ function current(){return _editId?byId(_editId):null;}
 /** @param {string} lotId */
 function openLot(lotId){
   var it=current();if(!it)return;
-  var lots=stockLots(it).map(function(lot){return Object.assign({},lot);});
-  var lot=lots.find(function(x){return x.id===lotId;});if(!lot)return;
-  lot.op=today();
-  writeLots(it,lots);touch(it);refreshItem(it);
-  var od=openDays(it);
-  showToast('📂 Geöffnet'+(od>0?' · Richtwert: bis '+fmtD(addDays(lot.op,od)):''));
+  if(markOpen(it,lotId))refreshItem(it);
+}
+// 📂 in der Liste: die Packung, die als nächste dran ist, heute angebrochen.
+/** @param {string} id */
+function openNext(id){var it=byId(id);if(it)markOpen(it,'');}
+// Eine Packung angebrochen (von einer Charge mit mehreren Stück wird eine
+// abgeteilt, pantryOpenOne). Zurück: im Artikel „Angebrochen am“ leeren.
+/** @param {any} it @param {string} lotId */
+function markOpen(it,lotId){
+  var od=openDays(it),r=pantryOpenOne(stockLots(it),lotId,today(),od);
+  if(!r)return false;
+  writeLots(it,r.lots);touch(it);
+  showToast('📂 '+(it.ic||'')+' '+it.n+' angebrochen'+(od>0?' · hält ca. bis '+fmtD(addDays(today(),od)):' · wie lange es angebrochen hält: im Artikel eintragen'));
+  return true;
 }
 // Charge ganz austragen: Korrektur im Verlauf, damit „Rückgängig“ sie zurückholt.
 /** @param {string} lotId */
@@ -1341,18 +1363,39 @@ function editFields(){
   var box=document.getElementById('pantryItemEdit');
   if(box&&box.scrollIntoView)box.scrollIntoView({behavior:'smooth',block:'start'});
 }
-// Formular geändert: Schätz-Hinweis für die neue Packung (D1) und das Angebot,
-// geschätzte Daten für einen neuen Lagerort neu zu berechnen (D4).
+// Formular geändert: geschätztes MHD der neuen Packung (D1, steht als „ca.“
+// im Datumsfeld, bis jemand das Packungsdatum einträgt), Lagerort-Vorschlag
+// für neue Artikel (solange nicht von Hand gewählt), Richtwert für
+// „Angebrochen haltbar“ und das Angebot, geschätzte Daten für einen neuen
+// Lagerort neu zu berechnen (D4).
+var _locTouched=false;// Lagerort im Artikel-Dialog von Hand gewählt
+var _offPlace='';     // Art laut Open Food Facts für den gescannten Code ('k'|'t'|'v')
+function locPicked(){_locTouched=true;formChanged();}
 function formChanged(){
-  var it=current(),n=val('pantryItemName').trim(),locId=val('pantryItemLoc');
-  var probe={n:n,hd:Math.round(num(val('pantryItemHd'))),c:val('pantryItemCat')||guessCat(n)};
-  var place=pantryPlace(loc(locId));
-  var est=document.getElementById('pantryItemEst');
-  if(est){
-    var days=n?pantryEstimateDays(probe,place):0;
-    est.textContent=days?'Leer lassen = geschätzt bis '+fmtD(addDays(today(),days))+(probe.hd>0?' (eigene Haltedauer)':' (Richtwert)')+'.'
-      :(n?'Für „'+n+'“ kennt die App keinen Richtwert — Datum von der Packung eintragen.':'Leer lassen: Die App schätzt ein Datum nach Produktart und Lagerort.');
+  var it=current(),n=val('pantryItemName').trim();
+  var probe={n:n,hd:it?+it.hd||0:0,c:val('pantryItemCat')||guessCat(n)};
+  var sel=/** @type {HTMLSelectElement} */ (document.getElementById('pantryItemLoc'));
+  if(!it&&!_locTouched&&sel&&n){var h=homeLoc(n,probe.c,_offPlace);if(h&&h!==sel.value)sel.value=h;}
+  var locId=val('pantryItemLoc'),place=pantryPlace(loc(locId));
+  var days=n?pantryEstimateDays(probe,place):0,est=days?addDays(today(),days):'';
+  document.querySelectorAll('#pantryCharges .pantry-charge[data-lot-id=""]').forEach(function(row){
+    var inp=/** @type {HTMLInputElement} */ (row.querySelector('.pantry-charge-mhd'));
+    if(!inp)return;
+    var was=inp.getAttribute('data-est')||'';
+    if(!inp.value||inp.value===was){inp.value=est;inp.setAttribute('data-est',est);}
+    var lbl=row.querySelector('.pantry-mhd-lbl');
+    if(lbl)lbl.textContent=est&&inp.value===est?'MHD ca.':'MHD';
+  });
+  var note=document.getElementById('pantryItemEst');
+  if(note){
+    note.textContent=days?'MHD ca. '+fmtD(est)+' · geschätzt '+(probe.hd>0?'aus deinen letzten Einkäufen':'nach Richtwert für Produktart und Lagerort')+'. Datum von der Packung eintragen, wenn bekannt — daraus lernt die App.'
+      :(n?'Für „'+n+'“ kennt die App keinen Richtwert — Datum von der Packung eintragen.':'Die App schätzt ein MHD nach Produktart und Lagerort.');
   }
+  var od=document.getElementById('pantryItemOd'),odNote=document.getElementById('pantryItemOdNote');
+  var rw=place==='t'?0:pantryOpenDays({n:n,c:probe.c},place);
+  if(od)/** @type {HTMLInputElement} */ (od).placeholder=rw?String(rw):'z. B. 3';
+  if(odNote)odNote.textContent=place==='t'?'Im Tiefkühler gilt keine Frist nach dem Anbrechen.'
+    :'So lange hält eine Packung, nachdem sie mit 📂 als angebrochen markiert wurde.'+(rw?' Richtwert: '+rw+(rw===1?' Tag':' Tage')+'.':' Für diesen Artikel kennt die App keinen Richtwert.');
   var box=document.getElementById('pantryItemReloc');
   if(!box)return;
   var s=it&&locId!==_openLoc?pantryShelf(n,probe.c,place):null;
@@ -1371,7 +1414,9 @@ function openItem(id){
   setVal('pantryItemQ',_shownQ);
   setVal('pantryItemG',it&&+it.g>0?fmtN(it.g):'');
   setVal('pantryItemMin',it&&+it.min>0?fmtN(it.min):'');
-  setVal('pantryItemHd',it&&+it.hd>0?String(Math.round(it.hd)):'');
+  setVal('pantryItemOd',it?String(openDays(it)||''):'');
+  _odShown=val('pantryItemOd');
+  _locTouched=!it&&!!chipLoc();_offPlace='';
   setVal('pantryItemUseQ','1');
   var au=/** @type {HTMLInputElement} */ (document.getElementById('pantryItemAuto'));
   if(au)au.checked=!!(it&&it.auto);
@@ -1465,8 +1510,14 @@ function saveItem(){
   it.c=val('pantryItemCat')||guessCat(n);
   it.g=num(val('pantryItemG'));
   it.min=num(val('pantryItemMin'));
-  it.hd=Math.round(num(val('pantryItemHd')));
-  if(!it.hd)delete it.hd;
+  // „Angebrochen haltbar“: gespeichert nur, was vom Richtwert abweicht oder
+  // hier geändert wurde; leer = Richtwert.
+  var odRaw=val('pantryItemOd').trim(),odV=Math.round(num(odRaw));
+  if(!odRaw)delete it.od;
+  else if(odRaw!==_odShown||+it.od>0){
+    var rw=pantryOpenDays({n:it.n,c:catOf(it)},placeOf(it));
+    if(odV>0&&odV!==rw)it.od=odV;else delete it.od;
+  }
   var auto=/** @type {HTMLInputElement} */ (document.getElementById('pantryItemAuto'));
   if(auto&&auto.checked)it.auto=1;
   else if(auto){delete it.auto;delete it.rsNo;}
@@ -1476,6 +1527,9 @@ function saveItem(){
   function field(row,cls){var el=/** @type {HTMLInputElement} */ (row.querySelector(cls));return el?el.value:'';}
   document.querySelectorAll('#pantryCharges .pantry-charge').forEach(function(row){
     var d=field(row,'.pantry-charge-mhd'),v=field(row,'.pantry-charge-vd'),lotId=row.getAttribute('data-lot-id');
+    // Unverändertes „ca.“-Datum einer neuen Packung: geschätzt, nicht von der Packung.
+    var mi=row.querySelector('.pantry-charge-mhd');
+    if(!lotId&&mi&&d&&d===mi.getAttribute('data-est'))d='';
     if(row.hasAttribute('data-new-first')){firstNew={mhd:d,vd:v};return;}
     var existing=lotId?lots.find(function(lot){return lot.id===lotId;}):null;
     if(existing){
@@ -1574,7 +1628,7 @@ function scanUnknown(code,prod){
   _scanLast={code:code,t:Date.now()};
   var q=scanAskOf(code);
   if(q)q.count++;
-  else _scanAsk.unshift({code:code,name:prod&&prod.name?String(prod.name):'',g:prod&&+prod.g>0?+prod.g:0,count:1,mode:_scanMode});
+  else _scanAsk.unshift({code:code,name:prod&&prod.name?String(prod.name):'',g:prod&&+prod.g>0?+prod.g:0,place:prod?pantryOffPlace(prod.cats):'',count:1,mode:_scanMode});
   renderScanList();
   return '🏷️ '+(prod&&prod.name?prod.name:'Unbekannter Code')+' — unten in der Liste zuordnen';
 }
@@ -1609,7 +1663,7 @@ function scanResolve(code){
   if(window.NTPicker&&NTPicker.closePicker)NTPicker.closePicker();
   _scanMode=a.mode==='out'?'out':'in';
   openItem('');
-  _pendingBc=code;_pendingN=a.count||1;
+  _pendingBc=code;_pendingN=a.count||1;_offPlace=a.place||'';
   setVal('pantryItemName',a.name||'');
   if(a.g)setVal('pantryItemG',String(a.g));
   setVal('pantryItemQ',_scanMode==='out'?'0':String(_pendingN));
@@ -2294,7 +2348,7 @@ document.addEventListener('visibilitychange',function(){if(!document.hidden){Syn
 window.NTPantry={
   boot:boot,open:open,close:close,render:render,renderCard:renderCard,setFilter:setFilter,
   pickTile:pickTile,setOrder:setOrder,search:search,addQuery:addQuery,
-  openLot:openLot,dropLot:dropLot,toShop:toShop,editFields:editFields,formChanged:formChanged,
+  openLot:openLot,openNext:openNext,locPicked:locPicked,dropLot:dropLot,toShop:toShop,editFields:editFields,formChanged:formChanged,
   add:add,step:step,remove:remove,submitInput:submitInput,inputKey:inputKey,
   openItem:openItem,saveItem:saveItem,deleteItem:deleteItem,addChargeRow:addChargeRow,removeChargeRow:removeChargeRow,
   openLocs:openLocs,locAdd:locAdd,locSave:locSave,locMove:locMove,locDelete:locDelete,

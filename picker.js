@@ -1185,7 +1185,7 @@ function scanFor(opts){
   var ov=document.getElementById('pickerOv');
   if(ov&&!((+ov.style.zIndex||0)>301))ov.style.zIndex='301';
 }
-// Name und Packungsgröße in Gramm (oder ml) aus Open Food Facts, sonst null.
+// Name, Packungsgröße in Gramm (oder ml) und Kategorien aus Open Food Facts, sonst null.
 function _pickerOffProduct(p){
   if(!p)return null;
   var name=String(p.product_name_de||p.product_name||'').trim();
@@ -1196,7 +1196,8 @@ function _pickerOffProduct(p){
     var m=/(\d+(?:[.,]\d+)?)\s*(kg|g|l|ml)\b/i.exec(String(p.quantity||''));
     if(m){var v=parseFloat(m[1].replace(',','.')),mu=m[2].toLowerCase();g=Math.round(mu==='kg'||mu==='l'?v*1000:v);}
   }
-  return {name:name,g:g>0?g:0};
+  // Kategorien für den üblichen Lagerort (NTPantry, pantryOffPlace).
+  return {name:name,g:g>0?g:0,cats:Array.isArray(p.categories_tags)?p.categories_tags.slice(0,40):[]};
 }
 function _pickerScanHit(code){
   var o=_pickerScanFor;if(!o)return;

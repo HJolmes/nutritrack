@@ -536,12 +536,14 @@ function askBooked(v){return logArr().some(function(e){return e.ev===v;});}
 function askDrop(v){var a=askList(),b=a.filter(function(x){return x.v!==v;});if(b.length!==a.length)S.pantryAsk=b;}
 // Vorschlags-Zeilen eines Eintrags für den Dialog (Menge in der Einheit des Artikels).
 function askGroup(entry,v,title){
-  var rows=pantryMealRows(entry,items(),askMem()).map(function(r){
+  var rows=pantryMealRows(entry,items(),askMem(),logArr()).map(function(r){
     var it=r.it,qq=it?pantryAskQty(it,r.grams,r.known):{unit:'',q:null};
     return {keys:r.keys,names:r.names,id:it?it.id:'',cands:r.cands.map(function(c){return c.id;}),src:r.src,
       grams:r.grams,known:r.known,unit:qq.unit,q:qq.q,on:!!it&&qq.q!==null&&qq.q>0,dir:-1};
   });
-  return {v:v,title:title||((entry.emoji||'🍽')+' '+(entry.name||'Eintrag')),name:String(entry.name||''),rows:rows};
+  // Zutaten ohne Vorschlag: lassen sich im Dialog von Hand einem Artikel zuordnen.
+  var rest=pantryMealRest(entry,items(),askMem());
+  return {v:v,title:title||((entry.emoji||'🍽')+' '+(entry.name||'Eintrag')),name:String(entry.name||''),rows:rows,rest:rest};
 }
 // Aktiv eingetragen (E1). `owner` = der echte Eintrag, wenn nur Zutaten an ihn
 // angehängt wurden (er behält seine ID, die Buchungen summieren sich).
@@ -648,26 +650,44 @@ function entryChanged(entry,oldAmt,newAmt){
   renderAsk();
   openOv('pantryMealOv');
 }
+// Passende Artikel zuerst, in der Reihenfolge der Wahrscheinlichkeit
+// (pantryRankCands), danach alle übrigen mit Bestand nach Name.
 function askOptions(r){
   var have=items().filter(function(it){return (+it.q||0)>0||it.id===r.id;});
-  var first=have.filter(function(it){return r.cands.indexOf(it.id)>=0;});
-  var rest=pantrySort(have.filter(function(it){return r.cands.indexOf(it.id)<0;}),'name');
-  return (r.id?'':'<option value="">Welcher Artikel?</option>')
-    +first.concat(rest).map(function(it){return '<option value="'+esc(it.id)+'"'+(it.id===r.id?' selected':'')+'>'+esc((it.ic||'🥫')+' '+it.n)+'</option>';}).join('');
+  var first=r.cands.map(byId).filter(function(it){return !!it&&have.indexOf(it)>=0;});
+  var rest=pantrySort(have.filter(function(it){return first.indexOf(it)<0;}),'name');
+  var opt=function(it){return '<option value="'+esc(it.id)+'"'+(it.id===r.id?' selected':'')+'>'+esc((it.ic||'🥫')+' '+it.n)+'</option>';};
+  return (r.id?'':'<option value="">'+(r.src==='hand'?'Artikel wählen …':'Welcher Artikel?')+'</option>')
+    +(first.length&&rest.length?'<optgroup label="Passend">'+first.map(opt).join('')+'</optgroup><optgroup label="Weitere Artikel">'+rest.map(opt).join('')+'</optgroup>'
+      :first.concat(rest).map(opt).join(''));
+}
+// Noch nicht zugeordnete Zutaten als Hinweis am Knopf „＋ Artikel von Hand abziehen“.
+function askRestHint(g){
+  var used=g.rows.map(function(r){return r.src==='hand'?r.keys[0]:'';});
+  var open=(g.rest||[]).filter(function(l){return used.indexOf(l.key)<0;}).map(function(l){return l.name;});
+  return open.length?' (z. B. '+esc(open.slice(0,2).join(', '))+')':'';
+}
+// Auswahl der Zutat für eine von Hand zugeordnete Zeile.
+function askIngOptions(g,r){
+  var cur=r.keys[0]||'';
+  return '<option value=""'+(cur?'':' selected')+'>Ohne Zutat</option>'
+    +(g.rest||[]).map(function(l){return '<option value="'+esc(l.key)+'"'+(l.key===cur?' selected':'')+'>'+esc(l.name)+'</option>';}).join('');
 }
 function askRowHtml(gi,ri,r){
-  var it=r.id?byId(r.id):null,back=_ask.mode==='back';
+  var it=r.id?byId(r.id):null,back=_ask.mode==='back',g=_ask.groups[gi],hand=r.src==='hand';
   var lbl=back?(r.dir>0?'zurück':'zusätzlich ab'):'abziehen';
   var note=back?(r.dir>0?'Zurück in den Vorrat':'Mehr gegessen — zusätzlich abziehen')
-    :[r.src==='choice'?'Mehrdeutig — bitte wählen':'',
+    :[r.src==='choice'?(it?'':'Mehrdeutig — wahrscheinlichste zuerst'):r.src==='guess'?'Vermutet — bitte prüfen':hand?'Von Hand zugeordnet':'',
       // Woher die Zeile kommt, nur wenn der Tagebuch-Name anders heißt als der Artikel.
-      it&&r.names.every(function(n){return pantryKey(n)===pantryKey(it.n);})?'':'aus „'+r.names.join('“, „')+'“',
+      hand||!r.names.length||it&&r.names.every(function(n){return pantryKey(n)===pantryKey(it.n);})?'':'aus „'+r.names.join('“, „')+'“',
       it?fmtN(it.q)+' Stück da':''].filter(Boolean).join(' · ');
   var name=it?(it.ic||'🥫')+' '+it.n:'';
-  return '<div class="pantry-meal-row" data-g="'+gi+'" data-r="'+ri+'">'
+  var ing=!back&&hand&&g&&g.rest&&g.rest.length;
+  return '<div class="pantry-meal-row'+(ing?' pantry-meal-hand':'')+'" data-g="'+gi+'" data-r="'+ri+'">'
     +'<label class="pantry-meal-on"><input type="checkbox"'+(r.on?' checked':'')+' aria-label="'+esc((name||r.names.join(', '))+' '+lbl)+'"></label>'
     +(back?'<strong class="pantry-meal-name">'+esc(name)+'</strong>'
-      :'<select class="sinp pantry-meal-it" aria-label="Vorratsartikel für '+esc(r.names.join(', '))+'" onchange="NTPantry.askPick(this)">'+askOptions(r)+'</select>')
+      :(ing?'<select class="sinp pantry-meal-ing" aria-label="Zutat aus dem Eintrag" onchange="NTPantry.askIng(this)">'+askIngOptions(g,r)+'</select>':'')
+        +'<select class="sinp pantry-meal-it" aria-label="Vorratsartikel für '+esc(r.names.join(', ')||'Handabzug')+'" onchange="NTPantry.askPick(this)">'+askOptions(r)+'</select>')
     +'<small>'+esc(note)+'</small>'
     +'<label class="pantry-meal-q"><input class="sinp" inputmode="decimal" value="'+esc(r.q===null||r.q===undefined?'':fmtN(r.q))+'" placeholder="0" aria-label="'+esc((name||'Menge')+' '+lbl+', '+(r.unit||'Stück'))+'"><span>'+esc(r.unit||'Stück')+'</span></label>'
     +'</div>';
@@ -685,7 +705,9 @@ function renderAsk(){
   if(no)no.textContent=back?'Vorrat so lassen':'Nicht aus dem Vorrat';
   el.innerHTML=_ask.groups.map(function(g,gi){
     return (many||back?'<div class="lbl pantry-meal-head">'+esc(g.title)+'</div>':'')
-      +g.rows.map(function(r,ri){return askRowHtml(gi,ri,r);}).join('');
+      +g.rows.map(function(r,ri){return askRowHtml(gi,ri,r);}).join('')
+      +(back?'':'<button type="button" class="seb pantry-meal-add" data-act="NTPantry.askAdd" data-args="['+gi+']">＋ Artikel von Hand abziehen'
+        +askRestHint(g)+'</button>');
   }).join('');
 }
 // Eingaben in das Modell zurücklesen (vor Neuzeichnen und Buchen).
@@ -716,6 +738,33 @@ function askPick(sel){
   r.unit=qq.unit;r.q=qq.q;r.on=!!it;
   renderAsk();
 }
+// Handabzug (Zeile von Hand): eine freie Zeile, Zutat und Artikel wählbar.
+// Mit Zutat merkt „Abziehen“ die Zuordnung — beim nächsten Mal ist sie vorgewählt.
+/** @param {number} gi */
+function askAdd(gi){
+  if(!_ask||_ask.mode==='back')return;
+  askRead();
+  var g=_ask.groups[+gi];
+  if(!g)return;
+  var used=g.rows.map(function(r){return r.src==='hand'?r.keys[0]:'';});
+  var l=(g.rest||[]).filter(function(x){return used.indexOf(x.key)<0;})[0];
+  g.rows.push({keys:l?[l.key]:[],names:l?[l.name]:[],id:'',cands:[],src:'hand',
+    grams:l?l.grams:0,known:!!l&&l.known,unit:'',q:null,on:false,dir:-1});
+  renderAsk();
+}
+/** @param {HTMLSelectElement} sel */
+function askIng(sel){
+  var row=sel&&sel.closest?sel.closest('.pantry-meal-row'):null;
+  if(!row||!_ask)return;
+  var g=_ask.groups[+row.getAttribute('data-g')],r=g&&g.rows[+row.getAttribute('data-r')];
+  if(!r)return;
+  askRead();
+  var l=(g.rest||[]).filter(function(x){return x.key===sel.value;})[0];
+  r.keys=l?[l.key]:[];r.names=l?[l.name]:[];r.grams=l?l.grams:0;r.known=!!l&&l.known;
+  var it=r.id?byId(r.id):null;
+  if(it){var qq=pantryAskQty(it,r.grams,r.known);r.unit=qq.unit;r.q=qq.q;}
+  renderAsk();
+}
 function askLearn(keys,ok,id){var m=askMem();keys.forEach(function(k){m[k]=pantryAskLearn(m[k],ok,id);});}
 // Rückbuchung `n` Stück zum Eintrag `v`: ganze Buchungen über Rückgängig,
 // ein Rest anteilig in die abgebuchten Chargen (Korrektur im Verlauf).
@@ -740,7 +789,7 @@ function confirmMeal(){
     g.rows.forEach(function(r){
       var it=r.id?byId(r.id):null;
       var pieces=it&&r.on&&r.q?(r.dir>0?Math.min(+r.net||0,r.unit==='g'?(+it.g>0?r.q/it.g:0):r.q):pantryAskPieces(it,r.q,r.unit)):0;
-      if(!back&&r.keys.length)askLearn(r.keys,pieces>0,it?it.id:'');
+      if(!back&&r.keys.length&&(r.src!=='hand'||pieces>0))askLearn(r.keys,pieces>0,it?it.id:'');
       if(!(pieces>0))return;
       var before=pantryNeed(it.q,it.min);
       if(r.dir>0)giveBack(it,pieces,g.v,g.name);
@@ -767,7 +816,7 @@ function declineMeal(){
   if(_ask&&_ask.mode!=='back'){
     askRead();
     _ask.groups.forEach(function(g){
-      g.rows.forEach(function(r){if(r.keys.length)askLearn(r.keys,false);});
+      g.rows.forEach(function(r){if(r.keys.length&&r.src!=='hand')askLearn(r.keys,false);});
       askDrop(g.v);
     });
     saveS();render();
@@ -2555,7 +2604,7 @@ window.NTPantry={
   openPhotos:openPhotos,pickPhotos:pickPhotos,takePhoto:takePhoto,photosChosen:photosChosen,dropPhoto:dropPhoto,
   analyzePhotos:analyzePhotos,foundSet:foundSet,foundApply:foundApply,
   openCook:openCook,openRecipe:openRecipe,aiIdeas:aiIdeas,openExpiring:openExpiring,expiring:expiring,
-  onBought:onBought,useRecipe:useRecipe,offerMeal:offerMeal,confirmMeal:confirmMeal,shortfall:shortfall,
+  onBought:onBought,useRecipe:useRecipe,offerMeal:offerMeal,confirmMeal:confirmMeal,askAdd:askAdd,askIng:askIng,shortfall:shortfall,
   declineMeal:declineMeal,queueMeal:queueMeal,openAsk:openAsk,askPick:askPick,entryChanged:entryChanged,
   setAsk:setAsk,askUnmute:askUnmute,planScore:planScore,planRecipe:planRecipe,
   consume:consume,dropBarcodes:dropBarcodes,scan:scan,openLog:openLog,undo:undo,

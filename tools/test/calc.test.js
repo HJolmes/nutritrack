@@ -1278,6 +1278,41 @@ test('pantryMatch: gleicher Name, eindeutiges Wort, mehrdeutig zur Auswahl, geme
   // gemerkter Artikel leer → zurück zur Namenslogik
   assert.equal(C.pantryMatch([{ id: 'f', n: 'Haferflocken', q: 0 }, items[0]], 'Haferflocken mit Milch', mem).it.id, 'm');
 });
+test('pantryMatch: zusammengeschrieben, Grundwort, Rangfolge bei Mehrdeutigkeit (Chat-Eintrag)', () => {
+  const C = load({});
+  const items = [
+    { id: 'ds', n: 'Delikatess Senf Mittelscharf', q: 1, mhd: '2027-01-10' },
+    { id: 'ss', n: 'Süßer Senf', q: 1, mhd: '2026-12-03', lots: [{ q: 1, op: '2026-11-20' }] },
+    { id: 'gs', n: 'BIO Geflügel-Salami', q: 1 },
+    { id: 'ti', n: 'Fein-Pikanter TILSITER', q: 1, g: 200 },
+    { id: 'gu', n: 'Senfgurken', q: 1 },
+  ];
+  assert.equal(C.pantryMatch(items, 'Geflügelsalami').it.id, 'gs');   // Bindestrich ↔ zusammengeschrieben
+  assert.equal(C.pantryMatch(items, 'Geflügelsalami').src, 'name');
+  assert.equal(C.pantryMatch([{ id: 'x', n: 'Geflügelsalami', q: 1 }], 'Geflügel Salami').it.id, 'x');
+  assert.equal(C.pantryMatch(items, 'Tilsiter').it.id, 'ti');
+  assert.equal(C.pantryMatch(items, 'Salami').src, 'name');           // „Geflügel-Salami“ enthält das Wort
+  assert.equal(C.pantryMatch([{ id: 'x', n: 'Geflügelsalami', q: 1 }], 'Salami').src, 'guess'); // nur Grundwort
+  assert.equal(C.pantryMatch(items, 'Gurke').it.id, 'gu');
+  assert.equal(C.pantryMatch(items, 'Mus'), null);                    // Grundwort zu kurz
+  const senf = C.pantryMatch(items, 'Senf');
+  assert.equal(senf.src, 'choice');
+  assert.deepEqual(plain(senf.cands.map((i) => i.id)), ['ss', 'ds']); // angebrochen zuerst
+  const log = [1, 2].map(() => ({ pid: 'ds', k: 'verbrauch', d: -1, u: 0 }));
+  assert.deepEqual(plain(C.pantryMatch(items, 'Senf', null, log).cands.map((i) => i.id)), ['ds', 'ss']); // oft abgezogen
+  const entry = { name: 'Brötchen', isRecipe: true, portions: 1, ingredients: [
+    { name: 'Brötchen', amount: 75 }, { name: 'Senf', amount: 10 }, { name: 'Tilsiter', amount: 30 },
+    { name: 'Geflügelsalami', amount: 20 }, { name: 'Nutella', amount: 10 }, { name: 'Nutella', amount: 5 },
+  ] };
+  assert.deepEqual(plain(C.pantryMealRows(entry, items).map((r) => r.src)), ['choice', 'name', 'name']);
+  assert.deepEqual(plain(C.pantryMealRest(entry, items)), [
+    { key: C.pantryKey('Brötchen'), name: 'Brötchen', grams: 75, known: true },
+    { key: 'nutella', name: 'Nutella', grams: 15, known: true },
+  ]);
+  // von Hand zugeordnet und gemerkt → kein Rest mehr, sondern Vorschlag
+  const mem = { nutella: { p: 'ds', ok: 1, no: 0 } };
+  assert.equal(C.pantryMealRest(entry, items, mem).length, 1);
+});
 test('pantryAskLearn/pantryAskMuted: dreimal abgelehnt und nie bestätigt → nicht mehr fragen', () => {
   const C = load({});
   let m;

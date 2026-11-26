@@ -2,6 +2,9 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.364',items:[
+    {icon:'💾',text:'<b>„Änderungen speichern?“ nur noch bei echten Änderungen</b>: Getipptes und wieder Gelöschtes, ein Häkchen hin und zurück oder ein schon gespeicherter Eintrag (z. B. „＋ Hinzufügen“ bei Medizin & Gaben) lösen keine Rückfrage mehr aus. „Speichern“ in der Rückfrage schließt danach auch Dialoge, die nach dem Speichern offen bleiben.',where:'Alle Dialoge'}
+  ]},
   {v:'0.363',items:[
     {icon:'🔎',text:'<b>Vorratsabzug findet mehr</b>: Zusammengeschriebene Namen passen jetzt auch zu Artikeln mit Bindestrich oder Leerzeichen („Geflügelsalami“ ↔ „BIO Geflügel-Salami“), dazu Grundwörter („Salami“ ↔ „Geflügelsalami“, als Vermutung markiert).',where:'Vorrat · Abzug nach Mahlzeit'},
     {icon:'⬆️',text:'<b>Mehrdeutig: wahrscheinlichste zuerst</b> — passende Artikel stehen oben, sortiert nach bisherigem Abzug, angebrochen und MHD; darunter alle weiteren Artikel.',where:'Vorrat · Abzug nach Mahlzeit'},

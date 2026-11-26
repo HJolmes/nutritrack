@@ -1802,11 +1802,63 @@ function pantryAskLearn(m,ok,itemId){
   if(p)r.p=p;
   return r;
 }
+// Alle zusammenhängenden Wortfolgen eines Schlüssels ohne Leerzeichen:
+// „bio gefluegel salami“ → bio, gefluegel, salami, biogefluegel, gefluegelsalami, …
+// So trifft „Geflügelsalami“ auch „Geflügel-Salami“ und umgekehrt.
+/** @param {string} k */
+function _pantryPhrases(k){
+  var w=String(k||'').split(' ').filter(Boolean),out=[];
+  for(var i=0;i<w.length;i++)for(var j=i;j<w.length;j++)out.push(w.slice(i,j+1).join(''));
+  return out;
+}
+// Gleiches Lebensmittel als ganzes Wort oder als zusammengeschriebene Wortfolge.
+/** @param {string} a @param {string} b */
+function _pantryWordHit(a,b){
+  if(!a||!b)return false;
+  var ha=' '+a+' ',hb=' '+b+' ';
+  if(ha.indexOf(hb)>=0||hb.indexOf(ha)>=0)return true;
+  var ca=a.replace(/ /g,''),cb=b.replace(/ /g,'');
+  return _pantryPhrases(a).indexOf(cb)>=0||_pantryPhrases(b).indexOf(ca)>=0;
+}
+// Zusammengesetztes Wort mit gleichem Grundwort: „Salami“ ↔ „Geflügelsalami“,
+// „Gurke“ ↔ „Senfgurke“ (Grundwort mindestens 4 Buchstaben).
+/** @param {string} a @param {string} b */
+function _pantryTailHit(a,b){
+  var wa=String(a||'').split(' ').filter(Boolean),wb=String(b||'').split(' ').filter(Boolean);
+  return wa.some(function(x){
+    return wb.some(function(y){
+      var s=x.length<y.length?x:y,l=x.length<y.length?y:x;
+      return s.length>=4&&l.length>s.length&&l.slice(-s.length)===s;
+    });
+  });
+}
+// Kandidaten nach Wahrscheinlichkeit: oft für Mahlzeiten abgezogen, angebrochen,
+// gleicher Name, wenig zusätzliche Wörter, früheres MHD, dann Name.
+/** @param {Array<any>} cands @param {string} k @param {Array<any>} [log] */
+function pantryRankCands(cands,k,log){
+  /** @type {Object<string,number>} */
+  var used={};
+  (log||[]).forEach(function(e){if(e&&!e.u&&e.k==='verbrauch'&&+e.d<0&&e.pid)used[e.pid]=(used[e.pid]||0)+1;});
+  var kw=String(k||'').split(' ').filter(Boolean).length;
+  function score(it){
+    var ik=pantryKey(it.n),open=(it.lots||[]).some(function(l){return l&&l.op&&+l.q>0;});
+    var extra=Math.max(0,ik.split(' ').filter(Boolean).length-kw);
+    return Math.min(used[it.id]||0,5)*3+(open?4:0)+(ik===k?3:0)-extra;
+  }
+  return (cands||[]).map(function(it){return {it:it,s:score(it)};}).sort(function(a,b){
+    if(b.s!==a.s)return b.s-a.s;
+    var ma=a.it.mhd||'9999',mb=b.it.mhd||'9999';
+    if(ma!==mb)return ma<mb?-1:1;
+    return String(a.it.n||'').localeCompare(String(b.it.n||''),'de');
+  }).map(function(x){return x.it;});
+}
 // Vorrats-Artikel (mit Bestand) zu einem Tagebuch-Namen. src: 'mem' gemerkt,
-// 'name' gleicher Name bzw. eindeutig als ganzes Wort (in beide Richtungen),
-// 'choice' mehrdeutig (zur Auswahl, nichts vorgewählt), 'muted'; sonst null.
-/** @param {Array<any>} items @param {string} name @param {any} [mem] */
-function pantryMatch(items,name,mem){
+// 'name' gleicher Name bzw. eindeutig als ganzes Wort oder zusammengeschrieben
+// (in beide Richtungen), 'guess' eindeutig nur über das Grundwort (vorgewählt,
+// als Vermutung markiert), 'choice' mehrdeutig (zur Auswahl, nach
+// Wahrscheinlichkeit sortiert, nichts vorgewählt), 'muted'; sonst null.
+/** @param {Array<any>} items @param {string} name @param {any} [mem] @param {Array<any>} [log] */
+function pantryMatch(items,name,mem,log){
   var k=pantryKey(name);
   if(!k)return null;
   var have=(items||[]).filter(function(it){return (+(it&&it.q)||0)>0;});
@@ -1817,32 +1869,31 @@ function pantryMatch(items,name,mem){
   }
   if(pantryAskMuted(m))return {it:null,cands:[],src:'muted'};
   var exact=have.filter(function(it){return pantryKey(it.n)===k;});
-  var hay=' '+k+' ';
-  var cands=exact.length?exact:have.filter(function(it){
-    var ik=pantryKey(it.n);
-    return !!ik&&(hay.indexOf(' '+ik+' ')>=0||(' '+ik+' ').indexOf(hay)>=0);
-  });
+  var src='name';
+  var cands=exact.length?exact:have.filter(function(it){return _pantryWordHit(k,pantryKey(it.n));});
+  if(!cands.length){src='guess';cands=have.filter(function(it){return _pantryTailHit(k,pantryKey(it.n));});}
   if(!cands.length)return null;
-  return cands.length===1?{it:cands[0],cands:cands,src:'name'}:{it:null,cands:cands,src:'choice'};
+  if(cands.length===1)return {it:cands[0],cands:cands,src:src};
+  return {it:null,cands:pantryRankCands(cands,k,log),src:'choice'};
 }
 // Vorschlag für einen Eintrag: eine Zeile je Vorrats-Artikel (gleiche Artikel
 // zusammengefasst), mehrdeutige Namen als eigene Auswahl-Zeile.
 // {keys, names, it, cands, src, grams, known}: known = Gramm aller Zeilen bekannt.
-/** @param {any} entry @param {Array<any>} items @param {any} [mem] */
-function pantryMealRows(entry,items,mem){
+/** @param {any} entry @param {Array<any>} items @param {any} [mem] @param {Array<any>} [log] */
+function pantryMealRows(entry,items,mem,log){
   /** @type {Array<any>} */
   var rows=[];
   /** @type {Object<string,any>} */
   var byId={};
   pantryEntryLines(entry).forEach(function(l){
-    var m=pantryMatch(items,l.name,mem);
+    var m=pantryMatch(items,l.name,mem,log);
     if(!m||m.src==='muted')return;
     var k=pantryKey(l.name);
     var r=m.it?byId[m.it.id]:null;
     if(r){
       if(r.keys.indexOf(k)<0)r.keys.push(k);
       r.names.push(l.name);r.grams+=l.grams;r.known=r.known&&l.grams>0;
-      if(m.src==='name'&&r.src==='mem')r.src='name';
+      if(m.src==='name'&&r.src!=='name')r.src='name';
       return;
     }
     r={keys:[k],names:[l.name],it:m.it,cands:m.cands,src:m.src,grams:l.grams,known:l.grams>0};
@@ -1850,6 +1901,22 @@ function pantryMealRows(entry,items,mem){
     rows.push(r);
   });
   return rows;
+}
+// Zeilen eines Eintrags ohne Vorschlag (nichts gefunden oder stumm geschaltet),
+// gleiche Namen zusammengefasst: für die Zuordnung von Hand im Dialog.
+// {key, name, grams, known}
+/** @param {any} entry @param {Array<any>} items @param {any} [mem] */
+function pantryMealRest(entry,items,mem){
+  /** @type {Array<any>} */
+  var out=[];
+  pantryEntryLines(entry).forEach(function(l){
+    var m=pantryMatch(items,l.name,mem);
+    if(m&&m.src!=='muted')return;
+    var k=pantryKey(l.name),r=out.filter(function(x){return x.key===k;})[0];
+    if(r){r.grams+=l.grams;r.known=r.known&&l.grams>0;return;}
+    out.push({key:k,name:l.name,grams:l.grams,known:l.grams>0});
+  });
+  return out;
 }
 // Vorgeschlagene Menge für den Artikel: in Gramm, wenn er Gramm je Stück
 // kennt (höchstens der Bestand), sonst in Stück; q null = unbekannt (leer lassen).

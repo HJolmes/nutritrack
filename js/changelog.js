@@ -2,6 +2,11 @@
 // NutriTrack – Versions-Changelog für den "Was ist neu"-Dialog.
 // Ausgelagert aus index.html (v0.204). Klassisches Script, exportiert window.CHANGELOG.
 window.CHANGELOG=[
+  {v:'0.363',items:[
+    {icon:'🔎',text:'<b>Vorratsabzug findet mehr</b>: Zusammengeschriebene Namen passen jetzt auch zu Artikeln mit Bindestrich oder Leerzeichen („Geflügelsalami“ ↔ „BIO Geflügel-Salami“), dazu Grundwörter („Salami“ ↔ „Geflügelsalami“, als Vermutung markiert).',where:'Vorrat · Abzug nach Mahlzeit'},
+    {icon:'⬆️',text:'<b>Mehrdeutig: wahrscheinlichste zuerst</b> — passende Artikel stehen oben, sortiert nach bisherigem Abzug, angebrochen und MHD; darunter alle weiteren Artikel.',where:'Vorrat · Abzug nach Mahlzeit'},
+    {icon:'✋',text:'<b>Artikel von Hand abziehen</b>: Im Abzug-Dialog eine Zutat ohne Treffer (z. B. Nutella) einem Vorratsartikel zuordnen. Die Zuordnung wird gemerkt und beim nächsten Mal vorgewählt.',where:'Vorrat · Abzug nach Mahlzeit'}
+  ]},
   {v:'0.362',items:[
     {icon:'⚠️',text:'<b>Altes Datum vom Foto</b>: Liest die KI ein MHD, das über 30 Tage zurückliegt, fragt die App vor dem Übernehmen nach — ohne dieses Datum übernehmen (die App schätzt dann), so übernehmen oder zurück zur Liste.',where:'Vorrat · Foto'}
   ]},
